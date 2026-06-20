@@ -461,10 +461,13 @@ class StatisticsQueryForm(forms.Form):
         elif self.cleaned_data['zip_query_type'] == 'partial':
             if not self.cleaned_data['zip_code_partial'] or len(self.cleaned_data['zip_code_partial']) > 5 or not self.cleaned_data['zip_code_partial'].isnumeric():
                 raise forms.ValidationError('Please enter a partial zip code (1-4 digits) to match.')
-        # International postcode: any non-empty string (matched case-insensitively against address_postcode).
+        # International postcode: non-empty string, alphanumeric + spaces + hyphens only (security).
         elif self.cleaned_data['zip_query_type'] == 'postcode':
-            if not self.cleaned_data.get('postcode', '').strip():
+            postcode_val = self.cleaned_data.get('postcode', '').strip()
+            if not postcode_val:
                 raise forms.ValidationError('Please enter an international postcode to match.')
+            if not re.match(r'^[A-Za-z0-9 \-]+$', postcode_val):
+                raise forms.ValidationError('Postcodes may only contain letters, digits, spaces, and hyphens.')
         # Distance queries also require a radius in miles.
         if self.cleaned_data['zip_query_type'] == 'distance':
             if not self.cleaned_data['zip_code_distance']:

@@ -1,6 +1,8 @@
 import logging
+import re
 
 from django import forms
+from django.core.exceptions import ValidationError
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
 
@@ -15,6 +17,19 @@ from django.conf import settings
 import json
 from pytz import country_names
 from phonenumber_field.formfields import PhoneNumberField
+
+# Security: allowed characters for international postcodes.
+# Permits letters, digits, spaces, and hyphens — covers all common international
+# postcode formats (UK: "SW1A 1AA", Canada: "K1A 0B1", Ireland: "A65 F4E2", etc.)
+# while rejecting script-injection attempts and special characters.
+_POSTCODE_RE = re.compile(r'^[A-Za-z0-9 \-]+$')
+
+def validate_postcode(value):
+    """Raise ValidationError if value contains characters outside the allowed set."""
+    if value and not _POSTCODE_RE.match(value):
+        raise ValidationError(
+            'Postcodes may only contain letters, digits, spaces, and hyphens.'
+        )
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
@@ -63,7 +78,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     # International postcode (up to 10 chars, e.g. UK "SW1A 1AA"); hidden by default,
     # shown via JS when the user picks "International" from the state dropdown.
-    address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
+    # The validate_postcode validator enforces safe characters server-side.
+    address_postcode = StrippedCharField(required=False, length=10, max_length=10, validators=[validate_postcode], widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
     # Country dropdown; hidden by default, shown alongside postcode for international addresses.
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
@@ -111,7 +127,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     # International postcode for emergency contact; hidden by default, shown via JS
     # when "International" is selected from the emergency contact state dropdown.
-    emerg_address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
+    # The validate_postcode validator enforces safe characters server-side.
+    emerg_address_postcode = StrippedCharField(required=False, length=10, max_length=10, validators=[validate_postcode], widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
     # Country dropdown for emergency contact; hidden by default, shown for international addresses.
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
@@ -551,15 +568,27 @@ class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)
 
 class MinimalUserInfo(FormUnrestrictedOtherUser):
+    """Minimal contact form used by volunteer/alumni/staff profile types."""
     first_name = StrippedCharField(length=25, max_length=64)
     last_name = StrippedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=list(zip(_states, _states)))
+    # US zip code (5 digits); hidden when "International" state is chosen.
     address_zip = StrippedCharField(required=False, length=5, max_length=5)
-    address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'hidden', 'placeholder': 'Postcode'}))
+    # International postcode; hidden by default, shown via JS when "International" is selected.
+    address_postcode = StrippedCharField(required=False, length=10, max_length=10, validators=[validate_postcode], widget=forms.TextInput(attrs={'class': 'hidden', 'placeholder': 'Postcode'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
+
+    def clean(self):
+        super().clean()
+        # Require at least one of zip (US) or postcode (international) when address fields are present.
+        if not self.cleaned_data.get('address_zip') and not self.cleaned_data.get('address_postcode'):
+            raise forms.ValidationError(
+                "Please provide a zip code (for US addresses) or postcode (for international addresses)."
+            )
+        return self.cleaned_data
 
 _grad_years = list(range(datetime.now().year, datetime.now().year + 6))
 

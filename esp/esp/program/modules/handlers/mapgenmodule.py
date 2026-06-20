@@ -79,15 +79,23 @@ class MapGenModule(ProgramModuleObj):
             users = ESPUser.objects.filter(filterObj.get_Q()).distinct()
             context['num_users'] = users.count()
 
-            #   Summarize users by state and zip code
-            #   Only get contact infos that are for the actual users (not guardians or emergency contacts)
+            #   Summarize users by state and zip code / postcode.
+            #   Only get contact infos that are for the actual users (not guardians or emergency contacts).
+            #   International users (issue #5845) store their code in address_postcode; include both.
             states_raw = ContactInfo.objects.filter(user__in=users, as_user__isnull=False
                 ).distinct('user').values_list('address_state', flat = True)
             states = dict(Counter([x for x in states_raw if x]))
 
+            # Collect US zip codes
             zipcodes_raw = ContactInfo.objects.filter(user__in=users, as_user__isnull=False
                 ).distinct('user').values_list('address_zip', flat = True)
             zipcodes = dict(Counter([x for x in zipcodes_raw if x]))
+            # Also collect international postcodes and merge into the same dict
+            postcodes_raw = ContactInfo.objects.filter(user__in=users, as_user__isnull=False
+                ).distinct('user').values_list('address_postcode', flat = True)
+            for pc in postcodes_raw:
+                if pc:
+                    zipcodes[pc] = zipcodes.get(pc, 0) + 1
 
             #   If we don't have state data, use zip code data to populate it
             #   data is from https://data.world/niccolley/us-zipcode-to-county-state
