@@ -75,26 +75,26 @@ function hideEmpty(source) {
           <td><input type="checkbox" name="user" value={{ req.user.id }}></td>
           <td align="center">
             {% if req.approved %}
-            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;"></i>
+            <i align="center" class="bi bi-check-circle" style="color:green; width:100%; font-size:1.5em;"></i>
             <span>({% if req.financialaidgrant_set.all.0.amount_max_dec %}${{ req.financialaidgrant_set.all.0.amount_max_dec }}{% endif %}{% if req.financialaidgrant_set.all.0.amount_max_dec and req.financialaidgrant_set.all.0.percent %} + {% endif %}{% if req.financialaidgrant_set.all.0.percent %}{{ req.financialaidgrant_set.all.0.percent }}%{% endif %})</span>
             {% else %}
-            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            <i align="center" class="bi bi-dash-circle" style="color:firebrick; width:100%; font-size:1.5em;" />
             {% endif %}
           </td>
           <td align="center" style="max-width: 70px; overflow-wrap:break-word;"><a href="/manage/userview?username={{ req.user.username|urlencode }}&program={{ program.id }}">{{ req.user.name }}</a></td>
           <td align="center">
             {% if req.reduced_lunch %}
-            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            <i align="center" class="bi bi-check-circle" style="color:green; width:100%; font-size:1.5em;" />
             {% else %}
-            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            <i align="center" class="bi bi-dash-circle" style="color:firebrick; width:100%; font-size:1.5em;" />
             {% endif %}
           </td>
           <td align="center">${% if req.household_income %}{{ req.household_income }}{% endif %}</td>
           <td align="center">
             {% if not req.student_prepare %}
-            <i align="center" class="glyphicon glyphicon-ok-sign" style="color:green; width:100%; font-size:1.5em;" />
+            <i align="center" class="bi bi-check-circle" style="color:green; width:100%; font-size:1.5em;" />
             {% else %}
-            <i align="center" class="glyphicon glyphicon-minus-sign" style="color:firebrick; width:100%; font-size:1.5em;" />
+            <i align="center" class="bi bi-dash-circle" style="color:firebrick; width:100%; font-size:1.5em;" />
             {% endif %}
           </td>
         </tr>
