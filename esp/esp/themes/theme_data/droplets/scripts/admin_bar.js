@@ -51,7 +51,7 @@ content_html:
     '<div class="input-group">' +
     '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" class="form-control" />' +
     '<span class="input-group-btn">' +
-    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-secondary"><span class="bi bi-search" aria-hidden="true"></span></button>' +
     '</span>' +
     '</div>' +
     '</form>',
@@ -67,7 +67,7 @@ if (currentPrograms && currentPrograms.forEach) {
                 '<div class="input-group">' +
                 '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" class="form-control" />' +
                 '<span class="input-group-btn">' +
-                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-secondary"><span class="bi bi-search" aria-hidden="true"></span></button>' +
                 '</span>' +
                 '</div>' +
                 '</form>' : '') +

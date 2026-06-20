@@ -20,6 +20,8 @@ Covers:
   tags: Tag
 """
 
+import os
+
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
@@ -54,6 +56,7 @@ from esp.web.models import NavBarCategory, NavBarEntry
 from esp.qsd.models import QuasiStaticData
 from esp.survey.models import Survey, SurveyResponse, Question, Answer, QuestionType
 from esp.tagdict.models import Tag
+from esp.themes.controllers import ThemeController
 
 
 SEED_USERNAMES = (
@@ -113,8 +116,16 @@ class Command(BaseCommand):
                 self._create_qsd(program, admin)
                 self._create_splash_info(program, students)
 
+            self._ensure_theme_media()
+
         self.stdout.write(self.style.SUCCESS('✓ Database seeding completed successfully!'))
         self.stdout.write('Admin credentials: username=admin  password=password')
+
+    # ── theme media ─────────────────────────────────────────────────────────
+
+    def _ensure_theme_media(self):
+        """Install default logo/header if missing and refresh cache-bust tags."""
+        ThemeController().ensure_theme_media()
 
     # ── flush ─────────────────────────────────────────────────────────────────
 
@@ -274,6 +285,53 @@ class Command(BaseCommand):
             defaults=dict(admin_title='Teacher Profile Editor',
                           seq=0, required=True, choosable=1))
 
+        # Supplement with all other choosable=1 modules from the handlers directory
+        from esp.program.modules import handlers as handlers_pkg
+        import importlib
+        import pkgutil
+        import inspect
+
+        for _, mod_name, _ in pkgutil.iter_modules(handlers_pkg.__path__):
+            module_dotted_name = f'esp.program.modules.handlers.{mod_name}'
+            try:
+                mod = importlib.import_module(module_dotted_name)
+            except Exception as e:
+                self.stdout.write(self.style.WARNING(
+                    f'  Skipping handler module {module_dotted_name}: {e!r}'
+                ))
+                continue
+            for _name, cls in inspect.getmembers(mod, inspect.isclass):
+                # Only consider classes actually defined in this handler file,
+                # not ones that happen to be imported into it.
+                if cls.__module__ != module_dotted_name:
+                    continue
+                try:
+                    is_handler = issubclass(cls, ProgramModuleObj) and cls is not ProgramModuleObj
+                except TypeError:
+                    continue
+                if not is_handler:
+                    continue
+                try:
+                    all_props = cls.module_properties_autopopulated()
+                except Exception as e:
+                    self.stdout.write(self.style.WARNING(
+                        f'  Skipping module_properties for {module_dotted_name}.{cls.__name__}: {e!r}'
+                    ))
+                    continue
+                for props in all_props:
+                    if props.get('choosable') == 1:
+                        ProgramModule.objects.update_or_create(
+                            handler=props['handler'],
+                            module_type=props['module_type'],
+                            defaults=dict(
+                                admin_title=props.get('admin_title', props['handler']),
+                                link_title=props.get('link_title'),
+                                inline_template=props.get('inline_template'),
+                                seq=props.get('seq', 200),
+                                required=props.get('required', False),
+                                choosable=1,
+                            ))
+
         for name in ['yes/no', 'rating', 'open response', 'multiple choice']:
             QuestionType.objects.get_or_create(name=name)
 
@@ -321,33 +379,6 @@ class Command(BaseCommand):
     # ── programs ──────────────────────────────────────────────────────────────
 
     def _create_programs(self):
-        all_module_handlers = [
-            # Core
-            'StudentRegCore', 'TeacherRegCore', 'AdminCore',
-            'OnsiteCore', 'VolunteerSignup', 'VolunteerManage',
-            'RegProfileModule', 'JSONDataModule',
-            # Student registration
-            'StudentClassRegModule', 'StudentRegConfirm',
-            'StudentAcknowledgementModule', 'StudentSurveyModule',
-            'LotteryStudentRegModule', 'LotteryFrontendModule',
-            'FinancialAidAppModule', 'StudentExtracosts', 'DonationModule',
-            'CreditCardModule_Stripe', 'StudentOnsite',
-            # Teacher registration
-            'TeacherClassRegModule', 'TeacherBioModule',
-            'AvailabilityModule', 'TeacherSurveyModule',
-            'TeacherAcknowledgementModule', 'TeacherPreviewModule',
-            'TeacherOnsite', 'TeacherEventsModule',
-            # Admin
-            'AdminClass', 'AdminVitals', 'AdminMaterials',
-            'ResourceModule', 'SchedulingCheckModule',
-            'ProgramPrintables', 'SurveyManagement',
-            'CommModule', 'NameTagModule',
-            'BigBoardModule', 'TeacherBigBoardModule', 'BatchClassRegModule',
-            'OnSiteCheckinModule', 'OnSiteCheckoutModule',
-            'OnSiteClassList', 'OnSiteAttendance',
-            'UnenrollModule', 'ClassSearchModule',
-            'TeacherCheckinModule', 'FinAidApproveModule',
-        ]
         programs = []
         for spec in [
             dict(name='Splash Dev', url='SplashDev/2026', grade_min=7,  grade_max=12),
@@ -362,14 +393,14 @@ class Command(BaseCommand):
                     director_cc_email='', director_confidential_email='',
                     program_size_max=200, program_allow_waitlist=True,
                 ))
-            modules_qs = ProgramModule.objects.filter(handler__in=all_module_handlers)
+            modules_qs = ProgramModule.objects.filter(choosable=1)
 
             if created:
                 program.class_categories.set(ClassCategories.objects.all())
                 program.program_modules.set(modules_qs)
 
                 # Seed ProgramModuleObj instances so the program has active modules
-                for pm in ProgramModule.objects.filter(handler__in=all_module_handlers):
+                for pm in modules_qs:
                     ProgramModuleObj.objects.get_or_create(
                         program=program,
                         module=pm,
