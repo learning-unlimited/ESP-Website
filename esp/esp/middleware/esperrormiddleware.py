@@ -169,8 +169,6 @@ class ESPErrorMiddleware(MiddlewareMixin):
             'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'error_url': request.build_absolute_uri(),
         }
-        # render_to_response() automatically handles context processors,
-        # so all configured context processors will be applied.
         # All error templates extend error_base.html, which provides
         # a consistent layout with two-tier information (user vs admin)
         # and a pre-filled report button.

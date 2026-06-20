@@ -172,8 +172,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     Render a template to an HTTP response, with ESP-specific context.
 
     This function is a wrapper around django.shortcuts.render() that adds
-    ESP-specific context variables (theme settings, navbar, etc.) and handles
-    RequestContext processing for Django 3.0+ compatibility.
+    ESP-specific context variables (theme settings, navbar, etc.).
 
     Args:
         template: Template name(s) to render (string or list of strings)
@@ -212,7 +211,6 @@ def render_to_response(template, request, context, content_type=None, use_reques
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if use_request_context:
-        # django.shortcuts.render() automatically applies context processors
         return django.shortcuts.render(request, template, context, content_type=content_type)
     else:
         # For rendering without context processors, use template rendering directly.
