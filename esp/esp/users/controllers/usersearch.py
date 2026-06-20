@@ -152,6 +152,9 @@ class UserSearchController(object):
                         Q_include &= Q(**filter_dict)
                     self.updated = True
 
+            # International postcode filter (issue #5845): case-insensitive exact match
+            # against address_postcode.  Distance-based search is not supported for
+            # international postcodes because the ZipCode table only holds US coordinates.
             if criteria.get('postcode', '').strip():
                 Q_include &= Q(registrationprofile__contact_user__address_postcode__iexact=criteria['postcode'].strip(), registrationprofile__most_recent_profile=True)
                 self.updated = True

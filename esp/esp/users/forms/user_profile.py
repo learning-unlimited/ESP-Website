@@ -59,8 +59,12 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_street = StrippedCharField(required=True, length=40, max_length=100)
     address_city = StrippedCharField(required=True, length=20, max_length=50)
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
+    # US zip code (5 digits max); hidden when "International" state is chosen.
     address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    # International postcode (up to 10 chars, e.g. UK "SW1A 1AA"); hidden by default,
+    # shown via JS when the user picks "International" from the state dropdown.
     address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
+    # Country dropdown; hidden by default, shown alongside postcode for international addresses.
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def __init__(self, *args, **kwargs):
@@ -84,6 +88,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
                     raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell', '') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
+        # Require at least one of zip (US) or postcode (international) when address is mandatory.
         if getattr(self, '_address_required', True):
             if not self.cleaned_data.get('address_zip') and not self.cleaned_data.get('address_postcode'):
                 raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses).")
@@ -102,8 +107,12 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
+    # US zip code for emergency contact; hidden when "International" state is chosen.
     emerg_address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    # International postcode for emergency contact; hidden by default, shown via JS
+    # when "International" is selected from the emergency contact state dropdown.
     emerg_address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
+    # Country dropdown for emergency contact; hidden by default, shown for international addresses.
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def clean(self):
@@ -111,6 +120,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
         if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
             if self.cleaned_data.get('emerg_phone_day', '') == '' and self.cleaned_data.get('emerg_phone_cell', '') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
+        # Require at least one of zip (US) or postcode (international) for the emergency contact address.
         if not self.cleaned_data.get('emerg_address_zip') and not self.cleaned_data.get('emerg_address_postcode'):
             raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses) for your emergency contact.")
         return self.cleaned_data

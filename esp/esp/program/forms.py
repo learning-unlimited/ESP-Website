@@ -372,10 +372,15 @@ class StatisticsQueryForm(forms.Form):
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
     school_multisel = SchoolMultiSelectField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
+    # Zip/postcode query selector.  The first three choices (exact, partial, distance)
+    # operate on address_zip (US-only; distance uses the ZipCode lat/long table).
+    # The 'postcode' choice operates on address_postcode for international addresses.
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip/Postcode'), ('exact', 'Exact US zip code match'), ('partial', 'Partial US zip code match'), ('distance', 'Distance from US zip code'), ('postcode', 'International postcode match')), initial='all', widget=forms.RadioSelect(), label='Zip/Postcode Query Type')
+    # US zip code value used with 'exact', 'partial', and 'distance' query types.
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
     zip_code_partial = forms.CharField(required=False, widget=forms.TextInput(), label='Beginning digits of Zip code')
     zip_code_distance = forms.IntegerField(required=False, widget=forms.TextInput(), label='Maximum distance from Zip code', help_text='Enter an integer distance in miles')
+    # International postcode value used with the 'postcode' query type (case-insensitive exact match).
     postcode = forms.CharField(required=False, widget=forms.TextInput(), label='International Postcode')
 
     def __init__(self, *args, **kwargs):
@@ -448,15 +453,19 @@ class StatisticsQueryForm(forms.Form):
                 raise forms.ValidationError('Please select at least one school from the list.')
 
         """ Check that the appropriate zip code / postcode fields are filled out """
+        # US zip: exact and distance both require a 5-digit numeric code.
         if self.cleaned_data['zip_query_type'] in ['exact', 'distance']:
             if not self.cleaned_data['zip_code'] or len(self.cleaned_data['zip_code']) != 5 or not self.cleaned_data['zip_code'].isnumeric():
                 raise forms.ValidationError('Please enter a 5-digit zip code to match.')
+        # US zip partial: 1–4 numeric digits used as a startswith filter.
         elif self.cleaned_data['zip_query_type'] == 'partial':
             if not self.cleaned_data['zip_code_partial'] or len(self.cleaned_data['zip_code_partial']) > 5 or not self.cleaned_data['zip_code_partial'].isnumeric():
                 raise forms.ValidationError('Please enter a partial zip code (1-4 digits) to match.')
+        # International postcode: any non-empty string (matched case-insensitively against address_postcode).
         elif self.cleaned_data['zip_query_type'] == 'postcode':
             if not self.cleaned_data.get('postcode', '').strip():
                 raise forms.ValidationError('Please enter an international postcode to match.')
+        # Distance queries also require a radius in miles.
         if self.cleaned_data['zip_query_type'] == 'distance':
             if not self.cleaned_data['zip_code_distance']:
                 raise forms.ValidationError('Please enter a zip code and a radius to search within.')
@@ -522,7 +531,7 @@ class StatisticsQueryForm(forms.Form):
             elif data['school_query_type'] == 'list':
                 self.hide_field('school_name')
 
-        #   Zip code / postcode selection
+        #   Zip code / postcode selection: hide fields that are irrelevant to the chosen query type.
         if 'zip_query_type' in data:
             if data['zip_query_type'] == 'all':
                 self.hide_field('zip_code')

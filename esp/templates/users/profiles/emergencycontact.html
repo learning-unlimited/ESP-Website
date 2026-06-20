@@ -99,6 +99,8 @@ function copy_parent_info() {
         {% endif %}
 
         {% if form.emerg_address_postcode %}
+        {# International postcode for emergency contact (issue #5845). Hidden by default; #}
+        {# shown via JS when "International" is selected from the emergency state dropdown. #}
         {{ form.emerg_address_postcode }} {% if form.emerg_address_postcode.errors %}
         <br /><span class="form_error" role="alert">{{ form.emerg_address_postcode.errors|join:", " }}</span>
         {% endif %}

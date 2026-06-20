@@ -1398,17 +1398,21 @@ def statistics(request, program=None):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
-            #   Narrow down by Zip code / postcode, simply using the latest profile
-            #   Note: it would be harder to track users better (i.e. zip code A in fall 2008, zip code B in fall 2009)
+            #   Narrow down by Zip code / postcode, simply using the latest profile.
+            #   Note: tracking zip history (e.g. zip A in 2008, zip B in 2009) is not supported here.
+            #   'exact'/'partial'/'distance' operate on address_zip (US addresses only).
+            #   'postcode' operates on address_postcode for international addresses (issue #5845).
             if form.cleaned_data['zip_query_type'] == 'exact':
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'partial':
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'distance':
+                # Distance search uses the ZipCode table's lat/long data — US addresses only.
                 zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
             elif form.cleaned_data['zip_query_type'] == 'postcode':
+                # International postcode: case-insensitive exact match on address_postcode.
                 users_q = users_q & Q(registrationprofile__contact_user__address_postcode__iexact=form.cleaned_data['postcode'].strip(), registrationprofile__most_recent_profile=True)
 
             #   Distinct PKs only (avoids running the heavy filter twice for count() + list()).

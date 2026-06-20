@@ -99,17 +99,25 @@ div.required label.control-label:after {
 </div>
 
 <script>
+/* check_state / check_emerg_state — issue #5845: international postcode support.
+ * When "International" is selected from the state dropdown:
+ *   - show the country dropdown and postcode field
+ *   - hide the US zip code field
+ * For any US state the reverse applies: zip shown, postcode/country hidden and cleared.
+ */
 function check_state() {
   if ($j("#id_address_state").val() == "International") {
     $j("#id_address_country").removeClass("hidden");
     if ($j("#id_address_country").val() == "US") {
       $j("#id_address_country").val("");
     }
+    // Hide zip and show international postcode input.
     $j("#id_address_zip").addClass("hidden");
     $j("#id_address_postcode").removeClass("hidden");
   } else {
     $j("#id_address_country").addClass("hidden");
     $j("#id_address_country").val("US");
+    // Show zip and hide/clear international postcode input.
     $j("#id_address_zip").removeClass("hidden");
     $j("#id_address_postcode").addClass("hidden");
     $j("#id_address_postcode").val("");
@@ -121,11 +129,13 @@ function check_emerg_state() {
     if ($j("#id_emerg_address_country").val() == "US") {
       $j("#id_emerg_address_country").val("");
     }
+    // Hide zip and show international postcode input.
     $j("#id_emerg_address_zip").addClass("hidden");
     $j("#id_emerg_address_postcode").removeClass("hidden");
   } else {
     $j("#id_emerg_address_country").addClass("hidden");
     $j("#id_emerg_address_country").val("US");
+    // Show zip and hide/clear international postcode input.
     $j("#id_emerg_address_zip").removeClass("hidden");
     $j("#id_emerg_address_postcode").addClass("hidden");
     $j("#id_emerg_address_postcode").val("");

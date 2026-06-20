@@ -82,6 +82,8 @@
         {% endif %}
 
         {% if form.address_postcode %}
+        {# International postcode field (issue #5845). Hidden by default; shown via JS when #}
+        {# the user selects "International" from the state dropdown above. #}
         {{ form.address_postcode }} {% if form.address_postcode.errors %}
         <br /><span class="form_error" role="alert">{{ form.address_postcode.errors|join:", " }}</span>
         {% endif %}
