@@ -6,8 +6,6 @@ and lunch constraints. This file adds invariant and edge-case tests that verify
 numpy array postconditions directly, independent of the HTTP layer.
 
 Note: save_assignments() creates only 'Enrolled' SRs — no waitlist records.
-LotteryEdgeCaseTest inherits ProgramFrameworkTest which already extends
-CacheFlushTestCase, so cache isolation is provided.
 
 Refs: #3780, #794
 """
@@ -239,15 +237,19 @@ class LotteryEdgeCaseTest(LotteryTestBase):
         Regression guard: a numpy upgrade that alters RNG behavior would
         change lottery outcomes silently without this test.
         """
-        ctrl1 = self._make_controller()
-        numpy.random.seed(42)
-        ctrl1.compute_assignments(check_result=False)
+        rng_state = numpy.random.get_state()
+        try:
+            ctrl1 = self._make_controller()
+            numpy.random.seed(42)
+            ctrl1.compute_assignments(check_result=False)
 
-        ctrl2 = self._make_controller()
-        numpy.random.seed(42)
-        ctrl2.compute_assignments(check_result=False)
+            ctrl2 = self._make_controller()
+            numpy.random.seed(42)
+            ctrl2.compute_assignments(check_result=False)
 
-        self.assertTrue(numpy.array_equal(ctrl1.student_sections, ctrl2.student_sections))
+            self.assertTrue(numpy.array_equal(ctrl1.student_sections, ctrl2.student_sections))
+        finally:
+            numpy.random.set_state(rng_state)
 
     def test_clear_assignments_resets_arrays(self):
         """clear_assignments() resets student_sections and student_schedules to zero."""
