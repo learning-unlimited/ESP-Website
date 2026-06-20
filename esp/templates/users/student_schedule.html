@@ -101,7 +101,7 @@ you arrive.
             {% if module.deadline_met_or_lottery_open %}
                 <br/>
                 <a href="/learn/{{one}}/{{two}}/cancel_day/{{ timeslot.0.start|date:"Y-m-d" }}"
-                   class="btn btn-mini btn-danger"
+                   class="btn btn-xs btn-danger"
                    onclick="return confirm('Are you sure you want to cancel ALL your registrations for {{ timeslot.0.pretty_date }}?');">
                    [Cancel all for this day]
                 </a>

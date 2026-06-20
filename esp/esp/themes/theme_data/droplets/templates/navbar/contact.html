@@ -1,26 +1,24 @@
-<ul class="nav pull-left">
-  <li class="dropdown">
-    <a class="navbar-header" data-toggle="dropdown">
-      About Us
-    </a>
-    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
-    <ul class="dropdown-menu pull-left">
+<ul class="navbar-nav">
+  <li class="nav-item dropdown">
+    <a class="nav-link navbar-item-label" data-toggle="dropdown">About Us</a>
+    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="About Us menu"><b class="caret"></b></a>
+    <ul class="dropdown-menu">
       {% if theme.contact_info %}
-      <li><div>{{ theme.contact_info|linebreaksbr }}</div></li>
+      <li><div class="dropdown-item-text">{{ theme.contact_info|linebreaksbr }}</div></li>
       {% endif %}
       {% if theme.show_email %}
-      <li><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email: {{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></li>
+      <li><a class="dropdown-item" href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">Email: {{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></li>
       {% endif %}
       {% if theme.contact_links %}
       {% for link in theme.contact_links %}
-      <li><a href="{{ link.link }}">{{ link.text }}</a></li>
+      <li><a class="dropdown-item" href="{{ link.link }}">{{ link.text }}</a></li>
       {% endfor %}
       {% endif %}
       {% if theme.faq_link %}
-      <li><a href="{{ theme.faq_link }}">FAQ</a></li>
+      <li><a class="dropdown-item" href="{{ theme.faq_link }}">FAQ</a></li>
       {% endif %}
       {% if theme.facebook_link %}
-      <li><a href="{{ theme.facebook_link }}" target="_blank">Facebook</a></li>
+      <li><a class="dropdown-item" href="{{ theme.facebook_link }}" target="_blank">Facebook</a></li>
       {% endif %}
     </ul>
   </li>

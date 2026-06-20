@@ -296,14 +296,20 @@ class UserSearchController(object):
             #   Get an initial query from the supplied base list
             recipient_type, list_name = data['combo_base_list'].split(':')
             if list_name.startswith('all'):
-                q_program = Q()
+                if recipient_type in ESPUser.getTypes():
+                    q_program = ESPUser.getAllOfType(recipient_type, True)
+                else:
+                    q_program = Q()
             else:
                 q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
 
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
             #   with any lists marked 'OR'.
-            checkbox_keys = [x[9:] for x in [x for x in list(data.keys()) if x.startswith('checkbox_')]]
+            #   Only treat a checkbox as active when it has a truthy value;
+            #   unchecked boxes can still appear in the POST data with an empty
+            #   value, and must not be applied as list filters.
+            checkbox_keys = [x[9:] for x in list(data.keys()) if x.startswith('checkbox_') and data.get(x)]
             and_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('and_')]]
             or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith('or_')]]
             not_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('not_')]]
@@ -330,7 +336,7 @@ class UserSearchController(object):
                         q_program = q_program | ~Q(pk__in=subquery_qs)
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria(recipient_type, data, program)
+            q_extra = self.query_from_criteria('any', data, program)
 
         qobject = (q_extra & q_program & Q(is_active=True))
 

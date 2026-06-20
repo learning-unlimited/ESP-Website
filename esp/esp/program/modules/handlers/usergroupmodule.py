@@ -61,7 +61,10 @@ class UserGroupModule(ProgramModuleObj):
             raise ESPError()('Filter and/or group has not been properly set')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user group management process.')
         if request.POST.get('group_name_new', ''):
             group = request.POST['group_name_new']
         else:
