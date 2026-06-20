@@ -43,11 +43,11 @@ div.required label.control-label:after {
                     Please fix the following error{{ form.errors|pluralize }} in the form.
             </div>
       <ul>
-	{% for error in form.errors.items %}
-	{% if error.0 == '__all__' %}
-	{{ error.1 }}
-	{% endif %}
-	{% endfor %}
+        {% for error in form.errors.items %}
+        {% if error.0 == '__all__' %}
+        {{ error.1 }}
+        {% endif %}
+        {% endfor %}
       </ul>
       <br />
       {% endif %}
@@ -105,9 +105,14 @@ function check_state() {
     if ($j("#id_address_country").val() == "US") {
       $j("#id_address_country").val("");
     }
+    $j("#id_address_zip").addClass("hidden");
+    $j("#id_address_postcode").removeClass("hidden");
   } else {
     $j("#id_address_country").addClass("hidden");
     $j("#id_address_country").val("US");
+    $j("#id_address_zip").removeClass("hidden");
+    $j("#id_address_postcode").addClass("hidden");
+    $j("#id_address_postcode").val("");
   }
 }
 function check_emerg_state() {
@@ -116,9 +121,14 @@ function check_emerg_state() {
     if ($j("#id_emerg_address_country").val() == "US") {
       $j("#id_emerg_address_country").val("");
     }
+    $j("#id_emerg_address_zip").addClass("hidden");
+    $j("#id_emerg_address_postcode").removeClass("hidden");
   } else {
     $j("#id_emerg_address_country").addClass("hidden");
     $j("#id_emerg_address_country").val("US");
+    $j("#id_emerg_address_zip").removeClass("hidden");
+    $j("#id_emerg_address_postcode").addClass("hidden");
+    $j("#id_emerg_address_postcode").val("");
   }
 }
 $j(document).ready(function() {

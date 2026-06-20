@@ -2066,7 +2066,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         'name': NameWidget,
     }
     link_compound_fields = {
-        'address': ['address_street', 'address_city', 'address_state', 'address_zip'],
+        'address': ['address_street', 'address_city', 'address_state', 'address_zip', 'address_postcode'],
         'name': ['first_name', 'last_name'],
     }
 
@@ -2093,6 +2093,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_city = models.CharField('City', max_length=50, blank=True, null=True)
     address_state = models.CharField('State', max_length=32, blank=True, null=True)
     address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
+    address_postcode = models.CharField('Postcode', max_length=10, blank=True, null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
 
     class Meta:
@@ -2117,7 +2118,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
-        return f'{self.address_street}, {self.address_city}, {self.address_state} {self.address_zip}'
+        postcode = self.address_postcode or self.address_zip or ''
+        return f'{self.address_street}, {self.address_city}, {self.address_state} {postcode}'
 
     def items(self):
         return list(self.__dict__.items())

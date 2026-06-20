@@ -59,7 +59,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     address_street = StrippedCharField(required=True, length=40, max_length=100)
     address_city = StrippedCharField(required=True, length=20, max_length=50)
     address_state = forms.ChoiceField(required=True, choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
-    address_zip = StrippedCharField(required=True, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def __init__(self, *args, **kwargs):
@@ -68,11 +69,12 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             del self.fields['phone_day']
         if not Tag.getBooleanTag('text_messages_to_students') or not self.user.isStudent():
             del self.fields['receive_txt_message']
+        self._address_required = True
         if self.user.isTeacher() and not Tag.getBooleanTag('teacher_address_required'):
             self.fields['address_street'].required = False
             self.fields['address_city'].required = False
             self.fields['address_state'].required = False
-            self.fields['address_zip'].required = False
+            self._address_required = False
 
     def clean(self):
         super().clean()
@@ -82,6 +84,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
                     raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell', '') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
+        if getattr(self, '_address_required', True):
+            if not self.cleaned_data.get('address_zip') and not self.cleaned_data.get('address_postcode'):
+                raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses).")
         return self.cleaned_data
 
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
@@ -97,7 +102,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini'}))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    emerg_address_zip = StrippedCharField(required=False, length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
+    emerg_address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'input-small hidden', 'placeholder': 'Postcode'}))
     emerg_address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
     def clean(self):
@@ -105,6 +111,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
         if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
             if self.cleaned_data.get('emerg_phone_day', '') == '' and self.cleaned_data.get('emerg_phone_cell', '') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
+        if not self.cleaned_data.get('emerg_address_zip') and not self.cleaned_data.get('emerg_address_postcode'):
+            raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses) for your emergency contact.")
         return self.cleaned_data
 
 
@@ -539,7 +547,8 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=list(zip(_states, _states)))
-    address_zip = StrippedCharField(length=5, max_length=5)
+    address_zip = StrippedCharField(required=False, length=5, max_length=5)
+    address_postcode = StrippedCharField(required=False, length=10, max_length=10, widget=forms.TextInput(attrs={'class': 'hidden', 'placeholder': 'Postcode'}))
     address_country = forms.ChoiceField(required=False, choices=[('', '(select a country)')] + sorted(list(country_names.items()), key = lambda x: x[1]), widget=forms.Select(attrs={'class': 'input-medium hidden'}))
 
 _grad_years = list(range(datetime.now().year, datetime.now().year + 6))

@@ -24,6 +24,7 @@ function copy_parent_info() {
   $j("#id_emerg_address_city").val($j("#id_address_city").val()).change();
   $j("#id_emerg_address_state").val($j("#id_address_state").val()).change();
   $j("#id_emerg_address_zip").val($j("#id_address_zip").val()).change();
+  $j("#id_emerg_address_postcode").val($j("#id_address_postcode").val()).change();
   $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
   $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
 }
@@ -82,7 +83,7 @@ function copy_parent_info() {
 {% if form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
 <div class="control-group">
     <label class="control-label" for="id_emerg_address_city">
-    <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip{% endif %}</i></small>
+    <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip/postcode{% endif %}</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
@@ -95,6 +96,12 @@ function copy_parent_info() {
         
         {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
         <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
+        {% endif %}
+
+        {% if form.emerg_address_postcode %}
+        {{ form.emerg_address_postcode }} {% if form.emerg_address_postcode.errors %}
+        <br /><span class="form_error" role="alert">{{ form.emerg_address_postcode.errors|join:", " }}</span>
+        {% endif %}
         {% endif %}
         
         {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
