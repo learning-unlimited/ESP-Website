@@ -4,59 +4,46 @@
 
 <h1>Themes - Site Appearance Customization</h1>
 
-<div class="row-fluid">
-    <div class="well">
-        <center>
-        <h3>Current theme: {{ theme_name }} </h3>
-        <a href="/themes/select/">
-        <button class="btn btn-large btn-block btn-primary" type="button">Step 1: Select a theme</button>
-        </a>
-        <br />
-        <br />
-        <a href="/themes/setup/">
-        <button class="btn btn-large btn-block btn-primary" type="button">Step 2: Set up the theme</button>
-        </a>
-        </center>
+<div class="row">
+    <div class="col-12">
+        <div class="well text-center">
+            <h3>Current theme: {{ theme_name }}</h3>
+            <a href="/themes/select/" class="btn btn-lg btn-primary btn-block w-100 mb-3">Step 1: Select a theme</a>
+            <a href="/themes/setup/" class="btn btn-lg btn-primary btn-block w-100">Step 2: Set up the theme</a>
+        </div>
     </div>
 </div>
 <br />
-<div class="row-fluid">
-    <div class="well">
-        <center>
+<div class="row">
+    <div class="col-12">
+        <div class="well text-center">
             <h3>Current logo:</h3>
-            <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded" style="max-width: 80%;">
+            <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded" class="img-fluid mb-3" style="max-height: 120px;">
             {% if has_header %}
             <h3>Current header:</h3>
-            <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded" style="max-width: 80%;">
+            <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded" class="img-fluid mb-3" style="max-height: 200px;">
             {% endif %}
             <h3>Current favicon:</h3>
-            <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected" style="max-width: 80%;">
-            <br /><br />
-            <a href="/themes/logos/">
-            <button class="btn btn-large btn-block btn-primary" type="button">Step 3: Upload/select a logo, header, or favicon</button>
-            </a>
-        </center>
+            <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected" class="mb-3" style="max-height: 32px;">
+            <a href="/themes/logos/" class="btn btn-lg btn-primary btn-block w-100">Step 3: Upload/select a logo, header, or favicon</a>
+        </div>
     </div>
 </div>
 <br />
-<div class="row-fluid">
-    <div class="well">
-        <center>
-        <h3>Current customization:<br />{{ last_customization_name }} </h3>
-        <a href="/themes/customize/">
-        <button class="btn btn-large btn-block btn-primary" type="button">Step 4: Customize the theme</button>
-        </a>
-        </center>
+<div class="row">
+    <div class="col-12">
+        <div class="well text-center">
+            <h3>Current customization:<br />{{ last_customization_name }}</h3>
+            <a href="/themes/customize/" class="btn btn-lg btn-primary btn-block w-100">Step 4: Customize the theme</a>
+        </div>
     </div>
 </div>
 <br />
-<div class="row-fluid">
-    <div class="well">
-        <center>
-        <a href="/themes/recompile/">
-        <button class="btn btn-large btn-block btn-primary" type="button">Install updates for the theme</button>
-        </a>
-        </center>
+<div class="row">
+    <div class="col-12">
+        <div class="well text-center">
+            <a href="/themes/recompile/" class="btn btn-lg btn-primary btn-block w-100">Install updates for the theme</a>
+        </div>
     </div>
 </div>
 
