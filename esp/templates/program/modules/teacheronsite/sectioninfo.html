@@ -51,10 +51,11 @@
                     <td>Enrollment:</td>
                     <td>
                         {{ section.num_students }} / {{ section.capacity }} students<br />
-                        (<a href="mailto:{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}" title="Email Section's Students">email</a>)
+                        {% if request.user not in section.get_moderators %}(<a href="mailto:{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}" title="Email Section's Students">email</a>){% endif %}
                         {% if sections.count > 1 %} (<a href="/teach/{{one}}/{{two}}/onsiteroster/{{ section.id }}" title="Section Roster">roster</a>){% endif %}
                     </td>
                 </tr>
+                {% if request.user not in section.get_moderators %}
                 <tr>
                     <td>Document uploads:</td>
                     <td>
@@ -77,6 +78,26 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% else %}
+                {% if section.parent_class.documents.count > 0 %}
+                <tr>
+                    <td>Document uploads:</td>
+                    <td>
+                        {% for doc in section.parent_class.documents.all %}
+                            <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a><br />
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% if section.parent_class.got_index_qsd %}
+                <tr>
+                    <td>Website:</td>
+                    <td>
+                        <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endif %}
             </tbody>
         </table>
         {% if not forloop.last %}

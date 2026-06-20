@@ -38,3 +38,15 @@ div.selector, div.selector-available, div.selector-chosen {
 div.selector select {
     width: 100%;
 }
+
+/* Chosen-panel filter: match the available-panel input sizing */
+.selector .selector-chosen input {
+    width: 320px;
+    margin-left: 8px;
+}
+
+/* Restore the top border on the chosen select — Django removes it assuming
+   the h2 is directly above, but now our filter sits between them */
+.selector-chosen select {
+    border-top: 1px solid #ccc !important;
+}

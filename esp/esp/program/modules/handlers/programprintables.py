@@ -823,16 +823,18 @@ class ProgramPrintables(ProgramModuleObj):
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, template_file = 'studentlist_emerg.html', extra_func = emergency_stuff, display_name = 'Student Emergency Contact List')
 
-    def _scheditems_for_teacher(self, teacher):
+    def _scheditems_for_teacher(self, teacher, program=None):
         """ Build scheditems list for a single teacher (teaching + moderating sections). """
-        classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
+        if program is None:
+            program = self.program
+        classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(program)
                 if cls.meeting_times.all().exists()
                 and cls.resourceassignment_set.all().exists()
                 and cls.status > 0])
         scheditems = []
         for cls in classes:
             moderating = teacher not in cls.parent_class.get_teachers()
-            role = self.program.getModeratorTitle() if moderating else 'Teacher'
+            role = program.getModeratorTitle() if moderating else 'Teacher'
             scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': cls, 'role': role, 'moderating': moderating})
         return scheditems
 
@@ -882,20 +884,8 @@ class ProgramPrintables(ProgramModuleObj):
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
-
         for teacher in teachers:
-            # get list of valid classes (teaching and observing/moderating)
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                moderating = teacher not in cls.parent_class.get_teachers()
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls,
-                                   'moderating': moderating})
+            scheditems.extend(self._scheditems_for_teacher(teacher))
 
         context['scheditems'] = scheditems
         context['moderators'] = False
@@ -916,18 +906,8 @@ class ProgramPrintables(ProgramModuleObj):
         teachers = sorted(filterObj.getList(ESPUser).distinct())
 
         scheditems = []
-
         for teacher in teachers:
-            # get list of valid classes
-            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            # now we sort them by time/title
-            for cls in classes:
-                scheditems.append({'name': teacher.name(),
-                                   'teacher': teacher,
-                                   'cls': cls})
+            scheditems.extend(item for item in self._scheditems_for_teacher(teacher) if item['moderating'])
 
         context['scheditems'] = scheditems
         context['moderators'] = True

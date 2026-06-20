@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>{{ program.niceName }} Teacher Schedule</title>
+<title>{{ program.niceName }} {% block teacherschedule_title %}Teacher Schedule{% endblock %}</title>
 <link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
 </head>
 <body>
@@ -16,10 +16,11 @@
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
 
-<div class="title">{{ program.niceName }} Teacher Schedule for <br /><br />
+<div class="title">{{ program.niceName }} {% block teacherschedule_heading %}Teacher Schedule{% endblock %} for <br /><br />
     <span>{{ scheditem.name }}</span>
 </div>
 <div class="description">
+{% block teacherschedule_instructions %}
 <ul>
 <li>If you spent money for your class, get reimbursed by following the instructions at <strong>{{ request.scheme }}://{{ request.get_host }}/teach/{{ program.program_type }}/reimbursements.html</strong>.</li>
 <li>If there is an emergency, contact the MIT Police at <strong>617-253-1212</strong> (not 911!) After calling them, please call us to let us know of the emergency.</li>
@@ -27,6 +28,7 @@
 <li>Please remember that MIT's Protection of Minors Policy forbids you from being the only adult in a room with students. Therefore, please avoid situations that will leave you alone with students.</li>
 <li>We hope you enjoy teaching at {{ program.program_type }}!</li>
 </ul>
+{% endblock %}
 </div>
 
 <table align="center" cellspacing="0" cellpadding="2px" class="schedule">

@@ -23,6 +23,7 @@ DATABASES = {'default':
 
 MIDDLEWARE_LOCAL = []
 
+PRIVACY_POLICY_URL = '/privacy-policy.html'
 EMAIL_HOST_SENDER = 'esp.mit.edu'
 ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu', r'esp-dev\.mit\.edu']
 
@@ -35,8 +36,20 @@ DEFAULT_EMAIL_ADDRESSES = {
     'treasury':          'esp-credit-cards@esp-dev.mit.edu',
     'mailman_moderator': 'esp-moderators@esp-dev.mit.edu',
 }
-VARNISH_HOST = None
+
 DEBUG_TOOLBAR = True
+# Disable most of the panels by default to reduce overhead:
+from .django_settings import DEBUG_TOOLBAR_CONFIG
+DEBUG_TOOLBAR_CONFIG['DISABLE_PANELS'] |= {
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+}
+
+VARNISH_HOST = None
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 

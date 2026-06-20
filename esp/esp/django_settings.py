@@ -138,6 +138,8 @@ DEFAULT_EMAIL_ADDRESSES = {
 INSTITUTION_NAME = 'MIT'
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
+# URL for the privacy policy page. LU default points to learningu.org; override in local_settings.py.
+PRIVACY_POLICY_URL = 'https://www.learningu.org/about/privacy/'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 

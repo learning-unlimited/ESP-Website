@@ -70,7 +70,8 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
-        css = { 'all': ( 'styles/admin.css', ) }
+        css = { 'all': ( '/media/styles/admin.css', ) }
+        js = ( '/media/scripts/admin_chosen_filter.js', )
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
     filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
     search_fields = ('name', )

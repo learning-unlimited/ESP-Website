@@ -78,16 +78,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                 teacher = ESPUser.objects.get(id=request.GET["user"])
             else:
                 teacher = request.user
-            scheditems = []
-            classes = sorted([cls for cls in teacher.getTaughtSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            for cls in classes:
-                scheditems.append(
-                    {"name": teacher.name(), "teacher": teacher, "cls": cls}
-                )
-            context["scheditems"] = scheditems
+            context["scheditems"] = pmo._scheditems_for_teacher(teacher, program=prog)
             return render_to_response(pmo.baseDir() + template_file, request, context)
         else:
             raise ESPError(
@@ -131,25 +122,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                 teacher = ESPUser.objects.get(id=request.GET["user"])
             else:
                 teacher = request.user
-            scheditems = []
-            classes = sorted([cls for cls in teacher.getTaughtOrModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            for cls in classes:
-                if teacher in cls.parent_class.get_teachers():
-                    role = "Teacher"
-                else:
-                    role = self.program.getModeratorTitle()
-                scheditems.append(
-                    {
-                        "name": teacher.name(),
-                        "teacher": teacher,
-                        "cls": cls,
-                        "role": role,
-                    }
-                )
-            context["scheditems"] = scheditems
+            context["scheditems"] = pmo._scheditems_for_teacher(teacher, program=prog)
             context["teachers"] = True
             context["moderators"] = True
             return render_to_response(pmo.baseDir() + template_file, request, context)
@@ -195,16 +168,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                 teacher = ESPUser.objects.get(id=request.GET["user"])
             else:
                 teacher = request.user
-            scheditems = []
-            classes = sorted([cls for cls in teacher.getModeratingSectionsFromProgram(self.program)
-                    if cls.meeting_times.all().exists()
-                    and cls.resourceassignment_set.all().exists()
-                    and cls.status > 0])
-            for cls in classes:
-                scheditems.append(
-                    {"name": teacher.name(), "teacher": teacher, "cls": cls}
-                )
-            context["scheditems"] = scheditems
+            context["scheditems"] = [item for item in pmo._scheditems_for_teacher(teacher, program=prog) if item['moderating']]
             context["teachers"] = False
             context["moderators"] = True
             return render_to_response(pmo.baseDir() + template_file, request, context)
