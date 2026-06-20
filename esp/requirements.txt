@@ -31,8 +31,8 @@ ipython==8.12.3 # Used for shell_plus
 Markdown==3.4.4 # Used in QSD
 numpy==1.26.4 # Used mainly in the lottery and class change controller
 pillow==12.2.0 # Required for ImageField, which we use in teacher bios
-psycopg2==2.9.9 # Talks to postgres
-pycurl==7.45.4 # Used only in a formstack script which I think is outdated
+psycopg2-binary==2.9.9 # Talks to postgres (binary build for Replit compatibility)
+# pycurl==7.45.4 # Disabled on Replit — needs libcurl dev headers
 py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.10.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
