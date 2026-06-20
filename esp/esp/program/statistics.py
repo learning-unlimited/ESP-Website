@@ -62,16 +62,27 @@ def zipcodes(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
 
-    #   Get zip codes and filter out invalid ones
+    #   Get zip codes / postcodes and count occurrences (issue #5845).
+    #   US addresses use address_zip (5 numeric digits); international addresses use
+    #   address_postcode (up to 10 chars).  Both are counted here; US zip codes that
+    #   fail the 5-digit numeric check are flagged as invalid.
     zip_dict = {}
     result_dict['invalid'] = 0
     for profile in profiles:
         if profile.contact_user:
             zip_code = profile.contact_user.address_zip
+            postcode = profile.contact_user.address_postcode
             if zip_code and len(zip_code) == 5 and zip_code.isnumeric():
+                # Valid US zip code
                 if zip_code not in zip_dict:
                     zip_dict[zip_code] = 0
                 zip_dict[zip_code] += 1
+            elif postcode and postcode.strip():
+                # International postcode — accepted as-is
+                key = postcode.strip().upper()
+                if key not in zip_dict:
+                    zip_dict[key] = 0
+                zip_dict[key] += 1
             else:
                 result_dict['invalid'] += 1
         else:

@@ -66,10 +66,13 @@ class CustomFormHandler():
         'name': ['first_name', 'last_name'],
         'email': 'e_mail',
         'phone': 'phone_day',
-        'address': ['address_street', 'address_city', 'address_state', 'address_zip'],
+        # address_postcode included alongside address_zip for international support (issue #5845)
+        'address': ['address_street', 'address_city', 'address_state', 'address_zip', 'address_postcode'],
         'street': 'address_street',
         'city': 'address_city',
+        # 'zip' maps to address_zip (US); use 'postcode' key for international postcodes
         'zip': 'address_zip',
+        'postcode': 'address_postcode',
         'state': 'address_state'
     }
 

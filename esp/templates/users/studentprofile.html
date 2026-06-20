@@ -4,10 +4,10 @@
 
 {% block content %}
 <br /><br />
-       <div id="divmaintext">	
-	<h2>Hi {{user.username}}!</h2>
-	<h2>Please tell us a bit about yourself!</h2> 
-	Field with * are required.
+       <div id="divmaintext">   
+        <h2>Hi {{user.username}}!</h2>
+        <h2>Please tell us a bit about yourself!</h2> 
+        Field with * are required.
 
 
 
@@ -63,7 +63,7 @@
 <tr>
  <td align='right'><label for="id_address_street">
                        <small><i>street</i></small>
-		   </label>
+                   </label>
  </td>
  <td>{{ form.address_street }} {% if form.address_street.errors %}
    <br /><span class="form_error" role="alert">{{ form.address_street.errors|join:", " }}</span>
@@ -89,16 +89,21 @@
    {% endif %}
  </td>
 
- <td align="right"><label for="id_address_zip">
-                       <small><i>&nbsp;&nbsp;zip</i></small>
-                   </label>
- 
+ <td align="right">
+   {# Label switches between "zip" and "zip/postcode" depending on state (issue #5845) #}
+   <label for="id_address_zip"><small><i>&nbsp;&nbsp;zip/postcode</i></small></label>
  </td>
    <td>
   {{ form.address_zip }} {% if form.address_zip.errors %}
    <br /><span class="form_error" role="alert">{{ form.address_zip.errors|join:", " }}</span>
    {% endif %}
-   </td> 
+   {# International postcode: hidden by default, shown via JS when "International" is selected #}
+   {% if form.address_postcode %}
+   {{ form.address_postcode }} {% if form.address_postcode.errors %}
+   <br /><span class="form_error" role="alert">{{ form.address_postcode.errors|join:", " }}</span>
+   {% endif %}
+   {% endif %}
+   </td>
  </tr>
  </table>
  </td>
@@ -218,7 +223,7 @@
 <tr>
  <td align='right'><label for="id_emerg_address_street">
                        <small><i>street</i></small>
-		   </label>
+                   </label>
  </td>
  <td>{{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
    <br /><span class="form_error" role="alert">{{ form.emerg_address_street.errors|join:", " }}</span>
@@ -244,16 +249,21 @@
    {% endif %}
  </td>
 
- <td align="right"><label for="id_emerg_address_zip">
-                       <small><i>&nbsp;&nbsp;zip</i></small>
-                   </label>
- 
+ <td align="right">
+   {# Label switches between "zip" and "zip/postcode" depending on state (issue #5845) #}
+   <label for="id_emerg_address_zip"><small><i>&nbsp;&nbsp;zip/postcode</i></small></label>
  </td>
    <td>
   {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
    <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
    {% endif %}
-   </td> 
+   {# International postcode for emergency contact: hidden by default, shown via JS #}
+   {% if form.emerg_address_postcode %}
+   {{ form.emerg_address_postcode }} {% if form.emerg_address_postcode.errors %}
+   <br /><span class="form_error" role="alert">{{ form.emerg_address_postcode.errors|join:", " }}</span>
+   {% endif %}
+   {% endif %}
+   </td>
  </tr>
  </table>
  </td>
@@ -297,5 +307,37 @@
 </form>
 
 </div>
+
+{# JS for international postcode support (issue #5845).
+   Mirrors the logic in profile.html: selecting "International" from the state
+   dropdown hides the US zip field and shows the postcode field instead. #}
+<script>
+function check_state() {
+  if ($j("#id_address_state").val() == "International") {
+    $j("#id_address_zip").addClass("hidden");
+    $j("#id_address_postcode").removeClass("hidden");
+  } else {
+    $j("#id_address_zip").removeClass("hidden");
+    $j("#id_address_postcode").addClass("hidden");
+    $j("#id_address_postcode").val("");
+  }
+}
+function check_emerg_state() {
+  if ($j("#id_emerg_address_state").val() == "International") {
+    $j("#id_emerg_address_zip").addClass("hidden");
+    $j("#id_emerg_address_postcode").removeClass("hidden");
+  } else {
+    $j("#id_emerg_address_zip").removeClass("hidden");
+    $j("#id_emerg_address_postcode").addClass("hidden");
+    $j("#id_emerg_address_postcode").val("");
+  }
+}
+$j(document).ready(function() {
+  check_state();
+  check_emerg_state();
+  $j("#id_address_state").change(function() { check_state(); });
+  $j("#id_emerg_address_state").change(function() { check_emerg_state(); });
+});
+</script>
 
 {% endblock %}
