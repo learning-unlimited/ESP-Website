@@ -152,6 +152,10 @@ class UserSearchController(object):
                         Q_include &= Q(**filter_dict)
                     self.updated = True
 
+            if criteria.get('postcode', '').strip():
+                Q_include &= Q(registrationprofile__contact_user__address_postcode__iexact=criteria['postcode'].strip(), registrationprofile__most_recent_profile=True)
+                self.updated = True
+
             if 'zipcode' in criteria and 'zipdistance' in criteria and \
                 len(criteria['zipcode'].strip()) > 0 and len(criteria['zipdistance'].strip()) > 0:
                 try:

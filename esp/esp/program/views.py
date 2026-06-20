@@ -1398,7 +1398,7 @@ def statistics(request, program=None):
                         school_names.append(item[4:])
                 users_q = users_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
 
-            #   Narrow down by Zip code, simply using the latest profile
+            #   Narrow down by Zip code / postcode, simply using the latest profile
             #   Note: it would be harder to track users better (i.e. zip code A in fall 2008, zip code B in fall 2009)
             if form.cleaned_data['zip_query_type'] == 'exact':
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
@@ -1408,6 +1408,8 @@ def statistics(request, program=None):
                 zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+            elif form.cleaned_data['zip_query_type'] == 'postcode':
+                users_q = users_q & Q(registrationprofile__contact_user__address_postcode__iexact=form.cleaned_data['postcode'].strip(), registrationprofile__most_recent_profile=True)
 
             #   Distinct PKs only (avoids running the heavy filter twice for count() + list()).
             user_ids = list(
