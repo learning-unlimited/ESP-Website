@@ -33,13 +33,13 @@
     <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.user_id }}</td>
     <td style="padding: 6px 10px; border: 1px solid #ddd;">
         {% if entry.status == "ok" %}
-            <span class="label label-success">OK</span>
+            <span class="badge badge-success">OK</span>
         {% elif entry.status == "skip" %}
-            <span class="label label-warning">Skipped</span>
+            <span class="badge badge-warning">Skipped</span>
         {% elif entry.status == "conflict" %}
-            <span class="label label-danger">Conflict</span>
+            <span class="badge badge-danger">Conflict</span>
         {% elif entry.status == "full" %}
-            <span class="label label-danger">Full</span>
+            <span class="badge badge-danger">Full</span>
         {% endif %}
     </td>
     <td style="padding: 6px 10px; border: 1px solid #ddd;">{{ entry.detail }}</td>

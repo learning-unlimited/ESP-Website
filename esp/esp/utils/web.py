@@ -60,15 +60,29 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
 
+def _media_cache_version(rel_path, tag_name):
+    """Cache-busting query param for theme media; falls back to file mtime."""
+    val = Tag.getTag(tag_name)
+    if val:
+        return val
+    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    if os.path.exists(full_path):
+        return hex(int(os.path.getmtime(full_path)))
+    return ''
+
+
 def esp_context_stuff():
     context = {}
 
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
     context['current_theme_version'] = Tag.getTag("current_theme_version")
-    context['current_logo_version'] = Tag.getTag("current_logo_version")
-    context['current_header_version'] = Tag.getTag("current_header_version")
-    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
+    context['current_logo_version'] = _media_cache_version(
+        'images/theme/logo.png', 'current_logo_version')
+    context['current_header_version'] = _media_cache_version(
+        'images/theme/header.png', 'current_header_version')
+    context['current_favicon_version'] = _media_cache_version(
+        'images/favicon.ico', 'current_favicon_version')
     context['settings'] = settings
 
     context['current_programs'] = Program.current_programs()
