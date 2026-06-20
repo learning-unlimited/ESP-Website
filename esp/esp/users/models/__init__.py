@@ -405,6 +405,36 @@ class BaseESPUser(object):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.get_last_program_with_profile(self)
 
+    @cache_function
+    def get_last_active_program(self):
+        """Return the most recent program the user participated in, or None.
+
+        "Participated" means the user wrote a registration profile for the
+        program (students/teachers) OR signed up to volunteer for it
+        (VolunteerOffer).
+        """
+        from esp.program.models import RegistrationProfile, Program
+
+        program_ids = set(
+            RegistrationProfile.objects
+                .filter(user=self, program__isnull=False)
+                .values_list('program_id', flat=True)
+        )
+        program_ids.update(
+            self.volunteeroffer_set
+                .values_list('request__program_id', flat=True)
+        )
+
+        if not program_ids:
+            return None
+
+        # A user is in only a handful of programs, so rank them in Python by
+        # program date rather than annotating timeslot dates in SQL.
+        programs = Program.objects.filter(id__in=program_ids)
+        return max(programs, key=lambda p: (p.datetime_range() or (datetime.min,))[0])
+    get_last_active_program.depend_on_row('program.RegistrationProfile', lambda p: {'self': p.user})
+    get_last_active_program.depend_on_row('program.VolunteerOffer', lambda vo: {'self': vo.user})
+
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
@@ -2158,10 +2188,14 @@ class K12School(models.Model):
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
         help_text='i.e. "PK, K, 1, 2, 3"')
-    school_id   = models.CharField(max_length=128, blank=True, null=True,
+    school_id   = models.CharField(max_length=128, blank=True, null=True, db_index=True,
         help_text='An 8-digit ID number.')
     contact_title = models.TextField(blank=True, null=True)
-    name          = models.TextField(blank=True, null=True)
+    name          = models.TextField(blank=True, null=True, db_index=True)
+    state         = models.CharField(max_length=2, blank=True, null=True, db_index=True,
+        help_text='Two-letter state code (e.g. MA). Used for filtering and NCES import.')
+    city          = models.CharField(max_length=128, blank=True, null=True, db_index=True,
+        help_text='City. Used for display and filtering.')
 
     objects = K12SchoolManager()
 
@@ -2169,20 +2203,44 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    # Minimum characters before running server-side search (avoids heavy queries on 50k+ rows)
+    AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH = 2
+    AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
+
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
-        name = data.strip()
-        query_set = cls.objects.filter(name__icontains = name)
-        values = query_set.order_by('name', 'id').values('name', 'id')
+    def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
+        """
+        Server-side autocomplete for K12 schools. Requires a minimum query length
+        and limits results for performance with large datasets (e.g. NCES import).
+        Optionally narrow by state via request GET param 'state' (2-letter code).
+        """
+        name = (data or '').strip()
+        if len(name) < cls.AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH:
+            return []
+        # Use istartswith for case-insensitive prefix matching in autocomplete results
+        query_set = cls.objects.filter(name__istartswith=name)
+        # Optional state filter: only when request is passed and state is provided
+        if request is not None:
+            state = request.GET.get('state') or ''
+            state = (state.strip().upper())[:2]
+            if state:
+                query_set = query_set.filter(state__iexact=state)
+        query_set = query_set.order_by('name', 'id')[:cls.AJAX_AUTOCOMPLETE_MAX_RESULTS]
+        values = list(query_set.values('name', 'id', 'city', 'state'))
         for value in values:
-            value['ajax_str'] = f'{value["name"]}'
+            # Show "School Name (City, ST)" when we have location
+            if value.get('city') and value.get('state'):
+                value['ajax_str'] = f'{value["name"]} ({value["city"]}, {value["state"]})'
+            else:
+                value['ajax_str'] = f'{value["name"]}'
         return values
 
     def __str__(self):
         if self.contact_id and self.contact.address_city and self.contact.address_state:
             return f'{self.name} in {self.contact.address_city}, {self.contact.address_state}'
-        else:
-            return f'{self.name}'
+        if self.city and self.state:
+            return f'{self.name} in {self.city}, {self.state}'
+        return f'{self.name or ""}'
 
     @classmethod
     def choicelist(cls, other_help_text=''):
@@ -2380,7 +2438,7 @@ class RecordType(models.Model):
         "student_survey", "teacher_survey", "reg_confirmed", "attended", "checked_out", "conf_email", "teacher_quiz_done",
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
         "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
-        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done",
+        "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done", "opt_out_paper_schedule",
     ]
 
     @classmethod
@@ -2425,6 +2483,11 @@ class Record(models.Model):
         Returns a QuerySet for all of a user's Records for a particular event,
         under various constraints.
 
+        The returned QuerySet is NOT deduplicated; the underlying joins are
+        all single forward ForeignKeys, so duplicates cannot arise from the
+        filter chain. Returning a non-distinct QuerySet allows callers to
+        chain .delete(), which Django 3.2+ forbids after .distinct().
+
         Parameters:
           user (ESPUser):              The user.
           event (unicode):             The event name.
@@ -2445,7 +2508,7 @@ class Record(models.Model):
             filter = filter.filter(time__year=when.year,
                                    time__month=when.month,
                                    time__day=when.day)
-        return filter.distinct()
+        return filter
 
     @classmethod
     def createBit(cls, extension, program, user):
@@ -2817,7 +2880,7 @@ class Permission(ExpirableModel):
         #  -teachers of a class with emailcode x (eg x=T1993) can edit
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
-            url = url[-5]
+            url = url[:-5]
         if user is None or isinstance(user, AnonymousESPUser):
             return False
         if user.isAdmin():

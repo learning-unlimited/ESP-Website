@@ -38,6 +38,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
   .control-label {
     padding-right: 10px;
   }
+
+  #theme_editor_accordion .card-header .btn-link { color: #007bff; font-size: 1.25rem; font-weight: 500; text-decoration: none; width: 100%; text-align: left; padding: 0.75rem 1.25rem; }
+  form.centered-form { display: block; width: 100%; }
+  #theme_editor_accordion .form-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin: 1.5rem 0; padding-top: 1rem; border-top: 1px solid #dee2e6; }
+  #theme-properties .control-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem; }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
@@ -45,41 +50,45 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
 {% load main %}
 
-<div class="row-fluid">
-    <div class="span12">
+<div class="row">
+    <div class="col-md-12">
         <h1>Theme Editor</h1>
         <div role="alert" class="alert alert-info">
             <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
         </div>
-        <div id="help-modal" class="modal hide fade">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal">x</button>
-                <h3>Welcome to the theme editor! It's easy to get started!</h3>
+        <div id="help-modal" class="modal fade" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title">Welcome to the theme editor! It's easy to get started!</h4>
+                    </div>
+                    <div class="modal-body">
+                        <ol>
+                            <li><strong>Add colors</strong> to your Palette.</li>
+                            <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Apply Without Saving</strong> often to see your changes in action.</li>
+                            <li>When you're happy with your changes, just enter a name under "Save/Load Theme Settings" and press <strong>Save</strong>!</li>
+                        </ol>
+                        <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='https://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
+                    </div>
+                    <div class="modal-footer"></div>
+                </div>
             </div>
-            <div class="modal-body">
-                <ol>
-                    <li><strong>Add colors</strong> to your Palette.</li>
-                    <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Apply Without Saving</strong> often to see your changes in action.</li>
-                    <li>When you're happy with your changes, just enter a name under "Save/Load Theme Settings" and press <strong>Save</strong>!</li>
-                </ol>
-                <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='https://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
-            </div>
-            <div class="modal-footer"></div>
         </div>
     </div>
 </div>
 
 <br />
-<div class="row-fluid">
-    <div class="span12">
+<div class="row">
+    <div class="col-md-12">
         <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
             {% csrf_token %} 
-            <div class="accordion">
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#theme_palette" data-original-title="Theme Palette">Palette</h3>
+            <div class="accordion" id="theme_editor_accordion">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#theme_palette">Palette</button></h4>
                     </div>
-                    <div class="collapse" id="theme_palette">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="theme_palette"><div class="card-body">
                         <h5>Your palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections. The theme has a built-in color palette available; however, if you would prefer other colors, you can add them to the custom palette.</h5>
                         <div class="control-group">
                             <div id="palette_base_div">
@@ -96,17 +105,18 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
                         <div class="controls">
-                            <button type="button" class="btn btn-default" id="addToPalette">Add Another Color</button>
+                            <button type="button" class="btn btn-secondary" id="addToPalette">Add Another Color</button>
                             <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Custom Palette</button>
                         </div>
                     </div>
+                    </div>
                 </div>
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding" data-original-title="Scaffolding">Scaffolding</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#scaffolding">Scaffolding</button></h4>
                     </div>
-                    <div class="collapse" id="scaffolding">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="scaffolding"><div class="card-body">
                         <h5>Use this section to change the color of the text and background.</h5>
                         <div class="control-group">
                             <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
@@ -157,13 +167,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
                         {% endif %}
                     </div>
+                    </div>
                 </div>
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#links" data-original-title="Links">Links</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#links">Links</button></h4>
                     </div>
-                    <div class="collapse" id="links">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="links"><div class="card-body">
                         <h5>Use this section to control the color of links normally, and when you hover on them.</h5>
                         <div class="control-group">
                             <label class="control-label" for="linkColor">Links:</label>
@@ -179,13 +190,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#typography" data-original-title="Typography">Typography</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#typography">Typography</button></h4>
                     </div>
-                    <div class="collapse" id="typography">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="typography"><div class="card-body">
                         <h5>Use this section to control the size (base font size), and the font family of your text.</h5>
                         <div class="control-group">
                             <label class="control-label" for="baseFontSize">Font Size:</label>
@@ -220,11 +232,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 </div>
 
                 {% if theme_name == "droplets" %}
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_inverse_edit_group" data-original-title="NavbarInverse">Navbar</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#navbar_inverse_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" id="navbar_inverse_edit_group">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="navbar_inverse_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarInverseBackground">Background:</label>
@@ -263,11 +275,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     </div>
                 </div>
                 {% elif theme_name != "fruitsalad" %}
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" data-original-title="Navbar">Navbar</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#navbar_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" id="navbar_edit_group">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="navbar_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarBackground">Background:</label>
@@ -308,13 +320,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
                     {% endif %}
                     </div>
+                    </div>
                 </div>
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme" data-original-title="Sidebar">Sidebar</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#sidebar_theme">Sidebar</button></h4>
                     </div>
-                    <div class="collapse" id="sidebar_theme">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="sidebar_theme"><div class="card-body">
                         <h5>Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.</h5>
                     {% if theme_name == "circles" or theme_name == "floaty" %}
                         <div class="control-group">
@@ -401,12 +414,12 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 </div>
                 {% endif %}
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" data-original-title="Buttons">Buttons</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#buttons">Buttons</button></h4>
                     </div>
-                    <div class="collapse" id="buttons">
-                        <h5>Buttons come in three types. You can see an example of each at the end of this form.</h5>
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="buttons"><div class="card-body">
+                        <h5>Buttons come in two types. You can see an example of each at the end of this form.</h5>
                         <div class="control-group">
                             <label class="control-label" for="btnBackground">Buttons:</label>
                             <div class="controls">
@@ -433,27 +446,15 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             </div>
                         </div>
 
-                        <div class="control-group">
-                            <label class="control-label" for="btnInverseBackground">Inverse Buttons:</label>
-                            <div class="controls">
-                                <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}" data-default="{{ variable_defaults|index:'btnInverseBackground' }}"/>
-                            </div>
-                        </div>
-                        <div class="control-group">
-                            <label class="control-label" for="btnInverseLinkColor">Inverse Button Text:</label>
-                            <div class="controls">
-                                <input type="text" class="color" id="btnInverseLinkColor" name="btnInverseLinkColor" value="{{ btnInverseLinkColor }}" data-default="{{ variable_defaults|index:'btnInverseLinkColor' }}"/>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
                 {% if theme_name != "barebones" %}
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" data-original-title="Advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</button></h4>
                     </div>
-                    <div class="collapse" id="advanced">
+                    <div class="collapse" data-parent="#theme_editor_accordion" id="advanced"><div class="card-body">
                         <h5>These are additional parameters specific to the currently selected theme.</h5>
                         {% if theme_name == "bigpicture" %}
                             <div>
@@ -470,7 +471,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                             </div>
 						{% endif %}
-                        {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
+                        {% for category, data in adv_vars.items %}{% if not data|length == 0 %}
                         <div id="adv_category_{{ forloop.counter0 }}">
                             <h3>Category: {{ category }}<hr/></h3>
                             {% if category == "variables_optional" %}
@@ -508,11 +509,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 </div>
                 {% endif %}
 
-                <div class="accordion-group">
-                    <div class="accordion-heading">
-                        <h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" data-original-title="Saved Settings">Save/Load Theme Settings</h3>
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left" data-toggle="collapse" data-target="#theme-properties" aria-expanded="true">Save/Load Theme Settings</button></h4>
                     </div>
-                    <div class="in collapse" id="theme-properties">
+                    <div class="collapse show" data-parent="#theme_editor_accordion" id="theme-properties"><div class="card-body">
                         <h5>When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the "Apply Without Saving" button. You can also load or delete saved settings, or revert to the last configuration.</h5>
                         <div class="control-group">
                             <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}"/>
@@ -532,25 +533,26 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                     <option value="{{last_used_settings}}">Last used settings...</option>
                                 </optgroup>
                             </select>
-                            <button type="submit" class="btn btn-default" name="load" value="load">Load</button>
+                            <button type="submit" class="btn btn-secondary" name="load" value="load">Load</button>
                             <button type="submit" class="btn btn-danger" name="delete" value="delete">Delete</button>
                         </div>
+                    </div>
                     </div>
                 </div>
 
                 <div class="form-actions" style="text-align:center;">
                     <button type="submit" class="btn btn-primary" name="apply" value="apply">Apply Without Saving</button>
-                    <button type="submit" class="btn btn-default" name="reset" value="reset">Reset Without Saving</button>
+                    <button type="submit" class="btn btn-secondary" name="reset" value="reset">Reset Without Saving</button>
                 </div>
             </div>
         </form>
     </div>
     <div align="center">
         <a href="/themes/">
-            <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+            <button type="button" class="btn btn-lg btn-primary">Return to themes page</button>
         </a>
         <a href="/">
-            <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+            <button type="button" class="btn btn-lg btn-secondary">Return to home page</button>
         </a>
         <br/><br/>
     </div>
@@ -561,4 +563,10 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 {% block javascript_footer %}
 {{ block.super }}
     <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
+    <script type="text/javascript">
+    $j(function () {
+      // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
+      $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
+    });
+    </script>
 {% endblock %}

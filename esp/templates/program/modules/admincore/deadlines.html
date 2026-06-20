@@ -24,13 +24,13 @@
 
 {% if message_good %}
     <div role="alert" class="alert alert-success">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ message_good }}
     </div>
 {% endif %}
 {% if message_bad %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ message_bad }}
     </div>
 {% endif %}
@@ -76,8 +76,8 @@
                 <th></th>
             </tr>
             {% endif %}
-            <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
+            <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
+                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length == 0 %}1{% else %}{{ details.perms|length }}{% endif %}">
                     {{ perm_type|perm_nice_name }}{% if details.recursive %}<br /><span style="color: royalblue;">(recursive)</span>{% endif %}<br>
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
@@ -99,7 +99,7 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
                         {% endif %}
                     {% endif %}
                 </td>
@@ -168,7 +168,7 @@
         <th></th>
     </tr>
     {% endif %}
-    <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
+    <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
         <th>{{ perm.user }}</th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
@@ -187,7 +187,7 @@
         </td>
         <td align="center" valign="center">
             <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
         </td>
     </tr>
     {% empty %}
