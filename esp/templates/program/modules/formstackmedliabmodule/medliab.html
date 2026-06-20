@@ -26,12 +26,13 @@
     <input type="hidden" name="full_legal_name" value="{{ user.first_name }} {{ user.last_name }}" />
     <input type="hidden" name="birthdate" value="{{ profile.student_info.dob|date }}" />
     <input type="hidden" name="cell_phone_number" value="{{ profile.contact_user.phone_cell|default:"" }}" />
-    {# Use address_zip for US addresses or address_postcode for international ones (issue #5845) #}
-    <input type="hidden" name="home_address" value="{{ profile.contact_user.address_street }}&#13;{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{{ profile.contact_user.address_postcode }}" />
+    {# Use postcode for international addresses, zip for US (issue #5845). #}
+    {# The address() model method builds the correct string for both cases.  #}
+    <input type="hidden" name="home_address" value="{{ profile.contact_user.address_street }}&#13;{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {% firstof profile.contact_user.address_postcode profile.contact_user.address_zip %}" />
     <input type="hidden" name="parentguardian_no_1" value="{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}&#13;Home: {{ profile.contact_guardian.phone_day }}&#13;Cell: {{ profile.contact_emergency.phone_cell|default:"None" }}" />
     <input type="hidden" name="parentguardian_no_2" value="" />
-    {# Emergency contact address also uses postcode for international addresses (issue #5845) #}
-    <input type="hidden" name="emergency_contact" value="{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}&#13;{{ profile.contact_emergency.e_mail|default:"Email: None" }}&#13;&#13;Day: {{ profile.contact_emergency.phone_day }}&#13;Cell: {{ profile.contact_emergency.phone_cell|default:"None" }}&#13;&#13;{{ profile.contact_emergency.address_street }}&#13;{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{{ profile.contact_emergency.address_postcode }}" />
+    {# Emergency contact address also uses postcode for international addresses (issue #5845). #}
+    <input type="hidden" name="emergency_contact" value="{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}&#13;{{ profile.contact_emergency.e_mail|default:"Email: None" }}&#13;&#13;Day: {{ profile.contact_emergency.phone_day }}&#13;Cell: {{ profile.contact_emergency.phone_cell|default:"None" }}&#13;&#13;{{ profile.contact_emergency.address_street }}&#13;{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {% firstof profile.contact_emergency.address_postcode profile.contact_emergency.address_zip %}" />
     <input type="hidden" name="chronic_medical_conditions_requiring_ongoing_care" value="" />
     <input type="hidden" name="allergies_animals_latex_food_meds_other" value="" />
     <input type="hidden" name="prescription_medicines_used_regularly_or_needed_on_occasion" value="" />

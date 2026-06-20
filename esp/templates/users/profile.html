@@ -99,62 +99,71 @@ div.required label.control-label:after {
 </div>
 
 <script>
-/* check_state / check_emerg_state — issue #5845: international postcode support.
- * When "International" is selected from the state dropdown:
- *   - show the country dropdown and postcode field
- *   - hide the US zip code field
- * For any US state the reverse applies: zip shown, postcode/country hidden and cleared.
+/*
+ * check_state / check_emerg_state — international postcode support (issue #5845).
+ *
+ * When the user picks "International" from a state dropdown:
+ *   1. Hide the US ZIP code field (address_zip / emerg_address_zip).
+ *   2. Show the international postcode field (address_postcode / emerg_address_postcode).
+ *   3. Show the country dropdown.
+ *   4. Clear any stale "US" country pre-selection so the user must pick explicitly.
+ *
+ * When the user picks any US state:
+ *   1. Show the ZIP field.
+ *   2. Hide and clear the postcode field.
+ *   3. Hide the country dropdown and reset it to "US".
+ *
+ * Both functions are called on DOMContentLoaded so that users returning to a
+ * form with "International" already selected see the correct fields immediately.
+ *
+ * check_emerg_state() is also called by copy_parent_info() in emergencycontact.html
+ * after it copies the user's address into the emergency contact fields.
  */
 function check_state() {
-  if ($j("#id_address_state").val() == "International") {
+  if ($j("#id_address_state").val() === "International") {
+    // Show country + postcode; hide ZIP.
     $j("#id_address_country").removeClass("hidden");
-    if ($j("#id_address_country").val() == "US") {
+    if ($j("#id_address_country").val() === "US") {
       $j("#id_address_country").val("");
     }
-    // Hide zip and show international postcode input.
     $j("#id_address_zip").addClass("hidden");
     $j("#id_address_postcode").removeClass("hidden");
   } else {
-    $j("#id_address_country").addClass("hidden");
-    $j("#id_address_country").val("US");
-    // Show zip and hide/clear international postcode input.
+    // Show ZIP; hide and reset country + postcode.
+    $j("#id_address_country").addClass("hidden").val("US");
     $j("#id_address_zip").removeClass("hidden");
-    $j("#id_address_postcode").addClass("hidden");
-    $j("#id_address_postcode").val("");
+    $j("#id_address_postcode").addClass("hidden").val("");
   }
 }
+
 function check_emerg_state() {
-  if ($j("#id_emerg_address_state").val() == "International") {
+  if ($j("#id_emerg_address_state").val() === "International") {
     $j("#id_emerg_address_country").removeClass("hidden");
-    if ($j("#id_emerg_address_country").val() == "US") {
+    if ($j("#id_emerg_address_country").val() === "US") {
       $j("#id_emerg_address_country").val("");
     }
-    // Hide zip and show international postcode input.
     $j("#id_emerg_address_zip").addClass("hidden");
     $j("#id_emerg_address_postcode").removeClass("hidden");
   } else {
-    $j("#id_emerg_address_country").addClass("hidden");
-    $j("#id_emerg_address_country").val("US");
-    // Show zip and hide/clear international postcode input.
+    $j("#id_emerg_address_country").addClass("hidden").val("US");
     $j("#id_emerg_address_zip").removeClass("hidden");
-    $j("#id_emerg_address_postcode").addClass("hidden");
-    $j("#id_emerg_address_postcode").val("");
+    $j("#id_emerg_address_postcode").addClass("hidden").val("");
   }
 }
+
 $j(document).ready(function() {
+  // Mark required fields with a visual indicator via CSS.
   $j(":required").each(function() {
     $j(this).closest(".control-group").addClass("required");
   });
-  
+
+  // Set initial field visibility based on whatever state is already selected
+  // (handles users returning to a partially-filled form).
   check_state();
   check_emerg_state();
-  
-  $j("#id_address_state").change(function() {
-    check_state();
-  });
-  $j("#id_emerg_address_state").change(function() {
-    check_emerg_state();
-  });
+
+  $j("#id_address_state").on("change", check_state);
+  $j("#id_emerg_address_state").on("change", check_emerg_state);
 });
 </script>
 

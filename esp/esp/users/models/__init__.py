@@ -2118,8 +2118,20 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
+        """
+        Return a human-readable single-line address string.
+
+        For US addresses the ZIP code is appended; for international addresses
+        the postcode and full country name are appended instead.
+        """
         postcode = self.address_postcode or self.address_zip or ''
-        return f'{self.address_street}, {self.address_city}, {self.address_state} {postcode}'
+        # Append the country name for international addresses so the reader
+        # knows which country the address belongs to.
+        country_suffix = ''
+        if self.address_state == 'International' and self.address_country and self.address_country != 'US':
+            # country_names is a pytz dict of ISO-3166-1 alpha-2 → full name.
+            country_suffix = ', ' + country_names.get(self.address_country, self.address_country)
+        return f'{self.address_street}, {self.address_city}, {self.address_state} {postcode}{country_suffix}'
 
     def items(self):
         return list(self.__dict__.items())

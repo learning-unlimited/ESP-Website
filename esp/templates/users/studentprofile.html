@@ -90,7 +90,7 @@
  </td>
 
  <td align="right">
-   {# Label switches between "zip" and "zip/postcode" depending on state (issue #5845) #}
+   {# Label covers both US zip and international postcode (issue #5845) #}
    <label for="id_address_zip"><small><i>&nbsp;&nbsp;zip/postcode</i></small></label>
  </td>
    <td>
@@ -101,6 +101,12 @@
    {% if form.address_postcode %}
    {{ form.address_postcode }} {% if form.address_postcode.errors %}
    <br /><span class="form_error" role="alert">{{ form.address_postcode.errors|join:", " }}</span>
+   {% endif %}
+   {% endif %}
+   {# Country dropdown: hidden by default, shown for international addresses #}
+   {% if form.address_country %}
+   {{ form.address_country }} {% if form.address_country.errors %}
+   <br /><span class="form_error" role="alert">{{ form.address_country.errors|join:", " }}</span>
    {% endif %}
    {% endif %}
    </td>
@@ -250,7 +256,7 @@
  </td>
 
  <td align="right">
-   {# Label switches between "zip" and "zip/postcode" depending on state (issue #5845) #}
+   {# Label covers both US zip and international postcode (issue #5845) #}
    <label for="id_emerg_address_zip"><small><i>&nbsp;&nbsp;zip/postcode</i></small></label>
  </td>
    <td>
@@ -261,6 +267,12 @@
    {% if form.emerg_address_postcode %}
    {{ form.emerg_address_postcode }} {% if form.emerg_address_postcode.errors %}
    <br /><span class="form_error" role="alert">{{ form.emerg_address_postcode.errors|join:", " }}</span>
+   {% endif %}
+   {% endif %}
+   {# Country dropdown for emergency contact: hidden by default, shown for international #}
+   {% if form.emerg_address_country %}
+   {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
+   <br /><span class="form_error" role="alert">{{ form.emerg_address_country.errors|join:", " }}</span>
    {% endif %}
    {% endif %}
    </td>
@@ -309,30 +321,44 @@
 </div>
 
 {# JS for international postcode support (issue #5845).
-   Mirrors the logic in profile.html: selecting "International" from the state
-   dropdown hides the US zip field and shows the postcode field instead. #}
+   When "International" is selected from a state dropdown:
+     - Hide the US ZIP field and show the international postcode field.
+     - Show the country dropdown and clear any stale "US" default.
+   Reverting to a US state restores ZIP, hides postcode/country, and resets country to "US". #}
 <script>
 function check_state() {
   if ($j("#id_address_state").val() == "International") {
+    // Switch to international mode: hide ZIP, show postcode + country.
     $j("#id_address_zip").addClass("hidden");
     $j("#id_address_postcode").removeClass("hidden");
+    $j("#id_address_country").removeClass("hidden");
+    // Clear the "US" pre-selection so the user must explicitly pick a country.
+    if ($j("#id_address_country").val() === "US") {
+      $j("#id_address_country").val("");
+    }
   } else {
+    // Switch to US mode: show ZIP, hide and reset postcode + country.
     $j("#id_address_zip").removeClass("hidden");
-    $j("#id_address_postcode").addClass("hidden");
-    $j("#id_address_postcode").val("");
+    $j("#id_address_postcode").addClass("hidden").val("");
+    $j("#id_address_country").addClass("hidden").val("US");
   }
 }
 function check_emerg_state() {
   if ($j("#id_emerg_address_state").val() == "International") {
     $j("#id_emerg_address_zip").addClass("hidden");
     $j("#id_emerg_address_postcode").removeClass("hidden");
+    $j("#id_emerg_address_country").removeClass("hidden");
+    if ($j("#id_emerg_address_country").val() === "US") {
+      $j("#id_emerg_address_country").val("");
+    }
   } else {
     $j("#id_emerg_address_zip").removeClass("hidden");
-    $j("#id_emerg_address_postcode").addClass("hidden");
-    $j("#id_emerg_address_postcode").val("");
+    $j("#id_emerg_address_postcode").addClass("hidden").val("");
+    $j("#id_emerg_address_country").addClass("hidden").val("US");
   }
 }
 $j(document).ready(function() {
+  // Run on page load so existing data renders with correct field visibility.
   check_state();
   check_emerg_state();
   $j("#id_address_state").change(function() { check_state(); });

@@ -230,8 +230,9 @@
 {% if profile.contact_user %}
     <tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
     <tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.phone_cell }}</td></tr>
-    {# Show postcode for international addresses, zip for US addresses (issue #5845) #}
-    <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{{ profile.contact_user.address_postcode }}</td></tr>
+    {# Show the appropriate postal code for this address. US addresses use address_zip; #}
+    {# international ones use address_postcode. firstof picks whichever is non-empty. #}
+    <tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {% firstof profile.contact_user.address_postcode profile.contact_user.address_zip %}{% if profile.contact_user.address_state == "International" and profile.contact_user.address_country and profile.contact_user.address_country != "US" %}, {{ profile.contact_user.get_address_country_display }}{% endif %}</td></tr>
 {% else %}
     <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
 {% endif %}
@@ -315,8 +316,8 @@
         <tr><td class="key">Email</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
         <tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
         <tr><td class="key">Cell Phone</td><td>{{ profile.contact_emergency.phone_cell }}</td></tr>
-        {# Show postcode for international addresses, zip for US addresses (issue #5845) #}
-        <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{{ profile.contact_emergency.address_postcode }}</td></tr>
+        {# Show the appropriate postal code for this address (issue #5845). #}
+        <tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {% firstof profile.contact_emergency.address_postcode profile.contact_emergency.address_zip %}{% if profile.contact_emergency.address_state == "International" and profile.contact_emergency.address_country and profile.contact_emergency.address_country != "US" %}, {{ profile.contact_emergency.get_address_country_display }}{% endif %}</td></tr>
         </table>
     {% else %}
         <em>(None specified)</em>
@@ -331,8 +332,8 @@
         <tr><td class="key">Email</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
         <tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
         <tr><td class="key">Cell Phone</td><td>{{ profile.contact_guardian.phone_cell }}</td></tr>
-        {# Show postcode for international addresses, zip for US addresses (issue #5845) #}
-        <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{{ profile.contact_guardian.address_postcode }}</td></tr>
+        {# Show the appropriate postal code for this address (issue #5845). #}
+        <tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {% firstof profile.contact_guardian.address_postcode profile.contact_guardian.address_zip %}{% if profile.contact_guardian.address_state == "International" and profile.contact_guardian.address_country and profile.contact_guardian.address_country != "US" %}, {{ profile.contact_guardian.get_address_country_display }}{% endif %}</td></tr>
         </table>
     {% else %}
         <em>(None specified)</em>

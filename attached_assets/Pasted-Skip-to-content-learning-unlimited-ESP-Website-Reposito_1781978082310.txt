@@ -1,0 +1,110 @@
+Skip to content
+learning-unlimited
+ESP-Website
+Repository navigation
+Code
+Issues
+580
+ (580)
+Pull requests
+244
+ (244)
+Agents
+Discussions
+Actions
+Projects
+Wiki
+Security and quality
+Insights
+Zip code doesn't support international addresses
+ #5845
+Open
+@willgearty
+Description
+willgearty
+opened 3 days ago
+Member
+The zip code field (address_zip on ContactInfo) currently is hard coded to 5 characters. This means it doesn't support postcodes from outside the US.
+
+I think the proper solution would look something like this:
+
+Add a second field address_postcode which supports longer postcodes (e.g., UK postcodes are up to 8 characters long)
+When a user selects "International" from the state field, the postcode field replaces the zip code field (like how the country field dynamically appears)
+address_zip and address_postcode would both be optional, but when an address is required, at least one of them would be required for the form to be valid
+Activity
+
+willgearty
+added 
+Forms
+ 
+Profiles
+ 
+users
+ 3 days ago
+deepaksoni47
+deepaksoni47 commented 16 minutes ago
+deepaksoni47
+16 minutes ago
+Contributor
+/assign
+
+github-actions
+github-actions commented 16 minutes ago
+github-actions
+bot
+16 minutes ago – with GitHub Actions
+✅ @deepaksoni47 has been assigned to this issue. You have 5/5 issue(s) assigned.
+
+📖 Getting Started · Contribution Rules · Code of Conduct
+
+
+github-actions
+assigned 
+deepaksoni47
+16 minutes ago
+@ISHUKR41
+Add a comment
+new Comment
+Markdown input: edit mode selected.
+Write
+Preview
+Use Markdown to format your comment
+Remember, contributions to this repository should follow its code of conduct.
+Metadata
+Assignees
+Labels
+Forms
+Profiles
+users
+Type
+No type
+Fields
+Give feedback
+No fields configured for issues without a type.
+Projects
+No projects
+Milestone
+No milestone
+Relationships
+None yet
+Development
+No branches or pull requests
+NotificationsCustomize
+You're not receiving notifications from this thread.
+
+Participants
+@willgearty
+@deepaksoni47
+Issue actions
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

@@ -27,6 +27,9 @@ function copy_parent_info() {
   $j("#id_emerg_address_postcode").val($j("#id_address_postcode").val()).change();
   $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
   $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
+  // After copying, update the emergency contact zip/postcode/country visibility
+  // to match whatever state was just copied in (issue #5845).
+  if (typeof check_emerg_state === 'function') { check_emerg_state(); }
 }
 </script>
 

@@ -14,8 +14,8 @@ Please get the <em>payer's</em> information to get a printable credit card refun
 Transaction Info:<br />
 <pre>
 Student Name: {{ student.name }}
-{# address_zip for US, address_postcode for international addresses (issue #5845) #}
-Student Address:  {{ student.getLastProfile.contact_user.address_street }}, {{ student.getLastProfile.contact_user.address_city }}, {{ student.getLastProfile.contact_user.address_state }} {{ student.getLastProfile.contact_user.address_zip }}{{ student.getLastProfile.contact_user.address_postcode }}
+{# firstof shows postcode for international, zip for US — never concatenates both (issue #5845) #}
+Student Address:  {{ student.getLastProfile.contact_user.address_street }}, {{ student.getLastProfile.contact_user.address_city }}, {{ student.getLastProfile.contact_user.address_state }} {% firstof student.getLastProfile.contact_user.address_postcode student.getLastProfile.contact_user.address_zip %}
 
 Transaction ID: {{ transaction.id }}
 Transaction Type: {{ transaction.payment_type }}
