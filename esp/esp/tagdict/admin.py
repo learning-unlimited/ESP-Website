@@ -43,10 +43,15 @@ class TagAdminForm(forms.ModelForm):
         return cleaned_data
 
 
+
 class TagAdmin(admin.ModelAdmin):
     form = TagAdminForm
     list_display = ('key', 'value', 'target', )
     list_filter = ('key', 'object_id', 'content_type__model', )
 
+    class Media:
+        css = {
+            'all': ('admin/css/tag_fix.css',)
+        }
 
 admin_site.register(Tag, TagAdmin)
