@@ -114,11 +114,11 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             'aria-label': 'US ZIP code',
         }),
     )
-    # International postcode (up to 10 chars, e.g. UK "SW1A 1AA", Canada "K1A 0B1").
+    # International postcode (up to 12 chars, e.g. UK "SW1A 1AA", Canada "K1A 0B1").
     # Hidden by default; shown via JS when the user picks "International" from the
     # state dropdown.  validate_postcode enforces safe characters server-side.
     address_postcode = StrippedCharField(
-        required=False, length=10, max_length=10,
+        required=False, length=12, max_length=12,
         validators=[validate_postcode],
         widget=forms.TextInput(attrs={
             'class': 'input-small hidden',
@@ -188,7 +188,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     # when "International" is selected from the emergency contact state dropdown.
     # validate_postcode enforces safe characters server-side.
     emerg_address_postcode = StrippedCharField(
-        required=False, length=10, max_length=10,
+        required=False, length=12, max_length=12,
         validators=[validate_postcode],
         widget=forms.TextInput(attrs={
             'class': 'input-small hidden',
@@ -658,7 +658,7 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     )
     # International postcode; hidden by default, shown via JS when "International" is selected.
     address_postcode = StrippedCharField(
-        required=False, length=10, max_length=10,
+        required=False, length=12, max_length=12,
         validators=[validate_postcode],
         widget=forms.TextInput(attrs={
             'class': 'hidden',

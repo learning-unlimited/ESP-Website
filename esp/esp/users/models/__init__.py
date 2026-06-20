@@ -2092,8 +2092,8 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     address_street = models.CharField('Street address', max_length=100, blank=True, null=True)
     address_city = models.CharField('City', max_length=50, blank=True, null=True)
     address_state = models.CharField('State', max_length=32, blank=True, null=True)
-    address_zip = models.CharField('Zip code', max_length=5, blank=True, null=True)
-    address_postcode = models.CharField('Postcode', max_length=10, blank=True, null=True)
+    address_zip = models.CharField('Zip code', max_length=10, blank=True, null=True)
+    address_postcode = models.CharField('Postcode', max_length=12, blank=True, null=True)
     address_country = models.CharField('Country', max_length=2, choices=sorted(list(country_names.items()), key = lambda x: x[1]), default='US')
 
     class Meta:
