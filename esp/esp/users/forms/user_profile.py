@@ -106,7 +106,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     # US ZIP code (5-digit or ZIP+4 format); hidden via JS when "International" is chosen.
     # validate_zip enforces the digit-only format server-side (security).
     address_zip = StrippedCharField(
-        required=False, length=5, max_length=10,
+        required=False, length=10, max_length=10,
         validators=[validate_zip],
         widget=forms.TextInput(attrs={
             'class': 'input-small',
@@ -176,7 +176,7 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     # US ZIP code for emergency contact; hidden via JS when "International" is chosen.
     # validate_zip enforces digit-only format server-side (security).
     emerg_address_zip = StrippedCharField(
-        required=False, length=5, max_length=10,
+        required=False, length=10, max_length=10,
         validators=[validate_zip],
         widget=forms.TextInput(attrs={
             'class': 'input-small',
@@ -208,9 +208,13 @@ class EmergContactForm(FormUnrestrictedOtherUser):
         if 'emerg_phone_day' in self.fields or 'emerg_phone_cell' in self.fields:
             if self.cleaned_data.get('emerg_phone_day', '') == '' and self.cleaned_data.get('emerg_phone_cell', '') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
-        # Require at least one of zip (US) or postcode (international) for the emergency contact address.
-        if not self.cleaned_data.get('emerg_address_zip') and not self.cleaned_data.get('emerg_address_postcode'):
-            raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses) for your emergency contact.")
+        # Require at least one of zip (US) or postcode (international) when the
+        # emergency contact address section is actually being filled in.  Guard on
+        # emerg_address_state being present so a cascade of field errors on other
+        # required fields doesn't also produce a misleading "missing zip" message.
+        if self.cleaned_data.get('emerg_address_state'):
+            if not self.cleaned_data.get('emerg_address_zip') and not self.cleaned_data.get('emerg_address_postcode'):
+                raise forms.ValidationError("Please provide a zip code (for US addresses) or postcode (for international addresses) for your emergency contact.")
         return self.cleaned_data
 
 
@@ -645,11 +649,11 @@ class MinimalUserInfo(FormUnrestrictedOtherUser):
     e_mail = forms.EmailField()
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=list(zip(_states, _states)))
+    address_state = forms.ChoiceField(choices=list(zip(_states, _states)), widget=forms.Select(attrs={'class': 'input-mini', 'aria-label': 'State or International'}))
     # US ZIP code (5-digit or ZIP+4); hidden via JS when "International" is chosen.
     # validate_zip enforces digit-only format server-side (security).
     address_zip = StrippedCharField(
-        required=False, length=5, max_length=10,
+        required=False, length=10, max_length=10,
         validators=[validate_zip],
         widget=forms.TextInput(attrs={
             'placeholder': 'ZIP code',

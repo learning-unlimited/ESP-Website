@@ -1,22 +1,51 @@
 ---
 name: Postcode field implementation
-description: International postcode support added to ESP-Website user address fields (GitHub issue #5845). All known bugs fixed.
+description: International postcode support on ContactInfo — fully implemented and tested. All known bugs fixed.
 ---
 
-## Rule
-`address_postcode = CharField(max_length=12)` exists on `ContactInfo` (migration `0046` added it at max_length=10; migration `0047` widened both fields).
-`address_zip = CharField(max_length=10)` — widened from 5 to support ZIP+4 format "12345-6789" (migration `0047`).
+## Summary of changes
 
-**Why:** Supports non-US addresses where ZIP code (5 digits) is not valid. The fields are optional individually; form `clean()` requires at least one of zip or postcode when address data is submitted.
+`address_zip` and `address_postcode` live on `ContactInfo`. Users see a state/province dropdown that includes "International". Selecting International hides the ZIP field and shows the postcode field via JS.
 
-## Completed fixes (all done)
+## Model (migration 0047)
+- `address_zip`      max_length **10**  (was 5 — too short for ZIP+4 "12345-6789")
+- `address_postcode` max_length **12**  (was 10 — extra headroom for edge-case formats)
 
-1. **Model** — `address_zip` max_length 5→10, `address_postcode` max_length 10→12 (`esp/users/models/__init__.py`)
-2. **Migration 0047** — `esp/users/migrations/0047_alter_contactinfo_zip_postcode.py` — alters both fields. Must exactly match model field kwargs (no help_text in model → no help_text in migration) or Django's autodetector flags a mismatch.
-3. **Profile forms** — `UserContactForm`, `EmergContactForm`, `MinimalUserInfo` in `user_profile.py` — postcode max_length updated to 12 to match model.
-4. **Custom forms** — `esp/customforms/forms.py` — `AddressWidget` now has 5 sub-widgets (added postcode TextInput hidden by default); `HiddenAddressWidget` has 5 `HiddenInput` widgets; `AddressField` compress() includes `{name}_postcode`; zip CharField max_length 5→10; postcode CharField max_length=12; `format_output()` injects self-contained IIFE JS that toggles ZIP/postcode rows based on USStateSelect value ("International" triggers postcode mode). Uses `document.currentScript.previousElementSibling` to scope each widget independently — safe with multiple address widgets on the same page.
-5. **DynamicForm** — already had `_contactinfo_map` with `address_postcode` and `'postcode': 'address_postcode'` (no change needed).
-6. **Admin** — `ContactInfoAdmin` now displays and searches by `address_zip`, `address_postcode`, `address_city`, `address_street`.
+## Validators (`user_profile.py`)
+- `validate_zip`      — regex `r'^\d{5}(-\d{4})?$'`  rejects script injection, allows 5-digit and ZIP+4
+- `validate_postcode` — regex `r'^[A-Za-z0-9 \-]+$'` rejects all special chars; covers UK/CA/IE formats
 
-## Known gotcha
-If a migration's field definition includes kwargs (e.g., `help_text`) that are absent from the model, Django's autodetector logs: "Your models have changes not reflected in a migration." Fix: keep the migration field kwargs identical to the model field kwargs.
+## Forms (all three: UserContactForm, EmergContactForm, MinimalUserInfo)
+- Both fields `required=False`; `clean()` requires **at least one** of zip or postcode
+- `UserContactForm.clean()` guarded by `self._address_required` (False for teachers when tag is off)
+- `EmergContactForm.clean()` guarded by `self.cleaned_data.get('emerg_address_state')` — avoids
+  a misleading "missing zip" cascade error when other required address fields also fail
+- All zip fields: `length=10, max_length=10`; all postcode fields: `length=12, max_length=12`
+- `MinimalUserInfo.address_state` has `widget=forms.Select(attrs={'class': 'input-mini', ...})`
+
+## JS toggle (`profile.html`)
+- `check_state()` / `check_emerg_state()` — toggle ZIP↔postcode + country on state dropdown change
+- Called on page load and on `change` event; safe when field IDs are absent (no-op)
+- `copy_parent_info()` in `emergencycontact.html` copies postcode and re-runs `check_emerg_state()`
+
+## Custom forms (`customforms/forms.py` — AddressWidget)
+- 5-widget layout: street, city, state, zip, postcode
+- Inline IIFE JS in `format_output()` scoped via `document.currentScript.previousElementSibling`
+  — safe with multiple AddressWidget instances on the same page
+- `compress()` returns `{name}_postcode`; `decompress()` pads to 5 values for backward compat
+- `HiddenAddressWidget` has 5 HiddenInput widgets (preserves postcode across FormWizard steps)
+
+## Templates
+- `usercontact.html` / `emergencycontact.html` — both fields rendered with error spans
+- `userview.html` — `{% firstof address_postcode address_zip %}` for display
+- Admin `ContactInfoAdmin` — displays and searches zip, postcode, city, street
+
+## Other modules
+- `usersearch.py` — `postcode` criterion does case-insensitive exact match on `address_postcode`
+- `program/forms.py` — `ProgramFilterForm` has `zip_query_type` with 'postcode' choice
+- `mapgenmodule.py` — collects both `address_zip` and `address_postcode` for map data
+
+## Gotcha: migration field kwargs must exactly match the model
+If a migration's field definition adds kwargs (e.g., `help_text`) that are absent from the model,
+Django's autodetector logs "models have changes not reflected in a migration."
+Fix: keep migration AlterField kwargs identical to the model field definition.
