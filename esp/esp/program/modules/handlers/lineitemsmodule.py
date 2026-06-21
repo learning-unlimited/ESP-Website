@@ -61,7 +61,7 @@ class LineItemsModule(ProgramModuleObj, CoreModule):
             id="manage_lineitems",
             url="/manage/%s/lineitems" % base,
             title="Line Items Management",
-            category="Configure",
+            category="Participants and Communication",
             keywords=["line items", "extra costs", "fees", "payments", "accounting"],
         )
 

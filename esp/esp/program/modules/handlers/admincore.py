@@ -108,16 +108,16 @@ class AdminCore(ProgramModuleObj, CoreModule):
         base = program.getUrlBase()
         # Map view names to (title, category, keywords) for admin dashboard search.
         entries = {
-            "main": ("Admin Portal", "Configure", ["dashboard", "admin", "home"]),
-            "settings": ("Program Settings", "Configure", ["settings", "program", "registration", "options"]),
-            "tags": ("Tag Settings", "Configure", ["tags", "advanced", "experts", "settings"]),
-            "dashboard": ("Dashboard", "Logistics", ["classes", "stats", "overview", "enrollment", "logistics"]),
-            "registrationtype_management": ("Student Registration Types", "Configure", ["registration", "types", "student", "sections", "schedule"]),
-            "lunch_constraints": ("Lunch Constraints", "Configure", ["lunch", "constraints", "schedule", "availability"]),
-            "deadline_management": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
-            "deadlines": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
-            "surveys": ("Surveys", "Configure", ["survey", "feedback", "student survey", "teacher survey"]),
-            "modules": ("Manage Modules", "Configure", ["modules", "required", "sequence", "student registration", "teacher registration"]),
+            "main": ("Admin Portal", "Program Management and Settings", ["dashboard", "admin", "home"]),
+            "settings": ("Program Settings", "Program Management and Settings", ["settings", "program", "registration", "options"]),
+            "tags": ("Tag Settings", "Program Management and Settings", ["tags", "advanced", "experts", "settings"]),
+            "dashboard": ("Dashboard", "Class Management and Scheduling", ["classes", "stats", "overview", "enrollment", "logistics"]),
+            "registrationtype_management": ("Student Registration Types", "Registration", ["registration", "types", "student", "sections", "schedule"]),
+            "lunch_constraints": ("Lunch Constraints", "Registration", ["lunch", "constraints", "schedule", "availability"]),
+            "deadline_management": ("Deadlines", "Registration", ["registration", "open", "close", "dates", "deadlines"]),
+            "deadlines": ("Deadlines", "Registration", ["registration", "open", "close", "dates", "deadlines"]),
+            "surveys": ("Surveys", "Program Management and Settings", ["survey", "feedback", "student survey", "teacher survey"]),
+            "modules": ("Manage Modules", "Program Management and Settings", ["modules", "required", "sequence", "student registration", "teacher registration"]),
         }
         if view_name not in entries:
             return None

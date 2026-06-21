@@ -283,6 +283,9 @@
                 {% if manage_tags %}
                 <a href="/manage/{{ program.getUrlBase }}/tags" title="miscellaneous settings, for experts only" class="dashboard-btn"><i class="bi bi-gear"></i> Tags</a>
                 {% endif %}
+                {% if manage_admin_testing %}
+                <a href="/manage/{{ program.getUrlBase }}/admin_testing" title="testing mode" class="dashboard-btn"><i class="bi bi-tools"></i> Testing Mode</a>
+                {% endif %}
                 {% if onsite_main %}
                 <a href="/onsite/{{ program.getUrlBase }}/main" class="dashboard-btn"><i class="bi bi-house"></i> Onsite Main</a>
                 {% endif %}
@@ -301,6 +304,30 @@
                 {% if manage_ajax_scheduling %}
                 <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling" title="assign rooms and times" class="dashboard-btn"><i class="bi bi-calendar"></i> Scheduling</a>
                 {% endif %}
+                {% if manage_classsearch %}
+                <a href="/manage/{{ program.getUrlBase }}/classsearch" title="search for classes" class="dashboard-btn"><i class="bi bi-search"></i> Class Search</a>
+                {% endif %}
+                {% if manage_scheduling_checks %}
+                <a href="/manage/{{ program.getUrlBase }}/scheduling_checks" title="run scheduling diagnostics" class="dashboard-btn"><i class="bi bi-check-square"></i> Scheduling Checks</a>
+                {% endif %}
+                {% if manage_edit_availability %}
+                <a href="/manage/{{ program.getUrlBase }}/edit_availability" title="check teacher availability" class="dashboard-btn"><i class="bi bi-calendar-check"></i> Availability</a>
+                {% endif %}
+                {% if manage_batchclassreg %}
+                <a href="/manage/{{ program.getUrlBase }}/batchclassreg" title="batch register students to a class" class="dashboard-btn"><i class="bi bi-person-lines-fill"></i> Batch Reg</a>
+                {% endif %}
+                {% if manage_bigboard %}
+                <a href="/manage/{{ program.getUrlBase }}/bigboard" title="live student registration board" class="dashboard-btn"><i class="bi bi-display"></i> Student BigBoard</a>
+                {% endif %}
+                {% if manage_teacherbigboard %}
+                <a href="/manage/{{ program.getUrlBase }}/teacherbigboard" title="live teacher registration board" class="dashboard-btn"><i class="bi bi-display"></i> Teacher BigBoard</a>
+                {% endif %}
+                {% if manage_lottery %}
+                <a href="/manage/{{ program.getUrlBase }}/lottery" title="run the lottery assignment thing" class="dashboard-btn"><i class="bi bi-dice-5"></i> Lottery</a>
+                {% endif %}
+                {% if manage_classflags %}
+                <a href="/manage/{{ program.getUrlBase }}/classflags" title="manage class flags" class="dashboard-btn"><i class="bi bi-flag"></i> Class Flags</a>
+                {% endif %}
                 {% if learn_catalog %}
                 <a href="/learn/{{ program.getUrlBase }}/catalog" class="dashboard-btn"><i class="bi bi-book"></i> Catalog</a>
                 {% endif %}
@@ -310,6 +337,15 @@
         <button class="collapsible-btn">Registration <span class="dropdown-icon text-muted">&#9660;</span></button>
         <div class="collapsible-content">
             <div class="pill-grid" style="padding: 15px 0 5px 0;">
+                {% if manage_phasezero %}
+                <a href="/manage/{{ program.getUrlBase }}/phasezero" title="manage program lottery" class="dashboard-btn"><i class="bi bi-0-circle"></i> Phase Zero</a>
+                {% endif %}
+                {% if manage_admissions %}
+                <a href="/manage/{{ program.getUrlBase }}/admissions" title="admissions dashboard" class="dashboard-btn"><i class="bi bi-person-check"></i> Admissions</a>
+                {% endif %}
+                {% if manage_review_students %}
+                <a href="/manage/{{ program.getUrlBase }}/review_students" title="application review for admin" class="dashboard-btn"><i class="bi bi-journal-check"></i> Review Apps</a>
+                {% endif %}
                 {% if manage_deadlines %}
                 <a href="/manage/{{ program.getUrlBase }}/deadlines" title="open/close registration" class="dashboard-btn"><i class="bi bi-clock"></i> Deadlines</a>
                 {% endif %}
@@ -345,6 +381,33 @@
                 {% endif %}
                 {% if manage_selectList %}
                 <a href="/manage/{{ program.getUrlBase }}/selectList" title="get a list of users" class="dashboard-btn"><i class="bi bi-card-list"></i> Arbitrary User List</a>
+                {% endif %}
+                {% if manage_grouptextpanel %}
+                <a href="/manage/{{ program.getUrlBase }}/grouptextpanel" title="group text panel" class="dashboard-btn"><i class="bi bi-phone"></i> Texts</a>
+                {% endif %}
+                {% if manage_deactivate %}
+                <a href="/manage/{{ program.getUrlBase }}/deactivate" title="mass deactivate users" class="dashboard-btn"><i class="bi bi-person-x"></i> Deactivate Users</a>
+                {% endif %}
+                {% if manage_usergroup %}
+                <a href="/manage/{{ program.getUrlBase }}/usergroup" title="manage user groups" class="dashboard-btn"><i class="bi bi-people"></i> User Groups</a>
+                {% endif %}
+                {% if manage_userrecords %}
+                <a href="/manage/{{ program.getUrlBase }}/userrecords" title="manage user records" class="dashboard-btn"><i class="bi bi-file-person"></i> User Records</a>
+                {% endif %}
+                {% if manage_usermap %}
+                <a href="/manage/{{ program.getUrlBase }}/usermap" title="generate map of users" class="dashboard-btn"><i class="bi bi-map"></i> User Map</a>
+                {% endif %}
+                {% if manage_lineitems %}
+                <a href="/manage/{{ program.getUrlBase }}/lineitems" title="line items management" class="dashboard-btn"><i class="bi bi-list-check"></i> Line Items</a>
+                {% endif %}
+                {% if manage_accounting %}
+                <a href="/manage/{{ program.getUrlBase }}/accounting" title="accounting" class="dashboard-btn"><i class="bi bi-calculator"></i> Accounting</a>
+                {% endif %}
+                {% if manage_viewpay %}
+                <a href="/manage/{{ program.getUrlBase }}/viewpay" title="view credit card transactions" class="dashboard-btn"><i class="bi bi-credit-card"></i> Transactions</a>
+                {% endif %}
+                {% if manage_finaidapprove %}
+                <a href="/manage/{{ program.getUrlBase }}/finaidapprove" title="approve financial aid requests" class="dashboard-btn"><i class="bi bi-bank"></i> Financial Aid</a>
                 {% endif %}
                 {% if manage_refund %}
                 <a href="/accounting/refund?program={{ program.id }}" class="dashboard-btn"><i class="bi bi-currency-dollar"></i> Refunds</a>
