@@ -70,9 +70,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
-            title="Scheduling",
-            category="Logistics",
-            keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
+            title="AJAX Scheduling module",
+            category="Class Management and Scheduling",
+            keywords=["scheduling", "ajax", "rooms", "times"],
         )
 
     def prepare(self, context={}):

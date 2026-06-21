@@ -78,9 +78,9 @@ class ResourceModule(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_resources",
             url="/manage/%s/resources" % base,
-            title="Resources",
-            category="Configure",
-            keywords=["rooms", "classrooms", "spaces", "timeslots", "resources"],
+            title="Classroom Resources Management",
+            category="Class Management and Scheduling",
+            keywords=["resources", "projectors", "classrooms", "spaces", "timeslots", "resources"],
         )
 
     """

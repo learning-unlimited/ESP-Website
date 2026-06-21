@@ -70,9 +70,9 @@ class TeacherEventsManageModule(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_teacher_events",
             url="/manage/%s/teacher_events" % base,
-            title="Teacher Training / Interviews",
-            category="Configure",
-            keywords=["teacher", "training", "interviews", "events"],
+            title="Teacher Events",
+            category="Registration",
+            keywords=["events", "onsite", "interviews", "training"],
         )
 
     @main_call

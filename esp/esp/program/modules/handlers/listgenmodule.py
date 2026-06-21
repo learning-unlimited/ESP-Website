@@ -313,9 +313,9 @@ class ListGenModule(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_selectList",
             url="/manage/%s/selectList" % base,
-            title="Arbitrary User List",
-            category="Coordinate",
-            keywords=["user list", "search users", "export", "mailing list"],
+            title="Arbitrary List Generator",
+            category="Participants and Communication",
+            keywords=["list", "lists", "generation", "query", "selectList", "mailing list"],
         )
 
     @aux_call

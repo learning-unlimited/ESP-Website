@@ -131,9 +131,9 @@ class CommModule(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_commpanel",
             url="/manage/%s/commpanel" % base,
-            title="Email (Communications Panel)",
-            category="Coordinate",
-            keywords=["email", "communications", "commpanel", "messages"],
+            title="Communications Panel",
+            category="Participants and Communication",
+            keywords=["communications", "emails", "send", "messages"],
         )
 
     @staticmethod

@@ -61,9 +61,9 @@ class AdminMaterials(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_get_materials",
             url="/manage/%s/get_materials" % base,
-            title="Documents",
-            category="Logistics",
-            keywords=["documents", "files", "upload", "download", "materials"],
+            title="Administrative Materials",
+            category="Program Management and Settings",
+            keywords=["materials", "resources", "files", "upload", "download"],
         )
 
     @main_call

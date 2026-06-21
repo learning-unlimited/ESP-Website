@@ -67,9 +67,9 @@ class VolunteerManage(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_volunteering",
             url="/manage/%s/volunteering" % base,
-            title="Volunteers",
-            category="Logistics",
-            keywords=["volunteers", "shifts", "signups"],
+            title="Volunteering Management",
+            category="Registration",
+            keywords=["volunteer", "help", "signup", "volunteering"],
         )
 
     """
