@@ -59,7 +59,7 @@
    <b>Deadlines for {{ group }}s</b> (click to expand/contract)
 </button>
 <div class="dspcont">
-    <table width="100%" cellspacing="0" cellpadding="3px">
+    <table class="table table-sm">
         <colgroup>
            <col span="1" width="30%">
            <col span="1">
@@ -125,7 +125,7 @@
 <p>If you have made changes to the current deadlines, please click "Save" above before creating a new deadline.</p>
 
 {% autoescape off %}
-<table cellspacing="0" cellpadding="3">
+<table class="table table-sm">
 {{ create_form }}
 <tr>
     <td align="center" valign="center" colspan="2">
@@ -151,7 +151,7 @@
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
 
-<table width="100%" cellspacing="0" cellpadding="3px">
+<table class="table table-sm">
     <colgroup>
        <col span="1" width="20%">
        <col span="1" width="30%">
@@ -208,7 +208,7 @@
 <p>If you have made changes to the current permissions, please click "Save" above before creating a new permission.</p>
 
 {% autoescape off %}
-<table cellspacing="0" cellpadding="3">
+<table class="table table-sm">
 {{ create_perm_form }}
 <tr>
     <td align="center" valign="center" colspan="2">

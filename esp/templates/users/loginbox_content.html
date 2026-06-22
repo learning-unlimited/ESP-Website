@@ -23,8 +23,9 @@
             class="btn btn-info dropdown-toggle"
             data-bs-toggle="dropdown"
             style="margin-left:0px;"
+            aria-label="Account menu"
           >
-            <span class="caret"></span>
+            <span class="caret" aria-hidden="true"></span>
           </button>
 
           <ul class="dropdown-menu">
@@ -48,13 +49,15 @@
   <div class="not_logged_in hidden">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
       <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
+      <label class="visually-hidden" for="user">Username</label>
       <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
+      <label class="visually-hidden" for="pass">Password</label>
       <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
 
       <button class="btn btn-primary" id="gologin" type="submit" style="margin-right:0px;"> Login </button>
       <span class="dropdown">
-        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" style="margin-left:0px;">
-          <span class="caret"></span>
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" style="margin-left:0px;" aria-label="More login options">
+          <span class="caret" aria-hidden="true"></span>
         </button>
 
         <ul class="dropdown-menu">
