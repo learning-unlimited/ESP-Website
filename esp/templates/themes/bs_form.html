@@ -1,32 +1,30 @@
-<script type="text/javascript"> 
-	  $j(document).ready(function(){
-	      $j('label').each(function(index) {
-		  if ($j(this).attr('for') != undefined) {
-		      $j(this).addClass('control-label');
-		  }
-	      });
-	      $j('div.control-group span.help-inline').each(function(index){$j(this).parent().parent().addClass('error');});
-	  });
+<script type="text/javascript">
+    $j(document).ready(function(){
+        $j('label').each(function(index) {
+            if ($j(this).attr('for') != undefined) {
+                $j(this).addClass('control-label');
+            }
+        });
+        $j('div.form-group span.help-block').each(function(index){$j(this).closest('.form-group').addClass('has-error');});
+    });
 </script>
 
 {% for field in form.hidden_fields %}
 {{ field }}
 {% endfor %}
-		      
+
 {% for field in form.visible_fields %}
 
-<div class="control-group">
-  <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
-  <div class="controls">
-    {{ field }}
+<div class="form-group{% if field.errors %} has-error{% endif %}">
+  <label class="control-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {{ field }}
   {% if field.errors %}
-  <span class="help-inline">
+  <span class="help-block" role="alert">
     {% for error in field.errors %}
-    {{error}}
+    {{ error }}
     {% endfor %}
   </span>
   {% endif %}
-  </div>
 </div>
 
 {% endfor %}
