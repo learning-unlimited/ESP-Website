@@ -54,7 +54,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 <!-- Auto-Flag Rule Modal -->
 <div id="autorule-modal" class="modal fade">
   <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal">&times;</button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     <h3>Create Auto-Flag Rule</h3>
   </div>
   <div class="modal-body">
@@ -77,7 +77,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     </form>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <a href="#" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</a>
     <a href="#" class="btn btn-primary" onclick="$j('#autorule-form').submit();">Save Rule</a>
   </div>
 </div>
