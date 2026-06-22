@@ -22,7 +22,9 @@
 <ul class="navbar-nav not_logged_in">
   <li class="nav-item d-flex align-items-center flex-wrap">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="form-inline navbar-form my-1">
+      <label class="visually-hidden" for="user">Username</label>
       <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox me-1" />
+      <label class="visually-hidden" for="pass">Password</label>
       <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox me-1" />
       <button class="btn btn-secondary btn-sm" id="gologin" type="submit">Login</button>
     </form>

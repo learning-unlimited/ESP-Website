@@ -17,7 +17,7 @@
 
 {% block navbar %}
 <div class="container navbar-container">
-  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top">
+  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
     <div id="navbar" class="container-fluid">
       {% if theme.show_logo_navbar %}
       <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
@@ -32,7 +32,7 @@
         {% include "navbar/admin.html" %}
         {% include "navbar/nav.html" %}
         {% include "navbar/contact.html" %}
-        <div class="navbar-login ml-auto d-flex align-items-center">
+        <div class="navbar-login ms-auto d-flex align-items-center">
           {% include "users/loginbox_content.html" %}
         </div>
       </div>
