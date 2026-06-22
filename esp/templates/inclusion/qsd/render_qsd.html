@@ -24,13 +24,13 @@
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
         <div class="qsd_buttons">
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'save');"
-                class="btn btn-success"><span class="bi bi-floppy" aria-hidden="true"></span>
+                class="btn btn-success"><span class="bi bi-save" aria-hidden="true"></span>
                 Save changes</button>
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'preview');"
                 class="btn btn-info"><span class="bi bi-eye" aria-hidden="true"></span>
                 Preview</button>
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', false);"
-                class="btn btn-danger"><span class="bi bi-x-lg" aria-hidden="true"></span>
+                class="btn btn-danger"><span class="bi bi-x" aria-hidden="true"></span>
                 Cancel</button>
             {% if qsdrec.id %}
             <button type="button" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');"

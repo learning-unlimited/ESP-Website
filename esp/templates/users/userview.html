@@ -108,7 +108,7 @@
                             {% if module.isCompleted %}
                                 <i class="bi bi-check done-sign" aria-label="Done"></i>
                             {% else %}
-                                <i class="bi bi-x-lg not-done-sign" aria-label="Not done"></i>
+                                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                             {% endif %}
                             {{ module.module.link_title }}
                         </td>
@@ -124,7 +124,7 @@
                                 {% if record.isCompleted %}
                                     <i class="bi bi-check done-sign" aria-label="Done"></i>
                                 {% else %}
-                                    <i class="bi bi-x-lg not-done-sign" aria-label="Not done"></i>
+                                    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                                 {% endif %}
                                 {{ record.full_event }}
                             </td>
@@ -165,7 +165,7 @@
                             {% if module.isCompleted %}
                                 <i class="bi bi-check done-sign" aria-label="Done"></i>
                             {% else %}
-                                <i class="bi bi-x-lg not-done-sign" aria-label="Not done"></i>
+                                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                             {% endif %}
                             {{ module.module.link_title }}
                         </td>
@@ -181,7 +181,7 @@
                                 {% if record.isCompleted %}
                                     <i class="bi bi-check done-sign" aria-label="Done"></i>
                                 {% else %}
-                                    <i class="bi bi-x-lg not-done-sign" aria-label="Not done"></i>
+                                    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
                                 {% endif %}
                                 {{ record.full_event }}
                             </td>
@@ -388,7 +388,7 @@
 {% endif %}{% endwith %}
 
 {% with other_enrolled as classes %}{% if classes %}
-    <a class="btn" data-bs-toggle="collapse" style="margin-top: 10px;" data-bs-target="#other-enrolled-collapse">Show/hide classes enrolled in other programs</a>
+    <a class="btn" data-toggle="collapse" style="margin-top: 10px;" data-target="#other-enrolled-collapse">Show/hide classes enrolled in other programs</a>
     <div id="other-enrolled-collapse" class="collapse">
     <h2>Classes Enrolled In (Other Programs):</h2>
     <br />
@@ -413,7 +413,7 @@
 {% endif %}{% endwith %}
 
 {% with other_taken as classes %}{% if classes %}
-    <a class="btn" data-bs-toggle="collapse" style="margin-top: 10px;" data-bs-target="#other-taken-collapse">Show/hide classes from other programs</a>
+    <a class="btn" data-toggle="collapse" style="margin-top: 10px;" data-target="#other-taken-collapse">Show/hide classes from other programs</a>
     <div id="other-taken-collapse" class="collapse">
     <h2>Classes Taken Or Applied For (Other Programs):</h2>
     <br />
