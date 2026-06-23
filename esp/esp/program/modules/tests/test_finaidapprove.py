@@ -36,9 +36,13 @@ class FinAidApproveTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertIn('requests', response.context)
 
     def test_student_get_is_forbidden(self):
-        """Non-admin GET is rejected."""
+        """Non-admin GET renders the notanadmin error page (ESP returns 200 for auth errors)."""
         self.login_as('student')
-        self.assert_view_forbidden(self._url())
+        response = self.client.get(self._url())
+        # ESP's @needs_admin renders a 200 error page rather than 302/403.
+        self.assertEqual(response.status_code, 200)
+        # The error template is errors/program/notanadmin.html
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
 
     def test_post_creates_financial_aid_grant(self):
         """POST with a valid user ID and amount creates a FinancialAidGrant."""

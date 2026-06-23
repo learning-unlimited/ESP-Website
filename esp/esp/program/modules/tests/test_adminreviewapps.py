@@ -65,11 +65,15 @@ class AdminReviewAppsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
 
     def test_student_cannot_accept(self):
-        """Non-admin cannot call accept_student."""
+        """Non-admin gets notanadmin error page for accept_student."""
         self.login_as('student')
-        self.assert_view_forbidden(self._accept_url())
+        response = self.client.get(self._accept_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
 
     def test_student_cannot_reject(self):
-        """Non-admin cannot call reject_student."""
+        """Non-admin gets notanadmin error page for reject_student."""
         self.login_as('student')
-        self.assert_view_forbidden(self._reject_url())
+        response = self.client.get(self._reject_url())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
