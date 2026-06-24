@@ -680,7 +680,7 @@ def convert_classroom_resources(
             for target in assignments:
                 if target in known_sections:
                     raise SchedulingError(
-                        "Room {} is double-booked and has known section " +
+                        "Room {} is double-booked and has known section "
                         "num {}".format(classroom.name, target))
         elif len(assignments) == 1:
             target = assignments[0]

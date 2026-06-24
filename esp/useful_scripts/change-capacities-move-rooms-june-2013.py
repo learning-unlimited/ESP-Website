@@ -40,13 +40,13 @@ def makeChanges(filename,override=False):
                 raise
 
     for cls, sec, capacity, room in secs:
-        if room is not "":
+        if room != "":
             cas = sec.classroomassignments()
             print("Removing %s from %s" % (sec.emailcode(), ', '.join([x.resource.name for x in cas])))
             cas.delete()
 
     for cls, sec, capacity, room in secs:
-        if room is not "":
+        if room != "":
             print("Moving section %s to room %s" % (sec.emailcode(), room))
             # the following is stolen from the manage class page code.  I don't like it, but that page works so I am using it.
             room_res = Resource.objects.filter(name=room)
@@ -58,7 +58,7 @@ def makeChanges(filename,override=False):
         cls.accept()
 
     for cls, sec, capacity, room in secs:
-        if capacity is not "":
+        if capacity != "":
             print("Changing class %s size to %s" % (cls.emailcode(), capacity))
             cls.class_size_max = int(capacity)
             cls.save()

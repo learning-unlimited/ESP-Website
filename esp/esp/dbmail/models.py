@@ -337,10 +337,10 @@ class MessageRequest(models.Model):
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
         except ImproperlyConfigured as e:
-            raise ESPError(True, 'Invalid sendto function "%s". ' + \
-                'This might be a website bug. Please contact us at %s ' + \
-                'and tell us how you got this error, and we will look into it. ' + \
-                'The error message is: "%s".' % \
+            raise ESPError(True, ('Invalid sendto function "%s". '
+                'This might be a website bug. Please contact us at %s '
+                'and tell us how you got this error, and we will look into it. '
+                'The error message is: "%s".') %
                 (sendto_fn_name, settings.DEFAULT_EMAIL_ADDRESSES['support'], e))
 
     # Processing a MessageRequest needs to be atomic, so that if the DB falls

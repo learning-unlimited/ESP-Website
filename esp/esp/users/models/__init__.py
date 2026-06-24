@@ -435,7 +435,7 @@ class BaseESPUser(object):
 
     def getReferralSource(self):
         user_data = ESPUserData.objects.filter(user=self).first()
-        if user_data == None:
+        if user_data is None:
             return None
         if user_data.referral_source == 'other' and user_data.referral_source_other:
             return user_data.referral_source_other

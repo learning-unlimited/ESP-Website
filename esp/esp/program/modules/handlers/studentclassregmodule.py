@@ -540,7 +540,7 @@ class StudentClassRegModule(ProgramModuleObj):
         for cls in classes:
             if cls.category.id != class_category_id and categories_sort:
                 class_category_id = cls.category.id
-                if (class_category_id != None):
+                if (class_category_id is not None):
                     class_blobs.append('</div>')
                 class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
             class_blobs.append(render_class_direct(cls))
