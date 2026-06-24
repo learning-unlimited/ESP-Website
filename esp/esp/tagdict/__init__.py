@@ -958,6 +958,13 @@ all_program_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'moderator_disable_signup': {
+        'is_boolean': True,
+        'help_text': 'Disable the moderator/observer voluntary signup form in teacher registration. When enabled, admins assign moderators manually.',
+        'default': True,
+        'category': 'moderate',
+        'is_setting': True,
+    },
     'moderatorreg_help_text_will_moderate': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the "Will you moderate?" field for the moderator registration form',

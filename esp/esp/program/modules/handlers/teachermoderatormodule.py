@@ -22,7 +22,12 @@ class TeacherModeratorModule(ProgramModuleObj):
             'choosable': 0,
         }
 
+    def isStep(self):
+        return not Tag.getBooleanTag('moderator_disable_signup', program=self.program)
+
     def isCompleted(self):
+        if Tag.getBooleanTag('moderator_disable_signup', program=self.program):
+            return True
         if hasattr(self, 'user'):
             user = self.user
         else:
@@ -33,6 +38,8 @@ class TeacherModeratorModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Moderate')
     def moderate(self, request, tl, one, two, module, extra, prog):
+        if Tag.getBooleanTag('moderator_disable_signup', program=self.program):
+            return self.goToCore(tl)
         context = {'prog': prog}
         recs = ModeratorRecord.objects.filter(user=get_current_request().user, program=self.program)
         if request.method == 'POST':
