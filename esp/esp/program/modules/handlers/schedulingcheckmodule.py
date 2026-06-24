@@ -210,11 +210,11 @@ class SchedulingCheckRunner:
     def _all_class_sections(self, include_walkins=True):
         if include_walkins and self.listed_sections:
             return self.all_sections
-        elif (include_walkins == False) and self.listed_nonwalkins:
+        elif not include_walkins and self.listed_nonwalkins:
             return self.all_nonwalkins
         else:
             qs = self.p.sections()
-            if include_walkins == False:
+            if not include_walkins:
                 #filter out walkins
                 qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
             if self.incl_unreview:

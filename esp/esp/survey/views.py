@@ -43,7 +43,7 @@ import xlwt
 import re
 from io import BytesIO
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Min
 from esp.users.models import ESPUser, Record, RecordType, admin_required
 from esp.program.models import Program, ClassCategories, StudentRegistration, RegistrationType, ClassSection
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
@@ -57,7 +57,6 @@ from django.http import Http404, HttpResponse
 from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q, Min
 
 @login_required
 def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):

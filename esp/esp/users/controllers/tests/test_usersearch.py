@@ -20,7 +20,6 @@ from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
 from django.test import TestCase
 import esp.users.views as views
-from esp.program.models import Program
 
 import random
 import string

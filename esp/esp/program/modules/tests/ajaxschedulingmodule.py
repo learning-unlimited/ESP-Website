@@ -111,9 +111,9 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.assertTrue(set(s2.get_meeting_times()) == set(m2), "Failed to assign meeting times.")
 
         # Return values should be success on the first one and failure on the second.
-        self.assertTrue(s1.assign_room(rooms[0])[0] == True, "Received negative response when scheduling first class.")
+        self.assertTrue(s1.assign_room(rooms[0])[0], "Received negative response when scheduling first class.")
         self.assertTrue(set(s1.classrooms()) == set(rooms[:2]), "Failed to schedule first class.")
-        self.assertTrue(s2.assign_room(rooms[0])[0] == False, "Failed to detect conflict with first class.")
+        self.assertFalse(s2.assign_room(rooms[0])[0], "Failed to detect conflict with first class.")
 
         # Check that the second attempt did not take.
         self.assertTrue(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")

@@ -113,7 +113,7 @@ class RegProfileModule(ProgramModuleObj):
             regProf.contact_user.save()
 
         response = profile_editor(request, prog, False, role)
-        if response == True:
+        if response is True:
             return self.goToCore(tl)
         return response
 

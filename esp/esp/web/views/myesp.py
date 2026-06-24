@@ -189,7 +189,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             curUser.last_name  = new_data.get('last_name')
             curUser.email     = new_data.get('e_mail')
             curUser.save()
-            if responseuponCompletion == True:
+            if responseuponCompletion:
                 return registration_redirect(request)
             else:
                 return True

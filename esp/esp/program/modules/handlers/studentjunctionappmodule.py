@@ -119,8 +119,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
         form = None
         if request.method == 'POST':
             data = request.POST.copy()
-            forms = app.get_forms(data)
-            for form in forms:
+            form_list = app.get_forms(data)
+            for form in form_list:
                 if form.is_valid():
                     form.target.update(form)
             if request.POST['submitform'].lower() == 'complete':
@@ -130,9 +130,9 @@ class StudentJunctionAppModule(ProgramModuleObj):
             app.save()
             return self.goToCore(tl)
         else:
-            forms = app.get_forms()
+            form_list = app.get_forms()
 
-        return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
+        return render_to_response(self.baseDir()+'application.html', request, {'forms': form_list, 'app': app})
 
     def isStep(self):
         return self.program.isUsingStudentApps()

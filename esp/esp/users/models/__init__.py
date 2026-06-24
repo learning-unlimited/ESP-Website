@@ -338,7 +338,7 @@ class BaseESPUser(object):
 
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
-            if request.session['user_morph']['onsite'] == True:
+            if request.session['user_morph']['onsite']:
                 self.onsite_local = True
                 self.other_user   = True
                 self.onsite_retTitle = request.session['user_morph']['retTitle']
@@ -488,7 +488,6 @@ class BaseESPUser(object):
     @cache_function
     def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
         from esp.program.models import Program
-        from esp.program.models import ClassSection
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
@@ -528,7 +527,6 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True):
-        from esp.program.models import ClassSection
         classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
@@ -542,7 +540,6 @@ class BaseESPUser(object):
 
     @cache_function
     def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
-        from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
@@ -740,7 +737,7 @@ class BaseESPUser(object):
     def getSections(self, program=None, verbs=None, valid_only=True):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
-        from esp.program.models import ClassSection, RegistrationType
+        from esp.program.models import RegistrationType
 
         if verbs:
             rts = RegistrationType.objects.filter(name__in=verbs)

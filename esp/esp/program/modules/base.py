@@ -177,7 +177,7 @@ class ProgramModuleObj(models.Model):
         """Includes only required modules"""
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = [mod for mod in prog.getModules() if mod.module.module_type == module_type and mod.isRequired() == True]
+        moduleobjs = [mod for mod in prog.getModules() if mod.module.module_type == module_type and mod.isRequired()]
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
     #   Program.getModules cache takes care of our dependencies

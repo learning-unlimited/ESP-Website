@@ -50,7 +50,6 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.tagdict.models import Tag
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json

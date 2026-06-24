@@ -113,7 +113,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         ProgInfo = prog.studentclassregmoduleinfo
 
         #HSSP-style lottery
-        if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
+        if ProgInfo.use_priority and ProgInfo.priority_limit > 1:
             return render_to_response('program/modules/lotterystudentregmodule/student_reg_hssp.html', request, context)
         #Splark/Spash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, context)

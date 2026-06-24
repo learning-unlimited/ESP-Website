@@ -37,7 +37,7 @@ Learning Unlimited, Inc.
 from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import FinancialAidGrant, LineItemType
 
-from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 
@@ -47,8 +47,6 @@ import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
-
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
             'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,

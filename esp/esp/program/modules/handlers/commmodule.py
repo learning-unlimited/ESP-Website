@@ -69,7 +69,6 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -173,7 +172,6 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest
-        from esp.users.models import PersistentQueryFilter
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
