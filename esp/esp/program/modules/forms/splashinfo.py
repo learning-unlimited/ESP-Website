@@ -47,8 +47,8 @@ class SiblingDiscountForm(forms.Form):
         else:
             raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
         super(SiblingDiscountForm, self).__init__(*args, **kwargs)
-        choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
-                   (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
+        choices = [(False, 'I am the first in my household enrolling in ' + program.name + ' (+ $' + str(program.base_cost) + ').'),
+                   (True, 'I have a sibling already enrolled in ' + program.name + ' (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
         option_data = {False: {'cost': program.base_cost, 'for_finaid': 'true'},
                        True: {'cost': program.base_cost - program.sibling_discount, 'for_finaid': 'true'}}
         self.fields['siblingdiscount'].widget = RadioSelectWithData(option_data=option_data)
