@@ -141,8 +141,7 @@ class OnSiteAttendance(ProgramModuleObj):
                 ("attended a class", [(len(att_dict[time]), time) for time in att_keys], False), # not cumulative
             ]
             timess_data, start = BigBoardModule.make_graph_data(timess)
-            context["left_axis_data"] = [{"axis_name": "# students", "series_data": timess_data}]
-            context["first_hour"] = start
+            context["left_axis_data"] = [{"axis_name": "# students", "series_data": timess_data, "first_hour": start}]
 
         return render_to_response(self.baseDir()+'attendance.html', request, context)
 

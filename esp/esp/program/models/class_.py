@@ -279,6 +279,8 @@ class ClassManager(Manager):
     catalog_cached.depend_on_model('program.ClassSection')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
+    catalog_cached.depend_on_model('program.ClassCategories')
+    catalog_cached.depend_on_row('program.Program', lambda prog: {'program': prog})
 
     #perhaps make it program-specific?
     @staticmethod
@@ -2133,6 +2135,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     class Meta:
         db_table = 'program_class'
         app_label = 'program'
+
+ClassManager.catalog_cached.depend_on_m2m(ClassSubject, 'teachers', lambda cls, teacher: {'program': cls.parent_program})
 
 @python_2_unicode_compatible
 class ClassCategories(models.Model):

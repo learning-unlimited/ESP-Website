@@ -345,19 +345,19 @@
     </tr>
   </table>
   {% if has_moderator_module %}
-  <h3>When assigning moderators:</h3>
+  <h3>When assigning {{ program.getModeratorTitle|lower }}s:</h3>
   <table width="100%">
     <tr>
       <td class="matrix-cell moderator-available-cell"></td><td>{{ program.getModeratorTitle }} available</td>
     </tr>
     <tr>
-      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>Moderator already assigned during this block</td>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell"></td><td>{{ program.getModeratorTitle }} already assigned during this block</td>
     </tr>
     <tr>
-      <td class="matrix-cell moderator-moderating-or-teaching-cell moderator-is-moderating-this-cell"></td><td>Moderator is assigned to this section</td>
+      <td class="matrix-cell moderator-moderating-or-teaching-cell moderator-is-moderating-this-cell"></td><td>{{ program.getModeratorTitle }} is assigned to this section</td>
     </tr>
     <tr>
-      <td class="matrix-cell moderator-teaching-cell"></td><td>Moderator already teaching</td>
+      <td class="matrix-cell moderator-teaching-cell"></td><td>{{ program.getModeratorTitle }} already teaching</td>
     </tr>
     <tr>
       <td class="matrix-cell moderator-unavailable-cell"></td><td>{{ program.getModeratorTitle }} unavailable</td>

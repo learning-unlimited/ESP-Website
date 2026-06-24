@@ -97,7 +97,7 @@ class FinAidApproveModule(ProgramModuleObj):
                     continue
 
                 if not approve_blanks:
-                    if is_blank(req.household_income) or is_blank(req.extra_explaination):
+                    if is_blank(req.extra_explaination):
                         continue
 
                 if req.approved:

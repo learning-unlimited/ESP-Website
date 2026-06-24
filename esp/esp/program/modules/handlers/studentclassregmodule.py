@@ -544,7 +544,6 @@ class StudentClassRegModule(ProgramModuleObj):
                     class_blobs.append('</div>')
                 class_blobs.append(category_header_str % (class_category_id, class_category_id, cls.category.category))
             class_blobs.append(render_class_direct(cls))
-            class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
         #   Include the program explicitly; this is a cached page, without RequestContext
         context['program'] = self.program
