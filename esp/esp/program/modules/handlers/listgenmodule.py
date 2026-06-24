@@ -454,7 +454,7 @@ class ListGenModule(ProgramModuleObj):
         from esp.users.views     import get_user_list
         from esp.users.models import PersistentQueryFilter
 
-        if not 'filterid' in request.GET:
+        if 'filterid' not in request.GET:
             filterObj, found = get_user_list(request, self.program.getLists(True))
         else:
             filterid  = request.GET['filterid']

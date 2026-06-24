@@ -549,7 +549,7 @@ class TagSettingsForm(BetterForm):
                 set_val = self.cleaned_data[key]
                 if isinstance(set_val, list):
                     set_val = ",".join(set_val)
-                if not set_val in ("", "None", None, tag_info.get('default')):
+                if set_val not in ("", "None", None, tag_info.get('default')):
                     # Set a [new] tag if a value was provided and the value is not the default
                     Tag.setTag(key, value=set_val)
                 else:

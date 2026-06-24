@@ -58,7 +58,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not 'sure' in request.GET and not 'gen_img' in request.GET:
+        if 'sure' not in request.GET and 'gen_img' not in request.GET:
             printers = Printer.objects.all().values_list('name', flat=True)
 
             return render_to_response(self.baseDir()+'instructions.html',

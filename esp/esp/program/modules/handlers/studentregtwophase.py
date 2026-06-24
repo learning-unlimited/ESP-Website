@@ -118,7 +118,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if times.count() == 0:
                 continue
             timeslot = times[0].id
-            if not timeslot in timeslot_dict:
+            if timeslot not in timeslot_dict:
                 timeslot_dict[timeslot] = {rel: title}
             else:
                 timeslot_dict[timeslot][rel] = title
@@ -135,7 +135,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 if len(times) == 0:
                     continue
                 timeslot = min(times, key=lambda t: t.start).id
-                if not timeslot in star_counts:
+                if timeslot not in star_counts:
                     star_counts[timeslot] = 1
                 else:
                     star_counts[timeslot] += 1
@@ -315,7 +315,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             'not_interested': [4,6,10]
         }
         """
-        if not 'json_data' in request.POST:
+        if 'json_data' not in request.POST:
             return HttpResponseBadRequest('JSON data not included in request.')
         try:
             json_data = json.loads(request.POST['json_data'])
@@ -399,7 +399,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        if not 'json_data' in request.POST:
+        if 'json_data' not in request.POST:
             return HttpResponseBadRequest('JSON data not included in request.')
         try:
             json_data = json.loads(request.POST['json_data'])

@@ -118,7 +118,7 @@ class FinancialAidAppModule(ProgramModuleObj):
             if form.is_valid():
                 app.__dict__.update(form.cleaned_data)
 
-                if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
+                if 'submitform' not in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False

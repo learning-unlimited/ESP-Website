@@ -382,7 +382,7 @@ class BaseESPUser(object):
         return ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
 
     def switch_back(self, request):
-        if not 'user_morph' in request.session:
+        if 'user_morph' not in request.session:
             raise ESPError('Error: You were not another user to begin with!')
 
         retUrl   = request.session['user_morph']['retUrl']

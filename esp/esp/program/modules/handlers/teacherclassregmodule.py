@@ -679,7 +679,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     @staticmethod
     def coteachers_logic(cls, request, prog, template, ajax, is_admin=False):
         # set txtTeachers and coteachers....
-        if not "coteachers" in request.POST:
+        if "coteachers" not in request.POST:
             coteachers = cls.get_teachers()
             if not is_admin:
                 coteachers = [user for user in coteachers if user.id != request.user.id]
@@ -923,7 +923,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
-        if not 'cls' in request.GET:
+        if 'cls' not in request.GET:
             raise ESPError("No class specified!", log=False)
 
         # Select the class
@@ -1251,7 +1251,7 @@ class TeacherClassRegModule(ProgramModuleObj):
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass=None):
 
         # Search for teachers with names that start with search string
-        if not "name" in request.GET or "name" in request.POST:
+        if "name" not in request.GET or "name" in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(
@@ -1267,7 +1267,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         queryset = ESPUser.objects.filter(Q_teacher)
 
-        if not "name" in request.GET:
+        if "name" not in request.GET:
             startswith = request.POST["name"]
         else:
             startswith = request.GET["name"]

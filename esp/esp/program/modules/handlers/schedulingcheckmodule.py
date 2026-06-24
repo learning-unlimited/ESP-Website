@@ -339,13 +339,13 @@ class SchedulingCheckRunner:
             mt =  s.get_meeting_times()
             for t in mt:
                 for teach in s.teachers:
-                    if not teach in d[t]:
+                    if teach not in d[t]:
                         d[t][teach] = str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else "")
                     else:
                         l.append({"Username": teach, name_heading: teach.name(), "Timeslot": t,
                                   "Section 1": str(s) + (" (Teacher)" if self.p.hasModule("TeacherModeratorModule") else ""), "Section 2": d[t][teach]})
                 for mod in s.get_moderators():
-                    if not mod in d[t]:
+                    if mod not in d[t]:
                         d[t][mod] = str(s) + " (" + str(self.p.getModeratorTitle().capitalize()) + ")"
                     else:
                         l.append({"Username": mod, name_heading: mod.name(), "Timeslot": t,
@@ -360,7 +360,7 @@ class SchedulingCheckRunner:
             resources = s.getResources()
             for t in mt:
                 for r in resources:
-                    if not r in d[t]:
+                    if r not in d[t]:
                         d[t][r] = s
                     else:
                         l.append({"Timeslot": t, "Resource":r, "Section 1":s, "Section2":d[t][r]})

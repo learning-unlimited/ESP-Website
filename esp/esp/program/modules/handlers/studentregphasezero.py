@@ -253,14 +253,14 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET or 'username' in request.POST:
             return self.goToCore(tl)
 
         limit = 10
 
         queryset = ESPUser.objects.filter(phasezerorecord__program=prog).distinct()
 
-        if not 'username' in request.GET:
+        if 'username' not in request.GET:
             startswith = request.POST['username']
         else:
             startswith = request.GET['username']

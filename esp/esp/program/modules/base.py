@@ -440,13 +440,13 @@ class ProgramModuleObj(models.Model):
         props = cls.module_properties()
 
         def update_props(props):
-            if not "handler" in props:
+            if "handler" not in props:
                 props["handler"] = cls.__name__
-            if not "admin_title" in props:
+            if "admin_title" not in props:
                 props["admin_title"] = "%(link_title)s (%(handler)s)" % props
-            if not "seq" in props:
+            if "seq" not in props:
                 props["seq"] = 200
-            if not "choosable" in props:
+            if "choosable" not in props:
                 props["choosable"] = 0
                 raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
 

@@ -230,7 +230,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
+        if 'action' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
@@ -268,7 +268,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_assign_moderator(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
+        if 'action' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
@@ -299,7 +299,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
-        if not 'comment' in request.POST:
+        if 'comment' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure

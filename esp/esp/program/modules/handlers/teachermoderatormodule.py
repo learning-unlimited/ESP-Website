@@ -85,7 +85,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     def moderatorlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET or 'name' in request.POST:
             return self.goToCore(tl)
 
         return self.moderatorlookup_logic(request, tl, one, two, module, extra, prog)
@@ -97,7 +97,7 @@ class TeacherModeratorModule(ProgramModuleObj):
 
         queryset = prog.teachers()['will_moderate']
 
-        if not 'name' in request.GET:
+        if 'name' not in request.GET:
             startswith = request.POST['name']
         else:
             startswith = request.GET['name']

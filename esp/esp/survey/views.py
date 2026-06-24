@@ -308,7 +308,7 @@ def delist(x):
 
 def dump_survey_xlwt(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
-    if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
+    if tl == 'manage' and 'teacher_id' not in request.GET and 'classsection_id' not in request.GET and 'classsubject_id' not in request.GET:
         # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
         datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
         wb=xlwt.Workbook()

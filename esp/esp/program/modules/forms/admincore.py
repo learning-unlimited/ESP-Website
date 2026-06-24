@@ -246,7 +246,7 @@ class ProgramTagSettingsForm(BetterForm):
                 if isinstance(set_val, list):
                     set_val = ",".join(set_val)
                 global_val = Tag.getBooleanTag(key, default = tag_info.get('default')) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, default = tag_info.get('default'))
-                if not set_val in ("", "None", None, global_val):
+                if set_val not in ("", "None", None, global_val):
                     # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
                     Tag.setTag(key, prog, set_val)
                 else:

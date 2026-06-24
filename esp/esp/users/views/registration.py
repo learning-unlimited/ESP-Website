@@ -105,7 +105,7 @@ When there are already accounts with this email address (depending on some tags)
 
     if form.is_valid():
         ## First, check to see if we have any users with the same email
-        if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
+        if 'do_reg_no_really' not in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
             awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
@@ -171,7 +171,7 @@ def user_registration_phase2(request):
 
 
 def activate_account(request):
-    if not 'username' in request.GET or not 'key' in request.GET:
+    if 'username' not in request.GET or 'key' not in request.GET:
         raise ESPError("Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     try:

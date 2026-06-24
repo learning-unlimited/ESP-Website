@@ -161,7 +161,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.apply_coteacher_op({'op': 'save', 'clsid': self.cls.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
         self.assertTrue(self.cls in self.teacher.getTaughtClasses())
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
-        self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
+        self.assertTrue(self.cls not in self.free_teacher2.getTaughtClasses())
 
     def add_resource_request(self, sec, res_type, val):
         rr = ResourceRequest()
@@ -176,7 +176,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
     def has_resource_pair_with_teacher(self, res_type, val_index, teacher):
         label = 'teacher_res_%d_%d' % (res_type.id, val_index)
         label_list = [resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()]
-        if not label in label_list:
+        if label not in label_list:
             return False
         i = label_list.index(label)
         teacher_list = ESPUser.objects.filter(self.moduleobj.get_resource_pairs()[i][2])

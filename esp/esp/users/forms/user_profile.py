@@ -305,11 +305,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             # If graduation year and dob were disabled, get old data.
             if (orig_prof.id is not None) and (orig_prof.student_info is not None):
 
-                if not 'graduation_year' in cleaned_data:
+                if 'graduation_year' not in cleaned_data:
                     # Get rid of the error saying this is missing
                     del self.errors['graduation_year']
 
-                if not 'dob' in cleaned_data:
+                if 'dob' not in cleaned_data:
                     del self.errors['dob']
 
                 # Always use the old birthdate if it exists, so that people can't

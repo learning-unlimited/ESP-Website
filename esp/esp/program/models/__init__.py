@@ -1875,7 +1875,7 @@ class BooleanExpression(models.Model):
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
-                if not item.__class__.__name__ in ['AutoField', 'OneToOneField']:
+                if item.__class__.__name__ not in ['AutoField', 'OneToOneField']:
                     setattr(new_token, item.name, getattr(token_or_value, item.name))
         else:
             new_token = token_or_value

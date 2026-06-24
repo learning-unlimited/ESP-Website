@@ -85,7 +85,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
     context.update(esp_context_stuff())
 
     # create nav bar list
-    if not 'navbar_list' in context:
+    if 'navbar_list' not in context:
         category = None
         if 'nav_category' in context:
             category = context['nav_category']

@@ -724,7 +724,7 @@ class ClassChangeController(object):
 
                         # The first time we ever encounter this section, build
                         # a priority queue of students to kick.
-                        if not sec_ind in list(students_to_kick.keys()):
+                        if sec_ind not in list(students_to_kick.keys()):
                             # Indices of students that are enrolled in this
                             # class by requesting it, in the enrollment we've
                             # computed so far.
