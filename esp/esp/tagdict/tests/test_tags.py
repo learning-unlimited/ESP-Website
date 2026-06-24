@@ -644,7 +644,7 @@ class TagRegistrationTest(SimpleTestCase):
     # Paths (relative to the esp/ root) to skip when scanning, because they
     # use test-only tags that are registered in the test module itself.
     _skip_paths = [
-        os.path.join('esp', 'tagdict', 'tests.py'),
+        os.path.join('tagdict', 'tests', 'test_tags.py'),
     ]
 
     # The set of all valid tag names from tagdict/__init__.py
