@@ -125,10 +125,10 @@ class ClassSizeRange(models.Model):
         if ranges:
             return ranges
         else:
-            for range in cls.objects.filter(program=None):
+            for size_range in cls.objects.filter(program=None):
                 k = cls()
-                k.range_min = range.range_min
-                k.range_max = range.range_max
+                k.range_min = size_range.range_min
+                k.range_max = size_range.range_max
                 k.program = prog
                 k.save()
             return cls.objects.filter(program=prog)
@@ -934,9 +934,9 @@ class ClassSection(models.Model):
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
-            for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).count() > 0:
-                    return (sec, time)
+            for timeslot in sec.meeting_times.all():
+                if meeting_times.filter(id = timeslot.id).count() > 0:
+                    return (sec, timeslot)
 
         return None
 
@@ -1853,9 +1853,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         user = teacher
         for cls in user.getTaughtClasses(self.parent_program, include_cancelled = False):
             for section in cls.get_sections():
-                for time in section.meeting_times.all():
+                for timeslot in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
-                        if sec.meeting_times.filter(id = time.id).count() > 0:
+                        if sec.meeting_times.filter(id = timeslot.id).count() > 0:
                             return True
 
         #   Check that adding this teacher as a coteacher would not overcommit them

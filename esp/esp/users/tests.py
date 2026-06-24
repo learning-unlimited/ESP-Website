@@ -538,7 +538,7 @@ class RecordTest(TestCase):
             def user_completed(when=None, only_today=False):
                 return Record.user_completed(self.user, self.event, program,
                                              when, only_today)
-            def filter(when=None, only_today=False):
+            def filter_records(when=None, only_today=False):
                 return Record.filter(self.user, self.event, program,
                                      when, only_today)
             def create(when=None):
@@ -565,7 +565,7 @@ class RecordTest(TestCase):
             # Clear Records, test that event is incomplete at all times.
             nowRecord.delete()
             del nowRecord
-            filter(self.future).delete()
+            filter_records(self.future).delete()
             self.assertFalse(user_completed())
             self.assertFalse(user_completed(self.past))
             self.assertFalse(user_completed(self.future))
@@ -585,9 +585,9 @@ class RecordTest(TestCase):
             self.assertTrue(user_completed())
             self.assertTrue(user_completed(self.past))
             self.assertTrue(user_completed(self.future))
-            self.assertEqual(1, filter().count())
-            self.assertEqual(1, filter(self.past).count())
-            self.assertEqual(2, filter(self.future).count())
+            self.assertEqual(1, filter_records().count())
+            self.assertEqual(1, filter_records(self.past).count())
+            self.assertEqual(2, filter_records(self.future).count())
 
             # Test that event is complete for the past and future days, but
             # is incomplete for today. Furthermore, when filtering by day,
@@ -595,7 +595,7 @@ class RecordTest(TestCase):
             self.assertTrue(user_completed(self.past, only_today=True))
             self.assertTrue(user_completed(self.future, only_today=True))
             self.assertFalse(user_completed(only_today=True))
-            self.assertEqual(1, filter(self.future, only_today=True).count())
+            self.assertEqual(1, filter_records(self.future, only_today=True).count())
 
 class PermissionTestCase(TestCase):
 

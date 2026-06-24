@@ -287,8 +287,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
             if not override:
                 # check availability
                 avail_times = [time.id for time in mod.getAvailableTimes(prog)]
-                for time in sec.meeting_times.all():
-                    if time.id not in avail_times:
+                for timeslot in sec.meeting_times.all():
+                    if timeslot.id not in avail_times:
                         return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
             sec.moderators.add(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
