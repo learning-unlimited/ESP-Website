@@ -41,7 +41,7 @@
 
 <p>Please proceed to edit <a href="#existing">existing deadlines for user groups</a> or <a href="#new">create a new deadline</a> if necessary.</p>
 
-<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users</a> or <a href="#new_perm">create a new permission</a>.</p>
+<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users and filters</a>, <a href="#new_perm">create a new permission for an individual user</a>, or <a href="#new_filter_perm">create a filter-based permission</a> for a dynamic group of users.</p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
@@ -140,13 +140,12 @@
 <hr>
 
 <a name="permissions"></a>
-<h2>Permissions (for individual users)</h2>
+<h2>Permissions (for individual users and filters)</h2>
 
 <button type="button" class="dsphead">
    <b>Existing Permissions</b> (click to expand/contract)
 </button>
 <div class="dspcont">
-
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
@@ -162,14 +161,22 @@
     {% for perm in permissions %}
     {% if forloop.counter0|divisibleby:"5" %}
     <tr>
-        <th>User</th>
+        <th>Target</th>
         <th>Permission</th>
         <th>Timing {% now "(T)" %}</th>
         <th></th>
     </tr>
     {% endif %}
     <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
-        <th>{{ perm.user }}</th>
+        <th>
+            {% if perm.user %}
+                {{ perm.user }}
+            {% elif perm.user_filter %}
+                Filter: {% if perm.user_filter.useful_name %}{{ perm.user_filter.useful_name }}{% else %}#{{ perm.user_filter_id }}{% endif %}
+            {% else %}
+                (none)
+            {% endif %}
+        </th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
             <span class="bituri">{{ perm.permission_type }}</span>
@@ -196,9 +203,8 @@
     {% endfor %}
     </tbody>
 </table>
-</div>
-
 </form>
+</div>
 
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_perm_form">
 
@@ -219,6 +225,13 @@
 </table>
 {% endautoescape %}
 </form>
+
+<a name="new_filter_perm"></a>
+<h3>Create new filter-based permissions</h3>
+
+<p>Grant a permission to a dynamic group of users (for example, all 7th graders or students at a particular school). You will use the user search tool to define which users receive the permission.</p>
+
+<p><a href="/manage/{{ program.getUrlBase }}/filter_permission" class="btn btn-primary">Create Filter Permission</a></p>
 
 </div>
 

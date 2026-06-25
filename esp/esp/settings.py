@@ -51,13 +51,20 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
-# Allow env to override DB settings (CI sets these to match the PostgreSQL service)
+# Allow env to override DB settings (CI and Docker set these to match the PostgreSQL service)
+if os.environ.get('DATABASE_HOST'):
+    DATABASES['default']['HOST'] = os.environ.get('DATABASE_HOST')
+if os.environ.get('DATABASE_PORT'):
+    DATABASES['default']['PORT'] = os.environ.get('DATABASE_PORT')
 if os.environ.get('DATABASE_USER'):
     DATABASE_USER = os.environ.get('DATABASE_USER')
+    DATABASES['default']['USER'] = DATABASE_USER
 if os.environ.get('DATABASE_PASSWORD'):
     DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+    DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
 if os.environ.get('DATABASE_NAME'):
     DATABASE_NAME = os.environ.get('DATABASE_NAME')
+    DATABASES['default']['NAME'] = DATABASE_NAME
 
 # Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
 # warnings. Explicitly locking this in prevents unintended schema changes if
@@ -235,6 +242,14 @@ MANAGERS = ADMINS
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
 
+# Docker dev: allow localhost when a host local_settings.py is volume-mounted
+if os.environ.get('DJANGO_ALLOWED_HOSTS'):
+    _allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS').strip()
+    if _allowed_hosts == '*':
+        ALLOWED_HOSTS = ['*']
+    else:
+        ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+
 for (key, value) in CONTACTFORM_EMAIL_CHOICES:
     if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
@@ -248,6 +263,10 @@ if 'CACHES' not in locals():
             'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
         }
     }
+
+# Docker dev: override memcached host when the repo is volume-mounted
+if os.environ.get('MEMCACHED_LOCATION'):
+    CACHES['default']['LOCATION'] = os.environ.get('MEMCACHED_LOCATION')
 
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 

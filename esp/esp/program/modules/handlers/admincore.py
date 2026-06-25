@@ -49,9 +49,12 @@ from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
-from esp.users.models import Permission, ESPUser
+from esp.users.controllers.usersearch import UserSearchController
+from esp.users.models import Permission, ESPUser, PersistentQueryFilter
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
@@ -88,6 +91,18 @@ class NewPermissionForm(forms.Form):
     permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
     user = AjaxForeignKeyNewformField(key_type=ESPUser, field_name='user', label='User',
         help_text='Start typing a username or "Last Name, First Name", then select the user from the dropdown.')
+    perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
+    perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
+
+
+class FilterPermissionOptionsForm(forms.Form):
+    permission_type = forms.ChoiceField(choices=[x for x in Permission.PERMISSION_CHOICES if "Administer" not in x[0]])
+    filter_name = forms.CharField(
+        label='Filter name',
+        required=False,
+        max_length=1024,
+        help_text='Optional short description for this filter (shown in the permissions list).',
+    )
     perm_start_date = forms.DateTimeField(label='Opening date/time' + FTIMEZONE, initial=datetime.now, widget=DateTimeWidget(), required=False)
     perm_end_date = forms.DateTimeField(label='Closing date/time' + FTIMEZONE, initial=None, widget=DateTimeWidget(), required=False)
 
@@ -359,6 +374,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
         message_good = ''
         message_bad = ''
 
+        if 'filter_perm_created' in request.GET:
+            perms = Permission.objects.filter(id=request.GET['filter_perm_created'], program=prog)
+            if perms.count() == 1:
+                perm = perms[0]
+                if perm.user_filter:
+                    target = perm.user_filter.useful_name or str(perm.user_filter_id)
+                    message_good = 'Permission created for filter %s: %s.' % (target, perm.nice_name())
+
         #   Handle 'open' / 'close' / 'delete' actions
         if extra == 'open':
             #   If there are no permissions for this permission type, create one and open it now (open ended)
@@ -376,7 +399,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.unexpire()
-                    message_good = f'Permission opened for {perm.user}: {perm.nice_name()}.'
+                    target = perm.user or (f'filter: {perm.user_filter.useful_name or perm.user_filter_id}' if perm.user_filter else '(none)')
+                    message_good = f'Permission opened for {target}: {perm.nice_name()}.'
                 else:
                     message_bad = f'No permission with ID {request.GET["perm_id"]}.'
 
@@ -392,7 +416,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if perms.count() == 1:
                     perm = perms[0]
                     perm.expire()
-                    message_good = f'Permission closed for {perm.user}: {perm.nice_name()}.'
+                    target = perm.user or (f'filter: {perm.user_filter.useful_name or perm.user_filter_id}' if perm.user_filter else '(none)')
+                    message_good = f'Permission closed for {target}: {perm.nice_name()}.'
                 else:
                     message_bad = f'No permission with ID {request.GET["perm_id"]}.'
 
@@ -404,7 +429,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if 'deadline' in request.GET:
                     message_good = f'Deadline deleted for {perm.role}s: {perm.nice_name()}.'
                 else:
-                    message_good = f'Permission deleted for {perm.user}: {perm.nice_name()}.'
+                    target = perm.user or (f'filter: {perm.user_filter.useful_name or perm.user_filter_id}' if perm.user_filter else '(none)')
+                    message_good = f'Permission deleted for {target}: {perm.nice_name()}.'
                 perm.delete()
             else:
                 if 'deadline' in request.GET:
@@ -510,10 +536,18 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 details['implied_open'] = any([getattr(perm, "implied", False) and perm.is_valid() for perm in details['perms']])
                 details['recursive'] = perm_type in list(Permission.implications.keys())
                 # Sort by validity and start/end dates
-                group_perms[group][perm_type]['perms'].sort(key=lambda perm: (perm.is_valid(), perm.end_date or datetime.max, perm.start_date or datetime.min), reverse=True)
+                group_perms[group][perm_type]['perms'].sort(key=lambda perm: (
+                    perm.is_valid(),
+                    perm.end_date is None,
+                    perm.end_date,
+                    perm.start_date is None,
+                    perm.start_date
+                ), reverse=True)
 
         #   find all the existing user permissions for this program
-        ind_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
+        user_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
+        filter_perms = Permission.objects.filter(program=self.program, user__isnull=True, user_filter__isnull=False).select_related('user_filter').order_by('permission_type')
+        ind_perms = list(user_perms) + list(filter_perms)
 
         perm_initial_data = [perm.__dict__ for perm in ind_perms]
         perm_formset = EditPermissionFormset(initial = perm_initial_data, prefix = 'edit_perms')
@@ -537,6 +571,90 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
     #   Alias for deadline management
     deadlines = deadline_management
+
+    @aux_call
+    @needs_admin
+    def filter_permission(self, request, tl, one, two, module, extra, prog):
+        """Step 1: use UserSearchController to define which users receive a permission."""
+        usc = UserSearchController()
+        context = {'program': prog}
+
+        if request.method == 'POST':
+            data = ListGenModule.processPost(request)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(
+                    prog,
+                    target_path='/manage/%s/filter_permission' % prog.url,
+                ))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir() + 'filter_permission_search.html', request, context)
+            selected = usc.selected_list_from_postdata(data)
+            if selected:
+                filterObj.useful_name = selected
+                filterObj.save()
+
+            num_users = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            context.update({
+                'filterid': filterObj.id,
+                'filter_description': filterObj.useful_name or selected,
+                'num_users': num_users,
+                'options_form': FilterPermissionOptionsForm(
+                    initial={'filter_name': filterObj.useful_name or ''},
+                ),
+            })
+            return render_to_response(self.baseDir() + 'filter_permission_options.html', request, context)
+
+        context.update(usc.prepare_context(
+            prog,
+            target_path='/manage/%s/filter_permission' % prog.url,
+        ))
+        return render_to_response(self.baseDir() + 'filter_permission_search.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def filter_permission_final(self, request, tl, one, two, module, extra, prog):
+        """Step 2: set permission type and dates, then create the permission."""
+        if request.method != 'POST' or 'filterid' not in request.GET:
+            raise ESPError()('Filter has not been properly set. Please start over.')
+
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except PersistentQueryFilter.DoesNotExist:
+            raise ESPError()('The selected filter no longer exists. Please start over.')
+        if str(ESPUser) != filterObj.item_model:
+            raise ESPError()('The selected filter is not a user filter. Please start over.')
+
+        options_form = FilterPermissionOptionsForm(request.POST.copy())
+        if not options_form.is_valid():
+            num_users = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            context = {
+                'program': prog,
+                'filterid': filterObj.id,
+                'filter_description': filterObj.useful_name,
+                'num_users': num_users,
+                'options_form': options_form,
+            }
+            return render_to_response(self.baseDir() + 'filter_permission_options.html', request, context)
+
+        filter_name = (options_form.cleaned_data['filter_name'] or '').strip()
+        if filter_name:
+            filterObj.useful_name = filter_name
+            filterObj.save()
+
+        perm = Permission.objects.create(
+            user=None,
+            role=None,
+            user_filter=filterObj,
+            permission_type=options_form.cleaned_data['permission_type'],
+            program=prog,
+            start_date=options_form.cleaned_data['perm_start_date'],
+            end_date=options_form.cleaned_data['perm_end_date'],
+        )
+        return HttpResponseRedirect(
+            '/manage/%s/deadlines?filter_perm_created=%s' % (prog.url, perm.id)
+        )
 
     @aux_call
     @needs_admin
