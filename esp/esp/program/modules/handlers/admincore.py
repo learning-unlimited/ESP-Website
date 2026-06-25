@@ -54,7 +54,7 @@ from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegMo
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.models import Permission, ESPUser, PersistentQueryFilter
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
 
@@ -378,8 +378,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
             perms = Permission.objects.filter(id=request.GET['filter_perm_created'], program=prog)
             if perms.count() == 1:
                 perm = perms[0]
-                target = perm.user_filter.useful_name or str(perm.user_filter_id)
-                message_good = 'Permission created for filter %s: %s.' % (target, perm.nice_name())
+                if perm.user_filter:
+                    target = perm.user_filter.useful_name or str(perm.user_filter_id)
+                    message_good = 'Permission created for filter %s: %s.' % (target, perm.nice_name())
 
         #   Handle 'open' / 'close' / 'delete' actions
         if extra == 'open':
@@ -545,7 +546,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         #   find all the existing user permissions for this program
         user_perms = Permission.objects.filter(program=self.program, user__isnull=False).order_by('user__username', 'permission_type')
-        filter_perms = Permission.objects.filter(program=self.program, user__isnull=True, user_filter__isnull=False).order_by('permission_type')
+        filter_perms = Permission.objects.filter(program=self.program, user__isnull=True, user_filter__isnull=False).select_related('user_filter').order_by('permission_type')
         ind_perms = list(user_perms) + list(filter_perms)
 
         perm_initial_data = [perm.__dict__ for perm in ind_perms]
@@ -580,7 +581,15 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
-            filterObj = usc.filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(
+                    prog,
+                    target_path='/manage/%s/filter_permission' % prog.url,
+                ))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir() + 'filter_permission_search.html', request, context)
             selected = usc.selected_list_from_postdata(data)
             if selected:
                 filterObj.useful_name = selected
@@ -614,6 +623,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
             filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         except PersistentQueryFilter.DoesNotExist:
             raise ESPError()('The selected filter no longer exists. Please start over.')
+        if str(ESPUser) != filterObj.item_model:
+            raise ESPError()('The selected filter is not a user filter. Please start over.')
 
         options_form = FilterPermissionOptionsForm(request.POST.copy())
         if not options_form.is_valid():

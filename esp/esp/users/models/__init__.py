@@ -2684,7 +2684,8 @@ class Permission(ExpirableModel):
             is_valid=False,
         ).select_related("user_filter")
 
-        perms = list(direct_qs)
+        best_direct = direct_qs.order_by("-end_date", "-start_date").first()
+        perms = [best_direct] if best_direct is not None else []
         membership_cache = {}
         for perm in filter_qs:
             uf = perm.user_filter
@@ -2699,6 +2700,8 @@ class Permission(ExpirableModel):
                     is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
                 except ESPError:
                     # Ignore invalid filters when computing deadlines
+                    if cache_key is not None:
+                        membership_cache[cache_key] = False
                     continue
                 if cache_key is not None:
                     membership_cache[cache_key] = is_member
