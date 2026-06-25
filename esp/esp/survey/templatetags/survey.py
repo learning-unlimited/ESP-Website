@@ -245,7 +245,7 @@ def histogram(answer_list, args='format=html'):
                          '-sDEVICE=png16m', '-R96',
                          '-sOutputFile=' + image_path, file_name])
     if args_dict.get('format') == 'tex':
-        return '\includegraphics[width=%fin]{%s}' % (image_width, image_path)
+        return r'\includegraphics[width=%fin]{%s}' % (image_width, image_path)
     if args_dict.get('format') == 'html':
         return '<img src="%s" />' % ('/media/' + HISTOGRAM_PATH + png_filename)
 

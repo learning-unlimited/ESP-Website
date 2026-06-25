@@ -20,7 +20,7 @@ class Command(BaseCommand):
     """
     def handle(self, *args, **options):
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
-        ret = os.system("find " + root + """ -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
+        ret = os.system("find " + root + r""" -name '*.pyc' -exec bash -c 'test ! -f "${1%c}"' -- {} \; -delete""")
         if ret:
             logger.info("Aborting with return code", ret)
             exit(ret)

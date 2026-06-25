@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                                     help_text='The director email address must end in @' + settings.SITE_INFO[1] +
                                               ' (your website), @learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). The default is <b>info@' + settings.SITE_INFO[1] +
                                               '</b>, which redirects to the "default" email address from your site\'s settings by default. You can create and manage your email redirects <a href="/manage/redirects/">here</a>.',
-                                    validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')))]),
+                                    validators=[validators.RegexValidator(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')))]),
         ),
         # This will run backwards, but won't do anything
         migrations.RunPython(replace_director_emails, lambda a, s: None),

@@ -158,9 +158,9 @@ def logos(request):
             # Update favicon version
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
-    context['favicon_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "favicon\..*\.ico")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
+    context['favicon_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"favicon\..*\.ico")]
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     context['current_logo_version'] = Tag.getTag("current_logo_version")
     context['current_header_version'] = Tag.getTag("current_header_version")

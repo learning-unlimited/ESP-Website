@@ -77,7 +77,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text=mark_safe('<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt> (e.g. use $$\pi$$ for &pi;).</span>' ))
+                                        help_text=mark_safe('<span class="tex2jax_ignore">Sell your class to prospective students! (This is the description they will see on the website when picking classes.) Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt> (e.g. use $$\\pi$$ for &pi;).</span>' ))
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
 

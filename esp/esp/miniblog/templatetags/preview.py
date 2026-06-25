@@ -10,10 +10,10 @@ from six.moves import zip
 __all__ = ['MiniblogNode', 'miniblog_for_user']
 
 arg_re = [
-    (re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\S+)\s+(\d+)\s*'), ('user', 'var_name', 'tl', 'limit')),
-    (re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\d+)\s*'), ('user', 'var_name', 'limit')),
-    (re.compile('\s*(\S+)\s+as\s+(\S+)\s+(\S+)\s*'), ('user', 'var_name', 'tl')),
-    (re.compile('\s*(\S+)\s+as\s+(\S+)\s*'), ('user', 'var_name')),
+    (re.compile(r'\s*(\S+)\s+as\s+(\S+)\s+(\S+)\s+(\d+)\s*'), ('user', 'var_name', 'tl', 'limit')),
+    (re.compile(r'\s*(\S+)\s+as\s+(\S+)\s+(\d+)\s*'), ('user', 'var_name', 'limit')),
+    (re.compile(r'\s*(\S+)\s+as\s+(\S+)\s+(\S+)\s*'), ('user', 'var_name', 'tl')),
+    (re.compile(r'\s*(\S+)\s+as\s+(\S+)\s*'), ('user', 'var_name')),
 ]
 
 register = template.Library()

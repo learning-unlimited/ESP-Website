@@ -9,23 +9,39 @@ BASEDIR="$(dirname "$SCRIPTDIR")"
 
 echo "Running lint checks..."
 
-# For now, ignore everything except:
-#   E101: mixed tabs and spaces
-#   F82x: undefined name, local variable referenced before assignment
-#   F831: duplicate arg in function definition
-#   W191: indentation contains tabs
-#   W29x: whitespace at end of line or on blank line
-#   W601: `has_key` instead of `in`
-#   W603: <> instead of !=
-#   W604: backticks instead of `repr`
-# Errors I'd like to turn on sometime soon, but which still require some
-# cleanup first:
-#   E11x: other indentation issues (expected indented block, unexpected indent, not a multiple of four)
-#   F811: redefinition of unused name
-#   F841: unused name
-# Ignore /env, since that's where we by default put the virtualenv, which has
-# lots of code that's not ours.  Also exclude .git, for speed.
-flake8 --ignore "E,F,W" --select "E10,F82,F831,W191,W29,W601,W603,W604" "$BASEDIR" --exclude=.git,env
+# Check everything except the codes listed below.
+# Excluded codes are pure style with no bug-finding value, or are structural
+# patterns used intentionally throughout the codebase.
+#
+# Style/formatting (no bug value):
+#   E1xx (except E101): indentation style (continuation lines, over-indented, etc.)
+#   E201,E202,E203: whitespace inside brackets
+#   E221,E222: alignment spaces around operators
+#   E225,E227,E228: missing whitespace around operators
+#   E231: missing whitespace after ','
+#   E251: spaces around keyword/default argument '='
+#   E261,E262,E265,E266: comment formatting
+#   E271,E272,E275: whitespace around keywords
+#   E301,E302,E303,E304,E305,E306: blank line counts
+#   E401: multiple imports on one line
+#   E402: module-level import not at top of file
+#   E501: line too long
+#   E502: redundant backslash
+#   E701: multiple statements on one line (colon)
+#   E703: statement ends with semicolon
+#   E731: lambda assignment (use def instead)
+#   E741: ambiguous variable name (l, O, I)
+#   W391: blank line at end of file
+# Structural (intentional patterns):
+#   F403: 'from module import *' — used in settings.py, models/__init__.py, etc.
+#   F405: name may come from star import — consequence of F403 patterns above
+# Too noisy to enforce without a dedicated cleanup pass:
+#   E722: bare except
+#   F401: imported but unused
+#   F841: local variable assigned but never used
+#
+# Ignore /env (virtualenv) and .git for speed.
+flake8 --extend-ignore "E111,E114,E116,E117,E122,E124,E125,E127,E128,E129,E131,E201,E202,E203,E221,E222,E225,E227,E228,E231,E251,E261,E262,E265,E266,E271,E272,E275,E301,E302,E303,E304,E305,E306,E401,E402,E501,E502,E701,E703,E731,E741,E722,F401,F403,F405,F841,W391" "$BASEDIR" --exclude=.git,env
 
 # Those escape codes the cursor up a line and forward 22 columns (past
 # "Running lint checks...").  We can't just `echo -n` above, because if there

@@ -7,7 +7,7 @@ from django.utils.safestring import mark_safe
 import re
 import six
 
-get_id_re = re.compile('.*\((\d+)\)$')
+get_id_re = re.compile(r'.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 

@@ -137,7 +137,7 @@ class ProgramCreationForm(BetterModelForm):
         super(ProgramCreationForm, self).clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = six.u('%(type)s/%(term)s') \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
