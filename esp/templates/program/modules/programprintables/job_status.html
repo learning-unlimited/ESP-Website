@@ -10,7 +10,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <style>
-        .glyphicon-spin {
+        .bi-spin {
             -webkit-animation: spin 2s infinite linear;
             animation: spin 2s infinite linear;
             display: inline-block;
@@ -28,27 +28,27 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-8 col-md-offset-2">
+    <div class="col-md-8 offset-md-2">
         <div class="well" style="margin-top: 50px; text-align: center;">
             <h3>Generating Printables</h3>
             <hr />
             {% if job.status == 'PENDING' or job.status == 'PROCESSING' %}
-            <span class="glyphicon glyphicon-refresh glyphicon-spin" style="font-size: 4em; margin: 20px 0; color: #3a87ad; display: inline-block;"></span>
+            <span class="bi bi-arrow-clockwise bi-spin" style="font-size: 4em; margin: 20px 0; color: #3a87ad; display: inline-block;"></span>
             <h4>Your document is currently being generated.</h4>
             <p class="text-muted">This process may take up to 15 minutes for large programs. This page will refresh
                 automatically every 5 seconds.</p>
             <p><strong>Status:</strong> {{ job.status }}</p>
 
             {% elif job.status == 'COMPLETED' %}
-            <span class="glyphicon glyphicon-ok-sign" style="font-size: 4em; margin: 20px 0; color: #468847; display: inline-block;"></span>
+            <span class="bi bi-check-circle" style="font-size: 4em; margin: 20px 0; color: #468847; display: inline-block;"></span>
             <h4>Success!</h4>
             <p>Your document has been generated.</p>
             {% if job.file %}
-            <a href="?download=1" class="btn btn-primary btn-lg"><span class="glyphicon glyphicon-download-alt"></span> Download {{ job.job_type|title }}</a>
+            <a href="?download=1" class="btn btn-primary btn-lg"><span class="bi bi-download"></span> Download {{ job.job_type|title }}</a>
             {% endif %}
 
             {% elif job.status == 'FAILED' %}
-            <span class="glyphicon glyphicon-warning-sign" style="font-size: 4em; margin: 20px 0; color: #b94a48; display: inline-block;"></span>
+            <span class="bi bi-exclamation-triangle" style="font-size: 4em; margin: 20px 0; color: #b94a48; display: inline-block;"></span>
             <h4>An Error Occurred</h4>
             <p>We encountered a problem while generating your document.</p>
             <div class="alert alert-error"
