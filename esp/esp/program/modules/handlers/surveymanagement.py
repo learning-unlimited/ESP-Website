@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.program.models import ClassSubject, ClassSection
 from esp.utils.web import render_to_response
 from esp.survey.models  import QuestionType, Question, Survey
@@ -53,6 +54,20 @@ class SurveyManagement(ProgramModuleObj):
             "seq": 25,
             'choosable': 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface survey management in the admin dashboard search dropdown.
+        # Only the main view is searchable; survey_manage is an internal helper.
+        if view_name != "surveys":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Surveys",
+            category=SEARCH_CATEGORY_SETTINGS,
+            keywords=["survey", "surveys", "feedback", "student survey", "teacher survey"],
+        )
 
     @needs_admin
     def survey_manage(self, request, tl, one, two, module, extra, prog):
