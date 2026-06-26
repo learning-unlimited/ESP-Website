@@ -71,7 +71,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
-    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), from_email):
+    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), from_email):
         raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
                        "end in @" + settings.SITE_INFO[1] + " (your website), " +
                        "@learningu.org, or a valid subdomain of learningu.org " +
@@ -108,8 +108,11 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     #   Normally this will be SMTP, but it also has an in-memory backend for testing.
     connection = get_connection(fail_silently=fail_silently, return_path=return_path)
 
-    #   Detect HTML tags in message and change content-type if they are found
-    if '<html>' in message:
+    #   Detect HTML tags in message and change content-type if they are found.
+    #   Match the opening <html> tag whether or not it carries attributes (e.g.
+    #   <html lang="en">), so attribute-bearing templates are still recognized
+    #   as HTML and sent with a stripped plaintext part plus an HTML alternative.
+    if re.search(r'<html[\s>]', message, re.IGNORECASE):
         # Generate a plaintext version of the email
         # Remove html tags and continuous whitespaces
         text_only = re.sub('[ \t]+', ' ', strip_tags(message))
@@ -202,6 +205,7 @@ class MessageRequest(models.Model):
     recipients = models.ForeignKey(PersistentQueryFilter, on_delete=models.CASCADE) # We will get the user from a query filter
     sendto_fn_name = models.CharField("sendto function", max_length=128,
                     choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
+                    blank=True,
                     help_text="The function that specifies, for each recipient " +
                     "of the message, which set of associated email addresses " +
                     "should receive the message.")
@@ -216,7 +220,7 @@ class MessageRequest(models.Model):
     )
 
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
-    processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
+    processed_by = models.DateTimeField(null=True, blank=True, default=None, db_index=True) # When should this be processed by?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
     public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
@@ -650,7 +654,7 @@ class PlainRedirect(models.Model):
         ordering=('original',)
 
 
-# Adapted from http://www.djangosnippets.org/snippets/735/
+# Adapted from https://www.djangosnippets.org/snippets/735/
 class CustomSMTPBackend(SMTPEmailBackend):
     """ Simple override of Django's default backend to allow a Return-Path to be specified """
 

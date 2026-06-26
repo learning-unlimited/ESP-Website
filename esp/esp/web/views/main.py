@@ -83,7 +83,7 @@ def program(request, tl, one, two, module, extra = None):
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
     if extra:
-        setattr(request, "module", "%s/%s" % (module, extra))
+        setattr(request, "module", f"{module}/{extra}")
     else:
         setattr(request, "module", module)
 
@@ -97,9 +97,9 @@ def program(request, tl, one, two, module, extra = None):
 
 @cache_control(max_age=180)
 def public_email(request, email_id):
-    email_req = MessageRequest.objects.filter(id=email_id, public=True)
-    if email_req.count() == 1:
-        return render_to_response('public_email.html', request, {'email_req': email_req[0]})
+    email_req = MessageRequest.objects.filter(id=email_id, public=True).first()
+    if email_req:
+        return render_to_response('public_email.html', request, {'email_req': email_req})
     else:
         raise ESPError('Invalid email id.', log=False)
 
@@ -276,7 +276,7 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect'):
         ctxt['prog'] = progs[0]
-        return HttpResponseRedirect('/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
+        return HttpResponseRedirect(f'/{userrole["base"]}/{progs[0].getUrlBase()}/{userrole["reg"]}')
     else:
         if len(progs) > 0:
             #   Sort available programs newest first

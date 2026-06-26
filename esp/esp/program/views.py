@@ -48,7 +48,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from django.http import HttpResponseRedirect, HttpResponseBadRequest
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.contenttypes.models import ContentType
@@ -466,8 +466,8 @@ def find_user(userstr):
     userstr_parts = [part.strip() for part in userstr.split(' ') if part]
 
     if len(userstr_parts) == 2 and \
-       re.match("\A\(\d\d\d\)\Z", userstr_parts[0]) and \
-       re.match("[^A-Za-z]*", userstr_parts[1]):
+    re.match(r"\A\(\d\d\d\)\Z", userstr_parts[0]) and \
+    re.match(r"[^A-Za-z]*", userstr_parts[1]):
         # HACK: coerce ["(555)", "555-5555"] to ["(555)555-5555"] so that the
         # first branch of the if statement gets taken
         userstr_parts = ["".join(userstr_parts)]
@@ -493,8 +493,12 @@ def find_user(userstr):
             formatted = "%s%s%s-%s%s%s-%s%s%s%s" % tuple(cleaned)
             user_q = user_q | Q(contactinfo__phone_day=formatted) | Q(contactinfo__phone_cell=formatted)
         # Try name (including parent/emergency contact)
-        user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
-        user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
+        # Skip name search for purely numeric strings: a number is an ID or phone,
+        # not a name, and including name-contains would cause spurious multi-user
+        # matches (e.g. a user whose first name contains the ID digits).
+        if not userstr.isnumeric():
+            user_q = user_q | (Q(first_name__icontains=userstr) | Q(last_name__icontains=userstr))
+            user_q = user_q | (Q(contactinfo__first_name__icontains=userstr) | Q(contactinfo__last_name__icontains=userstr))
         found_users = ESPUser.objects.filter(user_q).distinct()
     else:
         q_list = []
@@ -530,7 +534,12 @@ def usersearch(request):
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
-        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        def _last_active_sort_key(user):
+            # Sort by the user's most recent program (volunteers included), oldest-possible if none
+            program = user.get_last_active_program()
+            dates = program.dates() if program else None
+            return dates[0] if dates else datetime.date(datetime.MINYEAR, 1, 1)
+        sorted_users = sorted(found_users, key=_last_active_sort_key, reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
@@ -549,7 +558,11 @@ def userview(request):
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
-        program = user.get_last_program_with_profile()
+        program = user.get_last_active_program()
+        if program is None:
+            current = Program.current_programs()
+            if current:
+                program = current[0]
 
     learn_modules = []
     teach_modules = []
@@ -647,6 +660,44 @@ def userview(request):
         'grade_change_requests': user.requesting_student_set.filter(approved=None),
     }
     return render_to_response("users/userview.html", request, context )
+
+@admin_required
+def userview_edit(request):
+    """ Handle AJAX updates for user information from userview """
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Only POST requests are allowed.')
+
+    try:
+        user = ESPUser.objects.get(username=request.POST.get('username'))
+    except ESPUser.DoesNotExist:
+        return HttpResponseBadRequest('User not found.')
+
+    field = request.POST.get('field')
+
+    if field == 'name':
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        if not first_name and not last_name:
+            return HttpResponseBadRequest('At least one of first or last name must be provided.')
+        user.first_name = first_name
+        user.last_name = last_name
+    elif field == 'email':
+        email = request.POST.get('email', '').strip()
+        if email:
+            try:
+                validate_email(email)
+            except ValidationError:
+                return HttpResponseBadRequest('Invalid email address.')
+        user.email = email
+    else:
+        return HttpResponseBadRequest('Invalid field.')
+
+    user.save()
+    return HttpResponse(json.dumps({'success': True}), content_type="application/json")
+
 
 def deactivate_user(request):
     return activate_or_deactivate_user(request, activate=False)
@@ -872,7 +923,7 @@ def manage_pages(request):
                 #   Handle submission of bulk move form
                 if form.is_valid():
                     form.save_data()
-                    return HttpResponseRedirect('/manage/pages')
+                    return HttpResponseRedirect(reverse('manage_pages'))
 
             #   Create and display the form
             qsd_id_list = []
@@ -901,7 +952,7 @@ def manage_pages(request):
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
-        return HttpResponseRedirect('/manage/pages')
+        return HttpResponseRedirect(reverse('manage_pages'))
 
     elif 'cmd' in request.GET:
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
@@ -1252,19 +1303,87 @@ def statistics(request, program=None):
                 programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
-            #   Get list of users the query applies to
-            users_q = Q()
+            #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
+            #   teacher_reg / class_reg hide student fields; all other stats hide teacher fields.
+            #   Hidden fields still leave initial=True on the other role (e.g. teacher_reg_type_all),
+            #   which used to OR in teachers_union() for zipcodes etc. and produced enormous SQL.
+            stats_query = form.cleaned_data['query']
+            teacher_only = stats_query in ('teacher_reg', 'class_reg')
+
+            #   Get list of users the query applies to.
+            #   Accumulate per-program registration Q objects, then apply each role
+            #   filter once (Student / Teacher). Doing (prog_q & role) for every
+            #   program duplicates the groups join on each OR branch and is very
+            #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
+            #   and avoids that.
+            student_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('student_reg_types').choices
+            ] if 'student_reg_types' in form.fields else []
+            teacher_reg_types_on_form = [
+                choice[0] for choice in form.fields.get('teacher_reg_types').choices
+            ] if 'teacher_reg_types' in form.fields else []
+            student_users_q = None
+            teacher_users_q = None
+
             for program in programs:
-                if 'student_reg_types' in form.cleaned_data and form.cleaned_data['student_reg_types']:
-                    students_objects = program.students(QObjects=True)
-                    for reg_type in form.cleaned_data['student_reg_types']:
-                        if reg_type in list(students_objects.keys()):
-                            users_q = users_q | students_objects[reg_type]
-                elif 'teacher_reg_types' in form.cleaned_data and form.cleaned_data['teacher_reg_types']:
-                    teachers_objects = program.teachers(QObjects=True)
-                    for reg_type in form.cleaned_data['teacher_reg_types']:
-                        if reg_type in list(teachers_objects.keys()):
-                            users_q = users_q | teachers_objects[reg_type]
+                student_q = None
+                if not teacher_only:
+                    if form.cleaned_data.get('student_reg_type_all'):
+                        # "All" should be limited to the registration types shown
+                        # on the statistics form. `program.students_union()`
+                        # includes extra categories like attended_past/enrolled_past
+                        # which can be very expensive and are not part of this query.
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in student_reg_types_on_form:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
+                    elif form.cleaned_data.get('student_reg_types'):
+                        students_objects = program.students(QObjects=True)
+                        student_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['student_reg_types']:
+                            if reg_type in students_objects:
+                                student_q |= students_objects[reg_type]
+
+                    if student_q:
+                        if student_users_q is None:
+                            student_users_q = student_q
+                        else:
+                            student_users_q |= student_q
+
+                teacher_q = None
+                if teacher_only:
+                    if form.cleaned_data.get('teacher_reg_type_all'):
+                        # Same restriction as the student side.
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in teacher_reg_types_on_form:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
+                    elif form.cleaned_data.get('teacher_reg_types'):
+                        teachers_objects = program.teachers(QObjects=True)
+                        teacher_q = Q(pk__in=[])
+                        for reg_type in form.cleaned_data['teacher_reg_types']:
+                            if reg_type in teachers_objects:
+                                teacher_q |= teachers_objects[reg_type]
+
+                    if teacher_q:
+                        if teacher_users_q is None:
+                            teacher_users_q = teacher_q
+                        else:
+                            teacher_users_q |= teacher_q
+
+            users_q = None
+            if student_users_q is not None:
+                # Restrict to students so teachers/volunteers with registration-like
+                # records are not counted as students.
+                users_q = student_users_q & ESPUser.getAllOfType('Student')
+            if teacher_users_q is not None:
+                tq = teacher_users_q & ESPUser.getAllOfType('Teacher')
+                users_q = tq if users_q is None else (users_q | tq)
+
+            if users_q is None:
+                users_q = Q(pk__in=[])
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1290,13 +1409,17 @@ def statistics(request, program=None):
                 zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
                 users_q = users_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
 
-            users = ESPUser.objects.filter(users_q).distinct()
-            result_dict['num_users'] = users.count()
+            #   Distinct PKs only (avoids running the heavy filter twice for count() + list()).
+            user_ids = list(
+                ESPUser.objects.filter(users_q).values_list('pk', flat=True).distinct()
+            )
+            result_dict['num_users'] = len(user_ids)
+            users = ESPUser.objects.filter(pk__in=user_ids)
             user_list = list(users)
             # Batch-fetch latest profile per user to avoid N+1
             profile_by_user = {}
             if user_list:
-                for p in RegistrationProfile.objects.filter(user__in=users).select_related('user').order_by('user_id', '-last_ts'):
+                for p in RegistrationProfile.objects.filter(user__in=user_list).select_related('user', 'contact_user', 'student_info', 'student_info__k12school').order_by('user_id', '-last_ts'):
                     if p.user_id not in profile_by_user:
                         profile_by_user[p.user_id] = p
             profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
@@ -1328,6 +1451,9 @@ def statistics(request, program=None):
             context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                result = {}
+                result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+                result['script'] = render_to_string('program/statistics/script.js', context)
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1418,3 +1544,271 @@ def manage_docs(request, doc_path=None):
         'latest_release_html': latest_release_html,
     }
     return render_to_response('program/manage_docs.html', request, context)
+
+from django.http import JsonResponse, Http404
+from django.views.decorators.http import require_POST, require_GET
+from django.utils.dateparse import parse_datetime
+
+def get_program_or_404(request, program_type, program_term):
+    from esp.program.models import Program
+    try:
+        prog = Program.by_prog_inst(program_type, program_term)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+
+    if not request.user.is_authenticated or not request.user.isAdministrator(prog):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("You must be an administrator to manage this program.")
+
+    return prog
+
+@require_GET
+def module_schedule_api(request, program_type, program_term):
+    """
+    JSON API endpoint to list all modules for a program.
+    Inputs: program_type (str), program_term (str) from the URL.
+    Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+    modules = prog.getModules(user=request.user)
+
+    # We serialize them into dicts grouped by module_type (learn/teach)
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in modules:
+        tl = mod.module.module_type
+        if tl not in data["modules"]:
+            data["modules"][tl] = []
+
+        data["modules"][tl].append({
+            "id": mod.id,
+            "handler": mod.module.handler,
+            "admin_title": mod.module.admin_title,
+            "link_title": mod.get_link_title(),
+            "module_type": tl,
+            "seq": mod.seq,
+            "always_enabled": mod.always_enabled,
+            "seq_locked": mod.seq_locked,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "required": mod.required,
+            "required_label": mod.required_label,
+        })
+
+    return JsonResponse(data)
+
+@require_POST
+def module_schedule_update_api(request, program_type, program_term):
+    """
+    JSON API endpoint to update a program module's start_date, end_date, and seq.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq.
+    Outputs: JSONResponse with success boolean and updated module fields.
+    """
+    # we simulate PATCH using POST with data, or we could just use POST.
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        module_id = data.get("module_id")
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.utils import timezone
+
+        try:
+            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+
+        mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
+
+        if "start_date" in data:
+            val = data["start_date"]
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid start_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.start_date = dt
+            else:
+                mod.start_date = None
+
+        if "end_date" in data:
+            val = data["end_date"]
+            if val:
+                dt = parse_datetime(val)
+                if dt is None:
+                    return JsonResponse({"success": False, "error": "Invalid end_date format"}, status=400)
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                mod.end_date = dt
+            else:
+                mod.end_date = None
+
+        if "seq" in data:
+            if mod_hydrated.seq_locked:
+                return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
+            mod.seq = int(data["seq"])
+
+        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        mod.save()
+
+        return JsonResponse({
+            "success": True,
+            "module_id": mod.id,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "seq": mod.seq
+        })
+    except ValueError:
+        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
+    except Exception:
+        logger.exception("module_schedule_update_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+
+@require_POST
+def module_schedule_required_toggle_api(request, program_type, program_term):
+    """
+    JSON API endpoint to toggle a program module's required flag and update its required_label.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, required (bool), required_label (str).
+    Outputs: JSONResponse with success boolean and updated module fields.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        module_id = data.get("module_id")
+
+        from esp.program.modules.base import ProgramModuleObj
+        try:
+            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
+        except ProgramModuleObj.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+
+        if "required" in data:
+            if not isinstance(data["required"], bool):
+                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
+            mod.required = data["required"]
+
+        if "required_label" in data:
+            label = data["required_label"]
+            if not isinstance(label, str):
+                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+            if len(label) > max_len:
+                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
+            mod.required_label = label
+
+        mod.save()
+
+        return JsonResponse({
+            "success": True,
+            "module_id": mod.id,
+            "required": mod.required,
+            "required_label": mod.required_label
+        })
+    except ValueError:
+        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
+    except Exception:
+        logger.exception("module_schedule_required_toggle_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+
+@require_GET
+def module_schedule_preview_api(request, program_type, program_term):
+    """
+    JSON API endpoint to preview the list of active modules for a given timestamp.
+    Inputs: program_type (str), program_term (str) from the URL, GET parameter 'at' (ISO timestamp string).
+    Outputs: JSONResponse with a list of serialized modules valid at the given timestamp.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    at_str = request.GET.get("at")
+    if not at_str:
+        return JsonResponse({"success": False, "error": "Missing 'at' parameter"}, status=400)
+
+    from django.utils import timezone
+    at_dt = parse_datetime(at_str)
+    if at_dt is None:
+        return JsonResponse({"success": False, "error": "Invalid 'at' parameter"}, status=400)
+
+    if timezone.is_aware(at_dt):
+        at_dt = timezone.make_naive(at_dt, timezone.get_current_timezone())
+
+    # We bypass time filtering initially by using getModules(user=admin)
+    all_modules = prog.getModules(user=request.user)
+
+    data = {
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "modules": {"learn": [], "teach": []}
+    }
+
+    for mod in all_modules:
+        if mod.is_valid(when=at_dt):
+            tl = mod.module.module_type
+            if tl not in data["modules"]:
+                data["modules"][tl] = []
+
+            data["modules"][tl].append({
+                "id": mod.id,
+                "handler": mod.module.handler,
+                "admin_title": mod.module.admin_title,
+                "link_title": mod.get_link_title(),
+                "module_type": tl,
+                "seq": mod.seq,
+                "always_enabled": mod.always_enabled,
+                "seq_locked": mod.seq_locked,
+                "start_date": mod.start_date.isoformat() if mod.start_date else None,
+                "end_date": mod.end_date.isoformat() if mod.end_date else None,
+                "required": mod.required,
+                "required_label": mod.required_label,
+            })
+
+    return JsonResponse(data)
+
+@require_GET
+def module_schedule_conflicts_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    # request.user is admin, so getModules returns all modules regardless of expiration
+    all_modules = prog.getModules(user=request.user)
+    conflicts = []
+
+    for i, mod1 in enumerate(all_modules):
+        for mod2 in all_modules[i+1:]:
+            # Check for conflict declaration
+            if (mod2.module.handler in mod1.conflicts_with) or (mod1.module.handler in mod2.conflicts_with):
+                # Check for time overlap
+                start1 = mod1.start_date
+                end1 = mod1.end_date
+                start2 = mod2.start_date
+                end2 = mod2.end_date
+
+                # Overlap condition
+                cond1 = (start1 is None) or (end2 is None) or (start1 < end2)
+                cond2 = (start2 is None) or (end1 is None) or (start2 < end1)
+
+                if cond1 and cond2:
+                    overlap_starts = [s for s in (start1, start2) if s is not None]
+                    overlap_start = max(overlap_starts) if overlap_starts else None
+
+                    overlap_ends = [e for e in (end1, end2) if e is not None]
+                    overlap_end = min(overlap_ends) if overlap_ends else None
+
+                    conflicts.append({
+                        "module_id_1": mod1.id,
+                        "handler_1": mod1.module.handler,
+                        "module_id_2": mod2.id,
+                        "handler_2": mod2.module.handler,
+                        "overlap_start": overlap_start.isoformat() if overlap_start else None,
+                        "overlap_end": overlap_end.isoformat() if overlap_end else None,
+                        "description": f"{mod1.get_link_title()} overlaps with {mod2.get_link_title()}"
+                    })
+
+    return JsonResponse({"conflicts": conflicts})

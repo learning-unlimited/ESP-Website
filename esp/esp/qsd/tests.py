@@ -37,8 +37,13 @@ from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
+from django.core.cache import cache
 from django.template import Template, Context
+from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
+from reversion import revisions as reversion
+from reversion.models import Version
+import json
 
 from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
 
@@ -49,7 +54,7 @@ class QSDCorrectnessTest(TestCase):
         #   Determine URL for QSD page to be tested
         section = 'learn'
         pagename = 'foo'
-        self.url = '/%s/%s.html' % (section, pagename)
+        self.url = f'/{section}/{pagename}.html'
 
         #   Create user to function as QSD author
         new_admin, created = ESPUser.objects.get_or_create(username='qsd_admin')
@@ -212,6 +217,255 @@ class QSDCorrectnessTest(TestCase):
             # Attempting to edit a nonexistent page should give 404, not 500
             response = self.client.get(edit_url)
             self.assertEqual(response.status_code, 404)
+
+
+class QSDDefaultContentTest(TestCase):
+    """ Tests for default QSD content loading in the .edit page (issue #3791). """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_default_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def test_edit_shows_placeholder_when_no_default(self):
+        """For a URL with no template default, edit should show the placeholder."""
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/learn/nonexistent_page.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Please insert your text here', content)
+
+    def test_edit_shows_cached_default(self):
+        """When default content is cached, edit should show it instead of placeholder."""
+        cache.set(qsd_cache_key('contact'), {
+            'content': '<p>Default contact content from template</p>',
+            'title': 'Contact Us',
+        }, timeout=3600)
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Default contact content from template', content)
+        self.assertNotIn('Please insert your text here', content)
+
+    def test_cache_populated_by_inline_qsd_block(self):
+        """Rendering a template with inline_qsd_block should populate the cache."""
+        cache.delete(qsd_cache_key('test/defaultblock'))
+        template_data = """
+            {% load render_qsd %}
+            {% inline_qsd_block "test/defaultblock" %}
+            <p>This is the default block content</p>
+            {% end_inline_qsd_block %}
+        """
+        template = Template(template_data)
+        template.render(Context({}))
+        cached = cache.get(qsd_cache_key('test/defaultblock'))
+        self.assertIsNotNone(cached)
+        self.assertIn('This is the default block content', cached['content'])
+
+    def test_edit_loads_default_via_internal_render(self):
+        """Visiting /contact.edit.html should load defaults even without prior cache."""
+        cache.delete(qsd_cache_key('contact'))
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should contain the contact page default content, not the placeholder
+        self.assertNotIn('Please insert your text here', content)
+        self.assertIn('Before contacting us', content)
+
+
+class QSDVersionHistoryTest(TestCase):
+    """ Tests for QSD version history endpoints. """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_history_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, created = ESPUser.objects.get_or_create(username='qsd_history_student')
+        self.student.set_password('password')
+        self.student.save()
+
+        # Create a QSD with two revisions
+        with reversion.create_revision():
+            self.qsd = QuasiStaticData()
+            self.qsd.url = 'learn/historytest'
+            self.qsd.name = ''
+            self.qsd.author = self.admin
+            self.qsd.nav_category = default_navbarcategory()
+            self.qsd.content = 'Version One Content'
+            self.qsd.title = 'History Test'
+            self.qsd.description = ''
+            self.qsd.keywords = ''
+            self.qsd.save()
+            reversion.set_user(self.admin)
+
+        with reversion.create_revision():
+            self.qsd.content = 'Version Two Content'
+            self.qsd.save()
+            reversion.set_user(self.admin)
+
+    def test_history_requires_permission(self):
+        """ Non-editors cannot see version history. """
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_history_returns_versions(self):
+        """ Admins can see version list in correct order. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertGreaterEqual(len(data['versions']), 2)
+        # Most recent first
+        self.assertIn('Version Two', data['versions'][0]['snippet'])
+
+    def test_history_empty_for_nonexistent(self):
+        """ Returns empty list for QSD URL with no history. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/doesnotexist'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(len(data['versions']), 0)
+
+    def test_version_preview(self):
+        """ Can preview a specific version's content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Get version list to find version_id
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        old_version_id = versions[-1]['version_id']
+
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': old_version_id})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIn('Version One', data['content_raw'])
+        self.assertIn('Version One', data['content_html'])
+
+    def test_version_preview_requires_permission(self):
+        """ Non-editors cannot preview versions. """
+        self.client.login(username='qsd_history_student', password='password')
+        # Get a valid version_id using admin first
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        version_id = versions[0]['version_id']
+
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': version_id})
+        self.assertEqual(response.status_code, 403)
+
+    def test_restore_version(self):
+        """ Restoring a version creates a new revision with old content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Get version list
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        old_version_id = versions[-1]['version_id']
+
+        # Current content should be Version Two
+        current = QuasiStaticData.objects.get_by_url('learn/historytest')
+        self.assertIn('Version Two', current.content)
+
+        # Restore to old version
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': old_version_id})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['status'], 1)
+
+        # Verify content reverted
+        updated = QuasiStaticData.objects.get_by_url('learn/historytest')
+        self.assertIn('Version One', updated.content)
+
+        # Verify a new revision was created (now 3 total)
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(QuasiStaticData)
+        version_count = Version.objects.filter(
+            content_type=ct,
+            object_id=str(self.qsd.pk),
+        ).count()
+        self.assertGreaterEqual(version_count, 3)
+
+    def test_restore_requires_post(self):
+        """ Restore endpoint rejects GET. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_restore', {'version_id': 1})
+        self.assertEqual(response.status_code, 405)
+
+    def test_restore_requires_permission(self):
+        """ Non-editors cannot restore versions. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        versions = json.loads(response.content)['versions']
+        version_id = versions[0]['version_id']
+
+        self.client.login(username='qsd_history_student', password='password')
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': version_id})
+        self.assertEqual(response.status_code, 403)
+
+    def test_history_includes_author(self):
+        """ Version entries include the author username. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_history', {'url': 'learn/historytest'})
+        data = json.loads(response.content)
+        self.assertEqual(data['versions'][0]['author'], 'qsd_history_admin')
+
+    def test_invalid_version_id_returns_400(self):
+        """ Non-integer version_id returns 400, not a database error. """
+        self.client.login(username='qsd_history_admin', password='password')
+        response = self.client.get('/admin/ajax_qsd_version_preview', {'version_id': 'abc'})
+        self.assertEqual(response.status_code, 400)
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': 'abc'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_restore_sanitizes_class_qsd_content(self):
+        """ Restoring a class QSD applies HTML sanitization to its content. """
+        self.client.login(username='qsd_history_admin', password='password')
+        # Create a class QSD (url_parts[3] == 'Classes') with malicious content
+        with reversion.create_revision():
+            class_qsd = QuasiStaticData()
+            class_qsd.url = 'learn/Splash/2024/Classes/malicious'
+            class_qsd.name = ''
+            class_qsd.author = self.admin
+            class_qsd.nav_category = default_navbarcategory()
+            class_qsd.content = '<script>alert("xss")</script> Malicious content'
+            class_qsd.title = 'Class QSD Sanitization Test'
+            class_qsd.description = ''
+            class_qsd.keywords = ''
+            class_qsd.save()
+            reversion.set_user(self.admin)
+
+        # Get the version_id for the malicious revision
+        response = self.client.get('/admin/ajax_qsd_history', {'url': class_qsd.url})
+        self.assertEqual(response.status_code, 200)
+        versions = json.loads(response.content)['versions']
+        self.assertTrue(len(versions) >= 1)
+        version_id = versions[0]['version_id']
+
+        # Create a second revision so we can restore back to the malicious one
+        with reversion.create_revision():
+            class_qsd.content = 'Clean content'
+            class_qsd.save()
+            reversion.set_user(self.admin)
+
+        # Restore to the malicious version
+        response = self.client.post('/admin/ajax_qsd_restore', {'version_id': version_id})
+        self.assertEqual(response.status_code, 200)
+
+        # Verify script tag was stripped
+        class_qsd.refresh_from_db()
+        self.assertNotIn('<script', class_qsd.content)
+        self.assertIn('Malicious content', class_qsd.content)
+
+        # Cleanup
+        class_qsd.delete()
+
+    def tearDown(self):
+        QuasiStaticData.objects.filter(url='learn/historytest').delete()
 
 
 class QSDImageUploadTest(TestCase):
@@ -498,7 +752,7 @@ class QSDImageUploadTest(TestCase):
         # Verify no NEW files were created on disk
         after = set(os.listdir(upload_dir)) if os.path.exists(upload_dir) else set()
         new_files = after - before
-        self.assertEqual(new_files, set(), "Orphaned files found after failed batch upload: %s" % new_files)
+        self.assertEqual(new_files, set(), f"Orphaned files found after failed batch upload: {new_files}")
 
 
 class QSDBase64StrippingTest(TestCase):
