@@ -7,15 +7,6 @@ if [ ! -f /app/esp/esp/local_settings.py ]; then
     cp /app/esp/esp/local_settings.py.docker /app/esp/esp/local_settings.py
 fi
 
-# Create media symlinks if they don't exist
-if [ ! -e /app/esp/public/media/images ]; then
-    echo ">>> Creating media symlinks..."
-    ln -sf /app/esp/public/media/default_images /app/esp/public/media/images
-fi
-if [ ! -e /app/esp/public/media/styles ]; then
-    ln -sf /app/esp/public/media/default_styles /app/esp/public/media/styles
-fi
-
 # Wait for PostgreSQL to be ready
 echo ">>> Waiting for PostgreSQL..."
 until python -c "
@@ -47,6 +38,27 @@ else
     echo ">>> a) Delete the $COLLECTSTATIC_MARKER_FILE file."
     echo ">>> b) Run the following command:"
     echo ">>>    docker compose up"
+fi
+
+# Refresh theme node_modules when the named volume is stale.
+# Named volumes persist across `docker compose up --build` and will not
+# automatically receive new packages (e.g. sass) added to package.json.
+# The Dockerfile bakes a versioned copy at /opt/theme_node_modules_baked/
+# with a .lock-hash file. Compare that hash to a marker in the live volume;
+# if they differ, restore from the baked copy (no npm needed at runtime).
+THEME_DIR=/app/esp/public/media/theme_editor
+THEME_NM="$THEME_DIR/node_modules"
+VOL_HASH_FILE="$THEME_NM/.lock-hash"
+BAKED_DIR="/opt/theme_node_modules_baked"
+BAKED_HASH_FILE="$BAKED_DIR/.lock-hash"
+if [ -f "$BAKED_HASH_FILE" ]; then
+    BAKED_HASH=$(cat "$BAKED_HASH_FILE")
+    STORED_HASH=$(cat "$VOL_HASH_FILE" 2>/dev/null || echo "")
+    if [ "$BAKED_HASH" != "$STORED_HASH" ]; then
+        echo ">>> Theme node_modules stale — restoring from baked image copy..."
+        cp -r "$BAKED_DIR/." "$THEME_NM/"
+        echo ">>> Theme node_modules restored."
+    fi
 fi
 
 # Change to the esp directory before starting the server
