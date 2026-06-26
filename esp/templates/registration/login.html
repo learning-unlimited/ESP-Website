@@ -18,13 +18,12 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 {% endif %}
 
 <div class="alert span10">
-Both the username/email and password are <b>case-sensitive</b>: capitalization matters!
+Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
 <div class="well span10">
 
 <form action="{{ request.action }}" class="form-horizontal" method="post">
-{% csrf_token %}
 
 <div class="control-group">
     {% if form.username.errors %}
@@ -33,11 +32,11 @@ Both the username/email and password are <b>case-sensitive</b>: capitalization m
        </ul>
     {% elif wrong_user %}
        <ul class="errorlist">
-            The username or email you entered is not valid. Keep in mind it is case sensitive.
+            The username you entered is not valid. Keep in mind it is case sensitive.
        </ul>
     {% endif %}
 
-    <label class="control-label required" for="id_username">Username or Email:</label>
+    <label class="control-label required" for="id_username">Username:</label>
 
     <div class="controls">
     {{ form.username }}
@@ -78,16 +77,12 @@ document.getElementById('id_username').focus();
 //-->
 </script>
 
-</div>  
+</div>
 
 <br />
 <div class="alert alert-info span10">
-Don't already have an account?  
-<a href="/myesp/register/">Click here to create one</a>. <br />
-Forgot your password? 
-<a href="/myesp/passwdrecover/" title="Click for account recovery">
-Head on over to the Account Recovery Page
-</a>.
+Don't already have an account? <a href="/myesp/register/">Click here to create one</a>. <br />
+Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>
 </div>
 
