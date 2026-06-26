@@ -28,6 +28,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry
 from esp.program.models  import ClassSection
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
@@ -50,6 +51,29 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             "choosable": 1
             }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Only list human-readable pages; no JSON/AJAX endpoints.
+        base = program.getUrlBase()
+        entries = {
+            "teacheronsite": ("Teacher Onsite", "Other", ["teacher", "onsite", "schedule", "webapp"]),
+            "onsitemap": ("Teacher Onsite (Map)", "Other", ["teacher", "onsite", "map"]),
+            "onsitedetails": ("Teacher Onsite (Details)", "Other", ["teacher", "onsite", "details", "class info"]),
+            "onsiteroster": ("Teacher Onsite (Roster)", "Other", ["teacher", "onsite", "roster", "attendance"]),
+            "onsitesurvey": ("Teacher Onsite (Survey)", "Other", ["teacher", "onsite", "survey"]),
+        }
+        if view_name not in entries:
+            return None
+        title, category, keywords = entries[view_name]
+        return AdminSearchEntry(
+            id="teach_%s" % view_name,
+            url="/teach/%s/%s" % (base, view_name),
+            title=title,
+            category=category,
+            keywords=keywords,
+            disambiguation_label=title.replace("Teacher Onsite ", "").strip("()") if "(" in title else None,
+        )
+
     @main_call
     @needs_teacher
     @meets_deadline('/Webapp')
@@ -60,10 +84,12 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
-                   if cls.meeting_times.all().exists()
-                   and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0])
+        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
+        classes = [cls for cls in sections_qs
+                if cls.meeting_times.all()
+                   and cls.resourceassignment_set.all()
+                   and cls.status > 0]
+        classes.sort(key=lambda s: s._sort_key())
         # now we sort them by time/title
 
         context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)

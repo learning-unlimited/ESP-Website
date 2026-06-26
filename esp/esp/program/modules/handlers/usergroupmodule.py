@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 from django.contrib.auth.models import Group
 
@@ -54,6 +55,20 @@ class UserGroupModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface user group management in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (usergroupfinal) return None.
+        if view_name != "usergroup":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Manage User Groups",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["user", "groups", "roles", "membership", "permissions"],
+        )
+
     @aux_call
     @needs_admin
     def usergroupfinal(self, request, tl, one, two, module, extra, prog):
@@ -61,7 +76,10 @@ class UserGroupModule(ProgramModuleObj):
             raise ESPError()('Filter and/or group has not been properly set')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user group management process.')
         if request.POST.get('group_name_new', ''):
             group = request.POST['group_name_new']
         else:
@@ -83,14 +101,19 @@ class UserGroupModule(ProgramModuleObj):
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
-            filterObj = UserSearchController().filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'search.html', request, context)
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['groups'] = Group.objects.all().values_list('name', flat=True)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/usergroup' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @staticmethod
@@ -101,7 +124,7 @@ class UserGroupModule(ProgramModuleObj):
         users = filterobj.getList(ESPUser)
         try:
             users = users.distinct()
-        except:
+        except (TypeError, AttributeError):
             pass
 
         if not users:
@@ -119,11 +142,11 @@ class UserGroupModule(ProgramModuleObj):
 
         message = ""
         if created:
-            message += "User group '%s' has been created. " % (group.name)
+            message += f"User group '{group.name}' has been created. "
         if not created and clean:
-            message += "%i users were removed from user group '%s'. " % (diff2, group.name)
+            message += f"{diff2} users were removed from user group '{group.name}'. "
 
-        message += "%i new users have been added to user group '%s'. User group '%s' now has %i users." % (diff1, group.name, group.name, group.user_set.count())
+        message += f"{diff1} new users have been added to user group '{group.name}'. User group '{group.name}' now has {group.user_set.count()} users."
 
         return message
 

@@ -7,8 +7,8 @@ class FormstackMedliabTest(ProgramFrameworkTest):
     def setUp(self):
         super(FormstackMedliabTest, self).setUp()
         # Set up Formstack tags for the program so the template renders correctly
-        Tag.setProgramTag("formstack_id", "12345", self.program)
-        Tag.setProgramTag("formstack_viewkey", "abcde", self.program)
+        Tag.setTag("formstack_id", target=self.program, value="12345")
+        Tag.setTag("formstack_viewkey", target=self.program, value="abcde")
 
     def test_completion_indicator(self):
         """Test that the completion indicator appears only when the user has completed the form."""
