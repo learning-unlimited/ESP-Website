@@ -13,7 +13,7 @@
 {% block xtrajs %}
     {{ block.super }}
     <script type="text/javascript">
-        var question_types = {{ question_types|safe }};
+        var question_types = JSON.parse('{{ question_types|escapejs }}');
     </script>
 {% endblock %}
 
@@ -66,9 +66,9 @@ Each step below is a form that you can expand or contract by clicking on the hea
         <tr><th colspan="3">Surveys for {{ program.niceName }}</th></tr>
         <tr><td colspan="3"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
-            <td width="75%" class="underline"><b>Question</b></td>
+            <td width="70%" class="underline"><b>Question</b></td>
             <td width="15%" class="underline"><b>Category</b></td>
-            <td width="10%" class="underline"></td>
+            <td width="15%" class="underline"></td>
         </tr>
         {% for survey in surveys %}
             <tr>
@@ -76,6 +76,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
                 <td class="underline">{{ survey.category }}</td>
                 <td class="underline">
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=survey&op=edit&id={{ survey.id }}">[Edit]</a>
+                    <a href="/manage/{{ program.url }}/surveys/csv_export?survey_id={{ survey.id }}">[Download as CSV]</a>
                     <a href="/manage/{{ program.url }}/surveys/manage?obj=survey&op=delete&id={{ survey.id }}">[Delete]</a>
                 </td>
             </tr>
@@ -96,6 +97,20 @@ Each step below is a form that you can expand or contract by clicking on the hea
 
     <div class="dspcont">
     {% endif %}
+    <form method="post" action="/manage/{{ program.url }}/surveys/csv_import" enctype="multipart/form-data">
+        <table align="center" cellpadding="0" cellspacing="0" width="100%">
+            <tr><th colspan="2">Import questions from a CSV file</th></tr>
+            {{ csv_import_form.as_table }}
+            <tr>
+                <td colspan="2" align="center">
+                    <input class="btn btn-primary" type="submit" value="Upload &amp; Preview" />
+                    &nbsp;
+                    <a class="btn" href="/manage/{{ program.url }}/surveys/csv_template">Download CSV Template</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+    <br />
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=question">
         {% if question_form.id %}
         <input type="hidden" name="question_id" value="{{ question_form.id }}" />
@@ -148,7 +163,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
             </tr>
         {% endfor %}
         </table></td></tr>
-        <tr hidden id="rendered-panel"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
+        <tr id="rendered-panel" style="display: none;"><td colspan="5"><table width="100%" cellpadding="0" cellspacing="0">
         <tr>
             <td width="5%"><b>Seq</b></td>
             <td width="85%" colspan="3" align="center"><b>Rendered Question</b></td>

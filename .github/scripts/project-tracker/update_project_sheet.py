@@ -156,6 +156,48 @@ def fetch_pull_requests() -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Fetch repository collaborators with triage+ permissions
+# ---------------------------------------------------------------------------
+
+COLLABORATORS_QUERY = """
+query($owner: String!, $repo: String!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    collaborators(first: 100, after: $cursor) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        permission
+        node { login }
+      }
+    }
+  }
+}
+"""
+
+TRIAGE_PLUS = {"ADMIN", "MAINTAIN", "WRITE", "TRIAGE"}
+
+
+def fetch_privileged_logins() -> set[str]:
+    """Return the set of logins with triage or higher permissions."""
+    variables = {"owner": REPO_OWNER, "repo": REPO_NAME}
+    # collaborators returns edges (not nodes) since we need the permission
+    all_edges: list = []
+    variables["cursor"] = None
+    while True:
+        data = graphql(COLLABORATORS_QUERY, variables)
+        conn = data["repository"]["collaborators"]
+        all_edges.extend(conn["edges"])
+        if conn["pageInfo"]["hasNextPage"]:
+            variables["cursor"] = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    return {
+        edge["node"]["login"]
+        for edge in all_edges
+        if edge["permission"] in TRIAGE_PLUS
+    }
+
+
+# ---------------------------------------------------------------------------
 # Fetch open issues
 # ---------------------------------------------------------------------------
 
@@ -236,7 +278,7 @@ def link_profile(login: str) -> str:
     return f'=HYPERLINK("https://github.com/{login}", "{login}")'
 
 
-def build_pr_rows(prs: list[dict]) -> list[list[str]]:
+def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
         "PR #", "Title", "Author", "Opened", "Last Updated",
@@ -275,12 +317,12 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
         )
 
         # Determine the overall review state from the most recent
-        # non-PENDING review per reviewer (latest wins)
+        # non-PENDING review per privileged reviewer (triage+ only)
         reviewer_states: dict[str, str] = {}
         for rv in pr["reviews"]["nodes"]:
             rv_author = (rv.get("author") or {}).get("login", "")
             state = rv.get("state", "")
-            if rv_author and state != "PENDING":
+            if rv_author in privileged and state != "PENDING":
                 reviewer_states[rv_author] = state
         states = set(reviewer_states.values())
         if "CHANGES_REQUESTED" in states:
@@ -758,6 +800,10 @@ def main() -> None:
     prs = fetch_pull_requests()
     print(f"    Found {len(prs)} open PRs")
 
+    print("  Fetching privileged collaborators ...")
+    privileged = fetch_privileged_logins()
+    print(f"    Found {len(privileged)} users with triage+ permissions")
+
     print("  Fetching open issues ...")
     issues = fetch_issues()
     print(f"    Found {len(issues)} open issues")
@@ -767,7 +813,7 @@ def main() -> None:
     all_pr_authors = fetch_pr_authors_since(year_start)
     print(f"    Found {len(all_pr_authors)} unique PR authors")
 
-    pr_rows = build_pr_rows(prs)
+    pr_rows = build_pr_rows(prs, privileged)
     issue_rows = build_issue_rows(issues)
     contributor_rows = build_contributor_rows(prs, issues, all_pr_authors)
 
