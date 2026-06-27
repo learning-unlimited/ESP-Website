@@ -14,6 +14,7 @@ import numpy
 
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.models import (
+    ClassSubject,
     RegistrationProfile,
     RegistrationType,
     StudentRegistration,
@@ -54,10 +55,11 @@ class LotteryTestBase(ProgramFrameworkTest):
         ).distinct())
 
         for i, student in enumerate(self.students):
-            # Grade profile required for grade-range invariant checks.
+            # Alternate grades 7 and 12 so grade filtering is exercised.
+            grade = 7 if i % 2 == 0 else 12
             si = StudentInfo(
                 user=student,
-                graduation_year=ESPUser.YOGFromGrade(9, schoolyear),
+                graduation_year=ESPUser.YOGFromGrade(grade, schoolyear),
             )
             si.save()
             RegistrationProfile(
@@ -97,18 +99,13 @@ class LotteryBasicTest(LotteryTestBase):
 
     def test_interest_matrix_populated_from_ssi(self):
         """SSI records populate the interest matrix for valid sections of the subject."""
-        # Add SSI for all lottery students on all subjects — at least one entry
-        # must appear in the interest matrix after initialization.
         for student in self.students:
             for cls in self.program.classes():
                 StudentSubjectInterest.objects.get_or_create(
                     user=student, subject=cls
                 )
         ctrl = self._make_controller()
-        self.assertTrue(
-            numpy.any(ctrl.interest),
-            'interest matrix should have at least one True entry when SSI records exist',
-        )
+        self.assertTrue(numpy.any(ctrl.interest))
 
     def test_priority_registration_populates_priority_matrix(self):
         """Priority/1 SRs populate the priority[1] matrix."""
@@ -116,11 +113,7 @@ class LotteryBasicTest(LotteryTestBase):
         self.assertTrue(numpy.any(ctrl.priority[1]))
 
     def test_interested_students_enrolled_or_sections_full(self):
-        """
-        Every student who requested a section is either enrolled in at
-        least one class, or all their requested sections were full,
-        grade-blocked, or timeslot-blocked.
-        """
+        """Every interested student is enrolled or has a verifiable blocking reason."""
         for student in self.students:
             for cls in self.program.classes():
                 StudentSubjectInterest.objects.get_or_create(
@@ -186,14 +179,35 @@ class LotteryInvariantTest(LotteryTestBase):
         self.assertEqual(numpy.sum(reconstructed > 1), 0)
 
     def test_grade_range_respected(self):
-        """No student is enrolled in a section outside their grade range."""
-        for si in range(self.ctrl.num_sections):
-            enrolled = numpy.nonzero(self.ctrl.student_sections[:, si])[0]
+        """No student is enrolled in a section outside their grade range.
+
+        Meaningful because setUp alternates student grades between 7 and 12,
+        and some classes have restricted ranges (grade 10-12), so grade
+        filtering is actually exercised.
+        """
+        # Restrict half the classes to grade 10-12 so grade-7 students are filtered.
+        classes = list(ClassSubject.objects.filter(parent_program=self.program))
+        for cls in classes[:len(classes) // 2]:
+            cls.grade_min = 10
+            cls.grade_max = 12
+            cls.save()
+
+        ctrl = self._make_controller()
+        ctrl.compute_assignments()
+
+        for si in range(ctrl.num_sections):
+            enrolled = numpy.nonzero(ctrl.student_sections[:, si])[0]
             if enrolled.size == 0:
                 continue
-            grades = self.ctrl.student_grades[enrolled]
-            self.assertTrue(numpy.all(grades >= self.ctrl.section_grade_min[si]))
-            self.assertTrue(numpy.all(grades <= self.ctrl.section_grade_max[si]))
+            grades = ctrl.student_grades[enrolled]
+            self.assertTrue(
+                numpy.all(grades >= ctrl.section_grade_min[si]),
+                f'Section {si} (grade_min={ctrl.section_grade_min[si]}): grades {grades}'
+            )
+            self.assertTrue(
+                numpy.all(grades <= ctrl.section_grade_max[si]),
+                f'Section {si} (grade_max={ctrl.section_grade_max[si]}): grades {grades}'
+            )
 
     def test_student_sections_consistent_with_schedules(self):
         """student_schedules is consistent with student_sections."""
