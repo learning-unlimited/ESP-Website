@@ -244,10 +244,6 @@ class Question(models.Model):
                 '_param_values': 'Rows must be at least 1.',
             })
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
 
