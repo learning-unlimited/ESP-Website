@@ -4,7 +4,7 @@ import random
 from twill.commands import *
 from generators import *
 
-base_host = 'http://dev2.learningu.org'
+base_host = 'https://dev2.learningu.org'
 splash_name = 'Splash/2011_Spring'
 
 people_generator = random_people('Teacher')

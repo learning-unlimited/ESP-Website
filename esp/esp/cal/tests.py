@@ -181,7 +181,7 @@ class EventStaticMethodsTest(TestCase):
                 end=datetime(2025, 6, 15, hour, 50),
                 short_description='',
                 description='',
-                name='Event %d' % hour,
+                name=f'Event {hour}',
                 event_type=self.event_type,
             )
             self.events.append(ev)
