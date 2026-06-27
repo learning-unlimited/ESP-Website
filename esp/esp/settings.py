@@ -252,16 +252,23 @@ if 'CACHES' not in locals():
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
+# Use a per-UID subdirectory so that different OS users (e.g. www-data vs the
+# developer running tests) each get their own directory.  This prevents the
+# [Errno 13] Permission denied failures described in issue #234 that occurred
+# when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
-    if not os.path.exists(tempdir):
-        os.makedirs(tempdir)
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    os.makedirs(tempdir, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(tempdir, 0o700)
+    except OSError:
+        # If we cannot change permissions, proceed but keep the directory as-is.
+        pass
     tempfile.tempdir = tempdir
     tempfile.alreadytwiddled = True
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-# NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
@@ -277,4 +284,3 @@ if SENTRY_DSN:
         'dsn': SENTRY_DSN,
         'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
     }
-
