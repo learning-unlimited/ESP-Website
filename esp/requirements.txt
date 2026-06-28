@@ -45,5 +45,5 @@ shortuuid==0.4.2 # django-extensions dependency
 stripe==7.5.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
-werkzeug==2.0.3 # Required for runserver_plus (alternative to runserver provided by django-extensions)
+werkzeug==3.1.6 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 openpyxl==3.1.2 # Does form and survey exporting
