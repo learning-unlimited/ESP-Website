@@ -16,14 +16,9 @@ def _qsd_display_context(context, qsd):
     elif display_date_author_tag == 'None':
         display_date_author = 0 # hide footer
 
-    class_qsd = bool(context and context.get('class_qsd'))
-    request = context.get('request') if context is not None else None
-    user = getattr(request, 'user', None) if class_qsd else None
-
     return {
         'qsdrec': qsd,
         'display_date_author': display_date_author,
-        'can_edit_qsd': Permission.user_can_edit_qsd(user, qsd.url),
         'inline': False,
     }
 
@@ -37,9 +32,8 @@ def render_qsd_md(context, qsd):
 
 @register.simple_tag(takes_context=True)
 def can_edit_qsd(context, qsd):
-    class_qsd = bool(context and context.get('class_qsd'))
     request = context.get('request') if context is not None else None
-    user = getattr(request, 'user', None) if class_qsd else None
+    user = getattr(request, 'user', None)
     return Permission.user_can_edit_qsd(user, qsd.url)
 
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
@@ -99,12 +93,9 @@ class InlineQSDNode(template.Node):
                 'title': qsd_obj.title or title,
             }, timeout=86400 * 7)
 
-        request = context.get('request') if context is not None else None
-        user = getattr(request, 'user', None)
         context.update({
             'qsdrec': qsd_obj,
             'inline': True,
-            'can_edit_qsd': Permission.user_can_edit_qsd(user, url),
         })
         return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
 

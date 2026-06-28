@@ -498,21 +498,27 @@ class ClassQSDPermissionTest(ProgramFrameworkTest):
             qsd_rec.nav_category = default_navbarcategory()
             qsd_rec.save()
 
-    def test_teacher_sees_edit_chrome(self):
+    def test_teacher_can_access_edit_page(self):
         self.assertTrue(self.client.login(username=self.teacher.username, password='password'))
-        response = self.client.get('/%s.html' % self.qsd_url)
+        response = self.client.get('/%s.edit.html' % self.qsd_url)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('UTF-8')
-        self.assertIn('Edit this page', content)
-        self.assertIn('This is editable text.', content)
+        self.assertIn('Static Page Editing', content)
 
-    def test_non_teacher_does_not_see_edit_chrome(self):
+    def test_non_teacher_cannot_access_edit_page(self):
         self.assertTrue(self.client.login(username=self.student.username, password='password'))
+        response = self.client.get('/%s.edit.html' % self.qsd_url, follow=True)
+        self.assertRedirects(response, '/%s.html' % self.qsd_url)
+        messages = list(response.context['messages'])
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+
+    def test_read_page_renders_qsd_bits(self):
         response = self.client.get('/%s.html' % self.qsd_url)
         self.assertEqual(response.status_code, 200)
         content = response.content.decode('UTF-8')
-        self.assertNotIn('Edit this page', content)
-        self.assertNotIn('This is editable text.', content)
+        self.assertIn('qsd_bits hidden', content)
+        self.assertIn('Edit this page', content)
 
 
 class QSDImageUploadTest(TestCase):

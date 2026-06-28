@@ -1,5 +1,4 @@
 {% load markup %}
-{% if can_edit_qsd %}
 <div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
     <span class="bi bi-pencil" aria-hidden="true"></span>
     <span class="inline_edit_msg_text">
@@ -12,12 +11,10 @@
     </span>
     <span class="bi bi-pencil" aria-hidden="true"></span>
 </div>
-{% endif %}
 <div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdrec.edit_id }}">
     {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
 </div>
-{% if can_edit_qsd %}
-<div class="qsd_bits">
+<div class="qsd_bits hidden">
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
         <div class="qsd_buttons">
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'save');"
@@ -39,14 +36,12 @@
         <div id="tinymde_commandbar_{{ qsdrec.edit_id }}"></div>
         <div style="width: 100%; border: 1px solid #c0c0c0;">
             <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
-                                class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
+                class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
                 name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
         </div>
     </div>
 </div>
-{% endif %}
 
-{% if can_edit_qsd %}
 <script type="text/javascript">
 $j(document).ready(function() {
   if (esp_user.cur_admin != "1") {
@@ -57,15 +52,6 @@ $j(document).ready(function() {
 var tinyMDE = new TinyMDE.Editor({ textarea: "qsd_content_{{ qsdrec.edit_id }}" });
 var commandBar = new TinyMDE.CommandBar({element: 'tinymde_commandbar_{{ qsdrec.edit_id }}', editor: tinyMDE});
 </script>
-{% else %}
-<script type="text/javascript">
-$j(document).ready(function() {
-    if (esp_user.cur_admin != "1") {
-        $j(".qsd_view_visible").removeClass("qsd_view_visible");
-    }
-});
-</script>
-{% endif %}
 <br />
 {% if not inline %}
 <br />
