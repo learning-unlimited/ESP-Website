@@ -54,13 +54,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     <div class="col-md-12">
         <h1>Theme Editor</h1>
         <div role="alert" class="alert alert-info">
-            <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
+            <p>New to the theme editor? <a href="#help-modal" data-bs-toggle="modal">Click here</a>.</p>
         </div>
         <div id="help-modal" class="modal fade" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         <h4 class="modal-title">Welcome to the theme editor! It's easy to get started!</h4>
                     </div>
                     <div class="modal-body">
@@ -86,9 +86,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
             <div class="accordion" id="theme_editor_accordion">
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#theme_palette">Palette</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#theme_palette">Palette</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="theme_palette"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="theme_palette"><div class="card-body">
                         <h5>Your palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections. The theme has a built-in color palette available; however, if you would prefer other colors, you can add them to the custom palette.</h5>
                         <div class="control-group">
                             <div id="palette_base_div">
@@ -114,9 +114,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#scaffolding">Scaffolding</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#scaffolding">Scaffolding</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="scaffolding"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="scaffolding"><div class="card-body">
                         <h5>Use this section to change the color of the text and background.</h5>
                         <div class="control-group">
                             <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
@@ -172,9 +172,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#links">Links</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#links">Links</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="links"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="links"><div class="card-body">
                         <h5>Use this section to control the color of links normally, and when you hover on them.</h5>
                         <div class="control-group">
                             <label class="control-label" for="linkColor">Links:</label>
@@ -195,9 +195,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#typography">Typography</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#typography">Typography</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="typography"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="typography"><div class="card-body">
                         <h5>Use this section to control the size (base font size), and the font family of your text.</h5>
                         <div class="control-group">
                             <label class="control-label" for="baseFontSize">Font Size:</label>
@@ -234,9 +234,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% if theme_name == "droplets" %}
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#navbar_inverse_edit_group">Navbar</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#navbar_inverse_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="navbar_inverse_edit_group"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="navbar_inverse_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarInverseBackground">Background:</label>
@@ -277,9 +277,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% elif theme_name != "fruitsalad" %}
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#navbar_edit_group">Navbar</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#navbar_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="navbar_edit_group"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="navbar_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarBackground">Background:</label>
@@ -325,9 +325,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#sidebar_theme">Sidebar</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#sidebar_theme">Sidebar</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="sidebar_theme"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="sidebar_theme"><div class="card-body">
                         <h5>Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.</h5>
                     {% if theme_name == "circles" or theme_name == "floaty" %}
                         <div class="control-group">
@@ -416,9 +416,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#buttons">Buttons</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#buttons">Buttons</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="buttons"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="buttons"><div class="card-body">
                         <h5>Buttons come in two types. You can see an example of each at the end of this form.</h5>
                         <div class="control-group">
                             <label class="control-label" for="btnBackground">Buttons:</label>
@@ -452,9 +452,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 {% if theme_name != "barebones" %}
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left collapsed" data-toggle="collapse" data-target="#advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</button></h4>
                     </div>
-                    <div class="collapse" data-parent="#theme_editor_accordion" id="advanced"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="advanced"><div class="card-body">
                         <h5>These are additional parameters specific to the currently selected theme.</h5>
                         {% if theme_name == "bigpicture" %}
                             <div>
@@ -509,11 +509,30 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                 </div>
                 {% endif %}
 
+                {% if bootswatch_themes %}
                 <div class="card">
                     <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-left" data-toggle="collapse" data-target="#theme-properties" aria-expanded="true">Save/Load Theme Settings</button></h4>
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
                     </div>
-                    <div class="collapse show" data-parent="#theme_editor_accordion" id="theme-properties"><div class="card-body">
+                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="bootswatch-theme"><div class="card-body">
+                        <h5>Select a <a href="https://bootswatch.com/" target="_blank">Bootswatch</a> theme to apply on top of Bootstrap 5. Leave blank to use the default Bootstrap styling.</h5>
+                        <div class="control-group">
+                            <select name="bootswatch_theme" class="form-select">
+                                <option value="">— None (default Bootstrap) —</option>
+                                {% for bw_theme in bootswatch_themes %}
+                                <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div></div>
+                </div>
+                {% endif %}
+
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link btn-block text-start" data-bs-toggle="collapse" data-bs-target="#theme-properties" aria-expanded="true">Save/Load Theme Settings</button></h4>
+                    </div>
+                    <div class="collapse show" data-bs-parent="#theme_editor_accordion" id="theme-properties"><div class="card-body">
                         <h5>When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the "Apply Without Saving" button. You can also load or delete saved settings, or revert to the last configuration.</h5>
                         <div class="control-group">
                             <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}"/>

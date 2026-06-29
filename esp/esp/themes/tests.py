@@ -217,12 +217,15 @@ class ThemesTest(TestCase):
                                     str(response.content, encoding='UTF-8'), flags=re.I)) > 0,
                                     f'Missing editor input for {theme_name} variable {varname}')
 
-        #   Test that we can change a parameter and the right value appears in the stylesheet
+        #   Test that we can change a parameter and the right value appears in the stylesheet.
+        #   Bootstrap 5 exposes $link-color as the --bs-link-color CSS custom property in :root,
+        #   so we check for the custom property rather than a direct `a { color: ... }` rule.
         def verify_linkcolor(color_str):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
-            regexp = rf'\n\s*?a\s*?{{.*?color:\s*?{color_str};.*?}}'
+            regexp = rf'--bs-link-color:\s*{re.escape(color_str)};'
             with open(css_filename) as f:
-                self.assertEqual(len(re.findall(regexp, f.read(), flags=(re.DOTALL | re.I))), 1)
+                self.assertGreaterEqual(len(re.findall(regexp, f.read(), flags=re.I)), 1,
+                                        f'Expected --bs-link-color: {color_str} in compiled CSS')
 
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
@@ -342,27 +345,30 @@ class Bootstrap4MigrationTest(TestCase):
         self.assertIsInstance(themes_list, list)
         self.assertEqual(themes_list, sorted(themes_list), 'Bootswatch theme list must be sorted')
 
-    def test_bootswatch_themes_have_required_less_files(self):
-        """Each discovered Bootswatch theme has variables.less and bootswatch.less."""
-        bootswatch_dir = os.path.normpath(os.path.join(
-            themes_settings.less_dir, '..', 'node_modules', 'bootswatch'
+    def test_bootswatch_themes_have_required_scss_files(self):
+        """Each discovered Bootswatch theme has _variables.scss and _bootswatch.scss (Bootswatch 5 SCSS layout)."""
+        bootswatch_dist = os.path.normpath(os.path.join(
+            themes_settings.less_dir, '..', 'node_modules', 'bootswatch', 'dist'
         ))
         for name in self.tc.get_bootswatch_themes():
             self.assertTrue(
-                os.path.exists(os.path.join(bootswatch_dir, name, 'variables.less')),
-                f'bootswatch/{name}/variables.less missing'
+                os.path.exists(os.path.join(bootswatch_dist, name, '_variables.scss')),
+                f'bootswatch/dist/{name}/_variables.scss missing'
             )
             self.assertTrue(
-                os.path.exists(os.path.join(bootswatch_dir, name, 'bootswatch.less')),
-                f'bootswatch/{name}/bootswatch.less missing'
+                os.path.exists(os.path.join(bootswatch_dist, name, '_bootswatch.scss')),
+                f'bootswatch/dist/{name}/_bootswatch.scss missing'
             )
 
     def test_get_less_names_bootswatch_import_order(self):
-        """Bootswatch variables.less precedes bootstrap.less; bootswatch.less follows it."""
-        themes_list = self.tc.get_bootswatch_themes()
-        if not themes_list:
-            self.skipTest('Bootswatch npm package not installed')
-        names = [f.replace('\\', '/') for f in self.tc.get_less_names('barebones', bootswatch_theme=themes_list[0])]
+        """Bootswatch variables.less precedes bootstrap.less; bootswatch.less follows it (LESS pipeline only)."""
+        less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
+        if not less_only:
+            self.skipTest('All themes use SCSS; LESS Bootswatch import order test not applicable')
+        bootswatch_less = self.tc.get_bootswatch_less_themes()
+        if not bootswatch_less:
+            self.skipTest('Bootswatch 3 LESS npm package not installed')
+        names = [f.replace('\\', '/') for f in self.tc.get_less_names(less_only[0], bootswatch_theme=bootswatch_less[0])]
         bs3_idx = next(i for i, f in enumerate(names) if 'node_modules/bootstrap/less/bootstrap.less' in f)
         bsw_var_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('variables.less'))
         bsw_sty_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('bootswatch.less'))

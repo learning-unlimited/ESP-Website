@@ -54,7 +54,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 <!-- Auto-Flag Rule Modal -->
 <div id="autorule-modal" class="modal fade">
   <div class="modal-header">
-    <button type="button" class="close" data-dismiss="modal">&times;</button>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
     <h3>Create Auto-Flag Rule</h3>
   </div>
   <div class="modal-body">
@@ -77,7 +77,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     </form>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <a href="#" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</a>
     <a href="#" class="btn btn-primary" onclick="$j('#autorule-form').submit();">Save Rule</a>
   </div>
 </div>
@@ -92,7 +92,7 @@ function showAutoRuleModal() {
         <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
     </div>
     <div class="btn-group" id="spreadsheet_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <a class="btn dropdown-toggle" data-bs-toggle="dropdown" href="#">
             Class Spreadsheets
             <span class="caret"></span>
         </a>
@@ -103,7 +103,7 @@ function showAutoRuleModal() {
         </ul>
     </div>
     <div class="btn-group" id="flag_printable_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <a class="btn dropdown-toggle" data-bs-toggle="dropdown" href="#">
             Class Flag Printables
             <span class="caret"></span>
         </a>
@@ -123,7 +123,7 @@ function showAutoRuleModal() {
         </select>
     </div>
     <div class="btn-group" id="student_links" data-clsids="{{ IDs|join:',' }}">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <a class="btn dropdown-toggle" data-bs-toggle="dropdown" href="#">
             Student Links
             <span class="caret"></span>
         </a>
@@ -136,7 +136,7 @@ function showAutoRuleModal() {
         </ul>
     </div>
     <div class="btn-group" id="teacher_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <a class="btn dropdown-toggle" data-bs-toggle="dropdown" href="#">
             Teacher Links
             <span class="caret"></span>
         </a>

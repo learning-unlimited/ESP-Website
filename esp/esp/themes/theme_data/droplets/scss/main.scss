@@ -175,22 +175,18 @@ div.navbar-collapse {
     }
 }
 
+// BS5: nav-item.dropdown uses Bootstrap's native position:absolute dropdown.
+// The old flex+flex-basis:100% pattern was a BS3/BS4 workaround that broke
+// BS5's absolute-positioned dropdown-menu (caused menus to appear off-screen).
 .navbar .navbar-nav > li.dropdown,
 .navbar .navbar-nav > li.nav-item.dropdown {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    position: relative;
 }
 
 .navbar .dropdown-split {
     display: flex;
     align-items: center;
     padding: 0;
-}
-
-.navbar .navbar-nav > li > ul.dropdown-menu,
-.navbar .navbar-nav > li.nav-item > ul.dropdown-menu {
-    flex-basis: 100%;
 }
 
 .navbar .navbar-nav > li > a.caret-wrapper,
@@ -219,12 +215,6 @@ div.navbar-collapse {
 }
 
 @media (min-width: $navbarCollapseWidth) {
-    .navbar-expand-md .navbar-collapse {
-        display: flex !important;
-        flex-wrap: wrap;
-        align-items: center;
-    }
-
     .navbar-login {
         margin-left: auto !important;
     }
