@@ -15,7 +15,7 @@ urlpatterns = [
     re_path(r'^activate/?$', views.registration.activate_account, name='activate_account'),
     re_path(r'^passwdrecover/(success)?/?$', views.initial_passwd_request, name='passwd_recover_success'),
     re_path(r'^passwdrecover/?$', views.initial_passwd_request, name='passwd_recover'),
-    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]+)/$',
         views.password_reset_confirm, name='password_reset_confirm'),
     re_path(r'^resetpassword/done/?$', views.password_reset_done),
     re_path(r'^resend/?$', views.resend_activation_view,
