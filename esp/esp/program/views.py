@@ -1654,8 +1654,35 @@ def module_schedule_update_api(request, program_type, program_term):
                 return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
             mod.seq = int(data["seq"])
 
+        if "link_title" in data:
+            mod.link_title = data["link_title"]
+
+        if "required" in data:
+            mod.required = bool(data["required"])
+
+        if "required_label" in data:
+            mod.required_label = data["required_label"]
+
         if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
             return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        # Enforce hard constraints (same as admincore POST handler)
+        handler = mod.module.handler
+        if handler == "RegProfileModule":
+            mod.seq = 0
+            mod.required = True
+        elif "CreditCardModule_" in handler:
+            mod.seq = 10000
+            mod.required = False
+        elif handler == "StudentRegConfirm":
+            mod.seq = 99999
+            mod.required = False
+        elif handler == "AvailabilityModule":
+            mod.required = True
+        elif "AcknowledgementModule" in handler:
+            mod.required = True
+        elif handler == "StudentRegTwoPhase":
+            mod.required = True
 
         mod.save()
 
@@ -1664,7 +1691,10 @@ def module_schedule_update_api(request, program_type, program_term):
             "module_id": mod.id,
             "start_date": mod.start_date.isoformat() if mod.start_date else None,
             "end_date": mod.end_date.isoformat() if mod.end_date else None,
-            "seq": mod.seq
+            "seq": mod.seq,
+            "link_title": mod.link_title,
+            "required": mod.required,
+            "required_label": mod.required_label
         })
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)

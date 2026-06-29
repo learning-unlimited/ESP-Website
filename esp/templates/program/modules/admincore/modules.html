@@ -5,13 +5,13 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/module_timeline.css?v=1.0.6" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/module_timeline.js?v=1.0.6"></script>
 {% endblock %}
 
 {% block content %}
@@ -20,13 +20,13 @@
 
 <h1>Module Management for {{ program.niceName }}</h1>
 
-<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can drag individual modules to reorder them and change whether they are required or not. You can also click on a module name to edit the Registration Step Title that will be shown instead of the module's default title in the student/teacher registration to-do list, or the requirement label that will be shown in parentheses next to the title. To add or remove modules, you will need to enable/disable them in the <a href="/manage/{{ program.getUrlBase }}/settings/program">program settings</a>.</p>
+<p>Welcome to the module management page for {{ program.niceName }}. This page lists the modules that students and teachers will encounter during registration. You can edit individual modules by clicking on them in the timeline to set their Active Window dates, Required status, and Registration Step Title. The Active Window determines when a module is available for users to complete. Modules that are "Always On" are available for the duration of the program.</p>
 {% inline_program_qsd_block program "manage:modules" %}
 {% end_inline_program_qsd_block %}
 
 <div role="alert" class="alert alert-danger">
   <span class="bi bi-info-circle" aria-hidden="true"></span>
-  Please be aware that some modules require other modules to have been completed already (e.g., teacher class registration usually requires a teacher to have already set their availability). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions. Furthermore, the following settings will always be enforced regardless of how you move the modules below (if they are enabled for your program):
+  Please be aware that some modules require other modules to have been completed already (e.g., teacher class registration usually requires a teacher to have already set their availability). Please use common sense and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions. Furthermore, the following settings will always be enforced regardless of how you edit the modules below (if they are enabled for your program):
   <ul>
     <li>Profile Editor Modules must always be first <i>and</i> required</li>
     <li>The Availability Module must always be required</li>
@@ -37,89 +37,215 @@
   </ul>
 </div>
 
-{# Notification shown when a cross-list drop is rejected (required <-> not-required). #}
-<div id="module-constraint-msg" class="alert alert-warning" role="alert" style="display:none; position:absolute; z-index:9999; max-width:320px; box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
-<div id="module-reorder-announce" aria-live="assertive" aria-atomic="true" class="visually-hidden"></div>
+<!-- CSRF and URL base for JS -->
+<script type="application/json" id="csrf-token-data">"{{ csrf_token }}"</script>
+<script type="application/json" id="program-url-base">"{{ program.getUrlBase }}"</script>
+{{ module_constraints|json_script:"module-constraints-data" }}
 
-<div class="module-constraint-legend">
-  <strong>Icon legend:</strong>
-  <span class="legend-item"><span class="bi bi-lock constraint-icon-position" aria-hidden="true"></span> Position fixed</span>
-  <span class="legend-item"><span class="bi bi-asterisk constraint-icon-required" aria-hidden="true"></span> Must be required</span>
-  <span class="legend-item"><span class="bi bi-slash-circle constraint-icon-not-required" aria-hidden="true"></span> Cannot be required</span>
-</div>
+<div class="tl-wrapper">
+    <!-- Navigation Tabs -->
+    <nav class="tl-nav">
+        <div class="tl-tabs">
+            <button id="btnStudentTab" onclick="switchView('student')" class="tl-tab active-student">
+                <span class="tl-tab-dot"></span>
+                <span>Student Modules</span>
+                <span class="tl-tab-count" id="studentCount">0</span>
+            </button>
+            <button id="btnTeacherTab" onclick="switchView('teacher')" class="tl-tab">
+                <span class="tl-tab-dot"></span>
+                <span>Teacher Modules</span>
+                <span class="tl-tab-count" id="teacherCount">0</span>
+            </button>
+            <button id="btnSplitTab" onclick="switchView('split')" class="tl-tab">
+                <span class="tl-tab-dot"></span>
+                <span>All Modules</span>
+            </button>
+        </div>
+        <div class="tl-actions">
+            <button class="tl-btn tl-btn-primary" onclick="openAddDrawer()">+ Add Module</button>
+        </div>
+    </nav>
 
-<form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
-    {% csrf_token %}
-    <input type='hidden' name='learn_req' id='learn_req'>
-    <input type='hidden' name='learn_not_req' id='learn_not_req'>
-    <input type='hidden' name='teach_req' id='teach_req'>
-    <input type='hidden' name='teach_not_req' id='teach_not_req'>
-    <div style="float: left; width: 100%;">
-        <div class="wrapper">
-            <h2>
-              Student Registration
-            </h2>
-            <div id="learn_mods" class="column">
-                <h3>
-                    Required
-                </h3>
-                <ol id="sortable1" class="connectedSortable" role="list" aria-label="Student Required Modules">
-                {% for mod in learn_modules.required %}
-                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in position_locked_ids %}<span class="bi bi-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="bi bi-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="bi bi-slash-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
-                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                    </li>
-                {% endfor %}
-                </ol>
-                <h3>
-                    Not Required
-                </h3>
-                <ol id="sortable2" class="connectedSortable" role="list" aria-label="Student Not Required Modules">
-                {% for mod in learn_modules.not_required %}
-                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in position_locked_ids %}<span class="bi bi-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="bi bi-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="bi bi-slash-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
-                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                    </li>
-                {% endfor %}
-                </ol>
+    <!-- Legend Bar -->
+    <div class="tl-legend-bar">
+        <div class="tl-legend-items">
+            <div class="tl-legend-item"><div id="legendActive" class="tl-legend-color" style="background-color: var(--brand-student);"></div><span id="legendActiveLabel">Student Active</span></div>
+            <div class="tl-legend-item"><div id="legendScheduled" class="tl-legend-color" style="background-color: #eff6ff; border: 1px solid #bfdbfe;"></div><span id="legendScheduledLabel">Student Scheduled</span></div>
+            <div class="tl-legend-item" id="legendTeacherActive" style="display:none;"><div class="tl-legend-color" style="background-color: var(--brand-teacher);"></div><span>Teacher Active</span></div>
+            <div class="tl-legend-item" id="legendTeacherScheduled" style="display:none;"><div class="tl-legend-color" style="background-color: #f5f3ff; border: 1px solid #e9d5ff;"></div><span>Teacher Scheduled</span></div>
+            <div class="tl-legend-item"><div class="tl-legend-color" style="background-color: #10b981;"></div> Always On</div>
+        </div>
+    </div>
+
+    <!-- Workspace -->
+    <div class="tl-workspace">
+        <div id="studentContent" class="tl-content theme-student">
+            <div class="tl-header-row">
+                <div class="tl-sidebar-header">
+                    <span style="width:6px;height:6px;border-radius:50%;background-color:var(--brand-student);margin-right:6px;"></span>
+                    <span>STUDENT MODULES</span>
+                </div>
+                <div class="tl-grid-header">
+                    <div class="tl-header-scroll-content" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
+                        <div class="timeline-grid" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></div>
+                        <div class="tl-grid-labels"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tl-body-row">
+                <div class="tl-sidebar" id="studentSidebar"></div>
+                <div class="tl-main-grid">
+                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; height: 100%;">
+                        <div class="timeline-grid tl-grid-bg"></div>
+                        <div class="tl-blocks" id="studentGrid"></div>
+                        <div class="tl-now-wrapper" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 20;">
+                            <div class="tl-now-line" style="left: 45%;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="wrapper">
-            <h2>
-              Teacher Registration
-            </h2>
-            <div id="teach_mods" class="column">
-                <h3>
-                    Required
-                </h3>
-                <ol id="sortable3" class="connectedSortable" role="list" aria-label="Teacher Required Modules">
-                {% for mod in teach_modules.required %}
-                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in position_locked_ids %}<span class="bi bi-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="bi bi-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="bi bi-slash-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
-                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                    </li>
-                {% endfor %}
-                </ol>
-                <h3>
-                    Not Required
-                </h3>
-                <ol id="sortable4" class="connectedSortable" role="list" aria-label="Teacher Not Required Modules">
-                {% for mod in teach_modules.not_required %}
-                    <li id='{{ mod.id }}' role="listitem" tabindex="0" aria-label="{{ mod.module.admin_title }}{% if mod.id in position_locked_ids %} (position fixed){% endif %}{% if mod.id in required_locked_ids %} (must be required){% endif %}{% if mod.id in not_required_locked_ids %} (cannot be required){% endif %}" class="ui-state-default{% if mod.id in position_locked_ids %} module-locked{% endif %}{% if mod.required_label %} has_label{% endif %}{% if mod.link_title %} has_link_title{% endif %}">
-                        {% if mod.id in position_locked_ids %}<span class="bi bi-lock constraint-icon-position" aria-hidden="true" title="Position is fixed"></span>{% endif %}{% if mod.id in required_locked_ids %}<span class="bi bi-asterisk constraint-icon-required" aria-hidden="true" title="Must be required"></span>{% endif %}{% if mod.id in not_required_locked_ids %}<span class="bi bi-slash-circle constraint-icon-not-required" aria-hidden="true" title="Cannot be required"></span>{% endif %} {{ mod.module.admin_title }}<br/>
-                        <input type="text" class="link_title_input" name="{{ mod.id }}_link_title" value="{{ mod.link_title }}" placeholder="(Registration Step Title, default: {{ mod.module.link_title }})"{% if not mod.link_title %} style="display: none;"{% endif %}>
-                        <input type="text" class="label_input" name="{{ mod.id }}_label" value="{{ mod.required_label }}" placeholder="(requirement label)"{% if not mod.required_label %} style="display: none;"{% endif %}>
-                    </li>
-                {% endfor %}
-                </ol>
+        
+        <!-- Teacher Content -->
+        <div id="teacherContent" class="tl-content tl-content-teacher theme-teacher hidden">
+            <div class="tl-header-row">
+                <div class="tl-sidebar-header">
+                    <span style="width:6px;height:6px;border-radius:50%;background-color:var(--brand-teacher);margin-right:6px;"></span>
+                    <span>TEACHER MODULES</span>
+                </div>
+                <div class="tl-grid-header">
+                    <div class="tl-header-scroll-content" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;">
+                        <div class="timeline-grid" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0;"></div>
+                        <div class="tl-grid-labels"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="tl-body-row">
+                <div class="tl-sidebar" id="teacherSidebar"></div>
+                <div class="tl-main-grid">
+                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; height: 100%;">
+                        <div class="timeline-grid tl-grid-bg"></div>
+                        <div class="tl-blocks" id="teacherGrid"></div>
+                        <div class="tl-now-wrapper" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 20;">
+                            <div class="tl-now-line" style="left: 45%;"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <center><input class="btn btn-primary" type="submit" value="Save Modules"/></center>
-</form>
+    
+    <!-- Edit Panel -->
+    <div id="editOverlay" class="tl-edit-overlay" onclick="closeEditPanel()"></div>
+    <div id="editPanel" class="tl-edit-panel theme-student">
+        <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background-color: #f8fafc;">
+            <div>
+                <h2 style="margin:0; font-size: 14px; font-weight: 700;">Edit Module</h2>
+                <p id="editSubtitle" style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Editing Module</p>
+            </div>
+            <button onclick="closeEditPanel()" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">&times;</button>
+        </div>
+        <div style="flex: 1; padding: 20px; overflow-y: auto;">
+            <div class="tl-form-group">
+                <label class="tl-label">Module Label / Title</label>
+                <input type="text" id="editLabel" class="tl-input" placeholder="Registration Step Title">
+                <div class="tl-help-text">Shown in the timeline and user dashboard.</div>
+            </div>
+            <div class="tl-form-group">
+                <label class="tl-label">Active Window</label>
+                <div style="display: flex; gap: 8px;">
+                    <div style="flex:1;">
+                        <label style="font-size:10px; color:#64748b;">OPENS</label>
+                        <input type="datetime-local" id="editStart" class="tl-input">
+                    </div>
+                    <div style="flex:1;">
+                        <label style="font-size:10px; color:#64748b;">CLOSES</label>
+                        <input type="datetime-local" id="editEnd" class="tl-input">
+                    </div>
+                </div>
+                <div class="tl-help-text">Leave both empty for Always On (&infin;).</div>
+            </div>
+            <div class="tl-form-group">
+                <label class="tl-label">Required</label>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="reqToggle" class="tl-toggle" onclick="toggleReq()">
+                        <div class="tl-toggle-thumb"></div>
+                    </button>
+                    <span id="reqLabel" style="font-size: 12px; font-weight: 600;">Required</span>
+                </div>
+                <div class="tl-help-text">Required modules must be completed to proceed.</div>
+                <div id="reqLockMsg" class="tl-help-text" style="color: #ef4444; display: none; font-weight: 500;"></div>
+            </div>
+            <div class="tl-form-group">
+                <label class="tl-label">Requirement Label</label>
+                <input type="text" id="editReqLabel" class="tl-input" placeholder="e.g. Strongly Recommended">
+                <div class="tl-help-text">Displayed next to the title. Useful if a module is optional but strongly recommended.</div>
+            </div>
+        </div>
+        <div style="padding: 16px 20px; border-top: 1px solid #e2e8f0; background-color: #f8fafc; display: flex; gap: 12px;">
+            <button class="tl-btn tl-btn-secondary" style="flex:1;" onclick="closeEditPanel()">Cancel</button>
+            <button id="editSaveBtn" class="tl-btn tl-btn-primary" style="flex:1;">Save Changes</button>
+        </div>
+    </div>
+    
+    <!-- Add Module Drawer -->
+    <div id="addOverlay" class="tl-edit-overlay" onclick="closeAddDrawer()"></div>
+    <div id="addDrawer" class="tl-add-drawer">
+        <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background-color: #f8fafc;">
+            <div>
+                <h2 style="margin:0; font-size: 16px; font-weight: 700;">Configure Program Modules</h2>
+                <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Select the features you need. Related modules will be enabled automatically.</p>
+            </div>
+            <button onclick="closeAddDrawer()" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #94a3b8;">&times;</button>
+        </div>
+        <div style="flex: 1; padding: 24px; overflow-y: auto;">
+            {% if module_questions_categorized.student %}
+            <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px 0;">Student Registration</h3>
+            {% for q in module_questions_categorized.student %}
+            <label class="tl-add-module-option group">
+                <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
+                       data-module-ids="{{ q.value }}" 
+                       {% if q.checked %}checked{% endif %}>
+                <div style="flex: 1;">
+                    <div class="tl-add-label group-hover:text-brand-student">{{ q.label|safe }}</div>
+                </div>
+            </label>
+            {% endfor %}
+            {% endif %}
+
+            {% if module_questions_categorized.teacher %}
+            <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">Teacher Registration</h3>
+            {% for q in module_questions_categorized.teacher %}
+            <label class="tl-add-module-option group">
+                <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
+                       data-module-ids="{{ q.value }}" 
+                       {% if q.checked %}checked{% endif %}>
+                <div style="flex: 1;">
+                    <div class="tl-add-label group-hover:text-brand-teacher">{{ q.label|safe }}</div>
+                </div>
+            </label>
+            {% endfor %}
+            {% endif %}
+
+            {% if module_questions_categorized.general %}
+            <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">General Program Modules</h3>
+            {% for q in module_questions_categorized.general %}
+            <label class="tl-add-module-option group">
+                <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
+                       data-module-ids="{{ q.value }}" 
+                       {% if q.checked %}checked{% endif %}>
+                <div style="flex: 1;">
+                    <div class="tl-add-label">{{ q.label|safe }}</div>
+                </div>
+            </label>
+            {% endfor %}
+            {% endif %}
+        </div>
+        <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background-color: #f8fafc; display: flex; justify-content: flex-end;">
+            <button class="tl-btn tl-btn-primary" onclick="saveModules()" style="padding: 10px 24px;">Update Modules</button>
+        </div>
+    </div>
+</div>
 
 <br/>
 <button class="dsphead">
@@ -139,7 +265,6 @@
 </form>
 </div>
 
-{{ module_constraints|json_script:"module-constraints-data" }}
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
