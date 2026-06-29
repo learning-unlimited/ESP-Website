@@ -2,13 +2,12 @@ from django import template
 from django.core.cache import cache
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 from esp.qsd.models import QuasiStaticData, qsd_cache_key
+from esp.users.models import Permission
 from esp.tagdict.models import Tag
 
 register = template.Library()
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
-def render_qsd(qsd):
-    # check whether we should display the date and author footer (only affects non-administrator users)
+def _qsd_display_context(context, qsd):
     display_date_author_tag = Tag.getTag('qsd_display_date_author')
     display_date_author = 2 # display date and author
 
@@ -17,24 +16,25 @@ def render_qsd(qsd):
     elif display_date_author_tag == 'None':
         display_date_author = 0 # hide footer
 
-    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
-render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
-render_qsd.cached_function.depend_on_model(Tag)
+    return {
+        'qsdrec': qsd,
+        'display_date_author': display_date_author,
+        'inline': False,
+    }
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd_md.html')
-def render_qsd_md(qsd):
-    # check whether we should display the date and author footer (only affects non-administrator users)
-    display_date_author_tag = Tag.getTag('qsd_display_date_author')
-    display_date_author = 2 # display date and author
+@register.inclusion_tag('inclusion/qsd/render_qsd.html', takes_context=True)
+def render_qsd(context, qsd):
+    return _qsd_display_context(context, qsd)
 
-    if display_date_author_tag == 'Date':
-        display_date_author = 1 # display date only
-    elif display_date_author_tag == 'None':
-        display_date_author = 0 # hide footer
+@register.inclusion_tag('inclusion/qsd/render_qsd_md.html', takes_context=True)
+def render_qsd_md(context, qsd):
+    return _qsd_display_context(context, qsd)
 
-    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
-render_qsd_md.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
-render_qsd_md.cached_function.depend_on_model(Tag)
+@register.simple_tag(takes_context=True)
+def can_edit_qsd(context, qsd):
+    request = context.get('request') if context is not None else None
+    user = getattr(request, 'user', None)
+    return Permission.user_can_edit_qsd(user, qsd.url)
 
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_inline_qsd(url):
@@ -93,7 +93,10 @@ class InlineQSDNode(template.Node):
                 'title': qsd_obj.title or title,
             }, timeout=86400 * 7)
 
-        context.update({'qsdrec': qsd_obj, 'inline': True})
+        context.update({
+            'qsdrec': qsd_obj,
+            'inline': True,
+        })
         return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
 
 @register.tag
