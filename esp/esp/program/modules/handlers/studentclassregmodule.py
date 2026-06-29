@@ -48,7 +48,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -149,7 +149,8 @@ class StudentClassRegModule(ProgramModuleObj):
             id="learn_catalog",
             url="/learn/%s/catalog" % base,
             title="Student Catalog",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Catalog" button appears in directory.html.
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["catalog", "classes", "student view"],
         )
 
