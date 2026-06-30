@@ -33,11 +33,14 @@ Learning Unlimited, Inc.
 """
 
 import json
+from unittest.mock import patch
 
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.linkfields import cf_cache
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
+from esp.users.models import TeacherInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -212,6 +215,77 @@ class CustomFormsTest(TestCase):
             if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)
+
+    def test_link_field_foreign_key_persists_on_submit(self):
+        cf_cache._populate()
+        teacher_info_fields = cf_cache.link_fields['TeacherInfo']['fields']
+
+        with patch.dict(teacher_info_fields, {
+            'TeacherInfo_user': {
+                'model_field': 'user',
+                'disp_name': 'Linked User',
+                'field_type': 'custom',
+                'ques': 'Linked User',
+                'required': True,
+            }
+        }, clear=False):
+            self.client.login(username=self.admin.username, password='password')
+            form_data = {
+                'title': 'FK Persistence Form',
+                'perms': '',
+                'link_id': -1,
+                'success_url': '/formsuccess.html',
+                'success_message': 'Thank you!',
+                'anonymous': False,
+                'pages': [{
+                    'parent_id': -1,
+                    'sections': [{
+                        'fields': [
+                            {'data': {'field_type': 'TeacherInfo_user', 'question_text': 'Linked User', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
+                        ],
+                        'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                    }],
+                    'seq': 0
+                }],
+                'link_type': '-1',
+                'desc': 'FK regression form'
+            }
+
+            response = self.client.post(
+                '/customforms/submit/',
+                json.dumps(form_data),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+            )
+            self.assertEqual(response.status_code, 200)
+
+            form = Form.objects.get(title='FK Persistence Form')
+            field = Field.objects.get(form=form, label='Linked User')
+
+            submitter, _ = ESPUser.objects.get_or_create(username='forms_fk_submitter')
+            submitter.set_password('password')
+            submitter.save()
+            submitter.makeRole('Student')
+
+            target_user, _ = ESPUser.objects.get_or_create(username='forms_fk_target')
+            target_user.set_password('password')
+            target_user.save()
+
+            teacher_info = TeacherInfo.objects.create(user=submitter)
+
+            self.client.login(username=submitter.username, password='password')
+            get_response = self.client.get(f'/customforms/view/{form.id}/')
+            self.assertEqual(get_response.status_code, 200)
+
+            post_data = {
+                'combo_form-current_step': '0',
+                f'question_{field.id}': str(target_user.id),
+            }
+            post_response = self.client.post(f'/customforms/view/{form.id}/', post_data)
+            self.assertRedirects(post_response, f'/customforms/success/{form.id}/')
+
+            teacher_info.refresh_from_db()
+            self.assertEqual(teacher_info.user_id, target_user.id)
 
 
 class LandingViewTest(TestCase):
