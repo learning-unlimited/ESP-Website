@@ -44,6 +44,49 @@ class QuestionForm(forms.ModelForm):
             'seq': ('Sequence'),
         }
 
+    def clean(self):
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        param_values_raw = cleaned_data.get('_param_values', '') or ''
+        if param_values_raw:
+            params = [p.strip() for p in param_values_raw.split('|')]
+        else:
+            params = []
+
+        if question_type:
+            qt_name = question_type.name
+
+            if qt_name in ('Multiple Choice', 'Checkboxes'):
+                # params is the list of choices; require at least one non-empty choice
+                choices = [p for p in params if p.strip()]
+                if not choices:
+                    raise forms.ValidationError(
+                        'Please provide at least one choice for a %(qt)s question.',
+                        params={'qt': qt_name},
+                    )
+
+            elif qt_name in ('Labeled Numeric Rating', 'Numeric Rating'):
+                # First param is the number of ratings; must be an integer >= 2
+                if not params or not params[0]:
+                    raise forms.ValidationError(
+                        '%(qt)s requires the number of ratings to be specified.',
+                        params={'qt': qt_name},
+                    )
+                try:
+                    num_ratings = int(params[0])
+                except (ValueError, TypeError):
+                    raise forms.ValidationError(
+                        'Number of ratings must be a whole number, got "%(val)s".',
+                        params={'val': params[0]},
+                    )
+                if num_ratings < 2:
+                    raise forms.ValidationError(
+                        'Number of ratings must be at least 2, got %(val)s.',
+                        params={'val': num_ratings},
+                    )
+
+        return cleaned_data
+
 class SurveyImportForm(forms.Form):
     survey_id = forms.ModelChoiceField(queryset=None, label = "Survey")
 
