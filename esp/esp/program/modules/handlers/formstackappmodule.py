@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 
 from django.db.models.query import Q
-from django.template import Variable, Context, VariableDoesNotExist
+from django.template import Variable, Context, VariableDoesNotExist, Template
 
 from esp.application.models import FormstackStudentProgramApp
 from esp.program.modules.base import (
@@ -120,16 +120,49 @@ class FormstackAppModule(ProgramModuleObj):
             fsas.app_is_open or request.user.isAdmin(prog)
         )
         context['autopopulated'] = autopopulated = []
+
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
                 continue
+            if ':' not in line:
+                continue
+
             field, _, expr = line.partition(':')
-            value = resolve_field_expression(expr, {'user': request.user})
             field_name = field.strip()
-            if value is not None and field_name:
-                autopopulated.append((field_name, value))
+            expr_stripped = expr.strip()
+            if not field_name or not expr_stripped:
+                continue
+
+            if '{{' in expr_stripped or '{%' in expr_stripped:
+                try:
+                    template = Template(expr_stripped)
+                    template_context = Context({'user': request.user})
+                    value = template.render(template_context)
+                except Exception:
+                    expr_preview = (
+                        expr_stripped
+                        if len(expr_stripped) <= 200
+                        else expr_stripped[:197] + '...'
+                    )
+                    logger.exception(
+                        "Error rendering FormstackAppSettings autopopulated "
+                        "field %r with expr %r",
+                        field_name,
+                        expr_preview,
+                    )
+                    continue
+            else:
+                value = resolve_field_expression(
+                    expr_stripped, {'user': request.user}
+                )
+                if value is None:
+                    continue
+
+            autopopulated.append((field_name, value))
+
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
+
 
     @aux_call
     @needs_student_in_grade
