@@ -39,6 +39,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
@@ -397,26 +398,29 @@ class StudentClassRegModule(ProgramModuleObj):
         except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
-        cobj = section.parent_class
-        if not scrmi.use_priority:
-            error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
-        if scrmi.use_priority or not error:
-            error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+        with transaction.atomic():
+            section = ClassSection.objects.select_for_update().get(id=sectionid)
+            section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+            if not scrmi.use_priority:
+                error = section_error
+            if scrmi.use_priority or not section_error:
+                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = cobj_error or section_error
 
-        if scrmi.use_priority:
-            priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
-        else:
-            priority = 1
+            if scrmi.use_priority:
+                priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
+            else:
+                priority = 1
 
-        if error and not request.user.onsite_local:
-            raise ESPError(error, log=False)
+            if error and not request.user.onsite_local:
+                raise ESPError(error, log=False)
 
-        #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
-            return True
-        else:
-            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
+            #   Desired priority level is 1 above current max
+            if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                return True
+            else:
+                raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
     @needs_student_in_grade
