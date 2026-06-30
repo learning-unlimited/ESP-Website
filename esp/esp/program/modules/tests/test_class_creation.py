@@ -586,3 +586,110 @@ class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,
         after = self._get_availability(teacher)
         self.assertEqual(before, after,
                          "Availability should be unchanged after adding coteacher")
+
+
+# ---------------------------------------------------------------------------
+# 7. Teacher availability time checks (issue #1780)
+# ---------------------------------------------------------------------------
+
+class TeacherHasTimeCheckTest(ClassCreationTestMixin, ProgramFrameworkTest):
+    """
+    Regression tests for #1780: teacher_has_time must count *all* class-type
+    time blocks — including "Open Class Time Block" events — so that the cap
+    is consistent with getTaughtTime(), which already counts every taught
+    section regardless of its category.
+    """
+
+    def setUp(self):
+        super(TeacherHasTimeCheckTest, self).setUp()
+
+    # ------------------------------------------------------------------
+    # helper: create an open-class time block for the program
+    # ------------------------------------------------------------------
+    def _add_open_class_timeslot(self, hours=1):
+        """Add an Open Class Time Block to the test program."""
+        from esp.cal.models import EventType, Event
+        import datetime as dt
+        open_type, _ = EventType.objects.get_or_create(description='Open Class Time Block')
+        # Place it after all existing class time blocks
+        existing = list(self.program.getTimeSlots(exclude_types=[]))
+        if existing:
+            last_end = max(e.end for e in existing)
+        else:
+            last_end = dt.datetime(2222, 7, 7, 9, 0)
+        start = last_end + dt.timedelta(minutes=10)
+        end = start + dt.timedelta(hours=hours)
+        ev = Event.objects.create(
+            program=self.program,
+            event_type=open_type,
+            start=start,
+            end=end,
+            short_description='Open slot',
+            description='Open Class Time Block for tests',
+            name='Open Slot',
+        )
+        return ev
+
+    # ------------------------------------------------------------------
+    # 7a  Duration includes open-class slots
+    # ------------------------------------------------------------------
+
+    def test_teacher_has_time_includes_open_class_blocks(self):
+        """
+        Regression for #1780: teacher_has_time() must include Open Class Time
+        Block events in the total allowed duration.  Previously it delegated to
+        program.total_duration() which only counts Class Time Block events,
+        causing the cap to be lower than expected for programs that also have
+        open-class slots.
+
+        We request 1 hour *beyond* the regular-only cap; the old code would
+        have denied this (cap too low), the fixed code must allow it because
+        the open-class slot adds 2 hours of room.
+        """
+        from esp.program.controllers.classreg import ClassCreationController
+
+        teacher = self.teachers[0]
+
+        # Baseline: duration counted by the old code (regular blocks only).
+        regular_only_hours = self.program.total_duration().total_seconds() / 3600.0
+
+        # Add a 2-hour open-class time block; the new cap must absorb it.
+        self._add_open_class_timeslot(hours=2)
+
+        ccc = ClassCreationController(self.program)
+        # Request 1 hour beyond the regular-only cap.  Under the old (broken)
+        # implementation this would return False; under the fix it must be True.
+        extra_hours = regular_only_hours + 1
+        self.assertTrue(
+            ccc.teacher_has_time(teacher, extra_hours),
+            "teacher_has_time should allow a teacher to use some open-class "
+            "time beyond the regular-block hours when such slots exist"
+        )
+
+    # ------------------------------------------------------------------
+    # 7b  Over-registration is still blocked
+    # ------------------------------------------------------------------
+
+    def test_teacher_cannot_exceed_total_program_duration(self):
+        """
+        Requesting more teaching hours than the total combined program duration
+        (regular + open-class slots) must be denied.  The teacher has no
+        pre-existing classes; we simply ask for total_hours + 1, which exceeds
+        the cap by 1 hour.
+        """
+        from esp.program.controllers.classreg import ClassCreationController
+
+        ccc = ClassCreationController(self.program)
+        teacher = self.teachers[0]
+
+        # Total cap: all class-block types combined.
+        total_hours = self.program.total_duration(
+            types=['Class Time Block', 'Open Class Time Block']
+        ).total_seconds() / 3600.0
+
+        # Requesting 1 hour beyond the cap must be denied.
+        self.assertFalse(
+            ccc.teacher_has_time(teacher, total_hours + 1),
+            "teacher_has_time must return False when requested hours exceed "
+            "the total combined program duration"
+        )
