@@ -132,7 +132,7 @@ class UnenrollModule(ProgramModuleObj):
         sections = prog.sections().filter(
             status__gt=0, parent_class__status__gt=0)
         sections = sections.exclude(
-            parent_class__category__category='Lunch')
+            parent_class__category__is_lunch=True)
 
         enrollments = StudentRegistration.valid_objects().filter(
             relationship=enrolled, section__in=sections)

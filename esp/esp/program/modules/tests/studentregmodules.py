@@ -357,7 +357,7 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
         self.add_student_profiles()
         self.student = self.students[0]
-        self.lunch_category, _ = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        self.lunch_category, _ = ClassCategories.objects.get_or_create(is_lunch=True, symbol='L')
         self.lunch_class, _ = ClassSubject.objects.get_or_create(
             title='Lunch Period', category=self.lunch_category, grade_min=7, grade_max=12,
             parent_program=self.program, class_size_max=100, class_info='Lunch break')
