@@ -87,6 +87,20 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             '/learn/%s/studentreg2phase' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
 
+    def test_main_page_shows_steps_for_registration_link(self):
+        """TwoPhase page should include access to standard registration steps."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username)
+
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Step 0')
+        self.assertContains(response, 'Steps for Registration')
+        self.assertContains(response, '/learn/%s/studentreg' % self.program.getUrlBase())
+
     # ---------------------------------------------------------------
     # Test: GET on confirm_registration redirects (must be POST)
     # ---------------------------------------------------------------
