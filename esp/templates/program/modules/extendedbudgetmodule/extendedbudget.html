@@ -1,0 +1,64 @@
+{% extends "main.html" %}
+
+{% block title %}Extended Budget Requests for {{ program.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <style>
+        #budget_requests {
+            width: 100%;
+        }
+        #budget_requests th,
+        #budget_requests td {
+            vertical-align: top;
+        }
+        .budget-actions {
+            white-space: nowrap;
+        }
+        .budget-notes {
+            max-width: 320px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<h1>Extended Budget Requests for {{ program.niceName }}</h1>
+<p>Review pending extended budget requests and approve or reject them below.</p>
+
+{% if pending_requests %}
+<table class="table table-striped" id="budget_requests">
+    <tr>
+        <th>Class</th>
+        <th>Teachers</th>
+        <th>Planned Purchases</th>
+        <th>Notes for Directors</th>
+        <th>Decision</th>
+    </tr>
+    {% for cls in pending_requests %}
+    <tr>
+        <td>
+            <a href="/manage/{{ program.getUrlBase }}/manageclass/{{ cls.id }}">{{ cls.title }}</a>
+        </td>
+        <td>{{ cls.pretty_teachers }}</td>
+        <td class="budget-notes">{{ cls.purchase_requests|default:"(none)"|linebreaksbr }}</td>
+        <td class="budget-notes">{{ cls.message_for_directors|default:""|linebreaksbr }}</td>
+        <td class="budget-actions">
+            <form method="post" action="">
+                {% csrf_token %}
+                <input type="hidden" name="class_id" value="{{ cls.id }}" />
+                <button class="btn btn-success" type="submit" name="action" value="approve">Approve</button>
+                <button class="btn btn-danger" type="submit" name="action" value="reject">Reject</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<div class="info">
+    No pending extended budget requests for this program.
+</div>
+{% endif %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}

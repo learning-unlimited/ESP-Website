@@ -1,0 +1,11 @@
+{% autoescape off %}Extended Budget Request Update
+---------------------------------
+Program: {{ program.niceName }}
+Class: {{ class.title }}
+Status: {{ status_label }}
+
+You can review your class details on the teacher registration page:
+https://{{ DEFAULT_HOST }}/teach/{{ program.getUrlBase }}/teacherreg
+
+If you have any questions, please contact the program directors.
+{% endautoescape %}

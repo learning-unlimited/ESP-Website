@@ -441,6 +441,37 @@
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
+        {% if manage_ajax_scheduling %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-calendar"></i> Scheduling</div>
+                <div class="module_link_caption">assign rooms and times</div>
+            </button></a>
+        </div class="module_button">
+        {% endif %}
+        {% if manage_get_materials %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-duplicate"></i> Documents</div>
+                <div class="module_link_caption">upload and view files</div>
+            </button></a>
+        </div class="module_button">
+        {% endif %}
+        {% if manage_extendedbudget %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/extendedbudget"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-usd"></i> Extended Budgets</div>
+                <div class="module_link_caption">review budget requests</div>
+            </button></a>
+        </div>
+        {% endif %}
+        {% if manage_volunteering %}
+        <div class="module_button">
+            <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large">
+                <div class="module_link_main"><i class="glyphicon glyphicon-bullhorn"></i> Volunteers</div>
+                <div class="module_link_caption">create shifts, view signups</div>
+            </button></a>
 
         <div style="margin-top: 40px; text-align: center;">
             <a href="/manage/docs/program_modules.rst" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="bi bi-question-circle"></i></a>
