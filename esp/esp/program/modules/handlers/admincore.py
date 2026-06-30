@@ -692,7 +692,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
         from esp.program.models import ProgramModule
         pcf = ProgramCreationForm()
         current_ids = set(prog.program_modules.values_list('id', flat=True))
-        context['current_module_ids'] = list(current_ids)
 
         module_questions_categorized = {
             'student': [],
@@ -700,11 +699,17 @@ class AdminCore(ProgramModuleObj, CoreModule):
             'general': []
         }
 
-        for val, label in pcf.fields['program_module_questions'].choices:
+        choice_pairs = list(pcf.fields['program_module_questions'].choices)
+        all_choice_ids = {int(i) for val, _ in choice_pairs for i in val.split(',') if i.isdigit()}
+        module_type_by_id = dict(
+            ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'module_type')
+        )
+
+        for val, label in choice_pairs:
             ids = [int(i) for i in val.split(',') if i.isdigit()]
             is_checked = bool(ids) and all(i in current_ids for i in ids)
 
-            types = set(ProgramModule.objects.filter(id__in=ids).values_list('module_type', flat=True))
+            types = {module_type_by_id[i] for i in ids if i in module_type_by_id}
 
             if 'learn' in types and 'teach' not in types:
                 category = 'student'

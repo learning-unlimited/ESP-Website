@@ -1655,13 +1655,27 @@ def module_schedule_update_api(request, program_type, program_term):
             mod.seq = int(data["seq"])
 
         if "link_title" in data:
-            mod.link_title = data["link_title"]
+            title = data["link_title"]
+            if not isinstance(title, str):
+                return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+            if len(title) > max_len:
+                return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
+            mod.link_title = title
 
         if "required" in data:
-            mod.required = bool(data["required"])
+            if not isinstance(data["required"], bool):
+                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
+            mod.required = data["required"]
 
         if "required_label" in data:
-            mod.required_label = data["required_label"]
+            label = data["required_label"]
+            if not isinstance(label, str):
+                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+            if len(label) > max_len:
+                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
+            mod.required_label = label
 
         if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
             return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)

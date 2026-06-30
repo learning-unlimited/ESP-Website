@@ -5,13 +5,13 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/module_timeline.css?v=1.0.6" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/program/modules/module_timeline.js?v=1.0.6"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -207,7 +207,7 @@
                        data-module-ids="{{ q.value }}" 
                        {% if q.checked %}checked{% endif %}>
                 <div style="flex: 1;">
-                    <div class="tl-add-label group-hover:text-brand-student">{{ q.label|safe }}</div>
+                    <div class="tl-add-label group-hover:text-brand-student">{{ q.label }}</div>
                 </div>
             </label>
             {% endfor %}
@@ -221,7 +221,7 @@
                        data-module-ids="{{ q.value }}" 
                        {% if q.checked %}checked{% endif %}>
                 <div style="flex: 1;">
-                    <div class="tl-add-label group-hover:text-brand-teacher">{{ q.label|safe }}</div>
+                    <div class="tl-add-label group-hover:text-brand-teacher">{{ q.label }}</div>
                 </div>
             </label>
             {% endfor %}
@@ -235,7 +235,7 @@
                        data-module-ids="{{ q.value }}" 
                        {% if q.checked %}checked{% endif %}>
                 <div style="flex: 1;">
-                    <div class="tl-add-label">{{ q.label|safe }}</div>
+                    <div class="tl-add-label">{{ q.label }}</div>
                 </div>
             </label>
             {% endfor %}
