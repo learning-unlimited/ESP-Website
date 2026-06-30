@@ -103,7 +103,7 @@ class QSDManager(models.Manager):
 
 def qsd_edit_id(val):
     """ A short hex string summarizing the QSD's URL. """
-    return hashlib.sha1(val.encode("UTF-8")).hexdigest()[:8]
+    return hashlib.sha256(val.encode("UTF-8")).hexdigest()[:8]
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
