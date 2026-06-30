@@ -42,6 +42,7 @@ class CancelClassTest(ProgramFrameworkTest):
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
             self.assertEqual(sec.status, ClassStatus.CANCELLED)
+            self.assertEqual(sec.cancellation_reason, cancelMsg)
 
         # Test that an email was sent
         directorEmail = None
@@ -61,6 +62,14 @@ class CancelClassTest(ProgramFrameworkTest):
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
         self.assertContains(r, self.cls.emailcode(), status_code=200)
+
+    def testCancelSectionWithNoneExplanationPersistsNone(self):
+        sec = self.cls.sections.all()[0]
+        sec.cancel(email_students=False, include_lottery_students=False, text_students=False,
+                   email_teachers=False, explanation=None, unschedule=False)
+        sec.refresh_from_db()
+        self.assertEqual(sec.status, ClassStatus.CANCELLED)
+        self.assertIsNone(sec.cancellation_reason)
 
     # Regression: fix for GET/POST boolean guard in admin teacherlookup
     def test_teacherlookup_post_with_name_returns_json(self):
