@@ -235,19 +235,13 @@ class ClassManager(Manager):
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
         #   See http://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
-        counter = 0
-        index = 0
-        max_count = len(classes)
-        id_list = []
-        while counter < max_count:
-            cls = classes[index]
-            cls._temp_index = counter
-            if cls.id not in id_list:
-                id_list.append(cls.id)
-                index += 1
-            else:
-                classes.remove(cls)
-            counter += 1
+        seen_ids = set()
+        deduped_classes = []
+        for cls in classes:
+            if cls.id not in seen_ids:
+                seen_ids.add(cls.id)
+                deduped_classes.append(cls)
+        classes = deduped_classes
 
         # All class ID's; used by later query ugliness:
         class_ids = [x.id for x in classes]
