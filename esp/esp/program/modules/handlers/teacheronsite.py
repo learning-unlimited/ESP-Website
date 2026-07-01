@@ -120,6 +120,8 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'details'
         context['section_page'] = 'roster'
         context['not_found'] = []
+        context['enroll_setting'] = Tag.getProgramTag('section_attendance_enroll', prog)
+        context['unenroll_setting'] = Tag.getProgramTag('section_attendance_unenroll', prog)
         secid = 0
         if extra:
             secid = extra

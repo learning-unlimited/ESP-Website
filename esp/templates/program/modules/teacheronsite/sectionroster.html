@@ -61,9 +61,11 @@ function toggleCheck(element) {
                                 <th>
                                     Checked In
                                 </th>
+                                {% if sections|length_is:'1' %}
                                 <th>
                                     Attending Class?
                                 </th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -75,16 +77,18 @@ function toggleCheck(element) {
                                         <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                         <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                     </td>
+                                    {% if sections|length_is:'1' %}
                                     <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
-                                        <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                        <i class="material-icons-outlined md-5 pointer" onclick="toggleCheck(this);">{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                         <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                         value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                                         <br /><span class="msg"></span>
                                     </td>
+                                    {% endif %}
                                 </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" align="center">
+                                <td colspan="{% if sections|length_is:'1' %}4{% else %}3{% endif %}" align="center">
                                     No students enrolled in this section
                                 </td>
                             </tr>
@@ -94,7 +98,9 @@ function toggleCheck(element) {
                             <tr>
                                 <th colspan="2" class="sorttable_nosort">TOTAL</th>
                                 <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
+                                {% if sections|length_is:'1' %}
                                 <th align="center" name="attending_total" class="sorttable_nosort"></th>
+                                {% endif %}
                             </tr>
                         </tfoot>
                     </table>
@@ -122,9 +128,11 @@ function toggleCheck(element) {
                                 <th>
                                     Checked In
                                 </th>
+                                {% if sections|length_is:'1' %}
                                 <th>
                                     Attending Class?
                                 </th>
+                                {% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -136,12 +144,14 @@ function toggleCheck(element) {
                                     <i class="material-icons-outlined md-5">{% if student.checked_in %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                     <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                 </td>
+                                {% if sections|length_is:'1' %}
                                 <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
-                                    <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <i class="material-icons-outlined md-5 pointer" onclick="toggleCheck(this);">{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                     <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                     value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                                     <br /><span class="msg"></span>
                                 </td>
+                                {% endif %}
                             </tr>
                         {% endfor %}
                         </tbody>
@@ -149,7 +159,9 @@ function toggleCheck(element) {
                             <tr>
                                 <th colspan="2" class="sorttable_nosort">TOTAL</th>
                                 <th align="center" name="checkedin_total" class="sorttable_nosort"></th>
+                                {% if sections|length_is:'1' %}
                                 <th align="center" name="attending_total" class="sorttable_nosort"></th>
+                                {% endif %}
                             </tr>
                         </tfoot>
                     </table>
@@ -189,9 +201,15 @@ function toggleCheck(element) {
                     {% endif %}
                     <textarea name="misc_students" rows="10" style="width:100%;margin-top: 1vh; margin-bottom: 1vh;" placeholder="student usernames/IDs"></textarea>
                     <div>
+                        {% if enroll_setting == "teacher" or unenroll_setting == "teacher" %}
                         For any attending students not enrolled in this section:
+                        {% if enroll_setting == "teacher" %}
                         <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="enroll" checked hidden> Enroll them in this section
+                        {% endif %}
+                        {% if unenroll_setting == "teacher" %}
                         <br /><i class="material-icons-outlined md-3 pointer" onclick="toggleCheck(this);" style="vertical-align: text-bottom;">check_box</i><input type="checkbox" name="unenroll" checked hidden> Unenroll them from their conflicting sections
+                        {% endif %}
+                        {% endif %}
                         <br /><input style="font-size: 4vh !important;" type="Submit" class="btn" value="Submit Attendance" />
                     </div>
                 </td>

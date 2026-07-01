@@ -1321,6 +1321,22 @@ all_program_tags = {
         'category': 'onsite',
         'is_setting': True,
     },
+    'section_attendance_enroll': {
+        'is_boolean': False,
+        'help_text': 'When a teacher records attendance (via the section attendance page) for a student who is not enrolled in the section, should the student be enrolled in the section? If set to "Let the teacher decide", the teacher will be shown a checkbox to control this, checked by default.',
+        'default': 'false',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('true', 'Enroll in class'), ('false', 'Don\'t enroll in class'), ('teacher', 'Let the teacher decide')]),
+    },
+    'section_attendance_unenroll': {
+        'is_boolean': False,
+        'help_text': 'When a teacher records attendance (via the section attendance page) for a student who is not enrolled in the section and is enrolled in a conflicting section, should the student be unenrolled from the conflicting section? If set to "Let the teacher decide", the teacher will be shown a checkbox to control this, checked by default.',
+        'default': 'false',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.ChoiceField(choices=[('true', 'Unenroll from conflicting enrolled classes'), ('false', 'Don\'t unenroll from conflicting enrolled classes'), ('teacher', 'Let the teacher decide')]),
+    },
     'default_full_teacher_availability': {
         'is_boolean': True,
         'help_text': 'Should the teacher availability form default to all timeslots available? (Otherwise, default to none available.)',

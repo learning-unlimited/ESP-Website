@@ -47,6 +47,7 @@ from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
+from esp.tagdict.models import Tag
 
 import datetime
 
@@ -185,7 +186,14 @@ class OnSiteAttendance(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
+        context = {
+            'program': prog,
+            'tl': tl,
+            'one': one,
+            'two': two,
+            'enroll_setting': Tag.getProgramTag('section_attendance_enroll', prog),
+            'unenroll_setting': Tag.getProgramTag('section_attendance_unenroll', prog),
+        }
 
         timeslots = Event.objects.filter(id=extra, program = prog)
         if len(timeslots) == 1:

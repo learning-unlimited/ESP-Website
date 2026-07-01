@@ -240,9 +240,15 @@ Please select a section from the dropdown below.
         {% if not_found %}
         <br /><span style="color:red">{{ not_found|join:", " }} not found</span>
         {% endif %}
+        {% if enroll_setting == "teacher" or unenroll_setting == "teacher" %}
         <br /><h3>For any attending students not enrolled in this section:</h3>
+        {% if enroll_setting == "teacher" %}
         <input type="checkbox" name="enroll" checked> Enroll them in this section
+        {% endif %}
+        {% if unenroll_setting == "teacher" %}
         <br /><input type="checkbox" name="unenroll" checked> Unenroll them from their conflicting sections
+        {% endif %}
+        {% endif %}
     </td>
 </tr>
 </table>

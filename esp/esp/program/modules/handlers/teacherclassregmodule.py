@@ -263,7 +263,14 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline("/Classes/View")
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {"program": prog, "tl": tl, "one": one, "two": two}
+        context = {
+            "program": prog,
+            "tl": tl,
+            "one": one,
+            "two": two,
+            "enroll_setting": Tag.getProgramTag("section_attendance_enroll", prog),
+            "unenroll_setting": Tag.getProgramTag("section_attendance_unenroll", prog),
+        }
 
         user = request.user
         context["sched_sections"] = [
@@ -312,6 +319,18 @@ class TeacherClassRegModule(ProgramModuleObj):
         )[0]
         not_found = []
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        enroll_setting = Tag.getProgramTag("section_attendance_enroll", prog)
+        unenroll_setting = Tag.getProgramTag("section_attendance_unenroll", prog)
+        do_enroll = (
+            "enroll" in request.POST
+            if enroll_setting == "teacher"
+            else enroll_setting == "true"
+        )
+        do_unenroll = (
+            "unenroll" in request.POST
+            if unenroll_setting == "teacher"
+            else unenroll_setting == "true"
+        )
         if request.POST and 'submitted' in request.POST:
             # split with delimiters comma, semicolon, and space followed by any amount of extra whitespace
             misc_students = [_f for _f in re.split(r'[;,\s]\s*', request.POST.get('misc_students')) if _f]
@@ -334,13 +353,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                     sr.end_date = today_max
                     sr.save()
                     if student not in section.students():
-                        if "unenroll" in request.POST:
+                        if do_unenroll:
                             sm = ScheduleMap(student, prog)
                             for ts in [ts.id for ts in section.get_meeting_times()]:
                                 if ts in sm.map and len(sm.map[ts]) > 0:
                                     for sm_sec in sm.map[ts]:
                                         sm_sec.unpreregister_student(student, verbs)
-                        if 'enroll' in request.POST:
+                        if do_enroll:
                             for rt in [enrolled, onsite]:
                                 srs = StudentRegistration.objects.filter(
                                     user=student, section=section, relationship=rt
@@ -443,13 +462,25 @@ class TeacherClassRegModule(ProgramModuleObj):
                         sr.end_date = today_max
                         sr.save()
                         if student not in section.students():
-                            if request.POST.get("unenroll", "true").lower() == "true":
+                            unenroll_setting = Tag.getProgramTag("section_attendance_unenroll", prog)
+                            do_unenroll = (
+                                request.POST.get("unenroll", "true").lower() == "true"
+                                if unenroll_setting == "teacher"
+                                else unenroll_setting == "true"
+                            )
+                            enroll_setting = Tag.getProgramTag("section_attendance_enroll", prog)
+                            do_enroll = (
+                                request.POST.get("enroll", "true").lower() == "true"
+                                if enroll_setting == "teacher"
+                                else enroll_setting == "true"
+                            )
+                            if do_unenroll:
                                 sm = ScheduleMap(student, prog)
                                 for ts in [ts.id for ts in section.get_meeting_times()]:
                                     if ts in sm.map and len(sm.map[ts]) > 0:
                                         for sm_sec in sm.map[ts]:
                                             sm_sec.unpreregister_student(student, verbs)
-                            if request.POST.get('enroll', 'true').lower() == 'true':
+                            if do_enroll:
                                 for rt in [enrolled, onsite]:
                                     srs = StudentRegistration.objects.filter(
                                         user=student, section=section, relationship=rt
