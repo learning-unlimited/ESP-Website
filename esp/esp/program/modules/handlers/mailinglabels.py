@@ -246,13 +246,13 @@ class MailingLabels(ProgramModuleObj):
 
 
 
-                from io import StringIO
-                b = StringIO()
+                from io import BytesIO
+                b = BytesIO()
                 c.setopt(pycurl.WRITEFUNCTION, b.write)
 
                 c.perform()
 
-                retdata = b.getvalue().replace('\n', '').replace('\r', '')
+                retdata = b.getvalue().decode().replace('\n', '').replace('\r', '')
 
                 ma = regex.search(retdata)
                 try:

@@ -724,10 +724,7 @@ class FormHandler:
         Returns the response data as excel data.
         """
         import xlwt
-        try:
-            from cStringIO import StringIO
-        except:
-            from io import StringIO
+        from io import BytesIO
 
         response_data = self.getResponseData(self.form)
         wbk = xlwt.Workbook()
@@ -762,7 +759,7 @@ class FormHandler:
                 else: write_ans = ans
                 sheet.write(idx+1, col, write_ans)
 
-        output = StringIO()
+        output = BytesIO()
         wbk.save(output)
         return output
 
