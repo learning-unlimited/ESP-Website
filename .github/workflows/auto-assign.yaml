@@ -55,15 +55,15 @@ jobs:
 
             core.info(`/assign request from @${requester} on #${issueNumber}`);
 
-            // Check if user is a maintainer (admin or maintain permission)
+            // Check if user has write access or above (exempt from limits)
             const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               username: requester,
             });
-            const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+            const isMaintainer = ['admin', 'maintain', 'write'].includes(permData.permission);
             if (isMaintainer) {
-              core.info(`@${requester} is a maintainer — bypassing all assignment restrictions.`);
+              core.info(`@${requester} has write access or above — bypassing all assignment restrictions.`);
 
               // Still skip if already assigned to this issue
               const currentAssignees = context.payload.issue.assignees.map(a => a.login);
@@ -284,13 +284,13 @@ jobs:
                 return;
               }
 
-              // Check if user is a maintainer (admin or maintain permission)
+              // Check if user has write access or above (exempt from limits)
               const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: commenter,
               });
-              const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+              const isMaintainer = ['admin', 'maintain', 'write'].includes(permData.permission);
 
               // Check if someone is already assigned
               const currentAssignees = context.payload.issue.assignees.map(a => a.login);
@@ -337,15 +337,15 @@ jobs:
 
             const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
 
-            // Check if the assignee is a maintainer (admin or maintain permission)
+            // Check if the assignee has write access or above (exempt from limits)
             const { data: assigneePermData } = await github.rest.repos.getCollaboratorPermissionLevel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               username: assignee,
             });
-            const assigneeIsMaintainer = ['admin', 'maintain'].includes(assigneePermData.permission);
+            const assigneeIsMaintainer = ['admin', 'maintain', 'write'].includes(assigneePermData.permission);
             if (assigneeIsMaintainer) {
-              core.info(`@${assignee} is a maintainer — no restrictions apply.`);
+              core.info(`@${assignee} has write access or above — no restrictions apply.`);
               return;
             }
 
@@ -358,7 +358,7 @@ jobs:
                 repo: context.repo.repo,
                 username: sender,
               });
-              senderIsMaintainer = ['admin', 'maintain'].includes(senderPermData.permission);
+              senderIsMaintainer = ['admin', 'maintain', 'write'].includes(senderPermData.permission);
             }
 
             // Reject if the issue is closed (even if assigned by a maintainer)

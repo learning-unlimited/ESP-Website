@@ -36,8 +36,8 @@ Learning Unlimited, Inc.
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
-from esp.program.modules.tests.studentreg import StudentRegTest
+from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest, RegistrationProfileFlowTest
+from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
@@ -48,12 +48,16 @@ from esp.program.modules.tests.commpanel import CommunicationsPanelTest
 from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
 from esp.program.modules.tests.adminclass import CancelClassTest
+from esp.program.modules.tests.studentregmodules import StudentExtraCostsTest, StudentRegCoreTest, StudentRegPhaseZeroTest, StudentRegConfirmTest, LotteryStudentRegTest, StudentAcknowledgementTest, StudentLunchSelectionTest, StudentSurveyModuleTest, StudentCertModuleTest, StudentOnsiteTest, StudentClassRegModuleTest
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
+from esp.program.modules.tests.classflagmodule import ClassFlagModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
 from esp.program.modules.tests.unenrollmodule import UnenrollModuleTest
 from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.equityoutreach import EquityOutreachTest
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
+from esp.program.modules.tests.openclasses import OpenClassesPublicTest
+from esp.program.modules.tests.test_get_hours import GetHoursQueryCountTest, GetHoursApprovedFilterTest, GetHoursScheduledFilterTest, StaticHoursTest
 from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
 from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
 from esp.program.modules.tests.test_creditcard_required import (
@@ -70,3 +74,6 @@ from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
+from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn

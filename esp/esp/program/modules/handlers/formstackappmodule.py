@@ -116,7 +116,9 @@ class FormstackAppModule(ProgramModuleObj):
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
+        context['app_is_open'] = context['form'] is not None and (
+            fsas.app_is_open or request.user.isAdmin(prog)
+        )
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
             if not line.strip():
