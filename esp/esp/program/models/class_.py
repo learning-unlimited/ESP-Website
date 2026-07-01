@@ -1404,16 +1404,24 @@ class ClassSection(models.Model):
 
 
     def save(self, *args, **kwargs):
+        old_status = None
+        if self.pk is not None:
+            old_status = ClassSection.objects.filter(pk=self.pk).values_list('status', flat=True).first()
         super(ClassSection, self).save(*args, **kwargs)
-        # If all sibling sections are now the same status, make the class that status
-        all_match = True
-        for sec in self.parent_class.sections.all():
-            if sec.status != int(self.status):
-                all_match = False
-                break
-        if all_match:
-            self.parent_class.status = int(self.status)
-            self.parent_class.save()
+        # If this section's status just actually changed (as opposed to being
+        # re-saved at its existing status), and that leaves every sibling section
+        # at the same status, make the class match. Restricting this to a real
+        # transition keeps incidental resaves (e.g. from an unrelated class-level
+        # form save) from stomping a class status that was deliberately changed.
+        if old_status != int(self.status):
+            all_match = True
+            for sec in self.parent_class.sections.all():
+                if sec.status != int(self.status):
+                    all_match = False
+                    break
+            if all_match:
+                self.parent_class.status = int(self.status)
+                self.parent_class.save()
 
     class Meta:
         db_table = 'program_classsection'
