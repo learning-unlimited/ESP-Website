@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.resources.models import ResourceRequest, ResourceType
 from copy import deepcopy
 from esp.cal.models import *
@@ -29,6 +30,19 @@ class SchedulingCheckModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the scheduling diagnostics page in the admin dashboard search dropdown.
+        if view_name != "scheduling_checks":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Scheduling Diagnostics",
+            category=SEARCH_CATEGORY_CLASSES,
+            keywords=["scheduling", "diagnostics", "checks", "schedule", "conflicts"],
+        )
 
     @main_call
     @needs_admin

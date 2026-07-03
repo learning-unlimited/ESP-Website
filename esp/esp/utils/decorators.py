@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -63,12 +62,16 @@ class OptionalDecorator(object):
 
 enable_with_setting = OptionalDecorator
 
-def json_response(field_map={}):
+_FIELD_MAP_UNSET = object()
+
+def json_response(field_map=_FIELD_MAP_UNSET):
     """ Converts a serializable data structure into the appropriate HTTP response.
         Allows changing the field names using field_map, which might be complicated
         if related lookups were used.
     """
 
+    if field_map is _FIELD_MAP_UNSET:
+        field_map = {}
     # Here instead of at the top because of circular imports
     from esp.utils.web import render_to_response
 
