@@ -257,6 +257,13 @@ div.navbar-collapse {
     .dropdown:hover .dropdown-menu {
         display: block;
         margin-top: 0;
+        position: absolute;
+        top: 100%;
+    }
+
+    .navbar-nav .nav-item.dropdown .dropdown-menu.show {
+        position: absolute;
+        top: 100%;
     }
 
     .navbar .navbar-nav > .active > a,
