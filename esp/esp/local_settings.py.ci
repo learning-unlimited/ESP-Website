@@ -39,6 +39,7 @@ Learning Unlimited, Inc.
 #                                                                              #
 ################################################################################
 
+import os
 
 ###########################
 # Site identification     #
@@ -79,7 +80,12 @@ MIDDLEWARE_LOCAL = []
 # Database     #
 ################
 
-# Set DB name for this site
-DATABASE_NAME = 'test_django'
-DATABASE_USER = 'testuser'
-DATABASE_PASSWORD = 'testpassword'
+DATABASES = {'default': {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME':     os.environ.get('DATABASE_NAME', 'test_django'),
+    'USER':     os.environ.get('DATABASE_USER', 'testuser'),
+    'PASSWORD': os.environ.get('DATABASE_PASSWORD', 'testpassword'),
+    'HOST': 'localhost',
+    'PORT': '5432',
+}}
+

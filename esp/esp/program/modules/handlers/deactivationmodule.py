@@ -33,12 +33,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_list, get_user_checklist
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 import logging
 
@@ -54,6 +55,20 @@ class DeactivationModule(ProgramModuleObj):
             "seq": 502,
             "choosable": 1,
         }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface mass user deactivation in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (deactivatefinal) return None.
+        if view_name != "deactivate":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Mass Deactivate Users",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["deactivate", "disable", "users", "accounts", "mass"],
+        )
 
     @aux_call
     @needs_admin
@@ -91,7 +106,12 @@ class DeactivationModule(ProgramModuleObj):
                     return filterObj
             else:
                 data = ListGenModule.processPost(request)
-                filterObj = usc.filter_from_postdata(prog, data)
+                try:
+                    filterObj = usc.filter_from_postdata(prog, data)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    context.update(usc.prepare_context(prog, target_path=request.path))
+                    context['error'] = str(e)
+                    return render_to_response(self.baseDir()+'search.html', request, context)
                 selected = usc.selected_list_from_postdata(data)
 
                 if data['use_checklist'] == '1':
@@ -103,7 +123,7 @@ class DeactivationModule(ProgramModuleObj):
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/deactivate' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     def isStep(self):
