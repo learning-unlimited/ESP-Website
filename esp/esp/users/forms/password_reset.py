@@ -1,6 +1,8 @@
 
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
@@ -27,7 +29,7 @@ class PasswordResetForm(forms.Form):
         try:
             user = ESPUser.objects.get(username=self.cleaned_data['username'])
         except ESPUser.DoesNotExist:
-            raise forms.ValidationError("User '%s' does not exist." % self.cleaned_data['username'])
+            raise forms.ValidationError(f"User '{self.cleaned_data['username']}' does not exist.")
 
         return self.cleaned_data['username'].strip()
 
@@ -38,12 +40,12 @@ class PasswordResetForm(forms.Form):
         if len(ESPUser.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
             return self.cleaned_data['email'].strip()
 
-        raise forms.ValidationError('No user has email %s' % self.cleaned_data['email'])
+        raise forms.ValidationError(f'No user has email {self.cleaned_data["email"]}')
 
 class UserPasswdForm(FormWithRequiredCss):
-    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput(), label="Current password")
+    newpasswd = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="New password")
+    newpasswdconfirm = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="Confirm new password")
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -65,4 +67,8 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+        try:
+            validate_password(new_passwd, self.user)
+        except ValidationError as e:
+            raise forms.ValidationError(e.messages[0])
         return new_passwd

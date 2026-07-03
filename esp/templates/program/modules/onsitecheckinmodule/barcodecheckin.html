@@ -56,8 +56,8 @@
     </p>
 
     {% if results %}
-    <div class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <div role="alert" class="alert alert-info">
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         <span>
         Checked in {{ results.new|length }} students. {{ results.existing|length }} students were already checked in. {{ results.not_found|length }} students were not found, and {{ results.not_student|length }} IDs did not correspond to students.
         </span>
