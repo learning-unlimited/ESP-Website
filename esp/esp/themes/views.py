@@ -1,4 +1,3 @@
-
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -42,6 +41,7 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
@@ -151,6 +151,7 @@ THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. 
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
 
+
 @admin_required
 def landing(request):
     if settings.LOCAL_THEME:
@@ -161,6 +162,7 @@ def landing(request):
     context['last_customization_name'] = tc.get_current_customization()
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     return render_to_response('themes/landing.html', request, context)
+
 
 @admin_required
 def selector(request, keep_files=None):
@@ -191,6 +193,7 @@ def selector(request, keep_files=None):
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', request, context)
+
 
 @admin_required
 def logos(request):
@@ -254,11 +257,11 @@ def logos(request):
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
     settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+    r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
@@ -277,6 +280,7 @@ def logos(request):
     context['current_favicon_version'] = Tag.getTag("current_favicon_version")
 
     return render_to_response('themes/logos.html', request, context)
+
 
 @admin_required
 def confirm_overwrite(request, current_theme=None, differences=None, orig_view=None):
@@ -320,6 +324,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     context['orig_view'] = orig_view
     return render_to_response('themes/confirm_overwrite.html', request, context)
 
+
 @admin_required
 def configure(request, current_theme=None, force_display=False, keep_files=None):
     if settings.LOCAL_THEME:
@@ -352,7 +357,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -361,6 +366,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
     context['confirm_overwrite'] = request.POST.get('confirm_overwrite', '0')
 
     return render_to_response('themes/configure_form.html', request, context)
+
 
 @admin_required
 def editor(request):
@@ -379,7 +385,7 @@ def editor(request):
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
-                    random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
+                    random_slug = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
@@ -403,7 +409,7 @@ def editor(request):
 
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
-    context = tc.find_less_variables(flat=True)
+    context = tc.find_theme_variables(flat=True)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
     context['theme_name'] = current_theme
@@ -416,10 +422,10 @@ def editor(request):
     context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
 
     #   Load the theme-specific options
-    adv_vars = tc.find_less_variables(current_theme, theme_only=True)
+    adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
     context['adv_vars'] = {}
     for filename in adv_vars:
-        category_name = os.path.basename(filename)[:-5]
+        category_name = os.path.splitext(os.path.basename(filename))[0]
         category_vars = []
         keys = sorted(adv_vars[filename].keys())
         for key in keys:
@@ -438,9 +444,14 @@ def editor(request):
             else:
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
-    context['variable_defaults'] = tc.get_variable_defaults(current_theme)
+    variable_defaults = tc.get_variable_defaults(current_theme)
+    context['variable_defaults'] = variable_defaults
+    for key, val in variable_defaults.items():
+        if key not in context:
+            context[key] = val
 
     return render_to_response('themes/editor.html', request, context)
+
 
 @admin_required
 def recompile(request, keep_files=None):
@@ -457,5 +468,5 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+    return HttpResponseRedirect(reverse('themes_landing'))
 

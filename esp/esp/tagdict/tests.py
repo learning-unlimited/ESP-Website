@@ -6,6 +6,11 @@ from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
 from esp.tagdict import all_global_tags, all_program_tags
 from esp.tagdict.models import Tag
+from esp.tagdict.validators import (
+    ALL_HIDE_FIELDS_TAG_KEYS,
+    get_valid_field_names_for_tag,
+    validate_hide_fields_value,
+)
 from esp.program.tests import ProgramFrameworkTest
 
 # Make test-only tags not raise warnings
@@ -79,7 +84,7 @@ class TagTest(TestCase):
 
         user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
 
-        self.assertFalse(Tag.getTag("test", user), "Retrieved a tag for key 'test' target '%s', but we haven't set one yet!" % (user))
+        self.assertFalse(Tag.getTag("test", user), f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!")
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
@@ -368,6 +373,267 @@ class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
         self.assertIn("test_bool", keys)
 
 
+class PageSpecificTagBannerTest(ProgramFrameworkTest):
+    """
+    Tests that _inject_active_program_tags only shows tags that were actually
+    consulted (via getProgramTag) while handling the current request, not all
+    non-default tags for the program.
+    """
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+        Tag._getTag.delete_all()
+
+    def _make_mock_request(self, with_tracking=True):
+        """Return a minimal mock request object."""
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req.path = '/manage/%s/main' % self.program.url
+        req.user = self.admins[0]
+        if with_tracking:
+            req._active_program_tag_keys = set()
+            req._active_global_tag_keys = set()
+        else:
+            # Explicitly set to None so getattr() returns None (not a MagicMock),
+            # simulating a request where the middleware never ran.
+            req._active_program_tag_keys = None
+            req._active_global_tag_keys = None
+        return req
+
+    def test_only_accessed_tag_shown(self):
+        """Only the tag that getProgramTag was called for appears in the banner."""
+        Tag.setTag("test", target=self.program, value="custom")
+        Tag.setTag("test_bool", target=self.program, value="True")
+
+        req = self._make_mock_request()
+        # Simulate a view that only consults "test"
+        req._active_program_tag_keys.add("test")
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+        self.assertNotIn("test_bool", shown_keys)
+
+    def test_no_accessed_tags_shows_nothing(self):
+        """If the view accessed no program tags, the banner is empty."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request()
+        # _active_program_tag_keys is empty — no tags consulted
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        self.assertNotIn('active_program_tags', context)
+
+    def test_fallback_when_tracking_not_initialized(self):
+        """Without tracking, all non-default tags are shown as a fallback."""
+        Tag.setTag("test", target=self.program, value="custom")
+
+        req = self._make_mock_request(with_tracking=False)
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        self.assertIn("test", shown_keys)
+
+    def test_get_program_tag_records_access(self):
+        """Calling getProgramTag with a program populates _active_program_tag_keys."""
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        # Simulate middleware having set up the request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+        finally:
+            clear_current_request()
+
+
+class GetNondefaultGlobalTagsTest(TestCase):
+    """Tests for Tag.get_nondefault_global_tags()."""
+
+    def setUp(self):
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+
+    def test_no_tags_set(self):
+        """When no global tags exist, the result is empty."""
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+        self.assertNotIn("test_bool", keys)
+
+    def test_global_tag_returned(self):
+        """A global tag (no target) with is_setting=True appears in the result."""
+        Tag.setTag("test", target=None, value="hello")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertIn("test", keys)
+        entry = next(d for d in result if d['key'] == "test")
+        self.assertEqual(entry['value'], "hello")
+        self.assertIn('help_text', entry)
+
+    def test_targeted_tag_not_returned(self):
+        """A tag with a non-null target is not included in global results."""
+        # Setting a tag with any target row should be excluded by the
+        # content_type__isnull / object_id__isnull filter on the query.
+        user, _ = User.objects.get_or_create(
+            username="GlobalTagTestUser", email="gtt@example.com", password="")
+        Tag.setTag("test", target=user, value="targeted")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test", keys)
+
+    def test_non_setting_tag_excluded(self):
+        """A global tag with is_setting=False is excluded from the result."""
+        # Pick a real global key registered with is_setting=False, if any.
+        # Fall back to flipping our test tag's is_setting for the duration of
+        # this test if no such key exists.
+        original = all_global_tags['test'].get('is_setting', True)
+        all_global_tags['test']['is_setting'] = False
+        try:
+            Tag.setTag("test", target=None, value="something")
+            result = Tag.get_nondefault_global_tags()
+            keys = [d['key'] for d in result]
+            self.assertNotIn("test", keys)
+        finally:
+            all_global_tags['test']['is_setting'] = original
+
+    def test_tag_at_default_value_excluded(self):
+        """A global tag stored at its default value is hidden from the banner."""
+        all_global_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=None, value="False")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertNotIn("test_bool", keys)
+
+    def test_tag_at_nondefault_value_included(self):
+        """A global tag stored with a non-default value is shown."""
+        all_global_tags['test_bool']['default'] = False
+        Tag.setTag("test_bool", target=None, value="True")
+        result = Tag.get_nondefault_global_tags()
+        keys = [d['key'] for d in result]
+        self.assertIn("test_bool", keys)
+
+
+class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
+    """
+    Tests that _inject_active_program_tags also injects ``active_global_tags``
+    based on which global tag keys were consulted while handling the request,
+    in addition to the existing program-tag behavior.
+    """
+
+    def setUp(self):
+        super().setUp()
+        Tag.objects.filter(key__in=["test", "test_bool"]).delete()
+        Tag._getTag.delete_all()
+
+    def _make_mock_request(self, with_tracking=True):
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req.path = '/manage/%s/main' % self.program.url
+        req.user = self.admins[0]
+        if with_tracking:
+            req._active_program_tag_keys = set()
+            req._active_global_tag_keys = set()
+        else:
+            req._active_program_tag_keys = None
+            req._active_global_tag_keys = None
+        return req
+
+    def test_only_accessed_global_tag_shown(self):
+        """Only the global tag the view actually consulted appears in the banner."""
+        Tag.setTag("test", target=None, value="global custom")
+        Tag.setTag("test_bool", target=None, value="True")
+
+        req = self._make_mock_request()
+        # Simulate a view that only consults the global "test" tag.
+        req._active_global_tag_keys.add("test")
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        self.assertIn("test", shown_keys)
+        self.assertNotIn("test_bool", shown_keys)
+        # Settings link should point to the global tag management page.
+        self.assertEqual(context.get('active_global_tags_url'), '/manage/tags/')
+
+    def test_no_accessed_global_tags_shows_nothing(self):
+        """If the view accessed no global tags, the global banner is empty."""
+        Tag.setTag("test", target=None, value="global custom")
+
+        req = self._make_mock_request()
+        # _active_global_tag_keys stays empty.
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        self.assertNotIn('active_global_tags', context)
+
+    def test_fallback_when_tracking_not_initialized(self):
+        """Without tracking, all non-default global tags are shown as a fallback."""
+        Tag.setTag("test", target=None, value="global custom")
+
+        req = self._make_mock_request(with_tracking=False)
+
+        from esp.utils.web import _inject_active_program_tags
+        context = {}
+        _inject_active_program_tags(req, context)
+
+        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        self.assertIn("test", shown_keys)
+
+    def test_get_tag_records_global_access(self):
+        """Calling Tag.getTag (no target) populates _active_global_tag_keys."""
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            Tag.getTag("test")
+            self.assertIn("test", req._active_global_tag_keys)
+        finally:
+            clear_current_request()
+
+    def test_get_program_tag_fallback_records_global_access(self):
+        """
+        getProgramTag falling back to the global lookup (because no
+        program-specific value exists) also records the key into
+        _active_global_tag_keys, so global non-default values can show up in
+        the banner even when accessed through getProgramTag.
+        """
+        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from unittest.mock import MagicMock
+        req = MagicMock()
+        req._active_program_tag_keys = set()
+        req._active_global_tag_keys = set()
+        _threading_local.request = req
+        try:
+            # No program-specific tag; getProgramTag will fall through to the
+            # global lookup branch and should record the key as a global hit.
+            Tag.getProgramTag("test", program=self.program)
+            self.assertIn("test", req._active_program_tag_keys)
+            self.assertIn("test", req._active_global_tag_keys)
+        finally:
+            clear_current_request()
+
+
+
 class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
@@ -402,9 +668,9 @@ class TagRegistrationTest(SimpleTestCase):
             if self._is_tag_call(node) and node.args:
                 first_arg = node.args[0]
                 tag_key = None
-                if isinstance(first_arg, ast.Str):  # Python 3.7 compat
+                if isinstance(first_arg, ast.Str):  # legacy AST node compat
                     tag_key = first_arg.s
-                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # Python 3.8+ compat
+                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # modern AST node compat
                     tag_key = first_arg.value
                 if tag_key is not None:
                     self.found.append((tag_key, node.lineno))
@@ -495,3 +761,157 @@ class TagRegistrationTest(SimpleTestCase):
                 "esp.tagdict.__init__ (all_global_tags or all_program_tags):\n"
                 + tag_list
             )
+
+
+class HideFieldsValidatorTest(SimpleTestCase):
+    """Tests for the hide_fields tag validation utilities."""
+
+    def test_non_hide_fields_tag_returns_none(self):
+        """Tags that are not hide_fields tags should return None."""
+        self.assertIsNone(validate_hide_fields_value('some_other_tag', 'value'))
+        self.assertIsNone(get_valid_field_names_for_tag('some_other_tag'))
+
+    def test_all_hide_fields_tags_return_valid_fields(self):
+        """Every recognised hide_fields tag key should return a non-empty set of valid field names."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid_fields = get_valid_field_names_for_tag(tag_key)
+            self.assertIsNotNone(valid_fields, f"{tag_key} should be recognised")
+            self.assertIsInstance(valid_fields, set)
+            self.assertTrue(len(valid_fields) > 0, f"{tag_key} should have at least one valid field")
+
+    def test_empty_value_is_valid(self):
+        """An empty tag value should be accepted without errors."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '')
+            self.assertEqual(valid, [])
+            self.assertEqual(invalid, [])
+
+    def test_whitespace_only_value_is_valid(self):
+        """A whitespace-only tag value should be accepted without errors."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '   ')
+            self.assertEqual(valid, [])
+            self.assertEqual(invalid, [])
+
+    def test_valid_field_names_are_accepted(self):
+        """Known field names should appear in the valid list."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            # Pick one field to test
+            sample_field = sorted(all_fields)[0]
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field)
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+    def test_invalid_field_names_are_rejected(self):
+        """Non-existent field names should appear in the invalid list."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, 'not_a_real_field')
+            self.assertEqual(valid, [])
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_mixed_valid_and_invalid_fields(self):
+        """A mix of valid and invalid field names should be split correctly."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            value = '%s,not_a_real_field' % sample_field
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
+            self.assertIn(sample_field, valid)
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_whitespace_around_field_names_is_stripped(self):
+        """Leading/trailing whitespace around field names should be ignored."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            value = '  %s , not_a_real_field  ' % sample_field
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
+            self.assertIn(sample_field, valid)
+            self.assertIn('not_a_real_field', invalid)
+
+    def test_trailing_comma_does_not_create_empty_entry(self):
+        """A trailing comma should not produce an empty invalid field name."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field + ',')
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+    def test_case_insensitivity(self):
+        """Field name matching should be case-insensitive (values are lowered)."""
+        for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
+            all_fields = get_valid_field_names_for_tag(tag_key)
+            sample_field = sorted(all_fields)[0]
+            # All declared field names are already lowercase in Django,
+            # so an uppercased version should still resolve correctly
+            # after the value is lowered by the validator.
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field.upper())
+            self.assertIn(sample_field, valid)
+            self.assertEqual(invalid, [])
+
+
+class TagAdminFormValidationTest(TestCase):
+    """Tests for the TagAdminForm used in the Django admin."""
+
+    def test_admin_form_rejects_invalid_hide_fields(self):
+        """Submitting an invalid field name via the admin form should fail validation."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': 'not_a_real_field',
+        })
+        self.assertFalse(form.is_valid())
+        # The error should mention the invalid field name
+        error_text = str(form.errors)
+        self.assertIn('not_a_real_field', error_text)
+
+    def test_admin_form_accepts_valid_hide_fields(self):
+        """Submitting valid field names via the admin form should pass validation."""
+        from esp.tagdict.admin import TagAdminForm
+        from esp.users.forms.user_profile import StudentProfileForm
+
+        sample_field = sorted(StudentProfileForm.declared_fields.keys())[0]
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': sample_field,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_accepts_empty_hide_fields(self):
+        """An empty value for a hide_fields tag should be accepted."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'student_profile_hide_fields',
+            'value': '',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_accepts_non_hide_fields_tags(self):
+        """Non-hide-fields tags should not be affected by the validation."""
+        from esp.tagdict.admin import TagAdminForm
+
+        form = TagAdminForm(data={
+            'key': 'some_random_tag',
+            'value': 'any_value',
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_admin_form_error_lists_valid_options(self):
+        """The validation error should list the valid field names."""
+        from esp.tagdict.admin import TagAdminForm
+        from esp.users.forms.user_profile import TeacherProfileForm
+
+        form = TagAdminForm(data={
+            'key': 'teacher_profile_hide_fields',
+            'value': 'bogus_field',
+        })
+        self.assertFalse(form.is_valid())
+        error_text = str(form.errors)
+        self.assertIn('bogus_field', error_text)
+        # Should mention at least one valid field
+        any_valid = sorted(TeacherProfileForm.declared_fields.keys())[0]
+        self.assertIn(any_valid, error_text)
