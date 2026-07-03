@@ -4,24 +4,24 @@
 
 <table class="progressbar" align="center" width="400">
 <tr>
-<td><img src="/media/images/progress/left_fill.gif" /></td>
+<td><img src="/media/images/progress/left_fill.gif" alt="Progress bar start" /></td>
 {% for module in modules %}
 {% if module.isStep %}
 {% with module.isCompleted as moduleCompleted %}
 <td class="progress{% if moduleCompleted %}_fill{% endif %}">
 {% if module.useTemplate %}
-<a href="#module-{{ module.id }}">
+{% if is_module_page %}<a href="{{ mainpage_url }}">{% else %}<a href="#module-{{ module.id }}">{% endif %}
 {% else %}
 <a href="{{ module.get_full_path }}">
 {% endif %}
-<img src="/media/images/progress/bar{% if moduleCompleted %}_fill{% endif %}.gif" 
+<img src="/media/images/progress/bar{% if moduleCompleted %}_fill{% endif %}.gif"
     {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
     title="Not Done" alt="Not Done"{% endif %} /><br />
 </a>
 {% if module.useTemplate %}
-<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
-    {{ module.module.link_title }} 
-    </a> <em>(below)</em>
+{% if is_module_page %}<a href="{{ mainpage_url }}" title="{{ module.module.link_title }}">{% else %}<a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">{% endif %}
+    {{ module.module.link_title }}
+    </a>{% if not is_module_page %} <em>(below)</em>{% endif %}
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
@@ -32,6 +32,6 @@
 {% endwith %}
 {% endif %}
 {% endfor %}
-<td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" /></td>
+<td><img src="/media/images/progress/right{% if completedAll %}_fill{% endif %}.gif" alt="Progress bar end" /></td>
 </tr>
 </table>

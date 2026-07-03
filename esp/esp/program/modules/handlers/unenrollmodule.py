@@ -144,7 +144,7 @@ class UnenrollModule(ProgramModuleObj):
             'slot': timeslot,
             'seq': seq,
             'passed': timeslot.start < now - hour,
-            'upcoming': timeslot.start < now + hour,
+            'upcoming': timeslot.start >= now - hour,
         } for seq, timeslot in enumerate(timeslots)]
         context = {}
         context['selections'] = selections

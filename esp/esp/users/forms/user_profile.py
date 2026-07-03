@@ -1,6 +1,10 @@
+import logging
+
 from django import forms
 from esp.users.forms import _states
 from esp.tagdict.models import Tag
+
+logger = logging.getLogger(__name__)
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
@@ -46,8 +50,8 @@ class DropdownOtherField(forms.MultiValueField):
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     """ Base for contact form """
 
-    first_name = StrippedCharField(length=25, max_length=64)
-    last_name = StrippedCharField(length=30, max_length=64)
+    first_name = StrippedCharField(length=25, max_length=ESPUser._meta.get_field('first_name').max_length)
+    last_name = StrippedCharField(length=30, max_length=ESPUser._meta.get_field('last_name').max_length)
     e_mail = forms.EmailField()
     phone_day = PhoneNumberField(required=False)
     phone_cell = PhoneNumberField(required=False)
@@ -164,7 +168,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     pronoun = forms.CharField(max_length=50, required=False)
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7, 13)])
+    graduation_year = forms.ChoiceField(choices=[])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
@@ -210,7 +214,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             del self.fields['food_preference']
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
-        self.fields['graduation_year'].choices = [('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in ESPUser.grade_options()]
+        self.fields['graduation_year'].choices = ESPUser.graduation_year_choices()
 
         #   Add user's current grade if it is out of range and they have already filled out the profile.
         if user and user.registrationprofile_set.count() > 0:
@@ -225,7 +229,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             new_choices = []
             for x in self.fields['graduation_year'].choices:
                 if len(x[0]) > 0:
-                    new_choices.append((str(x[0]), "%s (%sth grade)" % (x[0], x[1])))
+                    new_choices.append((str(x[0]), f"{x[0]} ({x[1]}th grade)"))
                 else:
                     new_choices.append(x)
             self.fields['graduation_year'].choices = new_choices
@@ -267,12 +271,20 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         self.studentrep_error = False
 
     def clean_graduation_year(self):
-        gy = self.cleaned_data['graduation_year'].strip()
+        gy = self.cleaned_data.get('graduation_year', '').strip()
+        if not gy:
+            # Only enforce "required" when the field is actually required.
+            # When grade changes are disabled, __init__ sets required=False and
+            # the widget is HTML-disabled; clean() will backfill the old value
+            # from orig_prof.student_info, so we must not raise here.
+            if self.fields['graduation_year'].required:
+                raise forms.ValidationError("Grade / Graduation Year is required.")
+            return gy
         try:
             gy = str(abs(int(gy)))
-        except (ValueError, TypeError):
+        except ValueError:
             if gy != 'G':
-                gy = 'N/A'
+                raise forms.ValidationError("Invalid grade value.")
         return gy
 
     def clean_heard_about(self):
@@ -346,7 +358,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     pronoun = forms.CharField(max_length=50, required=False)
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
-    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label ='What is your affiliation with %s?' % settings.INSTITUTION_NAME)
+    affiliation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=AFFILIATION_CHOICES), label =f'What is your affiliation with {settings.INSTITUTION_NAME}?')
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
@@ -374,15 +386,15 @@ class TeacherInfoForm(FormWithRequiredCss):
             affiliation_field = self.fields['affiliation']
             affiliation, school = affiliation_field.widget.decompress(cleaned_data.get('affiliation'))
             if affiliation == '':
-                msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                msg = f'Please select your affiliation with {settings.INSTITUTION_NAME}.'
                 self.add_error('affiliation', msg)
             elif affiliation in (AFFILIATION_UNDERGRAD, AFFILIATION_GRAD, AFFILIATION_POSTDOC):
                 cleaned_data['affiliation'] = affiliation_field.compress([affiliation, '']) # ignore the box
             else: # OTHER or NONE -- Make sure they entered something into the other box
                 if school.strip() == '':
-                    msg = 'Please select your affiliation with %s.' % settings.INSTITUTION_NAME
+                    msg = f'Please select your affiliation with {settings.INSTITUTION_NAME}.'
                     if affiliation == AFFILIATION_OTHER:
-                        msg = 'Please enter your affiliation with %s.' % settings.INSTITUTION_NAME
+                        msg = f'Please enter your affiliation with {settings.INSTITUTION_NAME}.'
                     elif affiliation == AFFILIATION_NONE:
                         msg = 'Please enter your school or employer.'
                     self.add_error('affiliation', msg)
@@ -419,8 +431,15 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_students:
+        for field_name in [x.strip().lower() for x in Tag.getTag('student_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "student_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_students:
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
@@ -449,8 +468,15 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
+        for field_name in [x.strip().lower() for x in Tag.getTag('teacher_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "teacher_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
                 del self.fields[field_name]
 
 # A list of guardian fields that can not be deleted via profile_hide_fields tags
@@ -459,8 +485,15 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
+        for field_name in [x.strip().lower() for x in Tag.getTag('guardian_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "guardian_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
                 del self.fields[field_name]
 
 # A list of educator fields that can not be deleted via profile_hide_fields tags
@@ -469,8 +502,15 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_educators:
+        for field_name in [x.strip().lower() for x in Tag.getTag('educator_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "educator_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_educators:
                 del self.fields[field_name]
 
 # A list of volunteer fields that can not be deleted via profile_hide_fields tags
@@ -478,8 +518,15 @@ _undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',')]:
-            if field_name in self.fields and field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
+        for field_name in [x.strip().lower() for x in Tag.getTag('volunteer_profile_hide_fields').split(',') if x.strip()]:
+            if field_name not in self.fields:
+                logger.warning(
+                    "volunteer_profile_hide_fields: '%s' is not a recognized "
+                    "field name and will be ignored. Valid field names are: %s",
+                    field_name, ', '.join(sorted(self.fields.keys())),
+                )
+                continue
+            if field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
                 del self.fields[field_name]
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
