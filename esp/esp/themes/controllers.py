@@ -478,12 +478,18 @@ class ThemeController(object):
         return results
 
     def get_bootswatch_themes(self):
-        """Return sorted list of available Bootswatch SCSS theme names."""
+        """Return sorted list of available Bootswatch SCSS theme names.
+
+        Only directories containing the Bootswatch 5 SCSS entry points
+        (_variables.scss and _bootswatch.scss) count as themes, so stray
+        directories under dist/ never reach the editor dropdown.
+        """
         if not os.path.isdir(_BOOTSWATCH_DIST):
             return []
         return sorted([
             d for d in os.listdir(_BOOTSWATCH_DIST)
-            if os.path.isdir(os.path.join(_BOOTSWATCH_DIST, d))
+            if os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_variables.scss'))
+            and os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_bootswatch.scss'))
         ])
 
     def compile_scss(self, scss_data):
@@ -593,21 +599,27 @@ class ThemeController(object):
                     css_data_pre += content
 
             if bootswatch_theme is None:
+                #   Implicit value from the site-wide tag: tolerate a stale or
+                #   unavailable name (e.g. bootswatch npm package not installed
+                #   on this host) so recompiles and deploys never break on it.
                 bootswatch_theme = Tag.getTag('bootswatch_theme', default='')
+                if bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
+                    logger.warning('Ignoring unavailable Bootswatch theme %r; '
+                                   'compiling with stock Bootstrap', bootswatch_theme)
+                    bootswatch_theme = ''
+            elif bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
+                #   Explicitly requested by the caller: fail loudly.
+                raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
+
+            bw_vars_import = bw_scss_import = ''
             if bootswatch_theme:
-                valid_bootswatch = self.get_bootswatch_themes()
-                if bootswatch_theme not in valid_bootswatch:
-                    raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
                 bw_vars = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'variables')
                 bw_scss = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'bootswatch')
-                scss_data = var_data
-                scss_data += f'\n@import "{bw_vars}";\n'
-                scss_data += f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
-                scss_data += f'\n@import "{bw_scss}";\n'
-                scss_data += css_data_pre
-            else:
-                bootstrap_import = f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
-                scss_data = var_data + bootstrap_import + css_data_pre
+                bw_vars_import = f'\n@import "{bw_vars}";\n'
+                bw_scss_import = f'\n@import "{bw_scss}";\n'
+            scss_data = (var_data + bw_vars_import
+                         + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
+                         + bw_scss_import + css_data_pre)
 
             #   Replace all SCSS variable declarations for which we have a value defined.
             #   Parse variable names from the already-loaded scss_data (server content,

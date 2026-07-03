@@ -8,8 +8,8 @@
     <div class="col-12">
         <div class="well text-center">
             <h3>Current theme: {{ theme_name }}</h3>
-            <a href="/themes/select/" class="btn btn-lg btn-primary btn-block w-100 mb-3">Step 1: Select a theme</a>
-            <a href="/themes/setup/" class="btn btn-lg btn-primary btn-block w-100">Step 2: Set up the theme</a>
+            <a href="/themes/select/" class="btn btn-lg btn-primary w-100 mb-3">Step 1: Select a theme</a>
+            <a href="/themes/setup/" class="btn btn-lg btn-primary w-100">Step 2: Set up the theme</a>
         </div>
     </div>
 </div>
@@ -25,7 +25,7 @@
             {% endif %}
             <h3>Current favicon:</h3>
             <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected" class="mb-3" style="max-height: 32px;">
-            <a href="/themes/logos/" class="btn btn-lg btn-primary btn-block w-100">Step 3: Upload/select a logo, header, or favicon</a>
+            <a href="/themes/logos/" class="btn btn-lg btn-primary w-100">Step 3: Upload/select a logo, header, or favicon</a>
         </div>
     </div>
 </div>
@@ -34,7 +34,7 @@
     <div class="col-12">
         <div class="well text-center">
             <h3>Current customization:<br />{{ last_customization_name }}</h3>
-            <a href="/themes/customize/" class="btn btn-lg btn-primary btn-block w-100">Step 4: Customize the theme</a>
+            <a href="/themes/customize/" class="btn btn-lg btn-primary w-100">Step 4: Customize the theme</a>
         </div>
     </div>
 </div>
@@ -42,7 +42,7 @@
 <div class="row">
     <div class="col-12">
         <div class="well text-center">
-            <a href="/themes/recompile/" class="btn btn-lg btn-primary btn-block w-100">Install updates for the theme</a>
+            <a href="/themes/recompile/" class="btn btn-lg btn-primary w-100">Install updates for the theme</a>
         </div>
     </div>
 </div>

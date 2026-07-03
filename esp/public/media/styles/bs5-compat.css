@@ -1,0 +1,29 @@
+/* Compatibility shims for Bootstrap classes removed in Bootstrap 5.
+ *
+ * Many templates still use .form-inline (removed in BS5) and .navbar-form
+ * (removed in BS4).  These rules restore the Bootstrap 4 inline-form layout
+ * so those forms keep rendering horizontally until each template is migrated
+ * to BS5 flex utilities, at which point this file can be deleted.
+ */
+.form-inline,
+.navbar-form {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+}
+.form-inline .form-control,
+.navbar-form .form-control {
+    display: inline-block;
+    width: auto;
+    vertical-align: middle;
+}
+.form-inline label,
+.navbar-form label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+}
+.form-inline .form-check,
+.navbar-form .form-check {
+    width: auto;
+}

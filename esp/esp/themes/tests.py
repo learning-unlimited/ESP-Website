@@ -220,12 +220,18 @@ class ThemesTest(TestCase):
         #   Test that we can change a parameter and the right value appears in the stylesheet.
         #   Bootstrap 5 exposes $link-color as the --bs-link-color CSS custom property in :root,
         #   so we check for the custom property rather than a direct `a { color: ... }` rule.
-        def verify_linkcolor(color_str):
+        def verify_linkcolor(color_str, absent_color_str=None):
             css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = rf'--bs-link-color:\s*{re.escape(color_str)};'
             with open(css_filename) as f:
-                self.assertGreaterEqual(len(re.findall(regexp, f.read(), flags=re.I)), 1,
-                                        f'Expected --bs-link-color: {color_str} in compiled CSS')
+                css = f.read()
+            self.assertGreaterEqual(len(re.findall(regexp, css, flags=re.I)), 1,
+                                    f'Expected --bs-link-color: {color_str} in compiled CSS')
+            if absent_color_str is not None:
+                #   Recompiling must replace the old declaration, not append to it.
+                old_regexp = rf'--bs-link-color:\s*{re.escape(absent_color_str)};'
+                self.assertEqual(len(re.findall(old_regexp, css, flags=re.I)), 0,
+                                 f'Stale --bs-link-color: {absent_color_str} still in compiled CSS')
 
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
@@ -242,7 +248,7 @@ class ThemesTest(TestCase):
         config_dict = {'apply': True, 'linkColor': color_str2}
         response = self.client.post('/themes/customize/', config_dict)
         self.assertEqual(response.status_code, 200)
-        verify_linkcolor(color_str2)
+        verify_linkcolor(color_str2, absent_color_str=color_str1)
 
         config_dict = {'load': True, 'loadThemeName': 'save_test'}
         response = self.client.post('/themes/customize/', config_dict)
@@ -379,18 +385,41 @@ class Bootstrap4MigrationTest(TestCase):
 
     def test_compile_css_with_bootswatch_produces_valid_output(self):
         """compile_css() with a Bootswatch skin compiles to non-trivial CSS (LESS pipeline only)."""
-        themes_list = self.tc.get_bootswatch_themes()
-        if not themes_list:
-            self.skipTest('Bootswatch npm package not installed')
         less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
         if not less_only:
             self.skipTest('All themes use SCSS; Bootswatch 3 LESS test not applicable')
+        themes_list = self.tc.get_bootswatch_less_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch 3 LESS npm package not installed')
         self.tc.compile_css(less_only[0], {}, self.css_filename, bootswatch_theme=themes_list[0])
         with open(self.css_filename) as f:
             css = f.read()
         self.assertGreater(len(css), 10000)
         self.assertIn('.navbar-toggle', css)
         self.assertIn('.panel', css)
+
+    def test_compile_css_with_scss_bootswatch_produces_valid_output(self):
+        """compile_css() with a Bootswatch 5 skin on an SCSS theme compiles to non-trivial CSS."""
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        if not scss_themes:
+            self.skipTest('No SCSS themes available')
+        themes_list = self.tc.get_bootswatch_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(scss_themes[0], {}, self.css_filename, bootswatch_theme=themes_list[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertGreater(len(css), 10000)
+        self.assertIn('--bs-', css, 'Compiled CSS should contain Bootstrap 5 custom properties')
+
+    def test_compile_css_raises_for_unknown_explicit_bootswatch(self):
+        """compile_css() raises ValueError when an unknown Bootswatch skin is passed explicitly."""
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        if not scss_themes:
+            self.skipTest('No SCSS themes available')
+        with self.assertRaises(ValueError):
+            self.tc.compile_css(scss_themes[0], {}, self.css_filename,
+                                bootswatch_theme='no-such-bootswatch-skin')
 
 
 class SafeCustomizationPathTest(TestCase):

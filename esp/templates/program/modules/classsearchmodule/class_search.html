@@ -52,10 +52,12 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
 </div>
 
 <!-- Auto-Flag Rule Modal -->
-<div id="autorule-modal" class="modal fade">
+<div id="autorule-modal" class="modal fade" tabindex="-1">
+ <div class="modal-dialog">
+  <div class="modal-content">
   <div class="modal-header">
+    <h3 class="modal-title">Create Auto-Flag Rule</h3>
     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-    <h3>Create Auto-Flag Rule</h3>
   </div>
   <div class="modal-body">
     <p>This will automatically add the selected flag to any class that matches the current search criteria whenever it is saved.</p>
@@ -80,11 +82,13 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     <a href="#" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</a>
     <a href="#" class="btn btn-primary" onclick="$j('#autorule-form').submit();">Save Rule</a>
   </div>
+  </div>
+ </div>
 </div>
 
 <script type="text/javascript">
 function showAutoRuleModal() {
-    $j('#autorule-modal').modal('show');
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('autorule-modal')).show();
 }
 </script>
 <div class="btn-toolbar">

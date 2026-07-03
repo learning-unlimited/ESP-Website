@@ -215,6 +215,14 @@ div.navbar-collapse {
 }
 
 @media (min-width: $navbarCollapseWidth) {
+    // Let overflowing navbar content (nav categories + inline login form)
+    // wrap to a second row instead of overflowing the fixed-top navbar.
+    // Safe alongside BS5's absolutely-positioned dropdown menus.
+    .navbar-expand-md .navbar-collapse {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
     .navbar-login {
         margin-left: auto !important;
     }
