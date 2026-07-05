@@ -2,7 +2,6 @@
 Behavioral tests for FinAidApproveModule (esp/program/modules/handlers/finaidapprovemodule.py).
 
 This handler processes POST requests to approve financial aid grants.
-Coverage was 0% before this PR despite being used on every program day.
 
 Refs: #3780, #3773
 """
@@ -72,7 +71,7 @@ class FinAidApproveTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.login_as('admin')
         self.client.post(self._url(), {
             'user': [str(blank_student.id)],
-            # approve_blanks NOT sent
+            # approve_blanks NOT set
             'amount_max_dec': '25.00',
             'percent': '100',
         })

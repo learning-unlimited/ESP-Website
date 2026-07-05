@@ -2,7 +2,7 @@
 Behavioral tests for AdminReviewApps (esp/program/modules/handlers/adminreviewapps.py).
 
 accept_student() and reject_student() create and expire StudentRegistration
-objects with relationship='Accepted'. Coverage was 0% before this PR.
+objects with relationship='Accepted'.
 
 Refs: #3780, #3773
 """
@@ -24,12 +24,14 @@ class AdminReviewAppsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
 
     def _accept_url(self):
-        return self.get_module_url('manage', 'accept_student') + \
-               f'?cls={self.cls.id}&student={self.student.id}'
+        # accept_student() expects extra=class_id in URL path
+        return self.get_module_url('manage', 'accept_student', extra=str(self.cls.id)) + \
+               f'?student={self.student.id}'
 
     def _reject_url(self):
-        return self.get_module_url('manage', 'reject_student') + \
-               f'?cls={self.cls.id}&student={self.student.id}'
+        # reject_student() expects extra=class_id in URL path
+        return self.get_module_url('manage', 'reject_student', extra=str(self.cls.id)) + \
+               f'?student={self.student.id}'
 
     def test_accept_student_creates_accepted_registration(self):
         """accept_student() creates a StudentRegistration with relationship='Accepted'."""

@@ -4,7 +4,7 @@ Behavioral tests for LotteryStudentRegModule
 
 LotteryStudentRegTest (studentregmodules.py) already covers students() and
 isCompleted(). This file adds tests for the HTTP-layer views: timeslots_json()
-and viewlotteryprefs(), which had 0% behavioral coverage.
+and viewlotteryprefs().
 
 Refs: #3780, #3773
 """
@@ -48,12 +48,9 @@ class LotteryTimeslotsJsonTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         response = self.client.get(self._url())
         data = json.loads(response.content)
         returned_ids = [item[0] for item in data]
-        expected_ids = sorted(
-            [ts.id for ts in self.program.getTimeSlotList()],
-            key=lambda tid: next(
-                ts.start for ts in self.program.getTimeSlotList() if ts.id == tid
-            )
-        )
+        # Sort timeslots by start time, then extract IDs
+        timeslots = sorted(self.program.getTimeSlotList(), key=lambda ts: ts.start)
+        expected_ids = [ts.id for ts in timeslots]
         self.assertEqual(returned_ids, expected_ids)
 
 
@@ -73,10 +70,10 @@ class LotteryViewPrefsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         return self.get_module_url('learn', 'viewlotteryprefs')
 
     def test_unauthenticated_redirects(self):
-        """Unauthenticated GET is redirected."""
+        """Unauthenticated GET redirects to login (302)."""
         self.client.logout()
         response = self.client.get(self._url())
-        self.assertIn(response.status_code, [302, 403])
+        self.assertEqual(response.status_code, 302)
 
     def test_student_with_priority_sees_registration(self):
         """Student with a Priority/1 SR sees it in viewlotteryprefs context."""
@@ -93,9 +90,8 @@ class LotteryViewPrefsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
         self.client.login(username=self.student.username, password='password')
         response = self.client.get(self._url())
-        self.assertIn(response.status_code, [200, 302])
-        if response.status_code == 200:
-            self.assertFalse(
-                response.context.get('pempty', True),
-                'pempty should be False when student has Priority/1 registrations'
-            )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            response.context.get('pempty', True),
+            'pempty should be False when student has Priority/1 registrations'
+        )
