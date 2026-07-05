@@ -24,14 +24,14 @@ class AdminReviewAppsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
 
     def _accept_url(self):
-        # accept_student() expects extra=class_id in URL path
-        return self.get_module_url('manage', 'accept_student', extra=str(self.cls.id)) + \
-               f'?student={self.student.id}'
+        # accept_student() gets class from ?cls= and passes extra to review_students()
+        return self.get_module_url('manage', 'accept_student') + \
+               f'/{self.cls.id}?cls={self.cls.id}&student={self.student.id}'
 
     def _reject_url(self):
-        # reject_student() expects extra=class_id in URL path
-        return self.get_module_url('manage', 'reject_student', extra=str(self.cls.id)) + \
-               f'?student={self.student.id}'
+        # reject_student() gets class from ?cls= and passes extra to review_students()
+        return self.get_module_url('manage', 'reject_student') + \
+               f'/{self.cls.id}?cls={self.cls.id}&student={self.student.id}'
 
     def test_accept_student_creates_accepted_registration(self):
         """accept_student() creates a StudentRegistration with relationship='Accepted'."""
