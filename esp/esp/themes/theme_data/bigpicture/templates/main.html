@@ -20,11 +20,9 @@
 {% block navbar %}{% include "navbar.html" %}{% endblock navbar%}
 {% endcomment %}
 {% block navbar %}
-<div class="navbar">
-  <div class="navbar-inner">
-    {% include "users/loginbox_content.html" %}
-  </div>
-</div>
+<nav class="navbar navbar-dark">
+  {% include "users/loginbox_content.html" %}
+</nav>
 {% endblock navbar%}
 
 {% block heading %}
@@ -81,13 +79,13 @@
 <div class="container">
   <div class="row">
     {% block sidebar %}
-    <div id="sidebar" class="span3">
+    <div id="sidebar" class="col-md-3">
       {% include "sidebar/nav.html" %}
       {% include "sidebar/admin.html" %}
     </div>
     {% endblock %}
 
-    <main id="main" class="span9 resizable" tabindex="-1">
+    <main id="main" class="col-md-9 resizable" tabindex="-1">
       {% if request.COOKIES.esp_testing_role %}
       <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
         <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -97,13 +95,13 @@
       {% endif %}
       {% if request.mod_required %}
       <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
           This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
       </div>
       {% endif %}
       {% if request.show_perm_info %}
       <div class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
           <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
         <br />
         {% if request.roles_with_perm %}
@@ -119,7 +117,7 @@
         <strong>Admin notice:</strong>
         This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
         {% for tag in active_program_tags %}
-          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+          <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
         {% endfor %}
         &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
       </div>
@@ -130,7 +128,7 @@
         <strong>Admin notice:</strong>
         This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
         {% for tag in active_global_tags %}
-          <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+          <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
         {% endfor %}
         &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
       </div>
@@ -156,7 +154,6 @@
       </div>
     </main>
   </div>
-</div>
 </div>
 </br>
 </br>
