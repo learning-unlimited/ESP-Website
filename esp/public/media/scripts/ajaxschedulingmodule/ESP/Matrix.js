@@ -137,8 +137,8 @@ function Matrix(
     };
     
     this.scheduling_check = "";
-    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
-        this.scheduling_check = event.target.value;
+    $j('input[type=radio][name=scheduling-checks]').on("change", function (evt) {
+        this.scheduling_check = evt.target.value;
         this.updateCells();
     }.bind(this));
 
@@ -534,8 +534,8 @@ function Matrix(
         //populate cells
         var cells = this.cells;
         $j.each(room_ids, function(index, room_id){
-            row = rows[room_id];
-            for(i = 0; i < this.timeslots.timeslots_sorted.length; i++){
+            var row = rows[room_id];
+            for(var i = 0; i < this.timeslots.timeslots_sorted.length; i++){
                 cells[room_id][i].el.appendTo(row);
             }
             row.appendTo(tbody);
@@ -554,7 +554,12 @@ function Matrix(
         var that = this;
         this.el.tooltip({
             content: function() {
-                var room = that.rooms[$j(this).data('id')];
+                var $el = $j(this);
+                if ($el.hasClass("occupied-cell")) {
+                    var cell = $el.data("cell");
+                    return cell ? cell.tooltip() : "";
+                }
+                var room = that.rooms[$el.data('id')];
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
@@ -562,7 +567,7 @@ function Matrix(
                 ];
                 return tooltipParts.join("</br>");
             },
-            items: ".ft_c td",
+            items: ".ft_c td, .occupied-cell",
             track: true,
             show: {duration: 100},
             hide: {duration: 100},

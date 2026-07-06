@@ -1,28 +1,11 @@
 {
-    "name": "bootstrap"
-  , "description": "Sleek, intuitive, and powerful front-end framework for faster and easier web development."
-  , "version": "2.3.2"
-  , "keywords": ["bootstrap", "css"]
-  , "homepage": "http://twbs.github.com/bootstrap/"
-  , "author": "Twitter Inc."
-  , "scripts": { "test": "make test" }
-  , "repository": {
-      "type": "git"
-    , "url": "https://github.com/twbs/bootstrap.git"
-  }
-  , "licenses": [
-    {
-        "type": "Apache-2.0"
-      , "url": "http://www.apache.org/licenses/LICENSE-2.0"
-    }
-  ]
-  , "devDependencies": {
-      "uglify-js": "^3.19.3"
-    , "jshint": "^2.13.6"
-    , "less": "^3.13.1"
-    , "less-plugin-clean-css": "^1.5.1"
-    , "connect": "^3.7.0"
-    , "serve-static": "^1.15.0"
-    , "hogan.js": "^3.0.2"
+  "name": "esp-theme-editor",
+  "description": "Bootstrap and theme editor dependencies for ESP-Website",
+  "version": "4.0.0",
+  "private": true,
+  "dependencies": {
+    "bootstrap": "4.6.2",
+    "bootstrap-icons": "1.11.3",
+    "sass": "^1.58.0"
   }
 }
