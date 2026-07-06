@@ -273,11 +273,11 @@ class TeacherClassRegModule(ProgramModuleObj):
         }
 
         user = request.user
-        context["sched_sections"] = [
+        context["sched_sections"] = sorted([
             sec
             for sec in user.getTaughtOrModeratingSectionsFromProgram(program=prog)
             if sec.meeting_times.count() > 0
-        ]
+        ])
 
         secid = 0
         if "secid" in request.POST:

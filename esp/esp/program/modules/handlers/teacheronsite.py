@@ -104,9 +104,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
+            sections = sorted(user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
+                num_meeting_times__gt=0, status__gt=0))
         context['sections'] = sections
 
         return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
@@ -129,9 +129,9 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
+            sections = sorted(user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
+                num_meeting_times__gt=0, status__gt=0))
         section_list = []
         for section in sections:
             sec, not_found = TeacherClassRegModule.process_attendance(section, request, prog)
