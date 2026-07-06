@@ -29,8 +29,7 @@ class ThemesTest(TestCase):
         new_admin.makeRole('Administrator')
         self.admin = new_admin
 
-        #   Redirect compiled CSS output to a per-worker filename to avoid
-        #   races when multiple xdist workers delete/write the same file.
+        #   Redirect compiled CSS output to avoid disturbing installed setup
         self._css_file = themes_settings.COMPILED_CSS_FILE
         worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'main')
         themes_settings.COMPILED_CSS_FILE = f'theme_compiled_test_{worker_id}.css'
