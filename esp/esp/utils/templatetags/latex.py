@@ -34,8 +34,16 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import re
+
 from django import template
 register = template.Library()
+
+# Logo commands that use \spacefactor internally and crash in math mode.
+# \LaTeXe is excluded — it wraps itself in \mbox in LaTeX core.
+_TEXT_MODE_CMD_RE = re.compile(
+    r'\\(?:XeLaTeX|LuaLaTeX|AmSTeX|LaTeX|TeX)(?![a-zA-Z])'
+)
 
 @register.filter
 def texescape(value):
@@ -70,6 +78,14 @@ def texescape(value):
             continue
         for key, val in replacement_pairs:
             strings[i] = strings[i].replace(key, val)
+
+    # Fix text-mode-only commands in math blocks (issue #2928).
+    # Logo commands like \LaTeX use \spacefactor which crashes in math mode.
+    # Wrap in \mbox{} (base LaTeX, no package dependency).
+    for i in range(1, len(strings) - 1, 2):
+        strings[i] = _TEXT_MODE_CMD_RE.sub(
+            lambda m: r'\mbox{' + m.group(0) + '}', strings[i]
+        )
 
     value = '$'.join(strings)
 
