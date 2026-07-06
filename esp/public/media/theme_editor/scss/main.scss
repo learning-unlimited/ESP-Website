@@ -18,41 +18,47 @@ body {
     font-size: $navbarBrandFontSize;
 }
 
-// $navbarBackground cannot be bridged to Bootstrap 4's $dark variable before
-// @import because Bootstrap's color-contrast() runs on every palette entry and
-// fails on arbitrary hex values.  Direct CSS override here is equivalent.
-.navbar.bg-dark {
-    background-color: $navbarBackground !important;
-}
-
-// Theme editor button controls. Bootstrap 4 sets button text via color-yiq($background),
-// so $btnLinkColor / $btnPrimaryLinkColor cannot be bridged as SCSS variables (LESS had
-// @btn-default-color / @btn-primary-color). $secondary maps to $btnInverseBackground, not
-// $btnBackground, so default buttons also need explicit overrides.
-.btn-secondary,
-.btn-default {
-    background-color: $btnBackground;
-    border-color: darken($btnBackground, 12%);
-    color: $btnLinkColor;
-
-    &:hover,
-    &:focus {
-        background-color: darken($btnBackground, 7.5%);
-        border-color: darken($btnBackground, 12%);
-        color: $btnLinkColor;
+// $navbarBackground cannot be bridged to Bootstrap 5's $dark variable before
+// @import because Bootstrap's color-contrast() fails on arbitrary hex values.
+// Direct CSS override here is equivalent.  Suppressed when a Bootswatch theme
+// is active so Bootswatch's navbar color identity is not blocked.
+@if not $bootswatch-active {
+    .navbar.bg-dark {
+        background-color: $navbarBackground !important;
     }
 }
 
-.btn-primary {
-    background-color: $btnPrimaryBackground;
-    border-color: darken($btnPrimaryBackground, 5%);
-    color: $btnPrimaryLinkColor;
+// Theme editor button controls.  Only applied when NO Bootswatch theme is active.
+// When Bootswatch IS active, Bootstrap's component CSS already uses $primary/$secondary
+// (set by Bootswatch's _variables.scss) so we must not override those with the ESP
+// customizer variables — doing so would lock buttons to the ESP default colours
+// and hide the Bootswatch theme's button identity entirely.
+@if not $bootswatch-active {
+    .btn-secondary,
+    .btn-default {
+        background-color: $btnBackground;
+        border-color: darken($btnBackground, 12%);
+        color: $btnLinkColor;
 
-    &:hover,
-    &:focus {
-        background-color: darken($btnPrimaryBackground, 7.5%);
+        &:hover,
+        &:focus {
+            background-color: darken($btnBackground, 7.5%);
+            border-color: darken($btnBackground, 12%);
+            color: $btnLinkColor;
+        }
+    }
+
+    .btn-primary {
+        background-color: $btnPrimaryBackground;
         border-color: darken($btnPrimaryBackground, 5%);
         color: $btnPrimaryLinkColor;
+
+        &:hover,
+        &:focus {
+            background-color: darken($btnPrimaryBackground, 7.5%);
+            border-color: darken($btnPrimaryBackground, 5%);
+            color: $btnPrimaryLinkColor;
+        }
     }
 }
 

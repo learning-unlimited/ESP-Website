@@ -617,9 +617,28 @@ class ThemeController(object):
                 bw_scss = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'bootswatch')
                 bw_vars_import = f'\n@import "{bw_vars}";\n'
                 bw_scss_import = f'\n@import "{bw_scss}";\n'
-            scss_data = (var_data + bw_vars_import
-                         + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
-                         + bw_scss_import + css_data_pre)
+
+            if bootswatch_theme:
+                # Compilation order when Bootswatch is active:
+                #   1. $bootswatch-active: true  — enables @if guards in SCSS that suppress
+                #      droplets-specific overrides blocking Bootswatch's component styling.
+                #   2. Bootswatch _variables.scss  — sets $primary, $link-color, etc. with
+                #      !default; must come BEFORE our variables so Bootswatch color identity
+                #      is not clobbered by our non-!default defaults.
+                #   3. Our variable files  — bridge vars now use !default so Bootswatch
+                #      assignments above take precedence; user edits injected via regex override both.
+                #   4. @import "bootstrap"
+                #   5. Bootswatch _bootswatch.scss  — component overrides
+                #   6. Theme CSS rule files  — guarded by @if not $bootswatch-active
+                scss_data = ('$bootswatch-active: true;\n'
+                             + bw_vars_import
+                             + var_data
+                             + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
+                             + bw_scss_import + css_data_pre)
+            else:
+                scss_data = (var_data
+                             + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
+                             + css_data_pre)
 
             #   Replace all SCSS variable declarations for which we have a value defined.
             #   Parse variable names from the already-loaded scss_data (server content,

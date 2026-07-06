@@ -189,18 +189,44 @@ div.navbar-collapse {
     padding: 0;
 }
 
-.navbar .navbar-nav > li > a.caret-wrapper,
-.navbar .navbar-nav .caret-wrapper {
-    float: none;
-    padding-left: 5px;
-    cursor: pointer;
-}
-
+// Within a split dropdown, the label and caret are two separate <a> elements.
+// Bootstrap gives each nav-link full horizontal padding, which creates a gap
+// between them that looks like a separator (same as between different nav items).
+// Zero out the inner edges so the two elements merge into one visual unit:
+//   ← outer-padding | ASDF▼ | outer-padding →
 .navbar .navbar-nav > li > a.navbar-item-label,
 .navbar .navbar-nav .navbar-item-label {
     float: none;
     margin-right: 0;
+    padding-right: 0;
     cursor: pointer;
+}
+
+.navbar .navbar-nav > li > a.caret-wrapper,
+.navbar .navbar-nav .caret-wrapper {
+    float: none;
+    padding-left: 0;
+    padding-right: 0.5rem;
+    cursor: pointer;
+}
+
+// D1: Uniform font size for all navbar links (contact/admin use plain .nav-link
+// without .navbar-item-label, so they fell through to Bootstrap's 1rem default).
+// Reduce vertical padding to keep the navbar compact: Bootstrap's default
+// --bs-nav-link-padding-y: 0.5rem stacks on top of the navbar's own 0.5rem padding,
+// making the bar noticeably tall when the font is 20px.
+.navbar .navbar-nav .nav-link {
+    font-size: $navbarFontSize;
+    white-space: nowrap;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+// Compact the top navbar: reduce Bootstrap's outer navbar padding from 0.5rem
+// to 0.25rem so it doesn't add too much height on top of the nav-link padding.
+// The fixed-bottom footer nav is excluded (it uses .footer-container .navbar).
+.navbar-dark.fixed-top {
+    --bs-navbar-padding-y: 0.25rem;
 }
 
 #navbar.container-fluid {
@@ -285,6 +311,16 @@ div.navbar-collapse {
     border-top-color: currentColor;
 }
 
+// The footer nav is a fixed-bottom .navbar whose Bootstrap padding
+// (--bs-navbar-padding-y: 0.5rem top + bottom) stacks on top of #footer's own
+// 0.5rem padding, making the footer ~16px taller than expected.  The JS
+// footerResize() in main.html measures #footer.innerHeight() (the inner div),
+// so body padding-bottom ends up too small and content is hidden behind the footer.
+// Zero out Bootstrap's navbar padding here; #footer's own padding handles spacing.
+.footer-container .navbar {
+    --bs-navbar-padding-y: 0;
+}
+
 #footer {
     width: 100%;
     padding: 0.5rem 1rem;
@@ -292,6 +328,7 @@ div.navbar-collapse {
 
 #footer .navbar-nav {
     flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: center;
     width: 100%;
 }
@@ -312,56 +349,109 @@ div.navbar-collapse {
     color: rgba(255, 255, 255, 0.85);
 }
 
-// Override the global .navbar.bg-dark rule in theme_editor/scss/main.scss so that
-// the droplets-specific navbarInverse* customizer fields control the navbar background.
-.navbar.bg-dark {
-    background-color: $navbarInverseBackground !important;
-}
+// D4-D8: When a Bootswatch theme is active, let Bootswatch control the navbar colors.
+// Bootswatch's _bootswatch.scss applies its styles to .navbar.bg-{color}; our custom
+// overrides below would block that entirely if left in place unconditionally.
+@if $bootswatch-active {
+    // Use the Bootswatch theme's $primary color for the navbar background so themes
+    // like Cerulean (cyan) and Pulse (purple) show their expected identity colors.
+    // Must use the `background` shorthand (not just background-color) because
+    // Bootswatch's _bootswatch.scss applies background-image: linear-gradient(…)
+    // to .navbar.bg-dark via btn-shadow($dark).  A background-color sits under a
+    // background-image, so the grey gradient would paint over a color-only rule.
+    // The shorthand resets background-image to none, letting the color show.
+    .navbar.bg-dark {
+        background: $primary !important;
+    }
 
-.navbar-dark .navbar-nav .nav-link,
-.navbar-dark .navbar-brand {
-    color: $navbarInverseLinkColor;
-}
+    .navbar.bg-dark .dropdown-menu {
+        background-color: $dropdown-bg !important;
 
-.navbar-dark .navbar-brand {
-    color: $navbarInverseBrandColor;
-}
+        .dropdown-item,
+        .dropdown-item:focus {
+            color: $dropdown-link-color !important;
+        }
 
-.navbar-dark .navbar-nav .nav-link:hover,
-.navbar-dark .navbar-nav .nav-link:focus {
-    color: $navbarInverseLinkColorHover;
-}
+        .dropdown-item:hover,
+        .dropdown-item:active {
+            background-color: $dropdown-link-hover-bg !important;
+            color: $dropdown-link-hover-color !important;
+        }
+    }
 
-.navbar-dark .btn,
-.navbar.bg-dark .btn {
-    background-color: $navbarInverseBackgroundHighlight !important;
-    border-color: darken($navbarInverseBackgroundHighlight, 12%);
-    color: $navbarInverseLinkColor;
+    .navbar.bg-dark #adminbar_content a,
+    .navbar.bg-dark .dropdown-menu > li > div {
+        color: $dropdown-link-color;
+    }
+} @else {
+    // No Bootswatch — use the droplets customizer variables.
+    // Override the global .navbar.bg-dark rule in theme_editor/scss/main.scss so that
+    // the droplets-specific navbarInverse* customizer fields control the navbar background.
+    .navbar.bg-dark {
+        background-color: $navbarInverseBackground !important;
+    }
 
-    &:hover,
-    &:focus {
-        background-color: lighten($navbarInverseBackgroundHighlight, 7.5%) !important;
-        border-color: darken($navbarInverseBackgroundHighlight, 12%);
+    .navbar-dark .navbar-nav .nav-link,
+    .navbar-dark .navbar-brand {
+        color: $navbarInverseLinkColor;
+    }
+
+    .navbar-dark .navbar-brand {
+        color: $navbarInverseBrandColor;
+    }
+
+    .navbar-dark .navbar-nav .nav-link:hover,
+    .navbar-dark .navbar-nav .nav-link:focus {
         color: $navbarInverseLinkColorHover;
     }
-}
 
-.navbar-dark .navbar-nav .nav-item.active .nav-link,
-.navbar-dark .navbar-nav .nav-item.show .nav-link,
-.navbar-dark .navbar-nav .nav-link:hover,
-.navbar-dark .navbar-nav .nav-link:focus {
-    background-color: $navbarInverseBackgroundHighlight;
-}
+    .navbar-dark .btn,
+    .navbar.bg-dark .btn {
+        background-color: $navbarInverseBackgroundHighlight !important;
+        border-color: darken($navbarInverseBackgroundHighlight, 12%);
+        color: $navbarInverseLinkColor;
 
-.navbar-dark .dropdown-menu .dropdown-item {
-    color: $navbarInverseLinkColor;
-    background-color: $navbarInverseBackgroundHighlight;
-}
+        &:hover,
+        &:focus {
+            background-color: lighten($navbarInverseBackgroundHighlight, 7.5%) !important;
+            border-color: darken($navbarInverseBackgroundHighlight, 12%);
+            color: $navbarInverseLinkColorHover;
+        }
+    }
 
-.navbar-dark .dropdown-menu .dropdown-item:hover,
-.navbar-dark .dropdown-menu .dropdown-item:focus {
-    background-color: lighten($navbarInverseBackgroundHighlight, 7.5%);
-    color: $navbarInverseLinkColorHover;
+    // D3: Move hover/active highlight to the nav-item level (not just .nav-link) so the
+    // background fills the full navbar height with no off-color gap above or below.
+    @media (min-width: $navbarCollapseWidth) {
+        .navbar .navbar-nav > .nav-item {
+            align-self: stretch;
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    .navbar-dark .navbar-nav .nav-item.active,
+    .navbar-dark .navbar-nav .nav-item.show,
+    .navbar-dark .navbar-nav .nav-item:hover,
+    .navbar-dark .navbar-nav .nav-item:focus-within {
+        background-color: $navbarInverseBackgroundHighlight;
+    }
+
+    // Clear per-link background — highlight is now on the nav-item.
+    .navbar-dark .navbar-nav .nav-link:hover,
+    .navbar-dark .navbar-nav .nav-link:focus {
+        background-color: transparent;
+    }
+
+    .navbar-dark .dropdown-menu .dropdown-item {
+        color: $navbarInverseLinkColor;
+        background-color: $navbarInverseBackgroundHighlight;
+    }
+
+    .navbar-dark .dropdown-menu .dropdown-item:hover,
+    .navbar-dark .dropdown-menu .dropdown-item:focus {
+        background-color: lighten($navbarInverseBackgroundHighlight, 7.5%);
+        color: $navbarInverseLinkColorHover;
+    }
 }
 
 #adminbar_content .title {

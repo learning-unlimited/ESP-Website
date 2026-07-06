@@ -39,6 +39,34 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     padding-right: 10px;
   }
 
+  /* Force the theme editor accordion to always render in light mode so dark
+     Bootswatch themes (Solar, Yeti, Slate, etc.) don't make it unreadable. */
+  #theme_editor_accordion .card,
+  #theme-properties {
+    background-color: #fff;
+    color: #212529;
+    border-color: #dee2e6;
+  }
+  #theme_editor_accordion .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+  }
+  #theme_editor_accordion .card-body,
+  #theme-properties .card-body {
+    background-color: #fff;
+    color: #212529;
+  }
+  #theme_editor_accordion label,
+  #theme_editor_accordion h5,
+  #theme_editor_accordion select,
+  #theme_editor_accordion input[type="text"] {
+    color: #212529;
+  }
+  #theme_editor_accordion select,
+  #theme_editor_accordion input[type="text"] {
+    background-color: #fff;
+    border-color: #ced4da;
+  }
   #theme_editor_accordion .card-header .btn-link { color: #007bff; font-size: 1.25rem; font-weight: 500; text-decoration: none; width: 100%; text-align: left; padding: 0.75rem 1.25rem; }
   form.centered-form { display: block; width: 100%; }
   #theme_editor_accordion .form-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin: 1.5rem 0; padding-top: 1rem; border-top: 1px solid #dee2e6; }
@@ -84,11 +112,30 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
         <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
             {% csrf_token %} 
             <div class="accordion" id="theme_editor_accordion">
+                {% if bootswatch_themes %}
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
+                    </div>
+                    <div class="collapse" id="bootswatch-theme"><div class="card-body">
+                        <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to apply on top of {{ theme_name|capfirst }}. Leave blank to use the default styling. <strong>Selecting a Bootswatch theme will override most other customization options below.</strong></h5>
+                        <div class="control-group">
+                            <select name="bootswatch_theme" class="form-select" id="bootswatch-theme-select">
+                                <option value="">— None (default Bootstrap) —</option>
+                                {% for bw_theme in bootswatch_themes %}
+                                <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div></div>
+                </div>
+                {% endif %}
+
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#theme_palette">Palette</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="theme_palette"><div class="card-body">
+                    <div class="collapse" id="theme_palette"><div class="card-body">
                         <h5>Your palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections. The theme has a built-in color palette available; however, if you would prefer other colors, you can add them to the custom palette.</h5>
                         <div class="control-group">
                             <div id="palette_base_div">
@@ -116,7 +163,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#scaffolding">Scaffolding</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="scaffolding"><div class="card-body">
+                    <div class="collapse" id="scaffolding"><div class="card-body">
                         <h5>Use this section to change the color of the text and background.</h5>
                         <div class="control-group">
                             <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
@@ -174,7 +221,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#links">Links</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="links"><div class="card-body">
+                    <div class="collapse" id="links"><div class="card-body">
                         <h5>Use this section to control the color of links normally, and when you hover on them.</h5>
                         <div class="control-group">
                             <label class="control-label" for="linkColor">Links:</label>
@@ -197,7 +244,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#typography">Typography</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="typography"><div class="card-body">
+                    <div class="collapse" id="typography"><div class="card-body">
                         <h5>Use this section to control the size (base font size), and the font family of your text.</h5>
                         <div class="control-group">
                             <label class="control-label" for="baseFontSize">Font Size:</label>
@@ -230,13 +277,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
                     </div>
                 </div>
+                </div>
 
                 {% if theme_name == "droplets" %}
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#navbar_inverse_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="navbar_inverse_edit_group"><div class="card-body">
+                    <div class="collapse" id="navbar_inverse_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarInverseBackground">Background:</label>
@@ -274,12 +322,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         </div>
                     </div>
                 </div>
+                </div>
                 {% elif theme_name != "fruitsalad" %}
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#navbar_edit_group">Navbar</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="navbar_edit_group"><div class="card-body">
+                    <div class="collapse" id="navbar_edit_group"><div class="card-body">
                         <h5>Use this section to control the colors for the various elements of the navigation bar{% if theme_name == 'bigpicture' %} in the upper right hand corner. The highlight controls the color of the logout button and the dropdown menu{% elif theme_name == 'circles' %}. The circle colors can be changed in the 'Advanced' category{% elif theme_name != 'floaty' %}. The background fades into the highlight{% endif %}.</h5>
                         <div class="control-group">
                             <label class="control-label" for="navbarBackground">Background:</label>
@@ -327,7 +376,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#sidebar_theme">Sidebar</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="sidebar_theme"><div class="card-body">
+                    <div class="collapse" id="sidebar_theme"><div class="card-body">
                         <h5>Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.</h5>
                     {% if theme_name == "circles" or theme_name == "floaty" %}
                         <div class="control-group">
@@ -412,13 +461,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         {% endcomment %}
                     </div>
                 </div>
+                </div>
                 {% endif %}
 
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#buttons">Buttons</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="buttons"><div class="card-body">
+                    <div class="collapse" id="buttons"><div class="card-body">
                         <h5>Buttons come in two types. You can see an example of each at the end of this form.</h5>
                         <div class="control-group">
                             <label class="control-label" for="btnBackground">Buttons:</label>
@@ -448,13 +498,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
                     </div>
                 </div>
+                </div>
 
                 {% if theme_name != "barebones" %}
                 <div class="card">
                     <div class="card-header">
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#advanced">{% if theme_name == "fruitsalad" %}Fruitsalad Tabs{% else %}Advanced{% endif %}</button></h4>
                     </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="advanced"><div class="card-body">
+                    <div class="collapse" id="advanced"><div class="card-body">
                         <h5>These are additional parameters specific to the currently selected theme.</h5>
                         {% if theme_name == "bigpicture" %}
                             <div>
@@ -507,32 +558,14 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         {% endif %}{% endfor %}
                     </div>
                 </div>
-                {% endif %}
-
-                {% if bootswatch_themes %}
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
-                    </div>
-                    <div class="collapse" data-bs-parent="#theme_editor_accordion" id="bootswatch-theme"><div class="card-body">
-                        <h5>Select a <a href="https://bootswatch.com/" target="_blank">Bootswatch</a> theme to apply on top of Bootstrap 5. Leave blank to use the default Bootstrap styling.</h5>
-                        <div class="control-group">
-                            <select name="bootswatch_theme" class="form-select">
-                                <option value="">— None (default Bootstrap) —</option>
-                                {% for bw_theme in bootswatch_themes %}
-                                <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div></div>
                 </div>
                 {% endif %}
 
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start" data-bs-toggle="collapse" data-bs-target="#theme-properties" aria-expanded="true">Save/Load Theme Settings</button></h4>
+                <div class="card border-primary">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h4 class="mb-0 fw-semibold">Save/Load Theme Settings</h4>
                     </div>
-                    <div class="collapse show" data-bs-parent="#theme_editor_accordion" id="theme-properties"><div class="card-body">
+                    <div class="card-body" id="theme-properties">
                         <h5>When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the "Apply Without Saving" button. You can also load or delete saved settings, or revert to the last configuration.</h5>
                         <div class="control-group">
                             <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}"/>
@@ -555,7 +588,6 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             <button type="submit" class="btn btn-secondary" name="load" value="load">Load</button>
                             <button type="submit" class="btn btn-danger" name="delete" value="delete">Delete</button>
                         </div>
-                    </div>
                     </div>
                 </div>
 
@@ -586,6 +618,78 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     $j(function () {
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
+
+      // Disable all customizer panels when a Bootswatch theme is selected.
+      // Disable only the customizer panels whose Bootstrap variable equivalents are
+      // overridden by Bootswatch's _variables.scss / _bootswatch.scss.
+      // Panels whose variables are ESP-specific (sidebar colours, layout params) or
+      // applied via direct CSS override (font-size) remain enabled — their controls
+      // still work even with a Bootswatch theme active.
+      //
+      // Disabled panels (BW overrides their effect):
+      //   theme_palette              — feeds $primary etc. that BW resets
+      //   scaffolding                — $body-bg, $body-color, $headings-color
+      //   links                      — $link-color
+      //   navbar_inverse_edit_group  — droplets navbar colours (guarded by @if in SCSS)
+      //   navbar_edit_group          — other-theme navbar colours (same guard)
+      //   buttons                    — $btnPrimaryBackground overridden by $primary
+      //
+      // Always-on panels (not affected by BW):
+      //   typography    — $baseFontSize applied as direct body{} CSS rule; works fine
+      //   sidebar_theme — $sidebarBackground, $sidebarLink etc. are custom ESP vars
+      //   advanced      — navbarFontSize, navbarCollapseWidth, fruitsalad tabs
+      //   bootswatch-theme / theme-properties — selector + save/load, always needed
+      var BW_DISABLED_PANELS = {
+        'theme_palette': true,
+        'scaffolding': true,
+        'links': true,
+        'navbar_inverse_edit_group': true,
+        'navbar_edit_group': true,
+        'buttons': true
+      };
+
+      function syncBootswatchDisable() {
+        var $sel = $j('#bootswatch-theme-select');
+        if (!$sel.length) return;
+        var bwActive = $sel.val() !== '';
+        var TOOLTIP = 'Remove the Bootswatch theme to customize this option';
+
+        $j('#theme_editor_accordion .card').each(function () {
+          // Resolve this card's panel by its collapse ID.
+          var panelId = $j(this).find('.collapse[id]').first().attr('id') || '';
+          if (!BW_DISABLED_PANELS[panelId]) return; // not a BW-affected panel
+
+          var $card = $j(this);
+
+          // 1. Standard form elements: disable so values aren't submitted when
+          //    the form is POSTed (pointer-events alone can't prevent submission).
+          $card.find('input, select, button, textarea').prop('disabled', bwActive);
+
+          // 2. Spectrum color pickers need their own API call — prop('disabled')
+          //    only affects the hidden input, not the visible swatch widget.
+          $card.find('input.color, input.palette').each(function () {
+            try {
+              if (bwActive) { $j(this).spectrum('disable'); }
+              else          { $j(this).spectrum('enable');  }
+            } catch (e) {}
+          });
+
+          // 3. Apply disabled state to the whole card at once:
+          //    - opacity on the card itself dims header + body proportionally,
+          //      so the visual works on ANY Bootswatch theme (light or dark).
+          //      card-body opacity alone caused invisible-text on dark themes like
+          //      Solar because Bootstrap cards inherit body-bg via CSS custom props.
+          //    - pointer-events: none blocks header clicks (preventing accidental
+          //      expand/collapse) AND all widget interaction inside the body.
+          //    - A tooltip on the card gives the explanation on hover.
+          $card.css('opacity',        bwActive ? '0.5' : '')
+               .css('pointer-events', bwActive ? 'none' : '')
+               .attr('title', bwActive ? TOOLTIP : null);
+        });
+      }
+
+      $j('#bootswatch-theme-select').on('change', syncBootswatchDisable);
+      syncBootswatchDisable(); // apply on page load if a theme is already saved
     });
     </script>
 {% endblock %}

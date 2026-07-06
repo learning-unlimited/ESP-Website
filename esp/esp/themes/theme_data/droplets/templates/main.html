@@ -128,7 +128,12 @@
 <script>
 	function footerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('body').css('padding-bottom', $j("#footer").innerHeight());
+			// Measure the fixed-bottom nav itself (outerHeight includes its own
+			// padding/border) so body padding-bottom always covers the full footer,
+			// even when QSD text or admin controls add extra height.
+			var $footerNav = $j("#footer").closest(".navbar");
+			var h = $footerNav.length ? $footerNav.outerHeight(false) : $j("#footer").outerHeight(false);
+			$j('body').css('padding-bottom', h);
 		} else {
 			$j('body').css('padding-bottom', "inherit");
 		}

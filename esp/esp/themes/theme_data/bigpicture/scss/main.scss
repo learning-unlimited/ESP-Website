@@ -179,55 +179,68 @@ div.navbar-collapse.collapse {
     background-position: 0;
 }
 .navbar {
-    & {
-        padding: 6px;
-        width: auto;
-        display: inline-block;
-        position: absolute;
-        z-index: 1030;
-        right: 0;
-        color: $navbarText;
-        background: $navbarBackground;
-        min-height: auto;
-    }
+    // Structural layout — always applied regardless of Bootswatch.
+    padding: 6px;
+    width: auto;
+    display: inline-block;
+    position: absolute;
+    z-index: 1030;
+    right: 0;
+    min-height: auto;
+
     input, select, .radio, .checkbox {
         margin-top: 0;
     }
-    .btn {
+}
+
+// When Bootswatch is active, let Bootswatch supply navbar colors via $primary
+// and its _bootswatch.scss rules.  When not active, use the customizer variables.
+@if $bootswatch-active {
+    // background shorthand clears any background-image gradient from _bootswatch.scss
+    .navbar {
+        background: $primary !important;
+    }
+    .navbar .btn {
+        border: 1px solid rgba(0, 0, 0, 0.21);
+    }
+} @else {
+    .navbar {
+        color: $navbarText;
+        background: $navbarBackground;
+    }
+    .navbar .btn {
         background: $navbarBackgroundHighlight;
         color: $navbarText;
         border: 1px solid gray;
         border: 1px solid rgba(0, 0, 0, 0.21);
     }
-    .username {
+    .navbar .username {
         color: $navbarText;
         display: inline-block;
     }
-    a.username {
+    .navbar a.username {
         color: $navbarLinkColor;
         text-decoration: none;
     }
-    a.username:hover {
+    .navbar a.username:hover {
         color: $navbarLinkColorHover;
     }
-    .navbar-form > * {
+    .navbar .navbar-form > * {
         margin: 0;
         display: inline-block;
         vertical-align: middle;
         color: $navbarText;
     }
-    .navbar-form button {
+    .navbar .navbar-form button {
         margin: 0;
         color: $navbarText;
     }
-    .dropdown-menu {
-    > li > a {
+    .navbar .dropdown-menu > li > a {
         color: $navbarLinkColor;
         background: $navbarBackgroundHighlight;
     }
-    > li > a:hover {
+    .navbar .dropdown-menu > li > a:hover {
         color: $navbarLinkColorHover;
-    }
     }
 }
 
