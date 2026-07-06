@@ -52,8 +52,8 @@ jobs:
               }
             }
 
-            if (permission === 'admin' || permission === 'maintain') {
-              console.log('PR author is admin/maintainer — skipping check.');
+            if (permission === 'admin' || permission === 'maintain' || permission === 'write') {
+              console.log('PR author has write access or above — skipping check.');
               return;
             }
 

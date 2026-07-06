@@ -150,11 +150,15 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         #Test empty form
         response = self.client.post(self.all_classes_csv_url)
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response, 'form', 'subject_fields', 'This field is required.')
+        self.assertFormError(response.context['form'], 'subject_fields', 'This field is required.')
 
         #Test invalid fieldname
-        self.client.post(self.all_classes_csv_url, {'subject_fields':['invalid_field']})
-        self.assertFormError(response, 'form', 'subject_fields', 'This field is required.')
+        response = self.client.post(self.all_classes_csv_url, {'subject_fields':['invalid_field']})
+        self.assertFormError(
+            response.context['form'],
+            'subject_fields',
+            'Select a valid choice. invalid_field is not one of the available choices.',
+        )
 
     def test_all_classes_spreadsheet_valid_post(self):
         """
@@ -241,4 +245,3 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
-

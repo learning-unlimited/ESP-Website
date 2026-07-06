@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -502,7 +503,7 @@ class AccountCreationTest(TestCase):
         self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
         import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
+        match = re.search(r"\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
 
@@ -580,8 +581,8 @@ class TestChangeRequestView(TestCase):
 
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
-        self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+        self.assertFormError(response.context['form'], 'reason', 'This field is required.')
+        self.assertFormError(response.context['form'], 'claimed_grade', 'Value 483 is not a valid choice.')
 
     def test_send_request_email(self):
         c = Client()
@@ -1119,6 +1120,74 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class ActivateAccountTest(TestCase):
+    """Tests for the activate_account view."""
+
+    ACTIVATION_KEY = '123456'
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testactivate',
+            email='testactivate@example.com',
+            password='testpassword',
+        )
+        # Simulate an inactive account awaiting activation:
+        # the activation key is appended to the hashed password with '_'
+        self.user.password = self.user.password + '_' + self.ACTIVATION_KEY
+        self.user.is_active = False
+        self.user.save()
+        self.url = reverse('activate_account')
+
+    def test_valid_key_activates_user(self):
+        """A valid username and key activates the account."""
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_valid_key_strips_key_from_password(self):
+        """After activation the key suffix is removed from the stored password."""
+        expected_password = self.user.password[:-(len('_' + self.ACTIVATION_KEY))]
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, expected_password)
+
+    def test_valid_key_redirects_to_profile(self):
+        """After activation the user is redirected to the profile page."""
+        response = self.client.get(
+            self.url,
+            {'username': 'testactivate', 'key': self.ACTIVATION_KEY},
+        )
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+
+    def test_missing_username_raises_error(self):
+        """GET without username returns a 500 error response."""
+        response = self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_missing_key_raises_error(self):
+        """GET without key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate'})
+        self.assertEqual(response.status_code, 500)
+
+    def test_nonexistent_user_raises_error(self):
+        """A username that does not exist returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_already_active_user_raises_error(self):
+        """Trying to activate an already active account returns a 500 error response."""
+        self.user.is_active = True
+        self.user.save()
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_wrong_key_raises_error(self):
+        """An incorrect activation key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
+        self.assertEqual(response.status_code, 500)
 
 
 class PasswordValidationTest(TestCase):

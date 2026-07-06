@@ -357,7 +357,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                check=Q(grade_min__lte=F('grade_max')),
+                condition=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
          ),
         ]
@@ -1265,8 +1265,12 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl, old_prog)
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
+        modules = list(self.getModules_cached(tl, old_prog))
+
+        if user and not user.isAdmin(self):
+            modules = [m for m in modules if m.is_valid()]
+
         if user:
             for module in modules:
                 module.user = user
@@ -1666,31 +1670,16 @@ class RegistrationProfile(models.Model):
                                'student_info', 'teacher_info', 'guardian_info',
                                'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
-            # get the old program, if any
-            prog = regProf.program
+            regProf = copy.copy(RegistrationProfile.getLastProfile(user))
             regProf.program = program
-            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                # if the latest profile is old, wipe the id,
-                # then it will save as a new object if submitted with the profile form
-                if (datetime.now() - regProf.last_ts).days >= 5:
-                    regProf.id = None
-                # if the latest profile is new-ish,
-                # assume the info is up-to-date and save it now
-                else:
-                    # but, if the profile was for a previous program, we should keep the old profile
-                    # and make a new one for this program by wiping the id, then saving
-                    if prog is not None:
-                        regProf.id = None
-                    # otherwise, it was a profile without a program,
-                    # and we can just associate it with this program now, so just save
-                    regProf.save()
+                regProf.id = None
         else:
             regProf = regProfList[0]
         return regProf
-    # Thanks to our attempts to be smart and steal profiles from other programs,
-    # the cache can't depend only on profiles with the same (user, program).
+    # We can fall back to the user's latest profile from another program when a
+    # program-specific profile does not exist, so cache invalidation must depend
+    # on any profile for the user (not just the exact (user, program) pair).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
