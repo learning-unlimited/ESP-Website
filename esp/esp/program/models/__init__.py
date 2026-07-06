@@ -45,9 +45,10 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from phonenumber_field.modelfields import PhoneNumberField
-from django.core import validators
+
 from django.core.cache import cache
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q, F
@@ -69,7 +70,8 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
-from django.core.exceptions import ValidationError
+
+from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -355,7 +357,7 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                check=Q(grade_min__lte=F('grade_max')),
+                condition=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
          ),
         ]
@@ -1263,8 +1265,12 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl, old_prog)
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
+        modules = list(self.getModules_cached(tl, old_prog))
+
+        if user and not user.isAdmin(self):
+            modules = [m for m in modules if m.is_valid()]
+
         if user:
             for module in modules:
                 module.user = user
@@ -2361,6 +2367,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class

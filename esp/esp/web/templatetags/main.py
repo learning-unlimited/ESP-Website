@@ -57,7 +57,7 @@ def split(str, splitter):
 def index(arr, index):
     try:
         return arr[index]
-    except IndexError:
+    except (IndexError, KeyError, TypeError):
         return ''
 
 @register.filter
@@ -97,13 +97,15 @@ def extract_theme(url):
     settings = tc.get_template_settings()
     max_chars_matched = 0
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         num_chars_matched = count_matching_chars(url, category['header_link'])
         if num_chars_matched > max_chars_matched:
             max_chars_matched = num_chars_matched
             tab_index = 0
         i = 1
         for item in category['links']:
-            num_chars_matched = count_matching_chars(url, item['link'])
+            num_chars_matched = count_matching_chars(url, item.get('link', ''))
             # Prefer the sub-link if it's a strictly longer match, OR if it matches
             # equally well but is an exact match of the link's URL. This prevents
             # the header base color from continuously overriding the tab link color.
@@ -120,11 +122,15 @@ def get_nav_category(path):
                 #   Search for current nav category based on request path
     first_level = ''.join(path.lstrip('/').split('/')[:1])
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         if category['header_link'].lstrip('/').startswith(first_level):
             return category
     #   Search failed - use default nav category
     default_nav_category = 'learn'
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         if category['header_link'].lstrip('/').startswith(default_nav_category):
             return category
 

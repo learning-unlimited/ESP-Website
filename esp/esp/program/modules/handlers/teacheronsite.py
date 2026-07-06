@@ -56,7 +56,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         # Only list human-readable pages; no JSON/AJAX endpoints.
         base = program.getUrlBase()
         entries = {
-            "teacheronsite": ("Teacher Onsite", "Schedule", ["teacher", "onsite", "schedule", "webapp"]),
+            "teacheronsite": ("Teacher Onsite", "Other", ["teacher", "onsite", "schedule", "webapp"]),
             "onsitemap": ("Teacher Onsite (Map)", "Other", ["teacher", "onsite", "map"]),
             "onsitedetails": ("Teacher Onsite (Details)", "Other", ["teacher", "onsite", "details", "class info"]),
             "onsiteroster": ("Teacher Onsite (Roster)", "Other", ["teacher", "onsite", "roster", "attendance"]),
@@ -84,10 +84,12 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
-                   if cls.meeting_times.all().exists()
-                   and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0])
+        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
+        classes = [cls for cls in sections_qs
+                if cls.meeting_times.all()
+                   and cls.resourceassignment_set.all()
+                   and cls.status > 0]
+        classes.sort(key=lambda s: s._sort_key())
         # now we sort them by time/title
 
         context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
