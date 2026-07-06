@@ -20,25 +20,27 @@ def _setup_roles():
         Group.objects.get_or_create(name=name)
 
 
-class SummaryViewTest(TestCase):
-    def setUp(self):
-        super().setUp()
-        _setup_roles()
-        self.client = Client()
+class AdminViewTestMixin:
+    """Mixin for testing @admin_required views."""
 
+    def _create_admin_and_student(self):
         self.admin = ESPUser.objects.create_user(
             username='admin', password='pass'
         )
         self.admin.makeRole('Administrator')
-
         self.student = ESPUser.objects.create_user(
             username='student', password='pass'
         )
         self.student.makeRole('Student')
 
-        GlobalAccountingController().setup_accounts()
 
-        # Using exact URL name from urls.py
+class SummaryViewTest(AdminViewTestMixin, TestCase):
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.client = Client()
+        self._create_admin_and_student()
+        GlobalAccountingController().setup_accounts()
         self.url = reverse('accounting_summary')
 
     def test_summary_admin_can_access(self):
@@ -48,38 +50,35 @@ class SummaryViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_summary_non_admin_blocked(self):
-        """Non admin user is forbidden from accessing summary view."""
+        """Non-admin user gets 403 from summary view (admin_required raises PermissionDenied)."""
         self.client.force_login(self.student)
         response = self.client.get(self.url)
-        # Assumes your app returns a 403 Permission Denied for unauthorized access.
-        # If it redirects instead, change this to 302.
         self.assertEqual(response.status_code, 403)
 
     def test_summary_not_logged_in_blocked(self):
-        """Unauthenticated user cannot access summary view and is redirected."""
+        """Unauthenticated user is redirected to login."""
         response = self.client.get(self.url)
-        # Unauthenticated users should be redirected to login
         self.assertEqual(response.status_code, 302)
 
 
-class UserSummaryViewTest(TestCase):
+class UserSummaryViewTest(AdminViewTestMixin, TestCase):
     def setUp(self):
         super().setUp()
         _setup_roles()
         self.client = Client()
-
-        self.admin = ESPUser.objects.create_user(
-            username='admin', password='pass'
-        )
-        self.admin.makeRole('Administrator')
-
-        self.student = ESPUser.objects.create_user(
-            username='student', password='pass'
-        )
-        self.student.makeRole('Student')
-
-        # Using exact URL name from urls.py
+        self._create_admin_and_student()
         self.url = reverse('accounting_user_summary')
+
+    def test_user_summary_non_admin_blocked(self):
+        """Non-admin user gets 403 from user_summary."""
+        self.client.force_login(self.student)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_user_summary_not_logged_in_blocked(self):
+        """Unauthenticated user is redirected to login on user_summary."""
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
 
     def test_user_summary_get_no_user_shows_form(self):
         """GET with no target_user shows empty search form."""
