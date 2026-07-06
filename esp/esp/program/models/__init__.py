@@ -45,12 +45,13 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from phonenumber_field.modelfields import PhoneNumberField
-from django.core import validators
+
 from django.core.cache import cache
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.query import QuerySet
 from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
@@ -70,37 +71,70 @@ from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
+from phonenumber_field.modelfields import PhoneNumberField
+
 # Create your models here.
 class ProgramModule(models.Model):
     """ Program Modules for a Program """
 
     # Title for the link displayed for this Program Module in the Programs form
-    link_title = models.CharField(max_length=64, blank=True, null=True)
+    link_title = models.CharField(
+        max_length=64,
+        blank=True,
+        null=True,
+        help_text="Optional title displayed for this module link"
+    )
 
     # Human-readable name for the Program Module
-    admin_title = models.CharField(max_length=128)
+    admin_title = models.CharField(
+        max_length=128,
+        help_text="Title shown in the admin interface"
+    )
 
     #   A module can have an inline template (whose context is filled by prepare())
     #   independently of its main view.
-    inline_template = models.CharField(max_length=32, blank=True, null=True)
+    inline_template = models.CharField(
+        max_length=32,
+        blank=True,
+        null=True,
+        help_text="Template used to render this module inline"
+    )
 
     # One of teach/learn/etc.; What is this module typically used for?
-    module_type = models.CharField(max_length=32)
+    # One of teach/learn/etc.; What is this module typically used for?
+    module_type = models.CharField(
+        max_length=32,
+        help_text=mark_safe(
+            'Defines how this module is used (e.g., teach, learn, manage, onsite). '
+            'See <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst" target="_blank">Program Modules documentation</a> for details.'
+        )
+    )
 
     # self.__name__, stored neatly in the database
-    handler    = models.CharField(max_length=32)
+    handler = models.CharField(
+        max_length=32,
+        help_text="Handler used to process this module"
+    )
 
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
-    seq = models.IntegerField()
+    seq = models.IntegerField(
+        help_text="Order in which this module appears"
+    )
 
     # Must the user supply this ProgramModule with data in order to complete program registration?
-    required = models.BooleanField(default=False)
+    required = models.BooleanField(
+        default=False,
+        help_text="Whether this module is required for completion"
+    )
 
     # When creating a new program, should this module be available for admins to select (0), included by default (1)
     # or excluded by default (2).
-    choosable = models.IntegerField(default=0, validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)])
-
+    choosable = models.IntegerField(
+        default=0,
+        validators=[validators.MinValueValidator(0), validators.MaxValueValidator(2)],
+        help_text="Controls whether users can choose this module"
+    )
     class Meta:
         app_label = 'program'
         db_table = 'program_programmodule'
@@ -282,8 +316,8 @@ class Program(models.Model, CustomFormsLinkModel):
 
     url = models.CharField(max_length=80, unique=True)
     name = models.CharField(max_length=80)
-    grade_min = models.IntegerField()
-    grade_max = models.IntegerField()
+    grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
+    grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
     director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
                                        validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
@@ -294,7 +328,7 @@ class Program(models.Model, CustomFormsLinkModel):
                                                            'You can create and manage your email redirects <a href="/manage/redirects/">here</a>.'))
     director_cc_email = models.EmailField(blank=True, default='', max_length=75, help_text=mark_safe('If set, automated outgoing mail (except class cancellations) will be sent to this address <i>instead of</i> the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.')) # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
     director_confidential_email = models.EmailField(blank=True, default='', max_length=75, help_text='If set, confidential emails such as financial aid applications will be sent to this address <i>instead of</i> the director email.')
-    program_size_max = models.IntegerField(null=True, help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
+    program_size_max = models.IntegerField(null=True, validators=[validators.MinValueValidator(0)], help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.')
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule,
                          help_text='The set of enabled program functionalities. See ' +
@@ -309,11 +343,24 @@ class Program(models.Model, CustomFormsLinkModel):
                     help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.')
 
     documents = GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    def clean(self):
+        super().clean()
 
+        if self.grade_min is not None and self.grade_max is not None:
+            if self.grade_min > self.grade_max:
+                raise ValidationError({
+                    "__all__": "Minimum grade cannot exceed maximum grade."
+                })
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
         ordering = ('-id',)
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(grade_min__lte=F('grade_max')),
+                name='program_grade_min_lte_grade_max'
+         ),
+        ]
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
     USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
@@ -1218,8 +1265,12 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl, old_prog)
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
+        modules = list(self.getModules_cached(tl, old_prog))
+
+        if user and not user.isAdmin(self):
+            modules = [m for m in modules if m.is_valid()]
+
         if user:
             for module in modules:
                 module.user = user
@@ -1619,31 +1670,16 @@ class RegistrationProfile(models.Model):
                                'student_info', 'teacher_info', 'guardian_info',
                                'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
-            # get the old program, if any
-            prog = regProf.program
+            regProf = copy.copy(RegistrationProfile.getLastProfile(user))
             regProf.program = program
-            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                # if the latest profile is old, wipe the id,
-                # then it will save as a new object if submitted with the profile form
-                if (datetime.now() - regProf.last_ts).days >= 5:
-                    regProf.id = None
-                # if the latest profile is new-ish,
-                # assume the info is up-to-date and save it now
-                else:
-                    # but, if the profile was for a previous program, we should keep the old profile
-                    # and make a new one for this program by wiping the id, then saving
-                    if prog is not None:
-                        regProf.id = None
-                    # otherwise, it was a profile without a program,
-                    # and we can just associate it with this program now, so just save
-                    regProf.save()
+                regProf.id = None
         else:
             regProf = regProfList[0]
         return regProf
-    # Thanks to our attempts to be smart and steal profiles from other programs,
-    # the cache can't depend only on profiles with the same (user, program).
+    # We can fall back to the user's latest profile from another program when a
+    # program-specific profile does not exist, so cache invalidation must depend
+    # on any profile for the user (not just the exact (user, program) pair).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
@@ -1994,7 +2030,7 @@ class ScheduleMap:
     def __marinade__(self):
         import hashlib
         import pickle
-        return f'ScheduleMap_{hashlib.md5(pickle.dumps(self)).hexdigest()[:8]}'
+        return f'ScheduleMap_{hashlib.sha256(pickle.dumps(self)).hexdigest()[:8]}'
 
     def __str__(self):
         return f'{self.map}'
@@ -2331,6 +2367,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class
