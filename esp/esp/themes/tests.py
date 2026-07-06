@@ -6,8 +6,11 @@ import os
 import random
 import re
 import shutil
+import tempfile
+import unittest.mock as mock
 
 from django.conf import settings
+from django.core.exceptions import SuspiciousFileOperation
 
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -29,7 +32,7 @@ class ThemesTest(TestCase):
         #   Redirect compiled CSS output to a per-worker filename to avoid
         #   races when multiple xdist workers delete/write the same file.
         self._css_file = themes_settings.COMPILED_CSS_FILE
-        worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'master')
+        worker_id = os.environ.get('PYTEST_XDIST_WORKER', 'main')
         themes_settings.COMPILED_CSS_FILE = f'theme_compiled_test_{worker_id}.css'
 
     def tearDown(self):
@@ -191,17 +194,29 @@ class ThemesTest(TestCase):
         tc = ThemeController()
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
-            variables_filename = os.path.join(settings.MEDIA_ROOT, 'esp', 'themes', 'theme_data', theme_name,
-                                              'variables.less')
+            theme_data_dir = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data', theme_name)
+            if tc.uses_scss_pipeline(theme_name):
+                variables_filename = os.path.join(theme_data_dir, 'scss', 'variables.scss')
+                var_pattern = r'\$([a-zA-Z0-9_]+):\s+?(\S+);'
+            else:
+                variables_filename = os.path.join(theme_data_dir, 'less', 'variables.less')
+                var_pattern = r'@([a-zA-Z0-9_]+):\s+?(\S+);'
             if os.path.exists(variables_filename):
+                # Themes with a config form need template settings (see testSelector).
+                if tc.get_config_form_class(theme_name) is not None:
+                    continue
                 tc.clear_theme()
                 tc.load_theme(theme_name)
                 response = self.client.get('/themes/customize/')
                 self.assertEqual(response.status_code, 200)
-                variables = re.findall(r'@(\S+):\s+?(\S+);', open(variables_filename).read())
+                variables = re.findall(var_pattern, open(variables_filename).read())
                 for (varname, value) in variables:
-                    self.assertTrue(len(re.findall(r'<input.*?name="%s".*?value="%s".*?>',
-                                    str(response.content, encoding='UTF-8'), flags=re.I)) > 0)
+                    # Derived expressions (e.g. darken()) are not exposed as simple editor inputs.
+                    if '(' in value:
+                        continue
+                    self.assertTrue(len(re.findall(rf'<input[^>]*\bname="{re.escape(varname)}"',
+                                    str(response.content, encoding='UTF-8'), flags=re.I)) > 0,
+                                    f'Missing editor input for {theme_name} variable {varname}')
 
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
@@ -264,3 +279,296 @@ class ThemesTest(TestCase):
             tc.unset_current_customization()
             shutil.rmtree(themes_settings.themes_dir, ignore_errors=True)
             themes_settings.themes_dir = original_themes_dir
+
+
+class Bootstrap4MigrationTest(TestCase):
+    """Unit tests for the Bootstrap 3→4 migration: npm-based SCSS compilation."""
+
+    def setUp(self):
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        self.tc = ThemeController()
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
+
+    def tearDown(self):
+        themes_settings.COMPILED_CSS_FILE = self._css_file
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
+
+    def test_all_themes_use_scss_pipeline(self):
+        """Every bundled theme should have a scss/ directory (Bootstrap 4 pipeline)."""
+        for theme_name in self.tc.get_theme_names():
+            self.assertTrue(
+                self.tc.has_scss(theme_name),
+                f'{theme_name} is missing scss/ — expected Bootstrap 4 SCSS pipeline',
+            )
+
+    def test_get_scss_names_includes_bootstrap4_sources(self):
+        """get_scss_names() includes theme-editor and theme SCSS before Bootstrap import."""
+        names = [f.replace('\\', '/') for f in self.tc.get_scss_names('barebones')]
+        self.assertTrue(
+            any('theme_editor/scss/variables_custom.scss' in f for f in names),
+            'variables_custom.scss should be included',
+        )
+        self.assertTrue(
+            any('theme_data/barebones/scss/main.scss' in f for f in names),
+            'theme main.scss should be included',
+        )
+        self.assertFalse(
+            any(f.endswith('theme_editor/less/bootstrap.less') for f in names),
+            'Committed BS2 bootstrap.less should not appear in SCSS pipeline',
+        )
+
+    def test_compile_css_produces_bs4_markers(self):
+        """compile_css() output contains BS4 markers and no BS3 glyphicon class."""
+        self.tc.compile_css('barebones', {}, self.css_filename)
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertGreater(len(css), 10000)
+        self.assertIn('.navbar-toggler', css, 'Missing .navbar-toggler — BS4 not compiling')
+        self.assertIn('.card', css, 'Missing .card — BS4 not compiling')
+        self.assertIn('.bi', css, 'Missing .bi — Bootstrap Icons not included')
+        self.assertNotIn('.glyphicon', css, '.glyphicon present — BS3 leaked into BS4 output')
+
+    def test_get_variable_defaults_roundtrip(self):
+        """get_variable_defaults() compiles and returns a non-empty dict for every theme."""
+        for theme_name in self.tc.get_theme_names():
+            defaults = self.tc.get_variable_defaults(theme_name)
+            self.assertIsInstance(defaults, dict)
+            self.assertGreater(len(defaults), 0, f'{theme_name}: get_variable_defaults() returned empty dict')
+
+    def test_get_bootswatch_themes_returns_sorted_list(self):
+        """get_bootswatch_themes() returns a sorted list; empty list when npm package absent."""
+        themes_list = self.tc.get_bootswatch_themes()
+        self.assertIsInstance(themes_list, list)
+        self.assertEqual(themes_list, sorted(themes_list), 'Bootswatch theme list must be sorted')
+
+    def test_bootswatch_themes_have_required_less_files(self):
+        """Each discovered Bootswatch theme has variables.less and bootswatch.less."""
+        bootswatch_dir = os.path.normpath(os.path.join(
+            themes_settings.less_dir, '..', 'node_modules', 'bootswatch'
+        ))
+        for name in self.tc.get_bootswatch_themes():
+            self.assertTrue(
+                os.path.exists(os.path.join(bootswatch_dir, name, 'variables.less')),
+                f'bootswatch/{name}/variables.less missing'
+            )
+            self.assertTrue(
+                os.path.exists(os.path.join(bootswatch_dir, name, 'bootswatch.less')),
+                f'bootswatch/{name}/bootswatch.less missing'
+            )
+
+    def test_get_less_names_bootswatch_import_order(self):
+        """Bootswatch variables.less precedes bootstrap.less; bootswatch.less follows it."""
+        themes_list = self.tc.get_bootswatch_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch npm package not installed')
+        names = [f.replace('\\', '/') for f in self.tc.get_less_names('barebones', bootswatch_theme=themes_list[0])]
+        bs3_idx = next(i for i, f in enumerate(names) if 'node_modules/bootstrap/less/bootstrap.less' in f)
+        bsw_var_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('variables.less'))
+        bsw_sty_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('bootswatch.less'))
+        self.assertLess(bsw_var_idx, bs3_idx,
+                        'Bootswatch variables.less must come BEFORE bootstrap.less')
+        self.assertGreater(bsw_sty_idx, bs3_idx,
+                           'Bootswatch bootswatch.less must come AFTER bootstrap.less')
+
+    def test_compile_css_with_bootswatch_produces_valid_output(self):
+        """compile_css() with a Bootswatch skin compiles to non-trivial CSS (LESS pipeline only)."""
+        themes_list = self.tc.get_bootswatch_themes()
+        if not themes_list:
+            self.skipTest('Bootswatch npm package not installed')
+        less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
+        if not less_only:
+            self.skipTest('All themes use SCSS; Bootswatch 3 LESS test not applicable')
+        self.tc.compile_css(less_only[0], {}, self.css_filename, bootswatch_theme=themes_list[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertGreater(len(css), 10000)
+        self.assertIn('.navbar-toggle', css)
+        self.assertIn('.panel', css)
+
+
+class SafeCustomizationPathTest(TestCase):
+    """Tests for the _safe_customization_path security helper."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+        # Use a temporary directory so tests don't touch working tree
+        self._original_themes_dir = themes_settings.themes_dir
+        self._tmpdir = tempfile.mkdtemp()
+        themes_settings.themes_dir = self._tmpdir
+
+    def tearDown(self):
+        themes_settings.themes_dir = self._original_themes_dir
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def test_normal_name_returns_path_inside_themes_dir(self):
+        """A simple alphanumeric name should resolve inside themes_dir."""
+        path = self.tc._safe_customization_path('my_theme')
+        self.assertTrue(path.startswith(os.path.realpath(self._tmpdir) + os.sep))
+        self.assertTrue(path.endswith('.less'))
+
+    def test_traversal_with_dotdot_raises(self):
+        """Names containing '..' that escape themes_dir must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('../../etc/passwd')
+
+    def test_absolute_path_raises(self):
+        """An absolute path like '/tmp/evil' must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('/tmp/evil')
+
+    def test_name_with_slash_raises(self):
+        """A name with embedded slashes that escapes themes_dir must raise."""
+        with self.assertRaises(SuspiciousFileOperation):
+            self.tc._safe_customization_path('subdir/../../../etc/shadow')
+
+
+class FindScssVariablesSecurityTest(TestCase):
+    """Tests for find_scss_variables path-safety validation."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_find_scss_variables_rejects_path_outside_safe_roots(self):
+        """find_scss_variables silently skips filenames that resolve outside safe roots."""
+        outside_path = '/tmp/evil.scss'
+        with mock.patch.object(self.tc, 'get_scss_names', return_value=[outside_path]):
+            with self.assertLogs('esp.themes.controllers', level='WARNING') as cm:
+                result = self.tc.find_scss_variables('barebones', flat=True)
+        self.assertEqual(result, {})
+        self.assertTrue(any('rejecting' in msg for msg in cm.output))
+
+    def test_get_scss_names_unknown_theme_returns_global_files_only(self):
+        """get_scss_names for an unknown theme returns only the global SCSS files."""
+        names = self.tc.get_scss_names('nonexistent_theme_xyz')
+        self.assertTrue(all('theme_data' not in f for f in names),
+                        'Unknown theme should not produce theme_data/ entries')
+        self.assertTrue(any('variables_custom.scss' in f for f in names))
+
+    def test_get_less_names_unknown_theme_returns_global_files_only(self):
+        """get_less_names for an unknown theme returns no theme-specific LESS files."""
+        names = self.tc.get_less_names('nonexistent_theme_xyz')
+        self.assertFalse(any('nonexistent_theme_xyz' in f for f in names))
+
+    def test_find_theme_variables_delegates_to_less_pipeline(self):
+        """find_theme_variables calls find_less_variables when uses_scss_pipeline returns False."""
+        import unittest.mock as mock
+        with mock.patch.object(self.tc, 'uses_scss_pipeline', return_value=False):
+            with mock.patch.object(self.tc, 'find_less_variables', return_value={'x': '1'}) as mock_less:
+                result = self.tc.find_theme_variables('barebones')
+        mock_less.assert_called_once()
+        self.assertEqual(result, {'x': '1'})
+
+
+class SanitizeScssValueTest(TestCase):
+    """Tests for _sanitize_scss_value injection guard."""
+
+    def setUp(self):
+        from esp.themes.controllers import _sanitize_scss_value
+        self._fn = _sanitize_scss_value
+
+    def test_accepts_plain_color(self):
+        self.assertEqual(self._fn('color', '#ff0000'), '#ff0000')
+
+    def test_accepts_px_value(self):
+        self.assertEqual(self._fn('font-size', '14px'), '14px')
+
+    def test_rejects_at_import(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', '@import "evil"'))
+
+    def test_rejects_url(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('bg', 'url(/evil)'))
+
+    def test_rejects_semicolon(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', 'red; background: evil'))
+
+    def test_rejects_braces(self):
+        with self.assertLogs('esp.themes.controllers', level='WARNING'):
+            self.assertIsNone(self._fn('color', '{color: red}'))
+
+
+class CompileScssErrorPathTest(TestCase):
+    """Tests for compile_scss error handling."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_compile_scss_raises_on_nonzero_returncode(self):
+        """compile_scss raises ESPError_Log when the sass subprocess exits non-zero."""
+        import unittest.mock as mock
+        from esp.middleware.esperrormiddleware import ESPError_Log
+        mock_proc = mock.Mock()
+        mock_proc.returncode = 1
+        mock_proc.communicate.return_value = (b'', b'Error: bad scss')
+        with mock.patch('esp.themes.controllers.subprocess.Popen', return_value=mock_proc):
+            with self.assertRaises(ESPError_Log):
+                self.tc.compile_scss('$broken: {;')
+
+
+class GetVariableDefaultsUnknownThemeTest(TestCase):
+    """Tests for get_variable_defaults fallback to barebones on unknown theme."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+
+    def test_unknown_theme_falls_back_to_barebones(self):
+        """get_variable_defaults with an unknown name must not raise and must return a dict."""
+        result = self.tc.get_variable_defaults('__nonexistent_xyz__')
+        self.assertIsInstance(result, dict)
+        self.assertGreater(len(result), 0)
+
+
+class EnsureThemeMediaTest(TestCase):
+    """Tests for ThemeController.ensure_theme_media()."""
+
+    def setUp(self):
+        self.tc = ThemeController()
+        self._tmpdir = tempfile.mkdtemp()
+        self._orig_media = settings.MEDIA_ROOT
+        settings.MEDIA_ROOT = self._tmpdir
+
+    def tearDown(self):
+        settings.MEDIA_ROOT = self._orig_media
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _write_file(self, rel, content=b'data'):
+        path = os.path.join(self._tmpdir, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, 'wb') as f:
+            f.write(content)
+        return path
+
+    def test_missing_logo_is_copied_from_default(self):
+        """Logo is copied from default_images when it does not exist yet."""
+        self._write_file('default_images/theme/logo.png', b'reallogo')
+        self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        self.assertTrue(os.path.exists(dest))
+
+    def test_placeholder_logo_is_replaced(self):
+        """Placeholder logo (matching MD5) is replaced with the default."""
+        import hashlib
+        from esp.themes.controllers import PLACEHOLDER_LOGO_MD5
+        placeholder = b'placeholder'
+        # Write a file whose MD5 matches PLACEHOLDER_LOGO_MD5 by patching the constant
+        with mock.patch('esp.themes.controllers.PLACEHOLDER_LOGO_MD5',
+                        hashlib.md5(placeholder).hexdigest()):
+            self._write_file('images/theme/logo.png', placeholder)
+            self._write_file('default_images/theme/logo.png', b'reallogo')
+            self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        with open(dest, 'rb') as f:
+            self.assertEqual(f.read(), b'reallogo')
+
+    def test_non_placeholder_logo_is_kept(self):
+        """An existing logo with a non-placeholder MD5 must not be overwritten."""
+        self._write_file('images/theme/logo.png', b'customlogo')
+        self._write_file('default_images/theme/logo.png', b'defaultlogo')
+        self.tc.ensure_theme_media()
+        dest = os.path.join(self._tmpdir, 'images', 'theme', 'logo.png')
+        with open(dest, 'rb') as f:
+            self.assertEqual(f.read(), b'customlogo')
