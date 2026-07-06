@@ -50,17 +50,17 @@ jobs:
       DJANGO_SETTINGS_MODULE: esp.settings
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
-    - name: Set up Python 3.10
-      uses: deadsnakes/action@e640ac8743173a67cca4d7d77cd837e514bf98e8  # v3.2.0
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: "3.12"
     - name: Cache pip packages
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4
       with:
         path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-3.10-${{ hashFiles('esp/requirements.txt') }}
+        key: ${{ runner.os }}-pip-3.12-${{ hashFiles('esp/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-3.10-
+          ${{ runner.os }}-pip-3.12-
           ${{ runner.os }}-pip-
     - name: Get apt packages list
       id: apt-action-migrations
@@ -74,16 +74,16 @@ jobs:
     - name: Prepare for Installing Dependencies
       run: deploy/ci/before_install
       env:
-        PYTHON_VERSION: "3.10"
+        PYTHON_VERSION: "3.12"
     - name: Install Dependencies
       env:
         CI_JOB: test
-        PYTHON_VERSION: "3.10"
+        PYTHON_VERSION: "3.12"
       run: deploy/ci/install
     - name: Prepare for Migration Check
       env:
         CI_JOB: test
-        PYTHON_VERSION: "3.10"
+        PYTHON_VERSION: "3.12"
       run: deploy/ci/before_script
     - name: Run Migration Check
       env:
