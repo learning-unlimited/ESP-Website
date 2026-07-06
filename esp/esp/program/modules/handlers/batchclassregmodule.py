@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, PersistentQueryFilter
@@ -60,6 +61,20 @@ class BatchClassRegModule(ProgramModuleObj):
             "seq": 503,
             "choosable": 1,
         }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface batch class registration in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (batchclassregfinal) return None.
+        if view_name != "batchclassreg":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Batch Class Registration",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["batch", "register", "enroll", "students", "section", "class"],
+        )
 
     @main_call
     @needs_admin

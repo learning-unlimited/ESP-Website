@@ -269,6 +269,60 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
 
+    def testVolunteerUserviewFallback(self):
+        """ Test that a volunteer with no RegistrationProfile gets a program context from current_programs() """
+        from esp.program.models import Program
+        c = Client()
+        self.assertTrue(c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin")
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer999',
+            defaults={'first_name': 'Test', 'last_name': 'Volunteer', 'email': 'vol@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Confirm volunteer has no profile
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+
+        # userview should still return 200 even with no profile
+        response = c.get("/manage/userview", { 'username': volunteer.username })
+        self.assertEqual(response.status_code, 200)
+
+        volunteer.delete()
+
+    def testVolunteerLastActiveProgram(self):
+        """ A user who only volunteers (no RegistrationProfile) should still have
+            their program returned by get_last_active_program(), even though the
+            profile-only get_last_program_with_profile() returns None for them. """
+        from esp.program.models import VolunteerRequest, VolunteerOffer
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer998',
+            defaults={'first_name': 'Active', 'last_name': 'Volunteer', 'email': 'vol2@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Sign the volunteer up for a shift on a real program, reusing a
+        # timeslot that make_program() already created (VolunteerRequest just
+        # needs some cal.Event; its type is irrelevant to get_last_active_program).
+        program = make_program()
+        timeslot = list(program.getTimeSlots())[0]
+        vr = VolunteerRequest.objects.create(program=program, timeslot=timeslot, num_volunteers=1)
+        VolunteerOffer.objects.create(user=volunteer, request=vr)
+
+        # The profile-only method still finds nothing (no RegistrationProfile)...
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+        # ...but get_last_active_program() picks up the volunteered program.
+        self.assertEqual(volunteer.get_last_active_program(), program)
+
+        volunteer.delete()
+
     def tearDown(self):
         self.user.delete()
         self.admin.delete()
@@ -780,6 +834,67 @@ class ProgramFrameworkTest(TestCase):
             start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
+
+class RegistrationProfileTest(ProgramFrameworkTest):
+
+    def test_getLastForProgram_does_not_auto_save(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test',
+            last_name='Student',
+            username='teststudent1450',
+            email='teststudent1450@example.com',
+        )
+
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile = RegistrationProfile.getLastForProgram(student, self.program)
+
+        self.assertEqual(profile.program, self.program)
+        self.assertIsNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile.save()
+        self.assertIsNotNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 1)
+
+    def test_getLastForProgram_with_existing_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test2',
+            last_name='Student',
+            username='teststudent1450b',
+            email='teststudent1450b@example.com',
+        )
+
+        profile = RegistrationProfile.objects.create(
+            user=student,
+            program=self.program,
+            most_recent_profile=True
+        )
+        original_id = profile.id
+
+        retrieved = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(retrieved.id, original_id)
+        self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
 
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
@@ -1803,61 +1918,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         self.assertNotIn('warning', response_data)
         self.assertIn('flag_name', response_data)
 
-
-"""
-Tests for esp.program.controllers.classreg
-Source: esp/esp/program/controllers/classreg.py
-
-Tests ClassCreationController and ClassCreationValidationError.
-"""
-from django.contrib.auth.models import Group
-
-from esp.program.controllers.classreg import (
-    ClassCreationController,
-    ClassCreationValidationError,
-)
-from esp.program.models import Program
-from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
-
-
-class ClassCreationValidationErrorTest(TestCase):
-    def test_is_exception(self):
-        err = ClassCreationValidationError(None, None, 'test error')
-        self.assertIsInstance(err, Exception)
-
-    def test_stores_forms(self):
-        mock_form = 'form'
-        mock_formset = 'formset'
-        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
-        self.assertEqual(err.reg_form, 'form')
-        self.assertEqual(err.resource_formset, 'formset')
-
-    def test_str(self):
-        err = ClassCreationValidationError(None, None, 'bad data')
-        self.assertEqual(str(err), 'bad data')
-
-
-class ClassCreationControllerTest(TestCase):
-    def setUp(self):
-        super().setUp()
-        _setup_roles()
-        self.program = Program.objects.create(grade_min=7, grade_max=12)
-
-    def test_init_stores_program(self):
-        # ClassCreationController needs classregmoduleinfo on the program
-        # but we can at least test the constructor stores program
-        try:
-            controller = ClassCreationController(self.program)
-            self.assertEqual(controller.program, self.program)
-        except Exception:
-            # classregmoduleinfo may not exist, which is expected
-            pass
 """
 Tests for esp.program.controllers.confirmation
 Source: esp/esp/program/controllers/confirmation.py
