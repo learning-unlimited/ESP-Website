@@ -179,7 +179,6 @@ div.navbar-collapse.collapse {
     background-position: 0;
 }
 .navbar {
-    // Structural layout — always applied regardless of Bootswatch.
     padding: 6px;
     width: auto;
     display: inline-block;
@@ -193,10 +192,7 @@ div.navbar-collapse.collapse {
     }
 }
 
-// When Bootswatch is active, let Bootswatch supply navbar colors via $primary
-// and its _bootswatch.scss rules.  When not active, use the customizer variables.
 @if $bootswatch-active {
-    // background shorthand clears any background-image gradient from _bootswatch.scss
     .navbar {
         background: $primary !important;
     }

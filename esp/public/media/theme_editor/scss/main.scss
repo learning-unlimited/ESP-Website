@@ -7,10 +7,6 @@
 @import "bootstrap-icons/font/bootstrap-icons";
 @import "theme_layout_compat";
 
-// Apply px-based editor variables as direct CSS overrides.
-// Bootstrap 4 uses these variables in arithmetic with rem counterparts, making
-// variable bridges impossible without "incompatible units" errors.  Overriding here
-// (after @import "bootstrap") achieves the same effect for rendered output.
 body {
     font-size: $baseFontSize;
 }
@@ -18,21 +14,12 @@ body {
     font-size: $navbarBrandFontSize;
 }
 
-// $navbarBackground cannot be bridged to Bootstrap 5's $dark variable before
-// @import because Bootstrap's color-contrast() fails on arbitrary hex values.
-// Direct CSS override here is equivalent.  Suppressed when a Bootswatch theme
-// is active so Bootswatch's navbar color identity is not blocked.
 @if not $bootswatch-active {
     .navbar.bg-dark {
         background-color: $navbarBackground !important;
     }
 }
 
-// Theme editor button controls.  Only applied when NO Bootswatch theme is active.
-// When Bootswatch IS active, Bootstrap's component CSS already uses $primary/$secondary
-// (set by Bootswatch's _variables.scss) so we must not override those with the ESP
-// customizer variables — doing so would lock buttons to the ESP default colours
-// and hide the Bootswatch theme's button identity entirely.
 @if not $bootswatch-active {
     .btn-secondary,
     .btn-default {
@@ -62,7 +49,6 @@ body {
     }
 }
 
-// Bootstrap 3 compatibility helpers (templates/JS still use these classes)
 .hidden {
     display: none !important;
 }
@@ -88,13 +74,11 @@ body {
     border-left: 4px solid transparent;
 }
 
-// Split dropdowns use a custom .caret; hide Bootstrap 4's default caret
 .navbar .caret-wrapper.dropdown-toggle::after,
 .dropdown-split .dropdown-toggle::after {
     display: none !important;
 }
 
-// Login box: hide BS4 pseudo-caret when using legacy .caret span inside button
 #loginbox button.dropdown-toggle::after {
     display: none !important;
 }
@@ -119,7 +103,6 @@ input[type="radio"] + label, input[type="checkbox"] + label {
     background-color: #D3D3D3;
 }
 
-// datepicker
 input.hasDatepicker {
     max-width: 10em;
 }

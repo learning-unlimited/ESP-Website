@@ -1,11 +1,5 @@
-// "Base" variables that can be modified using the theme editor
-// ------------------------------------------------------------
-// Set to true (in controllers.py) when a Bootswatch theme is active so SCSS
-// @if guards can suppress the droplets-specific overrides that would otherwise
-// block Bootswatch's component styling.
 $bootswatch-active: false !default;
 
-// Gray scale (kept for backward compat with theme SCSS files)
 $black:                 #000;
 $grayDarker:            #222;
 $grayDark:              #333;
@@ -52,29 +46,14 @@ $btnInverseBackground:      #555;
 $btnInverseLinkColor:       #fff;
 $navbarCollapseWidth:             979px;
 
-// Bootstrap 5 variable overrides
-// These map our ESP theme-editor variables to Bootstrap 5's expected names
-// so that Bootstrap components automatically use the right colors.
-// Must be defined before @import "bootstrap".
-//
-// When a Bootswatch theme is active, bw_vars_import runs BEFORE this file so
-// Bootswatch can set $primary, $link-color, etc. first.  We use !default on
-// all bridge variables so those Bootswatch assignments are not clobbered here —
-// the user's own theme-editor values are injected via regex in controllers.py
-// and will override both Bootswatch and these defaults.
 $body-bg:                   $bodyBackground !default;
 $body-color:                $textColor !default;
 $link-color:                $linkColor !default;
 $link-hover-color:          $linkColorHover !default;
 $font-family-sans-serif:    $sansFontFamily !default;
-// $baseFontSize and $navbarBrandFontSize are px values; applied as direct CSS
-// overrides in main.scss to avoid Bootstrap arithmetic "incompatible units" errors.
 $headings-color:            $headingsColor !default;
 $primary:                   $btnPrimaryBackground !default;
 $secondary:                 $btnInverseBackground !default;
-// $navbarBackground cannot be bridged to $dark — darken()/lighten() arithmetic
-// inside Bootstrap's _utilities.scss fails on raw hex literals.  Applied as a
-// direct CSS override in main.scss instead.
 $navbar-dark-color:         $navbarText !default;
 $navbar-dark-hover-color:   $navbarLinkColorHover !default;
 $navbar-dark-brand-color:   $navbarLinkColor !default;

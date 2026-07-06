@@ -619,17 +619,6 @@ class ThemeController(object):
                 bw_scss_import = f'\n@import "{bw_scss}";\n'
 
             if bootswatch_theme:
-                # Compilation order when Bootswatch is active:
-                #   1. $bootswatch-active: true  — enables @if guards in SCSS that suppress
-                #      droplets-specific overrides blocking Bootswatch's component styling.
-                #   2. Bootswatch _variables.scss  — sets $primary, $link-color, etc. with
-                #      !default; must come BEFORE our variables so Bootswatch color identity
-                #      is not clobbered by our non-!default defaults.
-                #   3. Our variable files  — bridge vars now use !default so Bootswatch
-                #      assignments above take precedence; user edits injected via regex override both.
-                #   4. @import "bootstrap"
-                #   5. Bootswatch _bootswatch.scss  — component overrides
-                #   6. Theme CSS rule files  — guarded by @if not $bootswatch-active
                 scss_data = ('$bootswatch-active: true;\n'
                              + bw_vars_import
                              + var_data
