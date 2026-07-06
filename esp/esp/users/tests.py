@@ -5,9 +5,11 @@ from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
+from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -17,7 +19,7 @@ from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -138,6 +140,19 @@ class ESPUserTest(TestCase):
                                 f"Token check failed for username: {username}")
             finally:
                 user.delete()
+
+    def test_db_list_count_cache_invalidated_on_user_save(self):
+        ESPUser.objects.create(username='dblist_before_1')
+        ESPUser.objects.create(username='dblist_before_2')
+
+        baseline = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        ESPUser.objects.create(username='dblist_after_3')
+
+        # Use a fresh DBList instance so the result must come from cache or DB.
+        refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        self.assertEqual(refreshed, baseline + 1)
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
@@ -460,8 +475,8 @@ class AccountCreationTest(TestCase):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
+                                         "password":"Str0ng!Pass",
+                                         "confirm_password":"Str0ng!Pass",
                                          "first_name":"first",
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
@@ -488,7 +503,7 @@ class AccountCreationTest(TestCase):
         self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
         import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
+        match = re.search(r"\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
 
@@ -566,8 +581,8 @@ class TestChangeRequestView(TestCase):
 
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
-        self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+        self.assertFormError(response.context['form'], 'reason', 'This field is required.')
+        self.assertFormError(response.context['form'], 'claimed_grade', 'Value 483 is not a valid choice.')
 
     def test_send_request_email(self):
         c = Client()
@@ -1105,3 +1120,153 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class ActivateAccountTest(TestCase):
+    """Tests for the activate_account view."""
+
+    ACTIVATION_KEY = '123456'
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testactivate',
+            email='testactivate@example.com',
+            password='testpassword',
+        )
+        # Simulate an inactive account awaiting activation:
+        # the activation key is appended to the hashed password with '_'
+        self.user.password = self.user.password + '_' + self.ACTIVATION_KEY
+        self.user.is_active = False
+        self.user.save()
+        self.url = reverse('activate_account')
+
+    def test_valid_key_activates_user(self):
+        """A valid username and key activates the account."""
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_valid_key_strips_key_from_password(self):
+        """After activation the key suffix is removed from the stored password."""
+        expected_password = self.user.password[:-(len('_' + self.ACTIVATION_KEY))]
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, expected_password)
+
+    def test_valid_key_redirects_to_profile(self):
+        """After activation the user is redirected to the profile page."""
+        response = self.client.get(
+            self.url,
+            {'username': 'testactivate', 'key': self.ACTIVATION_KEY},
+        )
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+
+    def test_missing_username_raises_error(self):
+        """GET without username returns a 500 error response."""
+        response = self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_missing_key_raises_error(self):
+        """GET without key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate'})
+        self.assertEqual(response.status_code, 500)
+
+    def test_nonexistent_user_raises_error(self):
+        """A username that does not exist returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_already_active_user_raises_error(self):
+        """Trying to activate an already active account returns a 500 error response."""
+        self.user.is_active = True
+        self.user.save()
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_wrong_key_raises_error(self):
+        """An incorrect activation key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
+        self.assertEqual(response.status_code, 500)
+
+
+class PasswordValidationTest(TestCase):
+    """Ensure password strength rules are enforced on registration and password change."""
+
+    REG_BASE = {
+        'first_name': 'Test',
+        'last_name': 'User',
+        'username': 'testpwuser',
+        'initial_role': 'Student',
+        'email': 'test@example.com',
+        'confirm_email': 'test@example.com',
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='pwchangeuser')
+        cls.user.set_password('ValidPass1!')
+        cls.user.save()
+
+    def _reg_form(self, password, confirm=None):
+        from esp.users.forms.user_reg import UserRegForm
+        if confirm is None:
+            confirm = password
+        data = dict(self.REG_BASE, password=password, confirm_password=confirm)
+        return UserRegForm(data=data)
+
+    def _passwd_form(self, new_password, confirm=None):
+        from esp.users.forms.password_reset import UserPasswdForm
+        if confirm is None:
+            confirm = new_password
+        data = {
+            'password': 'ValidPass1!',
+            'newpasswd': new_password,
+            'newpasswdconfirm': confirm,
+        }
+        return UserPasswdForm(user=self.user, data=data)
+
+    def test_registration_rejects_short_password(self):
+        form = self._reg_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('password', form.errors)
+
+    def test_registration_rejects_common_password(self):
+        form = self._reg_form('password')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_rejects_numeric_only_password(self):
+        form = self._reg_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_accepts_strong_password(self):
+        form = self._reg_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_mismatched_passwords(self):
+        form = self._reg_form('Str0ng!Pass', confirm='Different!1')
+        self.assertFalse(form.is_valid())
+        self.assertIn('confirm_password', form.errors)
+
+    def test_password_change_rejects_short_password(self):
+        form = self._passwd_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('newpasswd', form.errors)
+
+    def test_password_change_rejects_common_password(self):
+        form = self._passwd_form('password1')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_rejects_numeric_only_password(self):
+        form = self._passwd_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_accepts_strong_password(self):
+        form = self._passwd_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_username_similar_password(self):
+        # UserAttributeSimilarityValidator must receive the user instance to work.
+        # 'testpwuser1' is too similar to username 'testpwuser'.
+        form = self._reg_form('testpwuser1')
+        self.assertFalse(form.is_valid())
