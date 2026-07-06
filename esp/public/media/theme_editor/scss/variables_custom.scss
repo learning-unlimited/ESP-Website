@@ -1,0 +1,73 @@
+// "Base" variables that can be modified using the theme editor
+// ------------------------------------------------------------
+
+// Gray scale (kept for backward compat with theme SCSS files)
+$black:                 #000;
+$grayDarker:            #222;
+$grayDark:              #333;
+$gray:                  #555;
+$grayLight:             #999;
+$grayLighter:           #eee;
+$white:                 #fff;
+
+$bodyBackground:            #fff;
+$contentBackground:         #fff;
+$heroUnitBackground:        #eee;
+$textColor:                 #333;
+$headingsColor:             #333;
+$titleColor:                #333;
+$linkColor:                 #08c;
+$linkColorHover:            #07a;
+$baseFontSize:              13px;
+$sansFontFamily:            "Helvetica Neue", Helvetica, Arial, sans-serif;
+$navbarBackground:          #222;
+$navbarBackgroundHighlight: #333;
+$navbarText:                #999;
+$navbarLinkColor:           #999;
+$navbarLinkColorHover:      #fff;
+$navbarInverseBackground:                #111111;
+$navbarInverseBackgroundHighlight:       #222222;
+$navbarInverseText:                      #999;
+$navbarInverseLinkColor:                 #999;
+$navbarInverseLinkColorHover:            #fff;
+$navbarInverseBrandColor:                $navbarInverseLinkColor;
+$navbarBrandFontSize:       24px;
+$sidebarText:               #999;
+$sidebarLink:               #08c;
+$sidebarHeader:             #651818;
+$sidebarBackground:         #eee;
+$sidebarLinkHover:          #07a;
+$sidebarHover:              #fff;
+$sidebarActive:             #fff;
+$sidebarActiveBackground:   #07a;
+$btnBackground:             #fff;
+$btnLinkColor:              #08c;
+$btnPrimaryBackground:      #08c;
+$btnPrimaryLinkColor:       #fff;
+$btnInverseBackground:      #555;
+$btnInverseLinkColor:       #fff;
+$navbarCollapseWidth:             979px;
+
+// Bootstrap 4 variable overrides
+// These map our ESP theme-editor variables to Bootstrap 4's expected names
+// so that Bootstrap components automatically use the right colors.
+// Must be defined before @import "bootstrap".
+$body-bg:                   $bodyBackground;
+$body-color:                $textColor;
+$link-color:                $linkColor;
+$link-hover-color:          $linkColorHover;
+$font-family-sans-serif:    $sansFontFamily;
+// $baseFontSize and $navbarBrandFontSize are px values. Bootstrap 4 uses these variables
+// in arithmetic with rem counterparts (e.g. $nav-link-height, $navbar-brand-padding-y),
+// causing "incompatible units" errors if we bridge them here. Both are applied as
+// direct CSS overrides in main.scss (which compiles after @import "bootstrap").
+$headings-color:            $headingsColor;
+$primary:                   $btnPrimaryBackground;
+$secondary:                 $btnInverseBackground;
+// $navbarBackground cannot be bridged to $dark here — darken()/lighten() arithmetic
+// inside Bootstrap's _utilities.scss causes "incompatible units" errors when $dark is a
+// hex literal instead of a palette entry.  Applied as a direct CSS override in main.scss.
+$navbar-dark-color:         $navbarText;
+$navbar-dark-hover-color:   $navbarLinkColorHover;
+$navbar-dark-brand-color:   $navbarLinkColor;
+$dropdown-link-color:       $grayDark;

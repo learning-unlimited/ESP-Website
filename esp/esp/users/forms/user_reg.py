@@ -1,6 +1,8 @@
 from django import forms
+from django.contrib.auth.password_validation import validate_password
 from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
+import socket
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
@@ -23,8 +25,8 @@ class ValidHostEmailField(forms.EmailField):
             try:
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
-                    raise forms.ValidationError('"%s" is not a valid email host' % email_host)
-            except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
+                    raise forms.ValidationError(f'"{email_host}" is not a valid email host')
+            except (DNS.DNSError, FileNotFoundError, socket.gaierror):  # (no resolv.conf, no nameservers, transient socket.gaierror lookup failure)
                 pass
         except ImportError: # no PyDNS
             pass
@@ -67,10 +69,10 @@ class UserRegForm(forms.Form):
     username = forms.CharField(min_length=5, max_length=30)
 
     password = forms.CharField(widget = forms.PasswordInput(),
-                               min_length=5)
+                               min_length=8)
 
     confirm_password = forms.CharField(widget = forms.PasswordInput(),
-                                       min_length=5)
+                                       min_length=8)
 
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [], widget=HiddenInput)
@@ -110,6 +112,12 @@ class UserRegForm(forms.Form):
     def clean_confirm_password(self):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
+        user = ESPUser(
+            username=self.cleaned_data.get('username', ''),
+            first_name=self.cleaned_data.get('first_name', ''),
+            last_name=self.cleaned_data.get('last_name', ''),
+        )
+        validate_password(self.cleaned_data['confirm_password'], user)
         return self.cleaned_data['confirm_password']
 
     def clean_confirm_email(self):

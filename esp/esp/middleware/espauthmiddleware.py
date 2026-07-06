@@ -92,7 +92,10 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                 expires = None
             else:
                 max_age = settings.SESSION_COOKIE_AGE
-                expires = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE), "%a, %d-%b-%Y %H:%M:%S GMT")
+                expires = datetime.datetime.strftime(
+                    datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE),
+                    "%a, %d-%b-%Y %H:%M:%S GMT"
+                )
             ret_title = ''
             try:
                 ret_title = request.session['user_morph']['retTitle']
@@ -150,4 +153,3 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             patch_vary_headers(response, ('Cookie',))
 
         return response
-
