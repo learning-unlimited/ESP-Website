@@ -37,7 +37,6 @@ py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matt
 Pygments==2.20.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
-raven # Required for Sentry error reporting
 setuptools==78.1.1 # For building packages from source
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
