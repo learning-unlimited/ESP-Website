@@ -5,7 +5,7 @@ Conflict detection, capacity enforcement, waitlist promotion, and grade
 filtering are critical invariants that must hold but had no dedicated
 regression tests.
 
-Addresses: #3780, #599
+Refs: #3780, #599
 """
 
 from esp.program.models import StudentRegistration, RegistrationType
