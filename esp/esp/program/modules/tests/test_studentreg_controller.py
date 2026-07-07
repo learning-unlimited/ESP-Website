@@ -42,28 +42,28 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         timeslots = self.program.getTimeSlots()
         if not timeslots:
             self.skipTest('No timeslots available')
-        
+
         first_timeslot = timeslots[0]
         sections_at_same_time = self.program.sections().filter(
             meeting_times=first_timeslot
         )[:2]
-        
+
         if sections_at_same_time.count() < 2:
             self.skipTest('Need at least 2 sections at same timeslot')
-        
+
         sec_a, sec_b = sections_at_same_time[0], sections_at_same_time[1]
-        
+
         result_a = sec_a.preregister_student(self.student)
         self.assertTrue(result_a, 'First registration should succeed')
-        
+
         result_b = sec_b.preregister_student(self.student)
-        
+
         enrolled_count = StudentRegistration.valid_objects().filter(
             user=self.student,
             section__in=[sec_a, sec_b],
             relationship__name='Enrolled'
         ).count()
-        
+
         self.assertLessEqual(
             enrolled_count, 1,
             'Student should not be enrolled in two sections at the same timeslot'
@@ -83,13 +83,13 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
-        
+
         section.capacity = 10
         section.save()
-        
+
         student = self.students[0]
         result = section.preregister_student(student)
-        
+
         self.assertTrue(result, 'Registration should succeed when section has capacity')
         self.assertTrue(
             StudentRegistration.valid_objects().filter(
@@ -105,15 +105,15 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
-        
+
         section.capacity = 2
         section.save()
-        
+
         section.preregister_student(self.students[0])
         section.preregister_student(self.students[1])
-        
+
         result = section.preregister_student(self.students[2])
-        
+
         self.assertFalse(result, 'Registration should fail when section is full')
         self.assertFalse(
             StudentRegistration.valid_objects().filter(
@@ -138,22 +138,22 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
-        
+
         section.capacity = 1
         section.save()
-        
+
         student_a = self.students[0]
         student_b = self.students[1]
-        
+
         section.preregister_student(student_a)
-        
+
         waitlist_rt = RegistrationType.get_map()['Waitlist/WaitList']
         StudentRegistration.objects.create(
             user=student_b,
             section=section,
             relationship=waitlist_rt
         )
-        
+
         self.assertTrue(
             StudentRegistration.valid_objects().filter(
                 user=student_b,
@@ -162,7 +162,7 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
             ).exists(),
             'Student B should be waitlisted'
         )
-        
+
         enrolled_regs = StudentRegistration.valid_objects().filter(
             user=student_a,
             section=section,
@@ -170,7 +170,7 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
         )
         for reg in enrolled_regs:
             reg.expire()
-        
+
         self.assertEqual(
             StudentRegistration.valid_objects().filter(
                 user=student_a,
@@ -195,17 +195,17 @@ class GradeFilterTest(ProgramFrameworkTest):
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
-        
+
         section.parent_class.grade_min = 7
         section.parent_class.grade_max = 12
         section.parent_class.save()
-        
+
         student = self.students[0]
         student.getLastProfile().student_info.graduation_year = self.program.anchor.year + 5
         student.getLastProfile().student_info.save()
-        
+
         result = section.preregister_student(student)
-        
+
         self.assertTrue(
             result,
             'Student within grade range should be able to register'
@@ -216,22 +216,22 @@ class GradeFilterTest(ProgramFrameworkTest):
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
-        
+
         section.parent_class.grade_min = 11
         section.parent_class.grade_max = 12
         section.parent_class.save()
-        
+
         student = self.students[0]
         student.getLastProfile().student_info.graduation_year = self.program.anchor.year + 9
         student.getLastProfile().student_info.save()
-        
+
         # preregister_student doesn't enforce grade restrictions by itself.
         # Grade filtering typically happens at the module handler level.
-        
+
         student_grade = student.getGrade(self.program)
         section_grade_min = section.parent_class.grade_min
         section_grade_max = section.parent_class.grade_max
-        
+
         self.assertFalse(
             section_grade_min <= student_grade <= section_grade_max,
             f'Student grade {student_grade} should be outside range [{section_grade_min}, {section_grade_max}]'
