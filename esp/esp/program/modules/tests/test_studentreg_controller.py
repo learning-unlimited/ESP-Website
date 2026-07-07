@@ -153,7 +153,9 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
 
         section.preregister_student(student_a)
 
-        waitlist_rt = RegistrationType.get_map()['Waitlist/WaitList']
+        waitlist_rt, _ = RegistrationType.objects.get_or_create(
+            name='Waitlist/1', defaults={'category': 'student'}
+        )
         StudentRegistration.objects.create(
             user=student_b,
             section=section,
@@ -164,7 +166,7 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
             StudentRegistration.valid_objects().filter(
                 user=student_b,
                 section=section,
-                relationship__name='Waitlist/WaitList'
+                relationship__name='Waitlist/1'
             ).exists(),
             'Student B should be waitlisted'
         )
