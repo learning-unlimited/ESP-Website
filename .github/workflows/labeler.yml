@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.repository == 'learning-unlimited/ESP-Website'
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v6
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           sync-labels: true  # Remove labels when files no longer match
