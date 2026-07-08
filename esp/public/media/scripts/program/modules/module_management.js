@@ -1,6 +1,6 @@
 /*
  * module_timeline.js
- * Interactive script for Phase 6 Module Management page.
+ * Script for interactive module management page.
  */
 
 var $j = jQuery.noConflict();
@@ -100,9 +100,13 @@ $j(document).ready(function() {
             maxDate.setMonth(maxDate.getMonth() + 3);
         }
         
-        // Add padding (e.g. 7 days before and after)
-        minDate.setDate(minDate.getDate() - 7);
-        maxDate.setDate(maxDate.getDate() + 7);
+        var now = new Date();
+        if (now < minDate) minDate = new Date(now);
+        if (now > maxDate) maxDate = new Date(now);
+        
+        // Add padding (35 days before so the red line doesn't overlap labels, and 14 days after)
+        minDate.setDate(minDate.getDate() - 35);
+        maxDate.setDate(maxDate.getDate() + 14);
         
         timelineStart = minDate;
         
@@ -308,18 +312,37 @@ $j(document).ready(function() {
                 .css({ left: pos.left, width: pos.width })
                 .on('click', function() { openEditPanel(mod, type); });
 
+            var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title).css({
+                position: 'sticky',
+                left: '12px'
+            });
+
+            var $rightSticky = $j('<div>').css({
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                position: 'sticky',
+                right: '12px'
+            });
+
             if (pos.isAlwaysOn) {
                 $block.addClass('block-always-on');
-                $block.append($j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title));
-                $block.append($j('<span>').addClass('tl-block-sub').text('Always On ∞'));
+                $rightSticky.append($j('<span>').addClass('tl-block-sub').text('Always On'));
+                if (mod.required) {
+                    $rightSticky.append($j('<span>').addClass('badge-req').text('REQ'));
+                }
             } else {
                 var isSolid = type === 'student' ? 'block-solid-student' : 'block-solid-teacher';
                 var isFaded = type === 'student' ? 'block-faded-student' : 'block-faded-teacher';
                 $block.addClass(pos.isActive ? isSolid : isFaded);
-                $block.append($j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title));
                 if (mod.required) {
-                    $block.append($j('<span>').addClass('badge-req').text('REQ'));
+                    $rightSticky.append($j('<span>').addClass('badge-req').text('REQ'));
                 }
+            }
+            
+            $block.append($leftSticky);
+            if ($rightSticky.children().length > 0) {
+                $block.append($rightSticky);
             }
             $blockRow.append($block);
             $grid.append($blockRow);

@@ -1,6 +1,6 @@
 /* 
  * module_timeline.css 
- * Styles for the interactive module scheduler (Phase 6).
+ * Styles for the interactive module management page.
  * Replaces the old module_management.css.
  */
 
@@ -770,6 +770,9 @@
     font-size: 10px;
     font-weight: 500;
     opacity: 0.85;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Toast Notifications */

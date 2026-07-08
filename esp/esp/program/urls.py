@@ -30,7 +30,6 @@ urlpatterns = [
     # module timeline API
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/?$', views.module_schedule_api, name='module_schedule_api'),
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/update/?$', views.module_schedule_update_api, name='module_schedule_update_api'),
-    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/required_toggle/?$', views.module_schedule_required_toggle_api, name='module_schedule_required_toggle_api'),
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/preview/?$', views.module_schedule_preview_api, name='module_schedule_preview_api'),
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/conflicts/?$', views.module_schedule_conflicts_api, name='module_schedule_conflicts_api'),
 ]

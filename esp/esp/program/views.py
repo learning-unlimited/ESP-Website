@@ -1604,8 +1604,8 @@ def module_schedule_api(request, program_type, program_term):
 @require_POST
 def module_schedule_update_api(request, program_type, program_term):
     """
-    JSON API endpoint to update a program module's start_date, end_date, and seq.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq.
+    JSON API endpoint to update a program module's schedule and metadata.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq, link_title, required, required_label.
     Outputs: JSONResponse with success boolean and updated module fields.
     """
     # we simulate PATCH using POST with data, or we could just use POST.
@@ -1714,53 +1714,6 @@ def module_schedule_update_api(request, program_type, program_term):
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
         logger.exception("module_schedule_update_api failed")
-        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
-
-@require_POST
-def module_schedule_required_toggle_api(request, program_type, program_term):
-    """
-    JSON API endpoint to toggle a program module's required flag and update its required_label.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, required (bool), required_label (str).
-    Outputs: JSONResponse with success boolean and updated module fields.
-    """
-    prog = get_program_or_404(request, program_type, program_term)
-
-    try:
-        data = json.loads(request.body)
-        module_id = data.get("module_id")
-
-        from esp.program.modules.base import ProgramModuleObj
-        try:
-            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
-        except ProgramModuleObj.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
-
-        if "required" in data:
-            if not isinstance(data["required"], bool):
-                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
-            mod.required = data["required"]
-
-        if "required_label" in data:
-            label = data["required_label"]
-            if not isinstance(label, str):
-                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
-            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
-            if len(label) > max_len:
-                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
-            mod.required_label = label
-
-        mod.save()
-
-        return JsonResponse({
-            "success": True,
-            "module_id": mod.id,
-            "required": mod.required,
-            "required_label": mod.required_label
-        })
-    except ValueError:
-        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
-    except Exception:
-        logger.exception("module_schedule_required_toggle_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
 @require_GET
