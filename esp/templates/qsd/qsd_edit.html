@@ -27,8 +27,28 @@
 <form method="post" action="{{ request.path }}" enctype="multipart/form-data">
 
 <h1>Static Page Editing</h1>
+
+{% if conflict %}
+<div class="alert alert-danger">
+  <p>This page was changed by someone else after you started editing it.
+  Your changes below have <strong>not</strong> been saved &mdash; review the
+  content against the latest version, then click "Save Changes!" again to
+  overwrite it, or reload the page to discard your changes and see the
+  latest version instead.</p>
+  {% if edit_history %}
+  <p>Recent edits to this page:</p>
+  <ul>
+    {% for edit in edit_history %}
+    <li>{{ edit.user }} &mdash; {{ edit.date }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+</div>
+{% endif %}
+
 <p>Current URL path: <tt>{{ qsdrec.url }}</tt> <br />
-<a href="{{ return_to_view }}">Back to Page View</a></p>
+<a href="{{ return_to_view }}">Back to Page View</a> |
+<a href="{{ history_url }}">View History</a></p>
 
   <h2>Title</h2>
   <input type="text" name="title" value="{{ title|escape }}" size="64" />
@@ -54,6 +74,8 @@
   <div style="width: 100%; border: 1px solid #c0c0c0; margin: 0 0 10px;">
     <textarea id="qsd_content" name="content" rows="50">{{ content|escape }}</textarea>
   </div>
+  <input type="hidden" name="orig_id" value="{{ orig_id|default_if_none:"" }}">
+  <input type="hidden" name="orig_version" value="{{ orig_version|default_if_none:"" }}">
   <p><input type="hidden" name="post_edit"><input type="submit" value="Save Changes!" class="btn btn-primary" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">
@@ -77,6 +99,22 @@ $j(document).ready(function() {
   $j.initialize(".jodit_toolbar_btn-image input[name=url]", function() {
     $j(this).after("Upload files <a href='/admin/filebrowser/browse/' target='_blank'>here");
   });
+
+  {% if orig_id and not conflict %}
+  // Same staleness guard as the inline editor: a browser can silently
+  // restore this textarea's old value across a plain page refresh even
+  // though the server just sent fresh content, since the hidden
+  // orig_id/orig_version inputs aren't restored the same way and would
+  // otherwise look perfectly fresh.
+  //
+  // Skipped when redisplaying a conflict: orig_id/orig_version there are
+  // deliberately refreshed to the current DB row (so a resubmit is a real
+  // override), while the textarea deliberately holds the user's own
+  // unsaved attempt, not the DB's content -- that mismatch is intentional,
+  // already fully explained by the conflict banner above, and would
+  // otherwise trip this same check as a spurious "stale" alert.
+  qsd_warn_if_stale('{{ qsdrec.url|escapejs }}', '{{ orig_id }}', '{{ orig_version|default_if_none:"" }}', 'qsd_content');
+  {% endif %}
 });
 </script>
 {% endblock %}

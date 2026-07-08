@@ -24,14 +24,10 @@ class QSDMoveForm(forms.Form):
         self.fields['nav_category'].initial = qsd.nav_category
 
     def save_data(self):
-        #   Find all matching QSDs
-        main_qsd = QuasiStaticData.objects.get(id=self.cleaned_data['id'])
-        other_qsds = QuasiStaticData.objects.filter(url=main_qsd.url, name=main_qsd.name)
-        for qsd in other_qsds:
-            #   Move them over
-            qsd.url = self.cleaned_data['destination']
-            qsd.nav_category = NavBarCategory.objects.get(id=self.cleaned_data['nav_category'])
-            qsd.save()
+        qsd = QuasiStaticData.objects.get(id=self.cleaned_data['id'])
+        qsd.url = self.cleaned_data['destination']
+        qsd.nav_category = NavBarCategory.objects.get(id=self.cleaned_data['nav_category'])
+        qsd.save()
 
 def destination_path(qsd_list):
     #   Compute longest common URL substring (at beginning) from qsd list
@@ -59,16 +55,10 @@ class QSDBulkMoveForm(forms.Form):
         orig_path = destination_path(qsd_list)
 
         #   For each QSD in the list:
-        for main_qsd in qsd_list:
+        for qsd in qsd_list:
 
             #   Find its URI relative to the original
-            url_relative = main_qsd.url[len(orig_path):]
+            url_relative = qsd.url[len(orig_path):]
             #   Add that URI to that of the new one
-            url_new = self.cleaned_data['destination'] + url_relative
-
-            #   Set the path on all versions of this QSD
-            other_qsds = QuasiStaticData.objects.filter(url=main_qsd.url, name=main_qsd.name)
-            for qsd in other_qsds:
-                #   Move them over
-                qsd.url = url_new
-                qsd.save()
+            qsd.url = self.cleaned_data['destination'] + url_relative
+            qsd.save()

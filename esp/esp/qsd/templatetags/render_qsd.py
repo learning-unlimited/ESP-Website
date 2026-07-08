@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from django import template
 from django.shortcuts import render_to_response
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
-from esp.qsd.models import QuasiStaticData
+from esp.qsd.models import QuasiStaticData, strip_default_content_indentation
 from esp.tagdict.models import Tag
 import six
 
@@ -41,7 +41,11 @@ render_qsd_md.cached_function.depend_on_model(Tag)
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj, 'inline': True}
+    # No defaults dict is passed to get_by_url_else_init above, so the true
+    # default content for this url is always empty -- exposed so the
+    # inline editor's "load the default content" option works even when
+    # qsd_obj above is a real, currently-saved (non-default) row.
+    return {'qsdrec': qsd_obj, 'inline': True, 'default_content': ''}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
 
 @cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
@@ -51,7 +55,7 @@ def render_inline_program_qsd(program, name):
     #or just do this
     url = QuasiStaticData.prog_qsd_url(program, name)
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj, 'inline': True}
+    return {'qsdrec': qsd_obj, 'inline': True, 'default_content': ''}
 def program_qsd_key_set(qsd):
     prog_and_name = QuasiStaticData.program_from_url(qsd.url)
     if prog_and_name is None:
@@ -86,8 +90,15 @@ class InlineQSDNode(template.Node):
         if program is not None:
             title += ' - ' + six.text_type(program)
 
-        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
-        context.update({'qsdrec': qsd_obj, 'inline': True})
+        # The default content is whatever this block tag's own nodelist
+        # renders to -- computed here (not just inside get_by_url_else_init)
+        # so it's available for the inline editor's "load the default
+        # content" option even when qsd_obj below is a real, currently-
+        # saved (non-default) row.
+        nodelist_content = self.nodelist.render(context)
+        default_content = strip_default_content_indentation(nodelist_content)
+        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': nodelist_content})
+        context.update({'qsdrec': qsd_obj, 'inline': True, 'default_content': default_content})
         # Note: this is django's render_to_response, not ours!
         return render_to_response("inclusion/qsd/render_qsd.html", context.flatten()).content
 

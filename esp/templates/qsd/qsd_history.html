@@ -1,0 +1,74 @@
+{% extends "main.html" %}
+
+{% block title %}{{ qsdrec.title }} - HISTORY{% endblock %}
+
+{% block content %}
+
+<h1>Page History</h1>
+
+{% if conflict %}
+<div class="alert alert-danger">
+  <p>This page was changed by someone else after you loaded this history
+  page. Nothing was reverted &mdash; the list below now reflects the latest
+  state. Preview and revert again if you still want to.</p>
+</div>
+{% endif %}
+
+<p>Current URL path: <tt>{{ qsdrec.url }}</tt> <br />
+<a href="{{ target_url }}">Back to Edit</a> |
+<a href="{{ return_to_view }}">Back to Page View</a></p>
+
+{% if preview %}
+<div class="alert alert-warning">
+  <p><strong>Previewing version from {{ preview.date }} by {{ preview.user }}</strong>
+  &mdash; not saved. Review the content below, then either revert to it or
+  close the preview.</p>
+  <form method="post" action="{{ history_url }}" style="display:inline">
+    <input type="hidden" name="version_id" value="{{ preview.version_id }}">
+    <input type="hidden" name="orig_id" value="{{ orig_id|default_if_none:"" }}">
+    <input type="hidden" name="orig_version" value="{{ orig_version|default_if_none:"" }}">
+    <input type="hidden" name="post_revert">
+    <input type="submit" value="Revert to this version" class="btn btn-warning"
+           onclick="return confirm('Revert this page to the version from {{ preview.date|escapejs }}? This will overwrite the current content.');">
+  </form>
+  <a href="{{ history_url }}" class="btn btn-default">Close Preview</a>
+</div>
+<h2>{{ preview.title }}</h2>
+<div class="prettify" style="border: 1px solid #c0c0c0; padding: 10px;">
+  {% autoescape off %}{{ preview.content }}{% endautoescape %}
+</div>
+<hr>
+{% endif %}
+
+{% if history %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Author</th>
+      <th>Date</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for edit in history %}
+    <tr{% if preview.version_id == edit.version_id %} class="active"{% endif %}>
+      <td>{{ edit.user }}</td>
+      <td>{{ edit.date }}</td>
+      <td>
+        {% if forloop.first %}
+        (current version)
+        {% elif preview.version_id == edit.version_id %}
+        (previewing)
+        {% else %}
+        <a href="{{ history_url }}?preview={{ edit.version_id }}">Preview</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No edit history recorded for this page yet.</p>
+{% endif %}
+
+{% endblock %}

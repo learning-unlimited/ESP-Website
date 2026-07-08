@@ -702,12 +702,10 @@ def manage_pages(request):
             else:
                 return render_to_response('qsd/move.html', request, {'qsd': qsd, 'form': form})
         elif request.GET['cmd'] == 'delete':
-            #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
+            #   Mark the QSD page with ID request.GET['id'] as inactive
             if data['sure'] == 'True':
-                all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
-                for q in all_qsds:
-                    q.disabled = True
-                    q.save()
+                qsd.disabled = True
+                qsd.save()
         return HttpResponseRedirect('/manage/pages')
 
     elif 'cmd' in request.GET:
@@ -716,28 +714,17 @@ def manage_pages(request):
             #   Show confirmation of deletion
             return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
-            #   Make all the QSDs enabled and return to viewing the list
-            all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
-            for q in all_qsds:
-                q.disabled = False
-                q.save()
+            #   Re-enable the QSD page
+            qsd.disabled = False
+            qsd.save()
         elif request.GET['cmd'] == 'move':
             #   Show move form
             form = QSDMoveForm()
             form.load_data(qsd)
             return render_to_response('qsd/move.html', request, {'qsd': qsd, 'form': form})
 
-    #   Show QSD listing
-    qsd_ids = []
-    qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'url', 'name')
-    seen_keys = set()
-    for id, path, name in qsds:
-        key = path, name
-        if key not in seen_keys:
-            qsd_ids.append(id)
-            seen_keys.add(key)
-    qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
-    qsd_list.sort(key=lambda q: q.url)
+    #   Show QSD listing. url is unique, so there's exactly one row per page.
+    qsd_list = list(QuasiStaticData.objects.all().order_by('url'))
     return render_to_response('qsd/list.html', request, {'qsd_list': qsd_list})
 
 @admin_required

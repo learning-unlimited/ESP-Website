@@ -20,7 +20,7 @@
     {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
 </div>
 <div class="qsd_bits hidden">
-    <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
+    <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}" data-orig-id="{{ qsdrec.pk|default_if_none:"" }}" data-orig-version="{{ qsdrec.latest_version_id|default_if_none:"" }}">
         <div class="qsd_buttons">
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'save');"
                 class="btn btn-success"><span class="glyphicon glyphicon-floppy-saved" aria-hidden="true"></span>
@@ -31,7 +31,20 @@
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', false);"
                 class="btn btn-danger"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
                 Cancel</button>
+            <button type="button" onclick="qsd_inline_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');"
+                class="btn btn-default"><span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                History</button>
         </div>
+        <div class="hidden" id="inline_conflict_{{ qsdrec.edit_id }}" style="margin: 10px 0; white-space: pre-line;"></div>
+        <div class="qsd_bits hidden" id="inline_history_{{ qsdrec.edit_id }}" style="margin: 10px 0; padding: 8px; border: 1px solid #c0c0c0;">
+            <strong>Load a previous version into the editor below:</strong>
+            <br>
+            <select id="inline_history_select_{{ qsdrec.edit_id }}" style="width: 100%; max-width: 400px; margin: 4px 0;"></select>
+            <button type="button" onclick="qsd_inline_preview_version('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');"
+                class="btn btn-info btn-sm">Load</button>
+            <div id="inline_history_loaded_{{ qsdrec.edit_id }}" style="margin-top: 6px; color: #a94442; font-weight: bold;"></div>
+        </div>
+        <textarea class="hidden" id="qsd_default_content_{{ qsdrec.edit_id }}" style="display: none;">{% autoescape on %}{{ default_content|default:"" }}{% endautoescape %}</textarea>
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
                   class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
                   name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
@@ -51,12 +64,57 @@ $j(document).ready(function() {
   });
 });
 
-var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
-  "enter": "BR",
-  "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
-  "toolbarAdaptive": false,
-  "saveModeInStorage": true,
-});
+// IIFE so `editor` is scoped to this block's Jodit instance -- a page can
+// have several inline QSD blocks, each with its own <script> tag; a plain
+// top-level `var editor` here would be a single shared global that the
+// last block on the page overwrites, silently making every block's setter
+// below act on the LAST block's editor instead of its own.
+(function() {
+  var editor = new Jodit("#qsd_content_{{ qsdrec.edit_id }}", {
+    "enter": "BR",
+    "buttons": "source,|,bold,strikethrough,underline,italic,|,superscript,subscript,|,ul,ol,outdent,indent,align,|,font,fontsize,brush,paragraph,|,image,video,table,link,hr,|,undo,redo,cut,eraser,copyformat,|,symbol,fullsize,selectall",
+    "toolbarAdaptive": false,
+    "saveModeInStorage": true,
+    // Off entirely -- on, Jodit runs source-mode content through an async-
+    // loaded HTML beautifier (js-beautify) whenever setMirrorValue() is
+    // called, which strips blank-line whitespace used as paragraph breaks
+    // in content that isn't wrapped in real <p> tags. Whether this actually
+    // ran used to depend on a load-order race (skipped if the beautifier
+    // script hadn't finished loading yet, e.g. early during page init;
+    // applied once it had, e.g. later when using Load) -- disabling it
+    // makes source-mode content always pristine instead of timing-dependent.
+    "beautifyHTML": false,
+  });
+  // Exposes a normalized setter so qsd_inline_preview_version() (qsd.js)
+  // can load a past version's content into both the textarea and Jodit's
+  // own WYSIWYG/source view, without needing to know Jodit's API directly.
+  window.qsd_editor_setters = window.qsd_editor_setters || {};
+  window.qsd_editor_setters["{{ qsdrec.edit_id }}"] = function(text) {
+    // editor.value = text (setEditorValue) only updates the WYSIWYG
+    // contenteditable node -- Jodit's Source-mode pane is a separate view
+    // that's only resynced from that node when you switch INTO source
+    // mode, not continuously.
+    //
+    // If we're in source mode, write through the source plugin's own
+    // setMirrorValue()/toWYSIWYG() instead of routing through
+    // editor.value: this build auto-loads an ACE editor for source mode,
+    // and Jodit itself overrides setMirrorValue() to redirect into ACE
+    // once that happens (the plain mirror <textarea> becomes a hidden,
+    // inert fallback) -- writing .mirror.value directly, or going through
+    // editor.value (which touches the WYSIWYG contenteditable, collapsing
+    // raw newlines used as paragraph breaks), both miss what's actually
+    // on screen. setMirrorValue()/toWYSIWYG() are Jodit's own dispatch
+    // layer, so this works whether ACE is active or not.
+    var sourcePlugin = editor.__plugins && editor.__plugins.source;
+    if (editor.getRealMode() === Jodit.MODE_SOURCE && sourcePlugin
+        && typeof sourcePlugin.setMirrorValue === "function") {
+      sourcePlugin.setMirrorValue(text);
+      sourcePlugin.toWYSIWYG();
+    } else {
+      editor.value = text;
+    }
+  };
+})();
 </script>
 <br />
 {% if not inline %}
