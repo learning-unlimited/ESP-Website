@@ -168,7 +168,7 @@ table .openclasslist td {
 {% endcomment %}
     {% for class in classes %}
         {% if class.start_time == current_time %}
-        {% if not class.isFull %}
+        {% if not class.isFullIgnoreChanges %}
         {% if not class.already_passed %}
     <tr>
         <td><div class="classlist_emailcode">{{class.emailcode}}</div></td>
