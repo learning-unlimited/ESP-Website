@@ -260,7 +260,7 @@ class JavascriptSyntaxTest(TestCase):
         closure_output_file = os.path.join(tempfile.gettempdir(), 'closure.out')
 
         base_path = settings.MEDIA_ROOT + 'scripts/'
-        exclude_names = ['yui', 'extjs', 'jquery', 'showdown']
+        exclude_names = ['extjs', 'jquery', 'showdown']
 
         #   Walk the directory tree and try compiling
         path_gen = os.walk(base_path)

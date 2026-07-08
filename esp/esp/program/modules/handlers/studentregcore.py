@@ -66,13 +66,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         if tl != "learn" or view_name != "studentreg":
             return None
-        from esp.program.modules.admin_search import AdminSearchEntry
+        from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
         base = program.getUrlBase()
         return AdminSearchEntry(
             id="learn_studentreg",
             url="/learn/%s/studentreg" % base,
             title="Student Registration",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Student Reg" button appears in directory.html.
+            category=SEARCH_CATEGORY_REGISTRATION,
             keywords=["student registration", "signup", "enroll"],
         )
 
