@@ -757,7 +757,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if remove_id_list:
                 modules_to_remove = ProgramModule.objects.filter(id__in=remove_id_list)
                 prog.program_modules.remove(*modules_to_remove)
-            
+
             # Save the program to trigger cache invalidation for getModules()
             prog.save()
 
