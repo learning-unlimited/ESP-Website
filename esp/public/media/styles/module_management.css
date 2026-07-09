@@ -1,5 +1,5 @@
-/* 
- * module_timeline.css 
+/*
+ * module_timeline.css
  * Styles for the interactive module management page.
  * Replaces the old module_management.css.
  */
@@ -255,6 +255,33 @@
     transition: background-color 0.2s;
     position: relative;
     box-sizing: border-box;
+}
+
+.tl-row-label:not(.tl-row-locked) {
+    cursor: grab;
+}
+
+.tl-row-label:not(.tl-row-locked):active {
+    cursor: grabbing;
+}
+
+.tl-row-label.tl-row-locked {
+    cursor: not-allowed;
+}
+
+/* Drag and Drop states */
+.tl-drag-placeholder {
+    height: 60px;
+    border: 2px dashed #93c5fd;
+    background-color: #eff6ff;
+    box-sizing: border-box;
+}
+
+.tl-sidebar .ui-sortable-helper {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    background-color: #ffffff;
+    opacity: 0.95;
+    z-index: 1000;
 }
 
 .tl-row-label:hover {
