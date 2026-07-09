@@ -16,8 +16,8 @@ jobs:
     steps:
       - uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: |
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: |
             👋 Thanks for opening your first issue here! We appreciate you taking the time to report this.
 
             **What happens next:**
@@ -26,7 +26,7 @@ jobs:
             - For setup help, see our [documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs)
 
             We're a volunteer-run project, so responses may take some time. Thank you for your patience! 🙏
-          pr-message: |
+          pr_message: |
             🎉 Thanks for your first pull request! We're excited to have you contribute to ESP-Website.
 
             **Review process:**
