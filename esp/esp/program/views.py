@@ -1856,7 +1856,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
         return JsonResponse({"success": True})
     except ValueError as e:
         if "locked and cannot be reordered" in str(e):
-            return JsonResponse({"success": False, "error": str(e)}, status=403)
+            return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
         return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
     except (TypeError, KeyError):
         return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
