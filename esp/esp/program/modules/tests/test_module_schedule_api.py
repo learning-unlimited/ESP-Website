@@ -180,7 +180,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
         original_seq = self.pmo.seq
         original_handler = self.pmo.module.handler
-        
+
         # Temporarily make this module locked in the DB
         self.pmo.module.handler = 'RegProfileModule'
         self.pmo.module.save()

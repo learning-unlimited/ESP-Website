@@ -1840,7 +1840,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
 
                 mod = module_map[mod_id]
                 handler = mod.module.handler
-                
+
                 position_locked = (
                     handler == 'RegProfileModule' or
                     'CreditCardModule_' in handler or
