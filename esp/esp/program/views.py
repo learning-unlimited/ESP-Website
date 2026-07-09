@@ -1839,16 +1839,26 @@ def module_schedule_reorder_api(request, program_type, program_term):
                     continue
 
                 mod = module_map[mod_id]
-                mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
+                handler = mod.module.handler
+                
+                position_locked = (
+                    handler == 'RegProfileModule' or
+                    'CreditCardModule_' in handler or
+                    handler == 'StudentRegConfirm'
+                )
 
-                if mod_hydrated.seq_locked:
-                    return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
+                if position_locked:
+                    raise ValueError(f"Module {handler} is locked and cannot be reordered")
 
                 mod.seq = int(new_seq)
                 mod.save(update_fields=['seq'])
 
         return JsonResponse({"success": True})
-    except (ValueError, TypeError, KeyError):
+    except ValueError as e:
+        if "locked and cannot be reordered" in str(e):
+            return JsonResponse({"success": False, "error": str(e)}, status=403)
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except (TypeError, KeyError):
         return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
     except Exception as e:
         logger.exception("module_schedule_reorder_api failed")

@@ -363,9 +363,18 @@ $j(document).ready(function() {
             placeholder: 'tl-drag-placeholder',
             update: function() {
                 var newOrder = [];
+                var currentSeq = 10;
                 $sidebar.children('.tl-row-label').each(function(i) {
-                    var modId = parseInt($j(this).data('mod-id'), 10);
-                    newOrder.push({ id: modId, seq: (i + 1) * 10 });
+                    var $row = $j(this);
+                    
+                    if ($row.hasClass('tl-row-locked')) {
+                        currentSeq += 10;
+                        return;
+                    }
+                    
+                    var modId = parseInt($row.data('mod-id'), 10);
+                    newOrder.push({ id: modId, seq: currentSeq });
+                    currentSeq += 10;
                 });
 
                 var modMap = {};

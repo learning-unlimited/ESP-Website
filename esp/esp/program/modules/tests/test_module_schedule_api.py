@@ -145,7 +145,6 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
     def test_reorder_success(self):
         """POST a valid reorder should update seq values in the DB."""
-        from unittest import mock
         self.client.force_login(self.admin)
 
         # Get another PMO from the program (there should be at least one)
@@ -176,14 +175,17 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         self.assertEqual(pmo2.seq, 10)
 
     def test_reorder_rejects_locked_module(self):
-        """Attempting to reorder a seq_locked module should return 403 and not save anything."""
-        from unittest import mock
+        """Attempting to reorder a position_locked module should return 403 and not save anything."""
         self.client.force_login(self.admin)
 
         original_seq = self.pmo.seq
-        original_class = self.pmo.__class__
+        original_handler = self.pmo.module.handler
+        
+        # Temporarily make this module locked in the DB
+        self.pmo.module.handler = 'RegProfileModule'
+        self.pmo.module.save()
 
-        with mock.patch.object(original_class, 'seq_locked', True):
+        try:
             url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
             payload = {
                 "order": [
@@ -195,6 +197,9 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             data = json.loads(response.content)
             self.assertFalse(data["success"])
             self.assertIn("locked", data["error"])
+        finally:
+            self.pmo.module.handler = original_handler
+            self.pmo.module.save()
 
         # Verify the seq was not changed (transaction was rolled back)
         self.pmo.refresh_from_db()
@@ -202,7 +207,6 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
     def test_reorder_rejects_wrong_program(self):
         """Module IDs from a different program should be silently ignored."""
-        from unittest import mock
         from esp.program.models import Program
         self.client.force_login(self.admin)
 
