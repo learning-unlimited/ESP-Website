@@ -1848,8 +1848,8 @@ def module_schedule_reorder_api(request, program_type, program_term):
                 mod.save(update_fields=['seq'])
 
         return JsonResponse({"success": True})
-    except (ValueError, TypeError, KeyError) as e:
-        return JsonResponse({"success": False, "error": str(e)}, status=400)
+    except (ValueError, TypeError, KeyError):
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
     except Exception as e:
         logger.exception("module_schedule_reorder_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
