@@ -267,6 +267,7 @@ button.sidetoolbar {
 #legend td {
     height: 30px;
     padding: .5vh;
+    outline-offset: -4px;
 }
 
 #loadingOverlay {
