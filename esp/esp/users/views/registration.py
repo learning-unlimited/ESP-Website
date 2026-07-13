@@ -1,6 +1,7 @@
 import logging
 import random
 import urllib.request, urllib.parse, urllib.error
+import string
 
 log = logging.getLogger(__name__)
 
@@ -10,11 +11,14 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
+from django.core.exceptions import ValidationError
+from django.db.models.query import Q
 from django.urls import reverse, reverse_lazy
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, JsonResponse
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_GET
 
 from vanilla import CreateView
 
@@ -22,13 +26,135 @@ from esp.dbmail.models import send_mail
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
+from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm, ValidHostEmailField
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 
 
-__all__ = ['user_registration_phase1', 'user_registration_phase2', 'resend_activation_view']
+__all__ = [
+    'user_registration_phase1',
+    'user_registration_phase2',
+    'resend_activation_view',
+    'registration_live_email_check',
+    'registration_live_username_check',
+]
 
+def _username_live_validation(username):
+    """Read-only validation for username feedback during registration."""
+    data = (username or '').strip()
+    if not data:
+        return {
+            'valid': False,
+            'available': None,
+            'message': 'Enter a username (5-30 letters and numbers).',
+        }
+
+    if len(data) < 5 or len(data) > 30:
+        return {
+            'valid': False,
+            'available': None,
+            'message': 'Username must be between 5 and 30 characters.',
+        }
+
+    good_chars = set(string.ascii_letters + string.digits)
+    if not set(data).issubset(good_chars):
+        return {
+            'valid': False,
+            'available': None,
+            'message': 'Username may only contain letters and numbers.',
+        }
+
+    awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
+    exists = ESPUser.objects.filter(username__iexact=data).exclude(
+        password='emailuser'
+    ).exclude(awaiting_activation).exists()
+    if exists:
+        return {
+            'valid': True,
+            'available': False,
+            'message': 'Username already in use.',
+        }
+
+    return {
+        'valid': True,
+        'available': True,
+        'message': 'Username is available.',
+    }
+
+@require_GET
+def registration_live_username_check(request):
+    """AJAX endpoint for phase-2 username availability/rules feedback."""
+    username = request.GET.get('username', '')
+    return JsonResponse(_username_live_validation(username))
+
+def _email_live_validation(email, initial_role):
+    """Read-only validation for email feedback during phase-1 registration."""
+    candidate_email = (email or '').strip()
+    role = (initial_role or '').strip()
+
+    if not candidate_email:
+        return {
+            'valid': False,
+            'available': None,
+            'message': 'Enter an email address.',
+        }
+
+    try:
+        ValidHostEmailField().clean(candidate_email)
+    except ValidationError as err:
+        return {
+            'valid': False,
+            'available': None,
+            'message': err.messages[0] if err.messages else 'Invalid email address.',
+        }
+
+    # If duplicate account checks are disabled, syntax/host validation is enough.
+    if not Tag.getBooleanTag('ask_about_duplicate_accounts'):
+        return {
+            'valid': True,
+            'available': True,
+            'message': 'Email address looks valid.',
+        }
+
+    valid_roles = {item[0] for item in ESPUser.getAllUserTypes()}
+    if role not in valid_roles:
+        return {
+            'valid': True,
+            'available': None,
+            'message': 'Select a role to check for existing accounts.',
+        }
+
+    accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(role, True))
+    existing_accounts = accounts_role.filter(
+        email=candidate_email,
+        is_active=True,
+    ).exclude(password='emailuser')
+    awaiting_activation_accounts = accounts_role.filter(
+        email=candidate_email,
+    ).filter(
+        is_active=False,
+        password__regex=r'\$(.*)_',
+    ).exclude(password='emailuser')
+
+    if existing_accounts.exists() or awaiting_activation_accounts.exists():
+        return {
+            'valid': True,
+            'available': False,
+            'message': 'An account with this email already exists for this role.',
+        }
+
+    return {
+        'valid': True,
+        'available': True,
+        'message': 'Email address is available.',
+    }
+
+@require_GET
+def registration_live_email_check(request):
+    """AJAX endpoint for phase-1 email validity/availability feedback."""
+    email = request.GET.get('email', '')
+    initial_role = request.GET.get('initial_role', '')
+    return JsonResponse(_email_live_validation(email, initial_role))
 
 def user_registration_validate(request):
     """Handle the account creation logic when the form is submitted
