@@ -7,7 +7,7 @@ from esp.tagdict.models import Tag
 
 register = template.Library()
 
-def _qsd_display_context(context, qsd):
+def _qsd_display_context(qsd):
     display_date_author_tag = Tag.getTag('qsd_display_date_author')
     display_date_author = 2 # display date and author
 
@@ -22,13 +22,17 @@ def _qsd_display_context(context, qsd):
         'inline': False,
     }
 
-@register.inclusion_tag('inclusion/qsd/render_qsd.html', takes_context=True)
-def render_qsd(context, qsd):
-    return _qsd_display_context(context, qsd)
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
+def render_qsd(qsd):
+    return _qsd_display_context(qsd)
+render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+render_qsd.cached_function.depend_on_model(Tag)
 
-@register.inclusion_tag('inclusion/qsd/render_qsd_md.html', takes_context=True)
-def render_qsd_md(context, qsd):
-    return _qsd_display_context(context, qsd)
+@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd_md.html')
+def render_qsd_md(qsd):
+    return _qsd_display_context(qsd)
+render_qsd_md.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+render_qsd_md.cached_function.depend_on_model(Tag)
 
 @register.simple_tag(takes_context=True)
 def can_edit_qsd(context, qsd):
