@@ -100,7 +100,7 @@ function fill_status_row(clsid, classes_data) {
     },
     {
       text: "Unreview",
-      cls: ["btn", "btn-default"],
+      cls: ["btn", "btn-secondary"],
       click: function() {
         update_class(clsid, 0);
       }
@@ -123,7 +123,7 @@ function fill_status_row(clsid, classes_data) {
     },
     {
       text: "Unreview",
-      cls: ["btn", "btn-default"],
+      cls: ["btn", "btn-secondary"],
       click: function() {
         update_class(clsid, 0);
       }
@@ -361,7 +361,7 @@ function createDeleteButtonTd(clsObj) {
             'onsubmit': 'return deleteClass();',
         }).append(
             $j("<input/>", {
-                'class': 'btn btn-default',
+                'class': 'btn btn-secondary',
                 'type': 'submit',
                 'value': 'Delete',
             })
