@@ -51,7 +51,15 @@ $body-color:                $textColor !default;
 $link-color:                $linkColor !default;
 $link-hover-color:          $linkColorHover !default;
 $font-family-sans-serif:    $sansFontFamily !default;
-$headings-color:            $headingsColor !default;
+// Only force the ESP headings colour when NOT using a Bootswatch theme.  Under a
+// Bootswatch theme, leaving $headings-color unset lets Bootstrap fall back to the
+// body colour, so headings stay legible on dark themes (#333 headings otherwise
+// vanish on a dark background — e.g. the "Theme Editor" title on Darkly/Slate/
+// Solar).  Themes that render content on a fixed white surface (fruitsalad) set
+// their content heading colour explicitly via $headingsColor, so are unaffected.
+@if not $bootswatch-active {
+    $headings-color:        $headingsColor !default;
+}
 $primary:                   $btnPrimaryBackground !default;
 $secondary:                 $btnInverseBackground !default;
 $navbar-dark-color:         $navbarText !default;

@@ -138,9 +138,6 @@
 			$j('body').css('padding-bottom', "inherit");
 		}
 	};
-	window.addEventListener("resize", footerResize);
-	$j(function() { footerResize() });
-	
 	function headerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
 			$j('body').css('padding-top', $j("#navbar").innerHeight());
@@ -148,8 +145,25 @@
 			$j('body').css('padding-top', "inherit");
 		}
 	};
-	window.addEventListener("resize", headerResize);
-	$j(function() { headerResize() });
+
+	// Recompute the body padding that clears the fixed-top navbar and the
+	// fixed-bottom footer.  This must run after the stylesheets AND web fonts
+	// have fully applied, not only at DOM ready: on the theme editor, Apply/Save/
+	// selecting a new theme re-fetches the compiled CSS asynchronously (the ?v=
+	// version bump plus css_auto-reload), so a ready-time measurement reads stale
+	// navbar/footer heights and the fixed footer overlaps the page buttons until
+	// a manual reload.  Re-running on window load and document.fonts.ready makes
+	// the padding match the final rendered heights without a reload.
+	function resizeBodyPadding() {
+		footerResize();
+		headerResize();
+	}
+	window.addEventListener("resize", resizeBodyPadding);
+	$j(resizeBodyPadding);
+	window.addEventListener("load", resizeBodyPadding);
+	if (document.fonts && document.fonts.ready) {
+		document.fonts.ready.then(resizeBodyPadding);
+	}
 
 	{# TODO(benkraft): this is ugly, find a better way #}
 	$j('.button').addClass('btn').removeClass('button');

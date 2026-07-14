@@ -323,9 +323,29 @@ div.navbar-collapse {
     color: rgba(255, 255, 255, 0.85);
 }
 
+// Bootstrap 5 gives .dropdown-menu 0.5rem of vertical padding.  The navbar
+// dropdown items are the coloured/highlighted rows, so that padding shows up as
+// off-coloured strips above the first item and below the last item (the "gap
+// above and below the highlight" reported on the navbar dropdowns).  Zero it so
+// the items — and their hover highlight — fill the menu edge to edge.
+.navbar .dropdown-menu {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 @if $bootswatch-active {
     .navbar.bg-dark {
         background: $primary !important;
+        // Derive the navbar foreground from $primary so the nav links, brand and
+        // login labels ("Hello, ...", "Account") stay legible whether the
+        // Bootswatch $primary is light (e.g. Quartz) or dark — navbar-dark's fixed
+        // light text is invisible on a light primary.  (Custom-property values are
+        // raw text to Sass, so color-contrast() must be interpolated with #{}.)
+        --bs-navbar-color: #{color-contrast($primary)};
+        --bs-navbar-hover-color: #{color-contrast($primary)};
+        --bs-navbar-active-color: #{color-contrast($primary)};
+        --bs-navbar-brand-color: #{color-contrast($primary)};
+        --bs-navbar-brand-hover-color: #{color-contrast($primary)};
     }
 
     .navbar.bg-dark .dropdown-menu {

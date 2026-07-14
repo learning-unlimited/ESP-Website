@@ -71,6 +71,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
   form.centered-form { display: block; width: 100%; }
   #theme_editor_accordion .form-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; margin: 1.5rem 0; padding-top: 1rem; border-top: 1px solid #dee2e6; }
   #theme-properties .control-group { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.5rem; }
+
+  /* The "Save/Load Theme Settings" card header uses .bg-primary.bg-opacity-10 (a
+     light tint).  Bootswatch's `.bg-primary h1..h6 { color: #fff }` rule assumes a
+     solid dark .bg-primary, so it turns the title white-on-light. Force it dark. */
+  #theme_editor_accordion .card-header h4, #theme_editor_accordion .card-header .h4 { color: #212529; }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}

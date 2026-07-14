@@ -477,18 +477,26 @@ class ThemeController(object):
                 results[safe_filename] = local_results
         return results
 
+    #   Bootswatch themes deliberately excluded from the editor: their styling
+    #   (heavy glow/blur, low-contrast defaults) does not adapt well to the ESP
+    #   layouts, so we hide them from the dropdown and reject them on compile.
+    EXCLUDED_BOOTSWATCH_THEMES = frozenset({'vapor', 'superhero', 'quartz'})
+
     def get_bootswatch_themes(self):
         """Return sorted list of available Bootswatch SCSS theme names.
 
         Only directories containing the Bootswatch 5 SCSS entry points
         (_variables.scss and _bootswatch.scss) count as themes, so stray
-        directories under dist/ never reach the editor dropdown.
+        directories under dist/ never reach the editor dropdown.  A small
+        exclusion list (EXCLUDED_BOOTSWATCH_THEMES) drops themes that don't
+        work well with the ESP layouts.
         """
         if not os.path.isdir(_BOOTSWATCH_DIST):
             return []
         return sorted([
             d for d in os.listdir(_BOOTSWATCH_DIST)
-            if os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_variables.scss'))
+            if d not in self.EXCLUDED_BOOTSWATCH_THEMES
+            and os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_variables.scss'))
             and os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_bootswatch.scss'))
         ])
 
