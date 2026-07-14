@@ -44,12 +44,12 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         self.assertTrue(timeslots, 'Test setup should create timeslots')
 
         first_timeslot = timeslots[0]
-        
+
         # Get two sections and ensure they exist
         sections = list(self.program.sections().filter(meeting_times__isnull=False)[:2])
         self.assertGreaterEqual(len(sections), 2, 'Test requires at least 2 sections')
         sec_a, sec_b = sections[0], sections[1]
-        
+
         # Ensure both sections are at the same timeslot
         sec_a.meeting_times.set([first_timeslot])
         sec_b.meeting_times.set([first_timeslot])
@@ -57,10 +57,10 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         # First enrollment should succeed
         result_a = sec_a.preregister_student(self.student)
         self.assertTrue(result_a, 'First registration should succeed')
-        
+
         # Check conflict detection using cannotAdd
         error = sec_b.cannotAdd(self.student, checkFull=True, autocorrect_constraints=False)
-        
+
         if error and 'conflict' in error.lower():
             self.assertIn('conflict', error.lower(), 'Error should mention schedule conflict')
         else:
@@ -70,7 +70,7 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
                 section__in=[sec_a, sec_b],
                 relationship__name='Enrolled'
             ).count()
-            
+
             self.assertLessEqual(
                 enrolled_count, 1,
                 'Student should not be enrolled in two sections at the same timeslot'
@@ -267,7 +267,7 @@ class GradeFilterTest(ProgramFrameworkTest):
         student_grade = student.getGrade(self.program)
         section_grade_min = section.parent_class.grade_min
         section_grade_max = section.parent_class.grade_max
-        
+
         self.assertFalse(
             section_grade_min <= student_grade <= section_grade_max,
             f'Student grade {student_grade} should be outside range [{section_grade_min}, {section_grade_max}]'
