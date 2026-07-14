@@ -413,6 +413,11 @@ class PhaseZeroRecordAdminForm(forms.ModelForm):
             },
         }
 
+    def clean_program(self):
+        program = self.cleaned_data.get('program')
+        if program is None:
+            raise forms.ValidationError(_("Program is required. Please select a program."))
+        return program
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
     form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
