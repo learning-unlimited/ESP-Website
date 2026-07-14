@@ -5,7 +5,7 @@ Conflict detection, capacity enforcement, waitlist promotion, and grade
 filtering are critical invariants that must hold but had no dedicated
 regression tests.
 
-Refs: #3780, #599
+Refs: #3780
 """
 
 from esp.program.models import StudentRegistration, RegistrationType
@@ -39,36 +39,38 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         )
 
     def test_conflict_prevents_enrollment_at_same_timeslot(self):
-        """Student cannot enroll in two classes at the same timeslot."""
+        """Conflict detected when student tries to enroll in overlapping classes."""
         timeslots = self.program.getTimeSlots()
-        if not timeslots:
-            self.skipTest('No timeslots available')
+        self.assertTrue(timeslots, 'Test setup should create timeslots')
 
         first_timeslot = timeslots[0]
-        sections_at_same_time = self.program.sections().filter(
-            meeting_times=first_timeslot
-        )[:2]
+        
+        # Get two sections and ensure they exist
+        sections = list(self.program.sections().filter(meeting_times__isnull=False)[:2])
+        self.assertGreaterEqual(len(sections), 2, 'Test requires at least 2 sections')
+        sec_a, sec_b = sections[0], sections[1]
+        
+        # Ensure both sections are at the same timeslot
+        sec_a.meeting_times.set([first_timeslot])
+        sec_b.meeting_times.set([first_timeslot])
 
-        if sections_at_same_time.count() < 2:
-            self.skipTest('Need at least 2 sections at same timeslot')
-
-        sec_a, sec_b = sections_at_same_time[0], sections_at_same_time[1]
-
+        # First enrollment should succeed
         result_a = sec_a.preregister_student(self.student)
         self.assertTrue(result_a, 'First registration should succeed')
-
-        result_b = sec_b.preregister_student(self.student)
-
-        # Conflict detection may not be enforced at preregister_student level
-        enrolled_count = StudentRegistration.valid_objects().filter(
-            user=self.student,
-            section__in=[sec_a, sec_b],
-            relationship__name='Enrolled'
-        ).count()
-
-        if enrolled_count > 1:
-            self.skipTest('Conflict detection not enforced at preregister_student level')
+        
+        # Check conflict detection using cannotAdd
+        error = sec_b.cannotAdd(self.student, checkFull=True, autocorrect_constraints=False)
+        
+        if error and 'conflict' in error.lower():
+            self.assertIn('conflict', error.lower(), 'Error should mention schedule conflict')
         else:
+            result_b = sec_b.preregister_student(self.student)
+            enrolled_count = StudentRegistration.valid_objects().filter(
+                user=self.student,
+                section__in=[sec_a, sec_b],
+                relationship__name='Enrolled'
+            ).count()
+            
             self.assertLessEqual(
                 enrolled_count, 1,
                 'Student should not be enrolled in two sections at the same timeslot'
@@ -139,7 +141,7 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
         self.schedule_randomly()
 
     def test_student_drop_promotes_waitlisted_student(self):
-        """When a student drops, waitlisted student is promoted to enrolled."""
+        """Student A drops full class, waitlisted student B is promoted to enrolled."""
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
@@ -170,6 +172,7 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
             'Student B should be waitlisted'
         )
 
+        # Drop student A
         enrolled_regs = StudentRegistration.valid_objects().filter(
             user=student_a,
             section=section,
@@ -188,21 +191,25 @@ class WaitlistPromotionTest(ProgramFrameworkTest):
             'Student A should no longer be enrolled after drop'
         )
 
-        # Automatic promotion may not be implemented at this level
         promoted = StudentRegistration.valid_objects().filter(
             user=student_b,
             section=section,
             relationship__name='Enrolled'
         ).exists()
 
-        if not promoted:
+        if promoted:
+            self.assertTrue(
+                promoted,
+                'Student B should be promoted to Enrolled after Student A drops'
+            )
+        else:
             self.assertTrue(
                 StudentRegistration.valid_objects().filter(
                     user=student_b,
                     section=section,
                     relationship__name='Waitlist/1'
                 ).exists(),
-                'Student B should remain waitlisted if auto-promotion not implemented'
+                'Student B should remain waitlisted (automatic promotion not implemented)'
             )
 
 
@@ -229,15 +236,20 @@ class GradeFilterTest(ProgramFrameworkTest):
         student.getLastProfile().student_info.graduation_year = schoolyear + 5
         student.getLastProfile().student_info.save()
 
-        result = section.preregister_student(student)
+        error = section.parent_class.cannotAdd(student, checkFull=True)
+        self.assertFalse(
+            error,
+            'ClassSubject.cannotAdd() should allow a student in the grade range'
+        )
 
+        result = section.preregister_student(student)
         self.assertTrue(
             result,
             'Student within grade range should be able to register'
         )
 
     def test_student_outside_grade_range_is_blocked(self):
-        """Student outside grade range cannot enroll in class."""
+        """Student outside grade range is blocked from enrolling."""
         section = self.program.sections().filter(
             meeting_times__isnull=False
         ).first()
@@ -248,16 +260,31 @@ class GradeFilterTest(ProgramFrameworkTest):
 
         student = self.students[0]
         schoolyear = ESPUser.program_schoolyear(self.program)
-        student.getLastProfile().student_info.graduation_year = schoolyear + 9
+        # Grade 6 student: graduates in 6 years (12 - 6 = grade 6)
+        student.getLastProfile().student_info.graduation_year = schoolyear + 6
         student.getLastProfile().student_info.save()
-
-        # Grade filtering happens at module handler level, not preregister_student
 
         student_grade = student.getGrade(self.program)
         section_grade_min = section.parent_class.grade_min
         section_grade_max = section.parent_class.grade_max
-
+        
         self.assertFalse(
             section_grade_min <= student_grade <= section_grade_max,
             f'Student grade {student_grade} should be outside range [{section_grade_min}, {section_grade_max}]'
+        )
+
+        error = section.parent_class.cannotAdd(student, checkFull=True)
+        self.assertTrue(
+            error,
+            'Student outside grade range should be blocked by ClassSubject.cannotAdd()'
+        )
+        self.assertIn('grade range', error.lower(), 'Error should mention grade range')
+
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student,
+                section=section,
+                relationship__name='Enrolled'
+            ).exists(),
+            'Student should not be enrolled when outside grade range'
         )
