@@ -74,6 +74,7 @@ $j(function(){
                 if (checked) {
                     $msg.find(".undo-attendance").remove();
                     var $undoBtn = $j('<button>')
+                        .attr('type', 'button')
                         .addClass('btn btn-default btn-mini undo-attendance')
                         .text('Undo')
                         .attr('data-checkedin', response.checkedin ? 'true' : 'false');

@@ -381,9 +381,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                             json_data['message'] = '%s was not marked as attending.' % student.name()
                         if request.POST.get('undo_checkin', 'false').lower() == 'true':
                             rt = RecordType.objects.get(name="attended")
-                            recs = Record.objects.filter(user=student, program=prog, event=rt)
-                            if recs.exists():
-                                recs.delete()
+                            # Undo only the most recent check-in
+                            rec = Record.objects.filter(user=student, program=prog, event=rt).order_by('-id').first()
+                            if rec is not None:
+                                rec.delete()
                                 json_data['uncheckedin'] = True
                     else:
                         if not prog.isCheckedIn(student):
