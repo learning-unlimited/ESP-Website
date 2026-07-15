@@ -28,7 +28,7 @@ email address.  If you are sure you want a new account, please click "Proceed to
   <form action="/myesp/passwdrecover/" method="post">
     <input type="hidden" name="email" value="{{ u.email }}" />
     <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="submit" value="I forgot my password!" class="btn btn-default" />
+    <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
   </form>
   </li>
   <br />
@@ -78,7 +78,7 @@ set forth by Learning Unlimited, the umbrella organization of which we are a mem
 <td colspan="2">
 <div class="errors">
 There 
-{% if form.errors|length_is:1 %}is an error{% else %}
+{% if form.errors|length == 1 %}is an error{% else %}
 are errors{% endif %} in the below form. Please fix and resubmit.
 </div>
 </td>
@@ -89,7 +89,7 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 
 <tr>
   <th colspan="2" class="submit">
-    <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-default" />
+    <input type="submit" value="Proceed to Account Creation" name="submit_btn" class="btn btn-secondary" />
   </th>
 </tr>
 </tbody>

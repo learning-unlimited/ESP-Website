@@ -9,6 +9,8 @@
 
 {% block body %}
 
+<a href="#content_area" class="skip-nav">Skip to main content</a>
+
 {% block main %}
 <div id="page" style="margin:0 auto; width:920px;">
 <div id="top_area">
@@ -29,7 +31,7 @@
 	        padding-right: 0px;
 }
     </style>
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
+    <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
         <div id="adminbar" class="admin hidden" style="position: fixed !important">
             <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
             <div id="adminbar_content"></div>
@@ -44,9 +46,16 @@
         },
     {% endfor %}
     ];
+
     var debug = {{ settings.DEBUG|yesno:"true,false" }};
     </script>
+    {{ theme.toolbar_links|json_script:"toolbar-links-data" }}
+    <script type="text/javascript">
+    var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
+    var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
+    </script>
     <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+
     {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
 
     <div id="nav_buffer">
@@ -81,7 +90,6 @@
     <!-- Login -->
     <div class="box" style="text-align: right;">
     {% include "users/loginbox_content.html" %}
-        <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
     </div>
     
 
@@ -92,7 +100,7 @@
 
 </div>
 
-<div id="content_area">
+<main id="content_area" tabindex="-1">
     {% if request.COOKIES.esp_testing_role %}
     <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
@@ -102,13 +110,13 @@
     {% endif %}
     {% if request.mod_required %}
     <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
     </div>
     {% endif %}
     {% if request.show_perm_info %}
     <div class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
         <br />
         {% if request.roles_with_perm %}
@@ -124,9 +132,20 @@
       <strong>Admin notice:</strong>
       This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_program_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+    </div>
+    {% endif %}
+    {% if active_global_tags %}
+    <div class="alert alert-info alert-dismissible" role="alert">
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <strong>Admin notice:</strong>
+      This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
+      {% for tag in active_global_tags %}
+        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
+      {% endfor %}
+      &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>
     {% endif %}
     {% if messages %}
@@ -167,10 +186,11 @@
         </span>
         {% endif %}
     </div>
-</div>
+</main>
 
 </div>
 </div>
 {% endblock %} {# endblock main #}
 
 {% endblock %} {# endblock body #}
+

@@ -162,7 +162,7 @@
         {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
-{% if sections|length_is:0 %}
+{% if sections|length == 0 %}
 <tr>
     <td colspan="5">
         There are no class sections
@@ -224,6 +224,9 @@
         <td class="not-checked-in">
         {% endif %}
             <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+            {% if teacher.id in previously_checked_in %}
+                <span class="badge badge-info previously-checked-in" title="Checked in on the previous program day">prev-day</span>
+            {% endif %}
         </td>
         <td class="checkin-column">
             {% if teacher.id not in arrived %}
@@ -263,6 +266,9 @@
             <td class="not-checked-in"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
             {% endif %}
                 <a href="/manage/userview?username={{ teacher.username }}&program={{ program.id }}" target="_blank">{{ teacher.name }}</a>
+                {% if teacher.id in previously_checked_in %}
+                    <span class="badge badge-info previously-checked-in" title="Checked in on the previous program day">prev-day</span>
+                {% endif %}
             </td>
             <td class="checkin-column"{% if forloop.first %} style="border-top:1px solid #ccc;"{% endif %}>
                 {% if teacher.id not in arrived %}
@@ -298,7 +304,9 @@
             {% if show_flags %}
                 <div class="flag-name-list fqr-class-flags">
                     {% for flag in section.parent_class.flags.all %}
-                        {% include "program/modules/classflagmodule/flag_name.html" %}
+                        {% if not flag.resolved %}
+                            {% include "program/modules/classflagmodule/flag_name.html" %}
+                        {% endif %}
                     {% endfor %}
                 </div>
                 <br />
@@ -319,7 +327,9 @@
             {% if show_flags %}
                 <div class="fqr-class-flags-detail">
                     {% for flag in section.parent_class.flags.all %}
-                        {% include "program/modules/classflagmodule/flag_detail.html" %}
+                        {% if not flag.resolved %}
+                            {% include "program/modules/classflagmodule/flag_detail.html" %}
+                        {% endif %}
                     {% endfor %}
                     {% with section.parent_class as class %}
                         {% include "program/modules/classflagmodule/new_flag_form.html" %}

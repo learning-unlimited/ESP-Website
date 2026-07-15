@@ -1,6 +1,7 @@
 from django import template
+from django.core.cache import cache
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
-from esp.qsd.models import QuasiStaticData
+from esp.qsd.models import QuasiStaticData, qsd_cache_key
 from esp.tagdict.models import Tag
 
 register = template.Library()
@@ -84,6 +85,14 @@ class InlineQSDNode(template.Node):
             title += ' - ' + str(program)
 
         qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
+
+        # Cache default content so the .edit view can find it
+        if not qsd_obj.pk:
+            cache.set(qsd_cache_key(url), {
+                'content': qsd_obj.content,
+                'title': qsd_obj.title or title,
+            }, timeout=86400 * 7)
+
         context.update({'qsdrec': qsd_obj, 'inline': True})
         return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
 
