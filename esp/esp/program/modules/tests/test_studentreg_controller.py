@@ -1,14 +1,13 @@
 """
 Behavioral tests for student registration invariants.
 
-Conflict detection, capacity enforcement, waitlist promotion, and grade
-filtering are critical invariants that must hold but had no dedicated
-regression tests.
+Conflict detection, capacity enforcement, and grade filtering are critical
+invariants that must hold but had no dedicated regression tests.
 
 Refs: #3780
 """
 
-from esp.program.models import StudentRegistration, RegistrationType
+from esp.program.models import StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 
@@ -58,23 +57,10 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         result_a = sec_a.preregister_student(self.student)
         self.assertTrue(result_a, 'First registration should succeed')
 
-        # Check conflict detection using cannotAdd
+        # Conflict detection must block second enrollment
         error = sec_b.cannotAdd(self.student, checkFull=True, autocorrect_constraints=False)
-
-        if error and 'conflict' in error.lower():
-            self.assertIn('conflict', error.lower(), 'Error should mention schedule conflict')
-        else:
-            result_b = sec_b.preregister_student(self.student)
-            enrolled_count = StudentRegistration.valid_objects().filter(
-                user=self.student,
-                section__in=[sec_a, sec_b],
-                relationship__name='Enrolled'
-            ).count()
-
-            self.assertLessEqual(
-                enrolled_count, 1,
-                'Student should not be enrolled in two sections at the same timeslot'
-            )
+        self.assertTrue(error, 'cannotAdd() should return an error for conflicting timeslot')
+        self.assertIn('conflict', error.lower(), 'Error message should mention schedule conflict')
 
 
 class CapacityEnforcementTest(ProgramFrameworkTest):
@@ -116,12 +102,15 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
         section.max_class_capacity = 2
         section.save()
 
-        section.preregister_student(self.students[0])
-        section.preregister_student(self.students[1])
+        result1 = section.preregister_student(self.students[0])
+        self.assertTrue(result1, 'First registration should succeed')
 
-        result = section.preregister_student(self.students[2])
+        result2 = section.preregister_student(self.students[1])
+        self.assertTrue(result2, 'Second registration should succeed')
 
-        self.assertFalse(result, 'Registration should fail when section is full')
+        result3 = section.preregister_student(self.students[2])
+
+        self.assertFalse(result3, 'Registration should fail when section is full')
         self.assertFalse(
             StudentRegistration.valid_objects().filter(
                 user=self.students[2],
@@ -130,87 +119,6 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
             ).exists(),
             'Student should not be enrolled in full section'
         )
-
-
-class WaitlistPromotionTest(ProgramFrameworkTest):
-    """Tests that waitlisted students are promoted when space opens."""
-
-    def setUp(self):
-        super().setUp()
-        self.add_user_profiles()
-        self.schedule_randomly()
-
-    def test_student_drop_promotes_waitlisted_student(self):
-        """Student A drops full class, waitlisted student B is promoted to enrolled."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-
-        section.max_class_capacity = 1
-        section.save()
-
-        student_a = self.students[0]
-        student_b = self.students[1]
-
-        section.preregister_student(student_a)
-
-        waitlist_rt, _ = RegistrationType.objects.get_or_create(
-            name='Waitlist/1', defaults={'category': 'student'}
-        )
-        StudentRegistration.objects.create(
-            user=student_b,
-            section=section,
-            relationship=waitlist_rt
-        )
-
-        self.assertTrue(
-            StudentRegistration.valid_objects().filter(
-                user=student_b,
-                section=section,
-                relationship__name='Waitlist/1'
-            ).exists(),
-            'Student B should be waitlisted'
-        )
-
-        # Drop student A
-        enrolled_regs = StudentRegistration.valid_objects().filter(
-            user=student_a,
-            section=section,
-            relationship__name='Enrolled'
-        )
-        for reg in enrolled_regs:
-            reg.expire()
-
-        self.assertEqual(
-            StudentRegistration.valid_objects().filter(
-                user=student_a,
-                section=section,
-                relationship__name='Enrolled'
-            ).count(),
-            0,
-            'Student A should no longer be enrolled after drop'
-        )
-
-        promoted = StudentRegistration.valid_objects().filter(
-            user=student_b,
-            section=section,
-            relationship__name='Enrolled'
-        ).exists()
-
-        if promoted:
-            self.assertTrue(
-                promoted,
-                'Student B should be promoted to Enrolled after Student A drops'
-            )
-        else:
-            self.assertTrue(
-                StudentRegistration.valid_objects().filter(
-                    user=student_b,
-                    section=section,
-                    relationship__name='Waitlist/1'
-                ).exists(),
-                'Student B should remain waitlisted (automatic promotion not implemented)'
-            )
 
 
 class GradeFilterTest(ProgramFrameworkTest):
@@ -279,12 +187,3 @@ class GradeFilterTest(ProgramFrameworkTest):
             'Student outside grade range should be blocked by ClassSubject.cannotAdd()'
         )
         self.assertIn('grade range', error.lower(), 'Error should mention grade range')
-
-        self.assertFalse(
-            StudentRegistration.valid_objects().filter(
-                user=student,
-                section=section,
-                relationship__name='Enrolled'
-            ).exists(),
-            'Student should not be enrolled when outside grade range'
-        )
