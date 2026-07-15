@@ -27,7 +27,7 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
             meeting_times__isnull=False
         ).first()
         self.assertIsNotNone(section, 'Test requires at least one scheduled section')
-        
+
         result = section.preregister_student(self.student)
         self.assertTrue(result, 'preregister_student() should return True for successful registration')
         self.assertTrue(
@@ -152,7 +152,7 @@ class GradeFilterTest(ProgramFrameworkTest):
         profile = student.getLastProfile()
         self.assertIsNotNone(profile, 'Student must have a profile')
         self.assertIsNotNone(profile.student_info, 'Student must have student_info')
-        
+
         profile.student_info.graduation_year = schoolyear + 5
         profile.student_info.save()
 
@@ -189,7 +189,7 @@ class GradeFilterTest(ProgramFrameworkTest):
         profile = student.getLastProfile()
         self.assertIsNotNone(profile, 'Student must have a profile')
         self.assertIsNotNone(profile.student_info, 'Student must have student_info')
-        
+
         # Create grade 6 student: schoolyear + 12 - graduation_year = grade
         # So graduation_year = schoolyear + 6 gives grade = 12 - 6 = 6
         profile.student_info.graduation_year = schoolyear + 6
