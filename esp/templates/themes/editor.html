@@ -642,8 +642,13 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
       // Always-on panels (not affected by BW):
       //   typography    — $baseFontSize applied as direct body{} CSS rule; works fine
       //   sidebar_theme — $sidebarBackground, $sidebarLink etc. are custom ESP vars
-      //   advanced      — navbarFontSize, navbarCollapseWidth, fruitsalad tabs
+      //   advanced      — navbarFontSize, navbarCollapseWidth (non-fruitsalad themes)
       //   bootswatch-theme / theme-properties — selector + save/load, always needed
+      //
+      // Exception: for fruitsalad the "advanced" panel holds the tab colour pickers,
+      // which are fully overridden by the Bootswatch @each block in main.scss when BW
+      // is active ($tabcolorN_* vars have no effect).  Disable it like the other BW-
+      // controlled panels so the stale static defaults aren't misleading.
       var BW_DISABLED_PANELS = {
         'theme_palette': true,
         'scaffolding': true,
@@ -652,6 +657,12 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
         'navbar_edit_group': true,
         'buttons': true
       };
+      // For fruitsalad, the "advanced" panel holds the tab colour pickers, which
+      // the Bootswatch @each block in main.scss fully overrides ($tabcolorN_* vars
+      // have no effect when BW is active).  Disable so stale defaults aren't shown.
+      if ('{{ theme_name }}' === 'fruitsalad') {
+        BW_DISABLED_PANELS['advanced'] = true;
+      }
 
       function syncBootswatchDisable() {
         var $sel = $j('#bootswatch-theme-select');

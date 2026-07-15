@@ -59,8 +59,12 @@
         box-sizing: border-box;
         display: inline-block;
         -webkit-appearance: none;
-        color: black;
-        background-color: #fdfdfd;
+        // Let Bootswatch control input colours on dark themes ($input-color /
+        // $input-bg); only apply the hardcoded white-on-light defaults otherwise.
+        @if not $bootswatch-active {
+            color: black;
+            background-color: #fdfdfd;
+        }
         @if not $bootswatch-active {
             border: 1px solid $accent2;
         }
@@ -106,7 +110,7 @@ body, .jumbotron {
 // image.  Give it a translucent dark scrim so it stays readable on light header
 // images / the light placeholder too (otherwise it's invisible white-on-light).
 #contact_info {
-    display: inline-block;
+    display: block;
     background: rgba(0, 0, 0, 0.45);
     padding: 0.4rem 0.6rem;
     border-radius: 4px;

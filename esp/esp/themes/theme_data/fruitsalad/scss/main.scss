@@ -466,6 +466,21 @@ margin-bottom: 10px;
     float: left;
 }
 
+// When a Bootswatch theme changes $body-bg away from the default white, the
+// CSS-triangle trick on .leftedge (border-top/left set to $bodyBackground) shows
+// as white triangles against the themed background.  Override with $body-bg so
+// the triangles always match the page background colour.
+@if $bootswatch-active {
+    #cross_link .leftedge a {
+        border-top-color: $body-bg;
+        border-left-color: $body-bg;
+    }
+    #search_box .leftedge {
+        border-top-color: $body-bg;
+        border-left-color: $body-bg;
+    }
+}
+
 #cross_link a:hover {
 text-decoration: underline;
 }

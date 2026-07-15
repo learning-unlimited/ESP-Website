@@ -66,8 +66,12 @@
     select {
         box-sizing: border-box;
         display: inline-block;
-        color: black;
-        background-color: #fdfdfd;
+        // Let Bootswatch control input colours on dark themes ($input-color /
+        // $input-bg); only apply the hardcoded white-on-light defaults otherwise.
+        @if not $bootswatch-active {
+            color: black;
+            background-color: #fdfdfd;
+        }
 
         &:focus {
             -webkit-box-shadow: none;

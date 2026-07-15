@@ -27,3 +27,12 @@
 .navbar-form .form-check {
     width: auto;
 }
+
+/* Some Bootswatch themes (e.g. Sketchy) use larger checkbox/radio graphics
+ * with a non-standard $form-check-input-width that can shift the control
+ * slightly above the label's first text line.  Reducing margin-top from
+ * Bootstrap's default 0.25em to 0.125em gives a tighter, centred look
+ * without breaking the float-based layout Bootstrap 5 uses for .form-check. */
+.form-check-input {
+    margin-top: 0.125em;
+}
