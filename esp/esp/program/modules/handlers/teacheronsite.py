@@ -56,7 +56,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         # Only list human-readable pages; no JSON/AJAX endpoints.
         base = program.getUrlBase()
         entries = {
-            "teacheronsite": ("Teacher Onsite", "Schedule", ["teacher", "onsite", "schedule", "webapp"]),
+            "teacheronsite": ("Teacher Onsite", "Other", ["teacher", "onsite", "schedule", "webapp"]),
             "onsitemap": ("Teacher Onsite (Map)", "Other", ["teacher", "onsite", "map"]),
             "onsitedetails": ("Teacher Onsite (Details)", "Other", ["teacher", "onsite", "details", "class info"]),
             "onsiteroster": ("Teacher Onsite (Roster)", "Other", ["teacher", "onsite", "roster", "attendance"]),
