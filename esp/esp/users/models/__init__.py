@@ -2553,7 +2553,7 @@ class Permission(ExpirableModel):
         blank=True,
         null=True,
         help_text="Apply this permission to all users matching this saved filter.",
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
     )
 
     #For now, we'll use plain text for a description of what permission it is
