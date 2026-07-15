@@ -108,15 +108,19 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
 
         result1 = section.preregister_student(self.students[0])
         self.assertTrue(result1, 'First registration should succeed')
+        # Refresh section from database to get updated student count
+        section.refresh_from_db()
         self.assertEqual(section.num_students(), 1, 'Section should have 1 student after first registration')
 
         result2 = section.preregister_student(self.students[1])
         self.assertTrue(result2, 'Second registration should succeed')
+        section.refresh_from_db()
         self.assertEqual(section.num_students(), 2, 'Section should have 2 students after second registration')
 
         result3 = section.preregister_student(self.students[2])
 
         self.assertFalse(result3, 'Registration should fail when section is full')
+        section.refresh_from_db()
         self.assertEqual(section.num_students(), 2, 'Section should still have 2 students after failed registration')
         self.assertFalse(
             StudentRegistration.valid_objects().filter(
