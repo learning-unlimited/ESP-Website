@@ -120,24 +120,22 @@ class FormstackAppModule(ProgramModuleObj):
             fsas.app_is_open or request.user.isAdmin(prog)
         )
         context['autopopulated'] = autopopulated = []
-
         for line in fsas.autopopulated_fields.strip().split('\n'):
-            if not line.strip():
-                continue
-            if ':' not in line:
-                continue
-
-            field, _, expr = line.partition(':')
+            field, sep, expr = line.partition(':')
             field_name = field.strip()
             expr_stripped = expr.strip()
-            if not field_name or not expr_stripped:
+            #   Require a colon and both halves (also skips blank lines)
+            if not sep or not field_name or not expr_stripped:
                 continue
 
             if '{{' in expr_stripped or '{%' in expr_stripped:
+                #   Render with autoescape off so the value is raw here;
+                #   studentapp.html escapes once at output, matching the
+                #   dotted-lookup path below. Do not "fix" this to autoescape on.
                 try:
-                    template = Template(expr_stripped)
-                    template_context = Context({'user': request.user})
-                    value = template.render(template_context)
+                    value = Template(expr_stripped).render(
+                        Context({'user': request.user}, autoescape=False)
+                    )
                 except Exception:
                     expr_preview = (
                         expr_stripped
@@ -152,12 +150,13 @@ class FormstackAppModule(ProgramModuleObj):
                     )
                     continue
             else:
-                value = resolve_field_expression(
-                    expr_stripped, {'user': request.user}
-                )
-                if value is None:
-                    continue
+                #   Backwards-compatible dotted lookup (e.g. user.username)
+                value = resolve_field_expression(expr_stripped, {'user': request.user})
 
+            #   Skip unresolved/empty; strip stray whitespace before it POSTs to Formstack
+            value = (value or '').strip()
+            if not value:
+                continue
             autopopulated.append((field_name, value))
 
         return render_to_response(self.baseDir()+'studentapp.html',
