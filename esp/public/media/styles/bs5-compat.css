@@ -28,15 +28,25 @@
     width: auto;
 }
 
-/* Bootswatch themes (e.g. Sketchy) style all checkboxes and radio buttons with
- * custom SVG graphics that are often larger than Bootstrap's 1em default.
- * For checkboxes/radios used outside Bootstrap's .form-check wrapper (raw
- * widgets rendered directly by Django form fields), vertical-align: middle
- * keeps the control centred on the text line regardless of its rendered size.
- * .form-check-input controls keep their own float/margin-top positioning from
- * Bootstrap — the cascade handles the specificity correctly. */
+/* Bootswatch Sketchy (and similar themes) sets [type="checkbox"] { width:0;
+ * height:0 } and draws the control via absolutely-positioned ::before/::after
+ * pseudo-elements (width: 15px).  Because the element is 0×0, adjacent inline
+ * text starts at the same x-position and the pseudo-element overlaps it.
+ *
+ * input[type="checkbox"] has specificity (0,1,1) which beats Sketchy's
+ * [type="checkbox"] at (0,1,0), so our properties win.  min-width/min-height
+ * also override a zero width/height at the layout stage regardless.
+ * display: inline-block ensures min-width is respected after appearance:none
+ * strips the replaced-element behaviour.
+ *
+ * For .form-check-input (Bootstrap): float:left overrides display to block
+ * (spec §9.7) so inline-block has no effect there, and Bootstrap's own
+ * width/height:1em is not reduced by min-width:1em. No breakage. */
 input[type="checkbox"],
 input[type="radio"] {
+    display: inline-block;
+    min-width: 1em;
+    min-height: 1em;
     vertical-align: middle;
 }
 
