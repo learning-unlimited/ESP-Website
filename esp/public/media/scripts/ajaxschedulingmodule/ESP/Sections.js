@@ -341,8 +341,24 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (!(assignment && assignment.room_id && assignment.timeslots.length > 0)) {
             return;
         }
+
+        // Sort timeslots by order before checking contiguity.
+        var timeslots_sorted = assignment.timeslots.slice().sort(function(a, b) {
+            return this.matrix.timeslots.get_by_id(a).order - this.matrix.timeslots.get_by_id(b).order;
+        }.bind(this));
+
+        var timeslot_objects = timeslots_sorted.map(function(ts_id) {
+            return this.matrix.timeslots.get_by_id(ts_id);
+        }.bind(this));
+
+        // Don't pre-populate for a contiguous single-instance class; only seed
+        // when the class is genuinely scheduled across non-contiguous timeslots.
+        if (this.matrix.timeslots.are_timeslots_contiguous(timeslot_objects)) {
+            return;
+        }
+
         this.selectedRecurringRoomId = assignment.room_id;
-        this.selectedRecurringTimeslots = assignment.timeslots.slice();
+        this.selectedRecurringTimeslots = timeslots_sorted;
         this.renderRecurringSelection();
     };
 
@@ -376,8 +392,32 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (!section) {
             return;
         }
+
+        // Get the full group of timeslots needed for this one occurrence (handles multi-block classes).
+        var group = this.matrix.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
+        if (group === null) {
+            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "red");
+            return;
+        }
+
         if (this.selectedRecurringRoomId && this.selectedRecurringRoomId !== room_id) {
             this.matrix.messagePanel.addMessage("Error: recurring slots for one section must be in the same room.", "red");
+            return;
+        }
+
+        // If any timeslot in this group is already selected, toggle the whole group off.
+        var anyInGroup = group.some(function(ts_id) {
+            return this.selectedRecurringTimeslots.indexOf(ts_id) >= 0;
+        }.bind(this));
+
+        if (anyInGroup) {
+            this.selectedRecurringTimeslots = this.selectedRecurringTimeslots.filter(function(ts_id) {
+                return group.indexOf(ts_id) < 0;
+            });
+            if (this.selectedRecurringTimeslots.length === 0) {
+                this.selectedRecurringRoomId = null;
+            }
+            this.renderRecurringSelection();
             return;
         }
 
@@ -387,17 +427,13 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             this.selectedRecurringRoomId = room_id;
         }
 
-        var existingIndex = this.selectedRecurringTimeslots.indexOf(timeslot_id);
-        if (existingIndex >= 0) {
-            this.selectedRecurringTimeslots.splice(existingIndex, 1);
-            if (this.selectedRecurringTimeslots.length === 0) {
-                this.selectedRecurringRoomId = null;
+        // Add all timeslots for this occurrence.
+        $j.each(group, function(i, ts_id) {
+            if (this.selectedRecurringTimeslots.indexOf(ts_id) < 0) {
+                this.selectedRecurringTimeslots.push(ts_id);
             }
-            this.renderRecurringSelection();
-            return;
-        }
+        }.bind(this));
 
-        this.selectedRecurringTimeslots.push(timeslot_id);
         this.selectedRecurringTimeslots.sort(function(a, b) {
             return this.matrix.timeslots.get_by_id(a).order - this.matrix.timeslots.get_by_id(b).order;
         }.bind(this));
@@ -460,7 +496,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 this.scheduleSectionLocal(section,
                     old_assignment.room_id,
                     old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
             }.bind(this)
         );
