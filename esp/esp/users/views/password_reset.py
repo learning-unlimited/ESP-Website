@@ -39,7 +39,7 @@ def initial_passwd_request(request, success=None):
             for user in users:
                 user.recoverPassword()
 
-            return HttpResponseRedirect('/%s/success/' % request.path.strip('/'))
+            return HttpResponseRedirect(f'/{request.path.strip("/")}/success/')
 
 
     else:
