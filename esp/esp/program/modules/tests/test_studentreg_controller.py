@@ -108,13 +108,16 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
 
         result1 = section.preregister_student(self.students[0])
         self.assertTrue(result1, 'First registration should succeed')
+        self.assertEqual(section.num_students(), 1, 'Section should have 1 student after first registration')
 
         result2 = section.preregister_student(self.students[1])
         self.assertTrue(result2, 'Second registration should succeed')
+        self.assertEqual(section.num_students(), 2, 'Section should have 2 students after second registration')
 
         result3 = section.preregister_student(self.students[2])
 
         self.assertFalse(result3, 'Registration should fail when section is full')
+        self.assertEqual(section.num_students(), 2, 'Section should still have 2 students after failed registration')
         self.assertFalse(
             StudentRegistration.valid_objects().filter(
                 user=self.students[2],
@@ -153,6 +156,11 @@ class GradeFilterTest(ProgramFrameworkTest):
         profile.student_info.graduation_year = schoolyear + 5
         profile.student_info.save()
 
+        # Verify grade calculation: schoolyear + 12 - graduation_year = grade
+        student_grade = student.getGrade(self.program)
+        self.assertEqual(student_grade, 7, 'Student should be in grade 7')
+        self.assertTrue(7 <= student_grade <= 12, 'Student should be in valid grade range')
+
         error = section.parent_class.cannotAdd(student, checkFull=True)
         self.assertFalse(
             error,
@@ -182,11 +190,14 @@ class GradeFilterTest(ProgramFrameworkTest):
         self.assertIsNotNone(profile, 'Student must have a profile')
         self.assertIsNotNone(profile.student_info, 'Student must have student_info')
         
-        # Grade 6 student: graduates in 6 years (12 - 6 = grade 6)
+        # Create grade 6 student: schoolyear + 12 - graduation_year = grade
+        # So graduation_year = schoolyear + 6 gives grade = 12 - 6 = 6
         profile.student_info.graduation_year = schoolyear + 6
         profile.student_info.save()
 
+        # Verify grade calculation
         student_grade = student.getGrade(self.program)
+        self.assertEqual(student_grade, 6, 'Student should be in grade 6')
         section_grade_min = section.parent_class.grade_min
         section_grade_max = section.parent_class.grade_max
 
