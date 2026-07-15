@@ -8,6 +8,15 @@
         tr {
           border-bottom: grey 1px dashed;
         }
+        /* Django as_table() renders BooleanField checkboxes as a raw
+           <input type="checkbox"> directly before help text in a <td>, with
+           no .form-check wrapper.  Ensure the checkbox sits beside (not on
+           top of) the text by giving it an explicit right margin and
+           vertical-align so it lines up with the first text line. */
+        #theme_setup_form td input[type="checkbox"] {
+            vertical-align: middle;
+            margin-right: 0.35em;
+        }
     </style>
 {% endblock %}
 
