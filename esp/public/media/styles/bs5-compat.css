@@ -28,11 +28,21 @@
     width: auto;
 }
 
-/* Some Bootswatch themes (e.g. Sketchy) use larger checkbox/radio graphics
- * with a non-standard $form-check-input-width that can shift the control
- * slightly above the label's first text line.  Reducing margin-top from
- * Bootstrap's default 0.25em to 0.125em gives a tighter, centred look
- * without breaking the float-based layout Bootstrap 5 uses for .form-check. */
+/* Bootswatch themes (e.g. Sketchy) style all checkboxes and radio buttons with
+ * custom SVG graphics that are often larger than Bootstrap's 1em default.
+ * For checkboxes/radios used outside Bootstrap's .form-check wrapper (raw
+ * widgets rendered directly by Django form fields), vertical-align: middle
+ * keeps the control centred on the text line regardless of its rendered size.
+ * .form-check-input controls keep their own float/margin-top positioning from
+ * Bootstrap — the cascade handles the specificity correctly. */
+input[type="checkbox"],
+input[type="radio"] {
+    vertical-align: middle;
+}
+
+/* Tighten Bootstrap's default 0.25em top margin for .form-check-input so that
+ * Bootswatch themes with $form-check-input-width > 1em (e.g. Sketchy at 1.25em)
+ * still sit centred on the label's first line of text. */
 .form-check-input {
     margin-top: 0.125em;
 }
