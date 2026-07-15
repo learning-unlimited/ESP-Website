@@ -48,7 +48,7 @@ from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries
+from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries, SEARCH_CATEGORY_SETTINGS, SEARCH_CATEGORY_CLASSES, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
@@ -123,16 +123,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
         base = program.getUrlBase()
         # Map view names to (title, category, keywords) for admin dashboard search.
         entries = {
-            "main": ("Admin Portal", "Configure", ["dashboard", "admin", "home"]),
-            "settings": ("Program Settings", "Configure", ["settings", "program", "registration", "options"]),
-            "tags": ("Tag Settings", "Configure", ["tags", "advanced", "experts", "settings"]),
-            "dashboard": ("Dashboard", "Logistics", ["classes", "stats", "overview", "enrollment", "logistics"]),
-            "registrationtype_management": ("Student Registration Types", "Configure", ["registration", "types", "student", "sections", "schedule"]),
-            "lunch_constraints": ("Lunch Constraints", "Configure", ["lunch", "constraints", "schedule", "availability"]),
-            "deadline_management": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
-            "deadlines": ("Deadlines", "Configure", ["registration", "open", "close", "dates", "deadlines"]),
-            "surveys": ("Surveys", "Configure", ["survey", "feedback", "student survey", "teacher survey"]),
-            "modules": ("Manage Modules", "Configure", ["modules", "required", "sequence", "student registration", "teacher registration"]),
+            "main": ("Admin Portal", SEARCH_CATEGORY_SETTINGS, ["dashboard", "admin", "home"]),
+            "settings": ("Program Settings", SEARCH_CATEGORY_SETTINGS, ["settings", "program", "registration", "options"]),
+            "tags": ("Tag Settings", SEARCH_CATEGORY_SETTINGS, ["tags", "advanced", "experts", "settings"]),
+            "dashboard": ("Dashboard", SEARCH_CATEGORY_CLASSES, ["classes", "stats", "overview", "enrollment", "logistics"]),
+            "registrationtype_management": ("Student Registration Types", SEARCH_CATEGORY_REGISTRATION, ["registration", "types", "student", "sections", "schedule", "reg types"]),
+            "lunch_constraints": ("Lunch Constraints", SEARCH_CATEGORY_REGISTRATION, ["lunch", "constraints", "schedule", "availability"]),
+            "deadlines": ("Deadlines", SEARCH_CATEGORY_SETTINGS, ["registration", "open", "close", "dates", "deadlines"]),
+            "modules": ("Manage Modules", SEARCH_CATEGORY_SETTINGS, ["modules", "required", "sequence", "student registration", "teacher registration"]),
         }
         if view_name not in entries:
             return None
@@ -808,11 +806,81 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['required_locked']}
         context['not_required_locked_ids'] = {int(k) for k, v in module_constraints.items() if v['not_required_locked']}
 
+        from esp.program.forms import ProgramCreationForm
+        from esp.program.models import ProgramModule
+        pcf = ProgramCreationForm()
+        current_ids = set(prog.program_modules.values_list('id', flat=True))
+
+        module_questions_categorized = {
+            'student': [],
+            'teacher': [],
+            'general': []
+        }
+
+        choice_pairs = list(pcf.fields['program_module_questions'].choices)
+        all_choice_ids = {int(i) for val, _ in choice_pairs for i in val.split(',') if i.isdigit()}
+        module_type_by_id = dict(
+            ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'module_type')
+        )
+
+        for val, label in choice_pairs:
+            ids = [int(i) for i in val.split(',') if i.isdigit()]
+            is_checked = bool(ids) and all(i in current_ids for i in ids)
+
+            types = {module_type_by_id[i] for i in ids if i in module_type_by_id}
+
+            if 'learn' in types and 'teach' not in types:
+                category = 'student'
+            elif 'teach' in types and 'learn' not in types:
+                category = 'teacher'
+            else:
+                category = 'general'
+
+            module_questions_categorized[category].append({
+                'value': val,
+                'label': label,
+                'checked': is_checked
+            })
+
+        context['module_questions_categorized'] = module_questions_categorized
+
         context['one'] = one
         context['two'] = two
         context['program'] = prog
 
         return render_to_response(self.baseDir()+'modules.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def update_program_modules(self, request, tl, one, two, module, extra, prog):
+        from django.http import JsonResponse
+        from esp.program.models import ProgramModule
+        if request.method == 'POST':
+            add_ids = request.POST.getlist('add_modules[]')
+            remove_ids = request.POST.getlist('remove_modules[]')
+
+            add_id_list = []
+            for item in add_ids:
+                add_id_list.extend(item.split(','))
+            add_id_list = [int(i) for i in add_id_list if i.isdigit()]
+
+            remove_id_list = []
+            for item in remove_ids:
+                remove_id_list.extend(item.split(','))
+            remove_id_list = [int(i) for i in remove_id_list if i.isdigit()]
+
+            if add_id_list:
+                modules_to_add = ProgramModule.objects.filter(id__in=add_id_list)
+                prog.program_modules.add(*modules_to_add)
+            if remove_id_list:
+                modules_to_remove = ProgramModule.objects.filter(id__in=remove_id_list)
+                prog.program_modules.remove(*modules_to_remove)
+
+            # Save the program to trigger cache invalidation for getModules()
+            prog.save()
+
+            return JsonResponse({'status': 'success'})
+        return JsonResponse({'status': 'error', 'message': 'Invalid request'})
 
     @aux_call
     @needs_admin

@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
+from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest, RegistrationProfileFlowTest
 from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
@@ -69,6 +69,7 @@ from esp.program.modules.tests.test_class_creation import (
     ClassTeacherListTest,
     ClassFormValidationTest,
     TeacherAvailabilityConsistencyTest,
+    ClassCreationControllerUnitTest,
 )
 from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest

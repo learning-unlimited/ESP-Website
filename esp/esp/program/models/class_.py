@@ -427,7 +427,7 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
-    def _get_room_capacity(self, rooms = None):
+    def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
         if rooms is None:
             rooms = self.classrooms()
@@ -436,7 +436,7 @@ class ClassSection(models.Model):
         rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
-        if options.apply_multiplier_to_room_cap:
+        if options.apply_multiplier_to_room_cap and not ignore_changes:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
         return rc
@@ -463,7 +463,7 @@ class ClassSection(models.Model):
                     ans = self.parent_class.class_size_max
             else:
                 class_max = self.parent_class.class_size_max
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(class_max, room_cap)
 
         #hacky fix for classes with no max size
@@ -474,17 +474,17 @@ class ClassSection(models.Model):
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
-                ans = self._get_room_capacity(rooms)
+                ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0
 
@@ -923,7 +923,7 @@ class ClassSection(models.Model):
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
-        my_timeslots = self.timeslot_ids()
+        my_timeslots = set(self.timeslot_ids())
         for sec in section_list:
             if sec.parent_class == self.parent_class:
                 return 'You are already signed up for a section of this class!'
@@ -954,6 +954,24 @@ class ClassSection(models.Model):
 
         # this user *can* add this class!
         return False
+
+    def get_conflicts(self, user):
+        """ Return a list of sections that conflict with this one for the given user. """
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
+        my_timeslots = set(self.timeslot_ids())
+        conflicts = []
+        for sec in section_list:
+            if sec.parent_class == self.parent_class:
+                conflicts.append(sec)
+                continue
+
+            if hasattr(sec, '_timeslot_ids'):
+                timeslot_ids = set(sec._timeslot_ids)
+            else:
+                timeslot_ids = set(sec.timeslot_ids())
+            if my_timeslots.intersection(timeslot_ids):
+                conflicts.append(sec)
+        return conflicts
 
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
@@ -1212,6 +1230,12 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched meeting_times."""
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title())
+
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
             return True
@@ -1254,6 +1278,15 @@ class ClassSection(models.Model):
 
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
+
+    def isFullIgnoreChanges(self, webapp=False):
+        """Return section fullness based on unadjusted/base capacity.
+
+        This bypasses class-cap and room-cap multiplier/offset adjustments.
+        It is used by views like the onsite open class list, where we want to
+        show physically open classes even if registration throttles are active.
+        """
+        return self.isFull(ignore_changes=True, webapp=webapp)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
@@ -1374,12 +1407,14 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
+        locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
+
+        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
+            qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
-                sr = StudentRegistration(user=user, section=self, relationship=rt)
+                sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
                 sr.save()
                 if fast_force_create:
                     ## That's the bare minimum to reg someone; we're done!
@@ -2089,6 +2124,33 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return None
         else:
             return eventList[0]
+
+    def start_time_prefetchable(self):
+        """Like ClassSection.start_time_prefetchable, but for subjects.
+
+        Returns the earliest start time across all sections.  If sections
+        and their meeting_times have been prefetched, this will not hit the DB.
+
+        Uses sections.all() instead of get_sections() to preserve Django's
+        prefetch cache (get_sections() adds order_by which can bypass it).
+        """
+        starts = []
+        for section in self.sections.all():
+            st = section.start_time_prefetchable()
+            if st is not None:
+                starts.append(st)
+        return min(starts) if starts else None
+
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched data.
+
+        Use as:
+            subjects = qs.prefetch_related('sections__meeting_times')
+            sorted(subjects, key=lambda s: s._sort_key())
+        """
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title)
 
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
