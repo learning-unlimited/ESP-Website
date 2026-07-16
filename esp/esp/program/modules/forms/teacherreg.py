@@ -33,13 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import logging
+import re
+
 from django import forms
 from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
-import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.users.models import UserAvailability
@@ -47,8 +49,11 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
+from django.utils import timezone
 from datetime import datetime, timedelta
 import json
+
+logger = logging.getLogger(__name__)
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
@@ -226,8 +231,15 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Hide fields as desired.
         tag_data = Tag.getProgramTag('teacherreg_hide_fields', prog)
         if tag_data:
-            for field_name in [x.strip().lower() for x in tag_data.split(',')]:
-                hide_field(self.fields[field_name])
+            for field_name in [x.strip().lower() for x in tag_data.split(',') if x.strip()]:
+                if field_name in self.fields:
+                    hide_field(self.fields[field_name])
+                else:
+                    logger.warning(
+                        "teacherreg_hide_fields: '%s' is not a recognized "
+                        "field name and will be ignored. Valid field names are: %s",
+                        field_name, ', '.join(sorted(self.fields.keys())),
+                    )
 
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
         if tag_data:
@@ -345,7 +357,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """
         # Don't allow signing up for a spot insuficiently far in advance
-        return event.start - datetime.now() < timedelta(days=0)
+        return event.start - timezone.now() < timedelta(days=0)
 
     def _slot_is_available(self, event):
         """ Determine whether a time slot is available. """
