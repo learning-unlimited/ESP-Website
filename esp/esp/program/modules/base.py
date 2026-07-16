@@ -69,6 +69,12 @@ class CoreModule(object):
     pass
 
 class ProgramModuleObj(ExpirableModel):
+    # Class-level attributes that subclasses can override.
+    # Use immutable defaults to avoid accidental cross-module mutation.
+    always_enabled = False
+    seq_locked = False
+    conflicts_with = ()
+
     start_date = models.DateTimeField(blank=True, null=True, default=None,
                                       help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
@@ -334,7 +340,13 @@ class ProgramModuleObj(ExpirableModel):
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement']
+                                       'SurveyManagement',
+                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
+                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
+                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

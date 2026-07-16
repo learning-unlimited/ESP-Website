@@ -405,6 +405,36 @@ class BaseESPUser(object):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.get_last_program_with_profile(self)
 
+    @cache_function
+    def get_last_active_program(self):
+        """Return the most recent program the user participated in, or None.
+
+        "Participated" means the user wrote a registration profile for the
+        program (students/teachers) OR signed up to volunteer for it
+        (VolunteerOffer).
+        """
+        from esp.program.models import RegistrationProfile, Program
+
+        program_ids = set(
+            RegistrationProfile.objects
+                .filter(user=self, program__isnull=False)
+                .values_list('program_id', flat=True)
+        )
+        program_ids.update(
+            self.volunteeroffer_set
+                .values_list('request__program_id', flat=True)
+        )
+
+        if not program_ids:
+            return None
+
+        # A user is in only a handful of programs, so rank them in Python by
+        # program date rather than annotating timeslot dates in SQL.
+        programs = Program.objects.filter(id__in=program_ids)
+        return max(programs, key=lambda p: (p.datetime_range() or (datetime.min,))[0])
+    get_last_active_program.depend_on_row('program.RegistrationProfile', lambda p: {'self': p.user})
+    get_last_active_program.depend_on_row('program.VolunteerOffer', lambda vo: {'self': vo.user})
+
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
@@ -2515,6 +2545,17 @@ class Permission(ExpirableModel):
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).", on_delete=models.CASCADE)
 
+    # Alternatively, a permission can be assigned to a dynamic user filter.
+    # This allows applying permissions to all users matching a saved filter
+    # (e.g. all 7th graders), and will stay up-to-date as users change.
+    user_filter = models.ForeignKey(
+        PersistentQueryFilter,
+        blank=True,
+        null=True,
+        help_text="Apply this permission to all users matching this saved filter.",
+        on_delete=models.PROTECT,
+    )
+
     #For now, we'll use plain text for a description of what permission it is
     PERMISSION_CHOICES = (
         ("Administer", "Full administrative permissions"),
@@ -2687,11 +2728,59 @@ class Permission(ExpirableModel):
             `datetime`
         """
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        q_obj = cls.q_permissions_on_program(quser, name, program, None, program_is_none_implies_all, is_valid=False).order_by("-end_date")
-        if q_obj.exists():
-            return q_obj[0].end_date
-        else:
+        direct_qs = cls.q_permissions_on_program(
+            quser, name, program, None, program_is_none_implies_all, is_valid=False
+        )
+
+        # Include permissions that apply via a dynamic user_filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            None,
+            program_is_none_implies_all,
+            is_valid=False,
+        ).select_related("user_filter")
+
+        best_direct = direct_qs.order_by("-end_date", "-start_date").first()
+        perms = [best_direct] if best_direct is not None else []
+        membership_cache = {}
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+            cache_key = uf.pk
+            is_member = None
+            if cache_key is not None and cache_key in membership_cache:
+                is_member = membership_cache[cache_key]
+            else:
+                try:
+                    is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+                except ESPError:
+                    # Ignore invalid filters when computing deadlines
+                    if cache_key is not None:
+                        membership_cache[cache_key] = False
+                    continue
+                if cache_key is not None:
+                    membership_cache[cache_key] = is_member
+            if is_member:
+                perms.append(perm)
+
+        if not perms:
             return None
+
+        # Match existing semantics: pick the latest closing time
+        latest = sorted(
+            perms,
+            key=lambda p: (
+                p.end_date is None,
+                p.end_date,
+                p.start_date is None,
+                p.start_date
+            ),
+            reverse=True,
+        )[0]
+        return latest.end_date
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2745,9 +2834,53 @@ class Permission(ExpirableModel):
         if user.isAdministrator(program=program):
             return True
 
+        # Direct user / role-based permissions
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        return cls.q_permissions_on_program(quser, name, program, when,
-                program_is_none_implies_all).exists()
+        if cls.q_permissions_on_program(
+            quser, name, program, when, program_is_none_implies_all
+        ).exists():
+            return True
+
+        # Permissions granted via a dynamic user filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            when,
+            program_is_none_implies_all,
+        ).select_related('user_filter')
+
+        # Per-request cache for user filter membership checks, keyed by
+        # (user_id, user_filter_id) to avoid repeated DB queries.
+        cache_attr = '_user_filter_membership_cache'
+        membership_cache = getattr(user, cache_attr, None)
+        if membership_cache is None:
+            membership_cache = {}
+            setattr(user, cache_attr, membership_cache)
+
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+
+            key = (user.pk, uf.pk)
+            cached_result = membership_cache.get(key)
+            if cached_result is not None:
+                if cached_result:
+                    return True
+                continue
+
+            try:
+                is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+            except ESPError:
+                # Ignore invalid filters when checking permissions
+                membership_cache[key] = False
+                continue
+
+            membership_cache[key] = is_member
+            if is_member:
+                return True
+        return False
 
     @classmethod
     def list_roles_with_perm(cls, name, program):
@@ -2784,18 +2917,21 @@ class Permission(ExpirableModel):
         return bool(self.implications.get(self.permission_type, None))
 
     def __str__(self):
-        #TODO
         if self.user is not None:
-            user = self.user.username
+            grantee = self.user.username
+        elif self.role is not None:
+            grantee = str(self.role)
+        elif self.user_filter is not None:
+            grantee = str(self.user_filter)
         else:
-            user = self.role
+            grantee = "None"
 
         if self.program is not None:
             program = self.program.niceName()
         else:
             program = "None"
 
-        return f"GRANT {self.permission_type} ON {program} TO {user}"
+        return f"GRANT {self.permission_type} ON {program} TO {grantee}"
 
     @classmethod
     def nice_name_lookup(cls, perm_type):

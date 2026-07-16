@@ -72,7 +72,7 @@
 
 {% render_inline_program_qsd program "learn:studentregheader" %}
 <div role="alert" class="alert alert-block">
-<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<span class="bi bi-info-circle" aria-hidden="true"></span>
 <big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
 
@@ -86,7 +86,7 @@
 {% if records %}
 {% render_inline_program_qsd program record_steps %}
 <div class="row">
-<div class="col-md-10 col-md-offset-1">
+<div class="col-md-10 offset-md-1">
 <table class="table table-condensed" align="center" width="400">
 <tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
 {% for record in records %}
@@ -94,9 +94,9 @@
         <td>{{ record.full_event }}</td>
         <td>
             {% if record.isCompleted %}
-                <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+                <i class="bi bi-check done-sign" aria-label="Done"></i>
             {% else %}
-                <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
             {% endif %}
         </td>
     </tr>
@@ -148,19 +148,19 @@
             {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full) #}
             {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
                 <button id="confirmbutton" type="submit"
-                        class="btn btn-default btn-lg"
+                        class="btn btn-secondary btn-lg"
                         disabled="disabled" />
-                    <span class="glyphicon glyphicon-ban-circle" aria-hidden="true"></span>
+                    <span class="bi bi-slash-circle" aria-hidden="true"></span>
                     {{ scrmi.confirm_button_text }}
                 </button>
             {% else %}
                 <button id="confirmbutton" type="submit"
                         class="btn btn-primary btn-lg" />
                     {% if isConfirmed %}
-                        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+                        <span class="bi bi-eye" aria-hidden="true"></span>
                         {{ scrmi.view_button_text }}
                     {% else %}
-                        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+                        <span class="bi bi-check" aria-hidden="true"></span>
                         {{ scrmi.confirm_button_text }}
                     {% endif %}
                 </button>
@@ -176,7 +176,7 @@
                 {% else %}
                     <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
                         <button type="submit" id="cancelbutton" class="btn btn-danger btn-lg">
-                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            <span class="bi bi-x" aria-hidden="true"></span>
                             {{ scrmi.cancel_button_text }}
                         </button>
                     </form>
