@@ -856,6 +856,16 @@ background: #bbb;
   text-decoration: underline;
 }
 
+@if $bootswatch-active {
+  // The generic $linkColor rule above (specificity 1,1,1) overrides bootswatch
+  // alert link colours, making links nearly invisible against alert backgrounds
+  // (e.g. Solar's cyan alert-info with blue link text).  Defer to the alert's
+  // own colour — which each bootswatch sets deliberately — inside .alert blocks.
+  #content .alert a:not(.btn) {
+    color: inherit;
+  }
+}
+
 #admin_link {
   padding: 30px 0px 0px 0px;
 }
