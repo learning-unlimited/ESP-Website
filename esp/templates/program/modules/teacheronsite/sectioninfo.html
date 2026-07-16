@@ -12,15 +12,34 @@
                 </th>
             </thead>
             <tbody>
+                {% if can_view_schedule %}
                 <tr>
                     <td style="width:35%">Room:</td>
                     <td>
-                        {% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+                        {% if section.initial_rooms %}
+                            {% for r in section.initial_rooms %}
+                                {{ r.name }}
+                                (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
                     </td>
                 </tr>
+                <tr>
                     <td>Time:</td>
-                    <td>{% if section.friendly_times|length == 0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
+                    <td>
+                        {% if section.friendly_times|length == 0 %}
+                            Unassigned
+                        {% else %}
+                            {% for f in section.friendly_times_with_date %}
+                                {{ f }}
+                            {% endfor %}
+                        {% endif %}
+                    </td>
                 </tr>
+                {% endif %}
                 {% if user not in section.parent_class.get_teachers or section.parent_class.get_teachers.count > 1 %}
                 <tr>
                     <td>{% if user in section.parent_class.get_teachers %}Co-{% endif %}Teachers:</td>
