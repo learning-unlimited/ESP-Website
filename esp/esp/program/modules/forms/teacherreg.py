@@ -49,6 +49,7 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.web.forms import ResizeImageField
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
@@ -263,6 +264,13 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields['class_style'].required = True
         else:
             hide_field(self.fields['class_style'])
+
+        if Tag.getBooleanTag('enable_class_description_images', prog):
+            self.fields['picture'] = ResizeImageField(label='Class Description Image',
+                                                       help_text='A picture to be displayed with your class description. Max 500x500.',
+                                                       required=False, size=(500, 500))
+        elif 'picture' in self.fields:
+            del self.fields['picture']
         # plus subprogram section wizard
 
     def clean(self):
