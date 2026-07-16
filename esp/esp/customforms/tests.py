@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 
-from esp.customforms.models import Form, Field
+from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
@@ -174,9 +174,9 @@ class CustomFormsTest(TestCase):
         response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Incorrect answer')
-        responses_corrected = responses_initial
-        responses_corrected[f'question_{field_id_map["ShortText"]}'] = 'Smart'
-        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'B'
+        responses_corrected = responses_initial.copy()
+        responses_corrected['question_%d' % field_id_map['ShortText']] = 'Smart'
+        responses_corrected['question_%d' % field_id_map['Choose an option']] = 'B'
         post_dict.update(responses_corrected)
         response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertRedirects(response, f"/customforms/success/{form.id}/")
@@ -203,7 +203,9 @@ class CustomFormsTest(TestCase):
         indiv_response = response_data['answers'][0]
         self.assertEqual(int(indiv_response['user_id']), self.student.id)
         for field_spec in indiv_response:
-            self.assertEqual(self.map_form_value(responses_corrected[key]), indiv_response[key])
+            if field_spec in ['user_id', 'user_display', 'user_email', 'username', 'id']:
+                continue
+            self.assertEqual(self.map_form_value(responses_corrected[field_spec]), indiv_response[field_spec])
         self.assertTrue('questions' in response_data)
         self.assertEqual(len(response_data['questions']), len(responses_initial) + 4)   #   provided fields plus user_id, user_display, user_email, username
         for entry in response_data['questions']:
@@ -380,44 +382,54 @@ class ViewResponseTest(TestCase):
         self.student.save()
         self.student.makeRole('Student')
 
-        self.form = Form.objects.create(
-            title='Test Form', created_by=self.admin,
+        self.admin_form = Form.objects.create(
+            title='Admin Form', created_by=self.admin,
             link_type='-1', link_id=-1,
             success_message='OK', success_url='/'
         )
-        # Create dynamic model table so view doesn't crash on query
-        dmh = DynamicModelHandler(self.form)
-        dmh.createTable()
+        self.teacher_form = Form.objects.create(
+            title='Teacher Form', created_by=self.teacher,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        # Create dynamic model tables so views don't crash on query
+        DynamicModelHandler(self.admin_form).createTable()
+        DynamicModelHandler(self.teacher_form).createTable()
 
     def tearDown(self):
         for form in Form.objects.all():
-            dmh = DynamicModelHandler(form)
-            dmh.purgeDynModel()
+            DynamicModelHandler(form).purgeDynModel()
 
     def test_admin_can_view_responses(self):
-        """Admin should be able to view responses page."""
+        """Admin should be able to view any form's responses page."""
         self.client.login(username='resp_admin', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
         self.assertEqual(response.status_code, 200)
 
-    def test_teacher_can_view_responses(self):
-        """Teacher should be able to view responses page."""
+    def test_teacher_can_view_own_form_responses(self):
+        """Teacher should be able to view responses for their own form."""
         self.client.login(username='resp_teacher', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.teacher_form.id)
         self.assertEqual(response.status_code, 200)
+
+    def test_teacher_cannot_view_others_form_responses(self):
+        """Teacher should be blocked from viewing another user's form responses."""
+        self.client.login(username='resp_teacher', password='password')
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
+        self.assertEqual(response.status_code, 403)
 
     def test_student_cannot_access(self):
         """Student should not be able to view responses."""
         self.client.login(username='resp_student', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
         # Should redirect to home page, which is '/'
         self.assertRedirects(response, '/')
 
     def test_unauthenticated_redirected(self):
         """Unauthenticated user should be redirected to login (by decorator)."""
         self.client.logout()
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
-        self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.admin_form.id)
 
 
 class FormBuilderViewTest(TestCase):
@@ -704,3 +716,145 @@ class EmptyFormTitleValidationTest(TestCase):
 
         existing_form.refresh_from_db()
         self.assertEqual(existing_form.title, 'A' * max_len)
+
+
+class FormOwnershipAccessTest(TestCase):
+    """Tests that only the form creator, admins, or morphed users can access form response data."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='owner_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.teacher_owner, _ = ESPUser.objects.get_or_create(username='owner_teacher')
+        self.teacher_owner.set_password('password')
+        self.teacher_owner.save()
+        self.teacher_owner.makeRole('Teacher')
+
+        self.teacher_other, _ = ESPUser.objects.get_or_create(username='other_teacher')
+        self.teacher_other.set_password('password')
+        self.teacher_other.save()
+        self.teacher_other.makeRole('Teacher')
+
+        self.form = Form.objects.create(
+            title='Ownership Test Form', description='Test',
+            created_by=self.teacher_owner,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section 1', seq=1)
+        self.field = Field.objects.create(
+            form=self.form, section=section,
+            field_type='textField', seq=0, label='Q1', required=False
+        )
+        self.question_name = f'question_{self.field.id}'
+        dmh = DynamicModelHandler(self.form)
+        dmh.createTable()
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_owner_can_view_responses(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_view_responses(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_view_any_responses(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_viewresponse_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get('/customforms/responses/999999/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_get_excel(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_get_excel(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_get_any_excel(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_exceldata_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get('/customforms/exceldata/999999/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_get_data(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_get_data(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_get_any_data(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_getdata_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': 999999},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonowner_teacher_cannot_bulk_download(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': self.form.id, 'question_name': self.question_name},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_bulk_download_any(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': self.form.id, 'question_name': self.question_name},
+        )
+        # No responses exist so the zip will be empty, but access should be granted
+        self.assertEqual(response.status_code, 200)
+
+    def test_bulkdownload_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': 999999, 'question_name': self.question_name},
+        )
+        self.assertEqual(response.status_code, 404)
