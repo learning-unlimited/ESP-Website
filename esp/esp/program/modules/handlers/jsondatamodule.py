@@ -43,6 +43,7 @@ from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
 from django.http import Http404
+from esp.tagdict.models import Tag
 
 from argcache import cache_function
 
@@ -501,6 +502,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'category', 'sections', 'teachers')
 
         difficulty_map = Tag.getDifficultyMap() if catalog else {}
+        enable_images = Tag.getBooleanTag('enable_class_description_images', prog)
 
         for c in qs:
             class_teachers = c.get_teachers()
@@ -522,6 +524,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['difficulty'] = c.hardness_rating
                 cls['difficulty_description'] = difficulty_map.get(str(c.hardness_rating)) if c.hardness_rating else None
                 cls['prereqs'] = c.prereqs
+                if enable_images:
+                    cls['picture_url'] = c.picture.url if c.picture else None
             cls['emailcode'] = c.emailcode()
             if c.duration:
                 cls['length'] = float(c.duration)
@@ -562,9 +566,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
+    class_subjects.cached_function.depend_on_model(Tag)
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
-    class_subjects.cached_function.depend_on_model('tagdict.Tag')
 
     @aux_call
     @json_response({
@@ -678,6 +682,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'difficulty': cls.hardness_rating,
             'difficulty_description': Tag.getDifficultyDescription(cls.hardness_rating),
             'prereqs': cls.prereqs,
+            'picture_url': cls.picture.url if cls.picture and Tag.getBooleanTag('enable_class_description_images', cls.parent_program) else None,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -688,6 +693,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {return_key: [return_dict]}
     class_info.cached_function.depend_on_model(ClassSubject)
     class_info.cached_function.depend_on_model(ClassSection)
+    class_info.cached_function.depend_on_model(Tag)
 
     @aux_call
     @no_auth
