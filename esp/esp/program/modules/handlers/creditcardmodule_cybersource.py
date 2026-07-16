@@ -56,12 +56,12 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        """ Whether the user has paid for this program or its parent program. """
+        """ Whether the user has no outstanding balance for this program. """
         if hasattr(self, 'user'):
             user = self.user
         else:
             user = get_current_request().user
-        return IndividualAccountingController(self.program, user).has_paid()
+        return IndividualAccountingController(self.program, user).amount_due() <= 0
     have_paid = isCompleted
 
     def students(self, QObject = False):

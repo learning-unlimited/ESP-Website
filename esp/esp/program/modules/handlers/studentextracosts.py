@@ -185,6 +185,7 @@ class StudentExtraCosts(ProgramModuleObj):
 
         #   Fetch the user's current preferences
         prefs = iac.get_preferences()
+        paid_item_ids = set(iac.get_transfers().filter(paid_in__isnull=False).values_list('line_item_id', flat=True))
 
         forms_all_valid = True
         error_custom = False
@@ -299,6 +300,9 @@ class StudentExtraCosts(ProgramModuleObj):
 
             for x in costs_list
         ]
+        for item in cost_items:
+            if item['LineItem'].id in paid_item_ids:
+                item['form'].fields['cost'].widget.attrs['disabled'] = True
 
         multi_cost_items = \
         [
@@ -315,6 +319,9 @@ class StudentExtraCosts(ProgramModuleObj):
 
             for x in multicosts_list
         ]
+        for item in multi_cost_items:
+            if item['LineItem'].id in paid_item_ids:
+                item['form'].fields['count'].widget.attrs['disabled'] = True
 
         multiselect_costitems = []
         for x in multiselect_list:
@@ -339,6 +346,8 @@ class StudentExtraCosts(ProgramModuleObj):
                 form_kwargs['initial'] = {'option': count_map[x.text][3]}
                 form_kwargs['is_custom'] = False
             new_entry['form'] = preserve_items.get(x.text) or MultiSelectCostItem(**form_kwargs)
+            if x.id in paid_item_ids:
+                new_entry['form'].fields['option'].widget.attrs['disabled'] = True
             multiselect_costitems.append(new_entry)
 
         forms = cost_items + multi_cost_items + multiselect_costitems
@@ -353,7 +362,8 @@ class StudentExtraCosts(ProgramModuleObj):
                                   request,
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
                                     'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
-                                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog) })
+                                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog),
+                                    'paid_item_ids': paid_item_ids })
 
     def isStep(self):
         return self.lineitemtypes().exists()

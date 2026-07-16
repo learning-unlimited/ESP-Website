@@ -336,10 +336,16 @@ class IndividualAccountingController(ProgramAccountingController):
         source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(include_donations=False).exclude(text__in=self.admission_items)
 
-        #   Clear existing transfers
-        Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
+        #   Clear only unpaid transfers (if student unchecks an item they didn't pay for)
+        Transfer.objects.filter(user=self.user, line_item__in=line_items, paid_in__isnull=True).delete()
 
-        #   Create transfers for optional line item types
+        #   Count how many transfers per line item type are already paid
+        from collections import defaultdict
+        paid_counts = defaultdict(int)
+        for t in Transfer.objects.filter(user=self.user, line_item__in=line_items, paid_in__isnull=False):
+            paid_counts[t.line_item_id] += 1
+
+        #   Create transfers for optional line item types, only for quantities beyond what is already paid
         for item_tup in optional_items:
             (item_name, quantity, cost, option_id) = item_tup
             matched = False
@@ -360,7 +366,8 @@ class IndividualAccountingController(ProgramAccountingController):
                         option = LineItemOptions.objects.get(id=option_id)
                         if cost is None:
                             transfer_amount = option.amount_dec_inherited
-                    for i in range(quantity or 0):
+                    new_quantity = max(0, (quantity or 0) - paid_counts[lit.id])
+                    for i in range(new_quantity):
                         result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=transfer_amount, option=option))
                     break
             if not matched:
@@ -425,8 +432,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def get_identifier(self):
         #   A brief string containing information about the user and
-        #   which purchases are included at this time
-        purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in self.get_transfers()])
+        #   which purchases are included at this time (only unpaid transfers)
+        transfers = self.get_transfers().filter(
+            line_item__for_payments=False,
+            paid_in__isnull=True,
+        ).exclude(line_item__text__in=self.finaid_items)
+        purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in transfers])
         return '%s:%s' % (self.get_id(), purchases_str)
 
     @staticmethod
