@@ -341,14 +341,17 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
     def test_onsiteprintschedules_invalid_userid(self):
         self._login_admin()
         response = self.client.get('/onsite/%s/printschedules?userid=invalid' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 400)
         self.assertIn(b'Invalid userid format', response.content)
 
     def test_onsiteprintschedules_nonexistent_userid(self):
         self._login_admin()
         response = self.client.get('/onsite/%s/printschedules?userid=99999' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 404)
         self.assertIn(b'User not found with the provided userid', response.content)
 
-    def test_onsiteprintschedules_missing_userid(self):
+    def test_onsiteprintschedules_polling_empty_queue(self):
         self._login_admin()
         response = self.client.get('/onsite/%s/printschedules?gen_img=1' % self.program.getUrlBase())
-        self.assertIn(b'Missing userid parameter', response.content)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b'')
