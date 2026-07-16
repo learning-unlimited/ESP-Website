@@ -100,8 +100,8 @@ Student Schedule for \\
 {% classes_by_day student.classes as day_entries %}
 {% for entry in day_entries %}\hline
 {% if not entry.day_time %}N/A{% endif %}{{ entry.day_time }} \newline
-\footnotesize{ {% if entry.cls.initial_rooms|length_is:0 %}N/A{% else %}{{ entry.cls.prettyrooms.0|texescape }}{% endif %} } &
-{% if entry.cls.event_type.description == "Compulsory" %}{{ entry.cls.description }}{% elif entry.cls.title|length_is:"0" %}N/A{% else %}{{ entry.cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
+\footnotesize{ {% if not entry.cls.initial_rooms %}N/A{% else %}{{ entry.cls.prettyrooms.0|texescape }}{% endif %} } &
+{% if entry.cls.event_type.description == "Compulsory" %}{{ entry.cls.description }}{% elif not entry.cls.title %}N/A{% else %}{{ entry.cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
 {% if "teacher_profile_pronoun_field"|getBooleanTag %}
 \footnotesize{ {{ entry.cls.parent_class.getTeacherNamesWithPronouns|join:", "|truncatewords_char:50|texescape }} }
 {% else %}

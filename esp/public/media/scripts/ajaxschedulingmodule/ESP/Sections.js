@@ -376,7 +376,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     };
 
     this.renderRecurringSelection = function() {
-        $j("td.recurring-selected-cell").removeClass("recurring-selected-cell");
+        $j("#matrix-table td.recurring-selected-cell").removeClass("recurring-selected-cell");
         if (!(this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0)) {
             return;
         }
