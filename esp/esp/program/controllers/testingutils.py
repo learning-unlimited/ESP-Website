@@ -48,14 +48,14 @@ from esp.users.models import Record, UserAvailability
 logger = logging.getLogger(__name__)
 
 
-class TestDataCleanupController(object):
+class DataCleanupController(object):
     """Centralises the logic for wiping test registration data for a single
     user within a program.  This is intentionally kept separate from the view
     layer so it can be tested independently and reused if needed.
 
     Usage::
 
-        ctrl = TestDataCleanupController(program, user)
+        ctrl = DataCleanupController(program, user)
         counts = ctrl.get_counts()   # preview — no side effects
         ctrl.execute()               # permanent deletion
     """
@@ -63,7 +63,6 @@ class TestDataCleanupController(object):
     def __init__(self, program, user):
         self.program = program
         self.user = user
-
     # ------------------------------------------------------------------
     # Querysets — each scoped strictly to (program, user)
     # ------------------------------------------------------------------
