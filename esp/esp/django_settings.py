@@ -81,7 +81,6 @@ LOG_LEVEL = 'INFO'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -201,7 +200,7 @@ TEMPLATES = [
     },
 ]
 
-FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
+FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -243,7 +242,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils.apps.UtilsConfig',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
@@ -296,6 +295,22 @@ MAILMAN_PATH = '/usr/lib/mailman/bin/'
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',
     )
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8},
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp', 'Unknown'),

@@ -40,7 +40,7 @@ from django.db.models.query import Q
 
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PRINTABLES
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
@@ -70,7 +70,7 @@ class NameTagModule(ProgramModuleObj):
             id="manage_selectidoptions",
             url="/manage/%s/selectidoptions" % base,
             title="Nametags",
-            category="Printables",
+            category=SEARCH_CATEGORY_PRINTABLES,
             keywords=["nametags", "name tags", "ids", "badges"],
         )
 
