@@ -990,13 +990,13 @@ class TeacherClassRegModule(ProgramModuleObj):
                         elif action in ('createopenclass', 'editopenclass'):
                             newclass = ccc.submit_draft(request.user, request.POST, newclass.id, form_class=TeacherOpenClassRegForm)
                     elif action == 'create':
-                        newclass = ccc.makeaclass(request.user, request.POST)
+                        newclass = ccc.makeaclass(request.user, request.POST, request.FILES)
                     elif action == 'createopenclass':
-                        newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
+                        newclass = ccc.makeaclass(request.user, request.POST, request.FILES, form_class=TeacherOpenClassRegForm)
                     elif action == 'edit':
-                        newclass = ccc.editclass(request.user, request.POST, extra)
+                        newclass = ccc.editclass(request.user, request.POST, extra, request.FILES)
                     elif action == 'editopenclass':
-                        newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+                        newclass = ccc.editclass(request.user, request.POST, extra, request.FILES, form_class=TeacherOpenClassRegForm)
 
                     do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 

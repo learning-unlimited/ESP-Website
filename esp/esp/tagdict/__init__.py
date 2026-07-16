@@ -874,6 +874,13 @@ all_program_tags = {
         'is_setting': True,
         'field': MultilineCharField(),
     },
+    'enable_class_description_images': {
+        'is_boolean': True,
+        'help_text': 'Enable teachers to upload a picture for their class description.',
+        'default': False,
+        'category': 'class',
+        'is_setting': True,
+    },
     'teacherreg_help_text_class_info': {
         'is_boolean': False,
         'help_text': 'If set, overrides the help text for the class registration class info field',

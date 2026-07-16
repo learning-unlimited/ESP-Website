@@ -37,7 +37,8 @@ def render_class_core(cls):
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times,
-            'difficulty_description': difficulty_description}
+            'difficulty_description': difficulty_description,
+            'enable_images': Tag.getBooleanTag('enable_class_description_images', prog)}
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
@@ -131,7 +132,8 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
             'prereg_url': prereg_url,
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
-            'show_class': show_class}
+            'show_class': show_class,
+            'enable_images': Tag.getBooleanTag('enable_class_description_images', cls.parent_program)}
 
 
 # The following two need to be inclusion tags rather than template includes

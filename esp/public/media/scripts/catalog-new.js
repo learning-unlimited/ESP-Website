@@ -18,6 +18,7 @@ var ClassSubject = function (data) {
         ? (data.difficulty + " – " + data.difficulty_description)
         : (data.difficulty || "");
     self.prereqs     = data.prereqs;
+    self.picture_url = data.picture_url;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
 
