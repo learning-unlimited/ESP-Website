@@ -11,6 +11,7 @@ from django.db.models.query import Q
 
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.models import RegistrationType
 from esp.program.models.class_ import ClassSubject, STATUS_CHOICES
 from esp.program.models.flags import ClassFlagType
@@ -43,6 +44,20 @@ class ClassSearchModule(ProgramModuleObj):
         proxy = True
         app_label = 'modules'
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the class search page in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (e.g. create_autorule) return None.
+        if view_name != "classsearch":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Class Search",
+            category=SEARCH_CATEGORY_CLASSES,
+            keywords=["class", "search", "classes", "query", "flags"],
+        )
+
     def query_builder(self):
         flag_types = ClassFlagType.get_flag_types(program=self.program)
         flag_datetime_inputs = [
@@ -53,12 +68,17 @@ class ClassSearchModule(ProgramModuleObj):
             field_name='flags__flag_type',
             options={str(ft.id): ft.name for ft in flag_types})
         any_flag_input = ConstantInput(Q(flags__isnull=False))
+        flag_status_input = SelectQInput(options=OrderedDict([
+            ('any',        {'title': 'Any Status',  'Q': Q()}),
+            ('unresolved', {'title': 'Unresolved',  'Q': Q(flags__resolved=False)}),
+            ('resolved',   {'title': 'Resolved',    'Q': Q(flags__resolved=True)}),
+        ]))
         flag_filter = SearchFilter(name='flag', title='the flag',
                                    inputs=[flag_select_input] +
-                                   flag_datetime_inputs)
+                                   flag_datetime_inputs + [flag_status_input])
         any_flag_filter = SearchFilter(name='any_flag', title='any flag',
                                        inputs=[any_flag_input] +
-                                       flag_datetime_inputs)
+                                       flag_datetime_inputs + [flag_status_input])
 
         resource_types = ResourceType.objects.filter(program=self.program)
         resource_value_input = OptionalInput(name="desired value",

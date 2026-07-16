@@ -409,7 +409,7 @@ def editor(request):
 
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
-    context = tc.find_less_variables(flat=True)
+    context = tc.find_theme_variables(flat=True)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
     context['theme_name'] = current_theme
@@ -422,10 +422,10 @@ def editor(request):
     context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
 
     #   Load the theme-specific options
-    adv_vars = tc.find_less_variables(current_theme, theme_only=True)
+    adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
     context['adv_vars'] = {}
     for filename in adv_vars:
-        category_name = os.path.basename(filename)[:-5]
+        category_name = os.path.splitext(os.path.basename(filename))[0]
         category_vars = []
         keys = sorted(adv_vars[filename].keys())
         for key in keys:
@@ -444,7 +444,11 @@ def editor(request):
             else:
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
-    context['variable_defaults'] = tc.get_variable_defaults(current_theme)
+    variable_defaults = tc.get_variable_defaults(current_theme)
+    context['variable_defaults'] = variable_defaults
+    for key, val in variable_defaults.items():
+        if key not in context:
+            context[key] = val
 
     return render_to_response('themes/editor.html', request, context)
 
