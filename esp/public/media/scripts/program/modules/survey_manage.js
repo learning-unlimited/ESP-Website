@@ -83,7 +83,12 @@ if (typeof question_types != 'undefined') {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
                     if (params[i] === "Number of ratings") {
-                        if (!par_value || isNaN(parseInt(par_value, 10))) { par_value = 5; }
+                        var num_ratings = parseInt(par_value, 10);
+                        if (!par_value || isNaN(num_ratings)) {
+                            par_value = 5;
+                        } else {
+                            par_value = Math.max(num_ratings, 2);
+                        }
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
                     } else {
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");

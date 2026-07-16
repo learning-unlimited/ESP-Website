@@ -56,8 +56,9 @@ class QuestionForm(forms.ModelForm):
         if question_type:
             qt_name = question_type.name
 
-            if qt_name in ('Multiple Choice', 'Checkboxes'):
-                # params is the list of choices; require at least one non-empty choice
+            qt_name_lower = qt_name.lower()
+
+            if qt_name_lower in ('multiple choice', 'checkboxes'):
                 choices = [p for p in params if p.strip()]
                 if not choices:
                     raise forms.ValidationError(
@@ -65,7 +66,7 @@ class QuestionForm(forms.ModelForm):
                         params={'qt': qt_name},
                     )
 
-            elif qt_name in ('Labeled Numeric Rating', 'Numeric Rating'):
+            elif qt_name_lower in ('labeled numeric rating', 'numeric rating'):
                 # First param is the number of ratings; must be an integer >= 2
                 if not params or not params[0]:
                     raise forms.ValidationError(
