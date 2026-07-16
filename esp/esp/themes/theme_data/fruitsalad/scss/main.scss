@@ -778,6 +778,18 @@ background: #bbb;
     margin: 0;
 }
 
+#adminbar_content a {
+    color: #333333;
+    /* Bootswatch dark themes (e.g. Slate) set $link-color: $white, which makes
+       links invisible on the admin bar's hardcoded #eee background. Pin to dark. */
+}
+
+@media (max-width: $navbarCollapseWidth) {
+    #adminbar_content a {
+        color: #999999;
+    }
+}
+
 
 /*
  * Page elements
