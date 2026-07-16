@@ -69,5 +69,6 @@ from esp.program.modules.tests.test_class_creation import (
     ClassTeacherListTest,
     ClassFormValidationTest,
     TeacherAvailabilityConsistencyTest,
+    ClassCreationControllerUnitTest,
 )
 from esp.program.modules.tests.test_nametagmodule import NameTagModuleTest
