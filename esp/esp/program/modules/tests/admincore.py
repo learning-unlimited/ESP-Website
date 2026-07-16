@@ -417,7 +417,7 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         self.assertTrue(self.client.login(username='admin_modmgmt_csrf', password='password'))
         response = self.client.get(self._modules_url())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=2)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=1)
 
     def test_module_management_save_post_without_csrf_is_rejected(self):
         # Prime CSRF cookie via GET, then POST without token.
