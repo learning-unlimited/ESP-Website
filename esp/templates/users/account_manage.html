@@ -8,7 +8,7 @@
 
 <h2>You can do the following things with your account:</h2>
 <center>
-<ul class="nav nav-tabs nav-stacked">
+<ul class="nav flex-column">
 <li style="width: 50%;"><a href="/myesp/profile" title="Edit your profile" style="text-decoration: none;">Edit your profile</a></li>{% if request.user.isTeacher %}
 <li style="width: 50%;"><a href="/teach/teachers/{{ request.user.username }}/bio.edit.html" title="Edit your teacher biography" style="text-decoration: none;">Edit your teacher biography</a></li>
 <li style="width: 50%;"><a href="/myesp/survey_responses" title="View your student survey feedback across all programs" style="text-decoration: none;">View all survey responses</a></li>
