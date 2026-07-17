@@ -59,8 +59,8 @@
 </form>
 {% if qsdrec.id %}
 <div style="margin-top: 10px;">
-  <button type="button" class="btn btn-default" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}')">
-    <span class="glyphicon glyphicon-time" aria-hidden="true"></span> Version History
+  <button type="button" class="btn btn-secondary" onclick="qsd_toggle_history('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}')">
+    <span class="bi bi-clock" aria-hidden="true"></span> Version History
   </button>
 </div>
 <div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
@@ -126,12 +126,12 @@ espHandleBase64Paste(editor);
         $j.get("/admin/ajax_qsd_version_preview", { version_id: version_id }, function(data) {
             $previewDiv.html(
                 '<div class="alert alert-warning" style="margin-bottom:8px;">'
-                + '<span class="glyphicon glyphicon-time"></span> '
+                + '<span class="bi bi-clock"></span> '
                 + 'Preview of historical version '
-                + '<button type="button" class="btn btn-xs btn-default qsd-close-preview-btn">'
-                + '<span class="glyphicon glyphicon-arrow-left"></span> Close preview</button> '
+                + '<button type="button" class="btn btn-xs btn-secondary qsd-close-preview-btn">'
+                + '<span class="bi bi-arrow-left"></span> Close preview</button> '
                 + '<button type="button" class="btn btn-xs btn-warning qsd-preview-restore-btn">'
-                + '<span class="glyphicon glyphicon-repeat"></span> Restore this version</button>'
+                + '<span class="bi bi-arrow-repeat"></span> Restore this version</button>'
                 + '</div>'
                 + '<h3>' + $j('<span>').text(data.title).html() + '</h3>'
                 + '<div style="border:1px solid #ccc; padding:12px; background:#fffff0;">'
