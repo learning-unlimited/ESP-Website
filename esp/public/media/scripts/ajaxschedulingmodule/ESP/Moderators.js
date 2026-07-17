@@ -149,6 +149,18 @@ function ModeratorDirectory(el, moderators) {
     this.init = function(){
         // set up handlers
         $j("body").on("schedule-changed", this.render.bind(this));
+
+        // Use a delegated tooltip on the directory container
+        this.el.tooltip({
+            items: ".moderator-cell",
+            content: function () {
+                var moderatorCell = $j(this).data("moderatorCell");
+                return moderatorCell ? moderatorCell.tooltip() : "";
+            },
+            show: { duration: 100 },
+            hide: { duration: 100 },
+            track: true,
+        });
     };
     this.init();
 
@@ -396,22 +408,25 @@ function ModeratorCell(el, moderator, matrix) {
     this.init = function() {
         this.el.data("moderatorCell", this);
 
-        $j(this.el).tooltip({
-            items: ".moderator-cell",
-            content: this.tooltip.bind(this),
-            show: {duration: 100},
-            hide: {duration: 100},
-            track: true,
-        });
-
         this.el.addClass("moderator-cell");
         var baseURL = this.matrix.sections.getBaseUrlString();
         this.el.attr('id', "moderator_" + this.moderator.id);
-        this.el[0].innerHTML = "<td>" + this.moderator.first_name + " " + this.moderator.last_name + 
-            "</br><a target='_blank' href='" + baseURL +
-            "edit_availability?user=" + this.moderator.username +
-            "'>Edit Availability</a>" + " <a target='_blank' href='/manage/userview?username=" +
-            this.moderator.username + "&program=" + prog_id + "'>Userview</a>" + "</td>";
+        this.el.empty();
+        this.el.append(document.createTextNode(this.moderator.first_name + " " + this.moderator.last_name));
+        this.el.append($j("<br/>"));
+        this.el.append(
+            $j("<a/>")
+                .attr("target", "_blank")
+                .attr("href", baseURL + "edit_availability?user=" + this.moderator.username)
+                .text("Edit Availability")
+        );
+        this.el.append(document.createTextNode(" "));
+        this.el.append(
+            $j("<a/>")
+                .attr("target", "_blank")
+                .attr("href", "/manage/userview?username=" + this.moderator.username + "&program=" + prog_id)
+                .text("Userview")
+        );
     }
 
     this.tooltip = function(){

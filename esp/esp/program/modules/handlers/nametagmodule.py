@@ -32,20 +32,21 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import os
 from django.conf import settings
+from django.contrib.auth.models import Group
+from django.core.files.storage import default_storage
+from django.db.models.query import Q
 
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PRINTABLES
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-
-from django.contrib.auth.models import Group
-from django.db.models.query import Q
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -69,7 +70,7 @@ class NameTagModule(ProgramModuleObj):
             id="manage_selectidoptions",
             url="/manage/%s/selectidoptions" % base,
             title="Nametags",
-            category="Printables",
+            category=SEARCH_CATEGORY_PRINTABLES,
             keywords=["nametags", "name tags", "ids", "badges"],
         )
 
@@ -87,10 +88,31 @@ class NameTagModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
-    def nametag_data(self, users_list1, user_title1, users_list2 = ESPUser.objects.none(), user_title2 = None, program = None):
+    def nametag_data(self, users_list1, user_title1, users_list2=ESPUser.objects.none(), user_title2=None, program=None, sort_by_time=False):
+        import datetime
         users = []
-        users_list = [ user for user in users_list1 | users_list2]
-        users_list = sorted([x for x in users_list if len(x.first_name+x.last_name)])
+        users_list = [user for user in users_list1 | users_list2 if len(user.first_name + user.last_name)]
+
+        if sort_by_time and program:
+            user_first_starts = {}
+            for user in users_list:
+                earliest = datetime.datetime.max
+                class_objects = user.getTaughtOrModeratingSectionsFromProgram(program).prefetch_related(
+                    'meeting_times',
+                    'resourceassignment_set',
+                )
+                for cls in class_objects:
+                    meeting_times = list(cls.meeting_times.all())
+                    resource_assignments = list(cls.resourceassignment_set.all())
+                    if not meeting_times or not resource_assignments or cls.status <= 0:
+                        continue
+                    cls_earliest = min((mt.start for mt in meeting_times), default=datetime.datetime.max)
+                    if cls_earliest < earliest:
+                        earliest = cls_earliest
+                user_first_starts[user.id] = earliest
+            users_list.sort(key=lambda x: (user_first_starts[x.id], x.last_name.lower(), x.first_name.lower()))
+        else:
+            users_list = sorted(users_list)
 
         for user in users_list:
             prof = RegistrationProfile.getLastProfile(user)
@@ -105,7 +127,7 @@ class NameTagModule(ProgramModuleObj):
             else:
                 pronoun = None
             user_dict = {'title': title,
-                         'name' : '%s %s' % (user.first_name, user.last_name),
+                         'name' : f'{user.first_name} {user.last_name}',
                          'id'   : user.id,
                          'username': user.username,
                          'pronoun': pronoun}
@@ -123,6 +145,7 @@ class NameTagModule(ProgramModuleObj):
         if 'type' not in request.POST:
             raise ESPError("You need to select the TYPE of Name Tag to print. (students,teachers,etc)", log=False)
         idtype = request.POST['type']
+        sort_by_time_flag = request.POST.get('sort_by_time') in ['True', 'true', '1', 'on']
 
         users = []
 
@@ -132,8 +155,18 @@ class NameTagModule(ProgramModuleObj):
             user_title = request.POST['blanktitle']
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
-            filterObj = usc.filter_from_postdata(prog, data)
-            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program = prog)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context = {'module': self}
+                context['groups'] = Group.objects.all()
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['combo_form'] = False
+                context['include_continue'] = False
+                context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'selectoptions.html', request, context)
+            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'students':
             user_title = "Student"
@@ -143,13 +176,13 @@ class NameTagModule(ProgramModuleObj):
             else:
                 students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
 
-            users = self.nametag_data(students, user_title, program = prog)
+            users = self.nametag_data(students, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'teacher':
             user_title = "Teacher"
             teachers = self.program.teachers()['class_approved'].distinct()
 
-            users = self.nametag_data(teachers, user_title)
+            users = self.nametag_data(teachers, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'teachermoderators':
             user_title = "Teacher"
@@ -158,14 +191,14 @@ class NameTagModule(ProgramModuleObj):
             teachers = teacher_dict['class_approved'].distinct()
             moderators = teacher_dict['assigned_moderator'].distinct()
 
-            users = self.nametag_data(teachers, user_title, moderators, user_title2)
+            users = self.nametag_data(teachers, user_title, moderators, user_title2, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'moderators':
             user_title = self.program.getModeratorTitle()
             teacher_dict = self.program.teachers()
             moderators = teacher_dict['assigned_moderator'].distinct()
 
-            users = self.nametag_data(moderators, user_title)
+            users = self.nametag_data(moderators, user_title, program=prog, sort_by_time=sort_by_time_flag)
 
         elif idtype == 'other':
             user_title = request.POST['blanktitle']
@@ -239,8 +272,11 @@ class NameTagModule(ProgramModuleObj):
 
         context['barcodes'] = True if 'barcodes' in request.POST else False
         context['users_and_backs'] = users_and_backs
-        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
+        context['group_name'] = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
         context['phone_number'] = Tag.getTag('group_phone_number')
+        current_logo_version = Tag.getTag('current_logo_version')
+        context['current_logo_version'] = current_logo_version if current_logo_version is not None else ''
+        context['has_logo'] = default_storage.exists('images/theme/logo.png')
 
         return render_to_response(self.baseDir()+'ids.html', request, context)
 
