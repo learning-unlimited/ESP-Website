@@ -1,4 +1,4 @@
-from esp.themes.controllers import ThemeController
+﻿from esp.themes.controllers import ThemeController
 
 from django import template
 
@@ -7,15 +7,37 @@ import json
 
 register = template.Library()
 
-def count_matching_chars(str1, str2):
+def count_matching_chars(url, link):
     """ Determines the length of the common substring at the beginning of
-        str1 and str2.  Used to identify the best matching tab based on
-        link URLs in the extract_theme filter below.
+        url and link up to a path boundary. Used to identify the best matching tab.
     """
-    for i in range(len(str1)):
-        if i < len(str2) and str1[i] != str2[i]:
-            return i
-    return min(len(str1), len(str2))
+    if not url or not link:
+        return 0
+
+    match_len = 0
+    for i in range(min(len(url), len(link))):
+        if url[i] == link[i]:
+            match_len += 1
+        else:
+            break
+
+    boundaries = ('/', '?', '#')
+
+    # Check if the match stops in the middle of a path segment.
+    # This happens if either string has more characters and the next character is NOT a boundary.
+    url_bad = (match_len < len(url) and url[match_len] not in boundaries)
+    link_bad = (match_len < len(link) and link[match_len] not in boundaries)
+
+    if match_len > 0 and (url_bad or link_bad):
+        # The match ended inside a word (e.g., 'ideas' vs 'ideas.html', or 'index' vs 'ideas').
+        # Backtrack to the last slash to ensure we only match full directories.
+        last_slash = url[:match_len].rfind('/')
+        if last_slash != -1:
+            match_len = last_slash + 1
+        else:
+            match_len = 0
+
+    return match_len
 
 @register.filter
 def mux_tl(str, type):
@@ -35,7 +57,7 @@ def split(str, splitter):
 def index(arr, index):
     try:
         return arr[index]
-    except IndexError:
+    except (IndexError, KeyError, TypeError):
         return ''
 
 @register.filter
@@ -64,7 +86,7 @@ def get_field(object, field):
 
 @register.filter
 def regexsite(str):
-    return str.replace(".", "\.")
+    return str.replace(".", r"\.")
 
 @register.filter
 def extract_theme(url):
@@ -75,14 +97,19 @@ def extract_theme(url):
     settings = tc.get_template_settings()
     max_chars_matched = 0
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         num_chars_matched = count_matching_chars(url, category['header_link'])
         if num_chars_matched > max_chars_matched:
             max_chars_matched = num_chars_matched
             tab_index = 0
         i = 1
         for item in category['links']:
-            num_chars_matched = count_matching_chars(url, item['link'])
-            if num_chars_matched > max_chars_matched:
+            num_chars_matched = count_matching_chars(url, item.get('link', ''))
+            # Prefer the sub-link if it's a strictly longer match, OR if it matches
+            # equally well but is an exact match of the link's URL. This prevents
+            # the header base color from continuously overriding the tab link color.
+            if num_chars_matched > max_chars_matched or (num_chars_matched == max_chars_matched and num_chars_matched == len(item['link'])):
                 max_chars_matched = num_chars_matched
                 tab_index = i
             i += 1
@@ -95,11 +122,15 @@ def get_nav_category(path):
                 #   Search for current nav category based on request path
     first_level = ''.join(path.lstrip('/').split('/')[:1])
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         if category['header_link'].lstrip('/').startswith(first_level):
             return category
     #   Search failed - use default nav category
     default_nav_category = 'learn'
     for category in settings['nav_structure']:
+        if 'header_link' not in category:
+            continue
         if category['header_link'].lstrip('/').startswith(default_nav_category):
             return category
 

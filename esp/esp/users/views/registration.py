@@ -64,7 +64,7 @@ This function is overloaded to handle either one or two phase reg"""
         #   Append key to password and disable until activation if desired
         if Tag.getBooleanTag('require_email_validation'):
             userkey = random.randint(0, 2**31 - 1)
-            user.password += "_%d" % userkey
+            user.password += f"_{userkey}"
             user.is_active = False
 
         user.save()
@@ -99,7 +99,7 @@ When there are already accounts with this email address (depending on some tags)
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex=r'\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -173,10 +173,10 @@ def activate_account(request):
     if u.is_active:
         raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.', log=False)
 
-    if not u.password.endswith("_%s" % request.GET['key']):
+    if not u.password.endswith(f"_{request.GET['key']}"):
         raise ESPError("Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
-    u.password = u.password[:-(len("_%s" % request.GET['key']))]
+    u.password = u.password[:-(len(f"_{request.GET['key']}"))]
     u.is_active = True
     u.save()
 

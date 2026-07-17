@@ -211,6 +211,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'bootswatch_theme': {
+        'is_boolean': False,
+        'help_text': 'The Bootswatch skin applied to the current SCSS theme (empty string means no skin)',
+        'default': '',
+        'category': 'theme',
+        'is_setting': False,
+    },
     'request_student_phonenum': {
         'is_boolean': True,
         'help_text': 'Whether to request a student home phone number',
@@ -584,7 +591,7 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'sections__meeting_times__start\', \'_num_students\', \'id\')',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\')',
         'default': 'category__symbol',
         'category': 'manage',
         'is_setting': True,
