@@ -7,10 +7,6 @@
 @import "bootstrap-icons/font/bootstrap-icons";
 @import "theme_layout_compat";
 
-// Apply px-based editor variables as direct CSS overrides.
-// Bootstrap 4 uses these variables in arithmetic with rem counterparts, making
-// variable bridges impossible without "incompatible units" errors.  Overriding here
-// (after @import "bootstrap") achieves the same effect for rendered output.
 body {
     font-size: $baseFontSize;
 }
@@ -18,45 +14,41 @@ body {
     font-size: $navbarBrandFontSize;
 }
 
-// $navbarBackground cannot be bridged to Bootstrap 4's $dark variable before
-// @import because Bootstrap's color-contrast() runs on every palette entry and
-// fails on arbitrary hex values.  Direct CSS override here is equivalent.
-.navbar.bg-dark {
-    background-color: $navbarBackground !important;
+@if not $bootswatch-active {
+    .navbar.bg-dark {
+        background-color: $navbarBackground !important;
+    }
 }
 
-// Theme editor button controls. Bootstrap 4 sets button text via color-yiq($background),
-// so $btnLinkColor / $btnPrimaryLinkColor cannot be bridged as SCSS variables (LESS had
-// @btn-default-color / @btn-primary-color). $secondary maps to $btnInverseBackground, not
-// $btnBackground, so default buttons also need explicit overrides.
-.btn-secondary,
-.btn-default {
-    background-color: $btnBackground;
-    border-color: darken($btnBackground, 12%);
-    color: $btnLinkColor;
-
-    &:hover,
-    &:focus {
-        background-color: darken($btnBackground, 7.5%);
+@if not $bootswatch-active {
+    .btn-secondary,
+    .btn-default {
+        background-color: $btnBackground;
         border-color: darken($btnBackground, 12%);
         color: $btnLinkColor;
+
+        &:hover,
+        &:focus {
+            background-color: darken($btnBackground, 7.5%);
+            border-color: darken($btnBackground, 12%);
+            color: $btnLinkColor;
+        }
     }
-}
 
-.btn-primary {
-    background-color: $btnPrimaryBackground;
-    border-color: darken($btnPrimaryBackground, 5%);
-    color: $btnPrimaryLinkColor;
-
-    &:hover,
-    &:focus {
-        background-color: darken($btnPrimaryBackground, 7.5%);
+    .btn-primary {
+        background-color: $btnPrimaryBackground;
         border-color: darken($btnPrimaryBackground, 5%);
         color: $btnPrimaryLinkColor;
+
+        &:hover,
+        &:focus {
+            background-color: darken($btnPrimaryBackground, 7.5%);
+            border-color: darken($btnPrimaryBackground, 5%);
+            color: $btnPrimaryLinkColor;
+        }
     }
 }
 
-// Bootstrap 3 compatibility helpers (templates/JS still use these classes)
 .hidden {
     display: none !important;
 }
@@ -82,13 +74,11 @@ body {
     border-left: 4px solid transparent;
 }
 
-// Split dropdowns use a custom .caret; hide Bootstrap 4's default caret
 .navbar .caret-wrapper.dropdown-toggle::after,
 .dropdown-split .dropdown-toggle::after {
     display: none !important;
 }
 
-// Login box: hide BS4 pseudo-caret when using legacy .caret span inside button
 #loginbox button.dropdown-toggle::after {
     display: none !important;
 }
@@ -113,7 +103,6 @@ input[type="radio"] + label, input[type="checkbox"] + label {
     background-color: #D3D3D3;
 }
 
-// datepicker
 input.hasDatepicker {
     max-width: 10em;
 }
