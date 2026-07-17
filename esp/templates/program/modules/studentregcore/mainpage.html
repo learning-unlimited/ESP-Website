@@ -186,8 +186,11 @@
 
             {# Paper schedule opt-out toggle #}
             <div style="margin-top: 12px;">
-                <label>
-                    <input type="checkbox" id="paper-schedule-optout" {% if opt_out_paper_schedule %}checked{% endif %}
+                {# Flex + centred alignment keeps the checkbox lined up with its
+                   label text across themes; without it fonts like Sketchy's push
+                   the box out of alignment with the text. #}
+                <label class="d-flex align-items-center gap-2">
+                    <input type="checkbox" id="paper-schedule-optout" class="m-0 flex-shrink-0" {% if opt_out_paper_schedule %}checked{% endif %}
                         onchange="toggle_paper_schedule_optout(this)" />
                     <span id="paper-schedule-optout-label">
                         {% if opt_out_paper_schedule %}
