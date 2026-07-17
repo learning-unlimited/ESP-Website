@@ -22,12 +22,6 @@ register = template.Library()
 
 @register.filter(is_safe=True)
 def markdown(value):
-    """Runs Markdown over a given value."""
-    return mark_safe(md.markdown(force_str(value)))
-
-
-@register.filter(is_safe=True)
-def markdown_safe(value):
-    """Runs Markdown with HTML comment sanitization."""
-    sanitized = sanitize_html_comments(force_str(value))
-    return mark_safe(md.markdown(sanitized))
+    """Runs Markdown over a given value, stripping malformed HTML comment
+    markers first so they can't break parsing/rendering."""
+    return mark_safe(md.markdown(sanitize_html_comments(force_str(value))))

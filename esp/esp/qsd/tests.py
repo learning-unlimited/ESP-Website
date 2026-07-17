@@ -928,9 +928,9 @@ class HTMLCommentSanitizationTest(TestCase):
         self.assertIn("<h2>", result)
         self.assertIn("</h2>", result)
 
-    def test_markdown_safe_filter(self):
-        from esp.utils.templatetags.markup import markdown_safe
+    def test_markdown_filter(self):
+        from esp.utils.templatetags.markup import markdown
         content = "Text <!-- outer <!-- inner --> outer --> more"
-        result = markdown_safe(content)
+        result = markdown(content)
         self.assertIsNotNone(result)
         self.assertEqual(str(result).count("<!--"), 1)

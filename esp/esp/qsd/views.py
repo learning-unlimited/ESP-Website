@@ -63,7 +63,8 @@ from django.views.decorators.http import require_POST
 
 from reversion import revisions as reversion
 
-from esp.utils.sanitize import strip_base64_images, sanitize_html_comments
+from esp.utils.sanitize import strip_base64_images
+from esp.utils.templatetags.markup import markdown
 
 import os
 import uuid
@@ -299,7 +300,6 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     import json
-    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
@@ -340,7 +340,7 @@ def ajax_qsd(request):
             purge_page(qsd.url+".html")
 
         result['status'] = 1
-        result['content'] = markdown(sanitize_html_comments(qsd.content))
+        result['content'] = markdown(qsd.content)
         result['url'] = qsd.url
 
     return HttpResponse(json.dumps(result))
@@ -348,7 +348,6 @@ def ajax_qsd(request):
 def ajax_qsd_preview(request):
     """ Ajax function for previewing the result of QSD editing. """
     import json
-    from markdown import markdown
     data = request.POST['data']
 
     # Get the URL
@@ -377,7 +376,6 @@ def ajax_qsd_preview(request):
     if len(url_parts) > 3 and url_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
-    data = sanitize_html_comments(data)
 
     # We don't necessarily need to wrap it in JSON, but this seems more
     # future-proof.
@@ -460,7 +458,6 @@ def ajax_qsd_version_preview(request):
     """ Return rendered content for a specific version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     version_id = request.GET.get('version_id', '')
     if not version_id:
@@ -502,7 +499,6 @@ def ajax_qsd_restore(request):
     """ Restore a QSD to a specific historical version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     if request.user.id is None:
         return HttpResponse('Session expired', status=401)

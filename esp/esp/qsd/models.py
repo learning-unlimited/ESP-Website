@@ -37,12 +37,12 @@ import hashlib
 from django.db import models
 from django.urls import reverse
 
-from markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
-from esp.utils.sanitize import sanitize_html_comments
+
+from esp.utils.templatetags.markup import markdown
 
 def qsd_cache_key(url):
     """Build a cache key for QSD default content, hashing long URLs.
@@ -158,7 +158,7 @@ class QuasiStaticData(models.Model):
 
     @cache_function
     def html(self):
-        return markdown(sanitize_html_comments(self.content))
+        return markdown(self.content)
     html.depend_on_row('qsd.QuasiStaticData', 'self')
 
     @staticmethod
