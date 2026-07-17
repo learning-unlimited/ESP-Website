@@ -110,7 +110,7 @@ body, .jumbotron {
 // image.  Give it a translucent dark scrim so it stays readable on light header
 // images / the light placeholder too (otherwise it's invisible white-on-light).
 #contact_info {
-    display: block;
+    display: inline-block;
     background: rgba(0, 0, 0, 0.45);
     padding: 0.4rem 0.6rem;
     border-radius: 4px;
@@ -246,6 +246,24 @@ div.navbar-collapse.collapse {
     .navbar .btn:focus {
         color: $primary;
         background: color-contrast($primary);
+    }
+
+    //  Navbar customizer values applied on top of the Bootswatch theme — only
+    //  for the fields the admin actually changed (see $esp-overridden).
+    @if index($esp-overridden, 'navbarBackground') {
+        .navbar { background: $navbarBackground !important; }
+    }
+    @if index($esp-overridden, 'navbarText') {
+        .navbar, .navbar .username { color: $navbarText !important; }
+    }
+    @if index($esp-overridden, 'navbarLinkColor') {
+        .navbar a.username { color: $navbarLinkColor !important; }
+    }
+    @if index($esp-overridden, 'navbarLinkColorHover') {
+        .navbar a.username:hover { color: $navbarLinkColorHover !important; }
+    }
+    @if index($esp-overridden, 'navbarBackgroundHighlight') {
+        .navbar .btn { background: $navbarBackgroundHighlight !important; }
     }
 } @else {
     .navbar {

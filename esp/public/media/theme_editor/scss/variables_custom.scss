@@ -1,4 +1,8 @@
 $bootswatch-active: false !default;
+// List of customizer variable names the admin changed from the theme default;
+// the compiler injects the real list when a Bootswatch theme is active so the
+// theme SCSS can apply just those as overrides on top of the Bootswatch theme.
+$esp-overridden: () !default;
 
 $black:                 #000;
 $grayDarker:            #222;
