@@ -81,7 +81,6 @@ LOG_LEVEL = 'INFO'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -201,7 +200,7 @@ TEMPLATES = [
     },
 ]
 
-FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
+FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -243,7 +242,7 @@ INSTALLED_APPS = (
     'esp.survey',
     'esp.accounting.apps.AccountingConfig',
     'esp.customforms.apps.CustomformsConfig',
-    'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
+    'esp.utils.apps.UtilsConfig',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.seltests',
     'esp.themes',
     'esp.varnish',
@@ -296,6 +295,22 @@ MAILMAN_PATH = '/usr/lib/mailman/bin/'
 AUTHENTICATION_BACKENDS = (
     'esp.utils.auth_backend.ESPAuthBackend',
     )
+
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {'min_length': 8},
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp', 'Unknown'),
@@ -397,7 +412,20 @@ FILEBROWSER_SELECT_FORMATS = {
 
 # Custom file storage backend that lowercases file extensions
 # This ensures consistent handling of file extensions regardless of upload method
-DEFAULT_FILE_STORAGE = 'esp.web.storage.LowercaseExtensionStorage'
+# Replaces Django 4.2-deprecated DEFAULT_FILE_STORAGE scalar setting.
+# The staticfiles backend is explicitly set to preserve the existing default
+# (StaticFilesStorage); do not silently change it when adding new environments.
+STORAGES = {
+    "default": {"BACKEND": "esp.web.storage.LowercaseExtensionStorage"},
+    "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
+
+# TODO: Django 5.0 changed the default for USE_TZ from False to True.  This
+# pin preserves the current behaviour (naive datetimes throughout the codebase)
+# until a dedicated timezone-aware migration effort is undertaken.  Do not
+# remove this line without first auditing every datetime field and making the
+# codebase timezone-aware.
+USE_TZ = False
 
 #   Default imports for shell_plus, for convenience.
 SHELL_PLUS_POST_IMPORTS = (
