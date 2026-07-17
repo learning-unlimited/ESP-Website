@@ -627,7 +627,24 @@ class ThemeController(object):
                 bw_scss_import = f'\n@import "{bw_scss}";\n'
 
             if bootswatch_theme:
+                #   Customization ON TOP of Bootswatch: apply only the customizer
+                #   fields the admin actually changed from the theme defaults;
+                #   untouched fields keep the Bootswatch value.  The theme SCSS
+                #   guards each override with index($esp-overridden, 'name').
+                #   Names come from the theme's own SCSS (find_scss_variables),
+                #   filtered to plain identifiers, so nothing user-tainted is
+                #   interpolated into the stylesheet.
+                scss_defaults = self.find_scss_variables(theme_name, flat=True)
+                overridden = [
+                    name for name in scss_defaults
+                    if name in variable_data
+                    and re.match(r'^[a-zA-Z0-9_]+$', name)
+                    and str(variable_data[name]).strip().lower()
+                        != str(scss_defaults[name]).strip().lower()
+                ]
+                esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
                 scss_data = ('$bootswatch-active: true;\n'
+                             + f'$esp-overridden: {esp_overridden};\n'
                              + bw_vars_import
                              + var_data
                              + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'

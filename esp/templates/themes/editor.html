@@ -123,7 +123,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
                     </div>
                     <div class="collapse" id="bootswatch-theme"><div class="card-body">
-                        <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to apply on top of {{ theme_name|capfirst }}. Leave blank to use the default styling. <strong>Selecting a Bootswatch theme will override most other customization options below.</strong></h5>
+                        <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to apply on top of {{ theme_name|capfirst }}. Leave blank to use the default styling. <strong>The Bootswatch theme sets the base look; any customization options you change below are then applied on top of it (options you leave untouched keep the Bootswatch theme's values).</strong></h5>
                         <div class="control-group">
                             <select name="bootswatch_theme" class="form-select" id="bootswatch-theme-select">
                                 <option value="">— None (default Bootstrap) —</option>
@@ -624,88 +624,11 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
 
-      // Disable all customizer panels when a Bootswatch theme is selected.
-      // Disable only the customizer panels whose Bootstrap variable equivalents are
-      // overridden by Bootswatch's _variables.scss / _bootswatch.scss.
-      // Panels whose variables are ESP-specific (sidebar colours, layout params) or
-      // applied via direct CSS override (font-size) remain enabled — their controls
-      // still work even with a Bootswatch theme active.
-      //
-      // Disabled panels (BW overrides their effect):
-      //   theme_palette              — feeds $primary etc. that BW resets
-      //   scaffolding                — $body-bg, $body-color, $headings-color
-      //   links                      — $link-color
-      //   navbar_inverse_edit_group  — droplets navbar colours (guarded by @if in SCSS)
-      //   navbar_edit_group          — other-theme navbar colours (same guard)
-      //   buttons                    — $btnPrimaryBackground overridden by $primary
-      //
-      // Always-on panels (not affected by BW):
-      //   typography    — $baseFontSize applied as direct body{} CSS rule; works fine
-      //   sidebar_theme — $sidebarBackground, $sidebarLink etc. are custom ESP vars
-      //   advanced      — navbarFontSize, navbarCollapseWidth (non-fruitsalad themes)
-      //   bootswatch-theme / theme-properties — selector + save/load, always needed
-      //
-      // Exception: for fruitsalad the "advanced" panel holds the tab colour pickers,
-      // which are fully overridden by the Bootswatch @each block in main.scss when BW
-      // is active ($tabcolorN_* vars have no effect).  Disable it like the other BW-
-      // controlled panels so the stale static defaults aren't misleading.
-      var BW_DISABLED_PANELS = {
-        'theme_palette': true,
-        'scaffolding': true,
-        'links': true,
-        'navbar_inverse_edit_group': true,
-        'navbar_edit_group': true,
-        'buttons': true
-      };
-      // For fruitsalad, the "advanced" panel holds the tab colour pickers, which
-      // the Bootswatch @each block in main.scss fully overrides ($tabcolorN_* vars
-      // have no effect when BW is active).  Disable so stale defaults aren't shown.
-      if ('{{ theme_name }}' === 'fruitsalad') {
-        BW_DISABLED_PANELS['advanced'] = true;
-      }
-
-      function syncBootswatchDisable() {
-        var $sel = $j('#bootswatch-theme-select');
-        if (!$sel.length) return;
-        var bwActive = $sel.val() !== '';
-        var TOOLTIP = 'Remove the Bootswatch theme to customize this option';
-
-        $j('#theme_editor_accordion .card').each(function () {
-          // Resolve this card's panel by its collapse ID.
-          var panelId = $j(this).find('.collapse[id]').first().attr('id') || '';
-          if (!BW_DISABLED_PANELS[panelId]) return; // not a BW-affected panel
-
-          var $card = $j(this);
-
-          // 1. Standard form elements: disable so values aren't submitted when
-          //    the form is POSTed (pointer-events alone can't prevent submission).
-          $card.find('input, select, button, textarea').prop('disabled', bwActive);
-
-          // 2. Spectrum color pickers need their own API call — prop('disabled')
-          //    only affects the hidden input, not the visible swatch widget.
-          $card.find('input.color, input.palette').each(function () {
-            try {
-              if (bwActive) { $j(this).spectrum('disable'); }
-              else          { $j(this).spectrum('enable');  }
-            } catch (e) {}
-          });
-
-          // 3. Apply disabled state to the whole card at once:
-          //    - opacity on the card itself dims header + body proportionally,
-          //      so the visual works on ANY Bootswatch theme (light or dark).
-          //      card-body opacity alone caused invisible-text on dark themes like
-          //      Solar because Bootstrap cards inherit body-bg via CSS custom props.
-          //    - pointer-events: none blocks header clicks (preventing accidental
-          //      expand/collapse) AND all widget interaction inside the body.
-          //    - A tooltip on the card gives the explanation on hover.
-          $card.css('opacity',        bwActive ? '0.5' : '')
-               .css('pointer-events', bwActive ? 'none' : '')
-               .attr('title', bwActive ? TOOLTIP : null);
-        });
-      }
-
-      $j('#bootswatch-theme-select').on('change', syncBootswatchDisable);
-      syncBootswatchDisable(); // apply on page load if a theme is already saved
+      // Customization now layers ON TOP of the selected Bootswatch theme: every
+      // panel stays editable, and only the fields the admin actually changes are
+      // applied over the theme (the compiler tracks changed-vs-default and the
+      // theme SCSS applies just those — see $esp-overridden).  So there is no
+      // longer anything to disable when a Bootswatch theme is selected.
     });
     </script>
 {% endblock %}
