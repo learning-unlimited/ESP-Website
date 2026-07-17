@@ -17,6 +17,9 @@ students.  We convert the list attributes to QuerySets where functions require
 them.
 """
 
+from datetime import datetime, date
+from unittest.mock import patch
+
 from types import SimpleNamespace
 
 from esp.program.models import Program, RegistrationProfile
@@ -128,6 +131,25 @@ class ZipcodesTest(StatisticsTestBase):
         self.assertEqual(rd["invalid"], 0)
         self.assertEqual(rd["zip_data"], [])
 
+    def test_valid_zipcode_counting(self):
+        profile = SimpleNamespace(contact_user=SimpleNamespace(address_zip="53419"))
+        _, rd = self._call(profiles=[profile])
+        self.assertEqual(dict(rd["zip_data"]), {"53419": 1})
+        self.assertEqual(rd["invalid"], 0)
+
+    def test_invalid_zipcode_formats(self):
+        short_zip = SimpleNamespace(contact_user=SimpleNamespace(address_zip="123"))
+        alpha_zip = SimpleNamespace(contact_user=SimpleNamespace(address_zip="abcde"))
+
+        _, rd = self._call(profiles=[short_zip, alpha_zip])
+        self.assertEqual(rd["invalid"], 2)
+        self.assertEqual(rd["zip_data"], [])
+
+    def test_missing_contact_info(self):
+        no_contact = SimpleNamespace(contact_user=None)
+        _, rd = self._call(profiles=[no_contact])
+        self.assertEqual(rd["invalid"], 1)
+
 
 # ===========================================================================
 # demographics()
@@ -184,6 +206,31 @@ class DemographicsTest(StatisticsTestBase):
         _, rd = self._call(rd={})
         self.assertIsInstance(rd["birthyear_data"], list)
 
+    def test_birthyear_counting_logic(self):
+        dob_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                graduation_year=2027,
+                dob=date(2005, 5, 20)
+            )
+        )
+        profiles = [dob_dummy]
+        _, rd = self._call(profiles=profiles)
+
+        self.assertEqual(rd['birthyear_data'], [(2005, 1)])
+        self.assertEqual(rd['gradyear_data'], [(2027, 1)])
+
+    def test_birthyear_aggregation_multiple_students(self):
+        student_a = SimpleNamespace(
+            student_info=SimpleNamespace(graduation_year=2027, dob=date(2005, 1, 1))
+        )
+        student_b = SimpleNamespace(
+            student_info=SimpleNamespace(graduation_year=2028, dob=date(2005, 12, 31))
+        )
+        profiles = [student_a, student_b]
+        _, rd = self._call(profiles=profiles)
+
+        self.assertEqual(rd['birthyear_data'], [(2005, 2)])
+
 
 # ===========================================================================
 # schools()
@@ -229,6 +276,32 @@ class SchoolsTest(StatisticsTestBase):
         self.assertEqual(rd["num_school"], 0)
         self.assertEqual(rd["school_data"], [])
 
+    def test_school_and_k12_counting_logic(self):
+        k12_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                k12school=SimpleNamespace(name="Chaitanya Techno School"),
+                school=None
+            )
+        )
+
+        uni_dummy = SimpleNamespace(
+            student_info=SimpleNamespace(
+                k12school=None,
+                school="Amrita Vishwa Vidyapeetham"
+            )
+        )
+
+        profiles = [k12_dummy, uni_dummy]
+        _, rd = self._call(profiles=profiles, rd={})
+
+        self.assertEqual(rd['num_k12school'], 1)
+        self.assertEqual(rd['num_school'], 1)
+
+        expected_names = ["Amrita Vishwa Vidyapeetham", "Chaitanya Techno School"]
+        actual_names = [item[0] for item in rd['school_data']]
+
+        self.assertCountEqual(actual_names, expected_names)
+
 
 # ===========================================================================
 # startreg()
@@ -264,6 +337,39 @@ class StartRegTest(StatisticsTestBase):
         for _prog, reg_list, confirm_list in rd["program_data"]:
             self.assertEqual(reg_list, [])
             self.assertEqual(confirm_list, [])
+
+    def test_registration_and_confirmation_counting(self):
+        mock_regs = [
+            {
+                'user_id': 1,
+                'section__parent_class__parent_program': self.programs[0].id,
+                'first_date': datetime(2026, 3, 20)
+            }
+        ]
+
+        mock_confirms = [
+            {
+                'user_id': 1,
+                'program_id': self.programs[0].id,
+                'last_time': datetime(2026, 3, 21)
+            }
+        ]
+
+        with patch('esp.program.models.StudentRegistration.objects.filter') as mock_reg_query, \
+             patch('esp.users.models.Record.objects.filter') as mock_conf_query:
+
+            mock_reg_query.return_value.values.return_value.annotate.return_value = mock_regs
+            mock_conf_query.return_value.values.return_value.annotate.return_value = mock_confirms
+
+            _, rd = self._call(rd={})
+
+            program, reg_list, confirm_list = rd['program_data'][0]
+
+            self.assertEqual(reg_list[0][0], datetime(2026, 3, 20).date())
+            self.assertEqual(reg_list[0][1], 1)
+
+            self.assertEqual(confirm_list[0][0], datetime(2026, 3, 21).date())
+            self.assertEqual(confirm_list[0][1], 1)
 
 
 # ===========================================================================
@@ -308,6 +414,25 @@ class RepeatsTest(StatisticsTestBase):
         with self.assertRaises(FieldError):
             self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
 
+    def test_repeats_logic_flow(self):
+        mock_data = [
+            (1, "Science"),
+            (1, "Science"),
+            (1, "Math"),
+            (2, "Math"),
+        ]
+
+        with patch('esp.users.models.Record.objects.filter') as mock_filter:
+            mock_filter.return_value.values_list.return_value = mock_data
+
+            _, rd = self._call(rd={})
+            repeat_data = dict(rd['repeat_data'])
+
+            self.assertIn("1x Math, 2x Science", repeat_data)
+            self.assertEqual(repeat_data["1x Math, 2x Science"], 1) # One student has this signature
+            self.assertIn("1x Math", repeat_data)
+            self.assertEqual(repeat_data["1x Math"], 1) # One student has this signature
+
 
 # ===========================================================================
 # heardabout()
@@ -343,6 +468,23 @@ class HeardAboutTest(StatisticsTestBase):
     def test_empty_profiles(self):
         _, rd = self._call(profiles=self.empty_profiles, rd={})
         self.assertEqual(rd["heardabout_data"], [])
+
+    def test_heard_about_normalization_logic(self):
+        profiles = [
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="School!")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="school")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="Friend...")),
+            SimpleNamespace(student_info=SimpleNamespace(heard_about="FRIEND")),
+        ]
+
+        _, rd = self._call(profiles=profiles, rd={})
+
+        data_dict = dict(rd['heardabout_data'])
+
+        self.assertEqual(data_dict["School!"], 2)
+        self.assertEqual(data_dict["Friend..."], 2)
+
+        self.assertEqual(len(rd['heardabout_data']), 2)
 
 
 # ===========================================================================

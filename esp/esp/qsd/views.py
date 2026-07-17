@@ -32,7 +32,11 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.qsd.models import QuasiStaticData
+import logging
+
+logger = logging.getLogger(__name__)
+
+from esp.qsd.models import QuasiStaticData, qsd_cache_key
 from esp.users.models import ContactInfo, Permission
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
 from esp.utils.web import render_to_response
@@ -60,12 +64,10 @@ from django.views.decorators.http import require_POST
 from reversion import revisions as reversion
 
 from esp.utils.sanitize import strip_base64_images
+from esp.utils.templatetags.markup import markdown
 
-import logging
 import os
 import uuid
-
-logger = logging.getLogger(__name__)
 
 # Image upload constraints
 QSD_IMAGE_MAX_SIZE = 25 * 1024 * 1024  # 25 MB
@@ -91,6 +93,38 @@ def _sanitize_image_extension(raw_ext):
         return 'webp'
     return None
 
+
+def _get_qsd_default_content(request, base_url):
+    """Try to load default QSD content from inline_qsd_block cache.
+    If not cached, try rendering the read page to populate the cache."""
+    cache_key = qsd_cache_key(base_url)
+    default = cache.get(cache_key)
+    if default:
+        return default
+
+    # Try rendering the read page internally to trigger inline_qsd_block.
+    # We use django.test.Client because it goes through the full middleware
+    # stack, which is required for the template tags to render properly.
+    try:
+        from django.urls import resolve, Resolver404
+        from django.test import Client as InternalClient
+
+        match = resolve('/' + base_url + '.html')
+        # Only proceed if it's NOT the qsd catch-all (avoid recursion)
+        if match.func is not qsd:
+            client = InternalClient()
+            client.force_login(request.user)
+            try:
+                client.get('/' + base_url + '.html')
+            except Exception:
+                logger.debug('Internal render failed for QSD default: %s', base_url, exc_info=True)
+            default = cache.get(cache_key)
+    except Resolver404:
+        pass
+    except Exception:
+        logger.warning('Unexpected error resolving QSD default: %s', base_url, exc_info=True)
+
+    return default
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -142,11 +176,18 @@ def qsd(request, url):
                 qsd_rec = QuasiStaticData()
                 qsd_rec.url = base_url
                 qsd_rec.nav_category = default_navbarcategory()
-                qsd_rec.title = 'New Page'
-                qsd_rec.content = 'Please insert your text here'
                 qsd_rec.create_date = datetime.now()
                 qsd_rec.keywords = ''
                 qsd_rec.description = ''
+
+                default = _get_qsd_default_content(request, base_url)
+                if default:
+                    qsd_rec.title = default.get('title', 'New Page')
+                    qsd_rec.content = default.get('content', 'Please insert your text here')
+                else:
+                    qsd_rec.title = 'New Page'
+                    qsd_rec.content = 'Please insert your text here'
+
                 action = 'edit'
 
             if (action == 'read'):
@@ -259,7 +300,6 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     import json
-    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
@@ -279,13 +319,12 @@ def ajax_qsd(request):
 
         data = post_dict['data']
 
-        # Get the URL from the request information
-        referer = request.META.get('HTTP_REFERER')
-        path = urlparse(referer).path
-        path_parts = [el for el in path.split('/') if el != '']
+        # Use the authoritative URL from the QSD object (database), not
+        # directly from the request
+        url_parts = qsd.url.split('/')
 
         # Sanitize if this is for a class QSD
-        if len(path_parts) > 3 and path_parts[3] == "Classes":
+        if len(url_parts) > 3 and url_parts[3] == "Classes":
             data = clean(data, strip = True)
         data, _ = strip_base64_images(data)
 
@@ -309,16 +348,32 @@ def ajax_qsd(request):
 def ajax_qsd_preview(request):
     """ Ajax function for previewing the result of QSD editing. """
     import json
-    from markdown import markdown
     data = request.POST['data']
 
-    # Get the URL from the request information
-    referer = request.META.get('HTTP_REFERER')
-    path = urlparse(referer).path
-    path_parts = [el for el in path.split('/') if el != '']
+    # Get the URL
+    url = request.POST.get('url', '')
+
+    # Require an authenticated session, similar to ajax_qsd
+    if request.user.id is None:
+        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=401)
+
+    # Enforce QSD edit permission before looking up the QSD
+    if not Permission.user_can_edit_qsd(request.user, url):
+        return HttpResponse(content='Sorry, you do not have permission to preview this page.', status=403)
+
+    # Try to look up an existing QSD by URL, if any
+    qsd = QuasiStaticData.objects.get_by_url(url) if url else None
+
+    if qsd is not None:
+        # Existing QSD: ensure it is enabled and use its canonical URL
+        if qsd.disabled:
+            return HttpResponse('Invalid QSD', status=404)
+        # Use the authoritative server-side URL for sanitization check
+        url = qsd.url
+    url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
-    if len(path_parts) > 3 and path_parts[3] == "Classes":
+    if len(url_parts) > 3 and url_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
 
@@ -403,7 +458,6 @@ def ajax_qsd_version_preview(request):
     """ Return rendered content for a specific version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     version_id = request.GET.get('version_id', '')
     if not version_id:
@@ -445,7 +499,6 @@ def ajax_qsd_restore(request):
     """ Restore a QSD to a specific historical version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     if request.user.id is None:
         return HttpResponse('Session expired', status=401)

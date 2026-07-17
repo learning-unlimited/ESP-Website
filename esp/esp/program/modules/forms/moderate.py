@@ -51,11 +51,11 @@ class ModeratorForm(forms.ModelForm):
         self.fields['num_slots'].widget.choices = choices
 
         #set default labels that need custom title
-        self.fields['will_moderate'].label = 'Will you serve as a %s?' % (self.program.getModeratorTitle().lower())
+        self.fields['will_moderate'].label = f'Will you serve as a {self.program.getModeratorTitle().lower()}?'
 
         # set default help texts that need custom title
-        self.fields['will_moderate'].help_text = "Would you like to serve as a %s for other teachers' classes?" % (self.program.getModeratorTitle().lower())
-        self.fields['num_slots'].help_text = 'For how many timeslots can you serve as a %s (we will use your teacher availability)?' % (self.program.getModeratorTitle().lower())
+        self.fields['will_moderate'].help_text = f"Would you like to serve as a {self.program.getModeratorTitle().lower()} for other teachers' classes?"
+        self.fields['num_slots'].help_text = f'For how many timeslots can you serve as a {self.program.getModeratorTitle().lower()} (we will use your teacher availability)?'
 
         # override help text/labels with tags
         for field in self.fields.keys():
