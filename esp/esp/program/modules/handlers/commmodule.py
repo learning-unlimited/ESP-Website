@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -132,7 +132,7 @@ class CommModule(ProgramModuleObj):
             id="manage_commpanel",
             url="/manage/%s/commpanel" % base,
             title="Email (Communications Panel)",
-            category="Coordinate",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
             keywords=["email", "communications", "commpanel", "messages"],
         )
 

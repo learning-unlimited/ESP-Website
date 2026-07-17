@@ -54,21 +54,19 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
 
-<<<<<<< HEAD
     def test_username_exact_match(self):
         """Username search should use iexact (not substring) matching."""
-        User.objects.create_user(username='john', password='x')
-        User.objects.create_user(username='johnny', password='x')
+        ESPUser.objects.create_user(username='john', password='x')
+        ESPUser.objects.create_user(username='johnny', password='x')
 
         query = UserSearchController().query_from_criteria(
             'any', {'username': 'john'}
         )
-        results = User.objects.filter(query)
+        results = ESPUser.objects.filter(query)
         usernames = list(results.values_list('username', flat=True))
         self.assertIn('john', usernames)
         self.assertNotIn('johnny', usernames)
 
-=======
     def test_overlap_bug(self):
         """
         Verify that combining mutually exclusive checklist filters (e.g., 'attended' AND
@@ -108,4 +106,62 @@ class TestUserSearchController(ProgramFrameworkTest):
         # The other_user should NOT be found because they only have ONE of the records (AND logic)
         self.assertNotIn(other_user, results)
         self.assertEqual(results.count(), 1)
->>>>>>> upstream/main
+
+    def test_all_base_list_or_overlap(self):
+        """
+        Verify that using 'all_X' as the combo_base_list correctly seeds q_program
+        with ESPUser.getAllOfType() instead of an empty Q(), so that OR conditions
+        correctly produce a union rather than an intersection.
+
+        Before the fix: using 'all_X' seeded q_program with Q(), so OR-ing in another
+        list (e.g. 'class_submitted') collapsed to just that list, incorrectly excluding
+        teachers who did not match the OR-ed list.
+
+        After the fix: ESPUser.getAllOfType('Teacher') OR 'class_submitted' correctly
+        returns all teachers.
+
+        Issue #1655
+        """
+        # teacher_only: in the Teacher group, but has NO approved class
+        teacher_only = ESPUser.objects.create_user(
+            username='teacher_only_1655', email='tonly@example.com', password='password')
+        teacher_only.makeRole('Teacher')
+
+        # teacher_submitted: in the Teacher group AND has a proposed class
+        teacher_submitted = ESPUser.objects.create_user(
+            username='teacher_submitted_1655', email='tsub@example.com', password='password')
+        teacher_submitted.makeRole('Teacher')
+
+        # Create a class for teacher_submitted so they appear in class_submitted
+        from esp.program.models import ClassSubject
+        from esp.program.class_status import ClassStatus
+        cls = ClassSubject.objects.create(
+            parent_program=self.program,
+            status=ClassStatus.UNREVIEWED,   # unreviewed/proposed status
+            category=self.program.class_categories.first(),
+            grade_min=7, grade_max=12,
+            class_size_max=20,
+            duration=1.0,
+            title='Test Class',
+        )
+        cls.teachers.add(teacher_submitted)
+
+        # Confirm class_submitted list includes teacher_submitted but NOT teacher_only
+        teacher_lists = self.program.teachers(QObjects=True)
+        submitted_qs = ESPUser.objects.filter(teacher_lists['class_submitted']).distinct()
+        self.assertIn(teacher_submitted, submitted_qs)
+        self.assertNotIn(teacher_only, submitted_qs)
+
+        # Submit: base list = allTeacher, OR = class_submitted
+        post_data = self._get_combination_post_data('Teacher', 'allTeacher')
+        post_data['checkbox_or_class_submitted'] = '1'
+
+        query = self.controller.query_from_postdata(self.program, post_data)
+        results = ESPUser.objects.filter(query).distinct()
+
+        # Both teachers must be in results because the base list is ALL teachers.
+        # Before the fix, only teacher_submitted would be returned (erroneous AND behavior).
+        self.assertIn(teacher_only, results,
+            "teacher_only should be included via the all_Teacher base list")
+        self.assertIn(teacher_submitted, results,
+            "teacher_submitted should be included via both the base list and the OR condition")
