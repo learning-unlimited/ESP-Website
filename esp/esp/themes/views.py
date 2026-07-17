@@ -401,6 +401,20 @@ def editor(request):
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
 
+        #   Save Bootswatch theme selection for SCSS themes.
+        #   Only touch the tag when the form actually submitted the field, so
+        #   programmatic POSTs (e.g. scripts posting {'apply': ...} without the
+        #   select) don't silently clear the site's skin.  Validate before
+        #   persisting: compile_css raises on unknown names, so a bad value
+        #   saved here would break every subsequent recompile.
+        if (tc.has_scss(tc.get_current_theme())
+                and ('apply' in request.POST or 'save' in request.POST)
+                and 'bootswatch_theme' in request.POST):
+            bootswatch_theme = request.POST['bootswatch_theme']
+            if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
+                raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            Tag.setTag('bootswatch_theme', value=bootswatch_theme)
+
         #   Re-generate the CSS for the current theme given the supplied settings
         if vars:
             tc.customize_theme(vars)
@@ -420,6 +434,11 @@ def editor(request):
 
     #   Load a bunch of preset fonts
     context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
+
+    #   Bootswatch support for SCSS themes
+    if tc.has_scss(current_theme):
+        context['bootswatch_themes'] = tc.get_bootswatch_themes()
+        context['current_bootswatch'] = Tag.getTag('bootswatch_theme', default='')
 
     #   Load the theme-specific options
     adv_vars = tc.find_theme_variables(current_theme, theme_only=True)

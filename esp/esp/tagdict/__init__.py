@@ -211,6 +211,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'bootswatch_theme': {
+        'is_boolean': False,
+        'help_text': 'The Bootswatch skin applied to the current SCSS theme (empty string means no skin)',
+        'default': '',
+        'category': 'theme',
+        'is_setting': False,
+    },
     'request_student_phonenum': {
         'is_boolean': True,
         'help_text': 'Whether to request a student home phone number',
