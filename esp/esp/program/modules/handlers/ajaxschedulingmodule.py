@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -71,7 +71,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
             title="Scheduling",
-            category="Logistics",
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
@@ -213,6 +213,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """ This call exists for debugging and testing purposes.  It's not a disaster if it's
         called in production, but it is annoying.
         Clears the change log for this program. """
+
+        if request.method != 'POST':
+            return HttpResponse('Method not allowed. Use POST.', status=405)
 
         self.get_change_log(prog).entries.all().delete()
         context = {}

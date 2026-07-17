@@ -28,3 +28,7 @@ else
     # no /usr/bin? hopefully this doesn't happen, let npm guess
     sudo -H npm install less@3.13.1 -g
 fi
+
+# Install Bootstrap 3 and other npm theme dependencies (LESS sources for compilation).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+(cd "$SCRIPT_DIR/public/media/theme_editor" && npm ci)

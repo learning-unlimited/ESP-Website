@@ -1,3 +1,4 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -290,3 +291,32 @@ class Tag(models.Model):
             tag_counter += 1
 
         return tag_counter
+
+    @classmethod
+    def getDifficultyDescription(cls, difficulty_key):
+        """
+        Return the human-readable description for a difficulty key from the
+        teacherreg_difficulty_choices tag (e.g. "**" -> "Introductory").
+        Returns None if the tag is not set, invalid, or the key is not found.
+        """
+        if not difficulty_key:
+            return None
+        difficulty_map = cls.getDifficultyMap()
+        return difficulty_map.get(str(difficulty_key))
+
+    @classmethod
+    def getDifficultyMap(cls):
+        """
+        Parse the teacherreg_difficulty_choices tag once and return a
+        {key_string: description} dict for O(1) lookups.
+        Returns an empty dict if the tag is not set or invalid.
+        """
+        tag_val = cls.getTag('teacherreg_difficulty_choices')
+        if not tag_val or not tag_val.strip():
+            return {}
+        try:
+            choices = json.loads(tag_val)
+            return {str(pair[0]): pair[1]
+                    for pair in choices if len(pair) >= 2}
+        except (ValueError, TypeError):
+            return {}

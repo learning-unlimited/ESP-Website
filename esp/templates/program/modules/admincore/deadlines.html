@@ -8,13 +8,8 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jstree/style.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/deadlines.css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
-{% endblock %}
-
-{% block xtrajs %}
-    <script type="text/javascript" src="/media/scripts/jquery.jstree.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -24,13 +19,13 @@
 
 {% if message_good %}
     <div role="alert" class="alert alert-success">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ message_good }}
     </div>
 {% endif %}
 {% if message_bad %}
     <div role="alert" class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
             {{ message_bad }}
     </div>
 {% endif %}
@@ -41,7 +36,7 @@
 
 <p>Please proceed to edit <a href="#existing">existing deadlines for user groups</a> or <a href="#new">create a new deadline</a> if necessary.</p>
 
-<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users</a> or <a href="#new_perm">create a new permission</a>.</p>
+<p>Alternatively, you can edit <a href="#permissions">existing permissions for individual users and filters</a>, <a href="#new_perm">create a new permission for an individual user</a>, or <a href="#new_filter_perm">create a filter-based permission</a> for a dynamic group of users.</p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
@@ -59,7 +54,7 @@
    <b>Deadlines for {{ group }}s</b> (click to expand/contract)
 </button>
 <div class="dspcont">
-    <table width="100%" cellspacing="0" cellpadding="3px">
+    <table class="table table-sm">
         <colgroup>
            <col span="1" width="30%">
            <col span="1">
@@ -76,8 +71,8 @@
                 <th></th>
             </tr>
             {% endif %}
-            <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length_is:0 %}1{% else %}{{ details.perms|length }}{% endif %}">
+            <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
+                <th class="{% if details.is_open %}is_open{% else %}is_closed{% endif %}" rowspan = "{% if details.perms|length == 0 %}1{% else %}{{ details.perms|length }}{% endif %}">
                     {{ perm_type|perm_nice_name }}{% if details.recursive %}<br /><span style="color: royalblue;">(recursive)</span>{% endif %}<br>
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
@@ -99,7 +94,7 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
                         {% endif %}
                     {% endif %}
                 </td>
@@ -125,7 +120,7 @@
 <p>If you have made changes to the current deadlines, please click "Save" above before creating a new deadline.</p>
 
 {% autoescape off %}
-<table cellspacing="0" cellpadding="3">
+<table class="table table-sm">
 {{ create_form }}
 <tr>
     <td align="center" valign="center" colspan="2">
@@ -140,18 +135,17 @@
 <hr>
 
 <a name="permissions"></a>
-<h2>Permissions (for individual users)</h2>
+<h2>Permissions (for individual users and filters)</h2>
 
 <button type="button" class="dsphead">
    <b>Existing Permissions</b> (click to expand/contract)
 </button>
 <div class="dspcont">
-
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
 
-<table width="100%" cellspacing="0" cellpadding="3px">
+<table class="table table-sm">
     <colgroup>
        <col span="1" width="20%">
        <col span="1" width="30%">
@@ -162,14 +156,22 @@
     {% for perm in permissions %}
     {% if forloop.counter0|divisibleby:"5" %}
     <tr>
-        <th>User</th>
+        <th>Target</th>
         <th>Permission</th>
         <th>Timing {% now "(T)" %}</th>
         <th></th>
     </tr>
     {% endif %}
-    <tr style="border-top: 1px solid grey;{% if details.perms|length_is:1 %}border-bottom: 1px solid grey;{% endif %}">
-        <th>{{ perm.user }}</th>
+    <tr style="border-top: 1px solid grey;{% if details.perms|length == 1 %}border-bottom: 1px solid grey;{% endif %}">
+        <th>
+            {% if perm.user %}
+                {{ perm.user }}
+            {% elif perm.user_filter %}
+                Filter: {% if perm.user_filter.useful_name %}{{ perm.user_filter.useful_name }}{% else %}#{{ perm.user_filter_id }}{% endif %}
+            {% else %}
+                (none)
+            {% endif %}
+        </th>
         <th class="{% if perm.is_valid %}is_open{% else %}is_closed{% endif %}">
             {{ perm.permission_type|perm_nice_name }}<br>
             <span class="bituri">{{ perm.permission_type }}</span>
@@ -187,7 +189,7 @@
         </td>
         <td align="center" valign="center">
             <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-small">Delete</button></a>
+            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission"><button type="button" class="btn btn-danger btn-sm">Delete</button></a>
         </td>
     </tr>
     {% empty %}
@@ -196,9 +198,8 @@
     {% endfor %}
     </tbody>
 </table>
-</div>
-
 </form>
+</div>
 
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="create_perm_form">
 
@@ -208,7 +209,7 @@
 <p>If you have made changes to the current permissions, please click "Save" above before creating a new permission.</p>
 
 {% autoescape off %}
-<table cellspacing="0" cellpadding="3">
+<table class="table table-sm">
 {{ create_perm_form }}
 <tr>
     <td align="center" valign="center" colspan="2">
@@ -219,6 +220,13 @@
 </table>
 {% endautoescape %}
 </form>
+
+<a name="new_filter_perm"></a>
+<h3>Create new filter-based permissions</h3>
+
+<p>Grant a permission to a dynamic group of users (for example, all 7th graders or students at a particular school). You will use the user search tool to define which users receive the permission.</p>
+
+<p><a href="/manage/{{ program.getUrlBase }}/filter_permission" class="btn btn-primary">Create Filter Permission</a></p>
 
 </div>
 
