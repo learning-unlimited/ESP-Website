@@ -16,9 +16,9 @@ def teacheracknowledgementform_factory(prog):
         teach_text = "teacher"
 
     if date_range is None:
-        label = "I have read the above and commit to serving as a %s for my %s class(es)." % (teach_text, prog.program_type)
+        label = f"I have read the above and commit to serving as a {teach_text} for my {prog.program_type} class(es)."
     else:
-        label = "I have read the above and commit to serving as a %s for my %s class(es) on %s." % (teach_text, prog.program_type, date_range)
+        label = f"I have read the above and commit to serving as a {teach_text} for my {prog.program_type} class(es) on {date_range}."
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
