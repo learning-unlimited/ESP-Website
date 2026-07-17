@@ -145,7 +145,7 @@ class CompositeConstraint(BaseConstraint):
     @util.timed_func("CompositeConstraint_check_swap_sections")
     def check_swap_sections(self, section1, section2, schedule):
         for c in self.constraints:
-            violation = c.check_swap_section(section1, section2, schedule)
+            violation = c.check_swap_sections(section1, section2, schedule)
             if violation:
                 return violation
         return None
