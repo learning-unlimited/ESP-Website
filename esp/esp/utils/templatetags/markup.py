@@ -24,4 +24,9 @@ register = template.Library()
 def markdown(value):
     """Runs Markdown over a given value, stripping malformed HTML comment
     markers first so they can't break parsing/rendering."""
+    print(value)
+    sanitized = sanitize_html_comments(value)
+    print(repr(sanitized))          # does this contain '-->' ?  (it shouldn't)
+    rendered = md.markdown(sanitized)
+    print(repr(rendered))           # does '-->' appear here?  (this is where it's coming from)
     return mark_safe(md.markdown(sanitize_html_comments(force_str(value))))

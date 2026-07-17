@@ -137,16 +137,14 @@ def sanitize_html_comments(value):
                 pos = next_close + 3
 
         raw_comment = value[start:pos]
-        if raw_comment.endswith('-->'):
-            inner = raw_comment[4:-3]
-        else:
-            inner = raw_comment[4:]
-
+        terminated = raw_comment.endswith('-->')
+        inner = raw_comment[4:-3] if terminated else raw_comment[4:]
         inner_clean = inner.replace('<!--', '').replace('-->', '')
-        if raw_comment.endswith('-->'):
+        if terminated:
+            # Well-formed comment: keep it, just strip any nested markers inside
             result.append('<!--' + inner_clean + '-->')
         else:
-            result.append('<!--' + inner_clean)
-
+            # Unterminated: drop the dangling '<!--'
+            result.append(inner_clean)
         i = pos
     return ''.join(result)

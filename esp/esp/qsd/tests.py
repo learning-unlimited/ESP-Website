@@ -928,6 +928,43 @@ class HTMLCommentSanitizationTest(TestCase):
         self.assertIn("<h2>", result)
         self.assertIn("</h2>", result)
 
+    def test_unterminated_comment_marker_removed_content_preserved(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "foo <!-- bar"
+        result = sanitize_html_comments(content)
+        # No lone opener survives (would comment out the rest of the page)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        # The text is preserved
+        self.assertIn("foo", result)
+        self.assertIn("bar", result)
+
+    def test_unterminated_nested_comment_all_markers_removed(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "x <!-- a <!-- b"
+        result = sanitize_html_comments(content)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        self.assertIn("a", result)
+        self.assertIn("b", result)
+
+    def test_terminated_comment_still_kept(self):
+        # Guard against the fix accidentally stripping well-formed comments
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "before <!-- keep me --> after"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "before <!-- keep me --> after")
+
+    def test_terminated_then_unterminated(self):
+        # A valid comment followed by a dangling opener: keep the first, strip the second
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- ok --> mid <!-- dangling"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertIn("mid", result)
+        self.assertIn("dangling", result)
+
     def test_markdown_filter(self):
         from esp.utils.templatetags.markup import markdown
         content = "Text <!-- outer <!-- inner --> outer --> more"
