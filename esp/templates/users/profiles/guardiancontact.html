@@ -7,7 +7,7 @@
  <label class="control-label" for="id_guard_first_name">First Name:</label>
  <div class="controls">
  {{ form.guard_first_name }} {% if form.guard_first_name.errors %}
-   <br /><span class="form_error">{{ form.guard_first_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.guard_first_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -18,7 +18,7 @@
  <label class="control-label" for="id_guard_last_name">Last Name:</label>
  <div class="controls">
  {{ form.guard_last_name }} {% if form.guard_last_name.errors %}
-   <br /><span class="form_error">{{ form.guard_last_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.guard_last_name.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -29,7 +29,7 @@
  <label class="control-label" for="id_guard_e_mail">Email address:</label>
  <div class="controls">
  {{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
-   <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.guard_e_mail.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -44,7 +44,7 @@
  <small><i><label class="control-label" for="id_guard_phone_day">home</label></i></small>
  <div class="controls">
  {{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
-   <br /><span class="form_error">{{ form.guard_phone_day.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.guard_phone_day.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
@@ -55,7 +55,7 @@
  <small><i><label class="control-label" for="id_guard_phone_cell">cell</label></i></small>
  <div class="controls">
  {{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
-   <br /><span class="form_error">{{ form.guard_phone_cell.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.guard_phone_cell.errors|join:", " }}</span>
    {% endif %}
 </div>
 </div>
