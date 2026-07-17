@@ -7,7 +7,7 @@
 #
 # Requires a safe directory in which to write data (the same one as the
 # script is running from) and a certificate bundle downloaded to the same
-# directory and named cacert.pem - see http://curl.haxx.se/ca/cacert.pem
+# directory and named cacert.pem - see https://curl.haxx.se/ca/cacert.pem
 #
 
 import json

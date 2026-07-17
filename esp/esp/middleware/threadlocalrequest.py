@@ -1,4 +1,4 @@
-## Code from <http://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
+## Code from <https://stackoverflow.com/questions/1057252/django-how-do-i-access-the-request-object-or-any-other-variable-in-a-forms-clea>
 ## Modified to not use (process-)global variables
 
 import logging
@@ -15,6 +15,17 @@ except ImportError:
 def get_current_request():
     return getattr(_threading_local, 'request', None)
 
+def set_current_request(request):
+    """Explicitly set the thread-local request.
+
+    Intended for use in automated tests where the full middleware stack is
+    not invoked (e.g. when using RequestFactory instead of the test client).
+    In production the ThreadLocals middleware populates this automatically
+    via process_request(); this function must NOT be called from production
+    code paths.
+    """
+    _threading_local.request = request
+
 def clear_current_request():
     """Remove the thread-local request, if any.
 
@@ -24,11 +35,21 @@ def clear_current_request():
         del _threading_local.request
 
 def AutoRequestContext(*args, **kwargs):
+    """
+    Create a context with access to the current request.
+
+    Args:
+        *args: Arguments to pass to the context constructor
+        **kwargs: Keyword arguments (including optional 'autoescape')
+
+    Returns:
+        A dictionary-like context object
+    """
     request = get_current_request()
     if request is None:
-        logger.error("Couldn't use RequestContext! Falling back to Context. "
+        logger.error("Couldn't access request! Falling back to basic Context. "
                      "This is almost certainly a bug; either Context should "
-                     "be being used explicitly, or RequestContext ought to "
+                     "be being used explicitly, or the request ought to "
                      "be available here.")
         retVal = Context(*args, **kwargs)
     else:
@@ -51,3 +72,5 @@ class ThreadLocals(MiddlewareMixin):
     """
     def process_request(self, request):
         _threading_local.request = request
+        request._active_program_tag_keys = set()
+        request._active_global_tag_keys = set()
