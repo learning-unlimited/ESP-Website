@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import os
+import subprocess
 import warnings
 import tempfile
 import django
@@ -91,9 +92,8 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 if SENTRY_DSN:
     sentry_handler = {
         'level': 'WARNING',
-        'filters': ['require_not_in_script'],
-        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        'dsn': SENTRY_DSN,
+        'filters': ['require_not_in_script', 'skip_404', 'skip_django110_warning'],
+        'class': 'sentry_sdk.integrations.logging.EventHandler',
     }
 else:
     sentry_handler = {
@@ -130,6 +130,12 @@ LOGGING = {
         },
         'require_not_in_script': {
             '()': 'esp.utils.log.RequireNotInScript',
+        },
+        'skip_404': {
+            '()': 'esp.utils.log.SkipHttp404',
+        },
+        'skip_django110_warning': {
+            '()': 'esp.utils.log.SkipDjango110DeprecationWarning',
         },
     },
     'handlers': {
@@ -251,16 +257,33 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
-    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
-    # will remain enabled and will receive exceptions before Raven does.
-    import raven
+    # If SENTRY_DSN is set, send errors to Sentry via sentry_sdk. Note that
+    # our exception middleware (i.e., ESPErrorMiddleware) will remain
+    # enabled and will receive exceptions before Sentry does.
+    import sentry_sdk
+    from sentry_sdk.integrations.logging import LoggingIntegration
 
-    INSTALLED_APPS += (
-        'raven.contrib.django.raven_compat',
+    try:
+        _sentry_release = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=os.path.join(PROJECT_ROOT, '..'),
+            stderr=subprocess.DEVNULL,
+        ).decode('utf8').strip()
+    except (OSError, subprocess.CalledProcessError):
+        _sentry_release = None
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        release=_sentry_release,
+        # We wire logging -> Sentry explicitly and selectively via
+        # LOGGING['handlers']['sentry'] (sentry_handler, above) instead of
+        # sentry_sdk's default global log capture, so disable the latter here.
+        integrations=[LoggingIntegration(level=None, event_level=None, sentry_logs_level=None)],
+        send_default_pii=True,
+        max_request_body_size='always',
+        # Bugsink doesn't support these event types.
+        traces_sample_rate=0,
+        send_client_reports=False,
+        auto_session_tracking=False,
     )
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
-    }
 
