@@ -1,4 +1,3 @@
-from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -83,7 +82,8 @@ class StudentRegSanityController(object):
                 report.append((sec, srs.count()))
                 if not fake:
                     for sr in srs:
-                        if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                        if csvlog:
+                            csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
                         sr.expire()
         logger.debug(report)
         logger.info("Walkins checked")
