@@ -399,7 +399,15 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
         with transaction.atomic():
-            section = ClassSection.objects.select_for_update().get(id=sectionid)
+            #   Validate that the section belongs to the expected class and program
+            #   while still taking a row lock, so concurrent registrations serialize
+            #   on the capacity checks below.
+            section = get_object_or_404(
+                ClassSection.objects.select_for_update(),
+                id=sectionid,
+                parent_class__id=classid,
+                parent_class__parent_program=prog,
+            )
             section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
             if not scrmi.use_priority:
                 error = section_error

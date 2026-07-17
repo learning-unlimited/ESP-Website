@@ -167,6 +167,32 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec4])
 
+    def test_ajax_addclass_mismatched_ids(self):
+        """A section_id that doesn't belong to class_id (or to the program) must 404,
+        not enroll the student or raise an unhandled exception."""
+        program = self.program
+
+        student = random.choice(self.students)
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
+        sec1 = random.choice(program.sections())
+        other_class_sections = list(program.sections().exclude(parent_class=sec1.parent_class))
+        if not other_class_sections:
+            self.skipTest("Skipping test_ajax_addclass_mismatched_ids: no section from a different class found.")
+        sec_other = random.choice(other_class_sections)
+
+        #   class_id belongs to a different class than section_id
+        response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec_other.parent_class.id, 'section_id': sec1.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 404)
+
+        #   nonexistent section_id
+        response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec1.parent_class.id, 'section_id': 999999}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 404)
+
+        #   the student should not have been enrolled by either request
+        response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.expect_empty_schedule(response)
+
     def test_ajax_clearslot(self):
         program = self.program
 
