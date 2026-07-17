@@ -8,6 +8,52 @@
         tr {
           border-bottom: grey 1px dashed;
         }
+        #theme_setup_form th,
+        #theme_setup_form td {
+            padding: 6px 4px;
+            vertical-align: middle;
+        }
+        /* Django as_table() emits <widget><br><span class="helptext">…</span>
+           for every field that has help_text.  For BooleanField checkboxes the
+           description IS the help_text, so the <br> pushes it onto a new line
+           below the checkbox instead of beside it.  Hide the <br> and render
+           the span inline so the description sits to the right of the checkbox.
+           :has(> input[type="checkbox"]) limits this to checkbox cells only,
+           leaving textarea / text-input help text unaffected. */
+        #theme_setup_form td:has(> input[type="checkbox"]) br {
+            display: none;
+        }
+        #theme_setup_form td:has(> input[type="checkbox"]) .helptext {
+            display: inline;
+        }
+        #theme_setup_form td input[type="checkbox"] {
+            margin-right: 0.35em;
+        }
+        /* forms.css sets #program_form td { color: black } and
+           #program_form th { background-color: #c6def7; color: #000 }.
+           Both selectors have specificity (1,0,1); our inline <style> loads
+           after the forms.css <link> so we win on source order.  Switch to
+           Bootstrap CSS variables so the table adapts to any Bootswatch theme:
+           dark themes (Solar, Slate) get legible text on their dark body-bg;
+           light themes keep the same dark-text-on-light-surface look. */
+        #theme_setup_form td {
+            color: var(--bs-body-color);
+            background-color: transparent;
+        }
+        #theme_setup_form th {
+            background-color: var(--bs-secondary-bg);
+            color: var(--bs-emphasis-color);
+        }
+        /* Dark Bootswatch themes (Solar, Slate, Cyborg, …) set $body-color
+           to a mid-grey that reads well on their dark body background.  The
+           widget sortable handles have hardcoded light backgrounds (lavender,
+           beige, aliceblue) so that mid-grey lands too low-contrast there.
+           --bs-emphasis-color is the maximum-contrast foreground for the
+           theme's light surface (black in Solar/Slate, white in BS5 dark
+           mode) and gives WCAG-compliant text on those light bg colours. */
+        .ui-sortable-handle {
+            color: var(--bs-emphasis-color) !important;
+        }
     </style>
 {% endblock %}
 
@@ -32,7 +78,7 @@
 </table>
 <br />
 <center>
-<button class="btn btn-lg btn-block btn-primary" type="submit">Save</button>
+<button class="btn btn-lg w-100 btn-primary" type="submit">Save</button>
 </center>
 </form>
 </div>
@@ -40,5 +86,16 @@
 {% else %}
 There is nothing to set up for this theme.  Please <a href="/themes/">return to the main theme page</a>.
 {% endif %}
+
+<script>
+/* Dark Bootswatch themes skip the $bootswatch-active-gated
+   `color: black; background-color: #fdfdfd;` for #main inputs, so
+   these unstyled inputs get browser-UA defaults which can be
+   invisible under OS dark-mode.  Adding .form-control applies the
+   theme's compiled $input-color / $input-bg. */
+$j('#theme_setup_form').find(
+    'input[type=text], input[type=url], input[type=email], textarea, select'
+).addClass('form-control');
+</script>
 
 {% endblock %}

@@ -20,17 +20,13 @@ We have detected differences between the image and script files provided by the 
         New size: {{ diff.source_size|filesizeformat }} <br />
         Current size: {{ diff.dest_size|filesizeformat }} <br />
         <a href="{{ diff.dest_url }}">View current version</a> <br />
-        <div class="radio">
-        <label>
-            <input type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_keep_{{ forloop.counter0 }}" value="keep" checked />
-            Keep the current file
-        </label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_keep_{{ forloop.counter0 }}" value="keep" checked />
+            <label class="form-check-label" for="id_keep_{{ forloop.counter0 }}">Keep the current file</label>
         </div>
-        <div class="radio">
-        <label>
-            <input type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_overwrite_{{ forloop.counter0 }}" value="overwrite" />
-            Overwrite the current file with the new file
-        </label>
+        <div class="form-check">
+            <input class="form-check-input" type="radio" name="overwrite_{{ diff.filename_hash }}" id="id_overwrite_{{ forloop.counter0 }}" value="overwrite" />
+            <label class="form-check-label" for="id_overwrite_{{ forloop.counter0 }}">Overwrite the current file with the new file</label>
         </div>
     </li>
 {% endfor %}
@@ -40,7 +36,7 @@ We have detected differences between the image and script files provided by the 
 <br />
 <br />
 <center>
-<button class="btn btn-lg btn-block btn-primary" type="submit">Confirm</button>
+<button class="btn btn-lg w-100 btn-primary" type="submit">Confirm</button>
 </center>
 </form>
 </p>
