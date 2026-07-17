@@ -379,9 +379,11 @@ $j(document).ready(function() {
 
                 var modMap = {};
                 $j.each(modules, function(index, m) { modMap[m.id] = m; });
-                var reordered = newOrder.map(function(o) {
+                newOrder.forEach(function(o) {
                     modMap[o.id].seq = o.seq;
-                    return modMap[o.id];
+                });
+                var reordered = modules.slice().sort(function(a, b) {
+                    return a.seq - b.seq;
                 });
 
                 if (type === 'student') {
