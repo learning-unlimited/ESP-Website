@@ -357,9 +357,9 @@ class Program(models.Model, CustomFormsLinkModel):
         ordering = ('-id',)
         constraints = [
             models.CheckConstraint(
-                condition=Q(grade_min__lte=F('grade_max')),
+                check=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
-         ),
+            ),
         ]
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
