@@ -7,15 +7,6 @@ if [ ! -f /app/esp/esp/local_settings.py ]; then
     cp /app/esp/esp/local_settings.py.docker /app/esp/esp/local_settings.py
 fi
 
-# Create media symlinks if they don't exist
-if [ ! -e /app/esp/public/media/images ]; then
-    echo ">>> Creating media symlinks..."
-    ln -sf /app/esp/public/media/default_images /app/esp/public/media/images
-fi
-if [ ! -e /app/esp/public/media/styles ]; then
-    ln -sf /app/esp/public/media/default_styles /app/esp/public/media/styles
-fi
-
 # Wait for PostgreSQL to be ready
 echo ">>> Waiting for PostgreSQL..."
 until python -c "
@@ -29,23 +20,45 @@ except psycopg2.OperationalError:
 done
 echo ">>> PostgreSQL is ready!"
 
-# Run migrations and collect static files only on first run,
-# or when FORCE_SETUP=1 is set (e.g., after pulling new code).
-MARKER_FILE="/app/.docker-setup-done"
-if [ ! -f "$MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
-    echo ">>> Running migrations..."
-    python /app/esp/manage.py migrate --noinput
+# Always run migrations on container start so new migrations
+# are applied automatically when switching branches or pulling code.
+echo ">>> Running migrations..."
+python /app/esp/manage.py migrate --noinput
 
+# Collect static files only on first run,
+# or when FORCE_SETUP=1 is set (e.g., after pulling new code).
+COLLECTSTATIC_MARKER_FILE="/app/.collectstatic-done"
+if [ ! -f "$COLLECTSTATIC_MARKER_FILE" ] || [ "${FORCE_SETUP:-0}" = "1" ]; then
     echo ">>> Collecting static files..."
     python /app/esp/manage.py collectstatic --noinput -v 0
-
-    touch "$MARKER_FILE"
+    touch "$COLLECTSTATIC_MARKER_FILE"
 else
-    echo ">>> Skipping migrations and collectstatic (already done)."
-    echo ">>> To force them to run again:"
-    echo ">>> a) Delete the $MARKER_FILE file."
+    echo ">>> Skipping collectstatic (already done)."
+    echo ">>> To force it to run again:"
+    echo ">>> a) Delete the $COLLECTSTATIC_MARKER_FILE file."
     echo ">>> b) Run the following command:"
     echo ">>>    docker compose up"
+fi
+
+# Refresh theme node_modules when the named volume is stale.
+# Named volumes persist across `docker compose up --build` and will not
+# automatically receive new packages (e.g. sass) added to package.json.
+# The Dockerfile bakes a versioned copy at /opt/theme_node_modules_baked/
+# with a .lock-hash file. Compare that hash to a marker in the live volume;
+# if they differ, restore from the baked copy (no npm needed at runtime).
+THEME_DIR=/app/esp/public/media/theme_editor
+THEME_NM="$THEME_DIR/node_modules"
+VOL_HASH_FILE="$THEME_NM/.lock-hash"
+BAKED_DIR="/opt/theme_node_modules_baked"
+BAKED_HASH_FILE="$BAKED_DIR/.lock-hash"
+if [ -f "$BAKED_HASH_FILE" ]; then
+    BAKED_HASH=$(cat "$BAKED_HASH_FILE")
+    STORED_HASH=$(cat "$VOL_HASH_FILE" 2>/dev/null || echo "")
+    if [ "$BAKED_HASH" != "$STORED_HASH" ]; then
+        echo ">>> Theme node_modules stale — restoring from baked image copy..."
+        cp -r "$BAKED_DIR/." "$THEME_NM/"
+        echo ">>> Theme node_modules restored."
+    fi
 fi
 
 # Change to the esp directory before starting the server

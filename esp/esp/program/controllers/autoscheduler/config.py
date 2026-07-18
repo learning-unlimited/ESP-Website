@@ -109,11 +109,11 @@ SCORER_DESCRIPTIONS = {
 # create another with the same name in an override dict. To delete a criterion
 # in an override, use None (either None or 'None' is okay) for the
 # specification.
+_STAR_CLASSROOM_PATTERN = r'^\*.*$'
 DEFAULT_RESOURCE_CONSTRAINTS = {
     # If you don't want to use a classroom, mark its name with a star.
     "restrict_star_classrooms":
-        "if any section then not classroom matches {}".format(
-            r"^\*.*$"),
+        f"if any section then not classroom matches {_STAR_CLASSROOM_PATTERN}",
     "restrict_star_classrooms_comment":
         "Ignore all classrooms with names marked with a star, e.g. *16-628.",
 }
