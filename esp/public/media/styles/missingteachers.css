@@ -128,3 +128,10 @@ input.not-found {
     color: #fff;
     vertical-align: middle;
 }
+
+/* These cells have hardcoded light backgrounds so they always need dark text,
+   overriding the color:inherit on #program_form td from forms.css. */
+#program_form td.section-code,
+#program_form td.section-detail-td {
+    color: black;
+}

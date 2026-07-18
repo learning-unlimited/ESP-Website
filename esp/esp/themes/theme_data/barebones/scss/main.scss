@@ -1,0 +1,10 @@
+body:has(.navbar.fixed-top) {
+  padding-top: 80px;
+}
+
+/* Give the sidebar nav list a top margin so the first item
+   (e.g. the program link) doesn't render flush against the
+   navbar / admin bar and get visually clipped. */
+#sidebar .nav {
+  margin-top: 15px;
+}

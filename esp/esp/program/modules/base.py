@@ -40,11 +40,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from django.utils.decorators import available_attrs
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
+from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
@@ -60,8 +60,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 def _login_redirect(request):
     return HttpResponseRedirect(
-        '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
-                      quote(request.get_full_path())))
+        f'{settings.LOGIN_URL}?{REDIRECT_FIELD_NAME}={quote(request.get_full_path())}')
 
 class CoreModule(object):
     """
@@ -69,7 +68,15 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
+    # Class-level attributes that subclasses can override.
+    # Use immutable defaults to avoid accidental cross-module mutation.
+    always_enabled = False
+    seq_locked = False
+    conflicts_with = ()
+
+    start_date = models.DateTimeField(blank=True, null=True, default=None,
+                                      help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
@@ -84,7 +91,7 @@ class ProgramModuleObj(models.Model):
         return self.module.link_title
 
     def __str__(self):
-        return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
+        return f'"{self.module.admin_title}" for "{self.program}"'
 
     def _get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
@@ -271,8 +278,7 @@ class ProgramModuleObj(models.Model):
     # important functions for hooks...
     @cache_function
     def get_full_path(self):
-        return '/%s/%s/%s' % (
-            self.module.module_type, self.program.url, self.main_view)
+        return f'/{self.module.module_type}/{self.program.url}/{self.main_view}'
     get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
     get_full_path.depend_on_model('program.Program')
 
@@ -285,8 +291,8 @@ class ProgramModuleObj(models.Model):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -308,18 +314,18 @@ class ProgramModuleObj(models.Model):
     def makeSetupLink(self):
         title = self.get_setup_title()
         link = self.get_setup_path()
-        return mark_safe('<a href="%s" title="%s">%s</a>' % (link, title, title))
+        return mark_safe(f'<a href="{link}" title="{title}">{title}</a>')
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
-            link = """<div class="module_button">\
-                                <a href="%s"><button type="button" class="module_link_large">
-                                    <div class="module_link_main">%s</div>
+            link = f"""<div class="module_button">\
+                                <a href="{self.get_full_path()}"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">{self.module.link_title}</div>
                                 </button></a>
-                            </div>""" % (self.get_full_path(), self.module.link_title)
+                            </div>"""
         else:
-            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -334,7 +340,13 @@ class ProgramModuleObj(models.Model):
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement']
+                                       'SurveyManagement',
+                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
+                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
+                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
@@ -359,12 +371,14 @@ class ProgramModuleObj(models.Model):
     def isRequired(self):
         return self.required
 
+    hideNotRequired = False
+
     def prepare(self, context):
         return context
 
     def getTemplate(self):
         if self.module.inline_template:
-            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+            return f'program/modules/{self.__class__.__name__.lower()}/{self.module.inline_template}'
         return None
 
     def teacherDesc(self):
@@ -473,7 +487,7 @@ class ProgramModuleObj(models.Model):
                 props["seq"] = 200
             if not "choosable" in props:
                 props["choosable"] = 0
-                raise AttributeError("Module `{}` doesn't have choosable property.".format(cls.__name__))
+                raise AttributeError(f"Module `{cls.__name__}` doesn't have choosable property.")
 
         if isinstance(props, dict):
             props = [ props ]
@@ -564,7 +578,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
         attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
     """
     def decorator(view_method):
-        @wraps(view_method, assigned=available_attrs(view_method))
+        @wraps(view_method)
         def _check(moduleObj, request, tl, *args, **kwargs):
             if require_login and not_logged_in(request):
                 return _login_redirect(request)
