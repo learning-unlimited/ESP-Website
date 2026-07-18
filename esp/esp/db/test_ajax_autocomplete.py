@@ -43,9 +43,9 @@ class AutocompleteAuthTest(TestCase):
             "Unauthenticated requests should be redirected to the login page"
         )
         self.assertIn(
-            '/admin/login',
+            '/accounts/login',
             response['Location'],
-            "Unauthenticated requests should redirect to the admin login URL",
+            "Unauthenticated requests should redirect to the login URL",
         )
 
     def test_missing_model_module_returns_400(self):
