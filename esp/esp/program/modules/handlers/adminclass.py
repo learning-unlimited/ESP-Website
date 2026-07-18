@@ -174,20 +174,24 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def deletesection(self, request, tl, one, two, module, extra, prog):
         """ A little function to remove the section specified in POST. """
+        cls = self.getClass(request, extra)
+        sec_id = request.POST.get('sec_id') or request.GET.get('sec_id')
+
+        if not sec_id:
+            raise ESPError('Missing section ID', log=False)
+
+        try:
+            section = cls.sections.get(id=int(sec_id))
+        except (ValueError, ClassSection.DoesNotExist):
+            raise ESPError(f'Unable to delete a section.  The section requested was: {sec_id}', log=False)
+
         if request.method == 'POST':
             if request.POST.get('sure') == 'True':
-                try:
-                    s = ClassSection.objects.get(id=int(request.GET['sec_id']))
-                    s.delete()
-                    return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
-                except (ValueError, ClassSection.DoesNotExist):
-                    raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
-        else:
-            section_id = int(request.GET['sec_id'])
-            section = ClassSection.objects.get(id=section_id)
-            context = {'sec': section, 'module': self}
+                section.delete()
+            return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
 
-            return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
+        context = {'sec': section, 'module': self}
+        return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
 
     @aux_call
     @needs_admin
