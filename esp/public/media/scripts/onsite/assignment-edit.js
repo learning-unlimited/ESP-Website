@@ -28,6 +28,7 @@ function addAssignment (event) {
         } else {
             form_select.append($j("<option></option>").prop( "disabled", true ).prop( "selected", true ).text("No resources available"));
             form_select.prop( "disabled", true );
+            form_select.attr( "title", "Make sure resources have been recorded as returned on previous time slots!" );
         }
     });
     assignmentForm.show().insertBefore(assignmentExtra);

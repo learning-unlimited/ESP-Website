@@ -58,7 +58,9 @@ Do not place a top-level function in this file if you would not like it to
 be supported as a type of query.
 """
 
-def zipcodes(form, programs, students, profiles, result_dict={}):
+def zipcodes(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Get zip codes and filter out invalid ones
     zip_dict = {}
@@ -83,7 +85,9 @@ def zipcodes(form, programs, students, profiles, result_dict={}):
         result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
-def demographics(form, programs, students, profiles, result_dict={}):
+def demographics(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Get aggregate 'vitals' info via cross-program SQL aggregation.
     agg = (
@@ -112,14 +116,17 @@ def demographics(form, programs, students, profiles, result_dict={}):
     birthyear_dict = {}
     for profile in profiles:
         if profile.student_info:
-            if profile.student_info.graduation_year and profile.student_info.graduation_year not in gradyear_dict:
-                gradyear_dict[profile.student_info.graduation_year] = 0
-            gradyear_dict[profile.student_info.graduation_year] += 1
+            grad_year = profile.student_info.graduation_year
+            if grad_year is not None:
+                if grad_year not in gradyear_dict:
+                    gradyear_dict[grad_year] = 0
+                gradyear_dict[grad_year] += 1
 
             if profile.student_info.dob:
-                if profile.student_info.dob.year not in birthyear_dict:
-                    birthyear_dict[profile.student_info.dob.year] = 0
-                birthyear_dict[profile.student_info.dob.year] += 1
+                birth_year = profile.student_info.dob.year
+                if birth_year not in birthyear_dict:
+                    birthyear_dict[birth_year] = 0
+                birthyear_dict[birth_year] += 1
 
     #   Get financial aid info using bulk queries instead of per-student loops.
 
@@ -166,7 +173,9 @@ def demographics(form, programs, students, profiles, result_dict={}):
     result_dict['finaid_approved'] = len(set(finaid_approved))
     return render_to_string('program/statistics/demographics.html', result_dict)
 
-def schools(form, programs, students, profiles, result_dict={}):
+def schools(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Count by name of every student's school
     school_dict = {}
@@ -193,7 +202,9 @@ def schools(form, programs, students, profiles, result_dict={}):
         result_dict['school_data'] = result_dict['school_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/schools.html', result_dict)
 
-def startreg(form, programs, students, profiles, result_dict={}):
+def startreg(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Get first class registration bit and confirmation bit for each student and bin by day.
     #   Uses two bulk queries instead of per-student per-program loops.
@@ -244,7 +255,9 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
     return render_to_string('program/statistics/startreg.html', result_dict)
 
-def repeats(form, programs, students, profiles, result_dict={}):
+def repeats(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   For each student, find out what other programs they registered for and bin by quantity in each program type.
     #   Uses a single bulk query instead of per-student loops.
@@ -286,7 +299,9 @@ def repeats(form, programs, students, profiles, result_dict={}):
     result_dict['repeat_data'] = list(zip(repeat_labels, repeat_counts))
     return render_to_string('program/statistics/repeats.html', result_dict)
 
-def heardabout(form, programs, students, profiles, result_dict={}):
+def heardabout(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Group most popular reasons for hearing about the program
     reasons_dict = {}
@@ -298,7 +313,7 @@ def heardabout(form, programs, students, profiles, result_dict={}):
             if ha_str:
                 ha_key = ha_str.rstrip('s').lower()
                 for char in ' _:-/.,!?+':
-                    ha_key.replace(char, '')
+                    ha_key = ha_key.replace(char, '')
                 if ha_key not in case_map:
                     case_map[ha_key] = ha_str
                     reasons_dict[ha_str] = 0
@@ -312,7 +327,9 @@ def heardabout(form, programs, students, profiles, result_dict={}):
         result_dict['heardabout_data'] = result_dict['heardabout_data'][:form.cleaned_data['limit']]
     return render_to_string('program/statistics/heardabout.html', result_dict)
 
-def hours(form, programs, students, profiles, result_dict={}):
+def hours(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
 
     #   Bin students by registered timeslots per program.
     #   Uses bulk queries instead of per-student per-section loops.
@@ -428,7 +445,9 @@ def hours(form, programs, students, profiles, result_dict={}):
     result_dict['hours_data'] = list(zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list))
     return render_to_string('program/statistics/hours.html', result_dict)
 
-def student_reg(form, programs, students, profiles, result_dict={}):
+def student_reg(form, programs, students, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_names = [
         'Student Lottery',
         'Class Lottery',
@@ -438,22 +457,33 @@ def student_reg(form, programs, students, profiles, result_dict={}):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
+    student_id_set = {p.user_id for p in profiles if p.user_id}
+    # Bulk-fetch phase-zero (program_id, user_id) pairs across all programs in
+    # one query, replacing one SQL INTERSECT query per program inside the loop.
+    phasezero_by_program = defaultdict(set)
+    for program_id, user_id in (
+        ESPUser.objects
+        .filter(phasezerorecord__program__in=programs)
+        .values_list('phasezerorecord__program_id', 'id')
+        .distinct()
+    ):
+        phasezero_by_program[program_id].add(user_id)
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = ESPUser.objects.filter(phasezerorecord__program=program).intersection(students).distinct().count()
+        stud_lott_num = len(phasezero_by_program.get(program.id, set()) & student_id_set)
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
-        class_lott_num = len(BigBoardModule.users_with_lottery(program) & set(students.values_list('id', flat = True)))
+        class_lott_num = len(BigBoardModule.users_with_lottery(program) & student_id_set)
         series_data['Class Lottery'].append([program.name, class_lott_num])
         stats_list.append(class_lott_num)
         # enrolled in at least one class
-        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & set(students.values_list('id', flat = True)))
+        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & student_id_set)
         series_data['Enrolled'].append([program.name, enroll_num])
         stats_list.append(enroll_num)
         # students checked in
-        checked_num = len(set(BigBoardModule.checked_in_users(program)) & set(students.values_list('id', flat = True)))
+        checked_num = len(set(BigBoardModule.checked_in_users(program)) & student_id_set)
         series_data['Checked In'].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)
@@ -469,7 +499,9 @@ def student_reg(form, programs, students, profiles, result_dict={}):
                        })
     return render_to_string('program/statistics/student_reg.html', result_dict)
 
-def teacher_reg(form, programs, teachers, profiles, result_dict={}):
+def teacher_reg(form, programs, teachers, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_names = [
         'Class Registered',
         'Class Approved',
@@ -505,7 +537,9 @@ def teacher_reg(form, programs, teachers, profiles, result_dict={}):
                        })
     return render_to_string('program/statistics/teacher_reg.html', result_dict)
 
-def class_reg(form, programs, teachers, profiles, result_dict={}):
+def class_reg(form, programs, teachers, profiles, result_dict=None):
+    if result_dict is None:
+        result_dict = {}
     stat_categories = ["Classes", "Class-student-hours"]
     stat_names = [
         'Classes Registered',

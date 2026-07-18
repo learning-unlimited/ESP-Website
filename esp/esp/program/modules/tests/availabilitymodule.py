@@ -64,7 +64,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         timeslots = self.program.getTimeSlots().values_list( 'id', flat=True )
 
         # Check that the teacher starts out without availability set
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
 
         # Log in as the teacher
         self.assertTrue( self.client.login( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
@@ -73,12 +73,12 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         # Available for one timeslot
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:1] } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
         # Two timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots[:2] } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( not self.moduleobj.isCompleted() )
+        self.assertTrue( not self.moduleobj.isCompleted(self.teachers[0]) )
         # Three timeslots
         response = self.client.post( self.moduleobj.get_full_path(), data={ 'timeslots': timeslots } )
         self.assertTrue( response.status_code == 302 )
-        self.assertTrue( self.moduleobj.isCompleted() )
+        self.assertTrue( self.moduleobj.isCompleted(self.teachers[0]) )
