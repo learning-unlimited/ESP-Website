@@ -40,7 +40,7 @@ from esp.program.modules.handlers.studentextracosts import CostItem, MultiCostIt
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.users.models import Record, RecordType, Permission
-
+from datetime import datetime, date
 
 class StudentExtraCostsTest(ProgramFrameworkTest):
 
@@ -352,7 +352,6 @@ class StudentAcknowledgementTest(ProgramFrameworkTest):
 
 
 class StudentLunchSelectionTest(ProgramFrameworkTest):
-
     def setUp(self):
         super().setUp(num_students=3, num_teachers=2, classes_per_teacher=1)
         self.add_student_profiles()
@@ -362,10 +361,53 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
             title='Lunch Period', category=self.lunch_category, grade_min=7, grade_max=12,
             parent_program=self.program, class_size_max=100, class_info='Lunch break')
         self.lunch_class.accept()
-        section = self.lunch_class.add_section(duration=1.0)
-        if self.program.getTimeSlots():
-            section.meeting_times.add(self.program.getTimeSlots()[0])
+        
         RecordType.objects.get_or_create(name='lunch_selected')
+
+    def test_lunch_selection_cross_month_date(self):
+    
+        from esp.program.modules.handlers.studentlunchselection import StudentLunchSelectionForm
+
+        # Create two sections
+        section1 = self.lunch_class.add_section(duration=1.0)
+        section2 = self.lunch_class.add_section(duration=1.0)
+
+        # Create events with required program linkage
+        from esp.cal.models import Event
+
+        event1 = Event.objects.create(
+            start=datetime(2026, 3, 5, 12, 0),
+            end=datetime(2026, 3, 5, 13, 0),
+            parent_program=self.program
+        )
+
+        event2 = Event.objects.create(
+            start=datetime(2026, 4, 5, 12, 0),
+            end=datetime(2026, 4, 5, 13, 0),
+            parent_program=self.program
+        )
+
+        # Attach events to sections
+        section1.meeting_times.add(event1)
+        section2.meeting_times.add(event2)
+
+        section1.preregister_student(self.student)
+        # Initialize form for March 5
+        form = StudentLunchSelectionForm(
+            program=self.program,
+            user=self.student,
+            day=date(2026, 3, 5)
+        )
+
+        choices = [choice[0] for choice in form.fields['timeslot'].choices if choice[0]]
+
+        # Assertions
+        self.assertIn(event1.id, choices)
+        self.assertNotIn(event2.id, choices)
+        
+        self.assertEqual(form.initial.get('timeslot'), event1.id)
+
+    
 
     def test_is_completed(self):
         module = self.program.getModule('StudentLunchSelection')
