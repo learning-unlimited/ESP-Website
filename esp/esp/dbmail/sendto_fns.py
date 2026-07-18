@@ -71,7 +71,7 @@ def _send_to_combination(sendto_fns):
 
     # Append the name and docstring of each component function, with some formatting.
     for fn in sendto_fns:
-        sendto_fn.__doc__ += "\n%s:\n%s" % (fn.__name__, re.sub('\n *', '\n    ', fn.__doc__).strip('\n'))
+        sendto_fn.__doc__ += f"\n{fn.__name__}:\n{re.sub(chr(10) + ' *', chr(10) + '    ', fn.__doc__).strip(chr(10))}"
 
     return sendto_fn
 

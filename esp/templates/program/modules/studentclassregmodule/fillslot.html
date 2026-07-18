@@ -1,5 +1,5 @@
 
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}}{% endblock %}
 
@@ -22,7 +22,7 @@ input.addbutton {
 </style>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <br />
 <h1>
     {{ program.niceName }} 
@@ -47,8 +47,8 @@ input.addbutton {
 {% endif %}
 
 {% if categories %}
-<div class="row-fluid">
-<table class="table table-bordered table-condensed span6">
+<div class="row">
+<table class="table table-bordered table-condensed col-md-6">
 <tbody>
  <tr class="info">
   <td colspan="2">
@@ -81,7 +81,7 @@ input.addbutton {
 
 {% load class_render %}
 
-{% if classes|length_is:0 %}
+{% if classes|length == 0 %}
 There are no available classes during this time block for students of your grade level!
 <ul>
 <li>Did you update your profile? Make sure you <a href="../profile">update your profile</a> before trying to sign up for classes.
