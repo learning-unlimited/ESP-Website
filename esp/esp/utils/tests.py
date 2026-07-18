@@ -954,6 +954,83 @@ class TexEscapeTest(unittest.TestCase):
         self.assertIn(r'\mbox{\LaTeX}', result)
 
 
+class DiffTemplateOverrideViewTest(DjangoTestCase):
+
+    def setUp(self):
+        import tempfile
+        from django.test.utils import override_settings
+
+        # Create users
+        self.admin = ESPUser.objects.create_user(username='admin_diff', password='pass')
+        self.admin.makeAdmin()
+        self.non_admin = ESPUser.objects.create_user(username='user_diff', password='pass')
+
+        # Use a fully isolated temporary directory — never touches the real templates/
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._override = override_settings(PROJECT_ROOT=self._tmpdir.name)
+        self._override.enable()
+
+        # Write the original template file inside the temp dir
+        template_dir = os.path.join(self._tmpdir.name, 'templates')
+        os.makedirs(template_dir)
+        self.template_path = os.path.join(template_dir, 'test_diff_template.html')
+        with open(self.template_path, 'w') as f:
+            f.write('Original Content')
+
+        # Create TemplateOverride pointing at the same unique name
+        self.override = TemplateOverride.objects.create(
+            name='test_diff_template.html',
+            content='Hello Override',
+            version=1,
+        )
+
+    def tearDown(self):
+        self._override.disable()
+        self._tmpdir.cleanup()
+
+    def test_admin_can_access_diff(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_forbidden(self):
+        self.client.login(username='user_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 403)
+
+    def test_invalid_template_id(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get('/manage/templateoverride/9999')
+        self.assertEqual(response.status_code, 404)
+
+    def test_diff_output_contains_expected_content(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        content = response.content.decode()
+        self.assertIn('diff', content)
+        self.assertIn('Original', content)
+        self.assertIn('Override', content)
+
+    def test_same_content_no_crash(self):
+        self.client.login(username='admin_diff', password='pass')
+        self.override.content = 'Original Content'
+        self.override.save()
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_template_file_exists_no_500(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertNotEqual(response.status_code, 500)
+
+    def test_missing_original_file_returns_404(self):
+        """Regression test: FileNotFoundError must become Http404, not 500."""
+        self.client.login(username='admin_diff', password='pass')
+        os.remove(self.template_path)
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 404)
+
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()
