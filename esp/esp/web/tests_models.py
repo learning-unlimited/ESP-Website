@@ -11,8 +11,7 @@ Covers:
   - NavBarEntry.makeUrl()
   - NavBarEntry.__str__()
   - install()
-
-PR 3/6 — esp/web module coverage improvement
+  
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
