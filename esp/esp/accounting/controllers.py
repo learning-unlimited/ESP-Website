@@ -119,8 +119,8 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.all_transfers().delete()
-        self.get_lineitemtypes().delete()
+        Transfer.objects.filter(pk__in=self.all_transfers()).delete()
+        LineItemType.objects.filter(pk__in=self.get_lineitemtypes()).delete()
         self.all_accounts().delete()
 
     def setup_accounts(self):

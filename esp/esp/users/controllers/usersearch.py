@@ -35,7 +35,7 @@ from collections import defaultdict
 from collections.abc import Hashable
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter, Record
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.web import render_to_response
 from esp.program.models import Program, RegistrationType, StudentRegistration
 from esp.dbmail.models import MessageRequest
@@ -296,79 +296,47 @@ class UserSearchController(object):
             #   Get an initial query from the supplied base list
             recipient_type, list_name = data['combo_base_list'].split(':')
             if list_name.startswith('all'):
-                q_program = Q()
+                if recipient_type in ESPUser.getTypes():
+                    q_program = ESPUser.getAllOfType(recipient_type, True)
+                else:
+                    q_program = Q()
             else:
                 q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
 
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
             #   with any lists marked 'OR'.
-            checkbox_keys = [x[9:] for x in [x for x in list(data.keys()) if x.startswith('checkbox_')]]
+            #   Only treat a checkbox as active when it has a truthy value;
+            #   unchecked boxes can still appear in the POST data with an empty
+            #   value, and must not be applied as list filters.
+            checkbox_keys = [x[9:] for x in list(data.keys()) if x.startswith('checkbox_') and data.get(x)]
             and_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('and_')]]
             or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith('or_')]]
             not_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('not_')]]
-            #if any keys concern the same field, we will place them into
-            #a subquery and count occurrences
-
-            #for the purpose of experimentation simply fix this to the record__event
-            #as this could very well have different implications for other fields
-
-            subqry_fieldmap = {'record__event':[]}
-
             for and_list_name in and_keys:
                 user_type = get_recipient_type(and_list_name)
-
                 if user_type:
-
                     qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
+                    subquery_qs = ESPUser.objects.filter(qobject).values_list('pk', flat=True).distinct()
 
                     if and_list_name in not_keys:
-                        q_program = q_program & ~qobject
+                        q_program = q_program & ~Q(pk__in=subquery_qs)
                     else:
-                        needs_subquery = False
-                        if len(qobject.children) > 1:
-                            qobject_child = qobject.children[1]
-
-                            if isinstance(qobject_child, (list, tuple)):
-                                field_name, field_value = qobject.children[1]
-                                needs_subquery = field_name in subqry_fieldmap
-
-                                if needs_subquery:
-                                    subqry_fieldmap[field_name].append(field_value)
-                        if not needs_subquery:
-                            q_program = q_program & qobject
-
-            event_fields = subqry_fieldmap['record__event']
-
-            if event_fields:
-                #annotation is needed to initiate group by
-                #except that it causes the query to return two columns
-                #so we call values at the end of the chain, however,
-                #that results in multiple group by fields(causing the query to fail)
-                #so, we assign a group by field, to force grouping by user_id
-                subquery = (
-                              Record
-                              .objects
-                              .filter(program=program, event__name__in=event_fields)
-                              .annotate(numusers=Count('user__id'))
-                              .filter(numusers=len(event_fields))
-                              .values_list('user_id', flat=True)
-                            )
-
-                subquery.query.group_by = []#leave empty to strip out duplicate group by
-                subquery = Q(pk__in=subquery)
+                        q_program = q_program & Q(pk__in=subquery_qs)
 
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
                 if user_type:
                     qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
+                    subquery_qs = ESPUser.objects.filter(qobject).values_list('pk', flat=True).distinct()
+
                     if or_list_name not in not_keys:
-                        q_program = q_program | qobject
+                        q_program = q_program | Q(pk__in=subquery_qs)
                     else:
-                        q_program = q_program | ~qobject
+                        q_program = q_program | ~Q(pk__in=subquery_qs)
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria(recipient_type, data, program)
+            q_extra = self.query_from_criteria('any', data, program)
 
         qobject = (q_extra & q_program & Q(is_active=True))
 
@@ -470,14 +438,19 @@ class UserSearchController(object):
 
         if template is None:
             template = 'users/usersearch/usersearch_default.html'
+        if add_to_context is None:
+            add_to_context = {}
 
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
-                filterObj = self.filter_from_postdata(program, data)
-                return (filterObj, True)
+                try:
+                    filterObj = self.filter_from_postdata(program, data)
+                    return (filterObj, True)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    add_to_context['error'] = str(e)
 
         if target_path is None:
             target_path = request.path
