@@ -1,7 +1,7 @@
-<nav class="navbar navbar-light bg-light navbar-expand-md fixed-top">
+<nav class="navbar navbar-light bg-light navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
   <div class="container">
     <a class="navbar-brand" href="/">{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}</a>
-    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+    <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbar-collapse">
@@ -9,7 +9,7 @@
         <li class="nav-item"><a class="nav-link" href="/about/main.html">About</a></li>
         <li class="nav-item"><a class="nav-link" href="/contact/contact/">Contact Us</a></li>
       </ul>
-      <ul class="nav navbar-nav ml-auto">
+      <ul class="nav navbar-nav ms-auto">
         <li class="nav-item">
           {% include "users/loginbox_content.html" %}
         </li>

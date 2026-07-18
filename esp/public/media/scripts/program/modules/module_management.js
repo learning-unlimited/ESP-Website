@@ -245,7 +245,7 @@ $j(document).ready(function() {
             var pos     = calculatePosition(mod);
 
             // ── Sidebar row ──────────────────────────────────────
-            var $row = $j('<div>').addClass('tl-row-label').on('click', function() {
+            var $row = $j('<div>').addClass('tl-row-label').data('mod-id', mod.id).on('click', function() {
                 openEditPanel(mod, type);
             });
             if (isLocked) { $row.addClass('tl-row-locked'); }
@@ -346,6 +346,79 @@ $j(document).ready(function() {
             }
             $blockRow.append($block);
             $grid.append($blockRow);
+        });
+
+        initSortable(type);
+    }
+
+    function initSortable(type) {
+        var $sidebar = $j('#' + type + 'Sidebar');
+        var modules  = type === 'student' ? allModules.learn : allModules.teach;
+
+        $sidebar.sortable({
+            items: '> .tl-row-label:not(.tl-row-locked)',
+            axis: 'y',
+            cursor: 'grabbing',
+            tolerance: 'pointer',
+            placeholder: 'tl-drag-placeholder',
+            update: function() {
+                var newOrder = [];
+                var currentSeq = 10;
+                $sidebar.children('.tl-row-label').each(function(i) {
+                    var $row = $j(this);
+                    
+                    if ($row.hasClass('tl-row-locked')) {
+                        currentSeq += 10;
+                        return;
+                    }
+                    
+                    var modId = parseInt($row.data('mod-id'), 10);
+                    newOrder.push({ id: modId, seq: currentSeq });
+                    currentSeq += 10;
+                });
+
+                var modMap = {};
+                $j.each(modules, function(index, m) { modMap[m.id] = m; });
+                newOrder.forEach(function(o) {
+                    modMap[o.id].seq = o.seq;
+                });
+                var reordered = modules.slice().sort(function(a, b) {
+                    return a.seq - b.seq;
+                });
+
+                if (type === 'student') {
+                    allModules.learn = reordered;
+                } else {
+                    allModules.teach = reordered;
+                }
+
+                computeTimelineDates();
+                renderGridHeaders();
+                renderTimeline('student');
+                renderTimeline('teacher');
+
+                $j.ajax({
+                    url: '/manage/' + programUrlBase + '/module_schedule/reorder',
+                    method: 'POST',
+                    data: JSON.stringify({ order: newOrder }),
+                    contentType: 'application/json',
+                    headers: { 'X-CSRFToken': csrfToken },
+                    success: function(res) {
+                        if (res.success) {
+                            showToast('Order saved.', 'success');
+                        } else {
+                            showToast('Error: ' + (res.error || 'Unknown error'), 'error');
+                            loadModules();
+                        }
+                    },
+                    error: function(xhr) {
+                        var msg = 'Network error while saving order.';
+                        try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+                        showToast(msg, 'error');
+                        loadModules();
+                    }
+                });
+            }
         });
     }
 

@@ -453,3 +453,6 @@ ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Google Maps Embed API key
+GOOGLE_MAPS_EMBED_KEY = ''
