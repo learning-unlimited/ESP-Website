@@ -1,15 +1,18 @@
 from django.urls import re_path
 
 from esp.program import views
+from esp.qsdmedia.views import site_media
 import esp.users.views.merge
 
 urlpatterns = [
     # manage stuff
     re_path(r'^manage/programs/?$', views.manage_programs, name='manage_programs'),
+    re_path(r'^manage/site_media/?$', site_media, name='manage_site_media'),
     re_path(r'^manage/newprogram/?$', views.newprogram, name='manage_newprogram'),
     re_path(r'^manage/submit_transaction/?$', views.submit_transaction, name='manage_submit_transaction'),
     re_path(r'^manage/pages/?$', views.manage_pages, name='manage_pages'),
     re_path(r'^manage/userview/?$', views.userview, name='manage_userview'),
+    re_path(r'^manage/userview_edit/?$', views.userview_edit, name='manage_userview_edit'),
     re_path(r'^manage/deactivate_user/?$', views.deactivate_user, name='manage_deactivate_user'),
     re_path(r'^manage/activate_user/?$', views.activate_user, name='manage_activate_user'),
     re_path(r'^manage/unenroll_student/?$', views.unenroll_student, name='manage_unenroll_student'),
@@ -23,4 +26,10 @@ urlpatterns = [
     re_path(r'^manage/preview/?$', views.template_preview, name='manage_template_preview'),
     re_path(r'^manage/mergeaccounts/?$', esp.users.views.merge.merge_accounts, name='manage_mergeaccounts'),
     re_path(r'^manage/docs(?:/(?P<doc_path>.*))?/?$', views.manage_docs, name='manage_docs'),
+
+    # module timeline API
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/?$', views.module_schedule_api, name='module_schedule_api'),
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/update/?$', views.module_schedule_update_api, name='module_schedule_update_api'),
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/preview/?$', views.module_schedule_preview_api, name='module_schedule_preview_api'),
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/conflicts/?$', views.module_schedule_conflicts_api, name='module_schedule_conflicts_api'),
 ]
