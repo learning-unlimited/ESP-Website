@@ -225,6 +225,13 @@ class StudentExtraCosts(ProgramModuleObj):
                 form = item['CostChoice']
                 lineitem_type = item['LineItemType']
 
+                # Disabled inputs are not submitted by the browser; preserve existing paid preference
+                if lineitem_type.id in paid_item_ids:
+                    existing = next((p for p in prefs if p[0] == lineitem_type.text), None)
+                    if existing:
+                        form_prefs.append(existing)
+                    continue
+
                 if form.is_valid():
                     if isinstance(form, CostItem):
                         if form.cleaned_data['cost'] is True:
