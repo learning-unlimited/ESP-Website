@@ -7,7 +7,6 @@ Covers:
   - bio()                   — username lookup, old_url, not found
   - bio_edit_user_program() — permission checks, GET form, POST save
 
-PR 5/6 — esp/web module coverage improvement
 """
 
 from django.test import RequestFactory
