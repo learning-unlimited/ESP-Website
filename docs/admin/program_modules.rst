@@ -298,8 +298,8 @@ Admin Setup
 
 The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
 
-1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited — you do not need to obtain or configure an API key for the embedded map.
-2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited.
+2. To enable the map, you'll need to set the 'program_center' tag to the geographic center of your campus or program location. The tag should be in the format "lat, long" (e.g., "37.427490, -122.170267"). This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
 3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065). Walking directions use standard Google Maps directions links and do not require any additional API keys.
 
 For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
@@ -429,8 +429,8 @@ Admin Setup
 
 The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
 
-1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited — you do not need to obtain or configure an API key for the embedded map.
-2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited.
+2. To enable the map, you'll need to set the 'program_center' tag to the geographic center of your campus or program location. The tag should be in the format "lat, long" (e.g., "37.427490, -122.170267"). This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
 3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065). Walking directions use standard Google Maps directions links and do not require any additional API keys.
 
 Note that you do not need to do any of this again if you've already done this for the student webapp.

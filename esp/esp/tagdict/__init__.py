@@ -490,13 +490,6 @@ all_global_tags = {
         'is_setting': True,
         'field': JSONValidatedCharField(),
     },
-    'google_cloud_api_key': {
-        'is_boolean': False,
-        'help_text': 'Deprecated: previously used for the Google Maps JavaScript API in onsite webapps. The site now links directly to google.com/maps/dir and this value is no longer used. It can be left blank and may be removed in a future release.',
-        'default': '',
-        'category': 'manage',
-        'is_setting': True,
-    },
     'google_analytics_id': {
         'is_boolean': False,
         'help_text': 'A <a href="https://support.google.com/analytics/answer/12270356?hl=en" target="_blank">measurement ID</a> for a <a href="https://developers.google.com/analytics" target="_blank">Google Analytics</a> property. The format of a measurement ID in Google Analytics 4 is "G-" followed by a combination of numbers and letters, such as "G-PSW1MY7HB4". Setting this value will enable the passing of traffic data to Google Analytics.',

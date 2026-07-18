@@ -42,6 +42,4 @@ SECRET_KEY = 'docker-dev-secret-key-not-for-production'
 
 ALLOWED_HOSTS = ['*']
 
-# Google Maps Embed API key (free — managed by Learning Unlimited).
-# Set this to a valid key to test map functionality locally.
 GOOGLE_MAPS_EMBED_KEY = ''
