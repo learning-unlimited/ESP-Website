@@ -13,8 +13,6 @@ Covers:
     myesp_accountmanage(), myesp_passwd() (GET, onsite error),
     myesp_stop_testing() (no-session, non-admin session),
     edit_profile() role routing
-
-PR 6/6 — esp/web module coverage improvement
 """
 
 from unittest.mock import MagicMock, patch
