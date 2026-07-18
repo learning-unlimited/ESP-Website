@@ -10,8 +10,7 @@ Covers:
   - NavBarEntry.makeTitle()
   - NavBarEntry.makeUrl()
   - NavBarEntry.__str__()
-  - install()
-  
+  - install()  
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
