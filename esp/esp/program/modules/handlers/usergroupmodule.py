@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
@@ -54,6 +55,20 @@ class UserGroupModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface user group management in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (usergroupfinal) return None.
+        if view_name != "usergroup":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Manage User Groups",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["user", "groups", "roles", "membership", "permissions"],
+        )
+
     @aux_call
     @needs_admin
     def usergroupfinal(self, request, tl, one, two, module, extra, prog):
@@ -61,7 +76,10 @@ class UserGroupModule(ProgramModuleObj):
             raise ESPError()('Filter and/or group has not been properly set')
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user group management process.')
         if request.POST.get('group_name_new', ''):
             group = request.POST['group_name_new']
         else:

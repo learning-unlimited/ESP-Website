@@ -346,6 +346,20 @@ div.dashboard-v2-container {
     font-size: 14px;
 }
 
+/* Hide a dashboard section when none of its buttons rendered for this program
+   (e.g. no financial modules are attached). The pill-grid still contains the
+   template's whitespace, so :empty can't detect this -- key off the absence of
+   any link instead. NB: :has() may not be nested inside another :has(), so we
+   match a header whose following content *has* a link and invert with :not(),
+   rather than matching a content that lacks one. Hides the header button; the
+   body is already collapsed (display:none) by default. */
+#dashboard-v2-container .collapsible-btn:not(:has(+ .collapsible-content a)) {
+    display: none;
+}
+#dashboard-v2-container .collapsible-content:not(:has(a)) {
+    display: none;
+}
+
 .admin-search-results {
     margin-top: 10px;
     display: none;
