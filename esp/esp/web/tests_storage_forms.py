@@ -4,8 +4,6 @@ Unit tests for:
   - esp/web/forms/__init__.py   (ResizeImageField)
   - esp/web/forms/bioedit_form.py  (BioEditForm)
   - esp/web/forms/fileupload_form.py (FileUploadForm, FileUploadForm_Admin, FileRenameForm)
-
-PR 2/11 — web module coverage improvement
 """
 
 from unittest.mock import patch, MagicMock
