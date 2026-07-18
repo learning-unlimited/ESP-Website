@@ -11,9 +11,11 @@ logger = logging.getLogger(__name__)
 import os
 import subprocess
 import sys
+import types
 from reversion import revisions as reversion
 from reversion.models import Version
 import unittest
+from unittest.mock import patch
 
 from django.db.models.query import Q
 from django.template import loader, Template, Context, TemplateDoesNotExist
@@ -756,6 +758,277 @@ class FormatLazyTest(DjangoTestCase):
     def test_integer_substitution(self):
         result = format_lazy("Value: %d", 42)
         self.assertEqual(str(result), "Value: 42")
+
+
+class ChooseProgramTestCase(unittest.TestCase):
+    def _install_fake_program_module(self, program_class):
+        module = types.ModuleType('esp.program.models')
+        module.Program = program_class
+        return patch.dict(sys.modules, {'esp.program.models': module})
+
+    def test_rejects_multiple_noninteractive_kwargs(self):
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with self.assertRaises(ValueError):
+                choose_program(program_id=7, program_name='Splash 2014')
+
+    def test_interactive_accepts_prefixed_suggestion_index(self):
+        suggestion_1 = types.SimpleNamespace(id=101, name='Alpha', url='alpha')
+        suggestion_2 = types.SimpleNamespace(id=202, name='Beta', url='beta')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [suggestion_1, suggestion_2])
+            objects = types.SimpleNamespace(get=lambda **kwargs: None)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['2', 'i:2']):
+                result = choose_program()
+
+        self.assertIs(result, suggestion_2)
+
+    def test_interactive_accepts_prefixed_program_id(self):
+        selected = types.SimpleNamespace(id=42, name='Chosen', url='chosen')
+
+        class Program(object):
+            class DoesNotExist(Exception):
+                pass
+
+            class MultipleObjectsReturned(Exception):
+                pass
+
+            current_programs = staticmethod(lambda: [])
+
+        def fake_get(**kwargs):
+            if kwargs.get('id') == 42:
+                return selected
+            raise Program.DoesNotExist()
+
+        Program.objects = types.SimpleNamespace(get=fake_get)
+
+        from esp.utils.shell_utils import choose_program
+
+        with self._install_fake_program_module(Program):
+            with patch('builtins.input', side_effect=['id:42']):
+                result = choose_program()
+
+        self.assertIs(result, selected)
+
+
+class ExpirableModelBoundaryTest(DjangoTestCase):
+    """Tests if ExpirableModel bounds have consistent logic (#5815)."""
+
+    def test_boundary_consistency(self):
+        from esp.users.models import Permission
+
+        # 1. Setup specific boundaries
+        start_time = datetime.datetime(2026, 1, 1, 12, 0, 0)
+        end_time = datetime.datetime(2026, 1, 31, 12, 0, 0)
+
+        # Create a Permission (a concrete subclass of ExpirableModel)
+        perm = Permission.objects.create(
+            permission_type='Administer',
+            start_date=start_time,
+            end_date=end_time
+        )
+
+        # 2. Test exact start boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=start_time),
+            "is_valid() should be True at exact start_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=start_time),
+            "valid_objects() should include exact start_date"
+        )
+
+        # 3. Test exact end boundary (should be valid/included)
+        self.assertTrue(
+            perm.is_valid(when=end_time),
+            "is_valid() should be True at exact end_date"
+        )
+        self.assertIn(
+            perm,
+            Permission.valid_objects(when=end_time),
+            "valid_objects() should include exact end_date"
+        )
+
+        # 4. Test just before start boundary (should be invalid/excluded)
+        just_before = start_time - datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_before),
+            "is_valid() should be False just before start_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_before),
+            "valid_objects() should exclude just before start_date"
+        )
+
+        # 5. Test just after end boundary (should be invalid/excluded)
+        just_after = end_time + datetime.timedelta(microseconds=1)
+        self.assertFalse(
+            perm.is_valid(when=just_after),
+            "is_valid() should be False just after end_date"
+        )
+        self.assertNotIn(
+            perm,
+            Permission.valid_objects(when=just_after),
+            "valid_objects() should exclude just after end_date"
+        )
+
+
+class TexEscapeTest(unittest.TestCase):
+    """Tests for the texescape template filter (esp.utils.templatetags.latex)."""
+
+    def setUp(self):
+        from esp.utils.templatetags.latex import texescape
+        self.texescape = texescape
+
+    def test_latex_in_math_wrapped(self):
+        result = self.texescape(r'$$\LaTeX$$')
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+    def test_tex_in_math_wrapped(self):
+        result = self.texescape(r'$$\TeX$$')
+        self.assertIn(r'\mbox{\TeX}', result)
+
+    def test_xelatex_in_math_wrapped(self):
+        result = self.texescape(r'$$\XeLaTeX$$')
+        self.assertIn(r'\mbox{\XeLaTeX}', result)
+
+    def test_lualatex_in_math_wrapped(self):
+        result = self.texescape(r'$$\LuaLaTeX$$')
+        self.assertIn(r'\mbox{\LuaLaTeX}', result)
+
+    def test_amstex_in_math_wrapped(self):
+        result = self.texescape(r'$$\AmSTeX$$')
+        self.assertIn(r'\mbox{\AmSTeX}', result)
+
+    def test_normal_math_unaffected(self):
+        result = self.texescape(r'$$\pi + \sqrt{2}$$')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_latex_not_partial_match(self):
+        """\\LaTeXe wraps itself in \\mbox internally — must not be matched."""
+        result = self.texescape(r'$$\LaTeXe$$')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_basic_escaping(self):
+        result = self.texescape('Tom & Jerry')
+        self.assertIn(r'\&', result)
+
+    def test_math_passthrough(self):
+        result = self.texescape(r'$$\sqrt{3}$$')
+        self.assertIn(r'\sqrt{3}', result)
+
+    def test_multiple_math_blocks(self):
+        result = self.texescape(r'$$\alpha$$ and $$\LaTeX$$')
+        self.assertIn(r'\alpha', result)
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+    def test_unmatched_dollars(self):
+        """Unmatched $$ falls back to full escaping — no math segments."""
+        result = self.texescape(r'$$\LaTeX')
+        self.assertNotIn(r'\mbox{', result)
+
+    def test_already_wrapped_in_text(self):
+        """Redundant nesting is cosmetic but valid LaTeX."""
+        result = self.texescape(r'$$\text{\LaTeX}$$')
+        self.assertIn(r'\mbox{\LaTeX}', result)
+
+
+class DiffTemplateOverrideViewTest(DjangoTestCase):
+
+    def setUp(self):
+        import tempfile
+        from django.test.utils import override_settings
+
+        # Create users
+        self.admin = ESPUser.objects.create_user(username='admin_diff', password='pass')
+        self.admin.makeAdmin()
+        self.non_admin = ESPUser.objects.create_user(username='user_diff', password='pass')
+
+        # Use a fully isolated temporary directory — never touches the real templates/
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._override = override_settings(PROJECT_ROOT=self._tmpdir.name)
+        self._override.enable()
+
+        # Write the original template file inside the temp dir
+        template_dir = os.path.join(self._tmpdir.name, 'templates')
+        os.makedirs(template_dir)
+        self.template_path = os.path.join(template_dir, 'test_diff_template.html')
+        with open(self.template_path, 'w') as f:
+            f.write('Original Content')
+
+        # Create TemplateOverride pointing at the same unique name
+        self.override = TemplateOverride.objects.create(
+            name='test_diff_template.html',
+            content='Hello Override',
+            version=1,
+        )
+
+    def tearDown(self):
+        self._override.disable()
+        self._tmpdir.cleanup()
+
+    def test_admin_can_access_diff(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_admin_forbidden(self):
+        self.client.login(username='user_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 403)
+
+    def test_invalid_template_id(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get('/manage/templateoverride/9999')
+        self.assertEqual(response.status_code, 404)
+
+    def test_diff_output_contains_expected_content(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        content = response.content.decode()
+        self.assertIn('diff', content)
+        self.assertIn('Original', content)
+        self.assertIn('Override', content)
+
+    def test_same_content_no_crash(self):
+        self.client.login(username='admin_diff', password='pass')
+        self.override.content = 'Original Content'
+        self.override.save()
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 200)
+
+    def test_template_file_exists_no_500(self):
+        self.client.login(username='admin_diff', password='pass')
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertNotEqual(response.status_code, 500)
+
+    def test_missing_original_file_returns_404(self):
+        """Regression test: FileNotFoundError must become Http404, not 500."""
+        self.client.login(username='admin_diff', password='pass')
+        os.remove(self.template_path)
+        response = self.client.get(f'/manage/templateoverride/{self.override.id}')
+        self.assertEqual(response.status_code, 404)
 
 
 def suite():
