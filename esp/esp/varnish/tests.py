@@ -21,7 +21,7 @@ class GetVarnishHostTest(TestCase):
     def test_returns_none_when_not_configured(self):
         # Default settings don't have VARNISH_HOST
         from django.conf import settings
-        if hasattr(settings, 'VARNISH_HOST'):
+        if getattr(settings, 'VARNISH_HOST', None):
             self.skipTest('VARNISH_HOST is set in test settings')
         result = get_varnish_host()
         self.assertIsNone(result)
@@ -31,7 +31,7 @@ class PurgePageTest(TestCase):
     def test_returns_none_when_no_varnish(self):
         """If no varnish host is configured, purge_page should return None."""
         from django.conf import settings
-        if hasattr(settings, 'VARNISH_HOST'):
+        if getattr(settings, 'VARNISH_HOST', None):
             self.skipTest('VARNISH_HOST is set in test settings')
         result = purge_page('/some/url/')
         self.assertIsNone(result)
@@ -56,7 +56,7 @@ class PurgePageTest(TestCase):
 class PurgeAllTest(TestCase):
     def test_returns_none_when_no_varnish(self):
         from django.conf import settings
-        if hasattr(settings, 'VARNISH_HOST'):
+        if getattr(settings, 'VARNISH_HOST', None):
             self.skipTest('VARNISH_HOST is set in test settings')
         result = purge_all()
         self.assertIsNone(result)
