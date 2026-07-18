@@ -98,6 +98,42 @@ We would like you, as a teacher, to upload all documents and other materials rel
 </table>
 </form>
 
+{% if copy_message %}
+<div style="padding: 10px 15px; margin: 10px auto; width: 70%; border-radius: 5px; font-family: Arial, sans-serif; font-size: 13px; {% if 'Successfully' in copy_message %}background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724;{% else %}background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24;{% endif %}">
+    {{ copy_message }}
+</div>
+{% endif %}
+
+{% if previous_docs %}
+<br />
+<table cellpadding="12" cellspacing="0" align="center" width="70%" style="background-color: #f9f9f9; border-radius: 5px; margin-top: 20px;">
+    <tr>
+        <th colspan="3" style="text-align: center;">
+            Documents from your previous classes
+        </th>
+    </tr>
+    <tr>
+        <td class="instructions" colspan="3">
+            These are documents you've uploaded for other classes. You can copy any of them to this class:
+        </td>
+    </tr>
+    {% for p_doc in previous_docs %}
+    <tr>
+        <td><a href="{{ p_doc.download_path }}">{{ p_doc.friendly_name }}</a></td>
+        <td style="color: #666; font-size: 12px;">(from {{ p_doc.owner_title }})</td>
+        <td>
+            <form method="post" action="./{{ cls.id }}" style="display: inline;">
+                <input type="hidden" name="command" value="copy_doc">
+                <input type="hidden" name="docid" value="{{ p_doc.id }}">
+                <input class="button" type="submit" value="Copy to this class">
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+
 {% include "program/modules/teacherregcore/returnlink.html" %}
 
 </div>
