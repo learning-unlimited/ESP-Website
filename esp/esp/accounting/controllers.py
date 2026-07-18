@@ -438,7 +438,9 @@ class IndividualAccountingController(ProgramAccountingController):
             paid_in__isnull=True,
         ).exclude(line_item__text__in=self.finaid_items)
         purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in transfers])
-        sibling_discount = self.amount_siblingdiscount()
+        # Only apply sibling discount when admission is being paid in this transaction
+        paying_admission = transfers.filter(line_item__text__in=self.admission_items).exists()
+        sibling_discount = self.amount_siblingdiscount() if paying_admission else Decimal('0')
         return '%s:%s:%.2f' % (self.get_id(), purchases_str, sibling_discount)
 
     @staticmethod
