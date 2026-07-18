@@ -377,13 +377,7 @@ class StartRegTest(StatisticsTestBase):
 # ===========================================================================
 
 class RepeatsTest(StatisticsTestBase):
-    """Tests for statistics.repeats().
-
-    NOTE: repeats() references 'program__program_type' (statistics.py L258),
-    but the Program model has no ``program_type`` field.  Every call therefore
-    raises ``django.core.exceptions.FieldError``.  These tests document the
-    pre-existing bug so it does not silently break the rest of the suite.
-    """
+    """Tests for statistics.repeats()."""
 
     def _call(self, students=None, profiles=None, rd=None):
         if students is None:
@@ -395,24 +389,20 @@ class RepeatsTest(StatisticsTestBase):
         return repeats(_form(), self.programs, students, profiles, rd), rd
 
     def test_returns_string(self):
-        from django.core.exceptions import FieldError
-        with self.assertRaises(FieldError):
-            self._call()
+        result, _ = self._call()
+        self.assertIsInstance(result, str)
 
     def test_result_dict_has_repeat_data(self):
-        from django.core.exceptions import FieldError
-        with self.assertRaises(FieldError):
-            self._call(rd={})
+        _, rd = self._call(rd={})
+        self.assertIn("repeat_data", rd)
 
     def test_repeat_data_is_list(self):
-        from django.core.exceptions import FieldError
-        with self.assertRaises(FieldError):
-            self._call(rd={})
+        _, rd = self._call(rd={})
+        self.assertIsInstance(rd["repeat_data"], list)
 
     def test_empty_students_gives_empty_repeat_data(self):
-        from django.core.exceptions import FieldError
-        with self.assertRaises(FieldError):
-            self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        _, rd = self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        self.assertEqual(rd["repeat_data"], [])
 
     def test_repeats_logic_flow(self):
         mock_data = [
