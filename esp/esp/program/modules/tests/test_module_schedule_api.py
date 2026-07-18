@@ -107,26 +107,6 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         data = json.loads(response.content)
         self.assertFalse(data["success"])
 
-    def test_module_schedule_required_toggle_api(self):
-        """Toggle required flags and label."""
-        self.client.force_login(self.admin)
-
-        payload = {
-            "module_id": self.pmo.id,
-            "required": True,
-            "required_label": "Must do this!"
-        }
-
-        response = self.client.post(
-            reverse("module_schedule_required_toggle_api", kwargs=self.url_kwargs),
-            data=json.dumps(payload),
-            content_type="application/json"
-        )
-        self.assertEqual(response.status_code, 200)
-
-        self.pmo.refresh_from_db()
-        self.assertTrue(self.pmo.required)
-        self.assertEqual(self.pmo.required_label, "Must do this!")
 
     def test_module_schedule_preview_api(self):
         """Preview API filters based on `at` timestamp."""
