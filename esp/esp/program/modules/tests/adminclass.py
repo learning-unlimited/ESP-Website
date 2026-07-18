@@ -6,6 +6,53 @@ from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
 from django.core import mail
 
+class SafeRedirectTest(ProgramFrameworkTest):
+    """Tests for the _safe_redirect validation in approveclass, rejectclass, and proposeclass."""
+
+    def setUp(self):
+        super().setUp()
+        self.schedule_randomly()
+        self.cls = self.teachers[0].getTaughtClasses()[0]
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.adminUser.save()
+        self.client.login(username='admin', password='password')
+        self.fallback_url = '/manage/' + self.program.url + '/manageclass/' + str(self.cls.id)
+
+    def _get_url(self, action):
+        return '/manage/' + self.program.url + '/' + action + '/' + str(self.cls.id)
+
+    def test_external_redirect_blocked_approveclass(self):
+        """External redirect URLs should be rejected, falling back to the manageclass URL."""
+        response = self.client.get(self._get_url('approveclass') + '?redirect=https://evil.com')
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_external_redirect_blocked_rejectclass(self):
+        response = self.client.get(self._get_url('rejectclass') + '?redirect=https://evil.com')
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_external_redirect_blocked_proposeclass(self):
+        response = self.client.get(self._get_url('proposeclass') + '?redirect=https://evil.com')
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_internal_redirect_allowed(self):
+        """Internal path redirects should be allowed."""
+        internal_url = '/manage/' + self.program.url + '/dashboard'
+        response = self.client.get(self._get_url('approveclass') + '?redirect=' + internal_url)
+        self.assertRedirects(response, internal_url, fetch_redirect_response=False)
+
+    def test_no_redirect_param_uses_fallback(self):
+        """When no redirect parameter is provided, the fallback URL should be used."""
+        response = self.client.get(self._get_url('approveclass'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_protocol_relative_redirect_blocked(self):
+        """Protocol-relative URLs (//evil.com) should be rejected."""
+        response = self.client.get(self._get_url('approveclass') + '?redirect=//evil.com')
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+
 class CancelClassTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
