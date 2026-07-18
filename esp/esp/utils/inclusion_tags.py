@@ -39,9 +39,6 @@ Learning Unlimited, Inc.
     you'll get cache initialization errors.
 """
 
-from esp.miniblog.templatetags.render_blog import render_blog
-from esp.miniblog.templatetags.render_blog import render_comments
-
 from esp.program.templatetags.class_render import render_class
 from esp.program.templatetags.class_render import render_class_core
 from esp.program.templatetags.class_render import render_class_preview

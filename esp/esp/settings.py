@@ -51,13 +51,20 @@ from .django_settings import *
 # Import system-specific settings
 from .local_settings import *
 
-# Allow env to override DB settings (CI sets these to match the PostgreSQL service)
+# Allow env to override DB settings (CI and Docker set these to match the PostgreSQL service)
+if os.environ.get('DATABASE_HOST'):
+    DATABASES['default']['HOST'] = os.environ.get('DATABASE_HOST')
+if os.environ.get('DATABASE_PORT'):
+    DATABASES['default']['PORT'] = os.environ.get('DATABASE_PORT')
 if os.environ.get('DATABASE_USER'):
     DATABASE_USER = os.environ.get('DATABASE_USER')
+    DATABASES['default']['USER'] = DATABASE_USER
 if os.environ.get('DATABASE_PASSWORD'):
     DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+    DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
 if os.environ.get('DATABASE_NAME'):
     DATABASE_NAME = os.environ.get('DATABASE_NAME')
+    DATABASES['default']['NAME'] = DATABASE_NAME
 
 # Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
 # warnings. Explicitly locking this in prevents unintended schema changes if
@@ -96,22 +103,10 @@ MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
 STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 
 # We log to LOG_FILE always at level LOG_LEVEL (INFO by default), log to the
-# console at level LOG_LEVEL if DEBUG=True, mail admins (i.e. serverlog) at
-# level ERROR if DEBUG=False, and log to sentry at level WARNING if set up.
-# DisallowedHost errors and deprecation warnings don't go to email ever.
-# In scripts, we log to the console in a shorter format, to a separate log
-# file, and not to email or sentry.
-if SENTRY_DSN:
-    sentry_handler = {
-        'level': 'WARNING',
-        'filters': ['require_not_in_script'],
-        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        'dsn': SENTRY_DSN,
-    }
-else:
-    sentry_handler = {
-        'class': 'logging.NullHandler',
-    }
+# console at level LOG_LEVEL if DEBUG=True, and mail admins (i.e. serverlog)
+# at level ERROR if DEBUG=False. DisallowedHost errors and deprecation
+# warnings don't go to email ever. In scripts, we log to the console in a
+# shorter format, and to a separate log file.
 
 warnings.simplefilter("default", PendingDeprecationWarning)
 
@@ -183,7 +178,6 @@ LOGGING = {
             'include_html': True,
             'formatter': 'verbose',
         },
-        'sentry': sentry_handler,
     },
     # We don't have a root logger, because it for various reasons ends up
     # confusing runserver_plus and getting doubled log output.  I can't figure
@@ -200,26 +194,25 @@ LOGGING = {
         # and just override 'django'.
         'django.security': {
             'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins', 'sentry'],
+                         'mail_admins'],
             'level': 'DEBUG',
         },
         'django.request': {
             'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins', 'sentry'],
+                         'mail_admins'],
             'level': 'DEBUG',
         },
         'django': {
             'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins', 'sentry'],
+                         'mail_admins'],
             'level': 'DEBUG',
         },
         'py.warnings': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'sentry'],
+            'handlers': ['file', 'filescript', 'console', 'consolescript'],
         },
         'esp': {
             'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins', 'sentry'],
+                         'mail_admins'],
             'level': 'DEBUG',
         },
     }
@@ -235,6 +228,14 @@ MANAGERS = ADMINS
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
 
+# Docker dev: allow localhost when a host local_settings.py is volume-mounted
+if os.environ.get('DJANGO_ALLOWED_HOSTS'):
+    _allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS').strip()
+    if _allowed_hosts == '*':
+        ALLOWED_HOSTS = ['*']
+    else:
+        ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+
 for (key, value) in CONTACTFORM_EMAIL_CHOICES:
     if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
@@ -249,32 +250,28 @@ if 'CACHES' not in locals():
         }
     }
 
+# Docker dev: override memcached host when the repo is volume-mounted
+if os.environ.get('MEMCACHED_LOCATION'):
+    CACHES['default']['LOCATION'] = os.environ.get('MEMCACHED_LOCATION')
+
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
 # set tempdir so that we don't have to worry about collision
+# Use a per-UID subdirectory so that different OS users (e.g. www-data vs the
+# developer running tests) each get their own directory.  This prevents the
+# [Errno 13] Permission denied failures described in issue #234 that occurred
+# when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX)
-    if not os.path.exists(tempdir):
-        os.makedirs(tempdir)
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    os.makedirs(tempdir, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(tempdir, 0o700)
+    except OSError:
+        # If we cannot change permissions, proceed but keep the directory as-is.
+        pass
     tempfile.tempdir = tempdir
     tempfile.alreadytwiddled = True
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-# NOTE: don't change this value; it's hard coded into various JavaScript files
 CSRF_COOKIE_NAME = 'esp_csrftoken'
-
-if SENTRY_DSN:
-    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
-    # will remain enabled and will receive exceptions before Raven does.
-    import raven
-
-    INSTALLED_APPS += (
-        'raven.contrib.django.raven_compat',
-    )
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
-    }
-

@@ -14,6 +14,13 @@
 
 <h1>{% if module %}{{ module }}{% else %}Search For User{% endif %}</h1>
 
+{% if module == "Scheduling and Class Changes" %}
+<div class="alert alert-info">
+    <p>Use the advanced search options below to find a student and access their registration schedule page. To perform a simpler search,
+        use the <a href="?">Simple Search</a>.</p>
+</div>
+{% endif %}
+
 <center>
 <p>
 Please search for a user: <br />
@@ -21,15 +28,15 @@ Please search for a user: <br />
 </p>
 
 {% if error %}
-<div align="center" class="alert alert-warning">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
-  Error: No user found by that criteria.
+<div align="center" role="alert" class="alert alert-warning" id="user-search-error">
+  <span class="bi bi-info-circle" aria-hidden="true"></span>
+  {% if error == True %}Error: No user found by that criteria.{% else %}Error: {{ error }}{% endif %}
 </div>
 {% endif %}
 
 {% if message %}
-<div class="alert alert-info">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div role="alert" class="alert alert-info">
+  <span class="bi bi-info-circle" aria-hidden="true"></span>
   <b>{{ message }}</b>
 </div>
 {% endif %}
@@ -108,9 +115,9 @@ Max:
 </tr>
 
 <tr><td><label><strong>Options:</strong></label></td><td align="center">
-<input class="fancybutton" type="submit" value="Search for user" name="submitform" />
+<input class="btn btn-primary" type="submit" value="Search for user" name="submitform" />
 {% if list %} or
-&nbsp;&nbsp;<input class="fancybutton" type="submit" value="Use Filtered List" name="submitform" />
+&nbsp;&nbsp;<input class="btn btn-primary" type="submit" value="Use Filtered List" name="submitform" />
 {% endif %}</td>
 </tr>
 </table>

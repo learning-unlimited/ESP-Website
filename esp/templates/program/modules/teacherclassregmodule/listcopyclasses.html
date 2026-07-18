@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>
 
 <br /><br />
@@ -36,7 +36,7 @@
   {% endif %}
   {% load class_render_row %}
   {% for cls in all_class_list %}
-    {% render_class_copy_row cls %}
+    {% render_class_copy_row cls request.user program %}
   {% endfor %}
 
 </table>
