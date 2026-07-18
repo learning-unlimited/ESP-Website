@@ -12,7 +12,7 @@ other host dependencies or specific Python versions needed.
 
 The Docker setup runs three containers:
 
-- **web**: The Django application (Python 3.10)
+- **web**: The Django application (Python 3.12)
 - **db**: PostgreSQL 14 database
 - **memcached**: Memcached caching layer
 
