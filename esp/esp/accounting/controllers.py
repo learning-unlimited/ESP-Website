@@ -438,7 +438,8 @@ class IndividualAccountingController(ProgramAccountingController):
             paid_in__isnull=True,
         ).exclude(line_item__text__in=self.finaid_items)
         purchases_str = ';'.join(['%d,%.2f' % (t.line_item_id, t.amount) for t in transfers])
-        return '%s:%s' % (self.get_id(), purchases_str)
+        sibling_discount = self.amount_siblingdiscount()
+        return '%s:%s:%.2f' % (self.get_id(), purchases_str, sibling_discount)
 
     @staticmethod
     def from_id(id):
@@ -472,7 +473,8 @@ class IndividualAccountingController(ProgramAccountingController):
         for manual intervention in the above case.
         """
         # Parse identifier
-        id_str, transfer_list = identifier.split(':')
+        id_str, transfer_list, sibling_discount_str = identifier.split(':')
+        sibling_discount = Decimal(sibling_discount_str)
         iac = IndividualAccountingController.from_id(id_str)
 
         payment = iac.submit_payment(
@@ -515,10 +517,10 @@ class IndividualAccountingController(ProgramAccountingController):
             transfer_total += transfer.amount_dec
             transfer.save()
 
-        if transfer_total != amount_paid:
+        if transfer_total - sibling_discount != amount_paid:
             raise ReconciliationError(
-                "Failed to process payment. Item prices sum to $%.2f, but the user paid $%.2f" %
-                (transfer_total, amount_paid))
+                "Failed to process payment. Item prices sum to $%.2f (sibling discount $%.2f), but the user paid $%.2f" %
+                (transfer_total, sibling_discount, amount_paid))
 
         # Success!
         return payment
