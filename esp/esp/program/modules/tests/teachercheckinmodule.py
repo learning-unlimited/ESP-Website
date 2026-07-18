@@ -177,8 +177,8 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         self.assertIn('url_when', response.context)
         context_when = response.context['when']
         self.assertEqual(context_when.date(), test_date)
-        self.assertEqual(context_when.hour, 0)
-        self.assertEqual(context_when.minute, 0)
+        self.assertEqual(context_when.hour, 23)
+        self.assertEqual(context_when.minute, 59)
         self.assertEqual(response.context['url_when'], context_when.strftime('%m/%d/%Y %H:%M'))
 
     def test_previously_checked_in_returned(self):
