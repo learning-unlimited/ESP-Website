@@ -118,7 +118,7 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
                 cls.__dict__[k] = v
 
         cls.custom_form_data = custom_data
