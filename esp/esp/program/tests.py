@@ -835,6 +835,67 @@ class ProgramFrameworkTest(TestCase):
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
+class RegistrationProfileTest(ProgramFrameworkTest):
+
+    def test_getLastForProgram_does_not_auto_save(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test',
+            last_name='Student',
+            username='teststudent1450',
+            email='teststudent1450@example.com',
+        )
+
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile = RegistrationProfile.getLastForProgram(student, self.program)
+
+        self.assertEqual(profile.program, self.program)
+        self.assertIsNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile.save()
+        self.assertIsNotNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 1)
+
+    def test_getLastForProgram_with_existing_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test2',
+            last_name='Student',
+            username='teststudent1450b',
+            email='teststudent1450b@example.com',
+        )
+
+        profile = RegistrationProfile.objects.create(
+            user=student,
+            program=self.program,
+            most_recent_profile=True
+        )
+        original_id = profile.id
+
+        retrieved = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(retrieved.id, original_id)
+        self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
+
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
     def setUp(self):
@@ -1198,6 +1259,41 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         options.class_cap_offset = 0
         options.save()
         self.assertEqual(sec.capacity, initial_capacity)
+
+    def test_ignore_changes_with_room_cap_multiplier(self):
+        """When ignore_changes=True, _get_room_capacity bypasses the room-cap multiplier."""
+        mult_test = decimal.Decimal('0.6')
+        offset_test = 4
+
+        self.program.getModules()
+        self.schedule_randomly()
+
+        sec = random.choice(list(self.program.sections()))
+        options = sec.parent_program.studentclassregmoduleinfo
+        rooms = sec.classrooms()
+        self.assertGreater(len(rooms), 0)
+        room_capacity = rooms[0].num_students
+
+        # Enable room-cap multiplier and set values
+        options.apply_multiplier_to_room_cap = True
+        options.class_cap_multiplier = mult_test
+        options.class_cap_offset = offset_test
+        options.save()
+
+        # _get_room_capacity with ignore_changes=True returns raw room capacity
+        self.assertEqual(
+            sec._get_room_capacity(ignore_changes=True),
+            room_capacity,
+        )
+
+        # Without ignore_changes the room-cap multiplier is applied
+        capped = int(room_capacity * mult_test + offset_test)
+        self.assertEqual(sec._get_room_capacity(), capped)
+
+        # isFullIgnoreChanges calls isFull(ignore_changes=True) internally;
+        # with zero enrolled students and the unadjusted capacity, it should not be full
+        self.assertEqual(sec.num_students(), 0)
+        self.assertFalse(sec.isFullIgnoreChanges())
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
