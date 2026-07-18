@@ -138,7 +138,7 @@ Popup div for class cancellation request
     </th>
   </tr>
   {% for sec in modlist %}
-    {% render_section_moderator_list_row sec %}
+    {% render_section_moderator_list_row sec request.user %}
   {% endfor %}
   {% endif %}
 </table>

@@ -4,8 +4,7 @@ set -euf -o pipefail
 if [ "$CI_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
-    coverage run --source=. ./manage.py test
-    coverage xml
+    pytest -n auto --cov=. --cov-report=xml
 elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint
 else

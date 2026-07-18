@@ -44,7 +44,7 @@ Architecture
 Each theme consists of a set of pre-defined template overrides, images and
 styles.  This information is stored in the code repository 
 (esp/themes/theme_data directory).  The styles are stored in LESS
-(http://lesscss.org) format and compiled into CSS with user-specified
+(https://lesscss.org) format and compiled into CSS with user-specified
 parameters.
 
 From the end user perspective, there are 3 steps to setting up their 
@@ -247,7 +247,7 @@ in the past by including different CSS files).  Use selectors to differentiate
 between elements.
 
 Further setup and usage information is available at:
-  http://wiki.learningu.org/Generic_Templates
+  https://wiki.learningu.org/Generic_Templates
 
 
 

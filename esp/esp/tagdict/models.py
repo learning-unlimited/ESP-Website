@@ -1,3 +1,4 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # aseering 3/23/2010
 # This model is based on the sample "TaggedItem" model from the Django
 # documentation, as described at
-# http://www.djangoproject.com/documentation/models/generic_relations/
+# https://www.djangoproject.com/documentation/models/generic_relations/
 
 class Tag(models.Model):
     """A tag on an item."""
@@ -35,9 +36,28 @@ class Tag(models.Model):
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
     def __str__(self):
-        return "%s: %s (%s)" % (self.key, self.value, self.target)
+        return f"{self.key}: {self.value} ({self.target})"
 
     EMPTY_TAG = " "
+
+    @staticmethod
+    def _record_tag_access(key, kind):
+        """
+        Record that this request consulted a tag of the given kind ('program'
+        or 'global'), so the active-tags banner can filter to keys actually
+        used while handling the current request.
+        """
+        try:
+            from esp.middleware.threadlocalrequest import get_current_request
+            req = get_current_request()
+            if req is None:
+                return
+            attr = '_active_program_tag_keys' if kind == 'program' else '_active_global_tag_keys'
+            bucket = getattr(req, attr, None)
+            if bucket is not None:
+                bucket.add(key)
+        except Exception:
+            pass
 
     @classmethod
     def getTag(cls, key, target=None, default=None):
@@ -52,6 +72,10 @@ class Tag(models.Model):
         if target is not None:
             logger.warning("getTag() called for key %s with specific target; consider using getProgramTag()",
                            key)
+        else:
+            # Record global tag access (only for true global lookups, not
+            # target-specific ones, which shouldn't happen via getTag anyway).
+            cls._record_tag_access(key, 'global')
 
         result = cls._getTag(key, target=target)
         if result is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
@@ -117,8 +141,14 @@ class Tag(models.Model):
         # this works.
         if program is not None:
             res = cls._getTag(key, target=program)
+            # Record that this page consulted this tag key for this program,
+            # so _inject_active_program_tags can filter to page-specific tags.
+            cls._record_tag_access(key, 'program')
         if res is None:
             res = cls._getTag(key)
+            # Falling back to the global tag value also counts as a global
+            # tag access for banner-filtering purposes.
+            cls._record_tag_access(key, 'global')
         if res is None:
             if default is not None:
                 res = default
@@ -146,6 +176,9 @@ class Tag(models.Model):
         if program:
             tag_val = Tag.getProgramTag(key, program, boolean=True, default=default)
         else:
+            # Direct global lookup — record the access so the banner can pick
+            # it up the same way the getTag()/getProgramTag() paths do.
+            cls._record_tag_access(key, 'global')
             tag_val = Tag._getTag(key)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
             if default is not None:
@@ -189,6 +222,54 @@ class Tag(models.Model):
         return tag.value
 
     @classmethod
+    def get_nondefault_program_tags(cls, program):
+        """
+        Return a list of dicts describing tags that have been explicitly set for
+        the given program (i.e., Tag rows exist with that program as the target
+        and the key is in all_program_tags with is_setting=True).
+
+        Each dict has keys: 'key', 'value', 'help_text'.
+        """
+        ct = ContentType.objects.get_for_model(program)
+        program_tag_rows = cls.objects.filter(content_type=ct, object_id=program.id)
+        result = []
+        for tag in program_tag_rows:
+            if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
+                default = all_program_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
+                result.append({
+                    'key': tag.key,
+                    'value': tag.value,
+                    'help_text': all_program_tags[tag.key].get('help_text', ''),
+                })
+        return result
+
+    @classmethod
+    def get_nondefault_global_tags(cls):
+        """
+        Return a list of dicts describing global tags that have been
+        explicitly set (i.e., Tag rows exist with no target and the key is in
+        all_global_tags with is_setting=True), excluding any whose stored
+        value matches the registered default.
+
+        Each dict has keys: 'key', 'value', 'help_text'.
+        """
+        global_tag_rows = cls.objects.filter(content_type__isnull=True, object_id__isnull=True)
+        result = []
+        for tag in global_tag_rows:
+            if tag.key in all_global_tags and all_global_tags[tag.key].get('is_setting', False):
+                default = all_global_tags[tag.key].get('default')
+                if default is not None and tag.value == str(default):
+                    continue
+                result.append({
+                    'key': tag.key,
+                    'value': tag.value,
+                    'help_text': all_global_tags[tag.key].get('help_text', ''),
+                })
+        return result
+
+    @classmethod
     def unSetTag(cls, key, target=None):
         """
         Delete the tag with the specified key and target, if one exists.
@@ -210,3 +291,32 @@ class Tag(models.Model):
             tag_counter += 1
 
         return tag_counter
+
+    @classmethod
+    def getDifficultyDescription(cls, difficulty_key):
+        """
+        Return the human-readable description for a difficulty key from the
+        teacherreg_difficulty_choices tag (e.g. "**" -> "Introductory").
+        Returns None if the tag is not set, invalid, or the key is not found.
+        """
+        if not difficulty_key:
+            return None
+        difficulty_map = cls.getDifficultyMap()
+        return difficulty_map.get(str(difficulty_key))
+
+    @classmethod
+    def getDifficultyMap(cls):
+        """
+        Parse the teacherreg_difficulty_choices tag once and return a
+        {key_string: description} dict for O(1) lookups.
+        Returns an empty dict if the tag is not set or invalid.
+        """
+        tag_val = cls.getTag('teacherreg_difficulty_choices')
+        if not tag_val or not tag_val.strip():
+            return {}
+        try:
+            choices = json.loads(tag_val)
+            return {str(pair[0]): pair[1]
+                    for pair in choices if len(pair) >= 2}
+        except (ValueError, TypeError):
+            return {}

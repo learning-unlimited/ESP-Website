@@ -1,3 +1,5 @@
+import json
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
@@ -59,3 +61,18 @@ class CancelClassTest(ProgramFrameworkTest):
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
         self.assertContains(r, self.cls.emailcode(), status_code=200)
+
+    # Regression: fix for GET/POST boolean guard in admin teacherlookup
+    def test_teacherlookup_post_with_name_returns_json(self):
+        """POST with 'name' absent from GET must return JSON, not redirect."""
+        self.client.login(username='admin', password='password')
+        url = '%steacherlookup' % self.program.get_manage_url()
+        response = self.client.post(url, {'name': 'teacher'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_teacherlookup_no_name_redirects(self):
+        """Request without 'name' in GET or POST must redirect via goToCore."""
+        self.client.login(username='admin', password='password')
+        url = '%steacherlookup' % self.program.get_manage_url()
+        self.assertEqual(self.client.get(url).status_code, 302)

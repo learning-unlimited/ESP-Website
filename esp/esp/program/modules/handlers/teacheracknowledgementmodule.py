@@ -16,9 +16,9 @@ def teacheracknowledgementform_factory(prog):
         teach_text = "teacher"
 
     if date_range is None:
-        label = "I have read the above and commit to serving as a %s for my %s class(es)." % (teach_text, prog.program_type)
+        label = f"I have read the above and commit to serving as a {teach_text} for my {prog.program_type} class(es)."
     else:
-        label = "I have read the above and commit to serving as a %s for my %s class(es) on %s." % (teach_text, prog.program_type, date_range)
+        label = f"I have read the above and commit to serving as a {teach_text} for my {prog.program_type} class(es) on {date_range}."
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
@@ -36,11 +36,8 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             'choosable': 1,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user,
                                      program=self.program,
                                      event__name="teacheracknowledgement").exists()
@@ -60,7 +57,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
                 return self.goToCore(tl)
             else:
                 rec.delete()
-        elif self.isCompleted():
+        elif self.isCompleted(request.user):
             context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
