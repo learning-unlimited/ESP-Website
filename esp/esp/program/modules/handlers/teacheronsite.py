@@ -190,7 +190,7 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
-        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY)
+        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY and Tag.getProgramTag('program_center', program = prog))
         return context
 
     def isStep(self):

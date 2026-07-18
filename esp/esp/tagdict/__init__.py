@@ -1181,8 +1181,8 @@ all_program_tags = {
     },
     'program_center': {
         'is_boolean': False,
-        'help_text': 'The geographic center for a program, following the form "lat, long". Used for the maps in the teacher and student onsite webapps.',
-        'default': '37.427490, -122.170267',
+        'help_text': 'The geographic center for a program, following the form "lat, long" (e.g., "37.427490, -122.170267"). Enables maps in the teacher and student onsite webapps.',
+        'default': None,
         'category': 'manage',
         'is_setting': True,
         'field': forms.CharField(validators=[RegexValidator(r'^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$', 'Enter a valid location.')])
