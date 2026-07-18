@@ -17,7 +17,7 @@
 
 {% block navbar %}
 <div class="container navbar-container">
-  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top">
+  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
     <div id="navbar" class="container-fluid">
       {% if theme.show_logo_navbar %}
       <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
@@ -25,14 +25,14 @@
       {% if theme.show_group_name %}
       <a class="navbar-brand" href="/">{{ theme.full_group_name }}</a>
       {% endif %}
-      <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+      <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbar-collapse">
         {% include "navbar/admin.html" %}
         {% include "navbar/nav.html" %}
         {% include "navbar/contact.html" %}
-        <div class="navbar-login ml-auto d-flex align-items-center">
+        <div class="navbar-login ms-auto d-flex align-items-center">
           {% include "users/loginbox_content.html" %}
         </div>
       </div>
@@ -93,22 +93,22 @@
     {% endif %}
     {% if active_program_tags %}
     <div class="alert alert-info alert-dismissible" role="alert">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       <strong>Admin notice:</strong>
       This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_program_tags %}
-        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
     </div>
     {% endif %}
     {% if active_global_tags %}
     <div class="alert alert-info alert-dismissible" role="alert">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       <strong>Admin notice:</strong>
       This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_global_tags %}
-        <span class="badge badge-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>
@@ -128,14 +128,16 @@
 <script>
 	function footerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('body').css('padding-bottom', $j("#footer").innerHeight());
+			// Measure the fixed-bottom nav itself (outerHeight includes its own
+			// padding/border) so body padding-bottom always covers the full footer,
+			// even when QSD text or admin controls add extra height.
+			var $footerNav = $j("#footer").closest(".navbar");
+			var h = $footerNav.length ? $footerNav.outerHeight(false) : $j("#footer").outerHeight(false);
+			$j('body').css('padding-bottom', h);
 		} else {
 			$j('body').css('padding-bottom', "inherit");
 		}
 	};
-	window.addEventListener("resize", footerResize);
-	$j(function() { footerResize() });
-	
 	function headerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
 			$j('body').css('padding-top', $j("#navbar").innerHeight());
@@ -143,8 +145,25 @@
 			$j('body').css('padding-top', "inherit");
 		}
 	};
-	window.addEventListener("resize", headerResize);
-	$j(function() { headerResize() });
+
+	// Recompute the body padding that clears the fixed-top navbar and the
+	// fixed-bottom footer.  This must run after the stylesheets AND web fonts
+	// have fully applied, not only at DOM ready: on the theme editor, Apply/Save/
+	// selecting a new theme re-fetches the compiled CSS asynchronously (the ?v=
+	// version bump plus css_auto-reload), so a ready-time measurement reads stale
+	// navbar/footer heights and the fixed footer overlaps the page buttons until
+	// a manual reload.  Re-running on window load and document.fonts.ready makes
+	// the padding match the final rendered heights without a reload.
+	function resizeBodyPadding() {
+		footerResize();
+		headerResize();
+	}
+	window.addEventListener("resize", resizeBodyPadding);
+	$j(resizeBodyPadding);
+	window.addEventListener("load", resizeBodyPadding);
+	if (document.fonts && document.fonts.ready) {
+		document.fonts.ready.then(resizeBodyPadding);
+	}
 
 	{# TODO(benkraft): this is ugly, find a better way #}
 	$j('.button').addClass('btn').removeClass('button');
