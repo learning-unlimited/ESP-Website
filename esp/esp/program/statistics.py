@@ -268,12 +268,13 @@ def repeats(form, programs, students, profiles, result_dict=None):
             user__in=students,
             event__name='reg_confirmed',
         )
-        .values_list('user_id', 'program__program_type')
+        .values_list('user_id', 'program__url')
     )
 
     #   Group by user: count how many programs of each type they confirmed
     user_type_counts = defaultdict(Counter)
-    for user_id, program_type in confirmed_pairs:
+    for user_id, program_url in confirmed_pairs:
+        program_type = program_url.split('/')[0] if program_url else program_url
         user_type_counts[user_id][program_type] += 1
 
     #   Bin students by their (program_type, count) signature
