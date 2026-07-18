@@ -1,11 +1,34 @@
+function showFlagWarning(message) {
+    var overlay = $j('<div>', { "class": "flag-warning-overlay" });
+    var box = $j('<div>', { "class": "flag-warning-box" });
+
+    $j('<div>', { "class": "flag-warning-icon", html: "&#9888;" }).appendTo(box);
+    $j('<div>', { "class": "flag-warning-title", text: "Email Notification Failed" }).appendTo(box);
+    $j('<div>', { "class": "flag-warning-message", text: message }).appendTo(box);
+    $j('<button>', { "class": "flag-warning-dismiss", text: "OK" }).appendTo(box);
+
+    overlay.append(box).appendTo('body');
+    overlay.on('click', '.flag-warning-dismiss', function() {
+        overlay.fadeOut(300, function() { overlay.remove(); });
+    });
+}
+
 function submitFlagForm (event) {
-    console.log("submit");
-    var form = $j(this)
+    var form = $j(this);
     var data = form.serialize();
+    var $oldDetail = form.parents("div.flag-detail");
+    var wasVisible = $oldDetail.is(":visible");
     $j.post(form.attr("action"), data, function (data) {
-        form.parents("div.fqr-class").find("div.fqr-class-flags").append(data.flag_name);
-        form.parents("div.flag-detail").replaceWith(data.flag_detail);
-    }, 'json')
+        if (data.flag_name) {
+            $oldDetail.parents("div.fqr-class").find("div.fqr-class-flags").append(data.flag_name);
+        }
+        var $newDetail = $j(data.flag_detail);
+        if (wasVisible) { $newDetail.show(); }
+        $oldDetail.replaceWith($newDetail);
+        if (data.warning) {
+            showFlagWarning(data.warning);
+        }
+    }, 'json');
     event.preventDefault();
 }
 
@@ -18,6 +41,25 @@ function removeFlag (url, id) {
     var div1 = $j("div#flag-detail-"+id);
     var div2 = $j("span#fqr-flag-header-"+id);
     $j.post(url, {'csrfmiddlewaretoken': csrf_token(), 'id' : id}, function () { div1.hide(); div2.hide(); });
+}
+
+function resolveFlag (url, id, btn, action) {
+    var $btn = $j(btn);
+    $btn.prop('disabled', true);
+    var csrfToken = $btn.closest('form').find('input[name=csrfmiddlewaretoken]').val();
+    var wasVisible = $j("div#flag-detail-" + id).is(":visible");
+    var $oldHeader = $j("span#fqr-flag-header-" + id);
+    var hadActive = $oldHeader.hasClass('active');
+    $j.post(url + id + '/', {'csrfmiddlewaretoken': csrfToken, 'action': action}, function (data) {
+        var $newDetail = $j(data.flag_detail);
+        if (wasVisible) { $newDetail.show(); }
+        $j("div#flag-detail-" + id).replaceWith($newDetail);
+        var $newHeader = $j(data.flag_name);
+        if (!hadActive) { $newHeader.removeClass('active'); }
+        $oldHeader.replaceWith($newHeader);
+    }, 'json').fail(function () {
+        $btn.prop('disabled', false);
+    });
 }
 
 $j(document).on("submit", "form.flag-form", submitFlagForm)

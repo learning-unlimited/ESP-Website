@@ -21,11 +21,8 @@ class TeacherModeratorModule(ProgramModuleObj):
             'choosable': 0,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return ModeratorRecord.objects.filter(user=user, program=self.program).exists()
 
     @main_call
@@ -77,7 +74,7 @@ class TeacherModeratorModule(ProgramModuleObj):
     def moderatorlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET and 'name' not in request.POST:
             return self.goToCore(tl)
 
         return self.moderatorlookup_logic(request, tl, one, two, module, extra, prog)
@@ -126,7 +123,7 @@ class TeacherModeratorModule(ProgramModuleObj):
             users = list(user_dict.values())
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': f"{user.last_name}, {user.first_name}", 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 

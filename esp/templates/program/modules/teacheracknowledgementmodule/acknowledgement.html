@@ -1,7 +1,7 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load modules %}
 {% block title %}{{program.niceName}} Teacher Acknowledgement{% endblock %}
-{% block content %}
+{% block module_content %}
 <h2>Teacher{% if prog|hasModule:"TeacherModeratorModule" %}/{{ prog.getModeratorTitle }}{% endif %} Acknowledgement for {{program.niceName}} </h2>
 <br />
 {% load render_qsd %}

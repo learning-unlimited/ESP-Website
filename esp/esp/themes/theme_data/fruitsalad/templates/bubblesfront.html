@@ -16,86 +16,97 @@
 {% block javascript %}
 {{ block.super }}
 <script type="text/javascript">
-window.onload = function(){
+  window.onload = function () {
 
-// create behavior wrapper
-var wrap = function(target, label) {
-  var flag = false;
-  target.onfocus = function(){
-    if (flag) {
-      target.value = '';
-      target.style.color = '#000000';
+    // create behavior wrapper
+    var wrap = function (target, label) {
+      var flag = false;
+      target.onfocus = function () {
+        if (flag) {
+          target.value = '';
+          target.style.color = '#000000';
+        }
+      };
+      target.onblur = function () {
+        if (flag = (target.value == '')) {
+          target.value = label;
+          target.style.color = '#999999';
+        }
+      };
+      target.onblur();
+    };
+
+    // set behavior on the login Username and Password fields
+    var loginUser = document.getElementById('login_user_index');
+    if (loginUser) {
+      wrap(loginUser, 'Username');
+      wrap(document.getElementById('login_pswd_index'), 'Password');
     }
+
   };
-  target.onblur = function(){
-    if (flag = (target.value == '')) {
-      target.value = label;
-      target.style.color = '#999999';
+
+  function set_teachlearn(tl) {
+    if (document.getElementById('remember').checked) {
+      var expires = new Date();
+      expires.setFullYear(expires.getFullYear() + 1);
+      document.cookie = 'teachlearn=' + tl + '; expires=' + expires.toUTCString() + '; path=/';
     }
-  };
-  target.onblur();
-};
-
-// set behavior on Username, Password, and Search fields
-wrap(document.getElementById('login_user_index'),'Username');
-wrap(document.getElementById('login_pswd_index'),'Password');
-
-};
-
-function set_teachlearn(tl) {
-if (document.getElementById('remember').checked) {
-document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025").toGMTString() + '; path=/';
-}
-}
+  }
 </script>
 {% endblock %}
 
 {% block body %}
 {% load main %}
 <div id="page" class="{{ request.path|extract_theme }}">
-<div id="splash_page">
-<!--
+  <div id="splash_page">
+    <!--
 <form name="select_type" method="get" action"#">
   <input type="submit" href="student.html" id="student" name="student" value="true" />
   <input type="submit" href="teacher.html" id="teacher" name="teacher" value="true" />
 -->
-  <a id="student" href="learn/index.html" onclick="javascript:set_teachlearn('learn');"></a>
-  <a id="teacher" href="teach/index.html" onclick="javascript:set_teachlearn('teach');"></a>
-  <a id="about" href="about/welcome.html"></a>
-  <a id="whoarewe" href="about/welcome.html">Who Are We?</a>
-  <input type="checkbox" id="remember" name="remember" />
-  <label for="remember" id="remember_label">Remember my choice</label>
-<!--</form>-->
-<span id="orbox">- or -</span>
+    <a id="student" href="learn/index.html" onclick="javascript:set_teachlearn('learn');"></a>
+    <a id="teacher" href="teach/index.html" onclick="javascript:set_teachlearn('teach');"></a>
+    <a id="about" href="about/welcome.html"></a>
+    <a id="whoarewe" href="about/welcome.html">Who Are We?</a>
+    <input type="checkbox" id="remember" name="remember" />
+    <label for="remember" id="remember_label">Remember my choice</label>
+    <!--</form>-->
+    <span id="orbox">- or -</span>
 
-{% block login %}
-<div id="login_box_index">
-<div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
-<div id="login_div_index">
-{% if not request.user.is_authenticated %}
-<!-- login -->
-<form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
-  <input type="hidden" name="next" value="/" />
-  <input type="text" id="login_user_index" name="username"/>
-  <input type="password" id="login_pswd_index" name="password" />
-  <span id="login_arrow1"></span>
-  <input type="submit" id="login_submit" name="login_submit" value="Log in" />
-  <span id="login_arrow2"></span>
-  <a href="/myesp/register" id="login_signup">Sign up</a>
-  <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
-</form>
-{% else %}
-<!-- logout -->
-<div id="login_greeting_index">
-  Hello, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>!<br />
-  (<a href="/myesp/signout/">Logout</a>{% if request.user.isAdministrator %} | <a href="/manage/programs/">Manage</a>{% endif %})
-</div>
-{% endif %}
+    {% block login %}
+    <div id="login_box_index">
+      <div class="corners">
+        <div class="ul"></div>
+        <div class="ur"></div>
+        <div class="dl"></div>
+        <div class="dr"></div>
+      </div>
+      <div id="login_div_index">
+        {% if not request.user.is_authenticated %}
+        <!-- login -->
+        <form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
+          <input type="hidden" name="next" value="/" />
+          <input type="text" id="login_user_index" name="username" />
+          <input type="password" id="login_pswd_index" name="password" />
+          <span id="login_arrow1"></span>
+          <input type="submit" id="login_submit" name="login_submit" value="Log in" />
+          <span id="login_arrow2"></span>
+          <a href="/myesp/register" id="login_signup">Sign up</a>
+          <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
+        </form>
+        {% else %}
+        <!-- logout -->
+        <div id="login_greeting_index">
+          Hello, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>!<br />
+          (<a href="/myesp/signout/">Logout</a>{% if request.user.isAdministrator %} | <a
+            href="/manage/programs/">Manage</a>{% endif %})
+        </div>
+        {% endif %}
 
-</div>
-</div>
-{% endblock %}
+      </div>
+    </div>
+    {% endblock %}
 
-</div>
+  </div>
 </div>
 {% endblock %}
