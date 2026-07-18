@@ -64,7 +64,7 @@ td>ul { list-style-type: none; padding: 0px }
             {{ f.form.option }}{% if f.LineItem.id in paid_item_ids %} <em style="color:gray;">(already paid)</em>{% endif %}
         {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
-            {{ f.form.siblingdiscount }}
+            {{ f.form.siblingdiscount }}{% if admission_paid %} <em style="color:gray;">(already paid)</em>{% endif %}
     </td>
 </tr>
             <tr>

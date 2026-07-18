@@ -186,6 +186,8 @@ class StudentExtraCosts(ProgramModuleObj):
         #   Fetch the user's current preferences
         prefs = iac.get_preferences()
         paid_item_ids = set(iac.get_transfers().filter(paid_in__isnull=False).values_list('line_item_id', flat=True))
+        admission_lit = iac.default_admission_lineitemtype()
+        admission_paid = admission_lit is not None and admission_lit.id in paid_item_ids
 
         forms_all_valid = True
         error_custom = False
@@ -230,6 +232,10 @@ class StudentExtraCosts(ProgramModuleObj):
                     existing = next((p for p in prefs if p[0] == lineitem_type.text), None)
                     if existing:
                         form_prefs.append(existing)
+                    continue
+
+                # Sibling discount is locked once admission has been paid
+                if isinstance(form, SiblingDiscountForm) and admission_paid:
                     continue
 
                 if form.is_valid():
@@ -359,6 +365,9 @@ class StudentExtraCosts(ProgramModuleObj):
 
         forms = cost_items + multi_cost_items + multiselect_costitems
         if prog.sibling_discount:
+            if admission_paid:
+                sibling_form.fields['siblingdiscount'].widget.attrs['disabled'] = True
+                sibling_form.fields['siblingname'].widget.attrs['disabled'] = True
             forms.append({
                     'form': sibling_form,
                     'type': 'sibling',
@@ -370,7 +379,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                   { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
                                     'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
                                     'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog),
-                                    'paid_item_ids': paid_item_ids })
+                                    'paid_item_ids': paid_item_ids, 'admission_paid': admission_paid })
 
     def isStep(self):
         return self.lineitemtypes().exists()
