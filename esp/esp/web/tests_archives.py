@@ -11,7 +11,6 @@ Covers:
   - archive_teachers() view
   - archive_programs() view
 
-PR 4/6 — esp/web module coverage improvement
 """
 
 from django.test import RequestFactory
