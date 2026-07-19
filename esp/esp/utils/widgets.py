@@ -1,9 +1,10 @@
-#   Downloaded from http://www.djangosnippets.org/snippets/391/
+#   Downloaded from https://www.djangosnippets.org/snippets/391/
 #   Modified to not force unicode
 #   - Michael P
 
 from django import forms
 from django.conf import settings
+from django.core.validators import EMPTY_VALUES
 from django.forms import widgets
 from django.template import Template, Context
 from django.utils.safestring import mark_safe
@@ -40,7 +41,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
         context.update({
-            'id': attrs['id'] if 'id' in attrs else '%s_id' % (name),
+            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
             'jquerywidget': self.jquerywidget,
             'media_url': settings.MEDIA_URL,
             'date_format': self.dformat,
@@ -50,7 +51,7 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
-        empty_values = forms.fields.EMPTY_VALUES
+        empty_values = EMPTY_VALUES
 
         value = data.get(name, None)
         if value in empty_values:
@@ -262,7 +263,8 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: lavender;
+    background: var(--bs-secondary-bg, lavender);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
@@ -430,14 +432,15 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: beige;
+    background: var(--bs-secondary-bg, beige);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
     margin-bottom: 5px;
 }
 #{{ name }}_entries > .ui-sortable-handle {
-    background: aliceblue;
+    background: var(--bs-tertiary-bg, aliceblue);
 }
 </style>
 """

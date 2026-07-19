@@ -113,17 +113,14 @@ class StudentLunchSelection(ProgramModuleObj):
             "choosable": 0,
             }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, event__name="lunch_selected", program=self.program).exists()
 
     @main_call
     @needs_student_in_grade
-    @meets_cap
     @meets_deadline('/Classes/Lunch')
+    @meets_cap
     def select_lunch(self, request, tl, one, two, module, extra, prog):
         context = {'prog': self.program}
         user = request.user

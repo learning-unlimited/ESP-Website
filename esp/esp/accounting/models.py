@@ -83,9 +83,9 @@ class LineItemType(models.Model):
         result = []
         for option in self.lineitemoptions_set.all():
             if option.is_custom:
-                result.append((option.id, '%s -- enter amount below' % (option.description,)))
+                result.append((option.id, f'{option.description} -- enter amount below'))
             else:
-                result.append((option.id, '%s -- $%.2f' % (option.description, option.amount_dec_inherited)))
+                result.append((option.id, f'{option.description} -- ${option.amount_dec_inherited:.2f}'))
         return result
 
     @property
@@ -107,9 +107,9 @@ class LineItemType(models.Model):
 
     def __str__(self):
         if self.amount_dec:
-            return '%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+            return f'{self.text} for {self.program} (${self.amount_dec})'
         else:
-            return '%s for %s' % (self.text, self.program)
+            return f'{self.text} for {self.program}'
 
     class Meta:
         ordering = ('-program_id',)
@@ -137,7 +137,7 @@ class LineItemOptions(models.Model):
             return float(self.amount_dec)
 
     def __str__(self):
-        return '%s ($%s)' % (self.description, self.amount_dec)
+        return f'{self.description} (${self.amount_dec})'
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest, on_delete=models.CASCADE)
@@ -178,13 +178,13 @@ class FinancialAidGrant(models.Model):
 
     def __str__(self):
         if self.percent and self.amount_max_dec:
-            return 'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
+            return f'Grant {self.user} (max ${self.amount_max_dec}, {self.percent}% discount) at {self.program}'
         elif self.percent:
-            return 'Grant %s (%d%% discount) at %s' % (self.user, self.percent, self.program)
+            return f'Grant {self.user} ({self.percent}% discount) at {self.program}'
         elif self.amount_max_dec:
-            return 'Grant %s (max $%s) at %s' % (self.user, self.amount_max_dec, self.program)
+            return f'Grant {self.user} (max ${self.amount_max_dec}) at {self.program}'
         else:
-            return 'Grant %s (no aid specified) at %s' % (self.user, self.program)
+            return f'Grant {self.user} (no aid specified) at {self.program}'
 
     class Meta:
         unique_together = ('request',)
@@ -281,7 +281,7 @@ class Transfer(models.Model):
     amount = property(get_amount, set_amount)
 
     def __str__(self):
-        return 'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
+        return f'Transfer ${self.amount_dec} from {self.source} to {self.destination}'
 
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
@@ -292,7 +292,7 @@ class CybersourcePostback(models.Model):
                                  on_delete=models.SET_NULL)
 
     def __str__(self):
-        return '%d' % self.id
+        return str(self.id)
 
 def install():
     """Set up the default accounts."""

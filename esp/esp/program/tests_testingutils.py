@@ -1,14 +1,13 @@
 """
-Tests for esp.program.controllers.testingutils.TestDataCleanupController.
+Tests for esp.program.controllers.testingutils.DataCleanupController.
 
 These tests verify:
 1. That wipe_test_data deletes the expected objects for (program, user).
 2. That it does NOT delete objects belonging to other users in the same program.
 3. That it does NOT delete objects from other programs.
 """
-from __future__ import absolute_import
 
-from esp.program.controllers.testingutils import TestDataCleanupController
+from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.models import (
     RegistrationType, StudentRegistration, StudentSubjectInterest,
     FinancialAidRequest, RegistrationProfile,
@@ -19,7 +18,7 @@ from esp.users.models import ESPUser, ContactInfo, Record, RecordType
 
 
 class TestDataCleanupTest(TestCase):
-    """Tests for TestDataCleanupController using a minimal hand-built fixture.
+    """Tests for DataCleanupController using a minimal hand-built fixture.
 
     We build only what we need so the test stays fast and self-contained.
     """
@@ -182,7 +181,7 @@ class TestDataCleanupTest(TestCase):
 
     def test_wipe_deletes_student_data(self):
         """execute() removes student-side data for the target user+program."""
-        ctrl = TestDataCleanupController(self.prog, self.student)
+        ctrl = DataCleanupController(self.prog, self.student)
         counts = ctrl.get_counts()
         self.assertGreater(counts['student_registrations'], 0)
         self.assertGreater(counts['records'], 0)
@@ -212,7 +211,7 @@ class TestDataCleanupTest(TestCase):
 
     def test_wipe_does_not_touch_other_user(self):
         """execute() must not delete data that belongs to a different user."""
-        ctrl = TestDataCleanupController(self.prog, self.student)
+        ctrl = DataCleanupController(self.prog, self.student)
         ctrl.execute()
 
         self.assertTrue(
@@ -222,7 +221,7 @@ class TestDataCleanupTest(TestCase):
 
     def test_wipe_does_not_touch_other_program(self):
         """execute() must not delete records from a different program."""
-        ctrl = TestDataCleanupController(self.prog, self.student)
+        ctrl = DataCleanupController(self.prog, self.student)
         ctrl.execute()
 
         self.assertTrue(
