@@ -211,6 +211,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'bootswatch_theme': {
+        'is_boolean': False,
+        'help_text': 'The Bootswatch skin applied to the current SCSS theme (empty string means no skin)',
+        'default': '',
+        'category': 'theme',
+        'is_setting': False,
+    },
     'request_student_phonenum': {
         'is_boolean': True,
         'help_text': 'Whether to request a student home phone number',
@@ -482,13 +489,6 @@ all_global_tags = {
         'category': 'manage',
         'is_setting': True,
         'field': JSONValidatedCharField(),
-    },
-    'google_cloud_api_key': {
-        'is_boolean': False,
-        'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps. The embedded map is entirely free but requires an API key. If not set, the map tab will be hidden.',
-        'default': '',
-        'category': 'manage',
-        'is_setting': True,
     },
     'google_analytics_id': {
         'is_boolean': False,
@@ -1181,8 +1181,8 @@ all_program_tags = {
     },
     'program_center': {
         'is_boolean': False,
-        'help_text': 'The geographic center for a program, following the form "lat, long". Used for the maps in the teacher and student onsite webapps.',
-        'default': '37.427490, -122.170267',
+        'help_text': 'The geographic center for a program, following the form "lat, long" (e.g., "37.427490, -122.170267"). Enables maps in the teacher and student onsite webapps.',
+        'default': None,
         'category': 'manage',
         'is_setting': True,
         'field': forms.CharField(validators=[RegexValidator(r'^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$', 'Enter a valid location.')])
