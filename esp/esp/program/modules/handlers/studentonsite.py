@@ -131,6 +131,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
         context['webapp_page'] = 'catalog'
+        context['classchange_deadline_met'] = prog.getModule("StudentClassRegModule").deadline_met()
         user_grade = user.getGrade(self.program)
         if extra:
             try:

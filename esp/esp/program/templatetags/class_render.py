@@ -60,13 +60,14 @@ render_class.cached_function.depend_on_row('program.StudentRegistration', lambda
 render_class.cached_function.get_or_create_token(('user',))
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_webapp.html')
-def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False):
+def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False, classchange_deadline_met=False):
     """Render the entire class for the webapp, including user-specific parts.
 
     Calls render_class_core for non-user-specific parts.
     """
     context = _render_class_helper(cls,  user, filter, timeslot, webapp = True, prereg_suffix = 'onsiteaddclass')
     context['checked_in'] = checked_in
+    context['allow_classchange'] = checked_in or classchange_deadline_met
     return context
 render_class_webapp.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 render_class_webapp.cached_function.get_or_create_token(('cls',))

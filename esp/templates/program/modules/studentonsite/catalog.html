@@ -94,7 +94,7 @@ function scrollFunction() {
 
                     <tr class="class_row">
                         <td colspan="2">
-                            {% render_class_webapp class program user request.GET.filter timeslot checked_in %}
+                            {% render_class_webapp class program user request.GET.filter timeslot checked_in classchange_deadline_met %}
                         </td>
                     </tr>
                 {% endfor %}
