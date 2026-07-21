@@ -13,17 +13,368 @@ div.required label.control-label:after {
   list-style-type: none;
   margin-left: 0px;
 }
+
+
+.profile-card-header{
+    background:#f8fafc;
+    border-bottom:1px solid #e5e7eb;
+    padding:18px 24px;
+}
+
+.profile-card-header h3{
+    margin:0;
+    font-size:24px;
+    font-weight:600;
+    color:#1e293b;
+}
+
+.profile-card-body{
+    padding:25px;
+}
+
+.profile-field{
+    margin-bottom:22px;
+}
+
+.section-subtitle{
+    margin:25px 0 15px;
+    font-size:18px;
+    font-weight:600;
+    color:#334155;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:8px;
+}
+
+.control-label{
+    font-weight:600;
+    color:#374151;
+}
+
+.controls input,
+.controls select,
+.controls textarea{
+    width:100%;
+    max-width:500px;
+    border-radius:8px;
+    border:1px solid #ced4da;
+    padding:10px 12px;
+    transition:.2s;
+}
+
+.controls input:focus,
+.controls select:focus,
+.controls textarea:focus{
+    border-color:#0d6efd;
+    box-shadow:0 0 0 .2rem rgba(13,110,253,.15);
+    outline:none;
+}
+
+.alert{
+    border-radius:10px;
+}
+
+.form_error{
+    color:#dc3545;
+    font-size:13px;
+    margin-top:4px;
+    display:block;
+}
+
+#id_receive_txt_message{
+    list-style:none;
+    padding-left:0;
+}
+
+#id_receive_txt_message li{
+    margin-bottom:8px;
+}
+
+@media (max-width:768px){
+
+.control-label{
+    display:block;
+    margin-bottom:6px;
+}
+
+.controls{
+    width:100%;
+}
+
+.controls input,
+.controls select,
+.controls textarea{
+    max-width:100%;
+}
+}
+
+/* Address Row */
+.controls-row{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.controls-row input,
+.controls-row select{
+    min-width: 170px;
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    transition: all .2s ease;
+}
+.controls-row input,
+.controls-row select {
+    height: 46px;
+    padding: 10px 14px;
+    border: 1px solid #d0d7de;
+    border-radius: 10px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+
+.controls-row input:focus,
+.controls-row select:focus{
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 .2rem rgba(13,110,253,.15);
+    outline: none;
+    
+}
+
+/* Error message */
+.controls-row .form_error{
+    display:block;
+    margin-top:5px;
+    color:#dc3545;
+    font-size:13px;
+}
+
+/* Additional info page */
+
+
+.profile-card-header{
+    padding:22px 30px;
+    border-bottom:1px solid #e8edf3;
+    background:#fafbfd;
+}
+
+.profile-card-header h3{
+    margin:0;
+    font-size:30px;
+    font-weight:700;
+    color:#183153;
+}
+
+.profile-card-body{
+    padding:30px;
+}
+
+.profile-field{
+    margin-bottom:22px;
+}
+
+.profile-field .control-label{
+    font-weight:600;
+    color:#374151;
+}
+
+.profile-field .controls input,
+.profile-field .controls select{
+    width:100%;
+    max-width:540px;
+    border-radius:10px;
+}
+.profile-alert{
+    background:#c7d2f7 !important;
+    border:1px solid #498ebd !important;
+    color:#386072 !important;
+}
+.profile-card{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-radius:12px;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+    margin:30px 0;
+    overflow:hidden;
+}
+.field-help{
+    display:block !important;
+    margin-bottom:12px !important;
+    color:#6c757d;
+    font-size:13px;
+}
+.controls-row > *{
+    margin-bottom:12px;
+}
+#id_heard_about_0{
+    margin-bottom:12px;
+}
+
+#id_heard_about_1{
+    display:block;
+    margin-top:12px !important;
+    margin-left:0 !important;
+}
+
+.section-subtitle{
+    margin:25px 0 18px;
+    font-size:20px;
+    font-weight:600;
+    color:#1e3a5f;
+    border-bottom:1px solid #e5e7eb;
+    padding-bottom:8px;
+}
+
+.phone-label{
+    font-weight:500;
+    color:#64748b;
+    font-size:14px;
+}
+#id_copy_parent_info{
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    position:relative !important;
+    transform:none !important;
+    margin-bottom:25px;
+}
+.copy-contact-btn{
+    background: linear-gradient(135deg,#2563eb,#1d4ed8);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:12px 26px;
+    font-size:10px;
+    font-weight:600;
+    letter-spacing:.3px;
+    box-shadow:0 8px 20px rgba(37,99,235,.25);
+    transition:all .3s ease;
+}
+
+.copy-contact-btn:hover{
+    background:linear-gradient(135deg,#1d4ed8,#1e40af);
+    transform:translateY(-2px);
+    box-shadow:0 12px 24px rgba(37,99,235,.35);
+    color:#fff;
+}
+
+.copy-contact-btn:active{
+    transform:scale(.97);
+}
+
+.copy-contact-btn:focus{
+    outline:none;
+    box-shadow:0 0 0 .25rem rgba(37,99,235,.25);
+}
+/* last Submit button */
+.form-actions{
+    margin-top:10px;
+    text-align:center;
+}
+.profile-submit-btn{
+    min-width: 230px;
+    padding: 10px 22px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    background: #2f7ed8;
+    border: 1px solid #2a6ebb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .25s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15);
+    align-items: center;
+}
+
+.profile-submit-btn:hover{
+    background: #2569b3;
+    border-color: #1f5c9b;
+    color:#fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,.2);
+    transform: translateY(-1px);
+}
+
+.profile-submit-btn:active{
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0,0,0,.15);
+}
+
+.profile-submit-btn:focus{
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(47,126,216,.25);
+}
+/*  profile page updateion  */
+.profile-hero{
+    background:#fff;
+    border:1px solid #d9e2ec;
+    border-radius:10px;
+    padding:24px 28px;
+    margin-bottom:25px;
+    width: 100%;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+}
+
+.profile-title{
+    margin:0;
+    font-size:34px;
+    color:#1e3a5f;
+    font-weight:700;
+}
+
+.profile-title i{
+    margin-right:8px;
+    color:#2f7ed8;
+}
+
+.profile-description{
+    margin:10px 0;
+    color:#6c757d;
+    font-size:15px;
+}
+
+.required-note{
+    display:inline-block;
+    margin-top:8px;
+    background:#fff8e5;
+    border:1px solid #ffe08a;
+    color:#856404;
+    padding:6px 12px;
+    border-radius:20px;
+    font-size:13px;
+}
+
+.required-star{
+    color:#dc3545;
+    font-weight:bold;
+}
+
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-  <div class="col-md-10">
-    <h1>Your Profile Information</h1>
-    <p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
-  </div>
-  <div class="row">
-    <div class="col-md-12">
+    <div class="span10">
+        <div class="profile-hero">
+
+            <div class="profile-hero-content">
+                <h1 class="profile-title">
+                    <i class="icon-user"></i>
+                    Your Profile Information
+                </h1>
+
+                <p class="profile-description">
+                    Please review and update your personal information below.
+                </p>
+
+                <span class="required-note">
+                    <span class="required-star">*</span>
+                    Indicates a required field
+                </span>
+
+                <div class="row">
+    <div class="col-md-12 ">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
 <p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "{% if new_user %}submit{% else %}update{% endif %}" button at the bottom of the page to continue.</p>
@@ -35,6 +386,12 @@ div.required label.control-label:after {
     </div>
   </div>
 </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+  
 <div class="row">
   <div class="col-md-10">
       {% if form.errors %}
@@ -91,8 +448,15 @@ div.required label.control-label:after {
         {% endif %}
         {% endif %}
 
-        <div class="form-actions"><input type="submit" class="btn btn-primary" value="{% if new_user %}Submit{% else %}Update{% endif %} Your Information!" /></div>
-
+<div class="form-actions">
+    <button type="submit" class="btn btn-primary profile-submit-btn">
+        {% if new_user %}
+            Submit Your Information!
+        {% else %}
+            Update Your Information!
+        {% endif %}
+    </button>
+</div>
         </fieldset>
     </form>
   </div>
@@ -136,6 +500,8 @@ $j(document).ready(function() {
     check_emerg_state();
   });
 });
+
+
 </script>
 
 {% endblock %}
