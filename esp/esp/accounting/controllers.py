@@ -524,6 +524,13 @@ class IndividualAccountingController(ProgramAccountingController):
                 "Failed to process payment. Item prices sum to $%.2f (sibling discount $%.2f), but the user paid $%.2f" %
                 (transfer_total, sibling_discount, amount_paid))
 
+        if sibling_discount > 0:
+            Transfer.objects.filter(
+                user=iac.user,
+                line_item=iac.default_siblingdiscount_lineitemtype(),
+                paid_in__isnull=True,
+            ).update(paid_in=payment)
+
         # Success!
         return payment
 
