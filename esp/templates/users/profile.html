@@ -41,14 +41,14 @@ div.required label.control-label:after {
             <div class="alert alert-danger">
                 <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
                     Please fix the following error{{ form.errors|pluralize }} in the form.
+                <ul>
+                {% for error in form.errors.items %}
+                {% ifequal error.0 '__all__' %}
+                {{ error.1 }}
+                {% endifequal %}
+                {% endfor %}
+                </ul>
             </div>
-      <ul>
-	{% for error in form.errors.items %}
-	{% ifequal error.0 '__all__' %}
-	{{ error.1 }}
-	{% endifequal %}
-	{% endfor %}
-      </ul>
       <br />
       {% endif %}
 
