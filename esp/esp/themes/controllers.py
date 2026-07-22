@@ -500,26 +500,49 @@ class ThemeController(object):
             and os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_bootswatch.scss'))
         ])
 
-    # Bootstrap's color-contrast($color) picks $white or $black based on WCAG
-    # relative luminance.  Threshold ≈ 0.179 (mid-point on the perceptual scale).
     @staticmethod
-    def _color_contrast_hex(hex_color):
-        """Return '#ffffff' or '#000000' for best WCAG contrast against hex_color."""
+    def _relative_luminance(hex_color):
+        """WCAG relative luminance (0..1) of a '#rrggbb' colour, or None."""
         if not hex_color or not hex_color.startswith('#'):
-            return '#ffffff'
+            return None
+        h = hex_color.lstrip('#')
+        if len(h) == 3:
+            h = h[0]*2 + h[1]*2 + h[2]*2
+        if len(h) != 6:
+            return None
         try:
-            h = hex_color.lstrip('#')
-            if len(h) == 3:
-                h = h[0]*2 + h[1]*2 + h[2]*2
-            if len(h) != 6:
-                return '#ffffff'
             r, g, b = int(h[0:2], 16)/255, int(h[2:4], 16)/255, int(h[4:6], 16)/255
-            def lin(c):
-                return c/12.92 if c <= 0.03928 else ((c + 0.055)/1.055) ** 2.4
-            L = 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b)
-            return '#ffffff' if L < 0.179 else '#000000'
         except (ValueError, IndexError):
+            return None
+        def lin(c):
+            return c/12.92 if c <= 0.03928 else ((c + 0.055)/1.055) ** 2.4
+        return 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b)
+
+    # Mirror Bootstrap's color-contrast($background): iterate the candidate
+    # foregrounds (light/white first, then dark/black) and return the FIRST whose
+    # contrast ratio exceeds $min-contrast-ratio (4.5).  This is NOT a simple
+    # luminance threshold — Bootstrap prefers WHITE and only falls back to black
+    # when white fails 4.5:1, so mid-tone backgrounds (e.g. a gold $primary) get
+    # white foreground text, matching the compiled SCSS.
+    @classmethod
+    def _color_contrast_hex(cls, hex_color, min_ratio=4.5):
+        """Return '#ffffff' or '#000000' the way Bootstrap color-contrast() would."""
+        bg_l = cls._relative_luminance(hex_color)
+        if bg_l is None:
             return '#ffffff'
+        def ratio(fg_l):
+            lighter, darker = max(bg_l, fg_l), min(bg_l, fg_l)
+            return (lighter + 0.05) / (darker + 0.05)
+        # Candidate foregrounds in Bootstrap's order: light (white) then dark (black).
+        white_ratio = ratio(1.0)
+        if white_ratio > min_ratio:
+            return '#ffffff'
+        black_ratio = ratio(0.0)
+        if black_ratio > min_ratio:
+            return '#000000'
+        # Neither passes: return the higher-contrast of the two (Bootstrap's
+        # $max-ratio fallback).
+        return '#ffffff' if white_ratio >= black_ratio else '#000000'
 
     @staticmethod
     def _norm_hex(value):
@@ -629,9 +652,28 @@ class ThemeController(object):
         body_color = norm(resolved.get('body-color')) or '#212529'
         link_color = norm(resolved.get('link-color')) or primary
         link_hover = norm(resolved.get('link-hover-color')) or self._shade_hex(link_color, 0.2)
+        # $headings-color styles <h*> (and content page titles).  It is a real
+        # colour in some themes (e.g. cerulean → $cyan) but null/unset in most,
+        # where headings simply inherit $body-color.  Fall back to body_color so
+        # the accordion matches the rendered heading regardless.
+        headings_color = norm(resolved.get('headings-color')) or body_color
         font_family = resolved.get('font-family-sans-serif')
 
-        contrast = self._color_contrast_hex
+        # Bootstrap's color-contrast() honours $min-contrast-ratio, which several
+        # Bootswatch themes override (e.g. solar uses 2.5, not Bootstrap's 4.5).
+        # Read the theme's value so the derived foreground colours match the
+        # compiled .btn-* / navbar text (a mid-tone $primary like solar's gold
+        # #b58900 gets white text at 2.5 but black at 4.5).
+        min_contrast_ratio = 4.5
+        try:
+            mcr_raw = resolved.get('min-contrast-ratio')
+            if mcr_raw:
+                min_contrast_ratio = float(re.match(r'[0-9.]+', mcr_raw.strip()).group())
+        except (AttributeError, ValueError):
+            pass
+
+        def contrast(hex_color):
+            return self._color_contrast_hex(hex_color, min_ratio=min_contrast_ratio)
         result = {}
 
         def put(name, val):
@@ -643,18 +685,23 @@ class ThemeController(object):
         put('contentBackground', body_bg)
         put('heroUnitBackground', light)
         put('textColor', body_color)
-        put('headingsColor', body_color)
-        put('titleColor', body_color)
+        put('headingsColor', headings_color)
+        put('titleColor', headings_color)
         put('linkColor', link_color)
         put('linkColorHover', link_hover)
         if font_family and '$' not in font_family:
             put('sansFontFamily', font_family.strip())
 
         # --- Buttons (shown for every theme) ---
+        # ESP renders "Primary Buttons" as .btn-primary and the generic "Buttons"
+        # as .btn-secondary (see the `btn btn-secondary` markup in the templates),
+        # so the swatches must track $primary / $secondary — NOT $light, which
+        # would show a near-white button with black text on dark themes (e.g.
+        # solar, whose generic buttons are the grey-teal $secondary #839496).
         put('btnPrimaryBackground', primary)
         put('btnPrimaryLinkColor', contrast(primary))
-        put('btnBackground', light)
-        put('btnLinkColor', contrast(light))
+        put('btnBackground', secondary)
+        put('btnLinkColor', contrast(secondary))
         put('btnInverseBackground', secondary)
         put('btnInverseLinkColor', contrast(secondary))
 

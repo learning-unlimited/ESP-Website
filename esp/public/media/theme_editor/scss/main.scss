@@ -70,11 +70,18 @@ body {
     @if index($esp-overridden, 'headingsColor') {
         h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 { color: $headingsColor; }
     }
+    // "Links" controls BODY/CONTENT links only.  Navbar links have their own
+    // customizer fields (navbar*/navbarInverse*), mirroring the Bootstrap 2/3
+    // behaviour where @linkColor never touched the navbar.  Exclude the navbar
+    // link elements (.nav-link, .navbar-brand) here: a bare `a:not(.btn)` is
+    // specificity (0,1,1) and would beat the navbar's `.nav-link` colour (0,1,0),
+    // leaking the body-link colour onto the navbar.
     @if index($esp-overridden, 'linkColor') {
-        a:not(.btn) { color: $linkColor; }
+        a:not(.btn):not(.nav-link):not(.navbar-brand) { color: $linkColor; }
     }
     @if index($esp-overridden, 'linkColorHover') {
-        a:not(.btn):hover, a:not(.btn):focus { color: $linkColorHover; }
+        a:not(.btn):not(.nav-link):not(.navbar-brand):hover,
+        a:not(.btn):not(.nav-link):not(.navbar-brand):focus { color: $linkColorHover; }
     }
     @if index($esp-overridden, 'btnPrimaryBackground') {
         .btn-primary {
