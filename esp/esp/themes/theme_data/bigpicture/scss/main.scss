@@ -110,7 +110,7 @@ body, .jumbotron {
 // image.  Give it a translucent dark scrim so it stays readable on light header
 // images / the light placeholder too (otherwise it's invisible white-on-light).
 #contact_info {
-    display: inline-block;
+    display: block;
     background: rgba(0, 0, 0, 0.45);
     padding: 0.4rem 0.6rem;
     border-radius: 4px;
