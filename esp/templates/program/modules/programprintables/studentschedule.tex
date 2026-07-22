@@ -96,9 +96,7 @@ Student Schedule for \\
 \begin{tabularx}{\textwidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
 \hline
 \textbf{Time and Room} & \textbf{Class and Teacher}{% if schedule_format.codes %} & \textbf{Code}{% endif %} \\
-{% if "multiweek_schedule"|getBooleanProgramTag:program %}
-{% classes_by_day student.classes as day_entries %}
-{% for entry in day_entries %}\hline
+{% if "multiweek_schedule"|getBooleanProgramTag:program %}{% classes_by_day student.classes as day_entries %}{% for entry in day_entries %}\hline
 {% if not entry.day_time %}N/A{% endif %}{{ entry.day_time }} \newline
 \footnotesize{ {% if not entry.cls.initial_rooms %}N/A{% else %}{{ entry.cls.prettyrooms.0|texescape }}{% endif %} } &
 {% if entry.cls.event_type.description == "Compulsory" %}{{ entry.cls.description }}{% elif not entry.cls.title %}N/A{% else %}{{ entry.cls.title|truncatewords_char:45|texescape }}{% endif %} \newline
@@ -110,8 +108,7 @@ Student Schedule for \\
 \texttt{% templatetag openbrace %}{{ entry.cls.emailcode }}{% templatetag closebrace %}
 {% endif %} \\
 {% endfor %}\hline
-{% else %}
-{% for cls in student.classes %}\hline
+{% else %}{% for cls in student.classes %}\hline
 {% if cls.friendly_times|length == 0 %}N/A{% endif %}{{ cls.friendly_times|join:", " }} \newline
 \footnotesize{ {% if cls.initial_rooms|length == 0 %}N/A{% else %}{{ cls.prettyrooms.0|texescape }}{% endif %} } &
 {% if cls.event_type.description == "Compulsory" %}{{ cls.description }}{% elif cls.title|length == 0 %}N/A{% else %}{{ cls.title|truncatewords_char:45|texescape }}{% endif %}{% if cls.parent_class.getTeacherNames %} \newline
@@ -123,8 +120,7 @@ Student Schedule for \\
 \texttt{% templatetag openbrace %}{{ cls.emailcode }}{% templatetag closebrace %}
 {% endif %} \\
 {% endfor %}\hline
-{% endif %}
-\end{tabularx}
+{% endif %}\end{tabularx}
 
 \end{center}
 

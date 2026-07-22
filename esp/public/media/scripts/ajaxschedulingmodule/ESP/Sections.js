@@ -462,11 +462,23 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             this.matrix.messagePanel.addMessage("Error: choose at least one timeslot before saving recurring schedule.", "red");
             return;
         }
+        var section = this.selectedSection;
         this.scheduleSectionWithTimeslots(
-            this.selectedSection,
+            section,
             this.selectedRecurringRoomId,
             this.selectedRecurringTimeslots.slice(),
-            callback
+            function() {
+                // Refresh the availability highlight and re-seed the selection from
+                // the saved assignment so a single occurrence can be toggled off and
+                // saved again without unscheduling the entire recurring class.
+                if (this.recurringSelectionMode && this.selectedSection === section) {
+                    this.matrix.unhighlightTimeslots(this.availableTimeslots);
+                    this.availableTimeslots = this.getAvailableTimeslots(section);
+                    this.matrix.highlightTimeslots(this.availableTimeslots, section, null, { recurringMode: this.recurringSelectionMode });
+                    this.seedRecurringSelectionFromAssignment(section);
+                }
+                callback();
+            }.bind(this)
         );
     };
 
@@ -704,6 +716,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.scheduleAsGhost = function(room_id, first_timeslot_id) {
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        if (schedule_timeslots === null) {
+            return;
+        }
         this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
         $j.each(schedule_timeslots, function(index, timeslot_id) {
             this.matrix.getCell(room_id, timeslot_id).addGhostSection(this.selectedSection);

@@ -200,16 +200,14 @@ function Scheduler(
 
         // set up handlers to schedule and unschedule ghost sections while hovering over empty cells
         $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
-            if(this.sections.selectedSection && !this.sections.recurringSelectionMode){
+            if(this.sections.selectedSection){
                 var cell = $j(evt.currentTarget).data("cell");
                 this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
             }
         }.bind(this));
 
         $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
-            if (!this.sections.recurringSelectionMode) {
-                this.sections.unscheduleAsGhost();
-            }
+            this.sections.unscheduleAsGhost();
         }.bind(this));
 
         // set up handler from print button

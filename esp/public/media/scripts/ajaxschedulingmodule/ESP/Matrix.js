@@ -262,7 +262,7 @@ function Matrix(
             addClassToTimeslots(teaching_timeslots, "teacher-teaching-cell");
         }
         
-        if(section && !options.recurringMode){
+        if(section){
             $j.each(available_timeslots, function(j, timeslot_id) {
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot_id);
