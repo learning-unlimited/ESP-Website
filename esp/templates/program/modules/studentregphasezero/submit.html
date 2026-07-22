@@ -63,7 +63,7 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
 
 <table width=100% cellpadding="0" cellspacing="0">
     <td width=46% class="option">
-        <form method="POST" id="submit_form" action="/learn/{{one}}/{{two}}/studentregphasezero">
+        <form method="POST" id="submit_form" action="/learn/{{one}}/{{two}}/studentregphasezero{% if phasezero_inline %}_inline{% endif %}">
             {% csrf_token %}
             <table width=100%>
             {{ form }}
@@ -86,7 +86,7 @@ Welcome to Phase Zero, or the Student Lottery, for {{program.niceName}}. Any stu
     <td width=8%><b><i>OR</i></b></td>
 
     <td width=46% class="option">
-        <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
+        <form action="/learn/{{one}}/{{two}}/joingroup{% if phasezero_inline %}_inline{% endif %}" method="post" name="addstudent">
             {% csrf_token %}
             <table width=100%>
                 <tr>

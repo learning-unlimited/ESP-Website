@@ -82,6 +82,15 @@ class StudentRegPhaseZero(ProgramModuleObj):
             "choosable": 0,
         }
 
+    def _inline_disabled_redirect(self, one, two, standalone_view):
+        """Aux calls ending in _inline only behave as 'inline' when the program has
+        opted in via the phasezero_inline tag; otherwise they fall back to the
+        standalone view. Falling back (rather than 404ing) keeps the endpoint
+        reachable, e.g. for tests/crawlers that hit every registered module view.
+        Keeping this check out of the standalone endpoints means the tag can never
+        change the behavior of the standalone module."""
+        return HttpResponseRedirect('/learn/%s/%s/%s' % (one, two, standalone_view))
+
     @main_call
     @needs_student_in_grade
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
@@ -90,15 +99,31 @@ class StudentRegPhaseZero(ProgramModuleObj):
         to enter the student lottery. Following entering the lottery, students are
         served a confirmation page.
         """
+        return self._studentregphasezero(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student_in_grade
+    def studentregphasezero_inline(self, request, tl, one, two, module, extra, prog):
+        """
+        Same as studentregphasezero, but rendered bare (no site nav/footer) for
+        embedding in an iframe on the two-phase student reg page. Only behaves as
+        inline when the 'phasezero_inline' tag is enabled for the program; the
+        standalone studentregphasezero endpoint above is unaffected by that tag
+        either way.
+        """
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'studentregphasezero')
+        return self._studentregphasezero(request, one, two, prog, inline=True)
+
+    def _studentregphasezero(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
 
-        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
-
-        if user.can_skip_phase_zero(self.program) and not phasezero_inline:
+        if user.can_skip_phase_zero(self.program) and not inline:
             #Student has permission to skip this module, redirect to main student reg page
             #This includes students that won the lottery
             #When inline, skip the redirect so the iframe shows confirmation instead
@@ -115,7 +140,6 @@ class StudentRegPhaseZero(ProgramModuleObj):
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
             context['group_name'] = group_name
-            context['phasezero_inline'] = phasezero_inline
 
             if not in_lottery:
                 if lottery_run:
@@ -154,17 +178,26 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @aux_call
     @needs_student_in_grade
     def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self._joingroup(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student_in_grade
+    def joingroup_inline(self, request, tl, one, two, module, extra, prog, newclass = None):
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'joingroup')
+        return self._joingroup(request, one, two, prog, inline=True)
+
+    def _joingroup(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
         lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
-        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
-        context['phasezero_inline'] = phasezero_inline
         context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
@@ -214,17 +247,26 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @aux_call
     @needs_student
     def leavegroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self._leavegroup(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student
+    def leavegroup_inline(self, request, tl, one, two, module, extra, prog, newclass = None):
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'leavegroup')
+        return self._leavegroup(request, one, two, prog, inline=True)
+
+    def _leavegroup(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
         lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
-        phasezero_inline = Tag.getBooleanTag('phasezero_inline', prog)
-        context['phasezero_inline'] = phasezero_inline
         context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run

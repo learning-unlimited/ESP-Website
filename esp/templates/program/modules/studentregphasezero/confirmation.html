@@ -115,7 +115,7 @@ The student lottery is now closed. No more changes may be made at this time. Thi
     {% if lottery_perm and not lottery_run %}
     {# Lottery is still open (and hasn't been run) #}
         <center>
-        <form action="/learn/{{one}}/{{two}}/leavegroup" method="post" name="leavegroup">
+        <form action="/learn/{{one}}/{{two}}/leavegroup{% if phasezero_inline %}_inline{% endif %}" method="post" name="leavegroup">
         {% csrf_token %}
         <input type="submit" class="button1" value="Leave My {{ group_name }}">
         </form>
@@ -136,7 +136,7 @@ The student lottery is now closed. No more changes may be made at this time. Thi
         1) Begin typing another student's <u>username</u> below<br>2) Select the correct username<br>3) Click the button.<br><br>Note: the student must already have a {{ group_name|lower }} and the maximum allowed group size is <b>{{ num_allowed_users }}</b> students. Email us at <a href="mailto:{{ program.director_email }}">{{ program.director_email }}</a> if you need more than {{ num_allowed_users }} students in your {{ group_name|lower }}, and we can add others manually.
         </p>
         {% end_inline_program_qsd_block %}
-        <form action="/learn/{{one}}/{{two}}/joingroup" method="post" name="addstudent">
+        <form action="/learn/{{one}}/{{two}}/joingroup{% if phasezero_inline %}_inline{% endif %}" method="post" name="addstudent">
         {% csrf_token %}
         <input type="text" name="student_username" id="student_username" />
         <input type="hidden" name="student_selected" id="student_id" />
