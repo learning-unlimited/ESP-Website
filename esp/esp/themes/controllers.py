@@ -500,6 +500,226 @@ class ThemeController(object):
             and os.path.isfile(os.path.join(_BOOTSWATCH_DIST, d, '_bootswatch.scss'))
         ])
 
+    # Bootstrap's color-contrast($color) picks $white or $black based on WCAG
+    # relative luminance.  Threshold ≈ 0.179 (mid-point on the perceptual scale).
+    @staticmethod
+    def _color_contrast_hex(hex_color):
+        """Return '#ffffff' or '#000000' for best WCAG contrast against hex_color."""
+        if not hex_color or not hex_color.startswith('#'):
+            return '#ffffff'
+        try:
+            h = hex_color.lstrip('#')
+            if len(h) == 3:
+                h = h[0]*2 + h[1]*2 + h[2]*2
+            if len(h) != 6:
+                return '#ffffff'
+            r, g, b = int(h[0:2], 16)/255, int(h[2:4], 16)/255, int(h[4:6], 16)/255
+            def lin(c):
+                return c/12.92 if c <= 0.03928 else ((c + 0.055)/1.055) ** 2.4
+            L = 0.2126*lin(r) + 0.7152*lin(g) + 0.0722*lin(b)
+            return '#ffffff' if L < 0.179 else '#000000'
+        except (ValueError, IndexError):
+            return '#ffffff'
+
+    @staticmethod
+    def _norm_hex(value):
+        """Return a normalized 6-digit '#rrggbb' hex, or None if value is not a plain hex colour.
+
+        Bootswatch variable values that resolve to functions, rgba(), CSS
+        keywords, etc. are rejected (return None) so only displayable colours
+        are derived from them.
+        """
+        if not value or not isinstance(value, str):
+            return None
+        v = value.strip()
+        if not v.startswith('#'):
+            return None
+        h = v[1:]
+        if len(h) == 3:
+            h = h[0]*2 + h[1]*2 + h[2]*2
+        if len(h) != 6 or any(c not in '0123456789abcdefABCDEF' for c in h):
+            return None
+        return '#' + h.lower()
+
+    @staticmethod
+    def _hex_to_rgb(h):
+        h = h.lstrip('#')
+        return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+    @staticmethod
+    def _rgb_to_hex(rgb):
+        return '#%02x%02x%02x' % tuple(max(0, min(255, int(round(c)))) for c in rgb)
+
+    @classmethod
+    def _mix_hex(cls, color1, color2, weight=0.5):
+        """Sass mix($color1, $color2, $weight): weight is the proportion of color1 (0..1)."""
+        a = cls._hex_to_rgb(color1)
+        b = cls._hex_to_rgb(color2)
+        return cls._rgb_to_hex(tuple(a[i]*weight + b[i]*(1 - weight) for i in range(3)))
+
+    @classmethod
+    def _shade_hex(cls, color, weight):
+        """Sass shade-color($color, $weight): mix black into color by weight (0..1)."""
+        return cls._mix_hex('#000000', color, weight)
+
+    @classmethod
+    def _tint_hex(cls, color, weight):
+        """Sass tint-color($color, $weight): mix white into color by weight (0..1)."""
+        return cls._mix_hex('#ffffff', color, weight)
+
+    def get_bootswatch_esp_vars(self, bootswatch_theme, esp_theme=None):
+        """Return ESP-variable-name→value dict derived from a Bootswatch theme.
+
+        Reads the Bootswatch _variables.scss, resolves simple variable
+        references (chains of $name: $other), and derives a value for *every*
+        ESP customizer field in the editor accordion from the theme's Bootstrap
+        palette ($primary, $secondary, $success, ... plus $body-bg/$body-color/
+        $link-color).  Colours with no direct Bootswatch equivalent are computed
+        from the palette (shade/tint/mix + WCAG color-contrast), mirroring what
+        the theme SCSS actually renders under `@if $bootswatch-active`, so the
+        accordion reflects the live look rather than the raw ESP defaults.
+
+        esp_theme: the active ESP theme name (e.g. 'droplets', 'bigpicture',
+            'fruitsalad'), used to derive the theme-specific navbar/sidebar/tab
+            fields shown only for that theme.
+        """
+        if not bootswatch_theme or bootswatch_theme not in self.get_bootswatch_themes():
+            return {}
+        bw_vars_path = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, '_variables.scss')
+        if not os.path.isfile(bw_vars_path):
+            return {}
+        with open(bw_vars_path) as f:
+            content = f.read()
+
+        # Parse all "$name: value !default;" declarations in file order.
+        raw = {}
+        for name, value in re.findall(
+            r'\$([a-zA-Z0-9_-]+):\s*(.*?)\s*!default\s*;', content, re.DOTALL
+        ):
+            raw[name] = value.strip()
+
+        # Resolve simple variable references ($name → value) up to depth 10.
+        def _resolve(name, depth=0):
+            if depth > 10:
+                return None
+            val = raw.get(name)
+            if val is None:
+                return None
+            # Pure variable reference: $other-var
+            if re.fullmatch(r'\$[a-zA-Z0-9_-]+', val):
+                return _resolve(val[1:], depth + 1)
+            return val
+
+        resolved = {name: _resolve(name) for name in raw}
+
+        # Base Bootstrap palette as normalized hex, with Bootstrap 5 default
+        # fallbacks so a value is always available to derive from (light
+        # Bootswatch themes often leave body-bg/body-color/link-color unset and
+        # inherit Bootstrap's own defaults).
+        norm = self._norm_hex
+        primary    = norm(resolved.get('primary'))    or '#0d6efd'
+        secondary  = norm(resolved.get('secondary'))  or '#6c757d'
+        success    = norm(resolved.get('success'))    or '#198754'
+        info       = norm(resolved.get('info'))       or '#0dcaf0'
+        warning    = norm(resolved.get('warning'))    or '#ffc107'
+        danger     = norm(resolved.get('danger'))     or '#dc3545'
+        light      = norm(resolved.get('light'))      or '#f8f9fa'
+        dark       = norm(resolved.get('dark'))       or '#212529'
+        body_bg    = norm(resolved.get('body-bg'))    or '#ffffff'
+        body_color = norm(resolved.get('body-color')) or '#212529'
+        link_color = norm(resolved.get('link-color')) or primary
+        link_hover = norm(resolved.get('link-hover-color')) or self._shade_hex(link_color, 0.2)
+        font_family = resolved.get('font-family-sans-serif')
+
+        contrast = self._color_contrast_hex
+        result = {}
+
+        def put(name, val):
+            if val:
+                result[name] = val
+
+        # --- Scaffolding / text / links (shown for every theme) ---
+        put('bodyBackground', body_bg)
+        put('contentBackground', body_bg)
+        put('heroUnitBackground', light)
+        put('textColor', body_color)
+        put('headingsColor', body_color)
+        put('titleColor', body_color)
+        put('linkColor', link_color)
+        put('linkColorHover', link_hover)
+        if font_family and '$' not in font_family:
+            put('sansFontFamily', font_family.strip())
+
+        # --- Buttons (shown for every theme) ---
+        put('btnPrimaryBackground', primary)
+        put('btnPrimaryLinkColor', contrast(primary))
+        put('btnBackground', light)
+        put('btnLinkColor', contrast(light))
+        put('btnInverseBackground', secondary)
+        put('btnInverseLinkColor', contrast(secondary))
+
+        # --- Theme-specific navbar / sidebar / advanced fields ---
+        if esp_theme == 'droplets':
+            # droplets' navbar (.navbar.bg-dark) renders on $primary with
+            # color-contrast($primary) foregrounds (see droplets/scss/main.scss).
+            put('navbarInverseBackground', primary)
+            put('navbarInverseBackgroundHighlight', self._shade_hex(primary, 0.15))
+            put('navbarInverseLinkColor', contrast(primary))
+            put('navbarInverseLinkColorHover', contrast(primary))
+            put('navbarInverseBrandColor', contrast(primary))
+        elif esp_theme == 'bigpicture':
+            # bigpicture's admin navbar renders on $primary with
+            # color-contrast($primary) foregrounds; the sidebar is NOT gated by
+            # $bootswatch-active, so derive its colours from the palette too.
+            put('navbarBackground', primary)
+            put('navbarBackgroundHighlight', self._shade_hex(primary, 0.15))
+            put('navbarText', contrast(primary))
+            put('navbarLinkColor', contrast(primary))
+            put('navbarLinkColorHover', contrast(primary))
+            put('sidebarBackground', light)
+            put('sidebarText', body_color)
+            put('sidebarLink', link_color)
+            put('sidebarHeader', primary)
+            put('sidebarLinkHover', link_hover)
+            put('sidebarHover', self._tint_hex(primary, 0.9))
+            put('sidebarActive', contrast(primary))
+            put('sidebarActiveBackground', primary)
+            # $accent1/$accent2 are gated behind `@if not $bootswatch-active`
+            # (unused while a Bootswatch theme is active), but the accordion
+            # still shows them, so mirror the palette for a coherent preview.
+            put('accent2', primary)
+            put('accent1', secondary)
+        elif esp_theme == 'fruitsalad':
+            # Mirror the @each tab palette in fruitsalad/scss/main.scss so the
+            # "Fruitsalad Tabs" accordion reflects the tabs that actually render
+            # under a Bootswatch theme (base colour + the shade-color accents).
+            tab_bases = {
+                0: primary, 1: info, 2: secondary, 3: danger, 4: warning,
+                5: success, 6: self._mix_hex(info, success, 0.5),
+                7: self._mix_hex(primary, danger, 0.5), 8: dark,
+                9: self._shade_hex(primary, 0.4),
+            }
+            for i, base in tab_bases.items():
+                if not base:
+                    continue
+                put('tabcolor%d_base_color' % i, base)
+                put('tabcolor%d_accent1_color' % i, self._shade_hex(base, 0.2))
+                put('tabcolor%d_accent2_color' % i, self._shade_hex(base, 0.35))
+
+        return result
+
+    def get_all_bootswatch_esp_vars(self, esp_theme=None):
+        """Return {bootswatch_theme: esp_vars_dict} for every available theme.
+
+        Used to pre-populate the client-side JS dict so the colour pickers
+        update immediately when the admin changes the Bootswatch dropdown
+        without a round-trip to the server.
+        """
+        return {
+            theme: self.get_bootswatch_esp_vars(theme, esp_theme=esp_theme)
+            for theme in self.get_bootswatch_themes()
+        }
+
     def compile_scss(self, scss_data):
         """Compile SCSS source string using dart-sass, return CSS bytes."""
         theme_editor_dir = _THEME_EDITOR_DIR
@@ -628,19 +848,29 @@ class ThemeController(object):
 
             if bootswatch_theme:
                 #   Customization ON TOP of Bootswatch: apply only the customizer
-                #   fields the admin actually changed from the theme defaults;
-                #   untouched fields keep the Bootswatch value.  The theme SCSS
-                #   guards each override with index($esp-overridden, 'name').
+                #   fields the admin actually changed from the *displayed* default.
+                #   When a Bootswatch theme is active the editor shows each field's
+                #   Bootswatch-derived value (see get_bootswatch_esp_vars), so the
+                #   baseline we diff against is the SCSS defaults overlaid with those
+                #   derived values — a field the admin left untouched equals its
+                #   derived value and is therefore NOT in $esp-overridden, letting the
+                #   Bootswatch theme flow through unimpeded (no spurious overrides from
+                #   simply submitting the pre-filled form).  Only a field the admin
+                #   genuinely changed from what was shown counts as an override.
                 #   Names come from the theme's own SCSS (find_scss_variables),
                 #   filtered to plain identifiers, so nothing user-tainted is
                 #   interpolated into the stylesheet.
                 scss_defaults = self.find_scss_variables(theme_name, flat=True)
+                effective_defaults = dict(scss_defaults)
+                effective_defaults.update(
+                    self.get_bootswatch_esp_vars(bootswatch_theme, esp_theme=theme_name)
+                )
                 overridden = [
                     name for name in scss_defaults
                     if name in variable_data
                     and re.match(r'^[a-zA-Z0-9_]+$', name)
                     and str(variable_data[name]).strip().lower()
-                        != str(scss_defaults[name]).strip().lower()
+                        != str(effective_defaults.get(name, scss_defaults[name])).strip().lower()
                 ]
                 esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
                 scss_data = ('$bootswatch-active: true;\n'
@@ -649,10 +879,20 @@ class ThemeController(object):
                              + var_data
                              + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
                              + bw_scss_import + css_data_pre)
+                #   Under Bootswatch, only substitute the fields the admin actually
+                #   changed (the $esp-overridden set).  Leaving untouched fields at
+                #   their SCSS declarations means the site renders 100% as pure
+                #   Bootswatch unless a field was explicitly edited — the pre-filled
+                #   Bootswatch-derived values shown in the editor do not leak into the
+                #   compiled CSS just because the form was submitted.
+                allowed_substitutions = set(overridden)
             else:
                 scss_data = (var_data
                              + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
                              + css_data_pre)
+                #   No Bootswatch theme: substitute every supplied variable (the
+                #   legacy behaviour, where the editor values are the source of truth).
+                allowed_substitutions = None
 
             #   Replace all SCSS variable declarations for which we have a value defined.
             #   Parse variable names from the already-loaded scss_data (server content,
@@ -660,6 +900,8 @@ class ThemeController(object):
             known_var_names = set(re.findall(r'\$([a-zA-Z0-9_-]+):', scss_data))
             for variable_name in known_var_names:
                 if variable_name not in variable_data:
+                    continue
+                if allowed_substitutions is not None and variable_name not in allowed_substitutions:
                     continue
                 safe_value = _sanitize_scss_value(variable_name, variable_data[variable_name])
                 if safe_value is None:
