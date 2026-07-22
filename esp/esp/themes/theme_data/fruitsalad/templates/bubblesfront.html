@@ -72,7 +72,8 @@
     <label for="remember" id="remember_label">Remember my choice</label>
     <!--</form>-->
     <span id="orbox">- or -</span>
-{% block login %}
+
+    {% block login %}
     <div id="login_box_index">
       <div class="corners">
         <div class="ul"></div>
@@ -101,9 +102,7 @@
             href="{% url 'manage_programs' %}">Manage</a>{% endif %})
         </div>
         {% endif %}
-      </div>
-    </div>
-    {% endblock %}
+
       </div>
     </div>
     {% endblock %}
