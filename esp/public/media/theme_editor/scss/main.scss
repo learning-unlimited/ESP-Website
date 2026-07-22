@@ -81,6 +81,13 @@ body {
             background-color: $btnPrimaryBackground;
             background-image: none;
             border-color: darken($btnPrimaryBackground, 5%);
+            // When only the background was changed, keep the label legible by
+            // contrasting against the NEW background (mirrors Bootstrap's
+            // button-variant).  Otherwise the text keeps Bootswatch's contrast
+            // colour computed for the old background and clashes.
+            @if not index($esp-overridden, 'btnPrimaryLinkColor') {
+                color: color-contrast($btnPrimaryBackground);
+            }
         }
     }
     @if index($esp-overridden, 'btnPrimaryLinkColor') {
@@ -91,6 +98,9 @@ body {
             background-color: $btnBackground;
             background-image: none;
             border-color: darken($btnBackground, 12%);
+            @if not index($esp-overridden, 'btnLinkColor') {
+                color: color-contrast($btnBackground);
+            }
         }
     }
     @if index($esp-overridden, 'btnLinkColor') {

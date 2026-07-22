@@ -434,6 +434,15 @@ def editor(request):
         if palette is not None:
             tc.set_palette(palette)
 
+        #   Post/Redirect/Get: redirect after handling the POST so a browser
+        #   reload issues a fresh GET instead of re-submitting the form.  Without
+        #   this, every reload pops the "Confirm Form Resubmission" dialog and
+        #   replays the previous apply/save — which is why the editor appeared to
+        #   "pick up colours from the previous theme" on reload.  The GET below
+        #   always rebuilds the pickers from the persisted state (Bootswatch tag +
+        #   saved customisations), so the displayed values are now deterministic.
+        return HttpResponseRedirect(reverse('themes_editor'))
+
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
 
