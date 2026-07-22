@@ -843,7 +843,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             # Drawer options are entirely optional features, so they should remain unlocked
             # allowing the admin to toggle them on or off. Core locked modules like the
             # Profile Module are automatically included and do not appear in this list.
-            
+
             module_questions_categorized[category].append({
                 'value': val,
                 'label': label,
