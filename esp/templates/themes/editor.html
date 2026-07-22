@@ -123,7 +123,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
                     </div>
                     <div class="collapse" id="bootswatch-theme"><div class="card-body">
-                        <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to apply on top of {{ theme_name|capfirst }}. Leave blank to use the default styling. <strong>The Bootswatch theme sets the base look; any customization options you change below are then applied on top of it (options you leave untouched keep the Bootswatch theme's values).</strong></h5>
+                                            <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to use as the base look for {{ theme_name|capfirst }}. Leave blank for the default Bootstrap styling. <strong>When a Bootswatch theme is active, the colour fields below show that theme's defaults — change only the ones you want to customise.</strong></h5>
                         <div class="control-group">
                             <select name="bootswatch_theme" class="form-select" id="bootswatch-theme-select">
                                 <option value="">— None (default Bootstrap) —</option>
@@ -131,6 +131,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
                                 {% endfor %}
                             </select>
+                            <small class="text-muted mt-1 d-block">Switching themes resets the colour fields below to the new theme's defaults so you can start customising from a clean slate.</small>
                         </div>
                     </div></div>
                 </div>
@@ -619,16 +620,49 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 {% block javascript_footer %}
 {{ block.super }}
     <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
+    {% if bootswatch_vars_json %}
+    <script type="text/javascript">
+    // Bootswatch-theme → ESP-variable → colour value.
+    // Pre-computed server-side so the colour pickers update without a round-trip
+    // when the admin changes the Bootswatch dropdown.
+    var bootswatch_esp_vars = {{ bootswatch_vars_json }};
+    </script>
+    {% endif %}
     <script type="text/javascript">
     $j(function () {
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
 
-      // Customization now layers ON TOP of the selected Bootswatch theme: every
-      // panel stays editable, and only the fields the admin actually changes are
-      // applied over the theme (the compiler tracks changed-vs-default and the
-      // theme SCSS applies just those — see $esp-overridden).  So there is no
-      // longer anything to disable when a Bootswatch theme is selected.
+      // Stash the SCSS-file defaults (= the server-rendered data-default values)
+      // before any dropdown-triggered changes so we can restore them when the
+      // admin selects "no Bootswatch theme".
+      $j('#theme_editor_accordion input[data-default]').each(function () {
+        $j(this).data('scss-default', $j(this).data('default'));
+      });
+
+      // When the Bootswatch theme dropdown changes, update every colour/font/length
+      // picker to show that theme's resolved colours.  The picker value AND the
+      // data-default (reset target) are both updated so "Reset Color" stays correct.
+      $j('#bootswatch-theme-select').on('change', function () {
+        var theme = $j(this).val();
+        var bw = (typeof bootswatch_esp_vars !== 'undefined' && bootswatch_esp_vars[theme])
+                   ? bootswatch_esp_vars[theme] : {};
+        $j('#theme_editor_accordion input[data-default]').each(function () {
+          var $input = $j(this);
+          var name = $input.attr('name');
+          var scssDefault = $input.data('scss-default');
+          // Prefer the Bootswatch-derived colour; fall back to the SCSS default.
+          var newDefault = (theme && bw[name]) ? bw[name] : (scssDefault || '');
+          if (newDefault === '') return;
+          // Update data-default so the Reset Color button targets the right colour.
+          $input.data('default', newDefault);
+          $input.val(newDefault);
+          // Update the Spectrum colour-picker preview if it is attached.
+          if ($input.hasClass('color')) {
+            try { $input.spectrum('set', newDefault); } catch (e) {}
+          }
+        });
+      });
     });
     </script>
 {% endblock %}
