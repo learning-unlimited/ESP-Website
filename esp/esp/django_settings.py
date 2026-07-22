@@ -81,7 +81,6 @@ LOG_LEVEL = 'INFO'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -454,3 +453,6 @@ ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Google Maps Embed API key
+GOOGLE_MAPS_EMBED_KEY = ''
