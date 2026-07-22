@@ -55,6 +55,22 @@ class ClassesByDayTagTest(ProgramFrameworkTest):
         self.assertEqual(result[1]['cls'], section)
         self.assertLess(result[0]['event'].start, result[1]['event'].start)
 
+    def test_single_section_argument_is_wrapped(self):
+        """A single ClassSection (not a list) is treated as a one-item list.
+
+        Used by the teacher HTML schedule, which passes one section at a time.
+        """
+        section = list(self.program.sections())[0]
+        ts1 = self._make_event_on_date(2222, 7, 7, 9, 10)
+        ts2 = self._make_event_on_date(2222, 7, 14, 9, 10)
+        section.meeting_times.set([ts1, ts2])
+
+        result = classes_by_day(section)
+
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(r['is_repeating'] for r in result))
+        self.assertEqual(result[0]['cls'], section)
+
     def test_compulsory_event_passthrough(self):
         """An Event passed directly is wrapped as-is with is_repeating=False."""
         ts = self.timeslots[0]

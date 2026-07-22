@@ -28,8 +28,15 @@ def classes_by_day(classes):
       day_time     -- human-readable time string for this occurrence,
                       always including the date (e.g. "Sat, Oct 05, 10am--12pm")
       is_repeating -- True when the class spans multiple distinct calendar dates
+
+    Accepts either an iterable of classes (e.g. a student's class list) or a
+    single ClassSection/Event (e.g. one entry on a teacher schedule).
     """
     rows = []
+
+    # Allow callers to pass a single section/event instead of a list.
+    if isinstance(classes, Event) or not hasattr(classes, '__iter__'):
+        classes = [classes]
 
     for cls in classes:
         # Compulsory timeslot -- an Event injected directly by the view
