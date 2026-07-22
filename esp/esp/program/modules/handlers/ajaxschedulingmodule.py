@@ -38,6 +38,7 @@ from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
 from django.http                 import HttpResponse
+from django.db                   import transaction
 from esp.cal.models              import Event
 from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
@@ -307,13 +308,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
         comment = request.POST['comment']
         locked = 'locked' in request.POST
 
-        try:
-            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
-        except module_ext.AJAXSectionDetail.DoesNotExist:
-            sectionDetail = module_ext.AJAXSectionDetail()
-            sectionDetail.initialize(prog, cls_id, comment, locked)
+        with transaction.atomic():
+            try:
+                module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+            except module_ext.AJAXSectionDetail.DoesNotExist:
+                sectionDetail = module_ext.AJAXSectionDetail()
+                sectionDetail.initialize(prog, cls_id, comment, locked)
 
-        self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
+            self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
         return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls_id)
 
     @aux_call
