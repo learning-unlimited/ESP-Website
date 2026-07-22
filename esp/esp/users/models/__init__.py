@@ -299,13 +299,13 @@ class BaseESPUser(object):
         return ESPUser.email_sendto_address(self.email, self.name())
 
     def __cmp__(self, other):
-        # two anonymous users are equal
-        if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
+        # two anonymous users are equal (checking against AnonymousUser, not AnonymousESPUser)
+        if isinstance(self, AnonymousUser) and isinstance(other, AnonymousUser):
             return 0
         # otherwise, rank the signed-in user higher
-        elif isinstance(other, AnonymousESPUser):
+        elif isinstance(other, AnonymousUser):
             return 1
-        elif isinstance(self, AnonymousESPUser):
+        elif isinstance(self, AnonymousUser):
             return -1
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
@@ -315,12 +315,15 @@ class BaseESPUser(object):
         return self.__cmp__(other) < 0
     def __gt__(self, other):
         return self.__cmp__(other) > 0
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
     def __le__(self, other):
         return self.__cmp__(other) <= 0
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
+    # note: the below __eq__ and __ne__ are shadowed for ESPUser instances (and ESPUser
+    # uses exact account comparison rather than name comparison); they should probably
+    # only be relevant to AnonymousESPUser
+    def __eq__(self, other):
+        return self.__cmp__(other) == 0
     def __ne__(self, other):
         return self.__cmp__(other) != 0
 
