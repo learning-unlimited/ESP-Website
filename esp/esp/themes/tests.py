@@ -233,25 +233,28 @@ class ThemesTest(TestCase):
                 self.assertEqual(len(re.findall(old_regexp, css, flags=re.I)), 0,
                                  f'Stale --bs-link-color: {absent_color_str} still in compiled CSS')
 
+        #   The editor uses Post/Redirect/Get, so each POST returns a 302 to the
+        #   editor; follow=True lands on the resulting 200 GET (and the CSS is
+        #   compiled during the POST, before the redirect).
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
         #   Test that we can save this setting, change it, and reload
         config_dict = {'save': True, 'linkColor': color_str1, 'saveThemeName': 'save_test'}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
 
         color_str2 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str2}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str2, absent_color_str=color_str1)
 
         config_dict = {'load': True, 'loadThemeName': 'save_test'}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
