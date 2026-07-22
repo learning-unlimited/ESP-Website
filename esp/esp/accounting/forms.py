@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from django import forms
 from esp.program.models import Program
 from esp.db.forms import AjaxForeignKeyNewformField
