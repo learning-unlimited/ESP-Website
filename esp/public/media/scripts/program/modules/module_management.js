@@ -608,6 +608,12 @@ $j(document).ready(function() {
             return;
         }
 
+        if (removeIds.length > 0) {
+            if (!confirm("Are you sure you want to remove these modules? If active students have already interacted with them, data may be hidden or affected.")) {
+                return;
+            }
+        }
+
         var payload = new URLSearchParams();
         addIds.forEach(function(id) { payload.append('add_modules[]', id); });
         removeIds.forEach(function(id) { payload.append('remove_modules[]', id); });
@@ -630,7 +636,10 @@ $j(document).ready(function() {
                 if (res.status === 'success') {
                     showToast('Modules updated successfully.', 'success');
                     closeAddDrawer();
-                    window.location.reload();
+                    $j('.tl-add-checkbox').each(function() {
+                        this.defaultChecked = this.checked;
+                    });
+                    loadModules();
                 } else {
                     showToast('Error: ' + (res.message || 'Unknown error'), 'error');
                 }

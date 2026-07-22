@@ -202,10 +202,11 @@
             {% if module_questions_categorized.student %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px 0;">Student Registration</h3>
             {% for q in module_questions_categorized.student %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label group-hover:text-brand-student">{{ q.label }}</div>
                 </div>
@@ -216,10 +217,11 @@
             {% if module_questions_categorized.teacher %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">Teacher Registration</h3>
             {% for q in module_questions_categorized.teacher %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label group-hover:text-brand-teacher">{{ q.label }}</div>
                 </div>
@@ -230,10 +232,11 @@
             {% if module_questions_categorized.general %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">General Program Modules</h3>
             {% for q in module_questions_categorized.general %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label">{{ q.label }}</div>
                 </div>
