@@ -42,6 +42,7 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
+from django.db import transaction
 
 from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.models import RegistrationProfile
@@ -181,12 +182,13 @@ class OnSiteClassList(ProgramModuleObj):
         success = registration_profile.student_info is not None
 
         if success:
-            registration_profile.save()
+            with transaction.atomic():
+                registration_profile.save()
 
-            for extension in ['attended', 'med', 'liab', 'onsite']:
-                Record.createBit(extension, program, student)
+                for extension in ['attended', 'med', 'liab', 'onsite']:
+                    Record.createBit(extension, program, student)
 
-            IndividualAccountingController.updatePaid(self.program, student, paid=True)
+                IndividualAccountingController.updatePaid(self.program, student, paid=True)
 
         json.dump({'status':success}, resp)
         return resp
@@ -410,19 +412,40 @@ class OnSiteClassList(ProgramModuleObj):
 
         time_now = datetime.now()
 
-        start_id = int(options.get('start', -1))
+        try:
+            start_id = int(options.get('start', -1) or -1)
+        except (ValueError, TypeError):
+            start_id = -1
+
+        curtime = None
         if start_id != -1:
-            curtime = Event.objects.filter(id=start_id)
-        else:
+            curtime = Event.objects.filter(
+                id=start_id,
+                program=self.program,
+                event_type__description='Class Time Block',
+            ).order_by('start')
+        if not curtime:
             window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
-            curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
+            curtime = Event.objects.filter(
+                program=self.program,
+                start__gte=window_start,
+                event_type__description='Class Time Block',
+            ).order_by('start')
             # If there are no events after the current time, just pick the first event of the program
             if curtime.count() == 0:
                 curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
-        end_id = int(options.get('end', -1))
+        try:
+            end_id = int(options.get('end', -1) or -1)
+        except (ValueError, TypeError):
+            end_id = -1
+
         if end_id != -1:
-            endtime = Event.objects.filter(id=end_id)
+            endtime = Event.objects.filter(
+                id=end_id,
+                program=self.program,
+                event_type__description='Class Time Block',
+            )
         else:
             endtime = None
 
@@ -457,6 +480,9 @@ class OnSiteClassList(ProgramModuleObj):
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
 
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
+        if template_name == 'openclasses.html':
+            context['timeslots'] = prog.getTimeSlots()
+            context['selected_start'] = start_id
 
         if sort_spec == 'unsorted':
             context['use_categories'] = False

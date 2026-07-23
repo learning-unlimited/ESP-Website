@@ -211,6 +211,13 @@ all_global_tags = {
         'category': 'theme',
         'is_setting': False,
     },
+    'bootswatch_theme': {
+        'is_boolean': False,
+        'help_text': 'The Bootswatch skin applied to the current SCSS theme (empty string means no skin)',
+        'default': '',
+        'category': 'theme',
+        'is_setting': False,
+    },
     'request_student_phonenum': {
         'is_boolean': True,
         'help_text': 'Whether to request a student home phone number',
@@ -483,13 +490,6 @@ all_global_tags = {
         'is_setting': True,
         'field': JSONValidatedCharField(),
     },
-    'google_cloud_api_key': {
-        'is_boolean': False,
-        'help_text': 'An API key for use with the Google Cloud Platform. Used for the maps in the student and teacher onsite webapps. The embedded map is entirely free but requires an API key. If not set, the map tab will be hidden.',
-        'default': '',
-        'category': 'manage',
-        'is_setting': True,
-    },
     'google_analytics_id': {
         'is_boolean': False,
         'help_text': 'A <a href="https://support.google.com/analytics/answer/12270356?hl=en" target="_blank">measurement ID</a> for a <a href="https://developers.google.com/analytics" target="_blank">Google Analytics</a> property. The format of a measurement ID in Google Analytics 4 is "G-" followed by a combination of numbers and letters, such as "G-PSW1MY7HB4". Setting this value will enable the passing of traffic data to Google Analytics.',
@@ -584,7 +584,7 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'sections__meeting_times__start\', \'_num_students\', \'id\')',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\')',
         'default': 'category__symbol',
         'category': 'manage',
         'is_setting': True,
@@ -1181,8 +1181,8 @@ all_program_tags = {
     },
     'program_center': {
         'is_boolean': False,
-        'help_text': 'The geographic center for a program, following the form "lat, long". Used for the maps in the teacher and student onsite webapps.',
-        'default': '37.427490, -122.170267',
+        'help_text': 'The geographic center for a program, following the form "lat, long" (e.g., "37.427490, -122.170267"). Enables maps in the teacher and student onsite webapps.',
+        'default': None,
         'category': 'manage',
         'is_setting': True,
         'field': forms.CharField(validators=[RegexValidator(r'^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?),\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$', 'Enter a valid location.')])
