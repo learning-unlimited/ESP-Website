@@ -2,8 +2,9 @@ import json
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject
+from esp.program.models import ClassSubject, ClassSection
 from esp.users.models import ESPUser
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from django.core import mail
 
 class CancelClassTest(ProgramFrameworkTest):
@@ -76,3 +77,46 @@ class CancelClassTest(ProgramFrameworkTest):
         self.client.login(username='admin', password='password')
         url = '%steacherlookup' % self.program.get_manage_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+
+class DeleteSectionTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        self.schedule_randomly()
+
+        self.cls = self.teachers[0].getTaughtClasses()[0]
+        self.section = self.cls.sections.all()[0]
+        self.other_cls = self.program.classes().exclude(id=self.cls.id).first()
+        self.other_section = self.other_cls.sections.all()[0]
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.adminUser.save()
+        self.client.login(username='admin', password='password')
+
+    def test_deletesection_post_uses_post_sec_id(self):
+        response = self.client.post(
+            f'/manage/{self.program.url}/deletesection/{self.cls.id}',
+            {'sec_id': self.section.id, 'sure': 'True'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ClassSection.objects.filter(id=self.section.id).exists())
+
+    def test_deletesection_cancel_redirects(self):
+        response = self.client.post(
+            f'/manage/{self.program.url}/deletesection/{self.cls.id}',
+            {'sec_id': self.section.id, 'sure': 'False'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(ClassSection.objects.filter(id=self.section.id).exists())
+
+    def test_deletesection_rejects_section_from_other_class(self):
+        response = self.client.get(
+            f'/manage/{self.program.url}/deletesection/{self.cls.id}?sec_id={self.other_section.id}'
+        )
+
+        self.assertEqual(response.status_code, 500)
+        self.assertTrue(ClassSection.objects.filter(id=self.other_section.id).exists())
