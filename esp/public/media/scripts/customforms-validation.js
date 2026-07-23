@@ -22,9 +22,9 @@ $j(function(){
 		}
 	});
 
-	jQuery.validator.addMethod('USZip', USZipValidator, "Please enter a valid US zip-code");
-	jQuery.validator.addMethod('USPhone', USPhoneValidator, "Must be of the format xxx-xxx-xxxx");
-	jQuery.validator.addMethod('ddate', DateValidator, "Must be of the format mm/dd/yyyy");
+	$j.validator.addMethod('USZip', USZipValidator, "Please enter a valid US zip-code");
+	$j.validator.addMethod('USPhone', USPhoneValidator, "Must be of the format xxx-xxx-xxxx");
+	$j.validator.addMethod('ddate', DateValidator, "Must be of the format mm/dd/yyyy");
 
 	// Initializing the tool-tips
 	$j('img.qmark').qtip({
