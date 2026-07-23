@@ -40,8 +40,8 @@
 </div>
 {% endif %}
 
-<div role="alert" class="alert alert-info profile-alert">
- <label class="control-label" for="id_e_mail">Email address:</label>
+<div class="control-group profile-field">
+     <label class="control-label" for="id_e_mail">Email address:</label>
  <div class="controls">
  {{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error" role="alert">{{ form.e_mail.errors|join:", " }}</span>

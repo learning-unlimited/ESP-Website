@@ -107,7 +107,9 @@ Your grade level will update automatically every August.
     <label for="{{ form.heard_about.id_for_label }}" class="control-label">(Optional) How did you hear of this program?
     </label>
     <div class="controls controls-row">
-    <p class="field-help">(If you select "Other," please explain in the lower box.)</span><br />
+<p class="field-help">
+    (If you select "Other," please explain in the lower box.)
+</p>
     {{ form.heard_about }} {% if form.heard_about.errors %}
     <br /><span class="form_error" role="alert">{{ form.heard_about.errors|join:", " }}</span>
     {% endif %}

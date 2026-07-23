@@ -44,7 +44,7 @@
 
 {% if form.guard_phone_day %}
 <div class="control-group profile-field">
- <label class="control-label phone-label">
+ <label class="control-label phone-label" for="id_guard_phone_day">
     Home
 </label>
  <div class="controls">
@@ -57,9 +57,10 @@
 
 {% if form.guard_phone_cell %}
 <div class="control-group profile-field">
-<label class="control-label phone-label">
-   cell
-</label> <div class="controls">
+<label class="control-label phone-label" for="id_guard_phone_cell">
+    Cell
+</label>
+ <div class="controls">
  {{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
    <br /><span class="form_error" role="alert">{{ form.guard_phone_cell.errors|join:", " }}</span>
    {% endif %}
