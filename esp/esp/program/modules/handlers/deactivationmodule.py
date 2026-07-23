@@ -78,8 +78,11 @@ class DeactivationModule(ProgramModuleObj):
         elif request.POST.get('confirm', '') == '':
             raise ESPError()('You must confirm that you want to deactivate these users.')
 
-        # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        # Get the filter to use from the request; this is set earlier in the mass deactivation flow.
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The selected filter no longer exists or is invalid. Please restart the deactivation process.')
         users = filterObj.getList(ESPUser)
 
         if not users:
