@@ -1,10 +1,10 @@
+{% load markup %}
 <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.css">
 <script src="//cdnjs.cloudflare.com/ajax/libs/jodit/3.2.36/jodit.min.js"></script>
 <script src="/media/scripts/jodit_base64_upload.js"></script>
 <!--jQuery.initialize plugin is created to help maintain dynamically created elements on the page-->
 <script src="https://cdn.jsdelivr.net/gh/pie6k/jquery.initialize@eb28c24e2eef256344777b45a455173cba36e850/jquery.initialize.js"></script>
 
-{% load markup %}
 <div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
     <span class="bi bi-pencil" aria-hidden="true"></span>
     <span class="inline_edit_msg_text">
