@@ -10,7 +10,7 @@
 })(jQuery);
 
 $j(function(){
-	const validator = $j('#cstform').validate({
+	$j('#cstform').validate({
 		errorPlacement: function(error, element){
 			if (element.is(':radio')) {
 				error.appendTo(element.parent().parent().parent().parent());
