@@ -13,32 +13,31 @@
 
 {% block body %}
 
+<a href="#main" class="skip-nav">Skip to main content</a>
+
 {% block navbar %}
 <div class="container navbar-container">
-  <div class="navbar navbar-fixed-top navbar-inverse">
-    <div id ="navbar" class="navbar-inner">
-      <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
-      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </a>
-      <!-- Be sure to leave the brand out there if you want it shown -->
+  <nav class="navbar navbar-dark bg-dark navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
+    <div id="navbar" class="container-fluid">
       {% if theme.show_logo_navbar %}
       <a href="/"><img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="{{theme.full_group_name}}" class="logo nav"></a>
       {% endif %}
       {% if theme.show_group_name %}
-      <a class="brand" href="/">{{ theme.full_group_name }}</a>
+      <a class="navbar-brand" href="/">{{ theme.full_group_name }}</a>
       {% endif %}
-      <!-- Everything you want hidden at 940px or less, place within here -->
-      <ul class="nav-collapse collapse">
+      <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbar-collapse">
         {% include "navbar/admin.html" %}
         {% include "navbar/nav.html" %}
         {% include "navbar/contact.html" %}
-        {% include "users/loginbox_content.html" %}
-      </ul>
+        <div class="navbar-login ms-auto d-flex align-items-center">
+          {% include "users/loginbox_content.html" %}
+        </div>
+      </div>
     </div>
-  </div>
+  </nav>
 </div>
 {% endblock navbar%}
 
@@ -66,23 +65,23 @@
 {% block main %}
 
 <div class="container">
-  <div id="main" class="resizable">
+  <main id="main" class="resizable" tabindex="-1">
     {% if request.COOKIES.esp_testing_role %}
     <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
       <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
       You are logged in as a test account.
-      <a href="/myesp/stop_testing/" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
+      <a href="{% url 'myesp_stop_testing' %}" style="color: #a47e3c; text-decoration: underline;">Stop Testing &mdash; Return to Admin</a>
     </div>
     {% endif %}
     {% if request.mod_required %}
     <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         This page is <b>required</b> for {% if request.tl == "teach" %}teacher{% elif request.tl == "learn" %}student{% elif request.tl == "volunteer" %}volunteer{% endif %} registration. You must complete it to proceed.
     </div>
     {% endif %}
     {% if request.show_perm_info %}
     <div class="alert alert-info">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         <a href="/manage/{{ request.one }}/{{ request.two }}/deadline_management/">Permission/deadline</a> required to view this page: {{ request.perm_names|join:", " }}
         <br />
         {% if request.roles_with_perm %}
@@ -94,13 +93,24 @@
     {% endif %}
     {% if active_program_tags %}
     <div class="alert alert-info alert-dismissible" role="alert">
-      <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       <strong>Admin notice:</strong>
       This program has {{ active_program_tags|length }} custom tag{{ active_program_tags|length|pluralize }} configured that may be modifying page behavior:
       {% for tag in active_program_tags %}
-        <span class="label label-default" title="{{ tag.help_text }}">{{ tag.key }}</span>
+        <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
       {% endfor %}
       &mdash; <a href="{{ active_program_tags_url }}" class="alert-link">View tag settings</a>
+    </div>
+    {% endif %}
+    {% if active_global_tags %}
+    <div class="alert alert-info alert-dismissible" role="alert">
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      <strong>Admin notice:</strong>
+      This site has {{ active_global_tags|length }} custom global tag{{ active_global_tags|length|pluralize }} configured that may be modifying page behavior:
+      {% for tag in active_global_tags %}
+        <span class="badge text-bg-secondary" title="{{ tag.help_text }}">{{ tag.key }}</span>
+      {% endfor %}
+      &mdash; <a href="{{ active_global_tags_url }}" class="alert-link">View tag settings</a>
     </div>
     {% endif %}
     {% if messages %}
@@ -111,21 +121,23 @@
     {% block content %}
     {% endblock content %}
 
-  </div>
+  </main>
 </div>
 </br>
 </br>
 <script>
 	function footerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('body').css('padding-bottom', $j("#footer").innerHeight());
+			// Measure the fixed-bottom nav itself (outerHeight includes its own
+			// padding/border) so body padding-bottom always covers the full footer,
+			// even when QSD text or admin controls add extra height.
+			var $footerNav = $j("#footer").closest(".navbar");
+			var h = $footerNav.length ? $footerNav.outerHeight(false) : $j("#footer").outerHeight(false);
+			$j('body').css('padding-bottom', h);
 		} else {
 			$j('body').css('padding-bottom', "inherit");
 		}
 	};
-	window.addEventListener("resize", footerResize);
-	$j(function() { footerResize() });
-	
 	function headerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
 			$j('body').css('padding-top', $j("#navbar").innerHeight());
@@ -133,8 +145,25 @@
 			$j('body').css('padding-top', "inherit");
 		}
 	};
-	window.addEventListener("resize", headerResize);
-	$j(function() { headerResize() });
+
+	// Recompute the body padding that clears the fixed-top navbar and the
+	// fixed-bottom footer.  This must run after the stylesheets AND web fonts
+	// have fully applied, not only at DOM ready: on the theme editor, Apply/Save/
+	// selecting a new theme re-fetches the compiled CSS asynchronously (the ?v=
+	// version bump plus css_auto-reload), so a ready-time measurement reads stale
+	// navbar/footer heights and the fixed footer overlaps the page buttons until
+	// a manual reload.  Re-running on window load and document.fonts.ready makes
+	// the padding match the final rendered heights without a reload.
+	function resizeBodyPadding() {
+		footerResize();
+		headerResize();
+	}
+	window.addEventListener("resize", resizeBodyPadding);
+	$j(resizeBodyPadding);
+	window.addEventListener("load", resizeBodyPadding);
+	if (document.fonts && document.fonts.ready) {
+		document.fonts.ready.then(resizeBodyPadding);
+	}
 
 	{# TODO(benkraft): this is ugly, find a better way #}
 	$j('.button').addClass('btn').removeClass('button');
@@ -144,23 +173,25 @@
 
 {% block footer %}
 <div class="container footer-container">
-  <div class="navbar navbar-fixed-bottom navbar-inverse">
-    <div id = "footer" class="navbar-inner">
-		{% if theme.show_footer_textbox %}
-		<div>
-			{% load render_qsd %}
-			{% inline_qsd_block "footer_text" %}
-			{% end_inline_qsd_block %}
-		</div>
-		{% endif %}
-		<ul class="nav" style="width: 100%">
-		<li style="width: 100%" class="text-center">
-			<a>&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</a>
-			<a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-       </li>
+  <nav class="navbar navbar-dark bg-dark fixed-bottom">
+    <div id="footer">
+      {% if theme.show_footer_textbox %}
+      <div>
+        {% load render_qsd %}
+        {% inline_qsd_block "footer_text" %}
+        {% end_inline_qsd_block %}
+      </div>
+      {% endif %}
+      <ul class="navbar-nav flex-row justify-content-center w-100">
+        <li class="nav-item">
+          <span class="navbar-text text-light py-0">&copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}</span>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-light py-0" href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
+        </li>
       </ul>
     </div>
-  </div>
+  </nav>
 </div>
 {% endblock footer %}
   
