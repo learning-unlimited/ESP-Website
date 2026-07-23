@@ -35,6 +35,8 @@ function scroll()
     {
         if (Date.now() - page_load_time >= refresh_interval_ms)
         {
+            if (interval_handle != -1) clearInterval(interval_handle);
+            interval_handle = -1;
             location.reload();
             return;
         }

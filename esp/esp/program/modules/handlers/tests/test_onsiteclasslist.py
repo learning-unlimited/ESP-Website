@@ -571,6 +571,8 @@ class StudentsStatusTests(ProgramFrameworkTest):
         entry = next((e for e in data if e[0] == student.id), None)
         self.assertIsNotNone(entry, "Student not found in search results")
         self.assertTrue(entry[3])
+
+        
 class ClassListReloadTests(ProgramFrameworkTest):
     """Tests for issue #318: the scrolling onsite class list should reload
     once it reaches the end of a scroll cycle, rather than on a fixed timer
