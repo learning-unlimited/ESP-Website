@@ -1,7 +1,9 @@
-<li class="hidden dropdown-header admin"> Admin</li>	
-	{% if settings.DEBUG %}<li class="admin hidden"><a href="/admin/"><i class="bi bi-list-task"></i> Administration pages</a></li>{% endif %}
-	<li class="admin hidden"><a href="/manage/programs/"><i class="bi bi-grid-3x3-gap"></i> Manage programs</a></li>
-    <li class="admin hidden"><a href="{% url 'manage_site_media' %}"><i class="bi bi-folder"></i> Manage media files</a></li>
-	<li class="admin hidden"><a href="/themes/"><i class="bi bi-pencil"></i> Theme settings</a></li>
-    <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
+{% if request.user.isAdmin %}
+<li class="dropdown-header admin"> Admin</li>
+{% if settings.DEBUG %}<li class="admin"><a href="/admin/"><i class="bi bi-list-task"></i> Administration pages</a></li>{% endif %}
+<li class="admin"><a href="/manage/programs/"><i class="bi bi-grid-3x3-gap"></i> Manage programs</a></li>
+<li class="admin"><a href="{% url 'manage_site_media' %}"><i class="bi bi-folder"></i> Manage media files</a></li>
+<li class="admin"><a href="/themes/"><i class="bi bi-pencil"></i> Theme settings</a></li>
+{% endif %}
+<li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
 
