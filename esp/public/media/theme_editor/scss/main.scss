@@ -49,6 +49,72 @@ body {
     }
 }
 
+// --- Customization on top of a Bootswatch theme ---------------------------
+// When a Bootswatch theme is active, the admin's customizer values are applied
+// ON TOP of it, but only for the fields they actually changed from the theme
+// default ($esp-overridden, injected by compile_css).  Untouched fields keep the
+// Bootswatch value.  These rules live in css_data_pre (after Bootstrap AND the
+// bootswatch component CSS) and use !important, so an intentional change wins.
+// Theme-specific surfaces (navbars, fruitsalad frame) are handled in each theme.
+// These rules compile after Bootstrap and the Bootswatch component CSS, so with
+// equal-or-higher specificity they win over the Bootswatch defaults WITHOUT
+// !important — which also lets each theme's more-specific chrome rules (navbar,
+// fruitsalad header/tabs) still win where they need to.
+@if $bootswatch-active {
+    @if index($esp-overridden, 'bodyBackground') {
+        body { background-color: $bodyBackground; }
+    }
+    @if index($esp-overridden, 'textColor') {
+        body { color: $textColor; }
+    }
+    @if index($esp-overridden, 'headingsColor') {
+        h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 { color: $headingsColor; }
+    }
+    // "Links" controls BODY/CONTENT links only.  Navbar links have their own
+    // customizer fields (navbar*/navbarInverse*), mirroring the Bootstrap 2/3
+    // behaviour where @linkColor never touched the navbar.  Exclude the navbar
+    // link elements (.nav-link, .navbar-brand) here: a bare `a:not(.btn)` is
+    // specificity (0,1,1) and would beat the navbar's `.nav-link` colour (0,1,0),
+    // leaking the body-link colour onto the navbar.
+    @if index($esp-overridden, 'linkColor') {
+        a:not(.btn):not(.nav-link):not(.navbar-brand) { color: $linkColor; }
+    }
+    @if index($esp-overridden, 'linkColorHover') {
+        a:not(.btn):not(.nav-link):not(.navbar-brand):hover,
+        a:not(.btn):not(.nav-link):not(.navbar-brand):focus { color: $linkColorHover; }
+    }
+    @if index($esp-overridden, 'btnPrimaryBackground') {
+        .btn-primary {
+            background-color: $btnPrimaryBackground;
+            background-image: none;
+            border-color: darken($btnPrimaryBackground, 5%);
+            // When only the background was changed, keep the label legible by
+            // contrasting against the NEW background (mirrors Bootstrap's
+            // button-variant).  Otherwise the text keeps Bootswatch's contrast
+            // colour computed for the old background and clashes.
+            @if not index($esp-overridden, 'btnPrimaryLinkColor') {
+                color: color-contrast($btnPrimaryBackground);
+            }
+        }
+    }
+    @if index($esp-overridden, 'btnPrimaryLinkColor') {
+        .btn-primary { color: $btnPrimaryLinkColor; }
+    }
+    @if index($esp-overridden, 'btnBackground') {
+        .btn-secondary, .btn-default {
+            background-color: $btnBackground;
+            background-image: none;
+            border-color: darken($btnBackground, 12%);
+            @if not index($esp-overridden, 'btnLinkColor') {
+                color: color-contrast($btnBackground);
+            }
+        }
+    }
+    @if index($esp-overridden, 'btnLinkColor') {
+        .btn-secondary, .btn-default { color: $btnLinkColor; }
+    }
+}
+
 .hidden {
     display: none !important;
 }

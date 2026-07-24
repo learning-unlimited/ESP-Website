@@ -1,4 +1,8 @@
 $bootswatch-active: false !default;
+// List of customizer variable names the admin changed from the theme default;
+// the compiler injects the real list when a Bootswatch theme is active so the
+// theme SCSS can apply just those as overrides on top of the Bootswatch theme.
+$esp-overridden: () !default;
 
 $black:                 #000;
 $grayDarker:            #222;
@@ -48,8 +52,25 @@ $navbarCollapseWidth:             979px;
 
 $body-bg:                   $bodyBackground !default;
 $body-color:                $textColor !default;
+// $link-color / $link-hover-color bridge from the "Links" customizer fields.
+// The !default declaration is the fallback (Bootswatch's own value wins when the
+// admin left the field untouched).  When the admin genuinely edited "Links" (the
+// field is in $esp-overridden) we must force the value on top of Bootswatch,
+// whose own $link-color (e.g. solar => $success) is already set before this file
+// is imported and would otherwise make the edit a silent no-op.
+//
+// The forced assignment MUST come after the !default declaration above: a bare
+// `$x: v;` inside a top-level @if updates the global ONLY if $x already exists
+// globally, otherwise it creates a block-local (so themes that don't define
+// $link-color themselves — e.g. cerulean — would silently drop the override).
 $link-color:                $linkColor !default;
 $link-hover-color:          $linkColorHover !default;
+@if index($esp-overridden, 'linkColor') {
+    $link-color:            $linkColor;
+}
+@if index($esp-overridden, 'linkColorHover') {
+    $link-hover-color:      $linkColorHover;
+}
 $font-family-sans-serif:    $sansFontFamily !default;
 // Only force the ESP headings colour when NOT using a Bootswatch theme.  Under a
 // Bootswatch theme, leaving $headings-color unset lets Bootstrap fall back to the

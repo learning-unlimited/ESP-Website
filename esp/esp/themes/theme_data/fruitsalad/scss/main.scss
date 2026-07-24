@@ -237,9 +237,22 @@ li.tabcolor9 a { background-color: $tabcolor9_base_color; }
  * fields).  @each loop variables are not `$name:` assignments, so they are safe.
  */
 @if $bootswatch-active {
-    @each $i, $base in (0: $primary, 1: $info, 2: $secondary, 3: $danger, 4: $warning,
-                        5: $success, 6: mix($info, $success, 50%), 7: mix($primary, $danger, 50%),
-                        8: $dark, 9: shade-color($primary, 40%)) {
+    //  Each tab's base colour defaults to the Bootswatch palette, but if the
+    //  admin customised that tab's base ($esp-overridden), honour their value so
+    //  the customizer keeps working on top of the Bootswatch theme (the accent
+    //  shades below track whichever base wins).  Using `if()` + loop variables
+    //  only — a top-level `$tabcolorN:` assignment here would both corrupt the
+    //  pre-Bootstrap variable layer and leak into the customizer as a junk field.
+    @each $i, $base in (0: if(index($esp-overridden, 'tabcolor0_base_color'), $tabcolor0_base_color, $primary),
+                        1: if(index($esp-overridden, 'tabcolor1_base_color'), $tabcolor1_base_color, $info),
+                        2: if(index($esp-overridden, 'tabcolor2_base_color'), $tabcolor2_base_color, $secondary),
+                        3: if(index($esp-overridden, 'tabcolor3_base_color'), $tabcolor3_base_color, $danger),
+                        4: if(index($esp-overridden, 'tabcolor4_base_color'), $tabcolor4_base_color, $warning),
+                        5: if(index($esp-overridden, 'tabcolor5_base_color'), $tabcolor5_base_color, $success),
+                        6: if(index($esp-overridden, 'tabcolor6_base_color'), $tabcolor6_base_color, mix($info, $success, 50%)),
+                        7: if(index($esp-overridden, 'tabcolor7_base_color'), $tabcolor7_base_color, mix($primary, $danger, 50%)),
+                        8: if(index($esp-overridden, 'tabcolor8_base_color'), $tabcolor8_base_color, $dark),
+                        9: if(index($esp-overridden, 'tabcolor9_base_color'), $tabcolor9_base_color, shade-color($primary, 40%))) {
         #page.tabcolor#{$i} {
             // --- themed surfaces ---
             #body { background: $base; }

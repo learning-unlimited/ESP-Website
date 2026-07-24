@@ -407,23 +407,59 @@ def editor(request):
         #   select) don't silently clear the site's skin.  Validate before
         #   persisting: compile_css raises on unknown names, so a bad value
         #   saved here would break every subsequent recompile.
+        bootswatch_switched = False
         if (tc.has_scss(tc.get_current_theme())
                 and ('apply' in request.POST or 'save' in request.POST)
                 and 'bootswatch_theme' in request.POST):
-            bootswatch_theme = request.POST['bootswatch_theme']
-            if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
-                raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
-            Tag.setTag('bootswatch_theme', value=bootswatch_theme)
+            new_bw = request.POST['bootswatch_theme']
+            old_bw = Tag.getTag('bootswatch_theme', default='')
+            if new_bw and new_bw not in tc.get_bootswatch_themes():
+                raise ESPError(f'Unknown Bootswatch theme: {new_bw!r}', log=False)
+            if new_bw != old_bw:
+                bootswatch_switched = True
+            Tag.setTag('bootswatch_theme', value=new_bw)
 
-        #   Re-generate the CSS for the current theme given the supplied settings
-        if vars:
+        # When switching to a different Bootswatch theme via Apply (not Save/Load),
+        # drop the form values so the new Bootswatch theme's colours render cleanly
+        # without being masked by stale overrides from the previous customisation.
+        # The $esp-overridden list will be empty and all Bootswatch defaults apply.
+        if bootswatch_switched and 'apply' in request.POST:
+            vars = {}
+
+        #   Re-generate the CSS for the current theme given the supplied settings.
+        #   Use "vars is not None" (not "if vars") so that an empty dict from a
+        #   load with no saved customisations still triggers a recompile.
+        if vars is not None:
             tc.customize_theme(vars)
         if palette is not None:
             tc.set_palette(palette)
 
+        #   Post/Redirect/Get: redirect after handling the POST so a browser
+        #   reload issues a fresh GET instead of re-submitting the form.  Without
+        #   this, every reload pops the "Confirm Form Resubmission" dialog and
+        #   replays the previous apply/save — which is why the editor appeared to
+        #   "pick up colours from the previous theme" on reload.  The GET below
+        #   always rebuilds the pickers from the persisted state (Bootswatch tag +
+        #   saved customisations), so the displayed values are now deterministic.
+        return HttpResponseRedirect(reverse('themes_editor'))
+
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
+
+    #   Resolve Bootswatch selection early — needed to layer colours correctly.
+    current_bootswatch = ''
+    if tc.has_scss(current_theme):
+        current_bootswatch = Tag.getTag('bootswatch_theme', default='')
+
+    #   Bootswatch-derived ESP variable values (empty dict when no BW theme selected).
+    bw_vars = tc.get_bootswatch_esp_vars(current_bootswatch, esp_theme=current_theme) if current_bootswatch else {}
+
+    #   Build editor context in priority order (lowest → highest):
+    #     1. SCSS file defaults
+    #     2. Bootswatch-derived colours (override SCSS defaults so pickers show real colours)
+    #     3. Admin's explicitly saved overrides (highest priority)
     context = tc.find_theme_variables(flat=True)
+    context.update(bw_vars)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
     context['theme_name'] = current_theme
@@ -438,7 +474,13 @@ def editor(request):
     #   Bootswatch support for SCSS themes
     if tc.has_scss(current_theme):
         context['bootswatch_themes'] = tc.get_bootswatch_themes()
-        context['current_bootswatch'] = Tag.getTag('bootswatch_theme', default='')
+        context['current_bootswatch'] = current_bootswatch
+        #   Pre-compute all Bootswatch themes' ESP variable maps for the
+        #   client-side dropdown change handler.  This lets the pickers update
+        #   immediately without a round-trip when the admin switches themes.
+        context['bootswatch_vars_json'] = json.dumps(
+            tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
+        )
 
     #   Load the theme-specific options
     adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
@@ -464,6 +506,9 @@ def editor(request):
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
     variable_defaults = tc.get_variable_defaults(current_theme)
+    #   When a Bootswatch theme is active the natural "reset-to" target for each
+    #   colour picker is the Bootswatch-derived colour, not the raw SCSS default.
+    variable_defaults.update(bw_vars)
     context['variable_defaults'] = variable_defaults
     for key, val in variable_defaults.items():
         if key not in context:
