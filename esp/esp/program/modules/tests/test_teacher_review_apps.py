@@ -64,6 +64,21 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         self.unauthorized_teacher.save()
         self.unauthorized_teacher.makeRole('Teacher')
 
+        # Ensure the selected class has at least 2 students registered so that
+        # tests requiring prev/next behavior have enough data to work with.
+        sections = self.cls.get_sections()
+        if sections:
+            sec = sections[0]
+            existing_roster = set()
+            for reg_type, students in self.cls.students_dict().items():
+                existing_roster.update(students)
+            for student in self.students:
+                if len(existing_roster) >= 2:
+                    break
+                if student not in existing_roster:
+                    sec.preregister_student(student, fast_force_create=True)
+                    existing_roster.add(student)
+
         # Create student applications
         # Clean up any existing applications for this program to avoid ID conflicts with --keepdb
         StudentApplication.objects.filter(program=self.program).delete()
