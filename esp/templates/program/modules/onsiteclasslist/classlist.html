@@ -12,6 +12,8 @@ categories = [];
 start_times = [];
 next_category = 0;
 next_start_time = 0;
+var page_load_time = Date.now();
+var refresh_interval_ms = {{ refresh }} * 1000;
 
 function setElementStyleById(id, propertyName, propertyValue) {
     if (!document.getElementById) return;
@@ -31,6 +33,13 @@ function scroll()
     elt1 = document.getElementById("scroller_top");
     if (elt1.offsetHeight + scroll_offset < 0)
     {
+        if (Date.now() - page_load_time >= refresh_interval_ms)
+        {
+            if (interval_handle != -1) clearInterval(interval_handle);
+            interval_handle = -1;
+            location.reload();
+            return;
+        }
         reset();
     }
     setElementStyleById("scroller_top", "top", scroll_offset + "px");
@@ -140,7 +149,7 @@ table .openclasslist td {
 
 </style>
 
-<meta http-equiv="refresh" content="{{ refresh }}" />
+
 <title>Onsite Class List for {{ prog.niceName }}</title>
 </head>
 
