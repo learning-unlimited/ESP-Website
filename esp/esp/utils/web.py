@@ -90,8 +90,8 @@ def esp_context_stuff():
 
 _PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
 
-# Paths that must not trigger session/cookie access (NoVaryOnCookieTest).
-# Accessing request.user would add Vary: Cookie; skip injection for these.
+# Paths for which the active-program-tags admin banner should be skipped.
+# These are public cacheable pages; there is no need to query admin tags.
 _CACHEABLE_SUFFIXES = ('catalog', 'index.html')
 
 
@@ -127,7 +127,7 @@ def _inject_active_program_tags(request, context):
     try:
         path = request.path.rstrip('/')
         if any(path.endswith(s) for s in _CACHEABLE_SUFFIXES):
-            return  # Avoid request.user access; would add Vary: Cookie
+            return  # Cacheable public page; skip admin-tag banner entirely
         if not (hasattr(request, 'user') and request.user.is_authenticated):
             return
         parts = request.path.strip('/').split('/')
@@ -183,7 +183,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
                            If False, render without context processors.
 
     Returns:
-        HttpResponse object with rendered template
+        TemplateResponse object with rendered template
     """
     if isinstance(template, str):
         template = [ template ]
@@ -211,7 +211,8 @@ def render_to_response(template, request, context, content_type=None, use_reques
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if use_request_context:
-        return django.shortcuts.render(request, template, context, content_type=content_type)
+        from django.template.response import TemplateResponse
+        return TemplateResponse(request, template, context, content_type=content_type)
     else:
         # For rendering without context processors, use template rendering directly.
         # Keep ``messages`` available for legacy templates/tests that expect it.
