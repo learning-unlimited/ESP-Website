@@ -6,6 +6,7 @@
 from script_setup import *
 
 import random
+from collections import defaultdict
 
 from esp.cal.models import Event
 from esp.program.models import Program, StudentRegistration, RegistrationType
@@ -40,8 +41,12 @@ lunches = ClassSection.objects.filter(parent_class__parent_program=program,
                                       parent_class__category__category='Lunch',
                                       meeting_times__isnull=False
                                       ).values_list('meeting_times', 'id')
-lunches_by_timeblock = dict(lunches)
-lunch_ids = set(lunches_by_timeblock.values())
+lunches_by_timeblock = defaultdict(list)
+lunch_ids = set()
+
+for timeblock_id, section_id in lunches:
+    lunches_by_timeblock[timeblock_id].append(section_id)
+    lunch_ids.add(section_id)
 
 lunchtimes_by_day = {}
 for timeblock_id, section_id in lunches:
@@ -68,9 +73,16 @@ for user in users:
                 # next day/user
                 print("assigning", user.username, "to lunch", end=' ')
                 print(timeblocks_by_id[lunchtime_id])
+                available_lunches = [
+                    section_id for section_id in lunches_by_timeblock[lunchtime_id]
+                    if sections_by_id[section_id].num_students() < sections_by_id[section_id].capacity
+                ]
+                if not available_lunches:
+                    continue
+                chosen_lunch_id = random.choice(available_lunches)
                 StudentRegistration.objects.create(
                     user=users_by_id[user.id],
-                    section=sections_by_id[lunches_by_timeblock[lunchtime_id]],
+                    section=sections_by_id[chosen_lunch_id],
                     relationship=relationship)
                 hungry = False
                 break
