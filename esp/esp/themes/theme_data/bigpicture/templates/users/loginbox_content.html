@@ -1,10 +1,10 @@
 {# TODO(benkraft): This isn't that different from the non-theme one, dedupe #}
 <div id="loginbox">
-
-  <div class="logged_in hidden">
+  {% if request.user.is_authenticated %}
+  <div class="logged_in">
     <form class="navbar-form form-inline">
       <a href="/myesp/profile/" class="username">
-        <i class="bi bi-person"></i> Hello, <span id="user_first_name"></span>!
+        <i class="bi bi-person"></i> Hello, {{ request.user.first_name|default:request.user.username }}!
       </a>
 
       <a class="btn" href="/myesp/signout">Logout</a>
@@ -22,8 +22,8 @@
       </span>
     </form>
   </div>
-
-  <div class="not_logged_in hidden">
+  {% else %}
+  <div class="not_logged_in">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
       <input type="hidden" name="next" value="{{ request.path }}" />
       <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
@@ -44,4 +44,5 @@
 
     </form>
   </div>
+  {% endif %}
 </div>

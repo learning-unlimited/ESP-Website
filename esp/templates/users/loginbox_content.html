@@ -5,11 +5,11 @@
   {% endif %}
 
 
-{% if user.is_authenticated %}
+{% if request.user.is_authenticated %}
 <div class="logged_in">
   <ul class="nav">
     <li>
-      <a id="loginbox_user_name" href="/myesp/profile/">Hello, <span id="user_first_name">{{ user.get_short_name|default:user.first_name|default:user.username }}</span>!</a>
+      <a id="loginbox_user_name" href="/myesp/profile/">Hello, {{ request.user.first_name|default:request.user.username }}!</a>
     </li>
 
     <li>
@@ -70,6 +70,7 @@
 
     </form>
   </div>
+  {% endif %}
 </div>
 
 

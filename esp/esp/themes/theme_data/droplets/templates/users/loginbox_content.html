@@ -2,10 +2,11 @@
   <div class="navbar-text text-light w-100 px-3">{{ login_result }}</div>
 {% endif %}
 
-<ul class="navbar-nav logged_in hidden">
+{% if request.user.is_authenticated %}
+<ul class="navbar-nav logged_in">
   <li class="nav-item dropdown dropdown-split">
     <a class="nav-link navbar-item-label" id="loginbox_user_name" href="/myesp/profile/">
-      Hello, <span id="user_first_name"></span>!
+      Hello, {{ request.user.first_name|default:request.user.username }}!
     </a>
     <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" data-bs-display="static" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
     <ul class="dropdown-menu dropdown-menu-end">
@@ -18,7 +19,7 @@
     </a>
   </li>
 </ul>
-
+{% else %}
 <ul class="navbar-nav not_logged_in">
   <li class="nav-item d-flex align-items-center flex-wrap">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="form-inline navbar-form my-1">
@@ -39,3 +40,4 @@
     </ul>
   </li>
 </ul>
+{% endif %}

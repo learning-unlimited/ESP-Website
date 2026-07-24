@@ -70,9 +70,6 @@ class CsrfTestCase(StaticLiveServerTestCase):
         WebDriverWait(self.selenium, 10).until(
             EC.visibility_of_element_located((By.CLASS_NAME, 'logged_in'))
         )
-        WebDriverWait(self.selenium, 10).until(
-            EC.text_to_be_present_in_element((By.ID, 'user_first_name'), "Student")
-        )
         logout(self.selenium, self.live_server_url)
 
         self.selenium.delete_cookie("esp_csrftoken")
@@ -80,8 +77,5 @@ class CsrfTestCase(StaticLiveServerTestCase):
         try_normal_login(self.selenium, self.live_server_url, "student", "student")
         WebDriverWait(self.selenium, 10).until(
             EC.visibility_of_element_located((By.CLASS_NAME, 'logged_in'))
-        )
-        WebDriverWait(self.selenium, 10).until(
-            EC.text_to_be_present_in_element((By.ID, 'user_first_name'), "Student")
         )
         logout(self.selenium, self.live_server_url)
