@@ -73,8 +73,9 @@
 
 {% block body %}
 <a href="#content" class="skip-nav">Skip to main content</a>
+{% if request.user.isAdmin %}
 <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
-<div id="adminbar" class="admin hidden" style="position: fixed !important">
+<div id="adminbar" class="admin" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>
@@ -97,6 +98,7 @@ var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').t
 var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
+{% endif %}
 <div id="page" class="{{ request.path|extract_theme }}">
   <div id="tab_sidebar">
     <ul id="menu">
@@ -106,7 +108,9 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
       <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
       {% endfor %}
       {% endwith %}
-      <li class="admin hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="{% url 'manage_programs' %}">MANAGE</a></li>
+      {% if request.user.isAdmin %}
+      <li class="admin tabcolor9" ><span class="accent">&nbsp;</span><a href="{% url 'manage_programs' %}">MANAGE</a></li>
+      {% endif %}
       <li class="unmorph hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="{% url 'myesp_switchback' %}">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
     </ul>
   </div>
@@ -163,6 +167,12 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
       <div id="login_box">
 
         <!-- login -->
+        {% if request.user.is_authenticated %}
+        <div class="logged_in">
+          {% include "users/loginbox_userinfo.html" %}
+          <span class="accentcolor"><a href={% url 'signout'% }">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
+        </div>
+        {% else %}
         <div class="not_logged_in">
           <form name="login_form" id="login_form" method="post" action="/myesp/login/">
             <input type="hidden" name="next" value="{{ request.path }}" />
@@ -175,11 +185,7 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
             <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
           </form>
         </div>
-        <div class="logged_in hidden">
-          {% include "users/loginbox_userinfo.html" %}
-  <span class="accentcolor"><a href="{% url 'signout' %}">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
-        </div>
-
+        {% endif %}
       </div>
       {% endblock %}
     </div>
@@ -259,8 +265,8 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
       </div>
       <![endif]-->
       {% with request.path|split:"/"|index:1 as split_url %}
-      {% if program and split_url|notequal:"manage" %}
-      <div class="admin hidden" id="admin_link">
+      {% if program and split_url|notequal:"manage" and request.user.isAdmin %}
+      <div class="admin" id="admin_link">
         <a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
       </div>
       {% endif %}

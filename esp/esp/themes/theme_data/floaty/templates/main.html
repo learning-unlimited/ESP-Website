@@ -24,6 +24,7 @@
 
 <div id="nav_area">
     {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
+    {% if request.user.isAdmin %}
     {% load modules %}
     <style>
         #content_area h2, h3, p, form {
@@ -32,7 +33,7 @@
 }
     </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
-        <div id="adminbar" class="admin hidden" style="position: fixed !important">
+        <div id="adminbar" class="admin" style="position: fixed !important">
             <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
             <div id="adminbar_content"></div>
         </div>
@@ -55,7 +56,7 @@
     var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
     </script>
     <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
-
+    {% endif %}
     {% comment %} === Ends Admin Toolbar (includes user search) === {% endcomment %}
 
     <div id="nav_buffer">
