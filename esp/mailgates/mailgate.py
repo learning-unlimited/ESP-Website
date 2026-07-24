@@ -60,7 +60,7 @@ try:
 
     message = email.message_from_bytes(sys.stdin.buffer.read())
 
-    handlers = EmailList.objects.all()
+    handlers = EmailList.objects.filter(admin_hold=False)
 
     matched_any_handler = False
 
