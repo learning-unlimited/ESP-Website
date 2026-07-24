@@ -41,3 +41,5 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = 'docker-dev-secret-key-not-for-production'
 
 ALLOWED_HOSTS = ['*']
+
+GOOGLE_MAPS_EMBED_KEY = ''
