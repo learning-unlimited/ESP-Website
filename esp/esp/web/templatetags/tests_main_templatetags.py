@@ -39,11 +39,11 @@ class CountMatchingCharsTest(TestCase):
 
     def test_str1_shorter(self):
         # str1 is shorter than str2; result is len(str1)
-        self.assertEqual(count_matching_chars("ab", "abcd"), 2)
+        self.assertEqual(count_matching_chars("ab", "ab/cd"), 2)
 
     def test_str2_shorter(self):
         # str2 is shorter than str1; result is len(str2)
-        self.assertEqual(count_matching_chars("abcd", "ab"), 2)
+        self.assertEqual(count_matching_chars("ab/cd", "ab"), 2)
 
     def test_empty_strings(self):
         self.assertEqual(count_matching_chars("", ""), 0)
