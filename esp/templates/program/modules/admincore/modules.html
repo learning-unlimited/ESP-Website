@@ -44,7 +44,7 @@
 
 <div class="tl-wrapper">
     <!-- Navigation Tabs -->
-    <nav class="tl-nav">
+    <nav class="tl-nav" aria-label="Timeline navigation">
         <div class="tl-tabs">
             <button id="btnStudentTab" onclick="switchView('student')" class="tl-tab active-student">
                 <span class="tl-tab-dot"></span>
@@ -137,13 +137,13 @@
     
     <!-- Edit Panel -->
     <div id="editOverlay" class="tl-edit-overlay" onclick="closeEditPanel()"></div>
-    <div id="editPanel" class="tl-edit-panel theme-student">
+    <div id="editPanel" class="tl-edit-panel theme-student" role="dialog" aria-modal="true" aria-labelledby="editSubtitle">
         <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background-color: #f8fafc;">
             <div>
                 <h2 style="margin:0; font-size: 14px; font-weight: 700;">Edit Module</h2>
                 <p id="editSubtitle" style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;">Editing Module</p>
             </div>
-            <button onclick="closeEditPanel()" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">&times;</button>
+            <button onclick="closeEditPanel()" aria-label="Close edit panel" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">&times;</button>
         </div>
         <div style="flex: 1; padding: 20px; overflow-y: auto;">
             <div class="tl-form-group">
@@ -168,7 +168,7 @@
             <div class="tl-form-group">
                 <label class="tl-label">Required</label>
                 <div style="display: flex; align-items: center; gap: 12px;">
-                    <button id="reqToggle" class="tl-toggle" onclick="toggleReq()">
+                    <button id="reqToggle" class="tl-toggle" onclick="toggleReq()" role="switch" aria-checked="false" aria-labelledby="reqLabel">
                         <div class="tl-toggle-thumb"></div>
                     </button>
                     <span id="reqLabel" style="font-size: 12px; font-weight: 600;">Required</span>
@@ -190,22 +190,23 @@
     
     <!-- Add Module Drawer -->
     <div id="addOverlay" class="tl-edit-overlay" onclick="closeAddDrawer()"></div>
-    <div id="addDrawer" class="tl-add-drawer">
+    <div id="addDrawer" class="tl-add-drawer" role="dialog" aria-modal="true" aria-labelledby="addDrawerTitle">
         <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background-color: #f8fafc;">
             <div>
-                <h2 style="margin:0; font-size: 16px; font-weight: 700;">Configure Program Modules</h2>
+                <h2 id="addDrawerTitle" style="margin:0; font-size: 16px; font-weight: 700;">Configure Program Modules</h2>
                 <p style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">Select the features you need. Related modules will be enabled automatically.</p>
             </div>
-            <button onclick="closeAddDrawer()" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #94a3b8;">&times;</button>
+            <button onclick="closeAddDrawer()" aria-label="Close add drawer" style="background: none; border: none; cursor: pointer; font-size: 24px; color: #94a3b8;">&times;</button>
         </div>
         <div style="flex: 1; padding: 24px; overflow-y: auto;">
             {% if module_questions_categorized.student %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 12px 0;">Student Registration</h3>
             {% for q in module_questions_categorized.student %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label group-hover:text-brand-student">{{ q.label }}</div>
                 </div>
@@ -216,10 +217,11 @@
             {% if module_questions_categorized.teacher %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">Teacher Registration</h3>
             {% for q in module_questions_categorized.teacher %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label group-hover:text-brand-teacher">{{ q.label }}</div>
                 </div>
@@ -230,10 +232,11 @@
             {% if module_questions_categorized.general %}
             <h3 style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin: 24px 0 12px 0;">General Program Modules</h3>
             {% for q in module_questions_categorized.general %}
-            <label class="tl-add-module-option group">
+            <label class="tl-add-module-option group {% if q.always_enabled %}opacity-50 cursor-not-allowed{% endif %}">
                 <input type="checkbox" name="module_question" value="{{ q.value }}" class="tl-add-checkbox" 
                        data-module-ids="{{ q.value }}" 
-                       {% if q.checked %}checked{% endif %}>
+                       {% if q.checked %}checked{% endif %}
+                       {% if q.always_enabled %}disabled{% endif %}>
                 <div style="flex: 1;">
                     <div class="tl-add-label">{{ q.label }}</div>
                 </div>
