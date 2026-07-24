@@ -114,7 +114,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 <br />
 <div class="row">
     <div class="col-md-12">
-        <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
+        <form class="form-horizontal centered-form" method="post" action="{% url 'themes_editor' %}">
             {% csrf_token %} 
             <div class="accordion" id="theme_editor_accordion">
                 {% if bootswatch_themes %}
@@ -607,7 +607,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
         <a href="{% url 'themes_landing' %}">
             <button type="button" class="btn btn-lg btn-primary">Return to themes page</button>
         </a>
-        <a href="/">
+        <a href="{% url 'home' %}">
             <button type="button" class="btn btn-lg btn-secondary">Return to home page</button>
         </a>
         <br/><br/>
