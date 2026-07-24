@@ -20,6 +20,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.selectedSection = null;
     this.ghostScheduleAssignment = {};
     this.availableTimeslots = [];
+    this.recurringSelectionMode = false;
+    this.selectedRecurringTimeslots = [];
+    this.selectedRecurringRoomId = null;
 
     // Set up filtering
     this.filter = {
@@ -286,7 +289,10 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.selectedSection = section;
         this.matrix.sectionInfoPanel.displaySection(section);
         this.availableTimeslots = this.getAvailableTimeslots(section);
-        this.matrix.highlightTimeslots(this.availableTimeslots, section);
+        this.matrix.highlightTimeslots(this.availableTimeslots, section, null, { recurringMode: this.recurringSelectionMode });
+        if (this.recurringSelectionMode) {
+            this.seedRecurringSelectionFromAssignment(section);
+        }
     };
 
     /**
@@ -312,7 +318,202 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.sectionInfoPanel.hide();
         this.matrix.sectionInfoPanel.override = override;
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
+        this.clearRecurringSelection();
         this.unscheduleAsGhost();
+    };
+
+    this.setRecurringSelectionMode = function(enabled) {
+        this.recurringSelectionMode = !!enabled;
+        this.clearRecurringSelection();
+        this.unscheduleAsGhost();
+        if (this.selectedSection) {
+            this.matrix.unhighlightTimeslots(this.availableTimeslots);
+            this.availableTimeslots = this.getAvailableTimeslots(this.selectedSection);
+            this.matrix.highlightTimeslots(this.availableTimeslots, this.selectedSection, null, { recurringMode: this.recurringSelectionMode });
+            if (this.recurringSelectionMode) {
+                this.seedRecurringSelectionFromAssignment(this.selectedSection);
+            }
+        }
+    };
+
+    this.seedRecurringSelectionFromAssignment = function(section) {
+        var assignment = this.scheduleAssignments[section.id];
+        if (!(assignment && assignment.room_id && assignment.timeslots.length > 0)) {
+            return;
+        }
+
+        // Sort timeslots by order before checking contiguity.
+        var timeslots_sorted = assignment.timeslots.slice().sort(function(a, b) {
+            return this.matrix.timeslots.get_by_id(a).order - this.matrix.timeslots.get_by_id(b).order;
+        }.bind(this));
+
+        var timeslot_objects = timeslots_sorted.map(function(ts_id) {
+            return this.matrix.timeslots.get_by_id(ts_id);
+        }.bind(this));
+
+        // Don't pre-populate for a contiguous single-instance class; only seed
+        // when the class is genuinely scheduled across non-contiguous timeslots.
+        if (this.matrix.timeslots.are_timeslots_contiguous(timeslot_objects)) {
+            return;
+        }
+
+        this.selectedRecurringRoomId = assignment.room_id;
+        this.selectedRecurringTimeslots = timeslots_sorted;
+        this.renderRecurringSelection();
+    };
+
+    this.clearRecurringSelection = function() {
+        if (this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0) {
+            $j.each(this.selectedRecurringTimeslots, function(index, timeslot_id) {
+                var cell = this.matrix.getCell(this.selectedRecurringRoomId, timeslot_id);
+                if (cell && cell.el) {
+                    cell.el.removeClass("recurring-selected-cell");
+                }
+            }.bind(this));
+        }
+        this.selectedRecurringTimeslots = [];
+        this.selectedRecurringRoomId = null;
+    };
+
+    this.renderRecurringSelection = function() {
+        $j("#matrix-table td.recurring-selected-cell").removeClass("recurring-selected-cell");
+        if (!(this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0)) {
+            return;
+        }
+        $j.each(this.selectedRecurringTimeslots, function(index, timeslot_id) {
+            var cell = this.matrix.getCell(this.selectedRecurringRoomId, timeslot_id);
+            if (cell && cell.el) {
+                cell.el.addClass("recurring-selected-cell");
+            }
+        }.bind(this));
+    };
+
+    this.toggleRecurringTimeslot = function(section, room_id, timeslot_id) {
+        if (!section) {
+            return;
+        }
+
+        // Get the full group of timeslots needed for this one occurrence (handles multi-block classes).
+        var group = this.matrix.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
+        if (group === null) {
+            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "red");
+            return;
+        }
+
+        if (this.selectedRecurringRoomId && this.selectedRecurringRoomId !== room_id) {
+            this.matrix.messagePanel.addMessage("Error: recurring slots for one section must be in the same room.", "red");
+            return;
+        }
+
+        // If any timeslot in this group is already selected, toggle the whole group off.
+        var anyInGroup = group.some(function(ts_id) {
+            return this.selectedRecurringTimeslots.indexOf(ts_id) >= 0;
+        }.bind(this));
+
+        if (anyInGroup) {
+            this.selectedRecurringTimeslots = this.selectedRecurringTimeslots.filter(function(ts_id) {
+                return group.indexOf(ts_id) < 0;
+            });
+            if (this.selectedRecurringTimeslots.length === 0) {
+                this.selectedRecurringRoomId = null;
+            }
+            this.renderRecurringSelection();
+            return;
+        }
+
+        var priorTimeslots = this.selectedRecurringTimeslots.slice();
+        var priorRoomId = this.selectedRecurringRoomId;
+        if (this.selectedRecurringRoomId === null) {
+            this.selectedRecurringRoomId = room_id;
+        }
+
+        // Add all timeslots for this occurrence.
+        $j.each(group, function(i, ts_id) {
+            if (this.selectedRecurringTimeslots.indexOf(ts_id) < 0) {
+                this.selectedRecurringTimeslots.push(ts_id);
+            }
+        }.bind(this));
+
+        this.selectedRecurringTimeslots.sort(function(a, b) {
+            return this.matrix.timeslots.get_by_id(a).order - this.matrix.timeslots.get_by_id(b).order;
+        }.bind(this));
+
+        var validation = this.matrix.validateAssignment(
+            section,
+            room_id,
+            this.selectedRecurringTimeslots,
+            [],
+            { enforceContiguous: false }
+        );
+        if (!validation.valid) {
+            this.selectedRecurringTimeslots = priorTimeslots;
+            this.selectedRecurringRoomId = priorRoomId;
+            this.matrix.messagePanel.addMessage(validation.reason, "red");
+            return;
+        }
+        this.renderRecurringSelection();
+    };
+
+    this.scheduleSelectedRecurringTimeslots = function(callback = function() {}) {
+        if (!this.selectedSection) {
+            return;
+        }
+        if (!(this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0)) {
+            this.matrix.messagePanel.addMessage("Error: choose at least one timeslot before saving recurring schedule.", "red");
+            return;
+        }
+        var section = this.selectedSection;
+        this.scheduleSectionWithTimeslots(
+            section,
+            this.selectedRecurringRoomId,
+            this.selectedRecurringTimeslots.slice(),
+            function() {
+                // Refresh the availability highlight and re-seed the selection from
+                // the saved assignment so a single occurrence can be toggled off and
+                // saved again without unscheduling the entire recurring class.
+                if (this.recurringSelectionMode && this.selectedSection === section) {
+                    this.matrix.unhighlightTimeslots(this.availableTimeslots);
+                    this.availableTimeslots = this.getAvailableTimeslots(section);
+                    this.matrix.highlightTimeslots(this.availableTimeslots, section, null, { recurringMode: this.recurringSelectionMode });
+                    this.seedRecurringSelectionFromAssignment(section);
+                }
+                callback();
+            }.bind(this)
+        );
+    };
+
+    this.scheduleSectionWithTimeslots = function(section, room_id, schedule_timeslots, callback = function() {}) {
+        var old_assignment = this.scheduleAssignments[section.id];
+        var override = this.matrix.sectionInfoPanel.override;
+        var validationOptions = this.recurringSelectionMode ? { enforceContiguous: false } : {};
+
+        if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots, [], validationOptions).valid){
+            return;
+        }
+
+        if (section.schedulingLocked){
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
+            this.unselectSection();
+            return;
+        }
+
+        this.scheduleSectionLocal(section, room_id, schedule_timeslots);
+        this.apiClient.schedule_section(
+            section.id,
+            schedule_timeslots,
+            room_id,
+            override,
+            callback,
+            function(msg) {
+                this.scheduleSectionLocal(section,
+                    old_assignment.room_id,
+                    old_assignment.timeslots);
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                console.log(msg);
+            }.bind(this)
+        );
+        this.matrix.sectionInfoPanel.override = false;
+        this.clearRecurringSelection();
     };
 
     /**
@@ -452,42 +653,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
      * @param callback: A function to run upon success
      */
     this.scheduleSection = function(section, room_id, first_timeslot_id, callback = function() {}){
-        var old_assignment = this.scheduleAssignments[section.id];
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(section, first_timeslot_id);
-        var override = this.matrix.sectionInfoPanel.override;
-
-        // Make sure the assignment is valid
-        if (!this.matrix.validateAssignment(section, room_id, schedule_timeslots).valid){
-            return;
-        }
-
-        // Make sure section not locked
-        if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
-            this.unselectSection();
-            return;
-        }
-
-        // Optimistically schedule the section locally before hearing back from the server
-        this.scheduleSectionLocal(section, room_id, schedule_timeslots);
-        this.apiClient.schedule_section(
-            section.id,
-            schedule_timeslots,
-            room_id,
-            override,
-            callback,
-            // If there's an error, reschedule the section in its old location
-            function(msg) {
-                this.scheduleSectionLocal(section,
-                    old_assignment.room_id,
-                    old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red")
-                console.log(msg);
-            }.bind(this)
-        );
-        // Reset the availability override
-        this.matrix.sectionInfoPanel.override = false;
+        this.scheduleSectionWithTimeslots(section, room_id, schedule_timeslots, callback);
     }
 
 
@@ -548,6 +716,9 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.scheduleAsGhost = function(room_id, first_timeslot_id) {
         var schedule_timeslots = this.matrix.timeslots.
             get_timeslots_to_schedule_section(this.selectedSection, first_timeslot_id);
+        if (schedule_timeslots === null) {
+            return;
+        }
         this.ghostScheduleAssignment = {'room_id': room_id, 'timeslots': schedule_timeslots};
         $j.each(schedule_timeslots, function(index, timeslot_id) {
             this.matrix.getCell(room_id, timeslot_id).addGhostSection(this.selectedSection);
@@ -572,7 +743,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.unscheduleSection = function(section, callback = function(){}){
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
             return;
         }
@@ -589,7 +760,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -607,11 +778,11 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.swapSections = function(section1, section2) {
         // Abort if either section is locked
         if (section1.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
             return;
         } else if (section2.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the second selected section is locked (" + section2.schedulingComment + ")! Unlock it first.", color = "red");
+            this.matrix.messagePanel.addMessage("Error: the second selected section is locked (" + section2.schedulingComment + ")! Unlock it first.", "red");
             this.unselectSection();
             return;
         }
@@ -639,7 +810,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
             // Abort if there isn't enough time for section 2 in classroom 1
             if(new_timeslots2 === null){
-                this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", color = "red");
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", "red");
                 this.unselectSection();
                 return;
             }
@@ -658,7 +829,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
             // Abort if there isn't enough time for section 1 in classroom 2
             if(new_timeslots1 === null){
-                this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", color = "red");
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", "red");
                 this.unselectSection();
                 return;
             }
@@ -693,7 +864,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "red");
                             this.unselectSection();
                             return;
                         }
@@ -721,7 +892,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, color = "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "red");
                             this.unselectSection();
                             return;
                         }
@@ -749,7 +920,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If there's an error, locally reschedule the sections in their old locations
             function(msg) {
                 this.swapSectionsLocal(old_assignments1, old_assignments2);
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
             }.bind(this)
         );
@@ -824,7 +995,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 // if unsuccessful, revert the comment locked status and show an error
                 section.schedulingComment = old_comment;
                 section.schedulingLocked = old_locked;
-                this.matrix.messagePanel.addMessage("Error: " + msg, color = "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
                 console.log(msg);
                 this.unselectSection();
             }.bind(this));
@@ -837,9 +1008,25 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
 
     this.getBaseUrlString = function() {
-        var parser = document.createElement('a');
-        parser.href = document.URL;
-        return parser.pathname.slice(0, -("ajaxscheduling".length) - 1);
+        var path = window.location.pathname || "";
+        var parts = path.split("/");
+
+        // Remove any trailing empty segment caused by a trailing slash.
+        if (parts.length > 0 && parts[parts.length - 1] === "") {
+            parts.pop();
+        }
+
+        // Remove the current view segment (e.g. ajax_scheduling).
+        if (parts.length > 0) {
+            parts.pop();
+        }
+
+        // If nothing is left, we are at the site root.
+        if (parts.length === 0) {
+            return "/";
+        }
+
+        return parts.join("/") + "/";
     };
 
 }
