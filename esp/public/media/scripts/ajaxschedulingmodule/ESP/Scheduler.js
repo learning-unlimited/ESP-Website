@@ -31,12 +31,12 @@ function Scheduler(
             room.resources = [];
             room.resource_lines = [];
             $j.each(room.associated_resources, function(index, resource) {
-                var resource_type = data.resource_types[resource.res_type_id];
+                const resource_type = data.resource_types[resource.res_type_id];
                 room.resources.push({
                     'resource_type': resource_type,
                     'value': resource.value,
                 });
-                var desc = resource_type.name;
+                let desc = resource_type.name;
                 if(resource.value) {
                     desc += ': ' + resource.value;
                 }
@@ -148,10 +148,10 @@ function Scheduler(
         });
 
         // set up handler for selecting moderators
-        $j("body").on("click", "td.moderator-cell", function(evt, ui) {
-            var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
+        $j("body").on("click", "td.moderator-cell", (evt) => {
+            const moderatorCell = $j(evt.currentTarget).data("moderatorCell");
             this.moderatorDirectory.selectModerator(moderatorCell.moderator);
-        }.bind(this));
+        });
 
         // prevent above handler if clicking a link within a moderator cell
         $j("body").on("click", "td.moderator-cell > a", function(evt){
@@ -159,14 +159,15 @@ function Scheduler(
         });
 
         // set up handler for selecting moderators from section info panel
-        $j("body").on("click", "a.moderator-link", function(evt, ui) {
-            var modID = $j(evt.currentTarget).data("moderator");
+        $j("body").on("click", "a.moderator-link", (evt) => {
+            const modID = $j(evt.currentTarget).data("moderator");
             this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
-        }.bind(this));
+        });
 
         // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
-        $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
+        $j("body").on("click", "td.matrix-cell > a", (evt) => {
+            const cell = $j(evt.currentTarget.parentElement).data("cell");
+
             if((evt.ctrlKey || evt.metaKey) && this.sections.selectedSection){
                 // attempt to swap the previously selected section with the section in the newly clicked cell
                 this.sections.swapSections(this.sections.selectedSection, cell.section);
@@ -179,31 +180,31 @@ function Scheduler(
             } else {
                 this.sections.selectSection(cell.section);
             }
-        }.bind(this));
+        });
 
-        $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
-            var cell = $j(evt.currentTarget).data("cell");
+        $j("body").on("click", "td.teacher-available-cell", (evt) => {
+            const cell = $j(evt.currentTarget).data("cell");
             if(this.sections.selectedSection) {
                 this.sections.scheduleSection(this.sections.selectedSection,
                                               cell.room_id, cell.timeslot_id);
             }
-        }.bind(this));
+        });
 
-        $j("body").on("click", "td.disabled-cell", function(evt, ui) {
+        $j("body").on("click", "td.disabled-cell", () => {
             this.sections.unselectSection();
-        }.bind(this));
+        });
 
         // set up handlers to schedule and unschedule ghost sections while hovering over empty cells
-        $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+        $j("body").on("mouseenter", "td.teacher-available-cell", (evt) => {
             if(this.sections.selectedSection){
-                var cell = $j(evt.currentTarget).data("cell");
+                const cell = $j(evt.currentTarget).data("cell");
                 this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
             }
-        }.bind(this));
+        });
 
-        $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
+        $j("body").on("mouseleave click", "td.teacher-available-cell", () => {
             this.sections.unscheduleAsGhost();
-        }.bind(this));
+        });
 
         // set up handler from print button
         $j("body").on("click", "#print_button", function(evt, ui) {
