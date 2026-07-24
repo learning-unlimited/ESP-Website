@@ -90,8 +90,8 @@ def esp_context_stuff():
 
 _PROGRAM_TLS = frozenset(['manage', 'learn', 'teach', 'onsite', 'volunteer'])
 
-# Paths that must not trigger session/cookie access (NoVaryOnCookieTest).
-# Accessing request.user would add Vary: Cookie; skip injection for these.
+# Paths for which the active-program-tags admin banner should be skipped.
+# These are public cacheable pages; there is no need to query admin tags.
 _CACHEABLE_SUFFIXES = ('catalog', 'index.html')
 
 
@@ -127,7 +127,7 @@ def _inject_active_program_tags(request, context):
     try:
         path = request.path.rstrip('/')
         if any(path.endswith(s) for s in _CACHEABLE_SUFFIXES):
-            return  # Avoid request.user access; would add Vary: Cookie
+            return  # Cacheable public page; skip admin-tag banner entirely
         if not (hasattr(request, 'user') and request.user.is_authenticated):
             return
         parts = request.path.strip('/').split('/')
