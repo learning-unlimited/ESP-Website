@@ -70,9 +70,8 @@ def user_summary(request):
     user = None
     context = {}
     if 'target_user' in request.GET:
-        users = ESPUser.objects.filter(id=request.GET['target_user'])
-        if users.count() == 1:
-            user = users[0]
+        form = StudentSearchForm(initial={'target_user': request.GET['target_user']})
+        user = ESPUser.objects.filter(id=request.GET['target_user']).first()
     elif 'target_user' in request.POST:
         form = StudentSearchForm(request.POST)
         if form.is_valid():
