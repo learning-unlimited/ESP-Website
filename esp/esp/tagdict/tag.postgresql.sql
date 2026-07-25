@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX tagict_tag_unique_notpertarget ON tagdict_tag (key) WHERE NOT (content_type IS NULL OR object_id IS NULL);
