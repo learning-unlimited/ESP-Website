@@ -572,7 +572,6 @@ class StudentsStatusTests(ProgramFrameworkTest):
         self.assertIsNotNone(entry, "Student not found in search results")
         self.assertTrue(entry[3])
 
-        
 class ClassListReloadTests(ProgramFrameworkTest):
     """Tests for issue #318: the scrolling onsite class list should reload
     once it reaches the end of a scroll cycle, rather than on a fixed timer
@@ -610,6 +609,7 @@ class ClassListReloadTests(ProgramFrameworkTest):
             options=options,
             template_name='classlist.html',
         )
+        resp.render()
         return resp.content.decode()
 
     def test_no_meta_refresh_tag(self):
