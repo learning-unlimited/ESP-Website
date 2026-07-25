@@ -35,9 +35,21 @@ $j(document).ready(function() {
     var $addOverlay  = $j('#addOverlay');
     var $addDrawer   = $j('#addDrawer');
 
+    function safeFocus($el) {
+        if (!$el || !$el.length) return;
+        var el = $el.get(0);
+        if (el && el.focus) {
+            try {
+                el.focus({ preventScroll: true });
+            } catch (e) {
+                $el.trigger('focus');
+            }
+        }
+    }
+
     // Prevent browser focus-scroll bugs from shifting the layout when modals open/close
-    $j('.tl-main-grid').on('scroll', function() {
-        if (($editPanel.hasClass('active') || $addDrawer.hasClass('active')) && this.scrollLeft !== 0) {
+    $j('.tl-wrapper, .tl-workspace').on('scroll', function() {
+        if (this.scrollLeft !== 0) {
             this.scrollLeft = 0;
         }
     });
@@ -79,16 +91,16 @@ $j(document).ready(function() {
                     if (lastFocusedModuleId) {
                         var $targetBlock = $j('.tl-block[data-module-id="' + lastFocusedModuleId + '"], .tl-row-label[data-module-id="' + lastFocusedModuleId + '"]');
                         if ($targetBlock.length) {
-                            $targetBlock.first().trigger('focus');
+                            safeFocus($targetBlock.first());
                         } else if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
-                            $j(lastFocusBeforeModal).trigger('focus');
+                            safeFocus($j(lastFocusBeforeModal));
                         }
                         lastFocusedModuleId = null;
                         lastFocusBeforeModal = null;
                     } else if (lastFocusedWasAddDrawer) {
                         var $addBtn = $j('button[onclick="openAddDrawer()"]');
                         if ($addBtn.length) {
-                            $addBtn.first().trigger('focus');
+                            safeFocus($addBtn.first());
                         }
                         lastFocusedWasAddDrawer = false;
                         lastFocusBeforeModal = null;
@@ -579,7 +591,7 @@ $j(document).ready(function() {
         lastFocusedModuleId = mod ? mod.id : null;
         lastFocusedWasAddDrawer = false;
         setTimeout(function() {
-            $j('#editLabel').trigger('focus');
+            safeFocus($j('#editLabel'));
         }, 100);
     }
 
@@ -589,11 +601,11 @@ $j(document).ready(function() {
         activeModule     = null;
         activeModuleType = null;
         if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
-            $j(lastFocusBeforeModal).trigger('focus');
+            safeFocus($j(lastFocusBeforeModal));
             lastFocusBeforeModal = null;
             lastFocusedModuleId = null;
         }
-        $j('.tl-wrapper').scrollLeft(0);
+        $j('.tl-wrapper, .tl-workspace').scrollLeft(0);
     };
 
     window.toggleReq = function() {
@@ -653,17 +665,18 @@ $j(document).ready(function() {
         $addOverlay.addClass('active');
         $addDrawer.addClass('active');
         setTimeout(function() {
-            $j('.tl-add-checkbox:not(:disabled)').first().trigger('focus');
+            safeFocus($j('.tl-add-checkbox:not(:disabled)').first());
         }, 100);
     };
     window.closeAddDrawer = function(isSaving) {
         $addDrawer.removeClass('active');
         $addOverlay.removeClass('active');
         if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
-            $j(lastFocusBeforeModal).trigger('focus');
+            safeFocus($j(lastFocusBeforeModal));
             lastFocusBeforeModal = null;
             lastFocusedWasAddDrawer = false;
         }
+        $j('.tl-wrapper, .tl-workspace').scrollLeft(0);
     };
 
     window.saveModules = function() {
