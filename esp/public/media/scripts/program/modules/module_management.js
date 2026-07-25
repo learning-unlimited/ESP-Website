@@ -14,6 +14,9 @@ $j(document).ready(function() {
     var allModules = { learn: [], teach: [] };
     var activeModule = null;    // currently editing
     var activeModuleType = null; // 'student' or 'teacher'
+    var lastFocusBeforeModal = null;
+    var lastFocusedModuleId = null;
+    var lastFocusedWasAddDrawer = false;
 
     var timelineStart = null;
     var timelineEnd = null;
@@ -33,8 +36,8 @@ $j(document).ready(function() {
     var $addDrawer   = $j('#addDrawer');
 
     // Prevent browser focus-scroll bugs from shifting the layout when modals open/close
-    $j('.tl-wrapper').on('scroll', function() {
-        if (this.scrollLeft !== 0) {
+    $j('.tl-main-grid').on('scroll', function() {
+        if (($editPanel.hasClass('active') || $addDrawer.hasClass('active')) && this.scrollLeft !== 0) {
             this.scrollLeft = 0;
         }
     });
@@ -48,7 +51,8 @@ $j(document).ready(function() {
             .addClass('tl-toast tl-toast-' + (type || 'success'))
             .attr('role', 'status')
             .attr('aria-live', 'polite')
-            .text(msg);        $j('body').append($toast);
+            .text(msg);
+        $j('body').append($toast);
         setTimeout(function() { $toast.addClass('tl-toast-visible'); }, 10);
         setTimeout(function() {
             $toast.removeClass('tl-toast-visible');
@@ -72,6 +76,23 @@ $j(document).ready(function() {
                     renderTimeline('student');
                     renderTimeline('teacher');
                     updateTabCounts();
+                    if (lastFocusedModuleId) {
+                        var $targetBlock = $j('.tl-block[data-module-id="' + lastFocusedModuleId + '"], .tl-row-label[data-module-id="' + lastFocusedModuleId + '"]');
+                        if ($targetBlock.length) {
+                            $targetBlock.first().trigger('focus');
+                        } else if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+                            $j(lastFocusBeforeModal).trigger('focus');
+                        }
+                        lastFocusedModuleId = null;
+                        lastFocusBeforeModal = null;
+                    } else if (lastFocusedWasAddDrawer) {
+                        var $addBtn = $j('button[onclick="openAddDrawer()"]');
+                        if ($addBtn.length) {
+                            $addBtn.first().trigger('focus');
+                        }
+                        lastFocusedWasAddDrawer = false;
+                        lastFocusBeforeModal = null;
+                    }
                 } else {
                     showToast('Failed to load modules.', 'error');
                 }
@@ -260,6 +281,7 @@ $j(document).ready(function() {
                 .attr('tabindex', '0')
                 .attr('role', 'button')
                 .attr('aria-label', 'Edit ' + rowTitle)
+                .attr('data-module-id', mod.id)
                 .data('mod-id', mod.id)
                 .on('click', function() {
                     openEditPanel(mod, type);
@@ -332,6 +354,7 @@ $j(document).ready(function() {
             var blockTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $blockRow = $j('<div>').addClass('tl-block-row');
             var $block    = $j('<div>').addClass('tl-block')
+                .attr('data-module-id', mod.id)
                 .css({ left: pos.left, width: pos.width })
                 .attr('tabindex', '0')
                 .attr('role', 'button')
@@ -553,19 +576,22 @@ $j(document).ready(function() {
         $editPanel.addClass('active');
         
         lastFocusBeforeModal = document.activeElement;
+        lastFocusedModuleId = mod ? mod.id : null;
+        lastFocusedWasAddDrawer = false;
         setTimeout(function() {
             $j('#editLabel').trigger('focus');
         }, 100);
     }
 
-    window.closeEditPanel = function() {
+    window.closeEditPanel = function(isSaving) {
         $editPanel.removeClass('active');
         $editOverlay.removeClass('active');
         activeModule     = null;
         activeModuleType = null;
-        if (lastFocusBeforeModal) {
+        if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
             $j(lastFocusBeforeModal).trigger('focus');
             lastFocusBeforeModal = null;
+            lastFocusedModuleId = null;
         }
         $j('.tl-wrapper').scrollLeft(0);
     };
@@ -602,7 +628,7 @@ $j(document).ready(function() {
                 $j('#editSaveBtn').prop('disabled', false).text('Save Changes');
                 if (res.success) {
                     showToast('Module saved successfully.', 'success');
-                    closeEditPanel();
+                    closeEditPanel(true);
                     loadModules();
                 } else {
                     showToast('Error: ' + (res.error || 'Unknown error'), 'error');
@@ -620,22 +646,23 @@ $j(document).ready(function() {
     // ──────────────────────────────────────────────────────────────
     // Add Drawer & Save Modules
     // ──────────────────────────────────────────────────────────────
-    var lastFocusBeforeModal = null;
-
     window.openAddDrawer = function() {
         lastFocusBeforeModal = document.activeElement;
+        lastFocusedWasAddDrawer = true;
+        lastFocusedModuleId = null;
         $addOverlay.addClass('active');
         $addDrawer.addClass('active');
         setTimeout(function() {
             $j('.tl-add-checkbox:not(:disabled)').first().trigger('focus');
         }, 100);
     };
-    window.closeAddDrawer = function() {
+    window.closeAddDrawer = function(isSaving) {
         $addDrawer.removeClass('active');
         $addOverlay.removeClass('active');
-        if (lastFocusBeforeModal) {
+        if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
             $j(lastFocusBeforeModal).trigger('focus');
             lastFocusBeforeModal = null;
+            lastFocusedWasAddDrawer = false;
         }
     };
 
@@ -687,7 +714,7 @@ $j(document).ready(function() {
                 $btn.prop('disabled', false).text(oldText);
                 if (res.status === 'success') {
                     showToast('Modules updated successfully.', 'success');
-                    closeAddDrawer();
+                    closeAddDrawer(true);
                     $j('.tl-add-checkbox').each(function() {
                         this.defaultChecked = this.checked;
                     });

@@ -839,10 +839,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
             else:
                 category = 'general'
 
-            is_always_enabled = False
-            # Drawer options are entirely optional features, so they should remain unlocked
-            # allowing the admin to toggle them on or off. Core locked modules like the
-            # Profile Module are automatically included and do not appear in this list.
+            handler_names = [handler_by_id.get(i, '') for i in ids]
+            is_always_enabled = is_checked and any(
+                h in ('RegProfileModule', 'AvailabilityModule', 'StudentRegTwoPhase') or 'AcknowledgementModule' in h
+                for h in handler_names if h
+            )
 
             module_questions_categorized[category].append({
                 'value': val,
