@@ -66,8 +66,12 @@
     select {
         box-sizing: border-box;
         display: inline-block;
-        color: black;
-        background-color: #fdfdfd;
+        // Let Bootswatch control input colours on dark themes ($input-color /
+        // $input-bg); only apply the hardcoded white-on-light defaults otherwise.
+        @if not $bootswatch-active {
+            color: black;
+            background-color: #fdfdfd;
+        }
 
         &:focus {
             -webkit-box-shadow: none;
@@ -92,7 +96,6 @@
         height: 2.5em;
     }
 }
-
 
 
 body {
@@ -177,9 +180,7 @@ div.navbar-collapse {
 
 .navbar .navbar-nav > li.dropdown,
 .navbar .navbar-nav > li.nav-item.dropdown {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    position: relative;
 }
 
 .navbar .dropdown-split {
@@ -188,23 +189,31 @@ div.navbar-collapse {
     padding: 0;
 }
 
-.navbar .navbar-nav > li > ul.dropdown-menu,
-.navbar .navbar-nav > li.nav-item > ul.dropdown-menu {
-    flex-basis: 100%;
+.navbar .navbar-nav > li > a.navbar-item-label,
+.navbar .navbar-nav .navbar-item-label {
+    float: none;
+    margin-right: 0;
+    padding-right: 0;
+    cursor: pointer;
 }
 
 .navbar .navbar-nav > li > a.caret-wrapper,
 .navbar .navbar-nav .caret-wrapper {
     float: none;
-    padding-left: 5px;
+    padding-left: 0;
+    padding-right: 0.5rem;
     cursor: pointer;
 }
 
-.navbar .navbar-nav > li > a.navbar-item-label,
-.navbar .navbar-nav .navbar-item-label {
-    float: none;
-    margin-right: 0;
-    cursor: pointer;
+.navbar .navbar-nav .nav-link {
+    font-size: $navbarFontSize;
+    white-space: nowrap;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+}
+
+.navbar-dark.fixed-top {
+    --bs-navbar-padding-y: 0.25rem;
 }
 
 #navbar.container-fluid {
@@ -220,7 +229,6 @@ div.navbar-collapse {
 
 @media (min-width: $navbarCollapseWidth) {
     .navbar-expand-md .navbar-collapse {
-        display: flex !important;
         flex-wrap: wrap;
         align-items: center;
     }
@@ -259,6 +267,13 @@ div.navbar-collapse {
     .dropdown:hover .dropdown-menu {
         display: block;
         margin-top: 0;
+        position: absolute;
+        top: 100%;
+    }
+
+    .navbar-nav .nav-item.dropdown .dropdown-menu.show {
+        position: absolute;
+        top: 100%;
     }
 
     .navbar .navbar-nav > .active > a,
@@ -280,6 +295,10 @@ div.navbar-collapse {
     border-top-color: currentColor;
 }
 
+.footer-container .navbar {
+    --bs-navbar-padding-y: 0;
+}
+
 #footer {
     width: 100%;
     padding: 0.5rem 1rem;
@@ -287,6 +306,7 @@ div.navbar-collapse {
 
 #footer .navbar-nav {
     flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: center;
     width: 100%;
 }
@@ -307,56 +327,113 @@ div.navbar-collapse {
     color: rgba(255, 255, 255, 0.85);
 }
 
-// Override the global .navbar.bg-dark rule in theme_editor/scss/main.scss so that
-// the droplets-specific navbarInverse* customizer fields control the navbar background.
-.navbar.bg-dark {
-    background-color: $navbarInverseBackground !important;
+// Bootstrap 5 gives .dropdown-menu 0.5rem of vertical padding.  The navbar
+// dropdown items are the coloured/highlighted rows, so that padding shows up as
+// off-coloured strips above the first item and below the last item (the "gap
+// above and below the highlight" reported on the navbar dropdowns).  Zero it so
+// the items — and their hover highlight — fill the menu edge to edge.
+.navbar .dropdown-menu {
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
-.navbar-dark .navbar-nav .nav-link,
-.navbar-dark .navbar-brand {
-    color: $navbarInverseLinkColor;
-}
+@if $bootswatch-active {
+    .navbar.bg-dark {
+        background: $primary !important;
+        // Derive the navbar foreground from $primary so the nav links, brand and
+        // login labels ("Hello, ...", "Account") stay legible whether the
+        // Bootswatch $primary is light (e.g. Quartz) or dark — navbar-dark's fixed
+        // light text is invisible on a light primary.  (Custom-property values are
+        // raw text to Sass, so color-contrast() must be interpolated with #{}.)
+        --bs-navbar-color: #{color-contrast($primary)};
+        --bs-navbar-hover-color: #{color-contrast($primary)};
+        --bs-navbar-active-color: #{color-contrast($primary)};
+        --bs-navbar-brand-color: #{color-contrast($primary)};
+        --bs-navbar-brand-hover-color: #{color-contrast($primary)};
+    }
 
-.navbar-dark .navbar-brand {
-    color: $navbarInverseBrandColor;
-}
+    .navbar.bg-dark .dropdown-menu {
+        background-color: $dropdown-bg !important;
 
-.navbar-dark .navbar-nav .nav-link:hover,
-.navbar-dark .navbar-nav .nav-link:focus {
-    color: $navbarInverseLinkColorHover;
-}
+        .dropdown-item,
+        .dropdown-item:focus {
+            color: $dropdown-link-color !important;
+        }
 
-.navbar-dark .btn,
-.navbar.bg-dark .btn {
-    background-color: $navbarInverseBackgroundHighlight !important;
-    border-color: darken($navbarInverseBackgroundHighlight, 12%);
-    color: $navbarInverseLinkColor;
+        .dropdown-item:hover,
+        .dropdown-item:active {
+            background-color: $dropdown-link-hover-bg !important;
+            color: $dropdown-link-hover-color !important;
+        }
+    }
 
-    &:hover,
-    &:focus {
-        background-color: lighten($navbarInverseBackgroundHighlight, 7.5%) !important;
-        border-color: darken($navbarInverseBackgroundHighlight, 12%);
+    .navbar.bg-dark #adminbar_content a,
+    .navbar.bg-dark .dropdown-menu > li > div {
+        color: $dropdown-link-color;
+    }
+} @else {
+    .navbar.bg-dark {
+        background-color: $navbarInverseBackground !important;
+    }
+
+    .navbar-dark .navbar-nav .nav-link,
+    .navbar-dark .navbar-brand {
+        color: $navbarInverseLinkColor;
+    }
+
+    .navbar-dark .navbar-brand {
+        color: $navbarInverseBrandColor;
+    }
+
+    .navbar-dark .navbar-nav .nav-link:hover,
+    .navbar-dark .navbar-nav .nav-link:focus {
         color: $navbarInverseLinkColorHover;
     }
-}
 
-.navbar-dark .navbar-nav .nav-item.active .nav-link,
-.navbar-dark .navbar-nav .nav-item.show .nav-link,
-.navbar-dark .navbar-nav .nav-link:hover,
-.navbar-dark .navbar-nav .nav-link:focus {
-    background-color: $navbarInverseBackgroundHighlight;
-}
+    .navbar-dark .btn,
+    .navbar.bg-dark .btn {
+        background-color: $navbarInverseBackgroundHighlight !important;
+        border-color: darken($navbarInverseBackgroundHighlight, 12%);
+        color: $navbarInverseLinkColor;
 
-.navbar-dark .dropdown-menu .dropdown-item {
-    color: $navbarInverseLinkColor;
-    background-color: $navbarInverseBackgroundHighlight;
-}
+        &:hover,
+        &:focus {
+            background-color: lighten($navbarInverseBackgroundHighlight, 7.5%) !important;
+            border-color: darken($navbarInverseBackgroundHighlight, 12%);
+            color: $navbarInverseLinkColorHover;
+        }
+    }
 
-.navbar-dark .dropdown-menu .dropdown-item:hover,
-.navbar-dark .dropdown-menu .dropdown-item:focus {
-    background-color: lighten($navbarInverseBackgroundHighlight, 7.5%);
-    color: $navbarInverseLinkColorHover;
+    @media (min-width: $navbarCollapseWidth) {
+        .navbar .navbar-nav > .nav-item {
+            align-self: stretch;
+            display: flex;
+            align-items: center;
+        }
+    }
+
+    .navbar-dark .navbar-nav .nav-item.active,
+    .navbar-dark .navbar-nav .nav-item.show,
+    .navbar-dark .navbar-nav .nav-item:hover,
+    .navbar-dark .navbar-nav .nav-item:focus-within {
+        background-color: $navbarInverseBackgroundHighlight;
+    }
+
+    .navbar-dark .navbar-nav .nav-link:hover,
+    .navbar-dark .navbar-nav .nav-link:focus {
+        background-color: transparent;
+    }
+
+    .navbar-dark .dropdown-menu .dropdown-item {
+        color: $navbarInverseLinkColor;
+        background-color: $navbarInverseBackgroundHighlight;
+    }
+
+    .navbar-dark .dropdown-menu .dropdown-item:hover,
+    .navbar-dark .dropdown-menu .dropdown-item:focus {
+        background-color: lighten($navbarInverseBackgroundHighlight, 7.5%);
+        color: $navbarInverseLinkColorHover;
+    }
 }
 
 #adminbar_content .title {

@@ -141,7 +141,12 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {{ form.requests.errors }}
         <br><br>
         <div class="noclick">
-        {{ form.confirm }} {{ form.confirm.help_text }}
+        {# d-flex keeps the checkbox and text on one line in all themes (Sketchy uses #}
+        {# larger SVG checkboxes that push text off-baseline without flex alignment).  #}
+        <label class="d-flex align-items-center gap-2" for="{{ form.confirm.html_name }}">
+            {{ form.confirm }}
+            <span>{{ form.confirm.help_text }}</span>
+        </label>
         </div>
         {{ form.non_field_errors }}
         <br><br>

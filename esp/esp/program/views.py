@@ -1570,7 +1570,7 @@ def module_schedule_api(request, program_type, program_term):
     Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
     """
     prog = get_program_or_404(request, program_type, program_term)
-    modules = prog.getModules(user=request.user)
+    modules = prog.getModules()
 
     # We serialize them into dicts grouped by module_type (learn/teach)
     data = {
@@ -1604,8 +1604,8 @@ def module_schedule_api(request, program_type, program_term):
 @require_POST
 def module_schedule_update_api(request, program_type, program_term):
     """
-    JSON API endpoint to update a program module's start_date, end_date, and seq.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq.
+    JSON API endpoint to update a program module's schedule and metadata.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq, link_title, required, required_label.
     Outputs: JSONResponse with success boolean and updated module fields.
     """
     # we simulate PATCH using POST with data, or we could just use POST.
@@ -1654,42 +1654,14 @@ def module_schedule_update_api(request, program_type, program_term):
                 return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
             mod.seq = int(data["seq"])
 
-        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
-            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
-
-        mod.save()
-
-        return JsonResponse({
-            "success": True,
-            "module_id": mod.id,
-            "start_date": mod.start_date.isoformat() if mod.start_date else None,
-            "end_date": mod.end_date.isoformat() if mod.end_date else None,
-            "seq": mod.seq
-        })
-    except ValueError:
-        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
-    except Exception:
-        logger.exception("module_schedule_update_api failed")
-        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
-
-@require_POST
-def module_schedule_required_toggle_api(request, program_type, program_term):
-    """
-    JSON API endpoint to toggle a program module's required flag and update its required_label.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, required (bool), required_label (str).
-    Outputs: JSONResponse with success boolean and updated module fields.
-    """
-    prog = get_program_or_404(request, program_type, program_term)
-
-    try:
-        data = json.loads(request.body)
-        module_id = data.get("module_id")
-
-        from esp.program.modules.base import ProgramModuleObj
-        try:
-            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
-        except ProgramModuleObj.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+        if "link_title" in data:
+            title = data["link_title"]
+            if not isinstance(title, str):
+                return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+            if len(title) > max_len:
+                return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
+            mod.link_title = title
 
         if "required" in data:
             if not isinstance(data["required"], bool):
@@ -1705,18 +1677,43 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
                 return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
             mod.required_label = label
 
+        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        # Enforce hard constraints (same as admincore POST handler)
+        handler = mod.module.handler
+        if handler == "RegProfileModule":
+            mod.seq = 0
+            mod.required = True
+        elif "CreditCardModule_" in handler:
+            mod.seq = 10000
+            mod.required = False
+        elif handler == "StudentRegConfirm":
+            mod.seq = 99999
+            mod.required = False
+        elif handler == "AvailabilityModule":
+            mod.required = True
+        elif "AcknowledgementModule" in handler:
+            mod.required = True
+        elif handler == "StudentRegTwoPhase":
+            mod.required = True
+
         mod.save()
 
         return JsonResponse({
             "success": True,
             "module_id": mod.id,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "seq": mod.seq,
+            "link_title": mod.link_title,
             "required": mod.required,
             "required_label": mod.required_label
         })
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
-        logger.exception("module_schedule_required_toggle_api failed")
+        logger.exception("module_schedule_update_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
 @require_GET
@@ -1812,3 +1809,58 @@ def module_schedule_conflicts_api(request, program_type, program_term):
                     })
 
     return JsonResponse({"conflicts": conflicts})
+
+@require_POST
+def module_schedule_reorder_api(request, program_type, program_term):
+    """
+    JSON API endpoint to bulk update the sequence (seq) of program modules.
+    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>} dicts.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        order = data.get("order", [])
+        if not isinstance(order, list):
+            return JsonResponse({"success": False, "error": "'order' must be a list"}, status=400)
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.db import transaction
+
+        update_ids = [u.get("id") for u in order if "id" in u]
+        module_map = {m.id: m for m in ProgramModuleObj.objects.filter(program=prog, id__in=update_ids).select_related('module')}
+
+        with transaction.atomic():
+            for update in order:
+                mod_id = update.get("id")
+                new_seq = update.get("seq")
+
+                if mod_id not in module_map:
+                    continue
+
+                mod = module_map[mod_id]
+                handler = mod.module.handler
+
+                position_locked = (
+                    handler == 'RegProfileModule' or
+                    'CreditCardModule_' in handler or
+                    handler == 'StudentRegConfirm'
+                )
+
+                if position_locked:
+                    raise ValueError(f"Module {handler} is locked and cannot be reordered")
+
+                mod.seq = int(new_seq)
+                mod.save(update_fields=['seq'])
+
+        return JsonResponse({"success": True})
+    except ValueError as e:
+        if "locked and cannot be reordered" in str(e):
+            return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except (TypeError, KeyError):
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except Exception as e:
+        logger.exception("module_schedule_reorder_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+

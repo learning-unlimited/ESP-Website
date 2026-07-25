@@ -1,33 +1,44 @@
 
+// $accent1/$accent2 are bigpicture's fixed brand colours (orange/navy).  They
+// only make sense on bigpicture's own light background, so gate every accent
+// colour, heading colour, link colour and accent border behind
+// `@if not $bootswatch-active`.  When a Bootswatch theme is active these are
+// omitted and Bootstrap's palette ($headings-color, $link-color, contrast-aware
+// buttons/inputs) drives the page instead — fixing navy links on dark boxes and
+// link-coloured text on themed buttons.
 #main {
     h1 {
-        color: $accent2;
+        @if not $bootswatch-active { color: $accent2; }
         font-size: 42px;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
-        color: $accent2;
+        @if not $bootswatch-active { color: $accent2; }
         font-size: 32px;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
     a {
-        color: $accent2;
+        @if not $bootswatch-active { color: $accent2; }
         text-decoration: underline;
     }
     .btn {
-        border: 1px solid $accent2;
         background-image: none;
-        &:active, &:focus {
-            border-color: $accent1;
+        @if not $bootswatch-active {
+            border: 1px solid $accent2;
+            &:active, &:focus {
+                border-color: $accent1;
+            }
         }
     }
     .module_link_large {
-        border: 1px solid $accent2;
-        background: $btnBackground;
-        &:active, &:focus {
-            border-color: $accent1;
+        @if not $bootswatch-active {
+            border: 1px solid $accent2;
+            background: $btnBackground;
+            &:active, &:focus {
+                border-color: $accent1;
+            }
         }
     }
     .btn-primary {
@@ -48,11 +59,17 @@
         box-sizing: border-box;
         display: inline-block;
         -webkit-appearance: none;
-        color: black;
-        background-color: #fdfdfd;
-        border: 1px solid $accent2;
+        // Let Bootswatch control input colours on dark themes ($input-color /
+        // $input-bg); only apply the hardcoded white-on-light defaults otherwise.
+        @if not $bootswatch-active {
+            color: black;
+            background-color: #fdfdfd;
+        }
+        @if not $bootswatch-active {
+            border: 1px solid $accent2;
+        }
         &:focus {
-            border-color: $accent1;
+            @if not $bootswatch-active { border-color: $accent1; }
             -webkit-box-shadow: none;
                -moz-box-shadow: none;
                     box-shadow: none;
@@ -72,7 +89,9 @@
 
 
 body {
-    background: $bodyBackground;
+    // Let Bootswatch own the page background ($body-bg) so dark themes are not
+    // forced onto bigpicture's white $bodyBackground (which hides their light text).
+    @if not $bootswatch-active { background: $bodyBackground; }
     position: relative;
 }
 .container {
@@ -85,6 +104,16 @@ body, .jumbotron {
 .header-cell {
     display: inline-block;
     vertical-align: bottom;
+}
+
+// The header text (group name, contact links) is white to sit on the header
+// image.  Give it a translucent dark scrim so it stays readable on light header
+// images / the light placeholder too (otherwise it's invisible white-on-light).
+#contact_info {
+    display: block;
+    background: rgba(0, 0, 0, 0.45);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
 }
 
 
@@ -179,55 +208,83 @@ div.navbar-collapse.collapse {
     background-position: 0;
 }
 .navbar {
-    & {
-        padding: 6px;
-        width: auto;
-        display: inline-block;
-        position: absolute;
-        z-index: 1030;
-        right: 0;
-        color: $navbarText;
-        background: $navbarBackground;
-        min-height: auto;
-    }
+    padding: 6px;
+    width: auto;
+    display: inline-block;
+    position: absolute;
+    z-index: 1030;
+    right: 0;
+    min-height: auto;
+
     input, select, .radio, .checkbox {
         margin-top: 0;
     }
-    .btn {
+}
+
+@if $bootswatch-active {
+    // The admin navbar background is the theme's $primary, which can be light
+    // (Quartz) or dark (Cyborg).  Derive every foreground from
+    // color-contrast($primary) rather than relying on navbar-dark's white text,
+    // so the "Hello, <user>" link and Logout/dropdown buttons stay legible on
+    // every Bootswatch theme (no blue-on-blue or white-on-light).
+    .navbar {
+        background: $primary !important;
+        color: color-contrast($primary);
+    }
+    .navbar .username,
+    .navbar a.username,
+    .navbar a.username:hover {
+        color: color-contrast($primary);
+        text-decoration: none;
+    }
+    .navbar .btn {
+        color: color-contrast($primary);
+        background: transparent;
+        border: 1px solid color-contrast($primary);
+    }
+    .navbar .btn:hover,
+    .navbar .btn:focus {
+        color: $primary;
+        background: color-contrast($primary);
+    }
+} @else {
+    .navbar {
+        color: $navbarText;
+        background: $navbarBackground;
+    }
+    .navbar .btn {
         background: $navbarBackgroundHighlight;
         color: $navbarText;
         border: 1px solid gray;
         border: 1px solid rgba(0, 0, 0, 0.21);
     }
-    .username {
+    .navbar .username {
         color: $navbarText;
         display: inline-block;
     }
-    a.username {
+    .navbar a.username {
         color: $navbarLinkColor;
         text-decoration: none;
     }
-    a.username:hover {
+    .navbar a.username:hover {
         color: $navbarLinkColorHover;
     }
-    .navbar-form > * {
+    .navbar .navbar-form > * {
         margin: 0;
         display: inline-block;
         vertical-align: middle;
         color: $navbarText;
     }
-    .navbar-form button {
+    .navbar .navbar-form button {
         margin: 0;
         color: $navbarText;
     }
-    .dropdown-menu {
-    > li > a {
+    .navbar .dropdown-menu > li > a {
         color: $navbarLinkColor;
         background: $navbarBackgroundHighlight;
     }
-    > li > a:hover {
+    .navbar .dropdown-menu > li > a:hover {
         color: $navbarLinkColorHover;
-    }
     }
 }
 
