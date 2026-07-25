@@ -236,10 +236,15 @@ def save(schedule, check_consistency=True, check_constraints=True):
 
         # First, we check to make sure nobody moved any sections we want, and
         # unschedule them to ensure we don't get cross-conflicts.
+        # Each section must be checked individually: using a leftover loop
+        # variable (or a cached get_meeting_times()) made whether we clear
+        # rooms depend on queryset order, which caused intermittent
+        # "room is already occupied" failures on valid swaps.
         for so in section_objs:
             section = schedule.class_sections[so.id]
             ensure_section_not_moved(so, section)
-            if len(section_obj.get_meeting_times()) > 0:
+            # Avoid cached get_meeting_times(); rollbacks do not restore cache.
+            if so.meeting_times.exists():
                 unschedule_section(so, ajax_change_log)
 
         check_can_schedule_sections(section_infos, schedule)
@@ -265,12 +270,34 @@ def check_can_schedule_sections(section_infos, schedule):
     and verifies the following for each section that we want to schedule:
         - That the teacher is not teaching another class at that time
         - That the rooms are not currently in use by another class
+        - That no two sections in this save claim the same room
+    Conflicts caused only by other sections in this same save batch are
+    ignored when reading the live DB, because those sections are being
+    reassigned as part of the final intended schedule (e.g. swaps).
     A SchedulingError is thrown if any of these occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
     locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(
             program=schedule.program, locked=True).values_list(
                     "cls_id", flat=True))
+    # Sections being saved together; their current DB assignments are not
+    # the final schedule and must not create false conflicts (e.g. swaps).
+    saving_section_ids = {section.id for section, _, _, _, _ in section_infos}
+
+    # Detect conflicts among the intended final room assignments themselves.
+    claimed_rooms = {}
+    for section, section_obj, possible_conflicts, meeting_times, room_objs \
+            in section_infos:
+        if not section.is_scheduled():
+            continue
+        for room_obj in room_objs:
+            other = claimed_rooms.get(room_obj.id)
+            if other is not None:
+                raise SchedulingError(
+                    f"Destination room {room_obj.name} of section "
+                    f"{section_obj.emailcode()} was already occupied by "
+                    f"section {other.emailcode()}")
+            claimed_rooms[room_obj.id] = section_obj
 
     for section, section_obj, possible_conflicts, meeting_times, room_objs \
             in section_infos:
@@ -282,6 +309,8 @@ def check_can_schedule_sections(section_infos, schedule):
             for teacher_id, other_sections in possible_conflicts:
                 # Make sure the teacher isn't teaching
                 for other_section in other_sections:
+                    if other_section.id in saving_section_ids:
+                        continue
                     for other_time in other_section.meeting_times.all():
                         if not (other_time.start >= end_time
                                 or other_time.end <= start_time):
@@ -289,13 +318,15 @@ def check_can_schedule_sections(section_infos, schedule):
                                 f"Teacher {teacher_id} of section {section_obj.emailcode()} is already teaching "
                                 f"section {other_section.emailcode()}")
 
-            # Make sure the room is available
+            # Make sure the room is available in the final schedule: ignore
+            # occupations by sections that are also being reassigned here.
             for room_obj in room_objs:
                 if room_obj.is_taken():
                     occupiers = room_obj.assignments()
                     for occupier in occupiers:
                         other_section = occupier.target
-                        if other_section.id != section.id:
+                        if (other_section.id != section.id
+                                and other_section.id not in saving_section_ids):
                             raise SchedulingError(
                                 f"Destination room {room_obj.name} of section {section_obj.emailcode()} was "
                                 f"already occupied by section {other_section.emailcode()}")
