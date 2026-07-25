@@ -42,9 +42,9 @@ class ClassCreationController(object):
         self.crmi = prog.classregmoduleinfo
 
     @transaction.atomic
-    def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
+    def makeaclass(self, user, reg_data, files=None, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, files=files, form_class=form_class)
 
         if form_class == TeacherOpenClassRegForm:
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
@@ -63,9 +63,9 @@ class ClassCreationController(object):
         return cls
 
     @transaction.atomic
-    def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
+    def editclass(self, current_user, reg_data, clsid, files=None, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, files=files, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -83,8 +83,8 @@ class ClassCreationController(object):
         return cls
 
 
-    def get_forms(self, reg_data, form_class=TeacherClassRegForm):
-        reg_form = form_class(self.crmi, reg_data)
+    def get_forms(self, reg_data, files=None, form_class=TeacherClassRegForm):
+        reg_form = form_class(self.crmi, data=reg_data, files=files)
 
         if 'request-TOTAL_FORMS' in reg_data:
             resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
