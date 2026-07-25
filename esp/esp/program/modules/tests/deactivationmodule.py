@@ -46,24 +46,16 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         """
         if data is None:
             data = {'confirm': 'on'}
-        try:
-            return self.client.post(self._url(filterid), data), None
-        except ESPError_Log as exc:
-            return None, exc
+        return self.client.post(self._url(filterid), data)
 
-    def _assert_graceful_esp_error(self, response, exc, *substrings):
+    def _assert_graceful_esp_error(self, response, *substrings):
         """Assert a handled ESPError rather than an uncaught 500/traceback."""
-        if exc is not None:
-            message = str(exc)
-            for substring in substrings:
-                self.assertIn(substring, message)
-            return
-
-        self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 500)
-        content = response.content.decode('utf-8')
-        for substring in substrings:
-            self.assertIn(substring, content)
+        self.assertTemplateUsed(response, 'error.html')
+        if substrings:
+            error_message = str(response.context['error'])
+            for substring in substrings:
+                self.assertIn(substring, error_message)
 
     def test_deactivatefinal_valid_filterid(self):
         """A valid filterid deactivates matching users and shows the finished page."""
@@ -73,9 +65,8 @@ class DeactivationModuleTest(ProgramFrameworkTest):
             user.save()
 
         filterObj = self._make_filter(targets)
-        response, exc = self._post_deactivatefinal(filterObj.id)
+        response = self._post_deactivatefinal(filterObj.id)
 
-        self.assertIsNone(exc, "Unexpected ESPError for a valid filterid: %s" % exc)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'FINISHED')
         for user in targets:
@@ -88,9 +79,9 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         target.is_active = True
         target.save()
 
-        response, exc = self._post_deactivatefinal()
+        response = self._post_deactivatefinal()
         self._assert_graceful_esp_error(
-            response, exc, 'Filter has not been properly set',
+            response, 'Filter has not been properly set',
         )
 
         target.refresh_from_db()
@@ -107,9 +98,9 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         filter_id = filterObj.id
         filterObj.delete()
 
-        response, exc = self._post_deactivatefinal(filter_id)
+        response = self._post_deactivatefinal(filter_id)
         self._assert_graceful_esp_error(
-            response, exc, 'no longer exists', 'deactivation',
+            response, 'no longer exists', 'deactivation',
         )
 
         for user in targets:
@@ -118,14 +109,14 @@ class DeactivationModuleTest(ProgramFrameworkTest):
 
     def test_deactivatefinal_nonexistent_filterid(self):
         """A numeric filterid with no matching row is a graceful ESPError."""
-        response, exc = self._post_deactivatefinal(99999999)
+        response = self._post_deactivatefinal(99999999)
         self._assert_graceful_esp_error(
-            response, exc, 'no longer exists', 'deactivation',
+            response, 'no longer exists', 'deactivation',
         )
 
     def test_deactivatefinal_invalid_filterid(self):
         """A non-numeric filterid is a graceful ESPError, not a ValueError/500."""
-        response, exc = self._post_deactivatefinal('abc')
+        response = self._post_deactivatefinal('abc')
         self._assert_graceful_esp_error(
-            response, exc, 'no longer exists', 'invalid', 'deactivation',
+            response, 'no longer exists', 'invalid', 'deactivation',
         )
