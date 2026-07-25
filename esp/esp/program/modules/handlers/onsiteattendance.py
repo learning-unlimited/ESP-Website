@@ -155,14 +155,14 @@ class OnSiteAttendance(ProgramModuleObj):
 
     @cache_function_for(105)
     def times_attending_class(self, prog):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         srs = StudentRegistration.objects.filter(section__parent_class__parent_program=prog,
             relationship__name="Attended", section__meeting_times__isnull=False
             ).order_by('start_date')
         att_dict = {}
         for sr in srs:
-            # For classes that are multiple hours, we want to count a student for
-            # each hour starting from when they are marked and ending at the end of the class
-            # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
             start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
             section_end_dt = sr.section.end_time().end
             end_time = section_end_dt.replace(
@@ -170,20 +170,27 @@ class OnSiteAttendance(ProgramModuleObj):
                 minute = 0, second = 0, microsecond = 0)
             user = sr.user
             time = start_time
-            # loop through hours until we get to the end time of the section
+            
             if end_time < start_time:
-                # If the original section end time-of-day is earlier than the start time-of-day,
-                # treat this as a cross-midnight class and shift the end time forward by one day.
                 if section_end_dt.time() < start_time.time():
                     end_time = end_time + datetime.timedelta(days=1)
 
-                # If after adjustment the end time is still invalid, skip this record.
-                if end_time < start_time:
-                    continue
+            # Skip invalid records to prevent infinite loops
+            if end_time <= start_time:
+                logger.warning(f"Skipping invalid attendance record for user {user.id}: "
+                             f"end_time ({end_time}) <= start_time ({start_time})")
+                continue
 
+            max_iterations = 168
+            iteration_count = 0
+            
             while(True):
+                iteration_count += 1
+                if iteration_count > max_iterations:
+                    logger.warning(f"Iteration limit reached for user {user.id}")
+                    break
+                
                 if time in att_dict:
-                    # Only count each student a maximum of one time per hour
                     if user not in att_dict[time]:
                         att_dict[time].append(user)
                 else:
