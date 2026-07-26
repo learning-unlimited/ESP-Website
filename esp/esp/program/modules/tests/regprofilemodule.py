@@ -64,18 +64,16 @@ class RegProfileModuleTest(ProgramFrameworkTest):
             get_current_request().user = student
             self.assertTrue( not self.moduleobj.isCompleted(student), "The profile should be incomplete at first." )
 
-        # First student: Test non-saving of initial program profile
+        # First student: getLastForProgram should not save a profile
         get_current_request().user = self.students[0]
         prof = RegistrationProfile.getLastForProgram(self.students[0], self.program)
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 0, "Profile was saved when it shouldn't have been." )
-        # Test migration of initial non-program profile to a program
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
         self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( self.moduleobj.isCompleted(self.students[0]), "Profile id wiped." )
-        self.assertTrue( self.students[0].registrationprofile_set.all()[0].program == self.program, "Profile failed to migrate to program." )
+        self.assertFalse( self.moduleobj.isCompleted(self.students[0]), "Profile should not be complete until explicitly saved with program." )
         self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles

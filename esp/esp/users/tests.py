@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
 from django.utils.functional import SimpleLazyObject
 
 from esp.middleware import ESPError
@@ -17,8 +18,18 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.models import (
+    User,
+    ESPUser,
+    UserForwarder,
+    StudentInfo,
+    Permission,
+    Record,
+    RecordType,
+    PersistentQueryFilter,
+)
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
+from esp.users.models import User, ESPUser, AnonymousESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -152,6 +163,41 @@ class ESPUserTest(TestCase):
         refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
 
         self.assertEqual(refreshed, baseline + 1)
+
+    def test_sort_key_normal_user_greater_than_anon(self):
+        anon_user = AnonymousESPUser()
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertGreater(user, anon_user)
+
+    def test_sort_key_alphabetical_order(self):
+        user_m = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_z = ESPUser(username="t2", first_name="Adam", last_name="Zebra")
+        self.assertLess(user_m, user_z)
+
+    def test_sort_key_same_last_name(self):
+        user_s = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_a = ESPUser(username="t2", first_name="Adam", last_name="Michael")
+        self.assertLess(user_a, user_s)
+
+    def test_sort_key_none_name_same_sort_position(self):
+        user1 = ESPUser(username="t1", first_name=None, last_name=None)
+        user2 = ESPUser(username="t2", first_name="", last_name="")
+        self.assertFalse(user1 < user2)
+        self.assertFalse(user2 < user1)
+
+    def test_sort_key_case_insensitive_same_sort_position(self):
+        user_lower = ESPUser(username="t1", first_name="smith", last_name="michael")
+        user_upper = ESPUser(username="t2", first_name="Smith", last_name="Michael")
+        self.assertFalse(user_lower < user_upper)
+        self.assertFalse(user_upper < user_lower)
+
+    def test_sort_key_compare_with_non_user(self):
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertFalse(user == "string") # Django Model.__eq__ returns False, does not raise
+        with self.assertRaises(TypeError): # ordering operators raise TypeError for non-BaseESPUser
+            _ = user > "string"
+        with self.assertRaises(TypeError):
+            _ = user < "string"
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
@@ -812,6 +858,44 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
+    def testFilterPermissionAppliesToMatchingUsers(self):
+        perm_name = 'Student/MainPage'
+        # Create a filter that matches self.user only
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+        )
+
+        other_user = ESPUser.objects.create(username='other_for_filter')
+        self.assertTrue(self.user_has_perm_for_program(perm_name))
+        self.assertFalse(Permission.user_has_perm(other_user, perm_name, program=self.program))
+
+    def testFilterPermissionControlsDeadline(self):
+        perm_name = 'Student/MainPage'
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        start = datetime.datetime.now() - datetime.timedelta(days=1)
+        end = datetime.datetime.now() + datetime.timedelta(days=1)
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+            start_date=start,
+            end_date=end,
+        )
+
+        self.assertEqual(
+            Permission.user_deadline_when(self.user, perm_name, program=self.program),
+            end,
+        )
+
 class AjaxAutocompleteViewTest(TestCase):
     def setUp(self):
         user_role_setup()
@@ -1119,6 +1203,74 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class ActivateAccountTest(TestCase):
+    """Tests for the activate_account view."""
+
+    ACTIVATION_KEY = '123456'
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testactivate',
+            email='testactivate@example.com',
+            password='testpassword',
+        )
+        # Simulate an inactive account awaiting activation:
+        # the activation key is appended to the hashed password with '_'
+        self.user.password = self.user.password + '_' + self.ACTIVATION_KEY
+        self.user.is_active = False
+        self.user.save()
+        self.url = reverse('activate_account')
+
+    def test_valid_key_activates_user(self):
+        """A valid username and key activates the account."""
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_valid_key_strips_key_from_password(self):
+        """After activation the key suffix is removed from the stored password."""
+        expected_password = self.user.password[:-(len('_' + self.ACTIVATION_KEY))]
+        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.password, expected_password)
+
+    def test_valid_key_redirects_to_profile(self):
+        """After activation the user is redirected to the profile page."""
+        response = self.client.get(
+            self.url,
+            {'username': 'testactivate', 'key': self.ACTIVATION_KEY},
+        )
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+
+    def test_missing_username_raises_error(self):
+        """GET without username returns a 500 error response."""
+        response = self.client.get(self.url, {'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_missing_key_raises_error(self):
+        """GET without key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate'})
+        self.assertEqual(response.status_code, 500)
+
+    def test_nonexistent_user_raises_error(self):
+        """A username that does not exist returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_already_active_user_raises_error(self):
+        """Trying to activate an already active account returns a 500 error response."""
+        self.user.is_active = True
+        self.user.save()
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+        self.assertEqual(response.status_code, 500)
+
+    def test_wrong_key_raises_error(self):
+        """An incorrect activation key returns a 500 error response."""
+        response = self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
+        self.assertEqual(response.status_code, 500)
 
 
 class PasswordValidationTest(TestCase):

@@ -31,7 +31,7 @@ td, th {
 <h2>Search for a teacher to retrieve their specific survey results:</h2>
 {% for error in teacher_form.target_user.errors %}
 <div role="alert" class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <span class="bi bi-info-circle" aria-hidden="true"></span>
         {{ error|escape }}
 </div>
 {% endfor %}
