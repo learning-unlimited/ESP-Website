@@ -478,9 +478,14 @@ def editor(request):
         #   Pre-compute all Bootswatch themes' ESP variable maps for the
         #   client-side dropdown change handler.  This lets the pickers update
         #   immediately without a round-trip when the admin switches themes.
-        context['bootswatch_vars_json'] = json.dumps(
-            tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
-        )
+        #   Passed as a plain dict (not pre-dumped JSON) so the template can
+        #   render it with |json_script, which HTML/JS-escapes it safely for
+        #   embedding in a <script> tag — interpolating a raw json.dumps()
+        #   string directly into a <script> block gets Django's normal
+        #   autoescaping applied to it (" -> &quot;), producing a JS syntax
+        #   error that silently left `bootswatch_esp_vars` undefined, which
+        #   broke every dropdown-driven colour update client-side.
+        context['bootswatch_vars'] = tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
 
     #   Load the theme-specific options
     adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
@@ -506,6 +511,11 @@ def editor(request):
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
     variable_defaults = tc.get_variable_defaults(current_theme)
+    #   Snapshot the raw SCSS defaults (Bootswatch-unaware) before overlaying
+    #   bw_vars below, so the "no Bootswatch theme" JS fallback (data-scss-default)
+    #   always has the true SCSS value to restore, even when a Bootswatch theme
+    #   was already active when the page was rendered.
+    context['scss_variable_defaults'] = dict(variable_defaults)
     #   When a Bootswatch theme is active the natural "reset-to" target for each
     #   colour picker is the Bootswatch-derived colour, not the raw SCSS default.
     variable_defaults.update(bw_vars)

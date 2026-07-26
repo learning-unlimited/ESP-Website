@@ -851,6 +851,29 @@ class ThemeController(object):
 
         return defaults
 
+    def get_effective_defaults(self, theme_name, bootswatch_theme):
+        """Return {variable_name: value} defaults a customizer field should be
+        diffed against: the theme's raw SCSS defaults, overlaid with the
+        active Bootswatch theme's derived colours (if any).
+
+        This is the single source of truth for "did the admin actually change
+        this field" — used both when deciding which SCSS variables to
+        substitute at compile time (compile_css) and when computing which
+        posted values count as real overrides to persist (customize_theme).
+        Those two computations previously diverged (customize_theme diffed
+        against raw SCSS defaults only), which let untouched fields that
+        merely displayed the Bootswatch-derived colour get stored as
+        "current_theme_params" overrides — masking the next theme switch
+        until an extra Save/Apply happened to overwrite them again.
+        """
+        scss_defaults = self.find_scss_variables(theme_name, flat=True)
+        effective_defaults = dict(scss_defaults)
+        if bootswatch_theme and bootswatch_theme in self.get_bootswatch_themes():
+            effective_defaults.update(
+                self.get_bootswatch_esp_vars(bootswatch_theme, esp_theme=theme_name)
+            )
+        return effective_defaults
+
     def compile_css(self, theme_name, variable_data, output_filename, bootswatch_theme=None):
         if theme_name in _SCSS_THEMES:
             # SCSS/Bootstrap 5 pipeline.  theme_name is constrained to the
@@ -908,10 +931,7 @@ class ThemeController(object):
                 #   filtered to plain identifiers, so nothing user-tainted is
                 #   interpolated into the stylesheet.
                 scss_defaults = self.find_scss_variables(theme_name, flat=True)
-                effective_defaults = dict(scss_defaults)
-                effective_defaults.update(
-                    self.get_bootswatch_esp_vars(bootswatch_theme, esp_theme=theme_name)
-                )
+                effective_defaults = self.get_effective_defaults(theme_name, bootswatch_theme)
                 overridden = [
                     name for name in scss_defaults
                     if name in variable_data
@@ -1219,14 +1239,31 @@ class ThemeController(object):
 
     def customize_theme(self, vars):
         logger.debug('Customizing theme with variables: %s', vars)
-        self.compile_css(self.get_current_theme(), vars, self.css_filename)
-        vars_available = self.find_theme_variables(self.get_current_theme(), flat=True)
+        theme_name = self.get_current_theme()
+        self.compile_css(theme_name, vars, self.css_filename)
+
+        #   Diff against the same baseline compile_css uses to decide
+        #   $esp-overridden: under an active Bootswatch theme that is the SCSS
+        #   defaults overlaid with the theme's derived colours, not the raw
+        #   SCSS defaults.  Diffing against raw SCSS defaults here (while
+        #   compile_css diffs against the Bootswatch-aware baseline) let a
+        #   field the admin never touched, but which merely *displayed* the
+        #   Bootswatch colour, get stored below as a "real" override — which
+        #   then outranked the next Bootswatch theme's own colours on
+        #   subsequent switches/saves until it happened to be overwritten
+        #   again.
+        vars_available = self.find_theme_variables(theme_name, flat=True)
+        if self.has_scss(theme_name):
+            bootswatch_theme = Tag.getTag('bootswatch_theme', default='')
+            if bootswatch_theme:
+                vars_available = self.get_effective_defaults(theme_name, bootswatch_theme)
         vars_diff = {}
         for key in vars:
-            if key in vars_available and len(vars[key].strip()) > 0 and vars[key] != vars_available[key]:
+            if (key in vars_available and len(vars[key].strip()) > 0
+                    and str(vars[key]).strip().lower() != str(vars_available[key]).strip().lower()):
                 logger.debug('Customizing: %s -> %s', key, vars[key])
                 vars_diff[key] = vars[key]
-        logger.debug('Customized %d variables for theme %s', len(vars_diff), self.get_current_theme())
+        logger.debug('Customized %d variables for theme %s', len(vars_diff), theme_name)
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
 
         #   Clear the Varnish cache
