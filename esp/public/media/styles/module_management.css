@@ -242,7 +242,7 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    padding-bottom: 15px;
+    padding-bottom: 0px;
 }
 
 .tl-row-label {
@@ -387,11 +387,7 @@
 }
 
 .tl-blocks {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     z-index: 10;
     display: flex;
     flex-direction: column;

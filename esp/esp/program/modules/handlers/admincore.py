@@ -841,7 +841,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
             handler_names = [handler_by_id.get(i, '') for i in ids]
             is_always_enabled = is_checked and any(
-                h in ('RegProfileModule', 'AvailabilityModule', 'StudentRegTwoPhase') or 'AcknowledgementModule' in h
+                h in ('RegProfileModule', 'AvailabilityModule', 'StudentRegTwoPhase')
                 for h in handler_names if h
             )
 

@@ -1699,6 +1699,9 @@ def module_schedule_update_api(request, program_type, program_term):
             mod.required = True
 
         mod.save()
+        mod_hydrated.start_date = mod.start_date
+        mod_hydrated.end_date = mod.end_date
+        mod_hydrated.sync_permissions()
 
         return JsonResponse({
             "success": True,
