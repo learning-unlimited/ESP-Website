@@ -85,6 +85,27 @@ function SectionInfoPanel(el, sections, togglePanel, sectionCommentDialog) {
         toolbar.append(overrideCheckbox);
         toolbar.append($j("<label for='schedule-override'>Override availability</label>"));
 
+        var recurringButton = $j("<button class='sidetoolbar'>Save recurring timeslots</button>");
+        var recurringId = "recurring-schedule-mode-" + section.id;
+        var recurringCheckbox = $j("<input id='" + recurringId + "' type='checkbox'></input>");
+        recurringCheckbox.prop('checked', this.sections.recurringSelectionMode)
+            .on("change", function(box) {
+                var recurringEnabled = $j(box.target).prop("checked");
+                this.sections.setRecurringSelectionMode(recurringEnabled);
+                recurringButton.button("option", "disabled", !recurringEnabled);
+            }.bind(this));
+        toolbar.append($j("<br/>"));
+        toolbar.append(recurringCheckbox);
+        toolbar.append($j("<label for='" + recurringId + "'>Recurring scheduling mode</label>"));
+
+        recurringButton
+            .button()
+            .prop("disabled", !this.sections.recurringSelectionMode)
+            .on("click", function() {
+                this.sections.scheduleSelectedRecurringTimeslots();
+            }.bind(this));
+        toolbar.append(recurringButton);
+
         var baseURL = this.sections.getBaseUrlString();
         var autoschedulerLink = "";
         if (has_autoscheduler_frontend === "True") {
