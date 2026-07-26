@@ -4,16 +4,16 @@
 
 <ul class="navbar-nav logged_in hidden">
   <li class="nav-item dropdown dropdown-split">
-    <a class="nav-link navbar-item-label" id="loginbox_user_name" href="/myesp/profile/">
+    <a class="nav-link navbar-item-label" id="loginbox_user_name" href="{% url 'myesp_profile' %}">
       Hello, <span id="user_first_name"></span>!
     </a>
     <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" data-bs-display="static" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
     <ul class="dropdown-menu dropdown-menu-end">
-      <li><a class="dropdown-item" href="/myesp/accountmanage/">Manage Account</a></li>
+      <li><a class="dropdown-item" href="{% url 'myesp_accountmanage' %}">Manage Account</a></li>
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="/myesp/signout">
+    <a class="nav-link" href="{% url 'signout' %}">
       <button class="btn btn-secondary btn-sm" type="button">Logout</button>
     </a>
   </li>
