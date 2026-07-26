@@ -1,7 +1,7 @@
 <div id="loginbox_user_name">
-    {{ request.user.first_name|default:request.user.username }} {{ request.user.last_name|default:"" }}
+    <span id="user_first_name"></span> <span id="user_last_name"></span>
     <br />
     <span id="user_data">
-        {{ request.user.username }} / {{ request.user.id }}
+        <span id="user_username"></span> / <span id="user_userid"></span>
     </span>
 </div>
