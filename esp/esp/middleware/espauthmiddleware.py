@@ -73,6 +73,14 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
         request.user = SimpleLazyObject(lambda: get_user(request))
 
     def process_response(self, request, response):
+        ## Prevent SessionMiddleware from adding "Vary: Cookie" just because the
+        ## session was read (e.g. for authentication checks).  We only want that
+        ## header when the session was actually *modified*.  This must run before
+        ## the no_set_cookies early-return so that cacheable views (decorated with
+        ## @disable_csrf_cookie_update) also benefit from the workaround.
+        ## -- aseering 11/1/2010, moved before no_set_cookies check
+        request.session.accessed = request.session.modified
+
         ## This gets set if we're not supposed to modify the cookie
         if getattr(response, 'no_set_cookies', False):
             return response
@@ -146,8 +154,6 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
 
             list(map(response.delete_cookie, cookies_to_delete))
             modified_cookies = (len(cookies_to_delete) > 0)
-
-        request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
         if modified_cookies:
             patch_vary_headers(response, ('Cookie',))
