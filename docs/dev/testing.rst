@@ -6,29 +6,34 @@ This document explains how to write tests for the ESP Website codebase, with a f
 Running Tests
 -------------
 
-To run all tests::
+``contributing.rst`` covers the test-running workflow in full: the Docker
+invocation, database reuse, and parallel runs. This section only shows how to
+narrow a run down to the tests you care about while writing them.
 
-  python manage.py test --settings=esp.test_settings
+Test settings come from ``esp/pytest.ini``, so no ``--settings`` flag is needed.
+All paths below are relative to the ``esp`` directory.
 
 To run a specific test file::
 
-  python manage.py test esp.program.modules.tests.test_class_creation --settings=esp.test_settings
+  pytest esp/program/modules/tests/test_class_creation.py
 
 To run a specific test class::
 
-  python manage.py test esp.program.modules.tests.test_class_creation.ClassCreationTestMixin --settings=esp.test_settings
+  pytest esp/program/modules/tests/test_class_creation.py::MakeAClassViewTest
 
 To run a single test method::
 
-  python manage.py test esp.program.modules.tests.test_class_creation.ClassCreationTestMixin.test_makeaclass_post_valid_creates_class --settings=esp.test_settings
+  pytest esp/program/modules/tests/test_class_creation.py::MakeAClassViewTest::test_makeaclass_post_valid_creates_class
 
 Test Framework Overview
 ------------------------
 
-ESP tests use Django's test framework with ESP-specific infrastructure:
+ESP tests use pytest with the pytest-django plugin, on top of ESP-specific
+infrastructure:
 
 - **ProgramFrameworkTest** (``esp/program/tests.py``): Base class that creates a complete program with students, teachers, admins, classes, and timeslots in setUp()
 - **ModuleHandlerTestMixin** (``esp/program/modules/tests/support/mixins.py``): Shared helpers for testing module handlers (login, URL building, assertions)
+- **Factories** (``esp/tests/factories.py``): ``make_user()``, ``make_program()``, and ``make_class()`` build single objects directly, for tests that do not need a whole program
 
 Writing Module Handler Tests
 -----------------------------
@@ -70,7 +75,7 @@ ModuleHandlerTestMixin reduces boilerplate::
 
 - ``login_as(role)`` — Log in as 'admin', 'teacher', or 'student'
 - ``get_module_url(tl, view)`` — Build URLs like ``/manage/TestProgram/2222_Summer/myview``
-- ``assert_view_ok(url)`` — Assert GET returns HTTP 200
+- ``assert_view_ok(url)`` — Assert GET returns HTTP 200, and return the response
 - ``assert_view_forbidden(url)`` — Assert GET returns HTTP 302 or 403
 - ``post_to_module(tl, view, data)`` — POST data to a handler
 - ``get_module_obj(handler_name)`` — Get ProgramModuleObj for direct method calls
@@ -82,20 +87,37 @@ ModuleHandlerTestMixin reduces boilerplate::
       url = self.get_module_url('manage', 'finaidapprove')
       self.assert_view_ok(url)
 
-  def test_teacher_cannot_access(self):
-      self.login_as('teacher')
+  def test_student_cannot_access(self):
+      self.login_as('student')
       url = self.get_module_url('manage', 'finaidapprove')
-      self.assert_view_forbidden(url)
+      response = self.client.get(url)
+      self.assertEqual(response.status_code, 200)
+      self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
 
-**Example**: POST behavior test::
+Note the asymmetry: ESP's ``@needs_admin`` does not return 403 or redirect. It
+renders ``errors/program/notanadmin.html`` with HTTP 200
+(``esp/program/modules/base.py``), so assert on the template rather than the
+status code. ``assert_view_forbidden()`` is only appropriate for views that
+genuinely redirect or return 403.
 
-  def test_approve_application(self):
+**Example**: POST behavior test. Use the field names the handler actually
+reads -- for ``finaidapprove`` that is a ``user`` list plus the approval
+options::
+
+  from esp.accounting.models import FinancialAidGrant
+
+  def test_post_creates_financial_aid_grant(self):
       self.login_as('admin')
       response = self.post_to_module('manage', 'finaidapprove', {
-          'user_id': self.students[0].id,
-          'approve': 'yes'
+          'user': [str(self.student.id)],
+          'approve_blanks': 'on',
+          'amount_max_dec': '25.00',
+          'percent': '100',
       })
-      self.assertEqual(response.status_code, 200)
+      self.assertIn(response.status_code, [200, 302])
+      self.assertTrue(
+          FinancialAidGrant.objects.filter(request=self.request).exists()
+      )
 
 Writing Controller Tests
 -------------------------
@@ -104,26 +126,39 @@ Controllers contain business logic. Test them by calling methods directly.
 
 **Example**: Testing ClassCreationController::
 
+  from decimal import Decimal
+
   from esp.program.controllers.classreg import ClassCreationController
   from esp.program.tests import ProgramFrameworkTest
-  from esp.program.models.class_ import ClassSubject
 
-  class ClassCreationControllerTest(ProgramFrameworkTest):
-      def test_set_class_data_basic(self):
-          subject = self.program.classes()[0]
-          teacher = self.teachers[0]
-          controller = ClassCreationController(self.program)
+  class UpdateClassSectionsTest(ProgramFrameworkTest):
+      def setUp(self, *args, **kwargs):
+          super().setUp(*args, **kwargs)
+          self.add_user_profiles()
+          self.controller = ClassCreationController(self.program)
 
-          # Create form data
-          form_data = {
-              'title': 'New Title',
-              'category': self.categories[0].id
-          }
+      def test_creates_sections_up_to_requested_count(self):
+          cls = self.program.classes()[0]
+          cls.duration = Decimal('0.833')
+          cls.save()
 
-          result = controller.set_class_data(subject, form_data)
-          
-          subject.refresh_from_db()
-          self.assertEqual(subject.title, 'New Title')
+          self.controller.update_class_sections(cls, 3)
+
+          self.assertEqual(cls.sections.count(), 3)
+
+Two things to know before calling these methods:
+
+- ``update_class_sections()`` creates sections with ``cls.duration``. The test
+  fixtures set a duration on sections but leave ``ClassSubject.duration`` unset,
+  so set it explicitly first or section creation fails.
+- ``set_class_data()`` and ``make_class_happen()`` take a bound, validated
+  ``TeacherClassRegForm``, not a plain dict, since they read
+  ``reg_form.cleaned_data``. Build one with ``controller.get_forms(reg_data)``,
+  which validates the POST data and raises ``ClassCreationValidationError`` if
+  it is invalid.
+
+``esp/program/controllers/test_classreg_controller.py`` shows both patterns,
+including a ``MagicMock`` stand-in for the form.
 
 Writing Behavioral Invariant Tests
 -----------------------------------
@@ -158,9 +193,15 @@ Behavioral tests verify critical system invariants hold.
           self.assertTrue(result)
 
           # Second enrollment blocked by conflict
-          error = sec_b.cannotAdd(student, checkFull=True)
+          error = sec_b.cannotAdd(student, checkFull=True,
+                                  autocorrect_constraints=False)
           self.assertTrue(error)
           self.assertIn('conflicts', error.lower())
+
+``cannotAdd()`` returns an error string when the student may not join, and a
+falsy value when they may. Pass ``autocorrect_constraints=False`` in tests:
+with the default of ``True`` it may resolve the constraint itself and report no
+error, which is not what a conflict test is trying to observe.
 
 Common Test Patterns
 ---------------------
@@ -230,9 +271,16 @@ Testing Error Messages
 
 Verify validation produces helpful errors::
 
-  error = section.cannotAdd(student, checkFull=True)
+  error = section.cannotAdd(student, checkFull=True,
+                            autocorrect_constraints=False)
   self.assertTrue(error)
   self.assertIn('conflicts', error.lower())
+
+Grade filtering is enforced on the ``ClassSubject``, not the section::
+
+  error = section.parent_class.cannotAdd(student, checkFull=True)
+  self.assertTrue(error)
+  self.assertIn('requested grade range', error.lower())
 
 Test Organization
 -----------------
@@ -240,10 +288,19 @@ Test Organization
 File Structure
 ~~~~~~~~~~~~~~
 
-Place tests near the code they test::
+Tests live in the application directory of the code they cover, either as a
+single ``tests.py`` or as a ``tests/`` package once an app has enough of them::
 
-  esp/program/controllers/classreg.py
-  esp/program/controllers/tests/test_classreg.py
+  esp/program/models/class_.py  ->  esp/program/tests.py
+  esp/accounting/models.py      ->  esp/accounting/tests/test_models.py
+
+Controller tests sit next to the controller they cover::
+
+  esp/program/controllers/classreg.py  ->  esp/program/controllers/test_classreg_controller.py
+  esp/program/controllers/lottery.py   ->  esp/program/controllers/test_lottery_controller.py
+
+Program module handler tests are the exception: they are collected together
+under ``esp/program/modules/tests/``, not next to the handler::
 
   esp/program/modules/handlers/finaidapprovemodule.py
   esp/program/modules/tests/test_finaidapprove.py
@@ -251,19 +308,23 @@ Place tests near the code they test::
 Naming
 ~~~~~~
 
-- Test files: ``test_<module_name>.py``
-- Test classes: ``<Feature>Test`` (e.g., ``EnrollmentConflictTest``)
+- Test files: ``test_<module_name>.py``. Some older files in
+  ``esp/program/modules/tests/`` are named ``<module_name>.py`` instead and are
+  picked up through the ``tests_modules.py`` aggregator; new files should use
+  the ``test_`` prefix so pytest collects them directly.
+- Test classes: ``<Feature>Test`` (e.g., ``EnrollmentConflictTest``). The
+  patterns pytest collects are set in ``esp/pytest.ini``.
 - Test methods: ``test_<what_it_tests>``
 
 Code Coverage
 -------------
 
-The repository uses Codecov with these thresholds:
+CI uploads coverage to Codecov, which enforces two gates (``codecov.yml``):
 
-- **Project coverage**: Must remain above 70%
-- **Patch coverage**: New code must be at least 60% tested
+- **Project coverage**: Overall coverage must stay at or above 70%
+- **Patch coverage**: New and changed lines in a PR must be at least 60% covered
 
-Coverage reports appear in GitHub Actions PR checks.
+Both appear as checks on the pull request.
 
 Debugging Failed Tests
 -----------------------
@@ -280,7 +341,8 @@ When a test fails:
 
 3. **Check test isolation**: Does the test pass alone but fail in the suite?
 
-4. **Verify test database**: Run ``python manage.py migrate --settings=esp.test_settings``
+4. **Rebuild the test database**: The database is reused between runs, so after
+   a branch switch or a new migration, run ``pytest --create-db`` once.
 
 Further Reading
 ---------------
@@ -288,5 +350,7 @@ Further Reading
 - Django testing: https://docs.djangoproject.com/en/stable/topics/testing/
 - ProgramFrameworkTest source: ``esp/program/tests.py``
 - ModuleHandlerTestMixin source: ``esp/program/modules/tests/support/mixins.py``
-- Example tests: ``esp/program/modules/tests/test_class_creation.py``
+- Factories source: ``esp/tests/factories.py``
+- Example handler tests: ``esp/program/modules/tests/test_finaidapprove.py``
+- Example view tests: ``esp/program/modules/tests/test_class_creation.py``
 
