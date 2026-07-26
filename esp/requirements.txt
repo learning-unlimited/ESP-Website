@@ -7,7 +7,7 @@ django-debug-toolbar==5.2.0 # Provides the debug toolbar
 django-extensions==4.1 # Provides shell_plus, runserver_plus, and other utilities
 django-filebrowser-no-grappelli==4.0.2 # Provides admin panel interface for files
 git+https://github.com/learning-unlimited/django-form-utils.git@v1.1.0 # Provides BetterForm (used in customforms) and BetterModelForm (used in program creation)
-django-formtools==2.4 # Used once in customforms
+django-formtools==2.7 # Used once in customforms
 django-localflavor==3.1 # Provides address fields
 django-phonenumber-field[phonenumbers]==6.3.0 # Provides phone number fields
 django-recaptcha==3.0.0 # Provides support for Google reCAPTCHA
@@ -37,7 +37,7 @@ py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matt
 Pygments==2.20.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
-setuptools==78.1.1 # For building packages from source
+setuptools==83.0.0 # For building packages from source
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
 stripe==7.5.0 # Required for credit card processing
