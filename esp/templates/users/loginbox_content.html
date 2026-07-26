@@ -5,7 +5,7 @@
   {% endif %}
 
 
-<div class="logged_in hidden">
+<div class="logged_in">
   <ul class="nav">
     <li>
       <a id="loginbox_user_name" href="{% url 'myesp_profile' %}">Hello, <span id="user_first_name"></span>!</a>
@@ -46,8 +46,8 @@
 
 
 
-  <div class="not_logged_in hidden">
-    <form name="loginform" id="loginform" method="post" action="{% url 'login' %}" class="navbar-form form-inline">
+<div class="not_logged_in">
+    <form name="loginform" id="loginform" method="post" action="{% url 'login' %}" class="navbar-form form-inline"> fc46336ca (Fix: Use server-side rendering for loginbox visibility to prevent FOUC (#5304) (#5307))
       <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
       <label class="visually-hidden" for="user">Username</label>
       <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
@@ -72,5 +72,18 @@
   </div>
 </div>
 
-
+<script type="text/javascript">
+  /* Fill the greeting name during parsing (before first paint) to avoid a
+     flash of empty text. */
+  (function () {
+    try {
+      if (!window.esp_user) { return; }
+      var el = document.getElementById("user_first_name");
+      if (el) {
+        var n = ("" + (esp_user.cur_first_name || esp_user.cur_username || "Guest")).trim();
+        if (n && n !== "undefined") { el.textContent = n; }
+      }
+    } catch (e) {}
+  })();
+</script>
 
