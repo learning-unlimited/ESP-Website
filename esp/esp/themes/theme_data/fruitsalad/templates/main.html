@@ -175,7 +175,7 @@ var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
             <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
           </form>
         </div>
-        <div class="logged_in hidden">
+        <div class="logged_in">
           {% include "users/loginbox_userinfo.html" %}
   <span class="accentcolor"><a href="{% url 'signout' %}">Logout</a> | <a href="/myesp/accountmanage">Manage Account</a></span>
         </div>

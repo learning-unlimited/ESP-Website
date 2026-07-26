@@ -36,4 +36,11 @@
   visibility: hidden;
 }
 
+/* Login box visibility, resolved before first paint to prevent flickers. */
+html:not(.esp-auth) .logged_in {
+  display: none;
+}
+html.esp-auth .not_logged_in {
+  display: none;
+}
 

@@ -5,7 +5,7 @@
   {% endif %}
 
 
-<div class="logged_in hidden">
+<div class="logged_in">
   <ul class="nav">
     <li>
       <a id="loginbox_user_name" href="/myesp/profile/">Hello, <span id="user_first_name"></span>!</a>
@@ -46,7 +46,7 @@
 
 
 
-  <div class="not_logged_in hidden">
+  <div class="not_logged_in">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
       <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
       <label class="visually-hidden" for="user">Username</label>
