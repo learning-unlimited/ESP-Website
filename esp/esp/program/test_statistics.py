@@ -416,10 +416,10 @@ class RepeatsTest(StatisticsTestBase):
 
     def test_repeats_logic_flow(self):
         mock_data = [
-            (1, "Science"),
-            (1, "Science"),
-            (1, "Math"),
-            (2, "Math"),
+            (1, "Science/123"),
+            (1, "Science/123"),
+            (1, "Math/456"),
+            (2, "Math/456"),
         ]
 
         with patch('esp.users.models.Record.objects.filter') as mock_filter:
