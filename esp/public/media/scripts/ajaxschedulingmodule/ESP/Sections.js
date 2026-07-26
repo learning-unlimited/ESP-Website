@@ -23,6 +23,11 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.recurringSelectionMode = false;
     this.selectedRecurringTimeslots = [];
     this.selectedRecurringRoomId = null;
+    // Tracks which cells currently carry the "recurring-selected-cell" highlight
+    // so renderRecurringSelection can clear exactly those cells (rather than
+    // relying on a global DOM selector).
+    this.renderedRecurringTimeslots = [];
+    this.renderedRecurringRoomId = null;
 
     // Set up filtering
     this.filter = {
@@ -351,32 +356,40 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             return this.matrix.timeslots.get_by_id(ts_id);
         }.bind(this));
 
-        // Don't pre-populate for a contiguous single-instance class; only seed
-        // when the class is genuinely scheduled across non-contiguous timeslots.
+        // Always track the existing assignment's timeslots so that saving after
+        // adding a new occurrence includes this one instead of overwriting it.
+        this.selectedRecurringRoomId = assignment.room_id;
+        this.selectedRecurringTimeslots = timeslots_sorted;
+
+        // But don't visually highlight a contiguous single-instance class as
+        // "recurring" -- only render the highlight when the class is genuinely
+        // scheduled across non-contiguous timeslots.
         if (this.matrix.timeslots.are_timeslots_contiguous(timeslot_objects)) {
             return;
         }
 
-        this.selectedRecurringRoomId = assignment.room_id;
-        this.selectedRecurringTimeslots = timeslots_sorted;
         this.renderRecurringSelection();
     };
 
     this.clearRecurringSelection = function() {
-        if (this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0) {
-            $j.each(this.selectedRecurringTimeslots, function(index, timeslot_id) {
-                var cell = this.matrix.getCell(this.selectedRecurringRoomId, timeslot_id);
-                if (cell && cell.el) {
-                    cell.el.removeClass("recurring-selected-cell");
-                }
-            }.bind(this));
-        }
         this.selectedRecurringTimeslots = [];
         this.selectedRecurringRoomId = null;
+        this.renderRecurringSelection();
     };
 
     this.renderRecurringSelection = function() {
-        $j("#matrix-table td.recurring-selected-cell").removeClass("recurring-selected-cell");
+        // Clear the highlight from exactly the cells it was last applied to
+        // (a global "#matrix-table td.recurring-selected-cell" selector doesn't
+        // work here since Matrix never actually sets that id on its DOM element).
+        $j.each(this.renderedRecurringTimeslots, function(index, timeslot_id) {
+            var cell = this.matrix.getCell(this.renderedRecurringRoomId, timeslot_id);
+            if (cell && cell.el) {
+                cell.el.removeClass("recurring-selected-cell");
+            }
+        }.bind(this));
+        this.renderedRecurringTimeslots = [];
+        this.renderedRecurringRoomId = null;
+
         if (!(this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0)) {
             return;
         }
@@ -386,17 +399,40 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 cell.el.addClass("recurring-selected-cell");
             }
         }.bind(this));
+        this.renderedRecurringTimeslots = this.selectedRecurringTimeslots.slice();
+        this.renderedRecurringRoomId = this.selectedRecurringRoomId;
+    };
+
+    /**
+     * Split the flat, order-sorted selectedRecurringTimeslots array into the
+     * separate contiguous occurrence-groups it's made up of (each occurrence may
+     * span multiple contiguous timeslots for a multi-block class).
+     */
+    this.getSelectedRecurringOccurrenceGroups = function() {
+        var groups = [];
+        var current = [];
+        $j.each(this.selectedRecurringTimeslots, function(index, ts_id) {
+            if (current.length === 0) {
+                current.push(ts_id);
+                return;
+            }
+            var prev = this.matrix.timeslots.get_by_id(current[current.length - 1]);
+            var next = this.matrix.timeslots.get_by_id(ts_id);
+            if (this.matrix.timeslots.are_timeslots_contiguous([prev, next])) {
+                current.push(ts_id);
+            } else {
+                groups.push(current);
+                current = [ts_id];
+            }
+        }.bind(this));
+        if (current.length > 0) {
+            groups.push(current);
+        }
+        return groups;
     };
 
     this.toggleRecurringTimeslot = function(section, room_id, timeslot_id) {
         if (!section) {
-            return;
-        }
-
-        // Get the full group of timeslots needed for this one occurrence (handles multi-block classes).
-        var group = this.matrix.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
-        if (group === null) {
-            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "red");
             return;
         }
 
@@ -405,19 +441,40 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             return;
         }
 
-        // If any timeslot in this group is already selected, toggle the whole group off.
-        var anyInGroup = group.some(function(ts_id) {
-            return this.selectedRecurringTimeslots.indexOf(ts_id) >= 0;
-        }.bind(this));
+        // If this timeslot is already part of a selected occurrence, remove that
+        // whole occurrence -- regardless of which slot within it was clicked.
+        // (Recomputing a fresh forward-only group from the clicked slot can
+        // disagree with the group that was actually added -- e.g. clicking the
+        // last slot of a multi-block occurrence -- leaving stale selections and
+        // highlighting behind.)
+        if (this.selectedRecurringTimeslots.indexOf(timeslot_id) >= 0) {
+            var groups = this.getSelectedRecurringOccurrenceGroups();
+            var matchingGroup = [timeslot_id];
+            $j.each(groups, function(index, group) {
+                if (group.indexOf(timeslot_id) >= 0) {
+                    matchingGroup = group;
+                }
+            });
 
-        if (anyInGroup) {
             this.selectedRecurringTimeslots = this.selectedRecurringTimeslots.filter(function(ts_id) {
-                return group.indexOf(ts_id) < 0;
+                return matchingGroup.indexOf(ts_id) < 0;
             });
             if (this.selectedRecurringTimeslots.length === 0) {
                 this.selectedRecurringRoomId = null;
             }
             this.renderRecurringSelection();
+            return;
+        }
+
+        // Otherwise, get the full group of timeslots needed for this new occurrence (handles multi-block classes).
+        var group = this.matrix.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
+        if (group === null) {
+            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "red");
+            return;
+        }
+
+        if (group.some(function(ts_id) { return this.selectedRecurringTimeslots.indexOf(ts_id) >= 0; }.bind(this))) {
+            this.matrix.messagePanel.addMessage("Error: this occurrence overlaps with an already-selected occurrence.", "red");
             return;
         }
 
@@ -429,9 +486,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
         // Add all timeslots for this occurrence.
         $j.each(group, function(i, ts_id) {
-            if (this.selectedRecurringTimeslots.indexOf(ts_id) < 0) {
-                this.selectedRecurringTimeslots.push(ts_id);
-            }
+            this.selectedRecurringTimeslots.push(ts_id);
         }.bind(this));
 
         this.selectedRecurringTimeslots.sort(function(a, b) {
