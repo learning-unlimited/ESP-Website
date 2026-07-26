@@ -262,7 +262,8 @@ def repeats(form, programs, students, profiles, result_dict=None):
     #   For each student, find out what other programs they registered for and bin by quantity in each program type.
     #   Uses a single bulk query instead of per-student loops.
 
-    #   Fetch all confirmed (user_id, program_type) pairs in one query
+     #   Fetch all confirmed (user_id, program_url) pairs in one query,
+    #   then derive program_type from the url below
     confirmed_pairs = (
         Record.objects.filter(
             user__in=students,
