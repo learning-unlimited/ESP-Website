@@ -47,7 +47,7 @@
 <div id="divnav">
   <p align="center">
     {% include "users/loginbox_userinfo.html" %}
-    <div class="unmorph hidden">
+    <div class="unmorph">
        <br /><a href="{% url 'myesp_switchback' %}">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
     </div>
     <a href="{% url 'myesp_accountmanage' %}">Manage Account</a>
@@ -96,7 +96,7 @@
 {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
 {% load modules %}
 <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
-<div id="adminbar" class="admin hidden" style="position: fixed !important">
+<div id="adminbar" class="admin" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>

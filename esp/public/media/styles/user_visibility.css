@@ -44,3 +44,8 @@ html.esp-auth .not_logged_in {
   display: none;
 }
 
+/* Admin UI visibility, resolved before first paint via to prevent flickers. */
+html:not(.esp-admin) .admin { display: none; }
+html:not(.esp-admin) .onsite { display: none; }
+html:not(.esp-morph) .unmorph { display: none; }
+
