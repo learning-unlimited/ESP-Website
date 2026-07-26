@@ -39,3 +39,19 @@
     </ul>
   </li>
 </ul>
+
+<script type="text/javascript">
+  /* Fill the greeting name during parsing (before first paint) to avoid a
+     flash of empty text. */
+  (function () {
+    try {
+      if (!window.esp_user) { return; }
+      var el = document.getElementById("user_first_name");
+      if (el) {
+        var n = ("" + (esp_user.cur_first_name || esp_user.cur_username || "Guest")).trim();
+        if (n && n !== "undefined") { el.textContent = n; }
+      }
+    } catch (e) {}
+  })();
+</script>
+
