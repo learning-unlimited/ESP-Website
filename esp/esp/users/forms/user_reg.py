@@ -5,7 +5,6 @@ from django.forms.fields import HiddenInput, TextInput
 
 from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import StrippedCharField
-from localflavor.us.forms import USPhoneNumberField
 import six
 
 DEFAULT_REFERRAL_SOURCE_TYPES = [

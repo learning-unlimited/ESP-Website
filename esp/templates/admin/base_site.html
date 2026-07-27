@@ -43,7 +43,9 @@ ul.ui-autocomplete li
 
 {% block messages %}
 <div class="alert alert-danger">
-    You probably shouldn't be here! You should check out the <a href="/manage/programs">general management page</a> or the main management pages for individual programs before resorting to using these admin pages.
+    Warning - changes made here in the admin panel usually have no safeguards and cannot be undone!
+    <br>
+    You should check out the <a href="/manage/programs">general management page</a> or the main management pages for individual programs before using these admin pages.
 </div>
 {{ block.super }}
 {% endblock %}

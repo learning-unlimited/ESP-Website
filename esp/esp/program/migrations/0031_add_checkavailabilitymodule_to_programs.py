@@ -16,13 +16,24 @@ def add_checkavailability_to_programs(apps, schema_editor):
     Program = apps.get_model('program', 'Program')
     ProgramModule = apps.get_model('program', 'ProgramModule')
 
-    try:
-        check_avail = ProgramModule.objects.get(
-            handler='CheckAvailabilityModule', module_type='manage'
-        )
-    except ProgramModule.DoesNotExist:
-        # Module not yet registered (shouldn't happen after modules.0047, but be safe)
-        return
+    # The CheckAvailabilityModule ProgramModule row is normally created by
+    # esp.program.modules.models.install(), which runs off the post_migrate
+    # signal *after* the whole `migrate` command (including this migration,
+    # despite following modules.0047 in the dependency graph) completes -- so
+    # on a fresh database the row does not exist yet here. get_or_create it
+    # with the same field values CheckAvailabilityModule.module_properties()
+    # specifies, so install() later finds this row (by handler + module_type)
+    # instead of creating a duplicate.
+    check_avail, _ = ProgramModule.objects.get_or_create(
+        handler='CheckAvailabilityModule',
+        module_type='manage',
+        defaults={
+            'link_title': 'Check Teacher Availability',
+            'admin_title': 'Teacher Availability Checker',
+            'seq': 0,
+            'choosable': 1,
+        },
+    )
 
     for program in Program.objects.filter(program_modules__handler='AvailabilityModule').distinct():
         program.program_modules.add(check_avail)
