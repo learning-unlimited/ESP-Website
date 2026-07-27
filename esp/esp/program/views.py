@@ -62,6 +62,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
@@ -866,6 +867,7 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
+@require_POST
 @transaction.non_atomic_requests
 def submit_transaction(request):
     # Before we do anything else, log the raw postback to the database
@@ -1573,7 +1575,7 @@ def module_schedule_api(request, program_type, program_term):
     Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
     """
     prog = get_program_or_404(request, program_type, program_term)
-    modules = prog.getModules(user=request.user)
+    modules = prog.getModules()
 
     # We serialize them into dicts grouped by module_type (learn/teach)
     data = {
@@ -1812,3 +1814,58 @@ def module_schedule_conflicts_api(request, program_type, program_term):
                     })
 
     return JsonResponse({"conflicts": conflicts})
+
+@require_POST
+def module_schedule_reorder_api(request, program_type, program_term):
+    """
+    JSON API endpoint to bulk update the sequence (seq) of program modules.
+    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>} dicts.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        order = data.get("order", [])
+        if not isinstance(order, list):
+            return JsonResponse({"success": False, "error": "'order' must be a list"}, status=400)
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.db import transaction
+
+        update_ids = [u.get("id") for u in order if "id" in u]
+        module_map = {m.id: m for m in ProgramModuleObj.objects.filter(program=prog, id__in=update_ids).select_related('module')}
+
+        with transaction.atomic():
+            for update in order:
+                mod_id = update.get("id")
+                new_seq = update.get("seq")
+
+                if mod_id not in module_map:
+                    continue
+
+                mod = module_map[mod_id]
+                handler = mod.module.handler
+
+                position_locked = (
+                    handler == 'RegProfileModule' or
+                    'CreditCardModule_' in handler or
+                    handler == 'StudentRegConfirm'
+                )
+
+                if position_locked:
+                    raise ValueError(f"Module {handler} is locked and cannot be reordered")
+
+                mod.seq = int(new_seq)
+                mod.save(update_fields=['seq'])
+
+        return JsonResponse({"success": True})
+    except ValueError as e:
+        if "locked and cannot be reordered" in str(e):
+            return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except (TypeError, KeyError):
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except Exception as e:
+        logger.exception("module_schedule_reorder_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+
