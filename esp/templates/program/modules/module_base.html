@@ -1,0 +1,21 @@
+{% extends "main.html" %}
+{% load modules %}
+
+{% comment %}
+Shared base template for student and teacher registration module pages.
+Individual module templates should extend this instead of main.html and
+place their content inside the module_content block.
+
+When the user is in the required-module redirect flow or navigates directly
+to a required module page, the registration_progress tag renders the
+checklist or progress bar at the top, giving orientation context about where
+the user is in the registration workflow.
+
+All other blocks from main.html (title, stylesheets, xtrajs, etc.) remain
+available to child templates as normal.
+{% endcomment %}
+
+{% block content %}
+{% registration_progress %}
+{% block module_content %}{% endblock %}
+{% endblock %}

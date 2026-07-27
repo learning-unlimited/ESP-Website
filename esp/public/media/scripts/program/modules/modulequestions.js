@@ -2,8 +2,9 @@ $j(document).ready(function(){
     // when the page loads, check/select the questions induced by the modules
     // that are already selected (if any, from a template program e.g.)
     $j(".hidden-field").parents("tr").hide()
+
     modulesToQuestions();
-    
+
     // when any question is checked/unchecked, add/remove only those modules
     $j("#id_program_module_questions").find("input").change(function(){
         var modules = $j("#id_program_modules").val();
@@ -49,13 +50,13 @@ function modulesToQuestions() {
     // check if ALL the modules associated with a given question are selected
     // if so, check that box
     for (var i=0; i < questions.length; i++) {
-        var q = questions[i];
-        var qvalslist = q.firstChild.firstChild.value.split(",");
+        var q = $j(questions[i]);
+        var qvalslist = q.find("input[type='checkbox']").val().split(",");
         var include = true;
-        if (qvalslist.length == 0) {
+        if (qvalslist.length == 1 && qvalslist[0] == "") {
             alert("The following question is associated with zero modules! "
                   + "Please contact web support.\n"
-                  + q.textContent);
+                  + q.text().trim());
         }
         else {
             for (var j=0; j < qvalslist.length; j++) {

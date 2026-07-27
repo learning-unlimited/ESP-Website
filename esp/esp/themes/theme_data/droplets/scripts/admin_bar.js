@@ -45,15 +45,14 @@ ESP = (function(){
   };
 })();
 
-// In Bootstrap 3, replace these with
-// http://getbootstrap.com/components/#input-groups-buttons
-
 ESP.registerAdminModule({
 content_html:
     '<form id="usersearchform" name="usersearchform" method="get" action="/manage/usersearch">' +
-    '<div class="input-append">' +
-    '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" />' +
-    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+    '<div class="input-group">' +
+    '<input type="text" id="user_search_field" name="userstr" placeholder="Find User" class="form-control" />' +
+    '<span class="input-group-btn">' +
+    '<button type="submit" id="user_search_submit" name="search_submit" aria-label="Search" class="btn btn-secondary"><span class="bi bi-search" aria-hidden="true"></span></button>' +
+    '</span>' +
     '</div>' +
     '</form>',
     name: 'user_search',
@@ -65,9 +64,11 @@ if (currentPrograms && currentPrograms.forEach) {
         ESP.registerAdminModule({
             content_html:
                 (currentProgram.class_search ? '<form id="class_search_form" name="class_search_form" method="get" action="/manage/' + currentProgram.urlBase + '/classsearch">' +
-                '<div class="input-append">' +
-                '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" />' +
-                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-default"><span class="glyphicon glyphicon-search glyphicon-btn-height" aria-hidden="true"></span></button>' +
+                '<div class="input-group">' +
+                '<input type="text" id="class_search_field" name="namequery" placeholder="Find Class by Title" class="form-control" />' +
+                '<span class="input-group-btn">' +
+                '<button type="submit" id="class_search_submit" name="class_search_submit" aria-label="Search" class="btn btn-secondary"><span class="bi bi-search" aria-hidden="true"></span></button>' +
+                '</span>' +
                 '</div>' +
                 '</form>' : '') +
                 '<div id="adminbar_Manage_content" class="content">' +
@@ -81,14 +82,32 @@ if (currentPrograms && currentPrograms.forEach) {
     });
 }
 
-ESP.registerAdminModule({
-    content_html: '<div class="content">' +
-                  '<a href="/manage/programs/">Manage all programs</a><br/>' +
-                  '<a href="/manage/pages">Manage static pages</a><br />' +
-                  (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
-                  '<a href="/admin/filebrowser/browse/">Manage media files</a><br />' +
-                  '<a href="/themes/">Manage theme settings</a>' +
-                  '</div>',
-    name: 'Other',
-    displayName: 'Other Important Links'
-});
+(function() {
+    // Default hardcoded links -- never removed, only added to
+    var linksHtml = '<a href="/manage/programs/">Manage all programs</a><br/>' +
+                    '<a href="/manage/pages">Manage static pages</a><br />' +
+                    (debug ? '<a href="/admin/">Administration pages</a><br />' : '') +
+                    '<a href="/manage/site_media/">Manage media files</a><br />' +
+                    '<a href="/themes/">Manage theme settings</a><br />' +
+                    '<a href="/manage/docs/">Website Documentation</a>';
+
+    // Append extra links configured in theme settings (never replaces defaults)
+    if (Array.isArray(toolbarLinks) && toolbarLinks.length > 0) {
+        toolbarLinks.forEach(function(link) {
+            // Only allow relative URLs and http/https to prevent XSS
+            var url = link.link;
+            if (url && (url.indexOf('/') === 0 || url.indexOf('http://') === 0 || url.indexOf('https://') === 0)) {
+                var a = document.createElement('a');
+                a.href = url;
+                a.textContent = link.text;
+                linksHtml += '<br/>' + a.outerHTML;
+            }
+        });
+    }
+
+    ESP.registerAdminModule({
+        content_html: '<div class="content">' + linksHtml + '</div>',
+        name: 'Other',
+        displayName: 'Other Important Links'
+    });
+})();

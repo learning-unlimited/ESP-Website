@@ -245,6 +245,9 @@ var sorttable = {
 	/** @this {Element} */
 	innerSortFunction: function(e) {
 		var table = this.parentNode.parentNode.parentNode;
+
+		if (table.className && /\bsorttable-busy\b/.test(table.className))
+			return;
 		if (!table.tBodies.length)
 			return;
 		var sorted = (this.className.indexOf(sorttable.CLASS_SORT[0]) != -1);
@@ -255,55 +258,50 @@ var sorttable = {
 		var i,tb,tbe;
 
 		sorttable.updateArrows(info,col,inverse,!sorted);
-        
-        // Will G: flipped order here to save computational time
-		if (sorted) {
-			sorttable.reverseSort(table);
-		} else { // determine sort function
-            info[col].known = table.rows.length;
-			var mtch = /\bsorttable_(\w+)\b/.exec(this.className);
-			if (mtch && sorttable['sort_'+mtch[1]]) {
-				info[col].func = sorttable['sort_'+mtch[1]];
-			} else {
-				sortle.val = [];
-				info[col].func = sorttable.guessType(table,col,sortle);
+
+		// Always perform a full sort even if the column was previously sorted,
+		// because the underlying data may have changed since the last sort.
+		var mtch = /\bsorttable_(\w+)\b/.exec(this.className);
+		if (mtch && sorttable['sort_'+mtch[1]]) {
+			info[col].func = sorttable['sort_'+mtch[1]];
+		} else {
+			sortle.val = [];
+			info[col].func = sorttable.guessType(table,col,sortle);
+		}
+
+		if (!sortle.val) { // build an array to sort if we didn't have to guessType()
+			sortle.val = [];
+			for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
+				var rows = table.tBodies[tb].rows;
+				if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH'){
+					sortle.len[tb] = 0;
+					continue;
+				}
+				sortle.len[tb] = rows.length;
+				for (i=0; i<rows.length; ++i) {
+					sortle.val.push([sorttable.getInnerText(rows[i].cells[col]), rows[i]]);
+				}
 			}
-            
-            if (!sortle.val) { // build an array to sort if we didn't had to guessType()
-                sortle.val = [];
-                for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
-                    var rows = table.tBodies[tb].rows;
-                    if (rows.length === 1 && rows[0].cells[0].nodeName === 'TH'){
-                        sortle.len[tb] = 0;
-                        continue;
-                    }
-                    sortle.len[tb] = rows.length;
-                    for (i=0; i<rows.length; ++i) {
-                        sortle.val.push([sorttable.getInnerText(rows[i].cells[col]), rows[i]]);
-                    }
-                }
-            }
+		}
 
-            /* If you want a stable sort, uncomment the following line */
-            sorttable.shaker_sort(sortle.val, info[col].func);
-            /* and comment out this one */
-            //sortle.val.sort(info[col].func);
-            if (inverse) sortle.val.reverse();
+		/* shaker_sort provides a stable sort to allow multi-level sorting of data */
+		sorttable.shaker_sort(sortle.val, info[col].func);
+		if (inverse) sortle.val.reverse();
 
-            var idx = 0;
-            for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
-                var tbody = table.tBodies[tb];
-                for (i=sortle.len[tb]; i--; ++idx) {
-                    tbody.appendChild(sortle.val[idx][1]);
-                }
-            }
-        }
-        // Will G: added this custom event for triggering other JS
-        this.dispatchEvent(
-            new CustomEvent("sorttable.sorted", {
-              bubbles: true,
-            }),
-        );
+		var idx = 0;
+		for (tb=0,tbe=table.tBodies.length; tb<tbe; ++tb) {
+			var tbody = table.tBodies[tb];
+			for (i=sortle.len[tb]; i--; ++idx) {
+				tbody.appendChild(sortle.val[idx][1]);
+			}
+		}
+
+		// Will G: added this custom event for triggering other JS
+		this.dispatchEvent(
+			new CustomEvent("sorttable.sorted", {
+			  bubbles: true,
+			}),
+		);
 	},
 
 	shaker_sort: function(list, comp_func) {

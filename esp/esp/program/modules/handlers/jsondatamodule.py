@@ -38,6 +38,7 @@ from collections import defaultdict
 from datetime import datetime
 import operator
 
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
@@ -72,6 +73,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             "seq": 0,
             "choosable": 1,
             } ]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # All views are JSON endpoints (e.g. for autoscheduler); do not list in admin search.
+        return None
 
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
@@ -403,7 +409,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'requested_room': cls.requested_room,
                 'comments': cls.message_for_directors,
                 'special_requests': cls.requested_special_resources,
-                'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+                'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
             }
             sections.append(section)
             section['index'] = s.index()
@@ -494,6 +500,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         qs = prog.classes().prefetch_related(
             'category', 'sections', 'teachers')
 
+        difficulty_map = Tag.getDifficultyMap() if catalog else {}
+
         for c in qs:
             class_teachers = c.get_teachers()
             class_moderators = c.moderators()
@@ -512,6 +520,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['class_info'] = c.class_info
                 cls['class_style'] = c.class_style
                 cls['difficulty'] = c.hardness_rating
+                cls['difficulty_description'] = difficulty_map.get(str(c.hardness_rating)) if c.hardness_rating else None
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
             if c.duration:
@@ -555,6 +564,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
+    class_subjects.cached_function.depend_on_model('tagdict.Tag')
 
     @aux_call
     @json_response({
@@ -617,9 +627,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'sections': sections}
 
     @aux_call
-    @cache_control(public=True, max_age=300)
-    @json_response()
     @no_auth
+    @method_decorator(cache_control(public=True, max_age=300))
+    @json_response()
     @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
@@ -666,6 +676,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'class_info': cls.class_info,
             'category': cls.category.category,
             'difficulty': cls.hardness_rating,
+            'difficulty_description': Tag.getDifficultyDescription(cls.hardness_rating),
             'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
@@ -679,9 +690,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     class_info.cached_function.depend_on_model(ClassSection)
 
     @aux_call
-    @cache_control(public=True, max_age=300)
-    @json_response()
     @no_auth
+    @method_decorator(cache_control(public=True, max_age=300))
+    @json_response()
     def class_size_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -728,7 +739,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     # This is separate from class_info because students shouldn't see it
     @aux_call
-    @cache_control(public=True, max_age=30)
+    @method_decorator(cache_control(public=True, max_age=30))
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
@@ -788,6 +799,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'category': cls.category.category,
             'class_style': cls.class_style,
             'difficulty': cls.hardness_rating,
+            'difficulty_description': Tag.getDifficultyDescription(cls.hardness_rating),
             'prereqs': cls.prereqs,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
@@ -801,7 +813,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
             'purchases': cls.purchase_requests,
-            'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
+            'flags': ', '.join(cls.flags.filter(resolved=False).values_list('flag_type__name', flat=True)),
         }
 
         return {return_key: [return_dict]}
@@ -847,7 +859,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         classes = prog.classes().select_related()
         flags_num_list = []
         for ft in ClassFlagType.get_flag_types(prog):
-            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft).distinct().count()))
+            flags_num_list.append(('Total # of Classes with the <i><span style="color: %s;">%s</span></i> flag' % (ft.color, ft.name), classes.filter(flags__flag_type=ft, flags__resolved=False).distinct().count()))
         return flags_num_list
     flags_nums.depend_on_row(ClassFlag, lambda flag: {'prog': flag.subject.parent_program})
     flags_nums = staticmethod(flags_nums)

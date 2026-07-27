@@ -63,11 +63,8 @@ class ClassChangeRequestModule(ProgramModuleObj):
         proxy = True
         app_label = 'modules'
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return StudentRegistration.valid_objects().filter(user=user, relationship__name="Request").exists()
 
     @main_call

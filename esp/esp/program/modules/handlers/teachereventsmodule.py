@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, no_auth
 from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.utils.web import render_to_response
 from django.db.models.query import Q
@@ -42,6 +42,7 @@ from esp.users.models import ESPUser, UserAvailability
 from esp.middleware.threadlocalrequest import get_current_request
 from django.contrib.auth.models import Group
 from django.conf import settings
+from django.utils import timezone
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
@@ -49,6 +50,81 @@ class TeacherEventsModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+    @aux_call
+    @no_auth
+    def calendar_data(self, request, tl, one, two, module, extra, prog):
+        """ Provide AJAX-compatible JSON for the calendar view. """
+        from django.http import JsonResponse
+
+        user = request.user
+
+        # Explicit auth check: return JSON errors instead of HTML redirects
+        if not user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        if not user.isTeacher() and not user.isAdmin(prog):
+            return JsonResponse({'error': 'Teacher access required'}, status=403)
+
+        data = []
+
+        # Get exact teacher event type objects to avoid fragile string matching
+        teacher_types = EventType.teacher_event_types()
+        interview_type = teacher_types.get('interview')
+        training_type = teacher_types.get('training')
+
+        # Collect teacher events for this program (including past events)
+        all_events = Event.objects.filter(
+            program=prog,
+            event_type__in=[t for t in (interview_type, training_type) if t is not None]
+        ).order_by('start')
+
+        now = timezone.now()
+        for event in all_events:
+            entries = UserAvailability.entriesBySlot(event)
+            is_mine = entries.filter(user=user).exists()
+
+            # Determine category and full status heavily relying on actual EventType objects
+            if interview_type and event.event_type.id == interview_type.id:
+                category = 'interview'
+                # Interview slots are single-occupancy
+                other_entries = entries.exclude(user=user)
+                is_full = other_entries.exists()
+            else:
+                category = 'training'
+                # Training slots allow multiple signups
+                is_full = False
+            is_past = event.start < now
+
+            if is_mine:
+                status = 'mine'
+                color = '#28a745'  # Green
+            elif is_full:
+                status = 'full'
+                color = '#dc3545'  # Red
+            elif is_past:
+                status = 'past'
+                color = '#6c757d'  # Gray
+            else:
+                status = 'available'
+                color = '#3788d8'  # Blue
+
+            detail = (event.description or event.name or '').strip()
+            title = ('%s: %s' % (category.capitalize(), detail)) if detail else category.capitalize()
+            data.append({
+                'id': event.id,
+                'title': title,
+                'start': event.start.isoformat(),
+                'end': event.end.isoformat(),
+                'color': color,
+                'extendedProps': {
+                    'category': category,
+                    'status': status,
+                    'description': event.description,
+                    'event_type_id': event.event_type.id
+                }
+            })
+
+        return JsonResponse(data, safe=False)
 
     def availability_role(self):
         return Group.objects.get(name='Teacher')
@@ -98,16 +174,13 @@ class TeacherEventsModule(ProgramModuleObj):
         }
 
     # Per-user info
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """
         Return true if user has signed up for everything possible.
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         entries = self.entriesByTeacher(user)
         for obj in EventType.objects.filter(is_teacher_type=True):
             if self.getTimes(obj).exists() and not entries[obj.description].exists():
@@ -127,7 +200,7 @@ class TeacherEventsModule(ProgramModuleObj):
                 event_types = EventType.objects.filter(is_teacher_type=True)
                 UserAvailability.objects.filter(user=request.user, event__event_type__in=event_types).delete()
                 for event_type in event_types:
-                    field_name = 'event_type_%d' % event_type.id
+                    field_name = f'event_type_{event_type.id}'
                     event = data.get(field_name)
                     if event:
                         ua, created = UserAvailability.objects.get_or_create( user=request.user, event=event, role=self.availability_role())
@@ -135,9 +208,8 @@ class TeacherEventsModule(ProgramModuleObj):
                         if self.program.director_email and created and 'interview' in event_type.description.lower():
                             event_name = event.description
                             send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
-                                  """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                                  (request.user.first_name, request.user.last_name, event_name), \
-                                  '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER), \
+                                  f"""Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: {request.user.first_name} {request.user.last_name}\n\nTime: {event_name}\n\n""", \
+                                  f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>', \
                                   [self.program.getDirectorCCEmail()], True, extra_headers = {'Reply-To': request.user.get_email_sendto_address()})
                 return self.goToCore(tl)
         else:
@@ -146,7 +218,7 @@ class TeacherEventsModule(ProgramModuleObj):
             for event_type in EventType.objects.filter(is_teacher_type=True):
                 desc = event_type.description
                 if entries[desc].count() > 0:
-                    data['event_type_%d' % event_type.id] = entries[desc][0].event.id
+                    data[f'event_type_{event_type.id}'] = entries[desc][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
 

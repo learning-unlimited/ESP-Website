@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Process /assign request
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -42,6 +42,12 @@ jobs:
 
             const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
 
+            // Only accept "/assign" as the entire comment (ignoring whitespace)
+            if (context.payload.comment.body.trim() !== '/assign') {
+              core.info(`Ignored non-exact /assign comment from @${requester} on #${issueNumber}.`);
+              return;
+            }
+
             const max = parseInt(
               process.env.MAX_OVERRIDE || process.env.DEFAULT_MAX,
               10
@@ -49,15 +55,15 @@ jobs:
 
             core.info(`/assign request from @${requester} on #${issueNumber}`);
 
-            // Check if user is a maintainer (admin or maintain permission)
+            // Check if user has write access or above (exempt from limits)
             const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               username: requester,
             });
-            const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+            const isMaintainer = ['admin', 'maintain', 'write'].includes(permData.permission);
             if (isMaintainer) {
-              core.info(`@${requester} is a maintainer — bypassing all assignment restrictions.`);
+              core.info(`@${requester} has write access or above — bypassing all assignment restrictions.`);
 
               // Still skip if already assigned to this issue
               const currentAssignees = context.payload.issue.assignees.map(a => a.login);
@@ -219,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check for informal assignment requests
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -233,10 +239,10 @@ jobs:
             const patterns = [
               /\bcan i (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
               /\bi(?:'d| would) like to (?:work on|take|tackle|pick up|be assigned|grab|handle|do)\b/,
-              /\bplease assign (?:me|this to me|it to me)\b/,
-              /\bassign (?:me|this to me|it to me)\b/,
-              /\bcan (?:you |someone )?assign (?:me|this to me|it to me)\b/,
-              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|it to me)\b/,
+              /\bplease assign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bassign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bcan (?:you |someone )?assign (?:me|this to me|this issue to me|it to me)\b/,
+              /\bcould (?:you |someone )?(?:please )?assign (?:me|this to me|this issue to me|it to me)\b/,
               /\bi(?:'ll| will) (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\blet me (?:work on|take|tackle|pick up|handle|do) this\b/,
               /\bi want to (?:work on|take|tackle|pick up|handle|do) this\b/,
@@ -259,13 +265,32 @@ jobs:
                 return;
               }
 
-              // Check if user is a maintainer (admin or maintain permission)
+              // Check if the issue has a blocked label
+              const blockedRaw = process.env.NO_ASSIGN_LABELS || '';
+              const blockedLabels = blockedRaw
+                .split(',')
+                .map(l => l.trim().toLowerCase())
+                .filter(Boolean);
+              const issueLabels = context.payload.issue.labels.map(l => l.name.toLowerCase());
+              const matchedLabels = issueLabels.filter(l => blockedLabels.includes(l));
+
+              if (matchedLabels.length > 0) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  body: `⚠️ Sorry @${commenter}, this issue is labeled **${matchedLabels.join('**, **')}** and is not currently available for assignment.` + WIKI_LINKS,
+                });
+                return;
+              }
+
+              // Check if user has write access or above (exempt from limits)
               const { data: permData } = await github.rest.repos.getCollaboratorPermissionLevel({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 username: commenter,
               });
-              const isMaintainer = ['admin', 'maintain'].includes(permData.permission);
+              const isMaintainer = ['admin', 'maintain', 'write'].includes(permData.permission);
 
               // Check if someone is already assigned
               const currentAssignees = context.payload.issue.assignees.map(a => a.login);
@@ -288,6 +313,8 @@ jobs:
                 });
               }
             }
+        env:
+          NO_ASSIGN_LABELS: ${{ vars.NO_ASSIGN_LABELS }}
 
   # ── Safety net: check direct assignments by maintainers ────────────────────
   check-direct-assignment:
@@ -295,7 +322,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Verify assignee is within limit
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -310,15 +337,15 @@ jobs:
 
             const WIKI_LINKS = `\n\n📖 [Getting Started](https://github.com/learning-unlimited/ESP-Website/wiki#getting-started) · [Contribution Rules](https://github.com/learning-unlimited/ESP-Website/wiki#rules) · [Code of Conduct](https://github.com/learning-unlimited/ESP-Website/blob/main/CODE_OF_CONDUCT.md)`;
 
-            // Check if the assignee is a maintainer (admin or maintain permission)
+            // Check if the assignee has write access or above (exempt from limits)
             const { data: assigneePermData } = await github.rest.repos.getCollaboratorPermissionLevel({
               owner: context.repo.owner,
               repo: context.repo.repo,
               username: assignee,
             });
-            const assigneeIsMaintainer = ['admin', 'maintain'].includes(assigneePermData.permission);
+            const assigneeIsMaintainer = ['admin', 'maintain', 'write'].includes(assigneePermData.permission);
             if (assigneeIsMaintainer) {
-              core.info(`@${assignee} is a maintainer — no restrictions apply.`);
+              core.info(`@${assignee} has write access or above — no restrictions apply.`);
               return;
             }
 
@@ -331,7 +358,7 @@ jobs:
                 repo: context.repo.repo,
                 username: sender,
               });
-              senderIsMaintainer = ['admin', 'maintain'].includes(senderPermData.permission);
+              senderIsMaintainer = ['admin', 'maintain', 'write'].includes(senderPermData.permission);
             }
 
             // Reject if the issue is closed (even if assigned by a maintainer)

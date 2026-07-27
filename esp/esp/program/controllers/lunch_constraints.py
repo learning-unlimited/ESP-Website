@@ -205,11 +205,11 @@ else:
     def generate_constraint(self, day):
         #   Prepare empty expression objects
         exp_requirement = BooleanExpression()
-        exp_requirement.label = 'choose a lunch period on %s' % day.strftime('%A')
+        exp_requirement.label = f'choose a lunch period on {day.strftime("%A")}'
         exp_requirement.save()
 
         exp_check = BooleanExpression()
-        exp_check.label = '%s lunch constraint check for %s' % (self.program.niceName(), day.isoformat())
+        exp_check.label = f'{self.program.niceName()} lunch constraint check for {day.isoformat()}'
         exp_check.save()
 
         constraint = ScheduleConstraint()

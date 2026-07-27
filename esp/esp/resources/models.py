@@ -70,7 +70,7 @@ class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
     # and just use `attributes` as a pipe-separated list
-    from esp.survey.models import ListField
+    from esp.survey.fields import ListField
 
     name = models.CharField(max_length=40)                          #   Brief name
     description = models.TextField()                                #   What is this resource?
@@ -146,7 +146,7 @@ class ResourceRequest(models.Model):
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
-    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     desired_value = models.TextField()
 
     def __str__(self):
@@ -163,7 +163,7 @@ class Resource(models.Model):
     res_type, attach to a user if necessary. """
 
     name = models.CharField(max_length=80)
-    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     num_students = models.IntegerField(blank=True, default=-1)
     # do not use group_id, use res_group instead
     # group_id can be removed with a future migration after all sites

@@ -56,12 +56,9 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             "choosable": 2,
             }
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return IndividualAccountingController(self.program, user).has_paid(in_full=True)
     have_paid = isCompleted
 
@@ -78,7 +75,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def _extracost_requires_payment(self):
         """Check if the student selected extra cost items that require CC payment."""
         from esp.accounting.models import Transfer
-        tag_value = Tag.getTag('creditcard_required_for_extracosts', self.program, default='')
+        tag_value = Tag.getProgramTag('creditcard_required_for_extracosts', program=self.program, default='')
         if not tag_value:
             return False
         request = get_current_request()

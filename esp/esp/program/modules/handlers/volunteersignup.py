@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, main_call, aux_call, no_auth, meets_deadline, needs_account
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.middleware import ESPError
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
@@ -54,6 +55,20 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             "seq": 0,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if tl != "volunteer" or view_name != "signup":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="volunteer_signup",
+            url="/volunteer/%s/signup" % base,
+            title="Volunteer Signup",
+            # Grouped under the dashboard section where the "Volunteer Reg" button appears in directory.html.
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["volunteer", "signup", "shifts", "registration"],
+        )
 
     def require_auth(self):
         return Tag.getBooleanTag('volunteer_require_auth', self.program)
