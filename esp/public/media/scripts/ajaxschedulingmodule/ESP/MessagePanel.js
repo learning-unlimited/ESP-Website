@@ -7,6 +7,38 @@
 function MessagePanel(el, initialMessage) {
     this.el = el;
 
+    this.showToast = function(msg, type) {
+        var $toast = $j('<div>', { "class": 'scheduler-toast scheduler-toast-' + type })
+            .text(msg)
+            .css({
+                position: 'fixed',
+                top: '24px',
+                bottom: 'auto',
+                left: '50%',
+                right: 'auto',
+                transform: 'translateX(-50%) translateY(8px)',
+                zIndex: 2147483647,
+            });
+        $j('body').append($toast);
+
+        setTimeout(function() {
+            $toast.css({
+                opacity: 1,
+                transform: 'translateX(-50%) translateY(0)',
+            });
+        }, 10);
+
+        setTimeout(function() {
+            $toast.css({
+                opacity: 0,
+                transform: 'translateX(-50%) translateY(8px)',
+            });
+            setTimeout(function() {
+                $toast.remove();
+            }, 250);
+        }, 3000);
+    };
+
     /**
      * Initialize the panel with the initial message
      */
@@ -22,11 +54,16 @@ function MessagePanel(el, initialMessage) {
      * @param msg: The message to add
      */
     this.addMessage = function(msg, color="black") {
-        this.el.append( "<p " + "style='color:" + color + "'>" + msg + "</p>");
-        // some browsers need delay before scrollHeight is updated
-        setTimeout(function() {
-            this.el.scrollTop(this.el[0].scrollHeight);
-        }.bind(this), 0);
+        var type = null;
+        if (color === "red") {
+            type = "error";
+        } else if (color === "blue" || color === "green") {
+            type = "success";
+        }
+
+        if (type) {
+            this.showToast(msg, type);
+        }
     };
 
     /**
