@@ -64,6 +64,7 @@ from esp.program.modules.tests.test_creditcard_required import (
     CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
 )
 from esp.program.modules.tests.grouptextmodule import GroupTextModuleSendMessagesTest
+from esp.program.modules.tests.deactivationmodule import DeactivationModuleTest
 from esp.program.modules.tests.test_class_creation import (
     MakeAClassViewTest,
     ClassStatusOnEditTest,
@@ -75,7 +76,10 @@ from esp.program.modules.tests.test_class_creation import (
 from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
+from esp.program.modules.tests.test_student_reg_phase_zero import StudentRegPhaseZeroTestCase
+from esp.program.modules.tests.test_teacher_review_apps import TeacherReviewAppsTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest
 from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
