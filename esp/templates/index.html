@@ -2,47 +2,53 @@
 
 {% block content %}
 
-  {% block heading %}
-    <div class="row" style="margin-top: 20px;">
-      <div class="col-md-12">
-        <div class="well">
-          <h1>New Site</h1>
-          <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
-          <a href="{% url 'themes_landing' %}">
-            <button class="btn btn-lg w-100 btn-primary" type="button" style="width: 75%; font-size: 1.5em;">Configure site appearance</button>
-          </a>
-        </div>
-      </div>
+{% block heading %}
+<div class="row" style="margin-top: 20px;">
+  <div class="col-md-12">
+    <div class="well">
+      <h1>New Site</h1>
+      <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
+      <a href="{% url 'themes_landing' %}" class="btn btn-lg w-100 btn-primary" style="width: 75%; font-size: 1.5em;">
+        Configure site appearance
+      </a>
     </div>
-  {% endblock heading %}
+  </div>
+</div>
+{% endblock heading %}
 
-  {% load render_qsd %}
+{% load render_qsd %}
 
-  {% inline_qsd_block "homepage_qsdpart" %}
-    <div class="row" style="margin-top:30px; text-align:center;">
+{% inline_qsd_block "homepage_qsdpart" %}
+<div class="row" style="margin-top:30px; text-align:center;">
 
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="/learn/index.html"><h2>Learn</h2></a>
-          <p>Edit this page to serve as a starting point for your students.</p>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="/teach/index.html"><h2>Teach</h2></a>
-          <p>Edit this page to serve as a starting point for your teachers.</p>
-        </div>
-      </div>
-
-      <div class="col-md-4">
-        <div class="well" style="padding:30px; min-height:160px;">
-          <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
-          <p>Edit this page to serve as a starting point for your volunteers.</p>
-        </div>
-      </div>
-
+  <div class="col-md-4">
+    <div class="well" style="padding:30px; min-height:160px;">
+      <a href="/learn/index.html">
+        <h2>Learn</h2>
+      </a>
+      <p>Edit this page to serve as a starting point for your students.</p>
     </div>
-  {% end_inline_qsd_block %}
+  </div>
+
+  <div class="col-md-4">
+    <div class="well" style="padding:30px; min-height:160px;">
+      <a href="/teach/index.html">
+        <h2>Teach</h2>
+      </a>
+      <p>Edit this page to serve as a starting point for your teachers.</p>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="well" style="padding:30px; min-height:160px;">
+      <a href="/volunteer/index.html">
+        <h2>Volunteer</h2>
+      </a>
+      <p>Edit this page to serve as a starting point for your volunteers.</p>
+    </div>
+  </div>
+
+</div>
+{% end_inline_qsd_block %}
 
 {% endblock content %}
