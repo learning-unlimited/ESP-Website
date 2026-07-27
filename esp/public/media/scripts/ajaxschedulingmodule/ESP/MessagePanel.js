@@ -9,16 +9,13 @@ function MessagePanel(el, initialMessage) {
 
     this.showToast = function (msg, type) {
         var bgColor = "#333";
-        var toastType = type;
-        if (type === "error" || type === "red") {
+        if (type === "error") {
             bgColor = "#ef4444";
-            toastType = "error";
-        } else if (type === "success" || type === "blue" || type === "green") {
+        } else if (type === "success") {
             bgColor = "#10b981";
-            toastType = "success";
         }
 
-        var $toast = $j('<div>', { "class": 'scheduler-toast scheduler-toast-' + toastType })
+        var $toast = $j('<div>', { "class": 'scheduler-toast scheduler-toast-' + type })
             .text(msg)
             .css({
                 position: 'fixed',
