@@ -855,6 +855,75 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
+    @aux_call
+    @needs_teacher
+    @meets_deadline("/Classes/Edit")
+    def editcapacity(self, request, tl, one, two, module, extra, prog):
+        try:
+            int(extra)
+        except (ValueError, TypeError):
+            raise ESPError("Invalid integer for class ID! Got `{}`".format(extra), log=False)
+
+        classes = ClassSubject.objects.filter(id=extra)
+        if len(classes) == 0:
+            raise ESPError("No class found matching this ID (ID={})!".format(extra), log=False)
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+        
+        cls = classes[0]
+        saved = False
+        errors = {}
+
+        if request.method == 'POST':
+            for sec in cls.sections.all():
+                key = 'capacity_%d' % sec.id
+                if key in request.POST:
+                    try:
+                        new_cap = int(request.POST[key])
+                        if new_cap >= 0:
+                            # Check if new capacity is less than current enrollment
+                            current_students = sec.num_students()
+                            if new_cap < current_students:
+                                errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(current_students)
+                            else:
+                                displayed_capacity = sec.capacity
+                                stored_capacity = sec.max_class_capacity
+
+                                # The form displays the effective capacity, which may differ
+            submitted_capacities = 0
+            for sec in cls.sections.all():
+                key = 'capacity_%d' % sec.id
+                if key in request.POST:
+                    submitted_capacities += 1
+                    raw_cap = request.POST[key]
+                    if raw_cap is None or not raw_cap.strip():
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    try:
+                        new_cap = int(raw_cap)
+                    except ValueError:
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    if new_cap < 0:
+                        errors[sec.id] = 'Capacity must be a non-negative integer'
+                        continue
+
+                    # Check if new capacity is less than current enrollment
+                    current_enrollment = sec.num_students()
+                    if new_cap < current_enrollment:
+                        errors[sec.id] = 'Capacity cannot be less than current enrollment ({} students)'.format(current_enrollment)
+                    else:
+                        sec.max_class_capacity = new_cap
+                        sec.save()
+            
+            # Only mark as saved if all submitted values were successfully applied
+            if submitted_capacities > 0 and not errors:
+                saved = True
+
+        return render_to_response(self.baseDir()+'editcapacity.html', request, {'cls': cls, 'saved': saved, 'errors': errors})
+
     @main_call
     @needs_teacher
     @meets_deadline('/Classes/Create/Class')
