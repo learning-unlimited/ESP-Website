@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentRegistration
@@ -88,30 +88,24 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         class_roster = []
         for reg_type, students in self.cls.students_dict().items():
             class_roster.extend(students)
+
+        # review_students() walks the class roster in the same order it's sorted
+        # by there (added_class, i.e. registration start_date), looking forward
+        # from "prev" for the next student with a completed application. Sort
+        # the roster the same way here before picking prev/next so the two
+        # chosen students are guaranteed to appear in that same relative order
+        # -- otherwise picking them by students_dict() iteration order (which
+        # has no relation to added_class) makes the redirect assertion flaky.
+        def added_class(student):
+            reg = StudentRegistration.valid_objects().filter(
+                section__parent_class=self.cls, user=student).first()
+            return reg.start_date if reg else datetime.min
+        class_roster.sort(key=added_class)
+
         for student in class_roster[:2]:
             app = student.getApplication(self.program, create=True)
             self.students_with_apps.append(student)
             self.student_apps.append(app)
-
-        # test_prev_redirect relies on students_with_apps[0] ("prev") sorting
-        # before students_with_apps[1] ("next", whose app is completed below)
-        # in the review_students view, which orders the roster by each
-        # student's registration start_date. class_roster's order comes from
-        # ClassSubject.students_dict(), which has no defined ordering (its
-        # querysets aren't sorted), so it has no guaranteed relationship to
-        # start_date order. Force the two students' start_date explicitly so
-        # the prev/next relationship the test asserts on is deterministic
-        # regardless of students_dict()'s iteration order.
-        if len(self.students_with_apps) > 1:
-            # Matches the view's own lookup (section__parent_class=cls, not
-            # a specific section), since a class may have multiple sections.
-            now = datetime.now()
-            StudentRegistration.valid_objects().filter(
-                section__parent_class=self.cls, user=self.students_with_apps[0]
-            ).update(start_date=now - timedelta(hours=2))
-            StudentRegistration.valid_objects().filter(
-                section__parent_class=self.cls, user=self.students_with_apps[1]
-            ).update(start_date=now - timedelta(hours=1))
 
         # Create some student app questions
         # Clean up any existing questions for this class

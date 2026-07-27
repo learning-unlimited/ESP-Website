@@ -822,6 +822,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         module_type_by_id = dict(
             ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'module_type')
         )
+        handler_by_id = dict(
+            ProgramModule.objects.filter(id__in=all_choice_ids).values_list('id', 'handler')
+        )
 
         for val, label in choice_pairs:
             ids = [int(i) for i in val.split(',') if i.isdigit()]
@@ -836,10 +839,17 @@ class AdminCore(ProgramModuleObj, CoreModule):
             else:
                 category = 'general'
 
+            handler_names = [handler_by_id.get(i, '') for i in ids]
+            is_always_enabled = is_checked and any(
+                h in ('RegProfileModule', 'AvailabilityModule', 'StudentRegTwoPhase') or 'AcknowledgementModule' in h
+                for h in handler_names if h
+            )
+
             module_questions_categorized[category].append({
                 'value': val,
                 'label': label,
-                'checked': is_checked
+                'checked': is_checked,
+                'always_enabled': is_always_enabled
             })
 
         context['module_questions_categorized'] = module_questions_categorized
