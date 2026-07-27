@@ -53,6 +53,7 @@ from django.core.management import call_command
 
 from django.test import LiveServerTestCase
 from django.test.client import Client
+from django.urls import reverse
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
@@ -2368,3 +2369,9 @@ class ProgramCreationFormDateValidationTest(TestCase):
         # assert there is no cross-field date-range error.
         self.assertNotIn('teacher_reg_end', form.errors)
         self.assertNotIn('student_reg_end', form.errors)
+        
+        
+class SubmitTransactionRequiresPostTest(TestCase):
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('manage_submit_transaction'))
+        self.assertEqual(response.status_code, 405)

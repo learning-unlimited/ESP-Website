@@ -82,6 +82,7 @@ function Scheduler(
                                              "<i>Welcome to the Ajax Scheduler!</i><br><br>" +
                                              "<strong>Delete</strong>: unschedule the selected section<br>" +
                                              "<strong>Ctrl/Cmd + Click</strong>: swap the clicked section with the selected section<br>" +
+                                             "<strong>Recurring mode</strong>: select explicit timeslots, then click \"Save recurring timeslots\"<br>" +
                                              "<strong>Escape</strong>: unselect the selected section" + (has_moderator_module === "True" ? "/moderator": "") + "<br>" +
                                              "<strong>F1</strong>: open the 'Classes' tab<br>" +
                                              "<strong>F2</strong>: open the 'Room Filters' tab<br>" +
@@ -184,8 +185,12 @@ function Scheduler(
         $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
             var cell = $j(evt.currentTarget).data("cell");
             if(this.sections.selectedSection) {
-                this.sections.scheduleSection(this.sections.selectedSection,
-                                              cell.room_id, cell.timeslot_id);
+                if (this.sections.recurringSelectionMode) {
+                    this.sections.toggleRecurringTimeslot(this.sections.selectedSection, cell.room_id, cell.timeslot_id);
+                } else {
+                    this.sections.scheduleSection(this.sections.selectedSection,
+                                                  cell.room_id, cell.timeslot_id);
+                }
             }
         }.bind(this));
 
