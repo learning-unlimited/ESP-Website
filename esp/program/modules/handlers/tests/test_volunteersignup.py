@@ -25,7 +25,6 @@ class VolunteerSignupTestCase(TestCase):
 
         # Create a valid Event with required short_description & description
         self.event = Event.objects.create(
-            anchor_day=datetime.now().date(),
             start=datetime.now(),
             end=datetime.now() + timedelta(hours=2),
             event_type=self.volunteer_event_type,
