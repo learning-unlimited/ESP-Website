@@ -33,7 +33,7 @@
         {% include "navbar/nav.html" %}
         {% include "navbar/contact.html" %}
         <div class="navbar-login ms-auto d-flex align-items-center">
-          {% include "users/loginbox_content.html" %}
+          {% block loginbox %}{% include "users/loginbox_content.html" %}{% endblock %}
         </div>
       </div>
     </div>
