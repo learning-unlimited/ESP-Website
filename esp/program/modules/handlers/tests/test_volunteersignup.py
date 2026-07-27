@@ -14,7 +14,6 @@ class VolunteerSignupTestCase(TestCase):
         # Create a basic Program fixture
         self.program = Program.objects.create(
             name='Test Volunteer Program',
-            anchor_day=datetime.now().date(),
             grade_min=7,
             grade_max=12,
         )
