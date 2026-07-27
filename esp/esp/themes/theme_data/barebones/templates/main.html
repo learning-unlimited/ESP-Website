@@ -108,7 +108,7 @@ Example stylesheet inclusion tag:
   <footer>
     <hr />
     {% block footer %}
-    <div class="onsite hidden"><a href="{% url 'myesp_onsite' %}">On-Site Registration</a></div>
+    <div class="onsite"><a href="{% url 'myesp_onsite' %}">On-Site Registration</a></div>
     <div>
       {% load render_qsd %}
       {% inline_qsd_block "footer_text" %}
