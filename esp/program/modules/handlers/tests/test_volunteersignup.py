@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 from django.test import TestCase
-from esp.program.models import Program, VolunteerRequest
-from esp.program.modules.handlers.volunteersignup import VolunteerSignup
-from esp.program.modules.forms.volunteer import VolunteerOfferForm
+
 from esp.cal.models import Event, EventType
+from esp.program.models import Program, VolunteerRequest
+from esp.program.modules.forms.volunteer import VolunteerOfferForm
+from esp.program.modules.handlers.volunteersignup import VolunteerSignup
 from esp.tagdict.models import Tag
 
 
@@ -14,7 +15,7 @@ class VolunteerSignupTestCase(TestCase):
             name='Test Volunteer Program',
             anchor_day=datetime.now().date(),
             grade_min=7,
-            grade_max=12
+            grade_max=12,
         )
 
         # Create required EventType
@@ -29,7 +30,7 @@ class VolunteerSignupTestCase(TestCase):
             end=datetime.now() + timedelta(hours=2),
             event_type=self.volunteer_event_type,
             short_description='Volunteer Shift',
-            description='Test Volunteer Shift Description'
+            description='Test Volunteer Shift Description',
         )
 
         # Create Tag and VolunteerRequest needed for VolunteerOfferForm choices
@@ -38,7 +39,7 @@ class VolunteerSignupTestCase(TestCase):
             program=self.program,
             tag=self.tag,
             event=self.event,
-            num_requested=5
+            num_requested=5,
         )
 
         # Initialize the handler module
@@ -57,7 +58,7 @@ class VolunteerSignupTestCase(TestCase):
             'phone': '1234567890',
             'requests': [self.volunteer_request.id],
             'comments': 'Happy to help with volunteer tasks!',
-            'confirm': True
+            'confirm': True,
         }
         form = VolunteerOfferForm(data=form_data, program=self.program)
         self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
