@@ -486,6 +486,10 @@ def editor(request):
         #   error that silently left `bootswatch_esp_vars` undefined, which
         #   broke every dropdown-driven colour update client-side.
         context['bootswatch_vars'] = tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
+        #   Raw ESP-default swatches (Bootswatch-unaware), so the dropdown
+        #   change handler can rebuild the "Built-in Theme Palette" when the
+        #   admin switches back to "None" without a server round-trip.
+        context['scss_base_palette'] = sorted(tc.get_scss_base_palette())
 
     #   Load the theme-specific options
     adv_vars = tc.find_theme_variables(current_theme, theme_only=True)

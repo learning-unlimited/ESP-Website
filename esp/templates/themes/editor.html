@@ -622,6 +622,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
     {% if bootswatch_vars %}
     {{ bootswatch_vars|json_script:"bootswatch-esp-vars" }}
+    {{ scss_base_palette|json_script:"scss-base-palette" }}
     <script type="text/javascript">
     // Bootswatch-theme → ESP-variable → colour value.
     // Pre-computed server-side so the colour pickers update without a round-trip
@@ -631,6 +632,9 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     // interpolating JSON directly into a normal <script> block (that path went
     // through Django's HTML autoescaping and silently corrupted the JSON).
     var bootswatch_esp_vars = JSON.parse(document.getElementById('bootswatch-esp-vars').textContent);
+    // Raw ESP-default swatches (Bootswatch-unaware) — the "Built-in Theme
+    // Palette" fallback for when the dropdown is switched back to "None".
+    var scss_base_palette = JSON.parse(document.getElementById('scss-base-palette').textContent);
     </script>
     {% endif %}
     <script type="text/javascript">
@@ -664,6 +668,33 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
             try { $input.spectrum('set', newDefault); } catch (e) {}
           }
         });
+
+        // Also refresh the "Built-in Theme Palette" swatches so this section
+        // updates live like the colour/font fields above, instead of only
+        // reflecting the new theme after the next Apply/reload.
+        var bwColors;
+        if (theme && bootswatch_esp_vars && bootswatch_esp_vars[theme]) {
+          var seen = {};
+          bwColors = [];
+          $j.each(bw, function (name, value) {
+            if (typeof value === 'string' && value.charAt(0) === '#' && !seen[value]) {
+              seen[value] = true;
+              bwColors.push(value);
+            }
+          });
+          bwColors.sort();
+        } else {
+          bwColors = (typeof scss_base_palette !== 'undefined') ? scss_base_palette : [];
+        }
+        var $baseDiv = $j('#palette_base_div');
+        $baseDiv.find('input.palette').each(function () {
+          try { $j(this).spectrum('destroy'); } catch (e) {}
+        });
+        $baseDiv.find('input.palette').remove();
+        $j.each(bwColors, function (i, color) {
+          $baseDiv.append($j('<input type="text" name="palette" class="palette"/>').val(color));
+        });
+        showBasePalette();
       });
     });
     </script>

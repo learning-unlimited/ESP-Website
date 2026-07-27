@@ -1360,6 +1360,25 @@ class ThemeController(object):
     ##  Palette getter/setter -- palette is a list of strings which each contain
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
+    def get_scss_base_palette(self):
+        """Return the theme's raw SCSS/LESS-declared hex palette (the static
+        ESP defaults), independent of any active Bootswatch theme.
+
+        Exposed publicly (not just used internally) so the editor view can
+        pass it to the template as the client-side JS fallback: when the
+        admin switches the Bootswatch dropdown back to "None", the "Built-in
+        Theme Palette" needs this to rebuild without a server round-trip.
+        """
+        palette_base = set()
+        base_vars = self.find_theme_variables(theme_only=False, flat=False)
+        for varset in base_vars.values():
+            for val in varset.values():
+                if isinstance(val, str) and val.startswith('#'):
+                    if len(val) == 4: # Convert to long form
+                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                    palette_base.add(val)
+        return palette_base
+
     def _get_bootswatch_base_palette(self):
         """Return the active Bootswatch theme's own colours as a hex set, or
         an empty set if no Bootswatch theme is active for the current theme.
@@ -1389,15 +1408,7 @@ class ThemeController(object):
             #   the ESP defaults, which don't reflect what actually renders.
             palette_base = set(bootswatch_palette)
         else:
-            #   Collect colors from any global LESS/SCSS variables
-            palette_base = set()
-            base_vars = self.find_theme_variables(theme_only=False, flat=False)
-            for varset in base_vars.values():
-                for val in varset.values():
-                    if isinstance(val, str) and val.startswith('#'):
-                        if len(val) == 4: # Convert to long form
-                            val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
-                        palette_base.add(val)
+            palette_base = self.get_scss_base_palette()
 
         palette_base = sorted(palette_base)
 
@@ -1411,14 +1422,7 @@ class ThemeController(object):
         if bootswatch_palette:
             palette -= bootswatch_palette
         else:
-            base_vars = self.find_theme_variables(theme_only=False, flat=False)
-            for varset in base_vars.values():
-                for val in varset.values():
-                    if isinstance(val, str) and val.startswith('#'):
-                        if len(val) == 4: # Convert to long form
-                            val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
-                        if val in palette:
-                            palette.remove(val)
+            palette -= self.get_scss_base_palette()
 
         palette = sorted(palette)
         Tag.setTag('current_theme_palette', value=json.dumps(palette))
