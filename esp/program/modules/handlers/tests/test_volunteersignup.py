@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+
 from django.test import TestCase
 
 from esp.cal.models import Event, EventType
@@ -62,4 +63,3 @@ class VolunteerSignupTestCase(TestCase):
         }
         form = VolunteerOfferForm(data=form_data, program=self.program)
         self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
-        
