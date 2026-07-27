@@ -1360,19 +1360,44 @@ class ThemeController(object):
     ##  Palette getter/setter -- palette is a list of strings which each contain
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
+    def _get_bootswatch_base_palette(self):
+        """Return the active Bootswatch theme's own colours as a hex set, or
+        an empty set if no Bootswatch theme is active for the current theme.
+
+        Used so the editor's "Built-in Theme Palette" reflects what a
+        Bootswatch-skinned site actually renders, rather than the static ESP
+        defaults, letting admins tweak/extend from the theme's real colours.
+        """
+        theme_name = self.get_current_theme()
+        if not self.has_scss(theme_name):
+            return set()
+        bootswatch_theme = Tag.getTag('bootswatch_theme', default='')
+        if not bootswatch_theme or bootswatch_theme not in self.get_bootswatch_themes():
+            return set()
+        return {
+            val for val in self.get_bootswatch_esp_vars(bootswatch_theme, esp_theme=theme_name).values()
+            if isinstance(val, str) and val.startswith('#')
+        }
+
     ## Returns a dictionary with the theme's base palette and the custom tag-defined palette
     def get_palette(self):
         palette_custom = json.loads(Tag.getTag('current_theme_palette', default='[]'))
 
-        #   Collect colors from any global LESS variables
-        palette_base = set()
-        base_vars = self.find_theme_variables(theme_only=False, flat=False)
-        for varset in base_vars.values():
-            for val in varset.values():
-                if isinstance(val, str) and val.startswith('#'):
-                    if len(val) == 4: # Convert to long form
-                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
-                    palette_base.add(val)
+        bootswatch_palette = self._get_bootswatch_base_palette()
+        if bootswatch_palette:
+            #   A Bootswatch theme is active: show its own palette instead of
+            #   the ESP defaults, which don't reflect what actually renders.
+            palette_base = set(bootswatch_palette)
+        else:
+            #   Collect colors from any global LESS/SCSS variables
+            palette_base = set()
+            base_vars = self.find_theme_variables(theme_only=False, flat=False)
+            for varset in base_vars.values():
+                for val in varset.values():
+                    if isinstance(val, str) and val.startswith('#'):
+                        if len(val) == 4: # Convert to long form
+                            val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                        palette_base.add(val)
 
         palette_base = sorted(palette_base)
 
@@ -1381,14 +1406,19 @@ class ThemeController(object):
     def set_palette(self, palette):
         #   Remove global theme variables from the palette
         palette = set(palette)
-        base_vars = self.find_theme_variables(theme_only=False, flat=False)
-        for varset in base_vars.values():
-            for val in varset.values():
-                if isinstance(val, str) and val.startswith('#'):
-                    if len(val) == 4: # Convert to long form
-                        val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
-                    if val in palette:
-                        palette.remove(val)
+
+        bootswatch_palette = self._get_bootswatch_base_palette()
+        if bootswatch_palette:
+            palette -= bootswatch_palette
+        else:
+            base_vars = self.find_theme_variables(theme_only=False, flat=False)
+            for varset in base_vars.values():
+                for val in varset.values():
+                    if isinstance(val, str) and val.startswith('#'):
+                        if len(val) == 4: # Convert to long form
+                            val = '#' + val[1] + val[1] + val[2] + val[2] + val[3] + val[3]
+                        if val in palette:
+                            palette.remove(val)
 
         palette = sorted(palette)
         Tag.setTag('current_theme_palette', value=json.dumps(palette))

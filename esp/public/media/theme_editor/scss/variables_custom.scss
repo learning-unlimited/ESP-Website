@@ -71,7 +71,16 @@ $link-hover-color:          $linkColorHover !default;
 @if index($esp-overridden, 'linkColorHover') {
     $link-hover-color:      $linkColorHover;
 }
+// $font-family-sans-serif bridges the "Font Family" customizer field the same
+// way $link-color bridges "Links" above: Bootswatch's own $font-family-sans-serif
+// (e.g. flatly => Lato, solar => "Source Sans Pro") is already set before this
+// file is imported, so the bare !default below is a no-op whenever the active
+// Bootswatch theme defines its own font — the forced assignment is required for
+// an admin's font choice to actually take effect.
 $font-family-sans-serif:    $sansFontFamily !default;
+@if index($esp-overridden, 'sansFontFamily') {
+    $font-family-sans-serif: $sansFontFamily;
+}
 // Only force the ESP headings colour when NOT using a Bootswatch theme.  Under a
 // Bootswatch theme, leaving $headings-color unset lets Bootstrap fall back to the
 // body colour, so headings stay legible on dark themes (#333 headings otherwise

@@ -33,9 +33,10 @@ Learning Unlimited, Inc.
 """
 
 import random
+from datetime import datetime, timedelta
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
-from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse
+from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentRegistration
 
 class TeacherReviewAppsTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -91,6 +92,26 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
             app = student.getApplication(self.program, create=True)
             self.students_with_apps.append(student)
             self.student_apps.append(app)
+
+        # test_prev_redirect relies on students_with_apps[0] ("prev") sorting
+        # before students_with_apps[1] ("next", whose app is completed below)
+        # in the review_students view, which orders the roster by each
+        # student's registration start_date. class_roster's order comes from
+        # ClassSubject.students_dict(), which has no defined ordering (its
+        # querysets aren't sorted), so it has no guaranteed relationship to
+        # start_date order. Force the two students' start_date explicitly so
+        # the prev/next relationship the test asserts on is deterministic
+        # regardless of students_dict()'s iteration order.
+        if len(self.students_with_apps) > 1:
+            # Matches the view's own lookup (section__parent_class=cls, not
+            # a specific section), since a class may have multiple sections.
+            now = datetime.now()
+            StudentRegistration.valid_objects().filter(
+                section__parent_class=self.cls, user=self.students_with_apps[0]
+            ).update(start_date=now - timedelta(hours=2))
+            StudentRegistration.valid_objects().filter(
+                section__parent_class=self.cls, user=self.students_with_apps[1]
+            ).update(start_date=now - timedelta(hours=1))
 
         # Create some student app questions
         # Clean up any existing questions for this class
