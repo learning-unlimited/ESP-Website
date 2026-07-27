@@ -105,19 +105,31 @@ reads -- for ``finaidapprove`` that is a ``user`` list plus the approval
 options::
 
   from esp.accounting.models import FinancialAidGrant
+  from esp.program.models import FinancialAidRequest
 
-  def test_post_creates_financial_aid_grant(self):
-      self.login_as('admin')
-      response = self.post_to_module('manage', 'finaidapprove', {
-          'user': [str(self.student.id)],
-          'approve_blanks': 'on',
-          'amount_max_dec': '25.00',
-          'percent': '100',
-      })
-      self.assertIn(response.status_code, [200, 302])
-      self.assertTrue(
-          FinancialAidGrant.objects.filter(request=self.request).exists()
-      )
+  class FinAidApproveTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
+      def setUp(self):
+          super().setUp()
+          self.student = self.students[0]
+          self.request = FinancialAidRequest.objects.create(
+              program=self.program,
+              user=self.student,
+              household_income='30000',
+              extra_explaination='Need help.',
+          )
+
+      def test_post_creates_financial_aid_grant(self):
+          self.login_as('admin')
+          response = self.post_to_module('manage', 'finaidapprove', {
+              'user': [str(self.student.id)],
+              'approve_blanks': 'on',
+              'amount_max_dec': '25.00',
+              'percent': '100',
+          })
+          self.assertIn(response.status_code, [200, 302])
+          self.assertTrue(
+              FinancialAidGrant.objects.filter(request=self.request).exists()
+          )
 
 Writing Controller Tests
 -------------------------
@@ -309,9 +321,9 @@ Naming
 ~~~~~~
 
 - Test files: ``test_<module_name>.py``. Some older files in
-  ``esp/program/modules/tests/`` are named ``<module_name>.py`` instead and are
-  picked up through the ``tests_modules.py`` aggregator; new files should use
-  the ``test_`` prefix so pytest collects them directly.
+  ``esp/program/modules/tests/`` are named ``<module_name>.py`` instead, which
+  matches none of the collection patterns in ``esp/pytest.ini``. Use the
+  ``test_`` prefix on new files so pytest collects them directly.
 - Test classes: ``<Feature>Test`` (e.g., ``EnrollmentConflictTest``). The
   patterns pytest collects are set in ``esp/pytest.ini``.
 - Test methods: ``test_<what_it_tests>``
