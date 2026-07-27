@@ -23,8 +23,9 @@ class VolunteerSignupTestCase(TestCase):
             description='Volunteer'
         )
 
-        # Create a valid Event with required short_description & description
+        # Create a valid Event linked to program
         self.event = Event.objects.create(
+            program=self.program,
             start=datetime.now(),
             end=datetime.now() + timedelta(hours=2),
             event_type=self.volunteer_event_type,
@@ -33,7 +34,7 @@ class VolunteerSignupTestCase(TestCase):
         )
 
         # Create Tag and VolunteerRequest needed for VolunteerOfferForm choices
-        self.tag = Tag.objects.create(category='Volunteer', name='General Volunteer')
+        self.tag, _ = Tag.objects.get_or_create(name='General Volunteer')
         self.volunteer_request = VolunteerRequest.objects.create(
             program=self.program,
             tag=self.tag,
