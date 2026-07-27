@@ -2369,8 +2369,8 @@ class ProgramCreationFormDateValidationTest(TestCase):
         # assert there is no cross-field date-range error.
         self.assertNotIn('teacher_reg_end', form.errors)
         self.assertNotIn('student_reg_end', form.errors)
-        
-        
+
+
 class SubmitTransactionRequiresPostTest(TestCase):
     def test_get_returns_405(self):
         response = self.client.get(reverse('manage_submit_transaction'))
