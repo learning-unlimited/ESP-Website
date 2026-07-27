@@ -89,7 +89,7 @@
 <div id="boxes_area">
     <!-- Login -->
     <div class="box" style="text-align: right;">
-    {% include "users/loginbox_content.html" %}
+    {% block loginbox %}{% include "users/loginbox_content.html" %}{% endblock %}
     </div>
     
 
