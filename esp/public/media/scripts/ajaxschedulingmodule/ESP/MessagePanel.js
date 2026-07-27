@@ -7,8 +7,18 @@
 function MessagePanel(el, initialMessage) {
     this.el = el;
 
-    this.showToast = function(msg, type) {
-        var $toast = $j('<div>', { "class": 'scheduler-toast scheduler-toast-' + type })
+    this.showToast = function (msg, type) {
+        var bgColor = "#333";
+        var toastType = type;
+        if (type === "error" || type === "red") {
+            bgColor = "#ef4444";
+            toastType = "error";
+        } else if (type === "success" || type === "blue" || type === "green") {
+            bgColor = "#10b981";
+            toastType = "success";
+        }
+
+        var $toast = $j('<div>', { "class": 'scheduler-toast scheduler-toast-' + toastType })
             .text(msg)
             .css({
                 position: 'fixed',
@@ -18,22 +28,32 @@ function MessagePanel(el, initialMessage) {
                 right: 'auto',
                 transform: 'translateX(-50%) translateY(8px)',
                 zIndex: 2147483647,
+                backgroundColor: bgColor,
+                color: '#fff',
+                padding: '12px 16px',
+                borderRadius: '8px',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+                fontSize: '14px',
+                fontWeight: '600',
+                transition: 'opacity 0.25s ease, transform 0.25s ease',
+                pointerEvents: 'none',
+                opacity: 0
             });
         $j('body').append($toast);
 
-        setTimeout(function() {
+        setTimeout(function () {
             $toast.css({
                 opacity: 1,
                 transform: 'translateX(-50%) translateY(0)',
             });
         }, 10);
 
-        setTimeout(function() {
+        setTimeout(function () {
             $toast.css({
                 opacity: 0,
                 transform: 'translateX(-50%) translateY(8px)',
             });
-            setTimeout(function() {
+            setTimeout(function () {
                 $toast.remove();
             }, 250);
         }, 3000);
@@ -42,8 +62,8 @@ function MessagePanel(el, initialMessage) {
     /**
      * Initialize the panel with the initial message
      */
-    this.init = function() {
-        if(initialMessage) {
+    this.init = function () {
+        if (initialMessage) {
             this.addMessage(initialMessage);
         }
     };
@@ -53,14 +73,7 @@ function MessagePanel(el, initialMessage) {
      *
      * @param msg: The message to add
      */
-    this.addMessage = function(msg, color="black") {
-        var type = null;
-        if (color === "red") {
-            type = "error";
-        } else if (color === "blue" || color === "green") {
-            type = "success";
-        }
-
+    this.addMessage = function (msg, type) {
         if (type) {
             this.showToast(msg, type);
         }
@@ -69,14 +82,14 @@ function MessagePanel(el, initialMessage) {
     /**
      * Hide the message panel
      */
-    this.hide = function() {
+    this.hide = function () {
         this.el.addClass("ui-helper-hidden");
     };
 
     /**
      * Show the message panel
      */
-    this.show = function() {
+    this.show = function () {
         this.el.removeClass("ui-helper-hidden");
     };
 
