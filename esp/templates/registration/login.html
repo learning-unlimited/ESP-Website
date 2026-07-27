@@ -2,6 +2,9 @@
 
 {% block title %}Login!{% endblock %}
 
+{# This page shows its own login form, so suppress the sidebar/navbar one. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 <h1>Please log in</h1>
 
