@@ -3,15 +3,6 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-{% comment %}
-{% if request.user.is_authenticated %}
-{% if request.user.isTeacher %}
-<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/teach/index.html">
-{% else %}
-<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/learn/index.html">
-{% endif %}
-{% endif %}
-{% endcomment %}
 {% endblock %}
 
 {% block javascript %}
