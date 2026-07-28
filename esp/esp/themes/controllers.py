@@ -118,10 +118,10 @@ def _get_theme_editor_dir():
 _THEME_EDITOR_DIR = _get_theme_editor_dir()
 _BOOTSTRAP5_SCSS = os.path.join(
     _THEME_EDITOR_DIR, 'node_modules', 'bootstrap', 'scss', 'bootstrap.scss'
-)
+).replace('\\', '/')
 _BOOTSWATCH_DIST = os.path.join(
     _THEME_EDITOR_DIR, 'node_modules', 'bootswatch', 'dist'
-)
+).replace('\\', '/')
 
 def _sanitize_scss_value(variable_name, value):
     """Return value if it is safe to embed in a SCSS declaration; log and return None otherwise.
@@ -679,7 +679,7 @@ class ThemeController(object):
 
             css_data = self.compile_less(less_data)
 
-        with open(output_filename, 'w') as output_file:
+        with open(output_filename, 'w', encoding='utf-8') as output_file:
             output_file.write(str(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
