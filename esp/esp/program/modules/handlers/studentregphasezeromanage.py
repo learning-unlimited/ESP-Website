@@ -152,49 +152,58 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         if request.POST:
             if request.POST.get('mode') == 'addnew':
-                add_user = ESPUser.objects.get(id=request.POST['student_selected1'])
-                in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
-                if in_lottery:
-                    context['error'] = 'Error - %s is already in the lottery.' % (add_user.name())
+                if len(request.POST.get('student_selected1', '').strip()) == 0:
+                    context['error'] = 'Error - Please click on the name when it drops down.'
                 else:
-                    rec = PhaseZeroRecord(program=prog)
-                    rec.save()
-                    rec.user.add(add_user)
-                    context['success'] = "%s has been added to the lottery." % (add_user.name())
-            elif request.POST.get('mode') == 'addtoexisting':
-                add_user = ESPUser.objects.get(id=request.POST['student_selected2'])
-                join_user = ESPUser.objects.get(id=request.POST['student_selected3'])
-                try:
-                    rec = PhaseZeroRecord.objects.get(user=join_user, program=prog)
-                except PhaseZeroRecord.DoesNotExist:
-                    context['error'] = 'Error - %s is not in an existing lottery group.' % (join_user.name())
-                else:
+                    add_user = ESPUser.objects.get(id=request.POST['student_selected1'])
                     in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
                     if in_lottery:
-                        old_rec = PhaseZeroRecord.objects.get(user=add_user, program=prog)
-                    num_users = rec.user.count()
-                    if num_users < num_allowed_users:
-                        rec.user.add(add_user)
-                        rec.save()
-                        if in_lottery:
-                            old_rec.user.remove(add_user)
-                            if not old_rec.user.exists():
-                                old_rec.delete()
-                            context['success'] = "%s has been moved to a different lottery group." % (add_user.name())
-                        context['success'] = "%s has been added to the lottery group." % (add_user.name())
+                        context['error'] = 'Error - %s is already in the lottery.' % (add_user.name())
                     else:
-                        context['error'] = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
-            elif request.POST.get('mode') == 'remove':
-                remove_user = ESPUser.objects.get(id=request.POST['student_selected4'])
-                try:
-                    rec = PhaseZeroRecord.objects.get(user=remove_user, program=prog)
-                except PhaseZeroRecord.DoesNotExist:
-                    context['error'] = 'Error - %s is not in the lottery.' % (remove_user.name())
+                        rec = PhaseZeroRecord(program=prog)
+                        rec.save()
+                        rec.user.add(add_user)
+                        context['success'] = "%s has been added to the lottery." % (add_user.name())
+            elif request.POST.get('mode') == 'addtoexisting':
+                if len(request.POST.get('student_selected2', '').strip()) == 0 or len(request.POST.get('student_selected3', '').strip()) == 0:
+                    context['error'] = 'Error - Please click on the name when it drops down.'
                 else:
-                    rec.user.remove(remove_user)
-                    if not rec.user.exists():
-                        rec.delete()
-                    context['success'] = "%s has been removed from the lottery." % (remove_user.name())
+                    add_user = ESPUser.objects.get(id=request.POST['student_selected2'])
+                    join_user = ESPUser.objects.get(id=request.POST['student_selected3'])
+                    try:
+                        rec = PhaseZeroRecord.objects.get(user=join_user, program=prog)
+                    except PhaseZeroRecord.DoesNotExist:
+                        context['error'] = 'Error - %s is not in an existing lottery group.' % (join_user.name())
+                    else:
+                        in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
+                        if in_lottery:
+                            old_rec = PhaseZeroRecord.objects.get(user=add_user, program=prog)
+                        num_users = rec.user.count()
+                        if num_users < num_allowed_users:
+                            rec.user.add(add_user)
+                            rec.save()
+                            if in_lottery:
+                                old_rec.user.remove(add_user)
+                                if not old_rec.user.exists():
+                                    old_rec.delete()
+                                context['success'] = "%s has been moved to a different lottery group." % (add_user.name())
+                            context['success'] = "%s has been added to the lottery group." % (add_user.name())
+                        else:
+                            context['error'] = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
+            elif request.POST.get('mode') == 'remove':
+                if len(request.POST.get('student_selected4', '').strip()) == 0:
+                    context['error'] = 'Error - Please click on the name when it drops down.'
+                else:
+                    remove_user = ESPUser.objects.get(id=request.POST['student_selected4'])
+                    try:
+                        rec = PhaseZeroRecord.objects.get(user=remove_user, program=prog)
+                    except PhaseZeroRecord.DoesNotExist:
+                        context['error'] = 'Error - %s is not in the lottery.' % (remove_user.name())
+                    else:
+                        rec.user.remove(remove_user)
+                        if not rec.user.exists():
+                            rec.delete()
+                        context['success'] = "%s has been removed from the lottery." % (remove_user.name())
             elif Tag.getBooleanTag('student_lottery_run', prog):
                 if request.POST.get('mode') == 'undo':
                     if "confirm" in request.POST:
