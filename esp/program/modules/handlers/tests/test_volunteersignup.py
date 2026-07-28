@@ -34,7 +34,7 @@ class VolunteerSignupTestCase(TestCase):
         )
 
         # Create Tag and VolunteerRequest needed for VolunteerOfferForm choices
-        self.tag, _ = Tag.objects.get_or_create(name='General Volunteer')
+        self.tag = Tag.objects.create(key='general_volunteer', value='General Volunteer')
         self.volunteer_request = VolunteerRequest.objects.create(
             program=self.program,
             tag=self.tag,
