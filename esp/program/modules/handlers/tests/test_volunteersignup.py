@@ -33,13 +33,14 @@ class VolunteerSignupTestCase(TestCase):
             description='Test Volunteer Shift Description',
         )
 
-        # Create Tag and VolunteerRequest needed for VolunteerOfferForm choices
-        self.tag = Tag.objects.create(key='general_volunteer', value='General Volunteer')
+        # Set tag using official Tag.setTag as explicitly requested by maintainer
+        Tag.setTag('general_volunteer', value='General Volunteer')
+
+        # Create VolunteerRequest with verified exact model fields
         self.volunteer_request = VolunteerRequest.objects.create(
             program=self.program,
-            tag=self.tag,
-            event=self.event,
-            num_requested=5,
+            timeslot=self.event,
+            num_volunteers=5,
         )
 
         # Initialize the handler module
@@ -62,3 +63,4 @@ class VolunteerSignupTestCase(TestCase):
         }
         form = VolunteerOfferForm(data=form_data, program=self.program)
         self.assertTrue(form.is_valid(), msg=f"Form errors: {form.errors}")
+        
