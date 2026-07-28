@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 from django.http import HttpResponse, HttpResponseForbidden
 from django.middleware.csrf import REASON_NO_REFERER
-from django.test import RequestFactory, override_settings
+from django.test import Client, RequestFactory, override_settings
 
 from esp.tests.factories import make_program, make_user
 from esp.tests.util import CacheFlushTestCase
@@ -50,11 +50,42 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         self.assertEqual(response.status_code, 403)
         self.assertIsInstance(response, HttpResponseForbidden)
 
-    def test_renders_the_esp_failure_page(self):
+    def test_page_states_the_csrf_failure(self):
         response = csrf_failure(self._request())
         content = response.content.decode('utf-8')
         self.assertIn('CSRF verification failed', content)
-        self.assertIn('403', content)
+        self.assertIn('Forbidden', content)
+
+    def test_serves_the_esp_page_and_not_djangos_default(self):
+        """The whole point of this view: our page, not the built-in one.
+
+        403_csrf_failure.html was adapted from Django's built-in CSRF page, so
+        most of the wording is common to both and cannot tell them apart. These
+        assertions use text that belongs to exactly one of the two, which is
+        what makes this a regression test for the view falling back silently.
+        """
+        content = csrf_failure(self._request()).content.decode('utf-8')
+
+        # Only in ours: the site template wrapper and the sign-off.
+        self.assertIn('Web Team', content)
+        self.assertIn('sorry for the inconvenience', content)
+        # Only in Django's: its own troubleshooting list.
+        self.assertNotIn('The form has a valid CSRF token', content)
+
+    def test_middleware_rejection_serves_the_esp_page(self):
+        """End-to-end: a real rejected POST, not a direct call to the view.
+
+        CSRF_FAILURE_VIEW is only reached through CsrfViewMiddleware, so this
+        is the path that actually matters. /accounts/login/ is used simply
+        because it accepts POST and is CSRF-protected.
+        """
+        client = Client(enforce_csrf_checks=True)
+        response = client.post('/accounts/login/', {'username': 'nobody'})
+
+        self.assertEqual(response.status_code, 403)
+        content = response.content.decode('utf-8')
+        self.assertIn('CSRF verification failed', content)
+        self.assertIn('Web Team', content)
 
     def test_response_is_html(self):
         response = csrf_failure(self._request())
