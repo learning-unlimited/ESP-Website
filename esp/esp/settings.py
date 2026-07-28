@@ -88,7 +88,7 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 if SENTRY_DSN:
     sentry_handler = {
         'level': 'WARNING',
-        'filters': ['require_not_in_script'],
+        'filters': ['require_not_in_script', 'skip_404', 'skip_django110_warning'],
         'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
         'dsn': SENTRY_DSN,
     }
@@ -127,6 +127,12 @@ LOGGING = {
         },
         'require_not_in_script': {
             '()': 'esp.utils.log.RequireNotInScript',
+        },
+        'skip_404': {
+            '()': 'esp.utils.log.SkipHttp404',
+        },
+        'skip_django110_warning': {
+            '()': 'esp.utils.log.SkipDjango110DeprecationWarning',
         },
     },
     'handlers': {
