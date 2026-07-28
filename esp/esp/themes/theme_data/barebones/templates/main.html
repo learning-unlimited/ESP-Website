@@ -26,7 +26,25 @@ Example stylesheet inclusion tag:
 <a href="#main" class="skip-nav">Skip to main content</a>
 
 {% block navbar %}
-{% include "navbar.html" %}
+<nav class="navbar navbar-light bg-light navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
+  <div class="container">
+    <a class="navbar-brand" href="/">{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}</a>
+    <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li class="nav-item"><a class="nav-link" href="/about/main.html">About</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'contact' %}">Contact Us</a></li>
+      </ul>
+      <ul class="nav navbar-nav ms-auto">
+        <li class="nav-item">
+          {% block loginbox %}{% include "users/loginbox_content.html" %}{% endblock %}
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
 {% endblock navbar%}
 
 {% block main %}
@@ -108,7 +126,7 @@ Example stylesheet inclusion tag:
   <footer>
     <hr />
     {% block footer %}
-    <div class="onsite hidden"><a href="{% url 'myesp_onsite' %}">On-Site Registration</a></div>
+    <div class="onsite"><a href="{% url 'myesp_onsite' %}">On-Site Registration</a></div>
     <div>
       {% load render_qsd %}
       {% inline_qsd_block "footer_text" %}

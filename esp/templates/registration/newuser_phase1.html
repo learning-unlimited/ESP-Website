@@ -2,6 +2,9 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{# This page has its own account form, so suppress the sidebar/navbar login box. #}
+{% block loginbox %}{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
