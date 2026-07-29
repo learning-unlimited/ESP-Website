@@ -85,9 +85,19 @@ function qsd_warn_if_stale(qsd_url, orig_id, orig_version, textarea_id)
             // this, that mismatch alone would trip a false "stale" alert on
             // every load of such content, including immediately after
             // saving it -- nothing was actually stale.
+            //
+            // Skip this check entirely when orig_id is empty (the block
+            // has no saved row yet): the textarea in that case is seeded
+            // from the block's *default* template content, not from any
+            // saved QSD row, while the server has no row to report content
+            // for and falls back to result.content === '' -- comparing the
+            // two would misfire as "changed" on essentially every click of
+            // an uncreated block, even though nothing changed. The real
+            // risk in that case -- someone else creating the row in the
+            // meantime -- is still caught independently by result.stale.
             var textarea = document.getElementById(textarea_id);
             var normalizeLineEndings = function(s) { return s.replace(/\r\n/g, '\n'); };
-            var contentMismatch = textarea && result.content !== undefined
+            var contentMismatch = orig_id && textarea && result.content !== undefined
                 && normalizeLineEndings(textarea.value) !== normalizeLineEndings(result.content);
             if (result.stale || contentMismatch) {
                 alert("Heads up: this content has changed since this page was loaded. " +
