@@ -278,6 +278,7 @@ class LineItemsModuleViewTest(ProgramFrameworkTest):
         response = self.client.get(
             self.url + '?op=edit&id=' + str(lineitem.id)
         )
+
         self.assertEqual(response.status_code, 200)
         self.assertIn('lineitem_form', response.context)
         self.assertIn('lineitem', response.context)
