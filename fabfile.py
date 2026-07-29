@@ -369,10 +369,16 @@ def loaddb(filename=None, load_db_only=False):
     # 15+, this DROP will fail with "schema does not exist" and should be
     # removed (or made conditional).
     # Only drop if the dump includes CREATE SCHEMA public; some pg_dump versions
-    # omit it for the default schema, in which case nothing would recreate it.
+    # omit it for the default schema (only emitting ALTER SCHEMA public OWNER
+    # TO ...), in which case nothing would recreate it. Note: `pg_restore -l`
+    # lists a "SCHEMA - public" TOC entry either way, so we have to check the
+    # entry's actual content (via --section=pre-data) rather than just its
+    # presence in the TOC listing.
     with settings(warn_only=True):
-        has_schema_public = run("pg_restore -l " + env.encfab + "dbdump | grep -q ' SCHEMA - public '")
-    if not has_schema_public.failed:
+        has_create_schema_public = run(
+            "pg_restore -f - --section=pre-data " + env.encfab +
+            "dbdump | grep -q 'CREATE SCHEMA public;'")
+    if not has_create_schema_public.failed:
         sudo("psql -AXqt --dbname=" + pipes.quote(env.dbname) + " -c 'DROP SCHEMA public'", user="postgres")
 
     # Load the database dump using the appropriate command for the format

@@ -2,7 +2,23 @@
 set -euf -o pipefail
 
 if [ "$TRAVIS_JOB" = "test" ]; then
-    cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
+    # Generate local_settings.py from the same canonical template used for
+    # local dev environments (deploy/config_templates/local_settings.py, via
+    # fabfile.py's emptydb task), rather than maintaining a second,
+    # independently-drifting settings file. Substitution matches the
+    # postgres service's credentials configured in tests.yml.
+    python3 -c "
+with open('deploy/config_templates/local_settings.py') as f:
+    template = f.read()
+context = {
+    'db_name': 'test_django',
+    'db_user': 'testuser',
+    'db_password': 'testpassword',
+    'secret_key': 'ci-test-secret-key-not-for-production',
+}
+with open('esp/esp/local_settings.py', 'w') as f:
+    f.write(template % context)
+"
     ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
     ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
     # the postgres service in Github Actions sets up the database for us
