@@ -72,6 +72,33 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         # Only in Django's: its own troubleshooting list.
         self.assertNotIn('The form has a valid CSRF token', content)
 
+    def test_renders_any_render_capable_response(self):
+        """A response with render() but no is_rendered must still be rendered.
+
+        Django's render() is a no-op once the content is baked, so the view
+        calls it unconditionally rather than consulting is_rendered, which is
+        specific to SimpleTemplateResponse. Skipping the call for a type that
+        does not define that attribute would put us back to reading .content
+        off an unrendered response.
+        """
+        class LazilyRenderedResponse(HttpResponse):
+            def __init__(self):
+                super().__init__('', content_type='text/html')
+
+            def render(self):
+                self.content = 'body available only after render()'
+                return self
+
+        with patch('esp.utils.web.render_to_response',
+                   return_value=LazilyRenderedResponse()):
+            response = csrf_failure(self._request())
+
+        self.assertEqual(response.status_code, 403)
+        self.assertIn(
+            'body available only after render()',
+            response.content.decode('utf-8'),
+        )
+
     def test_middleware_rejection_serves_the_esp_page(self):
         """End-to-end: a real rejected POST, not a direct call to the view.
 

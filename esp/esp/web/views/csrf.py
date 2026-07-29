@@ -39,8 +39,10 @@ def csrf_failure(request, reason=""):
         # render_to_response() hands back an unrendered TemplateResponse, whose
         # content is not available until it has been rendered. Reading .content
         # first raises ContentNotRenderedError, which the except clause below
-        # would quietly turn into Django's default error page.
-        if hasattr(response, 'render') and not response.is_rendered:
+        # would quietly turn into Django's default error page. render() is a
+        # no-op once the content is baked, so it is safe to call without
+        # inspecting is_rendered, which not every render-capable type defines.
+        if hasattr(response, 'render'):
             response.render()
         response = HttpResponseForbidden(str(response.content, encoding='UTF-8'),
                                          content_type=response['Content-Type'])
