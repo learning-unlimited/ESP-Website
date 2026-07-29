@@ -2,6 +2,9 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{# This page has its own account form, so suppress the sidebar/navbar login box. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
