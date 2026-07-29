@@ -1269,10 +1269,13 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         self.program.getModules()
         self.schedule_randomly()
 
-        sec = random.choice(list(self.program.sections()))
+        sec = next(
+            (s for s in self.program.sections() if s.classrooms()),
+            None,
+        )
+        self.assertIsNotNone(sec, "No sections have rooms after schedule_randomly()")
         options = sec.parent_program.studentclassregmoduleinfo
         rooms = sec.classrooms()
-        self.assertGreater(len(rooms), 0)
         room_capacity = rooms[0].num_students
 
         # Enable room-cap multiplier and set values
