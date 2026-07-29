@@ -1,5 +1,3 @@
-libapache2-mod-svn
-libapache2-mod-rpaf
-exim4-config
-exim4-base
-exim4-daemon-heavy
+postfix
+postfix-policyd-spf-python
+nginx

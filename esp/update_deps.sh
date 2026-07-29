@@ -49,12 +49,7 @@ fi
 
 if [[ "$MODE_PROD" ]]
 then
-    if [ $((${UBUNTU_VERSION%.*}+0)) -ge 20 ]
-    then
     xargs sudo apt install -y < $BASEDIR/esp/packages_prod.txt
-    else
-    xargs sudo apt-get install -y < $BASEDIR/esp/packages_prod_u12.txt
-    fi
 fi
 
 # Install universe and curl
