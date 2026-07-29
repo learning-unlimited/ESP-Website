@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,30 +34,23 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, meets_deadline, main_call, meets_cap
 from esp.utils.web import render_to_response
-from esp.dbmail.models import send_mail
-from esp.users.models import ESPUser, Record
+from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from esp.accounting.models import LineItemType
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 
 from django import forms
 from django.conf import settings
-from django.db import transaction
 from django.db.models.query import Q
 from django.http import HttpResponseRedirect
-from django.contrib.sites.models import Site
-from django.template.loader import render_to_string
 
 from decimal import Decimal
-from datetime import datetime
-import stripe
 import json
-import re
 
 
 
@@ -73,8 +67,8 @@ class DonationForm(forms.Form):
         self.fields['custom_amount'].initial = custom_amount_initial
 
     def clean_custom_amount(self):
-        amount_donation = self.cleaned_data.get('amount_donation','')
-        custom_amount = self.cleaned_data.get('custom_amount','')
+        amount_donation = self.cleaned_data.get('amount_donation', '')
+        custom_amount = self.cleaned_data.get('custom_amount', '')
 
         if amount_donation == "-1":
             if custom_amount:
@@ -87,6 +81,7 @@ class DonationForm(forms.Form):
 
 
 class DonationModule(ProgramModuleObj):
+    doc = """Solicit donations from students."""
 
     event = "donation_done"
 
@@ -106,10 +101,10 @@ class DonationModule(ProgramModuleObj):
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
             'donation_text': 'Donation to ESP',
-            'donation_options':[10, 20, 50],
+            'donation_options': [10, 20, 50],
         }
 
-        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program, "{}"))
+        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
@@ -118,13 +113,16 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        pac = ProgramAccountingController(self.program)
-        (donate_type, created) = pac.get_lineitemtypes().get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
     def isCompleted(self):
         """Whether the user made a decision about donating to LU."""
-        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):
         QObj = Q(transfer__line_item=self.line_item_type())
@@ -176,7 +174,7 @@ class DonationModule(ProgramModuleObj):
         # credit card payment has occured. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
         # has occured.
-        if iac.amount_due() <= 0:
+        if iac.has_paid():
             raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
 
         form = None
@@ -210,7 +208,8 @@ class DonationModule(ProgramModuleObj):
         # this page to not use AJAX but instead use a normal form submission,
         # we can then switch to granting the Record after the user is done with
         # the page.
-        Record.objects.get_or_create(user=user, program=self.program, event=self.event)
+        rt = RecordType.objects.get(name=self.event)
+        Record.objects.get_or_create(user=user, program=self.program, event=rt)
 
 
         #   Load donation amount separately, since the client-side code needs to know about it separately.

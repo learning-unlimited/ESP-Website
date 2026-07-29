@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import models, migrations
 
 
@@ -26,6 +27,6 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='tag',
-            unique_together=set([('key', 'content_type', 'object_id')]),
+            unique_together={('key', 'content_type', 'object_id')},
         ),
     ]

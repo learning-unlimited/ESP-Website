@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,25 +35,24 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
+from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
+from django.http                 import HttpResponse
+from django.db                   import transaction
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserAvailability
+from esp.users.models            import ESPUser
 from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from datetime                    import timedelta, time
-import json
-from collections                 import defaultdict
+from esp.resources.models        import Resource, ResourceAssignment
+from esp.tagdict.models          import Tag
 from argcache                    import cache_function
 from uuid                        import uuid4 as get_uuid
-from esp.utils.decorators         import json_response
-import calendar, time, datetime
+from esp.utils.decorators        import json_response
+
+import json
+import time
 
 class AJAXSchedulingModule(ProgramModuleObj):
-    """ This program module allows teachers to indicate their availability for the program. """
+    doc = """Provides an application to use for scheduling classes."""
 
     @classmethod
     def module_properties(cls):
@@ -86,8 +86,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         #actually return the page
         context = {
-            "has_autoscheduler_frontend":
-                prog.hasModule("AutoschedulerFrontendModule")}
+            "has_autoscheduler_frontend": prog.hasModule("AutoschedulerFrontendModule"),
+            "has_moderator_module": prog.hasModule("TeacherModeratorModule"),
+            "contiguous_tolerance": Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)
+            }
 
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
@@ -158,6 +160,25 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
+    def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
+        # assignments: the list of new assignments for the section(s) in json format
+        # Unschedule all of the section(s)
+        for asmt in assignments:
+            cls = ClassSection.objects.get(id=asmt['section'])
+            retval = self.ajax_schedule_deletereg(prog, cls, user)
+            if not json.loads(retval.content)['ret']:
+                return retval
+
+        # Reschedule all of the section(s)
+        for asmt in assignments:
+            if asmt['room_id']:
+                cls = ClassSection.objects.get(id=asmt['section'])
+                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
+                if not json.loads(retval.content)['ret']:
+                    return retval
+
+        return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
+
     @aux_call
     @needs_admin
     @json_response()
@@ -181,7 +202,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         Clears the change log for this program. """
 
         self.get_change_log(prog).entries.all().delete()
-        return HttpResponse('')
+        context = {}
+        return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
 
     def get_change_log(self, prog):
         change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
@@ -209,20 +231,21 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
+        if 'action' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
-        cls_id = request.POST['cls']
-        cls = ClassSection.objects.get(id=cls_id)
         action = request.POST['action']
 
         if action == 'deletereg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             times = []
             classrooms = [ None ]
             retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
-
         elif action == 'assignreg':
+            cls_id = request.POST['cls']
+            cls = ClassSection.objects.get(id=cls_id)
             blockrooms = request.POST['block_room_assignments'].split("\n")
             times = []
             classrooms = []
@@ -232,6 +255,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 classrooms.append(classroom)
             override = request.POST['override'] == "true"
             retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
+        elif action == 'swap':
+            assignments = json.loads(request.POST['assignments'])
+            override = request.POST['override'] == "true"
+            retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
@@ -239,8 +266,41 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def ajax_assign_moderator(self, request, tl, one, two, module, extra, prog):
+        # DON'T CACHE this function!
+        # It's supposed to have side effects, that's the whole point!
+        if 'action' not in request.POST:
+            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+
+        # Pull relevant data out of the JSON structure
+        sec_id = request.POST['sec']
+        sec = ClassSection.objects.get(id=sec_id)
+        mod_id = request.POST['mod']
+        mod = ESPUser.objects.get(id=mod_id)
+        action = request.POST['action']
+
+        if action == 'removemod':
+            sec.moderators.remove(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
+            return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
+        elif action == 'assignmod':
+            override = request.POST['override'] == "true"
+            if not override:
+                # check availability
+                avail_times = [time.id for time in mod.getAvailableTimes(prog)]
+                for timeslot in sec.meeting_times.all():
+                    if timeslot.id not in avail_times:
+                        return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
+            sec.moderators.add(mod)
+            self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
+            return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
+        else:
+            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+
+    @aux_call
+    @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
-        if not 'comment' in request.POST:
+        if 'comment' not in request.POST:
             raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
@@ -248,13 +308,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
         comment = request.POST['comment']
         locked = 'locked' in request.POST
 
-        try:
-            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
-        except module_ext.AJAXSectionDetail.DoesNotExist:
-            sectionDetail = module_ext.AJAXSectionDetail()
-            sectionDetail.initialize(prog, cls_id, comment, locked)
+        with transaction.atomic():
+            try:
+                module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+            except module_ext.AJAXSectionDetail.DoesNotExist:
+                sectionDetail = module_ext.AJAXSectionDetail()
+                sectionDetail.initialize(prog, cls_id, comment, locked)
 
-        self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
+            self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
         return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls_id)
 
     @aux_call
@@ -349,6 +410,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
             num_affected_sections += 1
 
         return num_affected_sections
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

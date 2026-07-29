@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,13 +33,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
+from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, User
+from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django.template.loader import get_template
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
@@ -47,8 +47,9 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 
-# student class picker module
 class FinancialAidAppModule(ProgramModuleObj):
+    doc = """Serve a financial aid application to students."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -81,15 +82,19 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid"""}
 
     def isCompleted(self):
-        return get_current_request().user.appliedFinancialAid(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return user.appliedFinancialAid(self.program)
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Finaid')
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be
     # misinterpreted as "we are out of financial aid".
-    def finaid(self,request, tl, one, two, module, extra, prog):
+    def finaid(self, request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.
         """
@@ -113,7 +118,7 @@ class FinancialAidAppModule(ProgramModuleObj):
             if form.is_valid():
                 app.__dict__.update(form.cleaned_data)
 
-                if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
+                if 'submitform' not in request.POST or request.POST['submitform'].lower() == 'complete':
                     app.done = True
                 elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
                     app.done = False
@@ -176,6 +181,10 @@ This request can be (re)viewed at:
                                   request,
                                   {'form': form, 'app': app})
 
+    def isStep(self):
+        # Only show this module if there are things (with costs) for financial aid to cover
+        pac = ProgramAccountingController(self.program)
+        return pac.get_lineitemtypes().filter(for_finaid=True, amount_dec__gt=0).exists()
 
     class Meta:
         proxy = True

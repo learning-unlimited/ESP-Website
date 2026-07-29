@@ -2,9 +2,10 @@
 <table cellspacing="0" cellpadding="10" border="1" width="100%">
     <tr>
         <th width="20%">Time</th>
-        <th width="60%">Class</th>
+        <th width="40%">Class</th>
         {% if room_numbers %}
         <th width="20%">Room</th>
+        <th width="20%">Zoom Link</th>
         {% endif %}
     </tr>
     {% for cls in sched_items %}
@@ -14,6 +15,7 @@
             <td>{{ cls.title }}</td>
             {% if room_numbers %}
             <td>{% for room in cls.prettyrooms %}{{ room }}, {% empty %}N/A{% endfor %}</td>
+            <td><a href="{{ cls.classrooms.0.associated_resources.0.attribute_value }}" target="_blank">{{ cls.classrooms.0.associated_resources.0.attribute_value }}</a></td>
             {% endif %}
         </tr>
         {% endif %}

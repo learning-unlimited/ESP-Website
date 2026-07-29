@@ -1,0 +1,21 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}User Group Portal{% endblock %}
+
+{% block content %}
+
+<h1>User Group Portal</h1>
+
+<p>Welcome to the user group portal&mdash;your one stop to add and remove users from existing and new groups.</p>
+
+<h2>Step 1:</h2>
+
+<p>Select users with the form below.</p>
+
+{% with include_common="True" %}
+{% include "users/usersearch/list_selector.html" %}
+{% endwith %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

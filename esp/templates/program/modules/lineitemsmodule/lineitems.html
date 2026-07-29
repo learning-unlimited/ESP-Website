@@ -1,0 +1,120 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Line Items for {{ prog.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/lineitems.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+    <!--This branch has a fix for when formsets are originally hidden-->
+    <script src="https://cdn.jsdelivr.net/gh/elo80ka/django-dynamic-formset@f5f68c818953ddf43ffa7cb2e9aa391c3d4dfb47/src/jquery.formset.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Line Items for {{ prog.niceName }}</h1>
+
+<p>
+You can use this page to add, remove, edit, delete, and import line items, which are individual costs that can be charged to students (including optional and/or custom costs).
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/lineitems?op=import">
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Import line items from a previous program</th></tr>
+    {{ import_lineitem_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Import Line Items" /></td></tr>
+</table>
+</form>
+
+{% with option_formset.empty_form as option_form %}
+    <div id="id_empty_form" style="display:none;">
+        <table>
+            <tr><th>{{ option_form.description.label_tag }}</th><td>{{ option_form.description }}</td></tr>
+            <tr><th>{{ option_form.amount_dec.label_tag }}</th><td>{{ option_form.amount_dec }}<br>{{ option_form.amount_dec.help_text }}<br></td></tr>
+            <tr><th>{{ option_form.is_custom.label_tag }}</th><td>{{ option_form.is_custom }} {{ option_form.is_custom.help_text }}<br></td></tr>
+            {% for hidden in option_form.hidden_fields %}
+                {{ hidden }}
+            {% endfor %}
+        </table>
+    </div>
+{% endwith %}
+
+<form method="post" action="/manage/{{ prog.url }}/lineitems">
+<input type="hidden" name="command" value="addedit" />
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2" class="small">Add/modify a line item</th></tr>
+    {% if lineitem %}
+    <input type="hidden" name="id_lineitem" value="{{ lineitem.id }}" id="id_lineitem">
+    {% endif %}
+    {{ lineitem_form }}
+    <tr>
+        <th><label>Options:<br>(optional)</label></th>
+        <td>
+            <div id="option_formset">
+            {{ option_formset.management_form }}
+            {% if not option_formset.0 %}
+                <span class="option-formset"></span>
+            {% else %}
+                {% for option_form in option_formset %}
+                    <div class="option-formset">
+                        <table>
+                            <tr><th>{{ option_form.description.label_tag }}</th><td>{{ option_form.description }}</td></tr>
+                            <tr><th>{{ option_form.amount_dec.label_tag }}</th><td>{{ option_form.amount_dec }}<br>{{ option_form.amount_dec.help_text }}<br></td></tr>
+                            <tr><th>{{ option_form.is_custom.label_tag }}</th><td>{{ option_form.is_custom }} {{ option_form.is_custom.help_text }}<br></td></tr>
+                            {% for hidden in option_form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                        </table>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            </div>
+        </td>
+    </tr>
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Update Line Item" /></td></tr>
+</table>
+</form>
+
+<table align="center" cellpadding="0" cellspacing="0" width="100%">
+    <tr><th colspan="2">Line Items for {{ prog.niceName }}</th></tr>
+    <tr><td colspan="2"><table cellpadding="0" cellspacing="0" width="100%">
+    <tr>
+        <td class="underline"><b>Name</b></td>
+        <td class="underline"><b>Cost</b></td>
+        <td class="underline"><b>Required</b></td>
+        <td class="underline"><b>Max Quantity</b></td>
+        <td class="underline"><b>For Finaid?</b></td>
+        <td class="underline"><b>Options</b></td>
+    </tr>
+    {% for li in lineitems %}
+    <tr>
+        <td class="underline">
+            <div id="lineitem-{{ li.id }}">{{ li.text }}</div>
+            <br />
+                <a href="/manage/{{ prog.url }}/lineitems?op=edit&id={{ li.id }}">[Edit]</a>
+                <a href="/manage/{{ prog.url }}/lineitems?op=delete&id={{ li.id }}">[Delete]</a>
+        </td>
+        <td class="underline">{{ li.amount_dec }}</td>
+        <td class="underline">{% if li.required %}&#10003;{% endif %}</td>
+        <td class="underline">{{ li.max_quantity }}</td>
+        <td class="underline">{% if li.for_finaid %}&#10003;{% endif %}</td>
+        <td class="underline">
+            <ol>
+            {% for opt in li.lineitemoptions_set.all %}
+            <li>{{ opt.description }}: {{ opt.amount_dec }}{% if opt.is_custom %} (Custom){% endif %}</li>
+            {% endfor %}</td>
+            </ol>
+    </tr>
+    {% endfor %}
+    </table></td></tr>
+</table>
+</div>
+<script id="lineitemsscript" src="/media/scripts/program/modules/lineitems.js" data-prog_url="{{ prog.url }}"></script>
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -56,6 +57,9 @@ class ClassFlagModule(ProgramModuleObj):
             "seq": 100,
             "choosable": 1,
         }
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

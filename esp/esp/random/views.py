@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.program.models import ClassSubject
 from esp.utils.web import render_to_response
 from esp.tagdict.models import Tag
@@ -9,7 +10,7 @@ import json
 # { "bad_program_names": ["Delve", "SATPrep", "9001", "Test"],
 #   "bad_titles": ["Lunch Period"] }
 def good_random_class():
-    constraints = json.loads(Tag.getTag('random_constraints', default='{}'))
+    constraints = json.loads(Tag.getTag('random_constraints'))
     q = Q()
     for bad_program_name in constraints.get('bad_program_names', []):
         q = q & ~Q(parent_program__name__icontains=bad_program_name)

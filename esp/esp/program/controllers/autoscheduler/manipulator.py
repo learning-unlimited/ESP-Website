@@ -1,5 +1,6 @@
 """A schedule manipulator. Stores and makes changes to an AS_schedule."""
 
+from __future__ import absolute_import
 import logging
 
 from esp.program.controllers.autoscheduler.scoring import CompositeScorer
@@ -261,6 +262,6 @@ class ScheduleManipulator:
         """Prints a sorted list of times recorded, not necessarily by this
         manipulator."""
         times = self.get_recorded_times()
-        items = sorted(times.items(), key=lambda x: -x[1][0])
+        items = sorted(list(times.items()), key=lambda x: -x[1][0])
         for i in items:
             logger.info(i)

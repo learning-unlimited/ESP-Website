@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+
+{% block title %}User Records Portal{% endblock %}
+
+{% block content %}
+{% load users %}
+
+<h1>User Records Portal</h1>
+<h2>FINISHED!</h2>
+
+<p>Congratulations!</p>
+
+<p>{{ num_users }} users were assigned the following records:</p>
+<ul>
+{% for rec in records %}
+<li>{{ rec|getRecordDescription }}</li>
+{% endfor %}
+</ul>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

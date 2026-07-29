@@ -1,0 +1,49 @@
+{% if login_result %}
+  <div class="nav">{{ login_result }}</div>
+{% endif %}
+
+<ul class="logged_in nav hidden pull-right">
+  <li>
+      <li class="dropdown">
+        <a class="navbar-header" id="loginbox_user_name" data-toggle="dropdown">
+          Hello, <span id="user_first_name"></span>
+          <span id="user_last_name"></span>!
+        </a>
+        <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
+        <ul class="dropdown-menu pull-right">
+          <li><a href="/myesp/accountmanage/">Manage Account</a></li>
+        </ul>
+      </li>
+  </li>
+  <li>
+    <form class="navbar-form form-inline" action="/myesp/signout">
+      <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
+    </form>
+  </li>
+</ul>
+
+
+
+<ul class="nav pull-right not_logged_in">
+  <li>
+    <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form pull-right">
+      <!-- input type="hidden" name="next" value={-{ request.path }}" / -->
+      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
+      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
+    
+      <button class="btn btn-inverse" id="gologin" type="submit" style="margin-right:0px;"> Login </button>
+    </form>
+  </li>
+  <li class="dropdown">
+    <a class="navbar-header" data-toggle="dropdown">
+      Account
+    </a>
+    <a class="dropdown-toggle caret-wrapper" data-toggle="dropdown"><b class="caret"></b></a>
+
+    <ul class="dropdown-menu pull-right">
+      <li><a href="/myesp/register">Register</a></li>
+      <li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
+      <li><a href="/myesp/loginhelp.html">Help</a></li>
+    </ul>
+  </li>
+</ul>

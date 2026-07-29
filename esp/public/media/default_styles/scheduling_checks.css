@@ -113,3 +113,19 @@ table {
 .alittlepspace {
 	padding-top: 8px;
 }
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+#refresh_interval {
+    width: 40px;
+    float: right;
+    margin-right: 10px;
+}
+
+button[name="refresh"] {
+    float: right;
+    margin-right: 10px;
+}

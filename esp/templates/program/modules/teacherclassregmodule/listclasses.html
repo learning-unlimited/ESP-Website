@@ -5,16 +5,17 @@
 
 .ui-dialog-titlebar-close:after {
     content: '';
-    width: 20px;
+    width: 18px;
     height: 20px;
     display: inline-block;
-    background-image: url(/media/styles/jquery-ui/images/ui-icons_222222_256x240.png);
+    background-image: url(/media/styles/jquery-ui/images/ui-icons_444444_256x240.png);
     background-position: -96px -128px;
     background-repeat: no-repeat;
 }
 </style>
 
 {% block xtrajs %}
+{% if can_req_cancel %}
 <script type="text/javascript">
 function requestCancel(cls) {
     $j('#request_' + cls).dialog({
@@ -36,17 +37,8 @@ function requestCancel(cls) {
     });
 }
 
-<!--
-
-function deleteClass() {
-    if (confirm('Are you sure you would like to delete this class?')) {
-       return true;
-    }
-    return false;
-}
-
-//-->
 </script>
+{% endif %}
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
@@ -98,55 +90,37 @@ If you have any questions regarding the program, <br /> please email the
   {% endif %}
   {% load class_render_row %}
   {% for cls in clslist %}
-    {% render_class_teacher_list_row cls can_req_cancel survey_results %}
+    {% render_class_teacher_list_row cls can_req_cancel survey_results request.user %}
   {% endfor %}
-  {% for sec in observing_section_list %}
-    <tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
-      <td class="clsleft bordertop2" colspan="7">
-        <em>Observing</em> {{ sec.parent_class }}
-      </td>
-    </tr>
-    <tr>
-      <td class="clsleft"><b>Teachers:</b></td>
-      <td class="clsmiddle" colspan="6">{% for t in sec.parent_class.get_teachers %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
-    </tr>
-    <tr>
-      <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
-        Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
-        <span style="font-weight: bold; color: #0C0;">Accepted</span>
-        {% else %}
-        <span style="font-weight: bold; color: #C00;">Rejected</span>
-        {% endif %}
-        {% else %}
-        <span style="font-weight: bold; color: #00C;">Unreviewed</span>
-        {% endif %}
-      </td>
-      <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}
-          {% if sec.get_observers %}<br />Observers: {% for a in sec.get_observers %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
-          {% endif %}
-      </td>
-  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) </td>
-    </tr>
+  {% if can_create %}
+  <tr>
+  <td colspan="7" class="clsleft bordertop2 add-class-cell">
+    {% if can_create_class %}
+    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+      Add a new class for {{ program.niceName }}!
+    </a>
+    <br />
+    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+      Teach a class from a previous program for {{ program.niceName }}!
+    </a>
+    {% endif %}
+    {% if can_create_open_class %}<br />
+    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
+      Add a new {{ open_class_category }} for {{ program.niceName }}!
+    </a> {% endif %}
+  </td>
+  </tr>
+  {% endif %}
+  {% if modlist %}
+  {% load section_render_row %}
+{#  <tr>#}
+{#    <th colspan="7">#}
+{#       Manage Your {{ program.getModeratorTitle }} Sections#}
+{#    </th>#}
+{#  </tr>#}
+  {% for sec in modlist %}
+    {% render_section_moderator_list_row sec %}
   {% endfor %}
-
-   {% if can_create %}
-   <tr>
-   <td colspan="7" class="clsleft bordertop2"><b>Registration form:</b>
-     {% if can_create_class %}
-     <a href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-       Add a new class for {{ program.niceName }}!
-     </a>
-     <br />
-     <a href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-       Teach a class from a previous program for {{ program.niceName }}!
-     </a>
-     {% endif %}
-     {% if can_create_open_class %}<br />
-     <a href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
-       Add a new {{ open_class_category }} for {{ program.niceName }}!
-     </a> {% endif %}
-   </td>
-   </tr>
-   {% endif %}
+  {% endif %}
 </table>
 </div> <!-- div#battlescreen -->

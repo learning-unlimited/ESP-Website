@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -51,18 +52,21 @@ person_type = (
 hear_about = (
     ('School', 'School'),
     ('Posters', 'Posters'),
-    ('Friend','Friend'),
-    ('Website','Website'),
+    ('Friend', 'Friend'),
+    ('Website', 'Website'),
     ('Referral', 'Referral'),
     ('Other', 'Other'),
     )
 
 class ContactForm(forms.Form):
-    sender  = forms.EmailField(label=_("Your Email"), required = True,
+    anonymous = forms.BooleanField(label=_("Anonymous"), required = False,
+                                   help_text=_("(By checking this, we will make your submission anonymous by removing all identifying information from your submission.)") )
+
+    sender  = forms.EmailField(label=_("Your Email"), required = False,
                                help_text=_("(e.g.: john.doe@domain.xyz)"))
 
-    cc_myself = forms.BooleanField(label=_("Copy me"), required = False,
-                                   help_text=_("(By checking this, we will send you a carbon-copy (cc) of this email.)") )
+    cc_myself = forms.BooleanField(label=_("Copy me"), required = False, initial = True,
+                                   help_text=_("(By checking this, we will send a carbon-copy (cc) of this email to the address listed above. If you checked the 'Anonymous' box, we will send a blind carbon-copy (bcc) of this email.)") )
 
     name      = forms.CharField(max_length=100, label="Your Name", required=False)
 
@@ -83,5 +87,3 @@ class ContactForm(forms.Form):
     # If this is true, then the user has seen and clicked through a message
     # checking whether they want to recover login information.
     decline_password_recovery = forms.BooleanField(required=False, widget=forms.HiddenInput)
-
-

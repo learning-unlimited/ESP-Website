@@ -40,17 +40,14 @@
 <p>
   Welcome to {{ settings.ORGANIZATION_SHORT_NAME }}!
   To do almost anything with us, you first need to register
-  an account with us. After you register account, you will be allowed to register
+  an account with us. After you register an account, you will be allowed to register
   for programs, sign up for classes, among other things.
-  By creating an account, you agree to the <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
-  set forth by Learning Unlimited, the umbrella organization of which we are a member.
+  By creating an account, you agree to our <a href="{{ settings.PRIVACY_POLICY_URL }}" target="_blank">Privacy Policy</a>.
 </p>
 {% if settings.USE_MAILMAN %}
 <p>
-  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
-  (The latter gets emails about longer-term {{ settings.ORGANIZATION_SHORT_NAME }} programs, targeted at people in the local area,
-  while the former gets emails about programs that might be worth travelling for.)
-  If you create an account, you will be automatically subscribed to our main announcements.
+  If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">email list</a>.
+  If you create an account, you will be automatically subscribed to our announcements.
 </p>
 {% endif %}
 {% end_inline_qsd_block %}
@@ -75,7 +72,7 @@
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit" class="btn btn-primary" />
+    <input type="submit" value="{% if accounts %}Confirm: Create another account for this email{% else %}Create account{% endif %}" name="submit_btn" class="btn btn-primary" />
     </div>
   </fieldset>
 </form>

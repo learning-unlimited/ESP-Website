@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,8 +34,10 @@ Learning Unlimited, Inc.
 """
 
 import os
+import subprocess
 import warnings
 import tempfile
+import django
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
@@ -45,13 +48,14 @@ BASE_DIR = PROJECT_ROOT
 IS_IN_SCRIPT = os.environ.get("DJANGO_IS_IN_SCRIPT", "False") == "True"
 
 # Configure Django to support ESP
-from django_settings import *
+from .django_settings import *
 
 # Import system-specific settings
-from local_settings import *
+from .local_settings import *
 
 # Do this here so we have access to PROJECT_ROOT
 TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
+TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
 TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
 # Ensure database settings are set properly
@@ -89,8 +93,7 @@ if SENTRY_DSN:
     sentry_handler = {
         'level': 'WARNING',
         'filters': ['require_not_in_script', 'skip_404', 'skip_django110_warning'],
-        'class': 'raven.contrib.django.raven_compat.handlers.SentryHandler',
-        'dsn': SENTRY_DSN,
+        'class': 'sentry_sdk.integrations.logging.EventHandler',
     }
 else:
     sentry_handler = {
@@ -225,8 +228,8 @@ MANAGERS = ADMINS
 DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
 
-for (key,value) in CONTACTFORM_EMAIL_CHOICES:
-    if (key in ('esp','general','esp-web','relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
+for (key, value) in CONTACTFORM_EMAIL_CHOICES:
+    if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
         CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
 
 
@@ -254,16 +257,33 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 CSRF_COOKIE_NAME = 'esp_csrftoken'
 
 if SENTRY_DSN:
-    # If SENTRY_DSN is set, send errors to Sentry via the Raven exception
-    # handler. Note that our exception middleware (i.e., ESPErrorMiddleware)
-    # will remain enabled and will receive exceptions before Raven does.
-    import raven
+    # If SENTRY_DSN is set, send errors to Sentry via sentry_sdk. Note that
+    # our exception middleware (i.e., ESPErrorMiddleware) will remain
+    # enabled and will receive exceptions before Sentry does.
+    import sentry_sdk
+    from sentry_sdk.integrations.logging import LoggingIntegration
 
-    INSTALLED_APPS += (
-        'raven.contrib.django.raven_compat',
+    try:
+        _sentry_release = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=os.path.join(PROJECT_ROOT, '..'),
+            stderr=subprocess.DEVNULL,
+        ).decode('utf8').strip()
+    except (OSError, subprocess.CalledProcessError):
+        _sentry_release = None
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        release=_sentry_release,
+        # We wire logging -> Sentry explicitly and selectively via
+        # LOGGING['handlers']['sentry'] (sentry_handler, above) instead of
+        # sentry_sdk's default global log capture, so disable the latter here.
+        integrations=[LoggingIntegration(level=None, event_level=None, sentry_logs_level=None)],
+        send_default_pii=True,
+        max_request_body_size='always',
+        # Bugsink doesn't support these event types.
+        traces_sample_rate=0,
+        send_client_reports=False,
+        auto_session_tracking=False,
     )
-    RAVEN_CONFIG = {
-        'dsn': SENTRY_DSN,
-        'release': raven.fetch_git_sha(os.path.join(PROJECT_ROOT, '..')),
-    }
 

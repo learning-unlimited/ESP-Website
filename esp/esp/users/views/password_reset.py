@@ -1,11 +1,12 @@
-from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
+from __future__ import absolute_import
+from esp.users.forms.password_reset import PasswordResetForm, NewPasswordSetForm
 from django.http import HttpResponseRedirect
 from esp.users.models import ESPUser, PasswordRecoveryTicket
 from esp.utils.web import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
 
-__all__ = ['initial_passwd_request','email_passwd_followup','email_passwd_cancel']
+__all__ = ['initial_passwd_request', 'email_passwd_followup', 'email_passwd_cancel']
 
 @anonymous_only()
 def initial_passwd_request(request, success=None):
@@ -42,7 +43,7 @@ def initial_passwd_request(request, success=None):
     else:
         form = PasswordResetForm()
 
-    return render_to_response('users/recovery_request.html',request,
+    return render_to_response('users/recovery_request.html', request,
                               {'form':form})
 
 
@@ -55,7 +56,7 @@ def email_passwd_followup(request,success=None):
     try:
         code = request.GET['code']
     except KeyError:
-        code = request.POST.get('code','')
+        code = request.POST.get('code', '')
 
     ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
     if len(ticket) == 0 or not ticket[0].is_valid():
@@ -96,7 +97,7 @@ def email_passwd_cancel(request,success=None):
     try:
         code = request.GET['code']
     except KeyError:
-        code = request.POST.get('code','')
+        code = request.POST.get('code', '')
 
     ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
     if len(ticket) == 0 or not ticket[0].is_valid():

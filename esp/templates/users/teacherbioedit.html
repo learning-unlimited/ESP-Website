@@ -29,7 +29,10 @@ Please complete the form below to update your biography.  We'd appreciate a pict
 </p>
 
 {% if form.errors %}
-<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.<h2>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Please fix the error{{ form.errors|pluralize }} in the form.
+    </div>
 {% endif %}
 
 <div id="program_form">

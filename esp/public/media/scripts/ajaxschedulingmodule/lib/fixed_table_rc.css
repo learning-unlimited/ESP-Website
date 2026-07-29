@@ -1,10 +1,10 @@
-.ft_container table { border-width: 0px; margin: 0px; border-collapse: collapse; margin: 0; outline-style: none; font-size: 0.9em; background-color: #fff; }
+.ft_container table { border-width: 0px; margin: 0px; border-collapse: collapse; margin: 0; outline-style: none; font-size: 0.9em; background-color: #fff; table-layout: fixed; }
 
 .ft_container table tr th { font-weight: bold; }
 
 .ft_container table thead { -moz-user-select: none;-webkit-user-select: none;}
 .ft_container table tr th, 
-.ft_container table tr td { border-collapse: collapse; padding: 2px 4px; word-wrap: break-word; border: 1px solid #CCCCCC; border-top-width: 0px; border-left-width: 0px; border-right-width: 1px; border-bottom-width: 1px; overflow:hidden; word-wrap: break-word;}
+.ft_container table tr td { border-collapse: collapse; padding: 2px 4px; word-wrap: break-word; border: 1px solid #CCCCCC; border-top-width: 0px; border-left-width: 0px; border-right-width: 1px; border-bottom-width: 1px; overflow:hidden; }
 
 .ft_container table tr:first-child td,  
 .ft_container table tr:first-child th { border-top-width: 1px; border-color: #CCCCCC; }

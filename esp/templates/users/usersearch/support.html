@@ -11,6 +11,8 @@
     <script type="text/javascript" src="/media/scripts/commpanel.js"></script>
     <script type="text/javascript">
     var program_base_url = "/json/{{ program.getUrlBase }}/";
+    var program_grade_min = "{{ program.grade_min }}";
+    var program_grade_max = "{{ program.grade_max }}";
     //  Populate list names
     var list_names = [{% for name in all_list_names %}"{{ name }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
     </script>

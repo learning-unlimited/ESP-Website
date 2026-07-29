@@ -1,4 +1,5 @@
-
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -70,6 +71,10 @@ def myesp_passwd(request):
         return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
                                                     'Success': False})
+
+@login_required
+def myesp_accountmanage(request):
+    return render_to_response('users/account_manage.html', request, {})
 
 @login_required
 def myesp_switchback(request):
@@ -163,22 +168,15 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             else:
                 old_regProf = regProf
 
-            for field_name in ['address_zip','address_city','address_street','address_state']:
-                if field_name in new_data and new_data[field_name] != getattr(old_regProf.contact_user,field_name,False):
-                    new_data['address_postal'] = ''
-
-            if new_data['address_postal'] == '':
-                new_data['address_postal'] = False
-
-            regProf.contact_user = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_user, '', curUser)
-            regProf.contact_emergency = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_emergency, 'emerg_')
+            regProf.contact_user = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_user, '')
 
             if new_data.get('dietary_restrictions'):
                 regProf.dietary_restrictions = new_data['dietary_restrictions']
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)
             elif role == 'guardian':
@@ -191,7 +189,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             curUser.last_name  = new_data.get('last_name')
             curUser.email     = new_data.get('e_mail')
             curUser.save()
-            if responseuponCompletion == True:
+            if responseuponCompletion:
                 return registration_redirect(request)
             else:
                 return True
@@ -203,13 +201,13 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             except:
                 pass
             form = FormClass(curUser, replacement_data)
-            if not Tag.getBooleanTag('allow_change_grade_level', default = False):
-                if prog_input is None:
-                    regProf = RegistrationProfile.getLastProfile(curUser)
-                else:
-                    regProf = RegistrationProfile.getLastForProgram(curUser, prog)
-                if regProf.id is None:
-                    regProf = RegistrationProfile.getLastProfile(curUser)
+            if prog_input is None:
+                regProf = RegistrationProfile.getLastProfile(curUser)
+            else:
+                regProf = RegistrationProfile.getLastForProgram(curUser, prog)
+            if regProf.id is None:
+                regProf = RegistrationProfile.getLastProfile(curUser)
+            if not Tag.getBooleanTag('allow_change_grade_level'):
                 if regProf.student_info:
                     if regProf.student_info.dob and 'dob' in form.fields:
                         form.data['dob'] = regProf.student_info.dob
@@ -238,7 +236,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         if regProf.student_info and regProf.student_info.dob:
             new_data['dob'] = regProf.student_info.dob
 
-        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], unicode)):
+        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], six.text_type)):
             new_data['unmatched_school'] = True
 
         #   Set default values for state fields
@@ -248,9 +246,10 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             state_tag_map[field] = 'local_state'
         form = FormClass(curUser, initial=new_data, tag_map=state_tag_map)
 
+    context['new_user'] = regProf.id is None
     context['request'] = request
     context['form'] = form
-    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum', default=True)
+    context['require_student_phonenum'] = Tag.getBooleanTag('require_student_phonenum')
     return render_to_response('users/profile.html', request, context)
 
 @login_required
@@ -259,7 +258,7 @@ def myesp_onsite(request):
     if not user.isOnsite():
         raise ESPError('You are not a valid onsite user, please go away.', log=False)
 
-    progs = Permission.program_by_perm(user,"Onsite")
+    progs = Permission.program_by_perm(user, "Onsite")
 
     # Order them decreasing by id
     progs = list(progs.order_by("-id"))

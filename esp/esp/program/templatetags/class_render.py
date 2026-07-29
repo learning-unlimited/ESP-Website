@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import template
 from django.template.loader import render_to_string
 
@@ -17,11 +18,11 @@ def render_class_core(cls):
     scrmi = prog.studentclassregmoduleinfo
     colorstring = prog.getColor()
     if colorstring is not None:
-        colorstring = ' background-color:#' + colorstring + ';'
+        colorstring = ' background-color: ' + colorstring + ';'
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
-    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog, True)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', prog)
 
     return {'class': cls,
             'collapse_full': collapse_full,
@@ -59,13 +60,14 @@ render_class.cached_function.depend_on_row('program.StudentRegistration', lambda
 render_class.cached_function.get_or_create_token(('user',))
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_webapp.html')
-def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False):
+def render_class_webapp(cls, prog, user=None, filter=False, timeslot=None, checked_in=False, classchange_deadline_met=False):
     """Render the entire class for the webapp, including user-specific parts.
 
     Calls render_class_core for non-user-specific parts.
     """
     context = _render_class_helper(cls,  user, filter, timeslot, webapp = True, prereg_suffix = 'onsiteaddclass')
     context['checked_in'] = checked_in
+    context['allow_classchange'] = checked_in or classchange_deadline_met
     return context
 render_class_webapp.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 render_class_webapp.cached_function.get_or_create_token(('cls',))
@@ -76,7 +78,7 @@ render_class_webapp.cached_function.get_or_create_token(('cls',))
 # this user.  This only applies to tags that can depend on a user.
 render_class_webapp.cached_function.depend_on_row('program.StudentRegistration', lambda reg: {'user': reg.user})
 render_class_webapp.cached_function.get_or_create_token(('user',))
-render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event == 'attended')
+render_class_webapp.cached_function.depend_on_row('users.Record', lambda record: {'prog': record.program}, lambda record: record.event and record.event.name == 'attended')
 
 @cache_function
 def render_class_direct(cls):
@@ -113,7 +115,7 @@ def _render_class_helper(cls, user=None, filter=False, timeslot=None, webapp = F
 
     # Allow tag configuration of whether class descriptions get collapsed
     # when the class is full (default: yes)
-    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program, True)
+    collapse_full = Tag.getBooleanTag('collapse_full_classes', cls.parent_program)
 
     return {'class':      cls,
             'collapse_full': collapse_full,

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -29,7 +30,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
 from esp.program.models  import ClassSection
-from esp.resources.models import Resource
 from esp.utils.web import render_to_response
 from esp.users.models    import Record
 from esp.survey.views   import survey_view, survey_review
@@ -39,6 +39,8 @@ from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegMo
 from django.db.models import Count
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
+    doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -59,20 +61,19 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        classes_observed = user.get_observing_sections_from_program(program = prog)
-        classes_all = [cls for cls in user.getTaughtSections(program = prog)
+        classes = sorted([cls for cls in user.getTaughtOrModeratingSectionsFromProgram(program = prog)
                    if cls.meeting_times.all().exists()
                    and cls.resourceassignment_set.all().exists()
-                   and cls.status > 0]
-        classes_all.extend(classes_observed) # this is used to see what to display in the onsite module
-        classes_all.sort() # by time and title
+                   and cls.status > 0])
+        # now we sort them by time/title
 
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog, default="Note: Please make sure to check in before your first class today.")
+        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
         context['webapp_page'] = 'schedule'
         context['crmi'] = prog.classregmoduleinfo
-        context['classes'] = classes_all
-        context['observed_classes'] = classes_observed
-        context['checked_in'] = Record.objects.filter(program=prog, event='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
+        context['classes'] = classes
+        context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
+
+        context['day_header_override'] = prog.get_singleday_header_override()
 
         return render_to_response(self.baseDir()+'schedule.html', request, context)
 
@@ -82,24 +83,10 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog, default='{lat: 37.427490, lng: -122.170267}')
-        context['API_key'] = Tag.getTag('google_cloud_api_key', default='')
+        context['center'] = Tag.getProgramTag('program_center', program = prog)
+        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
+        context['API_key'] = Tag.getTag('google_cloud_api_key')
 
-        #extra should be a classroom id
-        if extra:
-            #gets lat/long of classroom and adds it to context
-            try:
-                classroom = Resource.objects.get(id=extra)
-            except:
-                res = None
-            else:
-                try:
-                    res = classroom.associated_resources().get(res_type__name='Lat/Long')
-                except:
-                    res = None
-            if res and res.attribute_value:
-                classroom = res.attribute_value.split(",")
-                context['classroom'] = '{lat: ' + classroom[0].strip() + ', lng: ' + classroom[1].strip() + '}'
         return render_to_response(self.baseDir()+'map.html', request, context)
 
     @aux_call
@@ -114,12 +101,12 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = sorted(user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
+                num_meeting_times__gt=0, status__gt=0))
         context['sections'] = sections
 
         return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
@@ -133,16 +120,18 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['webapp_page'] = 'details'
         context['section_page'] = 'roster'
         context['not_found'] = []
+        context['enroll_setting'] = Tag.getProgramTag('section_attendance_enroll', prog)
+        context['unenroll_setting'] = Tag.getProgramTag('section_attendance_unenroll', prog)
         secid = 0
         if extra:
             secid = extra
             sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not request.user.canEdit(sections[0].parent_class):
+            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
                 return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
         else:
-            sections = user.getTaughtSections(program = prog).annotate(
+            sections = sorted(user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
                 num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
+                num_meeting_times__gt=0, status__gt=0))
         section_list = []
         for section in sections:
             sec, not_found = TeacherClassRegModule.process_attendance(section, request, prog)
@@ -179,10 +168,13 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        provider = Tag.getTag('onsite_map_provider')
+        context['map_provider'] = provider
+        context['map_tab'] = (provider == 'google') and bool(Tag.getTag('google_cloud_api_key').strip())
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program, default=False)
+        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program)
 
     class Meta:
         proxy = True

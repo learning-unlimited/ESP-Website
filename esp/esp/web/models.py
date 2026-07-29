@@ -1,4 +1,7 @@
-
+from __future__ import unicode_literals
+from __future__ import absolute_import
+import six
+from django.utils.encoding import python_2_unicode_compatible
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -42,6 +45,7 @@ from django.db.models.query import Q
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 
+@python_2_unicode_compatible
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
@@ -75,8 +79,11 @@ class NavBarCategory(models.Model):
     from_request.depend_on_model('web.NavBarCategory')
     from_request = staticmethod(from_request)
 
-    def __unicode__(self):
-        return u'%s' % self.name
+    def __str__(self):
+        return '%s' % self.name
+
+    class Meta:
+        verbose_name_plural = 'Nav bar categories'
 
 def default_navbarcategory():
     """ Default navigation category. """
@@ -88,7 +95,7 @@ def default_navbarcategory():
         NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
     return NavBarCategory._default
 
-
+@python_2_unicode_compatible
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
 
@@ -102,8 +109,8 @@ class NavBarEntry(models.Model):
     def can_edit(self, user):
         return user.isAdmin()
 
-    def __unicode__(self):
-        return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
+    def __str__(self):
+        return '%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
 
     def makeTitle(self):
         return self.text
@@ -115,7 +122,7 @@ class NavBarEntry(models.Model):
         return (self.link is not None) and (len(self.link) > 0)
 
     class Meta:
-        verbose_name_plural = 'Nav Bar Entries'
+        verbose_name_plural = 'Nav bar entries'
 
 def install():
     # Add a default nav bar category, to let QSD editing work.

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -41,7 +42,7 @@ from esp.survey.views   import survey_view, survey_review, survey_graphical, sur
 import datetime
 
 class TeacherSurveyModule(ProgramModuleObj):
-    """ A module for people to take surveys. """
+    doc = """Allows teachers to take post-program/class surveys."""
 
     @classmethod
     def module_properties(cls):
@@ -58,16 +59,16 @@ class TeacherSurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'teacher_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
+            return {'teacher_survey': Q(record__program=program) & Q(record__event__name=event)}
+        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event__name=event).distinct()}
 
     def teacherDesc(self):
         return {'teacher_survey': """Teachers who filled out the survey"""}
 
     def isStep(self):
-        return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program, default=False) and
+        return (Tag.getBooleanTag('teacher_survey_isstep', program=self.program) and
                 self.program.getTimeSlots()[0].start < datetime.datetime.now() and
-                self.program.getSurveys().filter(category__in = ["learn","teach"]).exists())
+                self.program.getSurveys().filter(category__in = ["learn", "teach"]).exists())
 
     @main_call
     @needs_teacher
@@ -81,8 +82,6 @@ class TeacherSurveyModule(ProgramModuleObj):
             return survey_graphical(request, tl, one, two)
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
-
-    surveys = survey
 
     class Meta:
         proxy = True

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -38,6 +39,8 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 from argcache            import cache_function
 
 class CreditCardViewer(ProgramModuleObj):
+    doc = """Lists the credit card payments for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -82,6 +85,16 @@ class CreditCardViewer(ProgramModuleObj):
     _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
+
+    def isStep(self):
+        return self.program.hasModule('CreditCardModule_Stripe')
+
+    setup_title = "Set up the website for credit card payments (including the 'stripe settings' tag) (you may need to reach out to the websupport team)"
+    setup_path = "tags/learn"
+
+    def isCompleted(self):
+        module = self.program.getModule('CreditCardModule_Stripe')
+        return module is not None and module.check_setup()
 
     class Meta:
         proxy = True

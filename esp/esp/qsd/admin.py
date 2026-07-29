@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -40,7 +41,7 @@ from reversion.admin import VersionAdmin
 from esp.utils.admin_user_search import default_user_search
 
 class QuasiStaticDataAdmin(VersionAdmin):
-    search_fields = default_user_search('author') + ['title','name','keywords','description','url']
+    search_fields = default_user_search('author') + ['title', 'name', 'keywords', 'description', 'url']
     list_display = ['nav_category', 'title', 'url', 'disabled', 'create_date', 'author']
     list_filter = ['nav_category',]
     date_hierarchy = 'create_date'

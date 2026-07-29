@@ -1,0 +1,68 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Teacher Events for {{ prog.niceName }}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <style>
+    .trs:not(:last-child) {
+        border-bottom: 1px dashed grey !important;
+    }
+    </style>
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+{{ block.super }}
+function deleteEvent() {
+    if (confirm('Are you sure you would like to delete this event?')) {
+       return true;
+    }
+    return false;
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Teacher Events for {{ prog.niceName }}</h1>
+
+<p>
+Teacher Events include (for now) <a href="#training">teacher training</a> and <a href="#interview">teacher interviews</a>. You can view and manage the timeslots here.
+</p>
+
+<div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/teacher_events">
+<input type="hidden" name="command" value="{% if editing_timeslot %}edit{% else %}add{% endif %}" />
+{% if editing_timeslot %}
+<input type="hidden" name="id" value="{{ editing_timeslot.id }}" />
+{% endif %}
+<table align="center" cellpadding="0" cellspacing="0" width="450">
+     <tr><th colspan="2" class="small">Add a Training or Interview</th></tr>
+    {{ timeslot_form }}
+    <tr><td colspan="2" align="center">{% if editing_timeslot %}<input class="btn btn-primary" type="submit" name = "submit_btn" value="Edit {{ editing_timeslot.event_type }}" />{% else %}<input class="btn btn-primary" type="submit" name = "submit_btn" value="Add Training" /> <input class="btn btn-primary" type="submit" name="submit_btn" value="Add Interview" />{% endif %}</td></tr>
+</table>
+</form>
+
+</br></br>
+
+<table align="center" cellpadding="4" cellspacing="0"> 
+    <tr><th colspan="5"><a name="interview"></a>Teacher Interviews</th></tr>
+    <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:45%">Teachers</th><th style="width:10%"></th></tr>
+    {% with interview_times as timeslots %}
+        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
+    {% endwith %}
+</table>
+<br><br>
+<table align="center" cellpadding="4" cellspacing="0"> 
+    <tr><th colspan="5"><a name="training"></a>Teacher Training</th></tr>
+    <tr><th style="width:25%">Description</th><th style="width:18%">Start</th><th style="width:7%">End</th><th style="width:40%">Teachers</th><th style="width:10%"></th></tr>
+    {% with training_times as timeslots %}
+        {% include "program/modules/teachereventsmanagemodule/event_row.html" %}
+    {% endwith %}
+</table>
+</div>
+
+{% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}

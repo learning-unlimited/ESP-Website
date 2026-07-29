@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,12 +35,12 @@ Learning Unlimited, Inc.
 """
 
 from django.core.management import call_command
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 from django.conf import settings
 
 import os
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
     """Update the site.
 
     - Clean out old .pyc files.
@@ -49,7 +50,7 @@ class Command(NoArgsCommand):
     - Recompile the theme.
     - Clear memcache
     """
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         default_options = {
             'verbosity': 1,
             'interactive': False,

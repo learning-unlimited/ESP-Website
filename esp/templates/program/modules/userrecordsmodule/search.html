@@ -1,0 +1,21 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}User Records Portal{% endblock %}
+
+{% block content %}
+
+<h1>User Records Portal</h1>
+
+<p>Welcome to the user records portal&mdash;your one stop to set arbitrary records for an arbitrary list of users.</p>
+
+<h2>Step 1:</h2>
+
+<p>Select users with the form below.</p>
+
+{% with include_common="True" include_checklist="True" %}
+{% include "users/usersearch/list_selector.html" %}
+{% endwith %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

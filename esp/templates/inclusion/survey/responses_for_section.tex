@@ -1,0 +1,14 @@
+{% load latex %}
+
+\begin{tcolorbox}[width=\textwidth,colbacktitle={esphead}, colback=white, title = \strut\Large {Responses for {{ sec.emailcode }}: {{ sec.title|texescape }}}, center title, coltitle=black ]    
+ \begin{center}
+       Teachers: {{ sec.parent_class.getTeacherNames|join:", "|texescape }}
+\end{center}
+\end{tcolorbox}  
+\vspace{6pt}
+
+{% for q in class_data %}
+    {% with sec.num_students as num_participants %}
+        {% include "survey/answers.tex" %}
+    {% endwith %}
+{% endfor %}

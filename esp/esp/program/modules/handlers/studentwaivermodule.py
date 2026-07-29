@@ -1,7 +1,7 @@
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_student, main_call, meets_deadline
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, Record
+from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
@@ -35,7 +35,7 @@ class StudentWaiverModule(ProgramModuleObj):
     def isCompleted(self):
         return Record.objects.filter(user=get_current_request().user,
                                      program=self.program,
-                                     event="studentwaiver").exists()
+                                     event__name="studentwaiver").exists()
 
     @main_call
     @needs_student
@@ -44,9 +44,11 @@ class StudentWaiverModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = studentwaiverform_factory(prog)(request.POST)
+            rt, _ = RecordType.objects.get_or_create(name="studentwaiver",
+                                                       defaults={'description': 'Submitted student liability waiver'})
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event="studentwaiver")
+                                                        event=rt)
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
@@ -60,7 +62,7 @@ class StudentWaiverModule(ProgramModuleObj):
     def students(self, QObject = False):
         """ Returns a list of students who have completed the liability waiver. """
         from datetime import datetime
-        qo = Q(record__program=self.program, record__event="studentwaiver")
+        qo = Q(record__program=self.program, record__event__name="studentwaiver")
         if QObject is True:
             return {'waiver': qo}
 

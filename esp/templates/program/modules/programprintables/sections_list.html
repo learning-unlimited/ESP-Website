@@ -1,5 +1,7 @@
 <html>
 <head>
+ {% load modules %}
+
 <title>List of Class Sections for {{ program.niceName }}</title>
 <style type="text/css" media="print,screen">
 body { font-family: georgia; margin: 0; font-size: 12px;}
@@ -48,6 +50,10 @@ table.sortable thead {
  <th>Max Grade</th>
  <th>Teachers</th>
  <th>Teacher Phone #s</th>
+ {% if program|hasModule:"TeacherModeratorModule" %}
+ <th>{{ program.getModeratorTitle }}s</th>
+ <th>{{ program.getModeratorTitle }} Phone #s</th>
+ {% endif %}
  <th>Room(s)</th>
  <th>Time(s)</th>
  <th>Status</th>
@@ -57,13 +63,17 @@ table.sortable thead {
 {% autoescape off %}
 <tr>
  <!-- <td>{{ forloop.counter }}</td> -->
- <td>{{ sec.emailcode }}</td>
+ <td data-st-key="{{ sec.id }}">{{ sec.emailcode }}</td>
  <td>{{ sec.title }}</td>
  <td>{{ sec.parent_class.class_info|truncatewords_html:10 }}</td>
  <td>{{ sec.parent_class.grade_min }}</td>
  <td>{{ sec.parent_class.grade_max }}</td>
  <td>{{ sec.parent_class.getTeacherNamesLast|join:"; " }}</td>
  <td>{% for teacher in sec.teachers %}{% if teacher.getLastProfile.contact_user.phone_cell %}{{ teacher.getLastProfile.contact_user.phone_cell }}{% else %}{{ teacher.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ {% if program|hasModule:"TeacherModeratorModule" %}
+ <td>{{ sec.getModeratorNamesLast|join:"; " }}</td>
+ <td>{% for moderator in sec.get_moderators %}{% if moderator.getLastProfile.contact_user.phone_cell %}{{ moderator.getLastProfile.contact_user.phone_cell }}{% else %}{{ moderator.getLastProfile.contact_user.phone_day }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</td>
+ {% endif %}
  <td>{% if sec.prettyrooms|length_is:0 %}Unassigned{% else %}{{ sec.prettyrooms|join:"<br />"}}{% endif %}</td>
  <td>{% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{{ sec.friendly_times|join:"<br />"}}{% endif %}</td>
  <td>{{ sec.status_str|capfirst }}</td>

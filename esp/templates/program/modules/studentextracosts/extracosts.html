@@ -5,21 +5,12 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-<link rel="stylesheet" href="//code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css">
+<link rel="stylesheet" href="//code.jquery.com/ui/1.13.0/themes/smoothness/jquery-ui.css">
 {% endblock %}
 
 {% block xtrajs %}
-<script type="text/javascript">
-$j(document).ready(function () {
-    {% for f in forms %}{% if f.type == "multiple" %}
-    $j("#id_{{ f.form.prefix }}-count").spinner({
-        min: 0,
-        max: {{ f.max }},
-        change: function (event, ui) { $j("#id_{{ f.form.prefix }}-count").attr("value", $j("#id_{{ f.form.prefix }}-count").spinner("value")) }
-    });
-    {% endif %}{% endfor %}
-});
-</script>
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -27,19 +18,22 @@ $j(document).ready(function () {
 .nocheckmark { border: 1px solid black; }
 td>ul { list-style-type: none; padding: 0px }
 </style>
-<br /><br />
 <h1>Additional Purchases</h1>
 
 {% load render_qsd %}
+{% load getTag %}
 
 {% inline_program_qsd_block program "learn:extracosts" %}
 <h2>This program contains additional items that you can pay for online.</h2>
 <br />
 
-<p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.  Otherwise, you will be charged when you arrive for the program.</p>
+<p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.  Otherwise, you will be charged when you arrive for the program.{% if not "already_paid_extracosts_allowed"|getBooleanTag %}  If you plan to pay by credit card, you must select all additional items before paying.{% endif %}</p>
 
-<p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
+<p>Food, t-shirts, and other additional items can only be updated until {% if not "already_paid_extracosts_allowed"|getBooleanTag %}you pay for the program online or, if you plan to pay upon arrival, {% endif %}1 week before the program.</p>
 {% end_inline_program_qsd_block %}
+
+<br /> 
+{% if paid_for %}<div class="alert alert-danger"><span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>{{ paid_for_text }}</div>{% endif %} 
 
 <br />
 
@@ -51,30 +45,48 @@ td>ul { list-style-type: none; padding: 0px }
 <div id="program_form">
 <form action="" method="post">
 <center>
-<table width="400" cellpadding="2" cellspacing="0">
+<table width="60%" style="min-width: 350px;" cellpadding="2" cellspacing="0">
 <tr><th>Additional Items for {{ program.niceName }}</th></tr>
 {% for f in forms %}
 <tr>
-    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required %}(required; please make a selection below){% else %}<!-- (optional) -->{% endif %}</td>
+    <td><b>{{ f.LineItem.text }}</b> {% if f.LineItem.required or f.type == "sibling" %}(required; please make a selection below){% else %}(optional){% endif %}</td>
 </tr>
-<tr style="border-bottom: 1px dashed grey;">
+<tr {% if f.type != "sibling" %}style="border-bottom: 1px dashed grey;"{% endif %}>
     <td>
         {% if f.type == "single" %}
-            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}
+            {% if f.form.cost.errors %}<div style="color: red;">{{ f.form.cost.errors|join:", " }}</div>{% endif %}
+            {{ f.form.cost }} ${{ f.LineItem.amount_dec|floatformat:2 }}{% if f.LineItem.id in paid_item_ids %} <em style="color:gray;">(already paid)</em>{% endif %}
+        {% elif f.type == "multiple" %}
+            {% if f.form.count.errors %}<div style="color: red;">{{ f.form.count.errors|join:", " }}</div>{% endif %}
+            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each{% if f.LineItem.id in paid_item_ids %} <em style="color:gray;">(already paid)</em>{% endif %}
+        {% elif f.type == "select" %}
+            {% if f.form.option.errors %}<div style="color: red;">{{ f.form.option.errors|join:", " }}</div>{% endif %}
+            {{ f.form.option }}{% if f.LineItem.id in paid_item_ids %} <em style="color:gray;">(already paid)</em>{% endif %}
+        {% elif f.type == "sibling" %}
+            {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
+            {{ f.form.siblingdiscount }}{% if admission_paid %} <em style="color:gray;">(already paid)</em>{% endif %}
+    </td>
+</tr>
+            <tr>
+                <td>If you selected that you have a sibling, please enter their name below:</td>
+            </tr>
+            {% if f.form.siblingname.errors %}
+            <tr>
+                <td>
+                    <div style="color: red;">{{ f.form.siblingname.errors|join:", " }}</div>
+                </td>
+            </tr>
+            {% endif %}
+            <tr style="border-bottom: 1px dashed grey;">
+                <td>{{ f.form.siblingname }}</td>
+            </tr>
         {% endif %}
-        {% if f.type == "multiple" %}
-            {{ f.form.count }} ${{ f.LineItem.amount_dec|floatformat:2 }} each
-        {% endif %}
-        {% if f.type == "select" %}
-            <div class="form-inline">{{ f.form.option }}</div>
-        {% endif %}
-        {% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>{% endif %}
         
         {# If num_options, radio buttons will be used for the field. In order to  #}
         {# be able to remove a selected item, we need a button. The Javascript    #}
-        {# code for the button is at the bottom.                                  #}
+        {# code for the button is in extracosts.js.                               #}
 
-        {% if f.LineItem.num_options and not f.LineItem.required %}
+        {% if f.LineItem.num_options and not f.LineItem.required and f.LineItem.id not in paid_item_ids %}
             <button type="button"
                     class="remove-item"
                     name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
@@ -86,6 +98,29 @@ td>ul { list-style-type: none; padding: 0px }
 </tr>
 {% endfor %}
 <tr>
+    <td align="right">
+        {% if forms %}
+        <p>Total cost of selected items: <span style="font-weight: bold;" id="total_extras"></span></p>
+        {% endif %}
+        {% if not program.sibling_discount %}
+        <p>Program admission: <span style="font-weight: bold;" id="amount_cost" data-total="{{ program.base_cost|floatformat:2 }}">${{ program.base_cost|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if amount_donation > 0 %}
+        <p>Donation: <span style="font-weight: bold;" id="amount_donation" data-donation="{{ amount_donation|floatformat:2 }}">${{ amount_donation|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if paid_for %}
+        <p>Total amount previously paid: <span style="font-weight: bold;" id="amount_paid" data-total="{{ amount_paid|floatformat:2 }}">-${{ amount_paid|floatformat:2 }}</span></p>
+        {% endif %}
+        {% if finaid_grant %}
+        <p>Total amount of financial aid: <span style="font-weight: bold;" id="amount_finaid" data-percent="{{ finaid_grant.percent|floatformat:2 }}" data-max_dec="{{ finaid_grant.amount_max_dec|floatformat:2 }}"></span></p>
+        {% endif %}
+        <p id="due_warning">Total amount due: <span style="font-weight: bold;" id="amount_due"></span></p>
+        {% if paid_for %}
+        <p id="donation_warning" style="color: blue;" hidden></p>
+        {% endif %}
+    </td>
+</tr>
+<tr>
     <td align="center">
         <input type="submit" class="btn btn-primary" value="Save"/>
     </td>
@@ -94,15 +129,5 @@ td>ul { list-style-type: none; padding: 0px }
 </center>
 </form>
 </div>
-
-<script type="text/javascript">
-    /*
-     * A click handler that unchecks all inputs with the same name as the
-     * button.
-     **/
-    function remove_item(button) {
-        $j("input[name="+button.name+"]").prop("checked", false);
-    }
-</script>
 
 {% endblock %}

@@ -6,6 +6,7 @@ To activate your custom menu add the following to your settings.py::
     ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
 """
 
+from __future__ import absolute_import
 try:
     from django.urls import reverse
 except ImportError:

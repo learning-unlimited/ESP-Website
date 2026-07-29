@@ -1,4 +1,10 @@
-class FixIEMiddleware(object):
+from __future__ import absolute_import
+try:
+    from django.utils.deprecation import MiddlewareMixin
+except ImportError:
+    MiddlewareMixin = object
+
+class FixIEMiddleware(MiddlewareMixin):
     """
     Quick MiddleWare that will fix the bug reported at
     http://support.microsoft.com/kb/824847/en-us?spid=8722&sid=global (thanks aconbere)

@@ -1,24 +1,21 @@
+from __future__ import absolute_import
 from django.db import models
 from django import forms
 from django.template.defaultfilters import addslashes
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
+import six
 
-get_id_re = re.compile('.*\((\d+)\)$')
+get_id_re = re.compile(r'.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 
-    def render(self, *args, **kwargs):
+    def render(self, name, value, attrs=None, renderer=None):
         """
         Renders the actual ajax widget.
         """
-        if len(args) == 1:
-            data = args[0]
-        else:
-            data = args[1]
-
-        old_init_val = init_val = data
+        old_init_val = init_val = data = value
 
         if isinstance(data, int):
             if hasattr(self, "field"):
@@ -29,10 +26,10 @@ class AjaxForeignKeyFieldBase:
                 obj = objects[0]
                 if hasattr(obj, 'ajax_str'):
                     init_val = obj.ajax_str() + " (%s)" % data
-                    old_init_val = unicode(obj)
+                    old_init_val = six.text_type(obj)
                 else:
-                    old_init_val = init_val = unicode(obj) + " (%s)" % data
-        elif isinstance(data, basestring):
+                    old_init_val = init_val = six.text_type(obj) + " (%s)" % data
+        elif isinstance(data, six.string_types):
             pass
         else:
             data = init_val = ''
@@ -259,15 +256,23 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
 
         if hasattr(self, "field"):
             # If we couldn't grab an ID, ask the target's autocompleter.
-            if id == None:
+            if id is None:
                 objs = self.field.rel.to.ajax_autocomplete(value)
                 if len( objs ) == 1:
                     id = objs[0]['id']
             # Finally, grab the object.
             if id:
-                return self.field.rel.to.objects.get(id=id)
+                objs = self.field.rel.to.objects.filter(id=id)
+                if objs.exists():
+                    return objs[0]
+                else:
+                    return None
 
         elif hasattr(self, 'key_type') and id is not None:
-            return self.key_type.objects.get(id=id)
+            objs = self.key_type.objects.filter(id=id)
+            if objs.exists():
+                return objs[0]
+            else:
+                return None
 
         return id

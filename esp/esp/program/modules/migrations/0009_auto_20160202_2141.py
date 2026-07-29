@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+from __future__ import absolute_import
 from django.db import migrations, models
 
 
@@ -13,6 +14,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterUniqueTogether(
             name='programmoduleobj',
-            unique_together=set([('program', 'module')]),
+            unique_together={('program', 'module')},
         ),
     ]

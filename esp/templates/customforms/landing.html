@@ -1,22 +1,41 @@
 {% extends "main.html" %}
 
+{% block title %} Manage Custom Forms {% endblock %}
+
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-landing.css" />
-{% endblock %}  
+{% endblock %}
 
 {% block content %}
     <h1 class="title">Your Forms</h1>
-    <em class="desc">You can play around with your existing forms below, or <a href="/customforms/create/" id="create_link">click here to create</a> new ones.</em>
-    <hr/><br/><br/>
-    <table class="form_list">
-        {% for form in form_list %}
-            <tr>
-                <td>{{form.title}}</td> 
-                <td><a href="/customforms/view/{{ form.id }}/">Fill</a></td>
-                <td><a href="/customforms/responses/{{ form.id }}/">View Responses</a></td>
-            </tr>   
-        {% endfor %}    
+    <em class="desc">You can play around with your existing forms below, or <a href="/customforms/create" id="create_link">click here to create</a> new ones.</em>
+    <hr/>
+    {% for form in form_list %}
+    {% ifchanged form.link_type %}
+    {% if not forloop.first %}
+    </table><br/><br/>
+    {% endif %}
+    <table class="form_list fullwidth">
+        <tr>
+            <th colspan="6"><h2>{% if form.link_obj %}Associated with a {{ form.link_type }}{% else %}Other Forms{% endif %}</h2></th>
+        </tr>
+        <tr>
+            <th width="25%">Form Name</th>
+            <th width="15%">Form ID</th>
+            {% if form.link_obj %}<th width = "35%">Associated {{ form.link_type }}</th>{% endif %}
+            <th colspan="3" width = "25%">Options</th>
+        </tr>
+    {% endifchanged %}
+        <tr>
+            <td>{{ form.title }}</td>
+            <td>{{ form.id }}</td>
+            {% if form.link_obj %}<td>{{ form.link_obj }}</td>{% endif %}
+            <td><a href="/customforms/create?edit={{ form.id }}">Edit</a></td>
+            <td><a href="/customforms/view/{{ form.id }}/">Fill</a></td>
+            <td><a href="/customforms/responses/{{ form.id }}/">View Responses</a></td>
+        </tr>
+    {% endfor %}
     </table>
     <br/><br/>
 {% endblock %}

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,7 +34,6 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.users.models import ESPUser, Permission
-from esp.program.models import ProgramModule
 from esp.accounting.controllers import ProgramAccountingController
 from esp.middleware import ESPError
 from django.contrib.auth.models import Group
@@ -55,7 +55,7 @@ def prepare_program(program, data):
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
 
-    modules += [(ProgramModule.objects.get(id=i).admin_title, i) for i in data['program_modules']]
+    modules += [(i.admin_title, i.id) for i in data['program_modules']]
 
     return perms, modules
 
@@ -91,6 +91,6 @@ def commit_program(prog, perms, cost=0, sibling_discount=None):
     pac = ProgramAccountingController(prog)
     pac.setup_accounts()
     pac.setup_lineitemtypes(cost)
-    prog.sibling_discount = sibling_discount # property saves Tag, no explicit save needed
+    prog.sibling_discount = sibling_discount # property saves Tag and LineItemType, no explicit save needed
 
     return prog

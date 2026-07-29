@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -37,22 +38,24 @@ Learning Unlimited, Inc.
 
 from django.template.loaders import base
 from django.template.base import Template
-from django.template import TemplateDoesNotExist
+from django.template import Origin, TemplateDoesNotExist
 
 from esp.utils.models import TemplateOverride
 from argcache import cache_function
 
 import hashlib
+import errno
+import io
+from os.path import join
 
 DEFAULT_ORIGIN = 'esp.utils.template cached loader'
 
-INVALID_CONTENTS = ''
+INVALID_CONTENTS = b''
 INVALID_HASH = hashlib.md5(INVALID_CONTENTS).hexdigest()
 
 class Loader(base.Loader):
-    is_usable = True
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, engine, *args, **kwargs):
+        super(Loader, self).__init__(engine)
         self.cache = {}
 
     """
@@ -65,7 +68,7 @@ class Loader(base.Loader):
     @cache_function
     def get_template_hash(template_name):
         contents = Loader.get_override_contents(template_name)
-        return hashlib.md5(contents.encode("utf-8")).hexdigest()
+        return hashlib.md5(contents.encode("UTF-8")).hexdigest()
     get_template_hash.depend_on_model('utils.TemplateOverride')
     get_template_hash = staticmethod(get_template_hash)
 
@@ -76,26 +79,50 @@ class Loader(base.Loader):
             return qs.order_by('-version').values_list('content', flat=True)[0]
         return ''
 
-    def load_template(self, template_name, template_dirs=None):
+    def get_contents(self, origin):
+        # hack for the debug toolbar
+        if origin.template_name:
+            template_name = origin.template_name
+        else:
+            template_name = origin.name
         hash_val = Loader.get_template_hash(template_name)
         if hash_val == INVALID_HASH:
             raise TemplateDoesNotExist('Template override not found')
         if hash_val not in self.cache:
             template = Template(Loader.get_override_contents(template_name), None, template_name)
-            self.cache[hash_val] = (template, DEFAULT_ORIGIN)
+            self.cache[hash_val] = Loader.get_override_contents(template_name)
         return self.cache[hash_val]
-    load_template.is_usable = True
 
-    def load_template_source(self, template_name, template_dirs=None):
-        """
-        Returns a tuple containing the source and origin for the given template
-        name. Raises TemplateDoesNotExist Exception if the template override
-        for the given template name does not exist.
+    def get_template_sources(self, template_name):
+        origin = Origin(
+                name="(template override)",
+                template_name=template_name,
+                loader=self,
+            )
+        return [origin]
 
-        Overrides the unimplemented method from the BaseLoader base class.
-        """
-        from django.conf import settings
-        source = Loader.get_override_contents(template_name)
-        if source:
-            return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
-        raise TemplateDoesNotExist(template_name)
+class ThemeLoader(base.Loader):
+    # modified from https://github.com/learning-unlimited/django-admin-tools/blob/master/admin_tools/template_loaders.py
+    def get_template_sources(self, template_name):
+        from esp.themes.controllers import ThemeController
+        tc = ThemeController()
+        template_dir = join(tc.base_dir(tc.get_current_theme()), 'templates')
+        try:
+            origin = Origin(
+                name=join(template_dir, template_name),
+                template_name=template_name,
+                loader=self,
+            )
+        except (ImportError, TypeError):
+            origin = join(template_dir, template_name)
+        return [origin]
+
+    # copied from https://github.com/django/django/blob/stable/1.11.x/django/template/loaders/filesystem.py
+    def get_contents(self, origin):
+        try:
+            with io.open(origin.name, encoding=self.engine.file_charset) as fp:
+                return fp.read()
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                raise TemplateDoesNotExist(origin)
+            raise

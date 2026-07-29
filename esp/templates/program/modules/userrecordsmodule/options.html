@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+
+{% block title %}User Records Portal{% endblock %}
+
+{% block content %}
+
+<h1>User Records Portal</h1>
+
+<h2>Step 2:</h2>
+<p>You have selected {{ num_users }} users. Use the settings below to set records for them.</p>
+
+<form action="/manage/{{ program.getUrlBase }}/userrecordsfinal?filterid={{ filterid }}" method="post" name="usergroup">
+<input type="hidden" name="selected" value="{{selected}}" />
+<h3>Choose which record(s) to set for these users:</h3>
+<h4>(new record types can be created on <a href="/manage/catsflagsrecs/" target="_blank">this page</a>)</h4>
+{% for rec in records %}
+<input type="checkbox" name="records" value="{{ rec.0 }}" id="records_{{ forloop.counter }}"/> <label for="records_{{ forloop.counter }}">{{ rec.1 }}</label><br>
+{% endfor %}
+<br>
+<input type="submit" value="Set Record(s)" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

@@ -35,7 +35,5 @@ Each step below is a form that you can expand or contract by clicking on the hea
 <script id="resourcesscript" src="/media/scripts/program/modules/resources.js" data-prog_url="{{ prog.url }}"></script>
 <script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
-<br /><br />
-<button type="button" class="btn btn-primary" onclick="location.href = '/manage/{{ prog.url }}/main';">Main Program Management Page</button>
-<br /><br />
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

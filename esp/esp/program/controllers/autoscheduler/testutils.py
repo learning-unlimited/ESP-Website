@@ -1,15 +1,17 @@
 """Tools for running tests."""
 
+from __future__ import absolute_import
 from datetime import datetime
 
 import esp.program.controllers.autoscheduler.data_model as data_model
+from six.moves import range
 
 
 def create_test_schedule_1():
     timeslots = [data_model.AS_Timeslot(
         datetime(2017, 2, 2, 10+i, 5),
         datetime(2017, 2, 2, 10+i, 55),
-        i + 1) for i in xrange(6)]
+        i + 1) for i in range(6)]
     restype = data_model.AS_ResourceType("Projector", 0, "Yes")
     classrooms = {
         "26-100": data_model.AS_Classroom("26-100", 50, timeslots),
@@ -43,7 +45,7 @@ def create_test_schedule_3():
     timeslots_extra = [data_model.AS_Timeslot(
         datetime(2017, 2, 3, 10+i, 5),
         datetime(2017, 2, 3, 10+i, 55),
-        i + 7) for i in xrange(6)]
+        i + 7) for i in range(6)]
     sched.timeslots += timeslots_extra
     sched.timeslot_dict = sched.build_timeslot_dict()
     lunch_timeslots = {

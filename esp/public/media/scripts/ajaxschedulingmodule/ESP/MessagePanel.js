@@ -8,7 +8,7 @@ function MessagePanel(el, initialMessage) {
     this.el = el;
 
     /**
-     * Initialize the pannel with the initial message
+     * Initialize the panel with the initial message
      */
     this.init = function() {
         if(initialMessage) {
@@ -21,8 +21,8 @@ function MessagePanel(el, initialMessage) {
      *
      * @param msg: The message to add
      */
-    this.addMessage = function(msg) {
-        this.el.append( "<p>" + msg + "</p>");
+    this.addMessage = function(msg, color="black") {
+        this.el.append( "<p " + "style='color:" + color + "'>" + msg + "</p>");
         // some browsers need delay before scrollHeight is updated
         setTimeout(function() {
             this.el.scrollTop(this.el[0].scrollHeight);

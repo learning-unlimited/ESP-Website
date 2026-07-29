@@ -1,4 +1,8 @@
+from __future__ import absolute_import
+from __future__ import unicode_literals
+from django.utils.encoding import python_2_unicode_compatible
 import logging
+import six
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -13,6 +17,7 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # http://www.djangoproject.com/documentation/models/generic_relations/
 
+@python_2_unicode_compatible
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -33,25 +38,36 @@ class Tag(models.Model):
         # Django can't currently do this, so it's enforced by custom SQL.
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s: %s (%s)" % (self.key, self.value, self.target)
 
     EMPTY_TAG = " "
 
     @classmethod
     def getTag(cls, key, target=None, default=None):
+        """
+        Will pull the default from __init__.py unless the default argument is specified.
+        """
         if key not in all_global_tags:
             logger.warning("Tag %s not in list of global tags", key)
-        elif all_global_tags[key][0]:
+        elif all_global_tags[key].get('is_boolean', False):
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         if target is not None:
             logger.warning("getTag() called for key %s with specific target; consider using getProgramTag()",
                            key)
 
-        result = cls._getTag(key, default=default, target=target)
+        result = cls._getTag(key, target=target)
+        if result is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
+            if default is not None:
+                result = default
+            else:
+                if key in all_program_tags:
+                    result = all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    result = all_global_tags[key].get('default')
 
-        if isinstance(result, basestring) and (result.lower() == "false" or
+        if isinstance(result, six.string_types) and (result.lower() == "false" or
                                                result.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -64,12 +80,12 @@ class Tag(models.Model):
         return the corresponding value as a string,
         or the value specified by the 'default' argument if no such value exists.
         """
-        if default is not None and not isinstance(default, basestring):
+        if default is not None and not isinstance(default, six.string_types):
             logger.warning("_getTag() called with non-string default for key %s",
                            key)
 
         try:
-            if target != None:
+            if target is not None:
                 ct = ContentType.objects.get_for_model(target)
                 return cls.objects.get(key=key, content_type=ct, object_id=target.id).value
             else:
@@ -84,10 +100,11 @@ class Tag(models.Model):
         """
         Given a key and program, return the corresponding value as string.
         If the program does not have the tag set, return the global value.
+        Will pull the default from __init__.py unless the default argument is specified.
         """
         if key not in all_program_tags:
             logger.warning("Tag %s not in list of program tags", key)
-        elif all_program_tags[key][0] and not boolean:
+        elif all_program_tags[key].get('is_boolean', False) and not boolean:
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         res = None
@@ -100,8 +117,14 @@ class Tag(models.Model):
         if res is None:
             res = cls._getTag(key)
         if res is None:
-            res = default
-        if (not boolean) and isinstance(res, basestring) and \
+            if default is not None:
+                res = default
+            else:
+                if key in all_program_tags:
+                    res = all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    res = all_global_tags[key].get('default')
+        if (not boolean) and isinstance(res, six.string_types) and \
            (res.lower() == "false" or res.lower() == "true"):
             logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
                            key)
@@ -109,17 +132,30 @@ class Tag(models.Model):
 
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
-        """ A variant of getProgramTag that returns boolean values.
-            The default argument should also be boolean. """
-        if (key not in all_program_tags or not all_program_tags[key][0]) \
-           and (key not in all_global_tags or not all_global_tags[key][0]):
+        """
+        A variant of getProgramTag that returns boolean values.
+        The default argument should also be boolean.
+        Will pull the default from __init__.py unless the default argument is specified.
+        """
+        if (key not in all_program_tags or not all_program_tags[key].get('is_boolean', False)) \
+           and (key not in all_global_tags or not all_global_tags[key].get('is_boolean', False)):
             logger.warning("Tag %s not in list of boolean tags", key)
         if program:
-            tag_val = Tag.getProgramTag(key, program, boolean=True)
+            tag_val = Tag.getProgramTag(key, program, boolean=True, default=default)
         else:
             tag_val = Tag._getTag(key)
         if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
-            return default
+            if default is not None:
+                return default
+            else:
+                if key in all_program_tags:
+                    return all_program_tags[key].get('default')
+                elif key in all_global_tags:
+                    return all_global_tags[key].get('default')
+                else:
+                    return None
+        elif isinstance(tag_val, bool):
+            return tag_val
         elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
             return True
         else:
@@ -137,7 +173,7 @@ class Tag(models.Model):
         that the tag has been set (or not).
         """
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
         else:
@@ -160,7 +196,7 @@ class Tag(models.Model):
         """
         tag_counter = 0
 
-        if target != None:
+        if target is not None:
             ct = ContentType.objects.get_for_model(target)
             items = cls.objects.filter(key=key, content_type=ct, object_id=target.id)
         else:

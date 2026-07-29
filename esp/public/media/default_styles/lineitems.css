@@ -1,0 +1,24 @@
+.option-formset label, .option-dynamic-form label {
+    display: inline;
+}
+
+.option-formset input, .option-dynamic-form input {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.option-formset table, .option-dynamic-form table {
+    border: 0px !important;
+}
+
+.option-formset th, .option-dynamic-form th {
+    background-color: transparent !important;
+}
+
+#option_formset div:nth-of-type(even) {
+    
+}
+
+#option_formset div:nth-of-type(odd) {
+    background: #eee;
+}

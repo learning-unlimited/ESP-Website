@@ -33,7 +33,7 @@
         Section {{ section.index }}: {{ section.friendly_times|join:", "}}<b><font color="#990000">{% if section.isFullWebapp %} (Full!){% elif section.isRegClosed %} (Closed!){% endif %}</font></b>
     {% endif %}
 </div>
-{% if section and checked_in and prereg_url %}
+{% if section and prereg_url and allow_classchange %}
     <div class="add_button">
         <form id="prereg_{{ class.id }}" name="prereg_{{ class.id }}" method="post" action="{{ prereg_url }}" style="margin: 0px;">
             <script type="text/javascript">add_csrf_token();</script>
@@ -44,7 +44,7 @@
                     Click here to add this class
                 </button></div>
             {% else %}
-              <input type="submit" class="btn-disabled" name="action" value="{{ errormsg }}" id="submitbutton{{ sec.id }}" disabled />
+              <p style="background: #f774; color: #444; border-radius: 3px; border: 1px solid black; font-size: 1.5vh; display: inline-block; padding: 0.3vh">{% autoescape off %}{{ errormsg }}{% endautoescape %}</p>
             {% endif %}
         </form>
     </div>

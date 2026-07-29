@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,9 +46,9 @@ class RegistrationTypeController(object):
 
     @classmethod
     def getVisibleRegistrationTypeNames(cls, prog, for_VRT_form = False):
-        if not (prog and isinstance(prog,(Program,int))):
+        if not (prog and isinstance(prog, (Program, int))):
             return set(cls.default_names)
-        if isinstance(prog,int):
+        if isinstance(prog, int):
             try:
                 prog = Program.objects.get(pk=prog)
             except Exception:
@@ -58,16 +59,16 @@ class RegistrationTypeController(object):
         else:
             display_names = cls.default_names
         if "All" in display_names:
-            display_names = list(RegistrationType.objects.all().values_list('name',flat=True).distinct().order_by('name'))
+            display_names = list(RegistrationType.objects.all().values_list('name', flat=True).distinct().order_by('name'))
             if for_VRT_form:
                 display_names.append("All")
         return display_names
 
     @classmethod
     def setVisibleRegistrationTypeNames(cls, display_names, prog):
-        if not (prog and isinstance(prog,(Program,int))):
+        if not (prog and isinstance(prog, (Program, int))):
             return False
-        if isinstance(prog,int):
+        if isinstance(prog, int):
             try:
                 prog = Program.objects.get(pk=prog)
             except Exception:

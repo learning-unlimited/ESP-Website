@@ -1,0 +1,19 @@
+{% extends "main.html" %}
+
+{% block title %}Contact Us{% endblock %}
+{% block content_title %}Contact Us{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+{% load getTag %}
+
+{% inline_qsd_block "contact" %}
+
+<p>
+Before contacting us with a question or concern, please check our <b><a href="/faq.html">FAQ page</a></b>.
+If your question is still not answered, please contact us {% if "contact_form_enabled"|getBooleanTag %}via <b><a href="/contact/contact">our contact form</a></b>{% else %} via email at <b><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></b>{% endif %}.
+</p>
+
+{% end_inline_qsd_block %}
+{% endblock %}

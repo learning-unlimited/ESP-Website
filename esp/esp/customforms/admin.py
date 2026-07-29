@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django.contrib import admin
 from esp.admin import admin_site
 
@@ -31,7 +32,7 @@ class FormAdmin(admin.ModelAdmin):
 admin_site.register(Form, FormAdmin)
 
 class PageAdmin(admin.ModelAdmin):
-    list_display = ['__unicode__', 'form', 'seq', num_sections]
+    list_display = ['__str__', 'form', 'seq', num_sections]
     list_filter = ('form',)
 admin_site.register(Page, PageAdmin)
 
@@ -44,7 +45,7 @@ admin_site.register(Section, SectionAdmin)
 class FieldAdmin(admin.ModelAdmin):
     list_filter = ('form',)
     search_fields = ('label',)
-    list_display = ['__unicode__', 'form', 'label', 'field_type', 'section', 'seq', 'required']
+    list_display = ['__str__', 'form', 'label', 'field_type', 'section', 'seq', 'required']
     list_editable = list_display[2:]
 admin_site.register(Field, FieldAdmin)
 

@@ -1,4 +1,5 @@
 """ Django settings for ESP website. """
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,7 +40,7 @@ Learning Unlimited, Inc.
 #                       Edit local_settings.py instead                         #
 #                                                                              #
 ################################################################################
-
+import os
 
 ###############################################
 # Default site identification                 #
@@ -91,7 +92,7 @@ INTERNAL_IPS = (
 # Default admins #
 ##################
 ADMINS = (
-    ('LU Web Team','serverlog@learningu.org'),
+    ('LU Web Team', 'serverlog@learningu.org'),
 )
 
 #GRAPPELLI_ADMIN_TITLE = "ESP administration"
@@ -117,10 +118,11 @@ DATABASES = {'default':
 ##########################
 EMAIL_HOST   = 'localhost'
 EMAIL_PORT   = '25'
-SERVER_EMAIL = 'server@diogenes.learningu.org'
+SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
 EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
+ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu']
 
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
@@ -136,6 +138,8 @@ DEFAULT_EMAIL_ADDRESSES = {
 INSTITUTION_NAME = 'MIT'
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
+# URL for the privacy policy page. LU default points to learningu.org; override in local_settings.py.
+PRIVACY_POLICY_URL = 'https://www.learningu.org/about/privacy/'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
@@ -181,11 +185,12 @@ TEMPLATES = [
                 'django.template.context_processors.media',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.static',
-                'django.core.context_processors.request',
+                'django.template.context_processors.request',
             ],
             'loaders': [
                 'admin_tools.template_loaders.Loader',
-                'esp.utils.template.Loader',
+                'esp.utils.template.Loader', # for template overrides
+                'esp.utils.template.ThemeLoader', # theme templates
                 ('django.template.loaders.cached.Loader',
                     (
                      'django.template.loaders.filesystem.Loader',
@@ -196,6 +201,8 @@ TEMPLATES = [
         },
     },
 ]
+
+FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
@@ -245,23 +252,21 @@ INSTALLED_APPS = (
     'argcache.apps.ArgCacheConfig',
     'django_extensions',
     'reversion',
+    'captcha',
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
     'esp.formstack',
     'esp.application.apps.ApplicationConfig',
-    'captcha',
     'admin_tools',
     'admin_tools.theming',
     'admin_tools.menu',
     'admin_tools.dashboard',
-    #'grappelli',
     'filebrowser',
     'django.contrib.admin.apps.SimpleAdminConfig',
     'django.contrib.admindocs',
 )
 
-import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)
@@ -296,9 +301,9 @@ AUTHENTICATION_BACKENDS = (
     )
 
 CONTACTFORM_EMAIL_CHOICES = (
-    ('esp','Unknown'),
-    ('general','General'),
-    ('esp-web','Website Problems'),
+    ('esp', 'Unknown'),
+    ('general', 'General'),
+    ('esp-web', 'Website Problems'),
     ('relations',  'K-12 School Relations'),
     )
 
@@ -309,13 +314,16 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+JQUERY_VERSION = '3.6.0'
+JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
+
+JQUERY_UI_VERSION = '1.13.2'
+
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
 ADDITIONAL_TEMPLATE_SCRIPTS = ''
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
-
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CachePanel',
@@ -326,7 +334,7 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalsPanel',
     'debug_toolbar.panels.sql.SQLPanel',
     'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'debug_toolbar.panels.templates.TemplatesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
     'debug_toolbar.panels.timer.TimerPanel',
     'debug_toolbar.panels.versions.VersionsPanel',
     'debug_toolbar.panels.redirects.RedirectsPanel',
@@ -338,17 +346,17 @@ def custom_show_toolbar(request):
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
 DEBUG_TOOLBAR_CONFIG = {
-    'DISABLE_PANELS': set([
+    'DISABLE_PANELS': {
         'debug_toolbar.panels.redirects.RedirectsPanel',
         'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
-    ]),
+    },
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'argcache.signals.cache_deleted',
     ],
     'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</div>',
-    'ENABLE_STACKTRACES' : True,
+    'INSERT_BEFORE': '</body>',
+    'ENABLE_STACKTRACES': True,
     'RENDER_PANELS': None,
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
@@ -369,22 +377,24 @@ CYBERSOURCE_CONFIG = {
     'merchant_id': '',
 }
 
+FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
 
 FILEBROWSER_EXTENSIONS = {
-    'Image': ['.jpg','.jpeg','.gif','.png','.tif','.tiff','.ico'],
-    'Document': ['.pdf','.doc','.rtf','.txt','.xls','.csv'],
-    'Video': ['.mov','.wmv','.mpeg','.mpg','.avi','.rm'],
-    'Audio': ['.mp3','.mp4','.wav','.aiff','.midi','.m4p'],
+    'Image': ['.jpg', '.jpeg', '.gif', '.png', '.tif', '.tiff', '.ico'],
+    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.csv'],
+    'Video': ['.mov', '.wmv', '.mpeg', '.mpg', '.avi', '.rm'],
+    'Audio': ['.mp3', '.mp4', '.wav', '.aiff', '.midi', '.m4p'],
 }
 
 FILEBROWSER_SELECT_FORMATS = {
-    'file': ['Image','Document','Video','Audio'],
+    'file': ['Image', 'Document', 'Video', 'Audio'],
     'image': ['Image'],
     'document': ['Document'],
-    'media': ['Video','Audio'],
+    'media': ['Video', 'Audio'],
 }
 
 #   Default imports for shell_plus, for convenience.
@@ -406,3 +416,5 @@ ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
 ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
+
+SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']

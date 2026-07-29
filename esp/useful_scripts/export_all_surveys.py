@@ -1,15 +1,19 @@
 
+from __future__ import absolute_import
+from __future__ import print_function
 from collections import defaultdict
 from esp.survey.models import Answer, SurveyResponse, Survey
 from esp.program.models import Program, ClassSubject, ClassSection
 from datetime import datetime, date, time
 
 from django.contrib.contenttypes.models import ContentType
+import six
+from functools import reduce
 
 try:
     from cStringIO import StringIO
 except:
-    from StringIO import StringIO
+    from io import StringIO
 
 import gc
 import xlwt
@@ -33,13 +37,13 @@ def get_all_data():
                                                             'survey_response__survey',
                                                             ) )
 
-    print 'Got answers'
+    print('Got answers')
     gc.collect() # 'cause the Django query parser system uses gobs of RAM; keep RAM usage down a bit
 
     all_survey_responses = list( SurveyResponse.objects.all().select_related() )
     all_surveys = list( Survey.objects.all().select_related() )
 
-    print 'Got surveys/responses'
+    print('Got surveys/responses')
     gc.collect()
 
     # This one can be an ordinary QuerySet; no funky tricks and small table
@@ -50,12 +54,12 @@ def get_all_data():
     # Don't bother using the cache for this; it doesn't fit.
     all_classes = ClassSubject.objects.catalog(None, force_all=True, use_cache=False)
 
-    print 'Got classes'
+    print('Got classes')
     gc.collect()
 
     all_sections = ClassSection.objects.all()
 
-    print 'Got sections'
+    print('Got sections')
     gc.collect()
 
     content_type_program = ContentType.objects.get_for_model(Program)
@@ -164,7 +168,7 @@ def auto_cell_type(val):
         pass
 
     # Give up; not a type that Excel likes
-    val = unicode(val)
+    val = six.text_type(val)
 
     # Are we something that looks like a boolean?
     if val.upper() in ("TRUE", "FALSE", "T", "F"):
@@ -329,9 +333,9 @@ def build_workbook_data():
 
                 for ans in resp:
                     ans_dict[ans.question_id] = auto_cell_type(ans.answer)
-                    ans_dict[-1] = ans._class.emailcode() if ans._class != None else ans_dict[-1]
-                    ans_dict[-2] = ans._section.title() if ans._section != None else ans_dict[-2]
-                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class != None else ans_dict[-3]
+                    ans_dict[-1] = ans._class.emailcode() if ans._class is not None else ans_dict[-1]
+                    ans_dict[-2] = ans._section.title() if ans._section is not None else ans_dict[-2]
+                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class is not None else ans_dict[-3]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
 

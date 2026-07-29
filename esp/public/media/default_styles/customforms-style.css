@@ -4,6 +4,10 @@ body {
 	text-decoration:none;
 }
 
+form {
+    margin: 0;
+}
+
 .wrapper {
 	width:960px;
 	margin:0 auto;
@@ -14,16 +18,35 @@ body {
 
 /* Form Preview Area */
 .preview_area {
+    position: fixed;
+    top: 0px;
+    overflow-y: scroll;
 	width:586px;
-	min-height:800px;
+	height: 100%;
 	background-color:#FFF;
-	float:left;
 	border:2px solid;
 	padding:5px;
 }
 
 .form_preview {
 	position:relative;
+    padding: 0px 20px;
+    min-height: 200px;
+}
+
+.form_preview::before {
+    content: '**Page Break**';
+    position: absolute;
+    width: 569px;
+    margin-left: -22px;
+    height: 20px;
+    text-align: center;
+    background: black;
+    color: white;
+}
+
+.form_preview .outline:first-of-type {
+    margin-top: 40px;
 }
 
 .field_wrapper {
@@ -64,20 +87,29 @@ body {
 	color:#FF0000;
 }
 
+.outline, .field_wrapper, .form_preview {
+    border:2px solid transparent;
+}
+
 .field_hover {
-	border:2px dashed blue;
-	padding:8px 8px;
+	border:2px dashed blue !important;
+}
+
+.page_selected {
+    background-color:#edffed;
+}
+
+.section_selected {
+    background-color:#f5dff1;
 }
 
 .field_selected {
 	background-color:#d2f8ff;
-	border:1px dashed blue;
-	padding:9px 9px;
+	border: 2px dashed blue;
 }
 
 .field_text {
 	font-size:0.9em;
-	font-style:italic;
 	margin:0px;
 	padding:0px;
 }
@@ -119,6 +151,7 @@ body {
 	position: relative; 
 	top: -0.5em;
 	cursor:pointer;
+    z-index: 1000;
 }
 
 #form_title{
@@ -130,13 +163,15 @@ body {
 
 /* Form Toolbox */
 #form_toolbox {
+    position: fixed;
+    top: 0px;
+    margin-left: 600px;
+    overflow-y: scroll;
+    height: 100%;
 	width:360px;
-	min-height:800px;
 	background-color:#d2f8ff;
-	float:right;
 	
 	padding:0px;
-	min-height:800px;
 }
 
 #toolbox_header ul {
@@ -181,7 +216,6 @@ body {
 }
 
 #field_properties {
-	height:500px;
 	margin:5px;
 	padding:5px;
 	border: 1px solid;
@@ -225,4 +259,21 @@ input {
 
 textarea {
     border: 1px solid #999999;
+}
+
+.field_wrapper input[type="radio"], .field_wrapper input[type="checkbox"] {
+    margin-top: 0px;
+}
+
+.qmark {
+    width: 15px;
+    height: 15px;
+}
+
+.field_label {
+    display: inline;
+}
+
+.correct_answer {
+    color: blue;
 }

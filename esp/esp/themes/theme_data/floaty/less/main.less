@@ -1,7 +1,7 @@
 
 body
 {
-    font-family: Arial, Helvetica, sans-serif;
+    background: @bodyBackground;
     margin: 0px;
     padding-top: 0px;
 }
@@ -17,7 +17,21 @@ body
 {
     position: relative;
     float: left;
+    color: @navbarBackground;
+}
 
+#nav_area p
+{
+    color: @navbarText;
+}
+#nav_area a
+{
+    color: @navbarLinkColor;
+}
+
+#nav_area a:hover
+{
+    color: @navbarLinkColorHover;
 }
 
 #nav_buffer
@@ -32,7 +46,7 @@ body
 {
     text-align: center;
     font-size: 1.1em;
-    color: @box_border_color;
+    color: @siteTitle;
 }
 
 #nav_buffer_background
@@ -40,7 +54,7 @@ body
     text-align: center;
     font-size: 2.5em;
     line-height: 1.2em;
-    color: @heading_background_color;
+    color: @siteTitle;
     padding-top: 35px;
 }
 
@@ -49,23 +63,33 @@ body
     vertical-align: bottom;
 }
 
+#primary_nav a
+{
+    text-decoration: none;
+}
+
 #secondary_nav
 {
     width: 680px;   /*  match width of #content_area    */
     float: left;
     vertical-align: bottom;
-    
-    border: 1px solid @content_border_color;
+    background: @navbarBackgroundHighlight;
+    border: 1px solid @contentBorder;
 
     margin: 0px;
     margin-left: 12px;
 
     padding: 0px;
 
-    border-radius: @content_border_radius;
+    border-radius: @contentBorderRadius;
     border-top-left-radius: 0px;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
+}
+
+#secondary_nav a
+{
+    text-decoration: none;
 }
 
 #bottom_area
@@ -89,6 +113,15 @@ body
 #login_box
 {
     font-size: 0.9em;
+}
+
+.nav > li > a {
+    color: @sidebarText;
+}
+
+.nav > li > a:hover {
+    color: @sidebarText;
+    background-color: transparent;
 }
 
 #login_box label
@@ -135,13 +168,13 @@ body
 
 #content_area
 {
+    background: @contentBackground;
     float: left;
-    font-family: Arial, Helvetica, sans-serif;
     margin: 0px;
     padding: 0px;
-    border: 1px solid @content_border_color;
+    border: 1px solid @contentBorder;
     border-top: none;
-    border-radius: @content_border_radius;
+    border-radius: @contentBorderRadius;
     border-top-left-radius: 0px;
     border-top-right-radius: 0px;
     min-height: 450px;
@@ -165,7 +198,7 @@ body
     clear: both;
     font-style: italic;
     padding: 10px;
-    border-top: 1px solid @content_border_color;
+    border-top: 1px solid @contentBorder;
 }
 
 #footer p
@@ -189,15 +222,15 @@ a:hover
 {
     font-size: 0.9em;
     line-height: 140%;
-    border: 1px solid @box_border_color;
+    border: 1px solid @sidebarBorder;
     padding: 5px;
     margin: 10px;
     margin-right: 24px;
     margin-bottom: 16px;
     width: 186px;
-    background-color: @box_background_color;
+    background-color: @sidebarBackground;
     word-wrap: break-word;
-    border-radius: @content_border_radius;
+    border-radius: @contentBorderRadius;
     background-image: -moz-linear-gradient(top,
         hsla(0, 0%, 100%, 0.7),
         hsla(0, 0%, 100%, 0)
@@ -209,6 +242,19 @@ a:hover
     box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.3);
 }
 
+.box a {
+    color: @sidebarLink
+}
+
+.box a:hover {
+    color: @sidebarLinkHover;
+    background-color: @sidebarHover;
+}
+
+input, textarea, .uneditable-input {
+  width: 94%; 
+}
+
 .box_header
 {
     text-align: right;
@@ -216,12 +262,12 @@ a:hover
     padding-right: 6px;
     padding-bottom: 4px;
     font-size: 1.1em;
-    color: @accent_text_color;
+    color: @titleColor;
 }
 
 .content_box
 {
-    background-color: @accent_background_color;
+    background-color: @navbarActiveBackground;
     float: right;
     padding: 8px;
     width: 260px;
@@ -243,14 +289,14 @@ a:hover
     margin: 5px;
     margin-left: 12px;
     margin-bottom: 0px;
-    padding: @nav_link_padding;
-    padding-left: @nav_link_padding + 2px;
+    padding: @navbarLinkPadding;
+    padding-left: @navbarLinkPadding + 2px;
     font-weight: bold;
     width: 130px;
     font-size: 1.0em;
-    border: 1px solid @content_border_color;
-    background-color: #FFFFFF;
-    border-radius: @content_border_radius;
+    border: 1px solid @contentBorder;
+    background-color: @navbarBackground;
+    border-radius: @contentBorderRadius;
     border-bottom-left-radius: 0px;
     border-bottom-right-radius: 0px;
     border-bottom: none;
@@ -261,13 +307,13 @@ a:hover
 
 .toplevel_focus a
 {
-    background-color: @accent_background_color;
+    background-color: @navbarActiveBackground;
 }
 
 /*  How to get it to change background color of entire div rather than just what's behind text?  */
 .toplevel_link :hover
 {
-    background-color: @box_background_color;
+    background-color: @navbarHoverBackground;
     background-image: -moz-linear-gradient(top,
         hsla(0, 0%, 100%, 0.7),
         hsla(0, 0%, 100%, 0)
@@ -287,8 +333,8 @@ a:hover
 
 #secondary_nav
 {
-    padding-top: @nav_link_padding;
-    padding-bottom: @nav_link_padding;
+    padding-top: @navbarLinkPadding;
+    padding-bottom: @navbarLinkPadding;
 }
 
 #secondary_nav .sublink a
@@ -296,10 +342,10 @@ a:hover
     padding: 0px;
     /*  Why does this need to be set so precisely for the background to line up?    */
     /*  Note, top/bottom padding must be matched to that of #secondary_nav div above   */
-    padding-top: @nav_link_padding;
-    padding-left: @nav_link_padding * 1.5;
-    padding-right: @nav_link_padding * 1.5;
-    padding-bottom: @nav_link_padding - 2px;
+    padding-top: @navbarLinkPadding;
+    padding-left: @navbarLinkPadding * 1.5;
+    padding-right: @navbarLinkPadding * 1.5;
+    padding-bottom: @navbarLinkPadding - 2px;
 
     margin: 0px;
 
@@ -309,7 +355,7 @@ a:hover
 
 #secondary_nav .sublink a:hover
 {
-    background-color: @box_background_color;
+    background-color: @navbarHoverBackground;
 }
 
 .sublink_hidden
@@ -321,7 +367,7 @@ a:hover
 {
     width: 70%;
     margin: 8px;
-    border: 1px solid @content_border_color;
+    border: 1px solid @contentBorder;
     box-shadow: 1px 1px 2px hsla(0, 0%, 0%, 0.2);
 }
 
@@ -332,7 +378,7 @@ a:hover
 
 #content_area th.heading
 {
-    background-color: @accent_background_color;
+    background-color: @navbarActiveBackground;
     padding: 7px;
     background-image: -moz-linear-gradient(top,
         hsla(0, 0%, 100%, 0.0),
@@ -375,10 +421,10 @@ a:hover
 
 h1
 {
-    background-color: @heading_background_color;
+    background-color: @contentTitleBackground;
     margin: 0px;
     margin-bottom: 10px;
-    color: @accent_text_color;
+    color: @titleColor;
     text-align: center;
     font-size: 1.5em;
 }
@@ -386,5 +432,5 @@ h1
 h2
 {
     font-size: 1.2em !important;
-    color: @accent_text_color;
+    color: @titleColor;
 }

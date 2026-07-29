@@ -10,8 +10,9 @@ is only entered by "trusted" users.  The code is also simpler for us since we
 pin to a given version of markdown, and don't use markdown extensions.
 """
 
+from __future__ import absolute_import
 from django import template
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 
 # Can't conflict with the `markdown` filter name.
@@ -23,4 +24,4 @@ register = template.Library()
 @register.filter(is_safe=True)
 def markdown(value):
     """Runs Markdown over a given value."""
-    return mark_safe(md.markdown(force_unicode(value)))
+    return mark_safe(md.markdown(force_text(value)))

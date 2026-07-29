@@ -1,0 +1,2 @@
+{% extends "elements/html" %}
+{% block body %}{% block main %}{% block content %}{% endblock %}{% endblock %}{% endblock %}

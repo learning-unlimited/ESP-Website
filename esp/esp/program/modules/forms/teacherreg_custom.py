@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -47,7 +48,7 @@ class ChicagoTeacherQuestionsForm(FormWithRequiredCss):
     room_type = forms.ChoiceField(label='Room type', choices=[('discussion', 'Discussion style'), ('lecture', 'Lecture style'), ('large', 'Large open room'), ('kitchen', 'Kitchen'), ('outdoors', 'Outdoors'), ('other', 'Other (please explain)')])
     discussion_type = forms.ChoiceField(label='', choices=[('', ''), ('carpet', 'Carpeted'), ('nocarpet', 'Not carpeted'), ('dontcare', 'No preference')], help_text='Specify your room preference here if you selected "Large, open room" above.', required=False)
     other_explain = forms.CharField(label='', help_text='Explain here if you chose "Other" above.', required=False)
-    dance_space = forms.BooleanField(label='',help_text='Please select this box if you would like a dance space with a barre.  We cannot guarantee that we will have enough of these rooms to meet demands, but we will work with you to find a room that will allow you teach an amazing class!', required=False)
+    dance_space = forms.BooleanField(label='', help_text='Please select this box if you would like a dance space with a barre.  We cannot guarantee that we will have enough of these rooms to meet demands, but we will work with you to find a room that will allow you teach an amazing class!', required=False)
     std_equipment = forms.MultipleChoiceField(label='Standard equipment requests', choices=[('audio', 'Audio support'), ('video', 'Visual support'), ('macadapter', 'Mac Adapter')], widget=forms.CheckboxSelectMultiple, required=False)
     mac_adapter = forms.CharField(label='', help_text='If you have a Mac and know what kind of adapter you need, please write it in here.  Otherwise, leave this blank.', required=False)
     special_equipment = forms.CharField(label='Special equipment requests', widget=forms.Textarea(attrs={'rows':4}), required=False,

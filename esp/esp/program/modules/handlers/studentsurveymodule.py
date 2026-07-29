@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,7 +33,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, meets_deadline, meets_grade, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
 from esp.tagdict.models import Tag
 from esp.users.models    import ESPUser
 from django.db.models.query   import Q
@@ -41,7 +42,7 @@ from esp.survey.views   import survey_view
 import datetime
 
 class StudentSurveyModule(ProgramModuleObj):
-    """ A module for people to take surveys. """
+    doc = """A module for students to take surveys about the program and/or classes."""
 
     @classmethod
     def module_properties(cls):
@@ -58,25 +59,22 @@ class StudentSurveyModule(ProgramModuleObj):
         program=self.program
 
         if QObject:
-            return {'student_survey': Q(record__program=program) & Q(record__event=event)}
-        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
+            return {'student_survey': Q(record__program=program) & Q(record__event__name=event)}
+        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event__name=event).distinct()}
 
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}
 
     def isStep(self):
-        return (Tag.getBooleanTag('student_survey_isstep', program=self.program, default=False) and
+        return (Tag.getBooleanTag('student_survey_isstep', program=self.program) and
                 self.program.getTimeSlots()[0].start < datetime.datetime.now() and
                 self.program.getSurveys().filter(category = "learn").exists())
 
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         return survey_view(request, tl, one, two)
-
-    surveys = survey
 
     class Meta:
         proxy = True

@@ -1,9 +1,11 @@
 """Script to get tags the site has set as JSON for later processing."""
 
+from __future__ import absolute_import
 from script_setup import *
 
 import json
 from django.conf import settings
+from io import open
 
 domain = settings.SITE_INFO[1].split('.')
 if domain[0] == 'www':

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,7 +44,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest, PhaseZeroRecord, ModeratorRecord
 
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -53,6 +54,8 @@ from esp.program.models import ClassFlag, ClassFlagType
 from esp.accounting.models import FinancialAidGrant
 
 from esp.utils.admin_user_search import default_user_search
+
+from esp.users.admin import ExpiredListFilter
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
@@ -67,7 +70,8 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
-        css = { 'all': ( 'styles/admin.css', ) }
+        css = { 'all': ( '/media/styles/admin.css', ) }
+        js = ( '/media/scripts/admin_chosen_filter.js', )
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
     filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
     search_fields = ('name', )
@@ -132,9 +136,12 @@ class Admin_SplashInfo(admin.ModelAdmin):
     list_display = (
         'student',
         'program',
+        'siblingdiscount',
+        'siblingname',
+        'submitted'
     )
-    search_fields = default_user_search('student')
-    list_filter = [ 'program', ]
+    search_fields = default_user_search('student') + ['siblingname']
+    list_filter = [ 'program', 'siblingdiscount', 'submitted']
 admin_site.register(SplashInfo, Admin_SplashInfo)
 
 ## Schedule stuff (wish it was schedule_.py)
@@ -232,7 +239,7 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
-    list_filter = ['section__parent_class__parent_program', 'relationship']
+    list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
@@ -245,7 +252,7 @@ class StudentSubjectInterestAdmin(admin.ModelAdmin):
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
-    return "; ".join(list(set([x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()])))
+    return "; ".join(list({x.name +': ' +  str(x.num_students) + " students" for x in obj.classrooms()}))
 def sec_teacher_optimal_capacity(obj):
     return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
@@ -257,7 +264,7 @@ admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
     model = ClassSection
-    fields = ('status','meeting_times', 'prettyrooms')
+    fields = ('status', 'meeting_times', 'prettyrooms')
     readonly_fields = ('meeting_times', 'prettyrooms')
     can_delete = False
 
@@ -305,7 +312,7 @@ admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 ## app_.py
 
 class StudentAppAdmin(admin.ModelAdmin):
-    list_display = ('user','program', 'done')
+    list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
 admin_site.register(StudentApplication, StudentAppAdmin)
@@ -345,16 +352,16 @@ class Admin_StudentAppReview(admin.ModelAdmin):
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
 
 class ClassFlagTypeAdmin(admin.ModelAdmin):
-    list_display = ('name','show_in_scheduler','show_in_dashboard')
+    list_display = ('name', 'show_in_scheduler', 'show_in_dashboard')
     search_fields = ['name']
     list_filter = ['program']
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
-    list_display = ('flag_type','subject','comment', 'created_by', 'modified_by')
+    list_display = ('flag_type', 'subject', 'comment', 'created_by', 'modified_by')
     readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
-    list_filter = ['subject__parent_program','flag_type']
+    list_filter = ['subject__parent_program', 'flag_type']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
@@ -362,3 +369,9 @@ class PhaseZeroRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program']
 admin_site.register(PhaseZeroRecord, PhaseZeroRecordAdmin)
+
+class ModeratorRecordAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'program', 'will_moderate', 'num_slots')
+    search_fields = ['user__username']
+    list_filter = ['program', 'will_moderate']
+admin_site.register(ModeratorRecord, ModeratorRecordAdmin)

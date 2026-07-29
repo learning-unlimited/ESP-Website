@@ -1,0 +1,21 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Mass Deactivation Portal{% endblock %}
+
+{% block content %}
+
+<h1>Mass Deactivation Portal</h1>
+
+<p>Welcome to the mass deactivation portal&mdash;your one stop to deactivate lots of users at once.</p>
+
+<h2>Step 1:</h2>
+
+<p>Select users with the form below.</p>
+
+{% with include_checklist="True" include_common="True" %}
+{% include "users/usersearch/list_selector.html" %}
+{% endwith %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

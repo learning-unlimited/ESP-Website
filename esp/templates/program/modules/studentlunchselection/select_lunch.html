@@ -16,7 +16,12 @@
 
 <div id="program_form">
 
-{% if errors %}<p align="center" style="color: red;">Please correct the form below before continuing.</p>{% endif %}
+{% if errors %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            Please correct the form below before continuing.
+    </div>
+{% endif %}
 
 {% inline_program_qsd_block program "studentlunchinstructions" %}
 <h2>Directions</h2>
@@ -26,7 +31,10 @@
 
 {% if messages %}
 {% for msg in messages %}
-<p><span style="color: red; font-weight: bold;">{{ msg }}</span></p>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ msg }}
+    </div>
 {% endfor %}
 {% endif %}
 

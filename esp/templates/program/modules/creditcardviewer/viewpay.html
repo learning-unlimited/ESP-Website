@@ -49,7 +49,7 @@ Payments:
 {% for payment in payment_table %}
 <tr{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
 <td>
-<b><a href="/manage/userview?username={{ payment.0.username}}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
+<b><a href="/manage/userview?username={{ payment.0.username}}&program={{ program.id }}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
 ${{ payment.2 }} billed; ${{ payment.3 }} owed
 </td>
 <td>
@@ -65,5 +65,6 @@ ${{ payment.2 }} billed; ${{ payment.3 }} owed
 </table>
 </div>
 
+{% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}
 

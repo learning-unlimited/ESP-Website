@@ -22,9 +22,13 @@ var Availability = (function () {
         return $j(td).hasClass("canDo");
     }
     
+    function isTD(td) {
+        return $j(td).is("td");
+    }
+    
     //Activate checkbox
     function checkbox_on(td) {
-        var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+        var checkbox = $j('#checkboxes > input[value='+td.getAttribute("name")+']')[0]
         $j(td).removeClass("proposed");
         $j(td).addClass("canDo");
         checkbox.checked = true;
@@ -33,7 +37,7 @@ var Availability = (function () {
 
     //Deactivate checkbox
     function checkbox_off(td) {
-        var checkbox = $j('input[value='+td.getAttribute("name")+']')[0]
+        var checkbox = $j('#checkboxes > input[value='+td.getAttribute("name")+']')[0]
         if (!$j(td).hasClass("teaching") && $j(td).hasClass("canDo")) {
             $j(td).removeClass("canDo");
             $j(td).addClass("proposed");
@@ -72,14 +76,16 @@ var Availability = (function () {
         var block = document.getElementById("block_" + col);
         for (var i = 1; i < block.rows.length; i++) {
             var td = block.rows[i].cells[0];
-            if (!isSet(td)) somethingToSet = true;
+            if (!isSet(td) && isTD(td)) somethingToSet = true;
         }
         for (var i = 1; i < block.rows.length; i++) {
             var td = block.rows[i].cells[0];
-            if (somethingToSet) {
-                checkbox_on(td);
-            } else {
-                checkbox_off(td);
+            if (isTD(td)) {
+                if (somethingToSet) {
+                    checkbox_on(td);
+                } else {
+                    checkbox_off(td);
+                }
             }
         }
     }
@@ -113,7 +119,6 @@ var Availability = (function () {
             if (this.disabled == true) {
                 $j(cell).removeClass("proposed");
                 $j(cell).addClass("teaching");
-                cell.title = disabledText;
             }
             if (this.checked == true) {
                 $j(cell).removeClass("proposed");
@@ -121,21 +126,24 @@ var Availability = (function () {
             }
         });
 
-        //Populate the right sidebar
+        //Populate the legend in the right sidebar
         $j(document).ready(function () {
-            $j(".wrap").append($j(".right"));
-            $j(".right").show();
+            $j(".side.left").append($j(".summary_div"));
+            $j(".summary_div").show();
         });
 
-        //If there is hover text, show it when hovering over the timeslot
+        //If there is hover text, show it centered on the hovered row in the right panel
         $j(".group td").mouseover(function() {
-            var hover_text = $j('input[value='+parseInt($j(this).attr('name'))+']').data('hover')
+            var hover_text = $j('#checkboxes > input[value='+parseInt($j(this).attr('name'))+']').data('hover')
             if (hover_text) {
-                $j(".left .summary").html(hover_text);
-                $j(".left .summary").css("display", "block");
+                var rowCenter = $j(this).offset().top + $j(this).outerHeight() / 2;
+                var panelTop = $j(".side.right").offset().top;
+                var details = $j(".right .details");
+                details.html(hover_text).css("display", "block");
+                details.css("top", (rowCenter - panelTop - details.outerHeight() / 2) + "px");
             }
         }).mouseout(function() {
-            $j(".left .summary").css("display", "none");
+            $j(".right .details").css("display", "none");
         });
     }
 

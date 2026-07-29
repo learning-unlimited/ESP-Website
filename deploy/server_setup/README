@@ -1,4 +1,0 @@
-This directory includes a script, new_site.sh, which is intended for creating sites in a production environment.  We used to have scripts for setting up the development environment, but these have been removed in favor of the Vagrant virtual machine approach documented at the link below.
-   https://github.com/learning-unlimited/ESP-Website/blob/main/docs/dev/vagrant.rst
-
-- Michael Price <price@learningu.org>, Jan. 2015

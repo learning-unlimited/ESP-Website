@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from django import forms
 
 from esp.survey.models  import Question, Survey
@@ -16,9 +17,6 @@ class SurveyForm(forms.ModelForm):
     class Meta:
         model = Survey
         exclude = ['program']
-        help_texts = {
-            'category': ('e.g. teach or learn'),
-        }
 
 class QuestionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):

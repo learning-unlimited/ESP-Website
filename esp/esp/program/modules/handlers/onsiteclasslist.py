@@ -1,4 +1,8 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,6 +40,7 @@ Learning Unlimited, Inc.
 import json
 from datetime import datetime, timedelta
 
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -43,22 +48,24 @@ from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 
 
-from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.users.models    import ESPUser, Record
 from esp.program.models import RegistrationProfile
+from esp.program.class_status import ClassStatus
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student_in_grade, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
-from esp.users.models import ESPUser, Record
-from esp.resources.models import ResourceAssignment
 from esp.utils.models import Printer, PrintRequest
 from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 class OnSiteClassList(ProgramModuleObj):
+    doc = """Display lists of classes for onsite registration purposes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -98,10 +105,10 @@ class OnSiteClassList(ProgramModuleObj):
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_optimal', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
             'sections': sections,
-            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label','start_millis').order_by("start")),
+            'timeslots': list(prog.getTimeSlots().extra({'start_millis':"""EXTRACT(EPOCH FROM start) * 1000""",'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label', 'start_millis').order_by("start")),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        json.dump(data, resp)
+        json.dump(data, resp, cls=DjangoJSONEncoder)
 
         return resp
 
@@ -166,7 +173,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
-        student = get_object_or_404(ESPUser,pk=request.POST.get("student_id"))
+        student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
 
         registration_profile = RegistrationProfile.getLastForProgram(student,
                                                                 program)
@@ -175,7 +182,7 @@ class OnSiteClassList(ProgramModuleObj):
         if success:
             registration_profile.save()
 
-            for extension in ['paid','Attended','medical','liability','OnSite']:
+            for extension in ['attended', 'med', 'liab', 'onsite']:
                 Record.createBit(extension, program, student)
 
             IndividualAccountingController.updatePaid(self.program, student, paid=True)
@@ -250,7 +257,7 @@ class OnSiteClassList(ProgramModuleObj):
             desired_sections = None
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
-        if not prog.isCheckedIn(user):
+        if not prog.isCheckedIn(user) and request.GET.get('check_in') == 'true':
             rec = Record(user=user, program=prog, event='attended')
             rec.save()
 
@@ -268,9 +275,10 @@ class OnSiteClassList(ProgramModuleObj):
                     failed_add_sections.append(sec.id)
 
             if len(failed_add_sections) == 0:
+                verbs = RTC.getVisibleRegistrationTypeNames(prog)
                 #   Remove sections the student wants out of
                 for sec in sections_to_remove:
-                    sec.unpreregister_student(user)
+                    sec.unpreregister_student(user, verbs)
                     result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
 
                 #   Remove sections that conflict with those the student wants into
@@ -282,7 +290,7 @@ class OnSiteClassList(ProgramModuleObj):
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
-                                sm_sec.unpreregister_student(user)
+                                sm_sec.unpreregister_student(user, verbs)
                                 result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                             else:
                                 existing_sections.append(sm_sec)
@@ -324,7 +332,7 @@ class OnSiteClassList(ProgramModuleObj):
         except:
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
 
-        printer = request.GET.get('printer',None)
+        printer = request.GET.get('printer', None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
@@ -341,9 +349,10 @@ class OnSiteClassList(ProgramModuleObj):
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
+        context['check_in_default'] = datetime.today().date() in prog.dates()
 
         open_class_category = prog.open_class_category
-        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         context['open_class_category'] = mark_safe(json.dumps(open_class_category))
 
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
@@ -354,7 +363,7 @@ class OnSiteClassList(ProgramModuleObj):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
 
@@ -367,7 +376,7 @@ class OnSiteClassList(ProgramModuleObj):
             options = request.GET.copy()
 
             #   Display options-selection page if this page is requested with no GET variables
-            if len(options.keys()) == 0:
+            if len(list(options.keys())) == 0:
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
@@ -386,6 +395,9 @@ class OnSiteClassList(ProgramModuleObj):
         else:
             window_start = time_now + timedelta(-1, 85200)  # 20 minutes ago
             curtime = Event.objects.filter(start__gte=window_start, event_type__description='Class Time Block').order_by('start')
+            # If there are no events after the current time, just pick the first event of the program
+            if curtime.count() == 0:
+                curtime = Event.objects.filter(program=self.program, event_type__description='Class Time Block').order_by('start')
 
         end_id = int(options.get('end', -1))
         if end_id != -1:
@@ -398,21 +410,22 @@ class OnSiteClassList(ProgramModuleObj):
             sort_spec = extra
 
         #   Enforce a maximum refresh speed to avoid server overload.
-        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh', default='10'))
+        min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
         if int(context['refresh']) < min_refresh:
             context['refresh'] = min_refresh
 
+        classes = []
         if curtime:
             curtime = curtime[0]
             if endtime:
                 endtime = endtime[0]
                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                    status=10, parent_class__status=10,
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
                  classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=10, parent_class__status=10,
+                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
                      begin_time__gte=curtime.start
                      )
             if sort_spec == 'unsorted':
@@ -438,8 +451,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   This view still uses classes, not sections.  The templates show information
         #   for each section of each class.
-        classes = [(i.num_students()/(i.class_size_max + 1), i) for i in self.program.classes()]
-        classes.sort()
+        classes = sorted([(i.num_students()//(i.class_size_max + 1), i) for i in self.program.classes() if i.class_size_max])
         classes = [i[1] for i in classes]
 
         categories = {}
@@ -449,13 +461,22 @@ class OnSiteClassList(ProgramModuleObj):
         printers = [ x.name for x in Printer.objects.all() ]
 
         return render_to_response(self.baseDir()+'allclasslist.html', request,
-            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
+            {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': list(categories.values()), 'printers': printers})
 
     def makeLink(self):
-        calls = [("classchange_grid","Grid-based Class Changes Interface"), ("classList","Scrolling Class List"), (self.get_main_view(),self.module.link_title)]
-        strings = [u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u('<a href="%s" title="%s" class="vModuleLink" >%s</a>') % \
                 ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1], call[1]) for call in calls]
         return "</li><li>".join(strings)
+
+    def makeButtonLink(self):
+        calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
+        strings = [six.u("""<div class="module_button">\
+                                <a href="%s"><button type="button" class="module_link_large">
+                                    <div class="module_link_main">%s</div>
+                                </button></a>
+                            </div>""") % ('/' + self.module.module_type + '/' + self.program.url + '/' + call[0], call[1]) for call in calls]
+        return "".join(strings)
 
 
 

@@ -13,7 +13,10 @@
 
 <h1>Select Students to Unenroll</h1>
 
-<p>Use the form below to unenroll students who have not checked into the program. Before using this, make sure that the latest check-ins have been recorded in the website.</p>
+<div class="alert alert-info">
+  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  Use the form below to unenroll students who have not checked into the program. Before using this, make sure that the latest check-ins have been recorded in the website.
+</div>
 
 <p>
   <span id="message">Loading enrollment numbers...</span>
@@ -24,8 +27,8 @@
   <input type="hidden" name="selected_enrollments" value="" />
   <table cellpadding="4" cellspacing="0" align="center" width="300">
     <tr>
-      <th>Kick students whose first class starts at...</th>
-      <th>from sections starting at...</th>
+      <th width="50%">Kick students whose first class starts at...</th>
+      <th width="50%">from classes starting at...</th>
     </tr>
     {% for t in selections %}
     <tr>

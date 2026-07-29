@@ -1,0 +1,13 @@
+{% load latex %}
+
+\begin{tcolorbox}[width=\textwidth,colback={esphead}]    
+ \begin{center}
+      \Large {Responses for {{ survey.name|texescape }}} 
+\end{center}
+\end{tcolorbox}  
+
+{% for q in display_data %}
+    {% with survey.num_participants as num_participants %}
+        {% include "survey/answers.tex" %}
+    {% endwith %}
+{% endfor %}

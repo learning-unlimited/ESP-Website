@@ -1,4 +1,6 @@
 
+from __future__ import absolute_import
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,19 +34,16 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
 from esp.utils.web import render_to_response
-from esp.middleware      import ESPError
 from esp.users.models    import ESPUser
 from django.db.models.query       import Q
-from django.template.loader import get_template
-from esp.program.models  import StudentApplication
 from django              import forms
 from esp.middleware.threadlocalrequest import get_current_request
 
-# student class picker module
 class StudentJunctionAppModule(ProgramModuleObj):
+    doc = """Allows students to submit applications for a program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -75,8 +74,11 @@ class StudentJunctionAppModule(ProgramModuleObj):
     def isCompleted(self):
         """ This step is completed if the student has marked their application as complete or answered questions for
         all of their classes.  I know this is slow sometimes.  -Michael P"""
-
-        app = get_current_request().user.getApplication(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        app = user.getApplication(self.program)
 
         #   Check if the application is empty or marked as completed.
         if app.done:
@@ -96,7 +98,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
             response_dict[response_question_ids[i]] = responses[i]
 
         #   Check that they responded to everything.
-        classes = get_current_request().user.getAppliedClasses(self.program)
+        classes = user.getAppliedClasses(self.program)
         for cls in classes:
             for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
                 if i not in response_question_ids:
@@ -109,16 +111,16 @@ class StudentJunctionAppModule(ProgramModuleObj):
         return super(StudentJunctionAppModule, self).deadline_met('/Applications')
 
     @main_call
-    @needs_student
+    @needs_student_in_grade
     @meets_deadline('/Applications')
-    def application(self,request, tl, one, two, module, extra, prog):
+    def application(self, request, tl, one, two, module, extra, prog):
         app = request.user.getApplication(self.program)
         app.set_questions()
         form = None
         if request.method == 'POST':
             data = request.POST.copy()
-            forms = app.get_forms(data)
-            for form in forms:
+            form_list = app.get_forms(data)
+            for form in form_list:
                 if form.is_valid():
                     form.target.update(form)
             if request.POST['submitform'].lower() == 'complete':
@@ -128,10 +130,12 @@ class StudentJunctionAppModule(ProgramModuleObj):
             app.save()
             return self.goToCore(tl)
         else:
-            forms = app.get_forms()
+            form_list = app.get_forms()
 
-        return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
+        return render_to_response(self.baseDir()+'application.html', request, {'forms': form_list, 'app': app})
 
+    def isStep(self):
+        return self.program.isUsingStudentApps()
 
     class Meta:
         proxy = True

@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,19 +35,15 @@ Learning Unlimited, Inc.
 """
 import json
 from django.http      import HttpResponse
-from esp.users.views  import search_for_user
-from esp.program.models import SplashInfo
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
-from esp.users.models import ESPUser
 from datetime         import datetime
 from esp.utils.web    import render_to_response
 from esp.utils.models import Printer, PrintRequest
-from datetime         import datetime
-from django.db.models.query   import Q
-from django.template.loader import select_template
 
 class OnsitePrintSchedules(ProgramModuleObj):
+    doc = """Automatically print student schedules at onsite registration."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -61,7 +58,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
-        if not 'sure' in request.GET and not 'gen_img' in request.GET:
+        if 'sure' not in request.GET and 'gen_img' not in request.GET:
             printers = Printer.objects.all().values_list('name', flat=True)
 
             return render_to_response(self.baseDir()+'instructions.html',

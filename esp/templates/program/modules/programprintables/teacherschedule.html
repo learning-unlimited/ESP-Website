@@ -1,34 +1,12 @@
 <html>
 <head>
-<title>Teacher Schedules</title>
-<style type="text/css" media="print,screen">
-body { font-family: georgia; margin: 0; font-size: 12px;}
-.title { text-align: center; font-size: 12pt; font-family: georgia; }
-.title span { font-weight:bolder; text-decoration: underline;
-              font-size:16pt; }
-.facts { text-align: center; border: 0; }
-.facts th { text-align: right; font-size: 12pt; font-weight: bold; }
-.facts td { text-align: left; font-size: 12pt;}
-.facts td.paid { border: 1px solid black; text-align: center;
-                 }
-.title { padding: 1in 0 0 0; }
-.schedule {border: 1px solid black; }
-.schedule td { border: 1px solid black; }
-.schedule th { border: 1px solid black; vertical-align: top; }
-.schedule td { vertical-align: top; }
-.schedule th.day { border-bottom: 0; }
-.schedule td.oldday { border-bottom: 0;
-                      border-top: 0;}
-td.newday { border-width: 2px 1px 0 1px;}
-#pagebreak {page-break-after: always; }
-.description { text-align: center; padding: .2in 0 .2in 0; }
-</style>
-
+<title>{{ program.niceName }} {% block teacherschedule_title %}Teacher Schedule{% endblock %}</title>
+<link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
 </head>
 <body>
 {% if scheditems|length_is:0 %}
 <div class="title">It looks like you don't have any classes scheduled yet.</div>
-{% endif %} 
+{% endif %}
 
 {% for scheditem in scheditems %}
 
@@ -38,17 +16,21 @@ td.newday { border-width: 2px 1px 0 1px;}
 <div id="pagebreak">&nbsp;</div>
 {% endif %}
 
-<div class="title">Teacher Schedule for <br /><br />
+<div class="title">{{ program.niceName }} {% block teacherschedule_heading %}Teacher Schedule{% endblock %} for <br /><br />
     <span>{{ scheditem.name }}</span>
 </div>
-<div class="description">Here is your schedule.
-  Please show up to class on-time.<br />
-  If you have any questions, please visit the {{ settings.ORGANIZATION_SHORT_NAME }} help desk.
+<div class="description">
+{% block teacherschedule_instructions %}
+<ul>
+<li>If you spent money for your class, get reimbursed by following the instructions at <strong>{{ request.scheme }}://{{ request.get_host }}/teach/{{ program.program_type }}/reimbursements.html</strong>.</li>
+<li>If there is an emergency, contact the MIT Police at <strong>617-253-1212</strong> (not 911!) After calling them, please call us to let us know of the emergency.</li>
+<li>For less urgent issues, contact {{ program.program_type }} HQ at <strong>617-253-4941</strong>.  If you have any questions, need help, need a projector, need an adapter, or anything else, please don't hesitate to call.</li>
+<li>Please remember that MIT's Protection of Minors Policy forbids you from being the only adult in a room with students. Therefore, please avoid situations that will leave you alone with students.</li>
+<li>We hope you enjoy teaching at {{ program.program_type }}!</li>
+</ul>
+{% endblock %}
 </div>
 
-<div style="height: 2in;">&nbsp;</div>
-<br />
-<br />
 <table align="center" cellspacing="0" cellpadding="2px" class="schedule">
 <tr><th colspan="4">Schedule</th></tr>
 <tr>
@@ -65,7 +47,7 @@ td.newday { border-width: 2px 1px 0 1px;}
   <td>{{ scheditem.cls.friendly_times|join:"<br />" }}</td>
   <td>{% if scheditem.cls.classrooms|length_is:0 %}N/A{% else %}
       {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
-  <td>{% if scheditem.observing %}(Observing){% endif %} {{ scheditem.cls.title }}</td>
+  <td>{% if scheditem.moderating %}<em>({{ program.getModeratorGerund }} class by {% for teacher in scheditem.cls.teachers %}{% if not forloop.first %}, {% endif %}{{ teacher.name }}{% endfor %})</em><br/>{% endif %}{{ scheditem.cls.title }}</td>
 </tr>
 {% endautoescape %}
 {% endfor %}

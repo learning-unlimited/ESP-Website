@@ -7,7 +7,7 @@
   var program_core_url = "{{ program.getUrlBase }}/";
   var program_base_url = "/json/" + program_core_url;
   var catalog_type = "public";
-  var open_class_category_id = {{ open_class_category_id }};
+  var open_class_category_id = {% if open_class_category_id is None %}null{% else %}{{ open_class_category_id }}{% endif %};
   var lunch_category_id = {{ lunch_category_id }};
   var increment_grade = {{ program.incrementGrade }};
 </script>
@@ -84,7 +84,7 @@
   <!-- ko if: !classesShowing() && !loading() -->
   <div class="no-match">
     <center>
-    There are no classes in this timeslot that match your filter.
+    There are no classes which begin in this timeslot that match your filter.
     </center>
   </div>
   <!-- /ko -->

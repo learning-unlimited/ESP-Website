@@ -16,15 +16,16 @@ if (document.getElementById("id_phone_cell") && document.getElementById("id_guar
   document.getElementById("id_copy_parent_info").style.display = '';
 }
 function copy_parent_info() {
-  $j("#id_emerg_first_name").val($j("#id_guard_first_name").val());
-  $j("#id_emerg_last_name").val($j("#id_guard_last_name").val());
-  $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val());
-  $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val());
-  $j("#id_emerg_address_street").val($j("#id_address_street").val());
-  $j("#id_emerg_address_city").val($j("#id_address_city").val());
-  $j("#id_emerg_address_state").val($j("#id_address_state").val());
-  $j("#id_emerg_address_zip").val($j("#id_address_zip").val());
-  $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val());
+  $j("#id_emerg_first_name").val($j("#id_guard_first_name").val()).change();
+  $j("#id_emerg_last_name").val($j("#id_guard_last_name").val()).change();
+  $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val()).change();
+  $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val()).change();
+  $j("#id_emerg_address_street").val($j("#id_address_street").val()).change();
+  $j("#id_emerg_address_city").val($j("#id_address_city").val()).change();
+  $j("#id_emerg_address_state").val($j("#id_address_state").val()).change();
+  $j("#id_emerg_address_zip").val($j("#id_address_zip").val()).change();
+  $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
+  $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
 }
 </script>
 
@@ -94,6 +95,10 @@ function copy_parent_info() {
         
         {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
         <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
+        {% endif %}
+        
+        {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
+        <br /><span class="form_error">{{ form.emerg_address_country.errors|join:", " }}</span>
         {% endif %}
     </div>
 </div>

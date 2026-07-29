@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,18 +34,15 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
-from esp.program.modules import module_ext
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.utils.web import render_to_response
-from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser
-from django              import forms
-from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
 from esp.accounting.controllers import IndividualAccountingController
 
 
 class OnsitePaidItemsModule(ProgramModuleObj):
+    doc = """Lists the items that a student has requested/paid for."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -60,7 +58,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        user, found = search_for_user(request, add_to_context = {'tl': 'onsite'})
+        user, found = search_for_user(request, add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
         if not found:
             return user
 

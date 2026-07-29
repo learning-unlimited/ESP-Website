@@ -1,4 +1,6 @@
+from __future__ import absolute_import
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
 from django.core import mail
@@ -35,10 +37,10 @@ class CancelClassTest(ProgramFrameworkTest):
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
 
         # Check that the class was changed to cancelled
-        self.assertTrue(self.cls.status == -20)
+        self.assertEqual(self.cls.status, ClassStatus.CANCELLED)
         # Check that the sections were cancelled
         for sec in self.cls.sections.all():
-            self.assertTrue(sec.status == -20)
+            self.assertEqual(sec.status, ClassStatus.CANCELLED)
 
         # Test that an email was sent
         directorEmail = None
@@ -52,9 +54,9 @@ class CancelClassTest(ProgramFrameworkTest):
                     studentEmail = m
                     break
 
-        self.assertTrue(directorEmail != None and cancelMsg in directorEmail.body)
-        self.assertTrue(studentEmail != None and cancelMsg in studentEmail.body)
+        self.assertTrue(directorEmail is not None and cancelMsg in directorEmail.body)
+        self.assertTrue(studentEmail is not None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
         r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
-        self.assertTrue(self.cls.emailcode() in r.content)
+        self.assertContains(r, self.cls.emailcode(), status_code=200)

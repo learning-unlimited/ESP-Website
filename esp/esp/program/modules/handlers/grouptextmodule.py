@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,23 +35,20 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.views.usersearch import get_user_checklist
-from django.db.models.query   import Q
-from esp.dbmail.models import ActionHandler
-from django.template import Template
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
 from django.conf import settings
 
-from twilio import TwilioRestException
-from twilio.rest import TwilioRestClient
+from twilio.rest import Client
+from twilio.base.exceptions import TwilioRestException
 
 class GroupTextModule(ProgramModuleObj):
+    doc = """Text users that match specific search criteria."""
     """ Want to tell all enrolled students about a last-minute lunch location
         change? Want to inform students about a cancelled class? The Group Text
         Panel is your friend!
@@ -69,9 +69,9 @@ class GroupTextModule(ProgramModuleObj):
         """ Check if Twilio configuration settings are set.
             The text message module will not work without them. """
 
-        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, basestring):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, six.string_types):
             return False
-        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, basestring):
+        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, six.string_types):
             return False
         if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
             return False
@@ -82,7 +82,7 @@ class GroupTextModule(ProgramModuleObj):
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
-            raise ESPError(), 'Filter or message have not been properly set'
+            raise ESPError()('Filter or message have not been properly set')
 
         if not self.is_configured():
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
@@ -109,13 +109,7 @@ class GroupTextModule(ProgramModuleObj):
         context['program'] = prog
 
         if request.method == "POST":
-            data = {}
-            for key in request.POST:
-                #   Some keys have list values
-                if key in ['regtypes']:
-                    data[key] = request.POST.getlist(key)
-                else:
-                    data[key] = request.POST[key]
+            data = ListGenModule.processPost(request)
             filterObj = UserSearchController().filter_from_postdata(prog, data)
 
             context['filterid'] = filterObj.id
@@ -138,14 +132,14 @@ class GroupTextModule(ProgramModuleObj):
             pass
 
         if not users:
-            raise ESPError(), "Your query did not match any users"
+            raise ESPError()("Your query did not match any users")
 
         account_sid = settings.TWILIO_ACCOUNT_SID
         auth_token = settings.TWILIO_AUTH_TOKEN
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError(), "You must configure the Twilio account settings before attempting to send texts using this module"
+          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0
@@ -157,8 +151,8 @@ class GroupTextModule(ProgramModuleObj):
 
             contactInfo = None
             try:
-                # TODO: handle multiple ContactInfo objects per user
-                contactInfo = ContactInfo.objects.filter(user=user).order_by("-id")[0]
+                #   Only get contact info for the actual user (not guardians or emergency contacts)
+                contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
             except ContactInfo.DoesNotExist:
                 pass
             if not contactInfo:
@@ -171,7 +165,7 @@ class GroupTextModule(ProgramModuleObj):
             if not contactInfo.receive_txt_message and not override:
                 send_log.append(str(user)+" does not want text messages, fine")
                 continue
-            client = TwilioRestClient(account_sid, auth_token)
+            client = Client(account_sid, auth_token)
 
             # format the number for Twilio
             formattedNumber = contactInfo.phone_cell.replace("-", "").replace(" ", "")
@@ -182,7 +176,7 @@ class GroupTextModule(ProgramModuleObj):
 
                 send_log.append("Sending text message to "+formattedNumber)
                 try:
-                    client.sms.messages.create(body=body,
+                    client.messages.create(body=body,
                                            to=formattedNumber,
                                            from_=ourNumbers[numberIndex])
                 except TwilioRestException as error:
@@ -190,6 +184,9 @@ class GroupTextModule(ProgramModuleObj):
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
 
         return "\n".join(send_log)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

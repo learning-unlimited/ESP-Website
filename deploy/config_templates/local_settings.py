@@ -1,8 +1,9 @@
 """ Local system-specific settings. """
 
+from __future__ import absolute_import
 import os
 
-SITE_INFO = (1, 'devsite.learningu.org', 'LU Dev Site')
+SITE_INFO = (1, 'esp-dev.mit.edu', 'MIT ESP Dev Site')
 CACHE_PREFIX = "ludev"
 PROJECT_ROOT = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..')
 USE_MAILMAN = False
@@ -22,11 +23,40 @@ DATABASES = {'default':
 
 MIDDLEWARE_LOCAL = []
 
-EMAIL_HOST_SENDER = 'devsite.learningu.org'
-VARNISH_HOST = None
+PRIVACY_POLICY_URL = '/privacy-policy.html'
+EMAIL_HOST_SENDER = 'esp.mit.edu'
+ALLOWED_SENDER_EMAIL_DOMAINS = [r'esp\.mit\.edu', r'mit\.edu', r'esp-dev\.mit\.edu']
+
+DEFAULT_EMAIL_ADDRESSES = {
+    'archive':           'archive@esp-dev.mit.edu',
+    'bounces':           'bounces@esp-dev.mit.edu',
+    'support':           'web@esp-dev.mit.edu',
+    'membership':        'esp@esp-dev.mit.edu',
+    'default':           'esp@esp-dev.mit.edu',
+    'treasury':          'esp-credit-cards@esp-dev.mit.edu',
+    'mailman_moderator': 'esp-moderators@esp-dev.mit.edu',
+}
+
 DEBUG_TOOLBAR = True
+# Disable most of the panels by default to reduce overhead:
+from .django_settings import DEBUG_TOOLBAR_CONFIG
+DEBUG_TOOLBAR_CONFIG['DISABLE_PANELS'] |= {
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'esp.utils.debug_panels.TemplatesPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+}
+
+VARNISH_HOST = None
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
 SECRET_KEY = '%(secret_key)s'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+
+# for shell_plus jupyter notebook:
+NOTEBOOK_ARGUMENTS = [
+    '--ip', '0.0.0.0',
+]

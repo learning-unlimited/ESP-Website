@@ -19,7 +19,30 @@
             <tr>
                 <td>Room:</td>
                 <td>
-                    {% if checked_in %}{% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}{% else %}You are not checked in{% endif %}
+                    {% if checked_in %}
+                        {% if section.initial_rooms %}
+                            {% for r in section.initial_rooms %}
+                                {{ r.name }}
+                                {% if map_provider == 'whereis.mit.edu' %}
+                                    (<a href="{{ r.mit_whereis_url }}" target="_blank">map</a>)
+                                {% elif map_provider == 'google' %}
+                                    (<a href="/learn/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
+                                {% endif %}
+                                {% comment %}
+                                {% if section.resourceassignments %}
+                                    (<a title="Zoom Link" href="{{ section.resourceassignments.0.resource.attribute_value }}" target="_blank">Zoom link</a>)
+                                {% else %}
+                                    (<a title="Zoom Link" href="{{ section.classrooms.0.associated_resources.0.attribute_value }}" target="_blank">Zoom link</a>)
+                                {% endif %}
+                                {% endcomment %}
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
+                    {% else %}
+                        You are not checked in
+                    {% endif %}
                 </td>
             </tr>
                 <td>Time:</td>
@@ -37,7 +60,7 @@
                 <td>Document uploads:</td>
                 <td>
                     {% for doc in section.parent_class.documents.all %}
-                        <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                        <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a><br />
                     {% endfor %}
                 </td>
             </tr>

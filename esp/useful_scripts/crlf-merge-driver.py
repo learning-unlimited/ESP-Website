@@ -16,8 +16,10 @@
 #
 
 
+from __future__ import absolute_import
 import sys
 import subprocess
+from io import open
 
 endings = {'lf': '\n', 'cr': '\r', 'crlf': '\r\n'}
 

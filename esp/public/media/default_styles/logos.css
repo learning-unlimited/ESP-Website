@@ -1,0 +1,39 @@
+.avatar .ui-icon {
+    background-position: left center;
+    height: 100px;
+    width: 100px;
+    background-size: 100px, 100px;
+}
+
+.ui-menu-icons .ui-menu-item-wrapper {
+    height: 100px;
+    padding-left: 110px;
+    display: flex;
+    align-items: center;
+}
+
+table {
+    width: 100%;
+}
+
+.options {
+    display: table-row;
+    width: 100%;
+}
+
+.options td {
+    width: 50%;
+    text-align: center;
+}
+
+.options input, .options select {
+    width: 80%;
+}
+
+.ui-selectmenu-button.ui-button {
+    width: 80%;
+}
+
+.well img {
+    max-width: 80%;
+}

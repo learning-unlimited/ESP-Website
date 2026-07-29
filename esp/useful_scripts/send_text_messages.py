@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import sys
-from twilio.rest import TwilioRestClient
+from twilio.rest import Client
 
 # TODO(jmoldow): Use Python built-in argparse module.
 if len(sys.argv) < 6:
-  print ("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0])
+  print(("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>" % sys.argv[0]))
   exit(1)
 
 account_sid = sys.argv[1]
@@ -15,10 +17,10 @@ body = sys.argv[5]
 numberIndex = 0
 
 for number in recipients:
-    client = TwilioRestClient(account_sid, auth_token)
+    client = Client(account_sid, auth_token)
 
-    print "Sending text message to "+number
-    client.sms.messages.create(body=body,
+    print("Sending text message to "+number)
+    client.messages.create(body=body,
                                to=number,
                                from_=ourNumbers[numberIndex])
     numberIndex = (numberIndex + 1) % len(ourNumbers)

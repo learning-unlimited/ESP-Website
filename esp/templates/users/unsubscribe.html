@@ -1,0 +1,32 @@
+{% extends "main.html" %}
+
+{% block title %}Deactivate and Unsubscribe{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<h1>{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} Account Deactivation and Unsubscription</h1>
+
+<div>
+{% if deactivated %}
+<p>
+Your account, <b>{{ user.username }}</b>, has been properly deactivated and you have been unsubscribed from emails from {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.
+</p>
+
+<p>
+Thank you for your interest in {{ settings.ORGANIZATION_SHORT_NAME }}!  If you have any questions, please <a href="/contact/">contact us</a>.
+</p>
+{% else %}
+<p>We're sorry to see you go. If you are sure you would like to deactivate your account (<b>{{ user.username }}</b>) and unsubscribe from emails from {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}, please click the confirmation button below:</p>
+<form method="post">
+{% csrf_token %}
+<input type="hidden" name="List-Unsubscribe" value="One-Click">
+<input type="submit" class="btn btn-primary" value="Confirm"></input>
+</form>
+{% endif %}
+</div>
+
+{% endblock %}

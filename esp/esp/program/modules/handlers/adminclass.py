@@ -1,4 +1,7 @@
 
+from __future__ import absolute_import
+from __future__ import division
+from six.moves import range
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -32,29 +35,25 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from collections import defaultdict
+from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, ClassFlagType
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser, User
 
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
 from django.http import HttpResponseRedirect, HttpResponse
 from esp.middleware import ESPError
-from esp.program.controllers.classreg import ClassCreationController
-from esp.users.models import TeacherInfo
-from esp.program.models import RegistrationProfile
-
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
 """ Module in the middle of a rewrite. -Michael """
 
 class AdminClass(ProgramModuleObj):
-    doc = """ This module is extremely useful for managing classes if you have them them in your program.
+    doc = """This module is extremely useful for managing classes if you have them in your program.
         Works best with student and teacher class modules, but they are not necessary.
         Options for this are available on the main manage page.
         """
@@ -76,11 +75,11 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((-20, 'Cancelled'), (-10, 'Rejected'), (0, 'Unreviewed'), (5, 'Accepted but hidden'), (10, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
-            room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
+            room_choices = list(self.program.getClassrooms().values_list('name', 'name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'resources':
             resources = self.program.getFloatingResources()
@@ -162,11 +161,13 @@ class AdminClass(ProgramModuleObj):
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':
-                class_subject.accept_all_sections()
+                class_subject.accept()
             elif review_status == 'UNREVIEW':
-                class_subject.unreview_all_sections()
+                class_subject.propose()
             elif review_status == 'REJECT':
                 class_subject.reject()
+            elif review_status == 'CANCEL':
+                class_subject.cancel()
             else:
                 raise ESPError("Error: invalid review status")
 
@@ -195,7 +196,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def addsection(self, request, tl, one, two, module, extra, prog):
         """ A little function to add a section to the class specified in POST. """
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         cls.add_section()
 
         return HttpResponseRedirect('/manage/%s/%s/manageclass/%s' % (one, two, extra))
@@ -203,23 +204,20 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         sections = cls.sections.all().order_by('id')
         context = {}
 
-        if cls.isCancelled():
+        if cls.isCancelled() or not cls.hasScheduledSections():
             cls_cancel_form = None
         else:
             cls_cancel_form = ClassCancellationForm(subject=cls)
-        sec_cancel_forms = []
-        for sec in sections:
-            if sec.isCancelled():
-                sec_cancel_forms.append(None)
-            else:
-                sec_cancel_forms.append(SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())))
+        sec_cancel_forms = SectionCancellationForm(cls = cls)
+
+        cls_form = ClassManageForm(self, subject=cls)
+        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
 
         action = request.GET.get('action', None)
-
         if request.method == 'POST':
             if action == 'cancel_cls':
                 cls_cancel_form.data = request.POST
@@ -227,59 +225,38 @@ class AdminClass(ProgramModuleObj):
                 if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to email and remove students, etc.
                     cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], text_students=cls_cancel_form.cleaned_data['text_students'], email_teachers = cls_cancel_form.cleaned_data['email_teachers'], explanation=cls_cancel_form.cleaned_data['explanation'], unschedule=cls_cancel_form.cleaned_data['unschedule'])
-                    cls_cancel_form = None
-            else:
-                j = 0
-                for i in [sec.index() for sec in sections]:
-                    if action == ('cancel_sec_%d' % i):
-                        sec_cancel_forms[j].data = request.POST
-                        sec_cancel_forms[j].is_bound = True
-                        if sec_cancel_forms[j].is_valid():
-                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], text_students=sec_cancel_forms[j].cleaned_data['text_students'], email_teachers = sec_cancel_forms[j].cleaned_data['email_teachers'], explanation=sec_cancel_forms[j].cleaned_data['explanation'], unschedule=sec_cancel_forms[j].cleaned_data['unschedule'])
-                            sec_cancel_forms[j] = None
-                    j += 1
-
-        cls_form = ClassManageForm(self, subject=cls)
-        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
-
-        if request.method == 'POST' and action == 'modify':
-            cls_form.data = request.POST
-            cls_form.is_bound = True
-            valid = cls_form.is_valid()
-            for sf in sec_forms:
-                sf.data = request.POST
-                sf.is_bound = True
-                valid = (valid and sf.is_valid())
-
-            if valid:
-                # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
-                # then cancel it, and it won't kick all the students out
-                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                new_status = int(cls_form.cleaned_data['status'])
-                should_cancel_sections = (int(cls_alter.status) > 0 and new_status < 0)
-
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
+            elif action == 'cancel_sec':
+                sec_cancel_forms.data = request.POST
+                sec_cancel_forms.is_bound = True
+                if sec_cancel_forms.is_valid():
+                    cleaned_data = sec_cancel_forms.cleaned_data
+                    for sec in sections:
+                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                            sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
+            elif action == 'modify_cls':
+                cls_form = ClassManageForm(self, subject=cls)
+                cls_form.data = request.POST
+                cls_form.is_bound = True
+                if cls_form.is_valid():
+                    cls_form.save_data(cls)
+                    return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
+            elif action == 'modify_sec':
                 for sf in sec_forms:
-                    sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
-                    orig_sec_status = sec_alter.status
-                    sf.save_data(sec_alter)
-
-                    # If the parent class was canceled, cancel the sections
-                    if should_cancel_sections and int(sec_alter.status) > 0:
-                        sec_alter.status = new_status
-                        sec_alter.save()
-
-                    # Kick all the students out of a class if it was rejected
-                    if int(sec_alter.status) < 0 and int(orig_sec_status) > 0:
-                        for student in sec_alter.students():
-                            sec_alter.unpreregister_student(student)
-
-                #   Save class info after section info so that cls_form.save_data()
-                #   can override section information if it's supposed to.
-                #   This is needed for accepting/rejecting the sections of a
-                #   class when the sections are unreviewed.
-                cls_form.save_data(cls_alter)
-
-                return HttpResponseRedirect(request.get_full_path())
+                    if 'sec'+str(sf.index)+'-secid' in request.POST:
+                        sf.data = request.POST
+                        sf.is_bound = True
+                        if sf.is_valid():
+                            sec = ClassSection.objects.get(id=sf.cleaned_data['secid'])
+                            orig_sec_status = sec.status
+                            sf.save_data(sec)
+                            verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            # Kick all the students out of a class if it was rejected
+                            if int(sec.status) < 0 and int(orig_sec_status) > 0:
+                                for student in sec.students():
+                                    sec.unpreregister_student(student, verbs)
+                            return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
 
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True
@@ -302,7 +279,7 @@ class AdminClass(ProgramModuleObj):
         cls.accept()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -311,7 +288,7 @@ class AdminClass(ProgramModuleObj):
         cls.reject()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -320,7 +297,7 @@ class AdminClass(ProgramModuleObj):
         cls.propose()
         if 'redirect' in request.GET:
             return HttpResponseRedirect(request.GET['redirect'])
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
@@ -331,7 +308,7 @@ class AdminClass(ProgramModuleObj):
         cls = classes[0]
 
         cls.delete(True)
-        return self.goToCore(tl)
+        return HttpResponseRedirect(prog.get_manage_url() + 'dashboard')
 
     @aux_call
     @needs_admin
@@ -355,94 +332,7 @@ class AdminClass(ProgramModuleObj):
 
         cls = classes[0]
 
-        coteachers = list(cls.get_teachers())
-
-        op = request.POST.get('op')
-
-        conflictinguser = None
-        error = False
-
-        old_coteachers_set = set(cls.get_teachers())
-        ccc = ClassCreationController(self.program)
-
-        conflictinguser = ''
-
-        if op == 'add':
-
-            if len(request.POST['teacher_selected'].strip()) == 0:
-                error = 'Error - Please click on the name when it drops down.'
-
-            try:
-                maybe_section_index = int(request.POST.get('submit'))
-            except TypeError:
-                maybe_section_index = None
-            except ValueError:
-                maybe_section_index = None
-
-            if maybe_section_index is None and any(str(teacher.id) == request.POST['teacher_selected'] for teacher in coteachers):
-                error = 'Error - You already added this teacher as a coteacher!'
-
-            if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request,
-                                          {'class': cls,
-                                           'ajax': ajax,
-                                           'coteachers': coteachers,
-                                           'error': error,
-                                           'conflict': []})
-
-            # add schedule conflict checking here...
-            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
-
-            if maybe_section_index is None:
-                if cls.conflicts(teacher):
-                    conflictinguser = teacher
-                else:
-                    lastProf = RegistrationProfile.getLastForProgram(teacher, prog)
-                    if not lastProf.teacher_info:
-                        anyInfo = teacher.getLastProfile().teacher_info
-                        if anyInfo:
-                            lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf,
-                                                                            {'graduation_year': anyInfo.graduation_year,
-                                                                             'affiliation': anyInfo.affiliation,
-                                                                             'major': anyInfo.major,
-                                                                             'shirt_size': anyInfo.shirt_size,
-                                                                             'shirt_type': anyInfo.shirt_type})
-                        else:
-                            lastProf.teacher_info = TeacherInfo.addOrUpdate(teacher, lastProf, {})
-                    lastProf.save()
-                    coteachers.append(teacher)
-                    txtTeachers = ",".join([str(coteacher.id) for coteacher in coteachers ])
-                    ccc.associate_teacher_with_class(cls, teacher)
-                    ccc.send_class_mail_to_directors(cls)
-            else:
-                # section.index is one-indexed, something seems wrong about
-                # all this because we usually do a really good job of never
-                # having to get a section in this exact way, but oh well
-                cls.get_sections()[maybe_section_index - 1].observers.add(teacher)
-
-        elif op == 'del':
-            ids = request.POST.getlist('delete_coteachers')
-            new_coteachers = [teacher for teacher in coteachers if str(teacher.id) not in ids]
-            for teacher in set(coteachers) - set(new_coteachers):
-                cls.removeTeacher(teacher)
-            coteachers = new_coteachers
-
-            comma_sep_ids = request.POST.getlist('delete_observers')
-            all_observer_ids_to_delete = defaultdict(list)
-            for comma_sep_id in request.POST.getlist('delete_observers'):
-                index_str, id_str = comma_sep_id.split(',')
-                all_observer_ids_to_delete[int(index_str)].append(id_str)
-            for section in cls.get_sections():
-                ids_to_delete = all_observer_ids_to_delete[section.index()]
-                for observer in section.observers.filter(id__in=ids_to_delete):
-                    section.observers.remove(observer)
-
-        return render_to_response(self.baseDir()+'coteachers.html', request,
-                                  {'class': cls,
-                                   'ajax': ajax,
-                                   'coteachers': coteachers,
-                                   'conflict': conflictinguser,
-                                   'program': prog})
+        return TeacherClassRegModule.coteachers_logic(cls, request, prog, self.baseDir()+'coteachers.html', ajax, is_admin = True)
 
     @aux_call
     @needs_admin
@@ -469,7 +359,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         # Search for teachers with names that start with search string
-        if not 'name' in request.GET or 'name' in request.POST:
+        if 'name' not in request.GET or 'name' in request.POST:
             return self.goToCore(tl)
 
         return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
@@ -478,13 +368,9 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def classavailability(self, request, tl, one, two, module, extra, prog):
         """ Shows the collective availability of teachers for a class. """
-        cls = self.getClass(request,extra)
+        cls = self.getClass(request, extra)
         time_options = prog.getTimeSlots()
-        #   Group contiguous blocks
-        if not Tag.getBooleanTag('availability_group_timeslots', default=True):
-            time_groups = [list(time_options)]
-        else:
-            time_groups = Event.group_contiguous(list(time_options))
+        time_groups = prog.getTimeGroups()
 
         teachers = cls.get_teachers()
 
@@ -497,10 +383,12 @@ class AdminClass(ProgramModuleObj):
         viable_times = []
         unavail_teachers = {}
         teaching_teachers = {}
+        moderating_teachers = {}
         conflict_found = False
         for time in time_options:
             unavail_teachers[time] = []
             teaching_teachers[time] = []
+            moderating_teachers[time] = []
             for teacher in teachers:
                 if time not in teacher.getAvailableTimes(prog, True):
                     unavail_teachers[time].append(teacher)
@@ -508,7 +396,9 @@ class AdminClass(ProgramModuleObj):
                         conflict_found = True
                 if time in teacher.getTaughtTimes(prog, exclude = [cls]):
                     teaching_teachers[time].append(teacher)
-            if (len(unavail_teachers[time]) + len(teaching_teachers[time])) == 0:
+                if time in teacher.getModeratingTimesFromProgram(prog):
+                    moderating_teachers[time].append(teacher)
+            if (len(unavail_teachers[time]) + len(teaching_teachers[time]) + len(moderating_teachers[time])) == 0:
                 viable_times.append(time)
 
         context =   {
@@ -521,6 +411,7 @@ class AdminClass(ProgramModuleObj):
                                     'section': cls.get_section(t),
                                     'unavail_teachers': unavail_teachers.get(t),
                                     'teaching_teachers': teaching_teachers.get(t),
+                                    'moderating_teachers': moderating_teachers.get(t),
                                 }
                             for t in group]
                         for group in time_groups]
@@ -529,11 +420,14 @@ class AdminClass(ProgramModuleObj):
         context['unscheduled'] = unscheduled_sections
         context['conflict_found'] = conflict_found
         # this seems kinda hacky, but it's probably fine for now
-        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times)])
+        context['is_overbooked'] = sum([sec.duration for sec in cls.get_sections()]) > sum([Event.total_length(events).seconds/3600.0 for events in Event.group_contiguous(viable_times, int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)))])
         context['num_groups'] = len(context['groups'])
         context['program'] = prog
 
         return render_to_response(self.baseDir()+'classavailability.html', request, context)
+
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

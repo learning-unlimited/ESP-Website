@@ -1,0 +1,72 @@
+body {
+    font-family: georgia;
+    margin: 0;
+    font-size: 14px;
+}
+.title {
+    text-align: center;
+    font-size: 14pt;
+    font-family: georgia;
+}
+.title span {
+    font-weight:bolder;
+    text-decoration: underline;
+    font-size:20pt;
+}
+.facts {
+    text-align: center;
+    border: 0;
+}
+.facts th {
+    text-align: right;
+    font-size: 14pt;
+    font-weight: bold;
+}
+.facts td {
+    text-align: left;
+    font-size: 14pt;
+}
+.facts td.paid {
+    border: 1px solid black;
+    text-align: center;
+}
+.title {
+    padding: 0.25in 0 0 0;
+}
+.schedule {
+    border: 1px solid black;
+}
+.schedule td {
+    border: 1px solid black;
+    font-size: 12pt;
+}
+.schedule th {
+    border: 1px solid black;
+    vertical-align: top;
+    font-size: 13pt;
+}
+.schedule td {
+    vertical-align: top;
+}
+.schedule th.day {
+    border-bottom: 0;
+}
+.schedule td.oldday {
+    border-bottom: 0;
+    border-top: 0;
+}
+td.newday {
+    border-width: 2px 1px 0 1px;
+}
+#pagebreak {
+    page-break-after: always;
+}
+.description {
+    text-align: left;
+    padding: .2in 0 .2in 0;
+    width: 800px;
+    margin: 0 auto;
+}
+.description li {
+    padding: 5px 0px;
+}

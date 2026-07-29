@@ -25,7 +25,7 @@ After creating the program template using this form, you will still need to set 
 </p>
 
 <p>
-Please enter the date ranges (bottom 3 rows) in one of the following formats:
+Please enter the date ranges (bottom 4 rows) in one of the following formats:
 <ul>
 <li><tt><font style="background-color:lightgray;">9/1/2007</font></tt> (for September 1<sup>st</sup>, 2007 at midnight)</li>
 <li><tt><font style="background-color:lightgray;">9/1/2007 17:30</font></tt> (for September 1<sup>st</sup>, 2007 5:30 pm)</li>
@@ -45,8 +45,21 @@ Use a past program as a template:
 {% endfor %}
 </select>
 <br />
-<font color="#4CC417">If you use a program as a template, make sure to carefully look through and update all fields below!</font>
 </p>
+{% if template_prog_id != 0 %}
+<div class="alert alert-info" role="alert">
+<span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+If you use a program as a template, make sure to carefully look through and update all fields below!</br>
+In addition to importing the settings listed in the form below, using this program as a template will also copy the following:
+<ul>
+    <li>Teacher class registration settings</li>
+    <li>Student class registration settings</li>
+    <li>Tag settings</li>
+    <li>Module sequence and required settings</li>
+    <li>Manually enabled modules</li>
+</ul>
+</div>
+{% endif %}
 
 <div id="alumni_form">
   <form action="{{ request.path }}" method="post">

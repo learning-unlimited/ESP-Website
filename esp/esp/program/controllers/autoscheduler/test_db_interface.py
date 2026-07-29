@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 import datetime
 import traceback
 
@@ -13,6 +15,8 @@ from esp.program.models.class_ import \
 from esp.program.modules import module_ext
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
+from six.moves import range
+from six.moves import zip
 
 
 class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
@@ -120,7 +124,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 duration=duration)
         for i in extra_settings["extra_class_teachers"]:
             new_class.makeTeacher(self.teachers[i])
-        for i in xrange(extra_settings["extra_class_sections"]):
+        for i in range(extra_settings["extra_class_sections"]):
             if new_class.get_sections().count() <= i:
                 new_class.add_section(duration=duration)
         new_class.accept()
@@ -151,7 +155,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         # Create timeslots
         timeslots = []
         timeslot_id = self.initial_timeslot_id
-        for i in xrange(settings["num_timeslots"]):
+        for i in range(settings["num_timeslots"]):
             start_time = settings["start_time"] \
                 + datetime.timedelta(minutes=(
                     i * (settings["timeslot_length"]
@@ -170,7 +174,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         # Create classrooms and furnishings
         classrooms = []
         capacity = settings["room_capacity"]
-        for i in xrange(settings["num_rooms"]):
+        for i in range(settings["num_rooms"]):
             classrooms.append(data_model.AS_Classroom(
                 "Room {}".format(str(i)), capacity, timeslots[:-1]))
         restype_id = ResourceType.objects.get(
@@ -189,7 +193,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
 
         # Create teachers
         teachers = []
-        for i in xrange(settings["num_teachers"]):
+        for i in range(settings["num_teachers"]):
             teacher_id = i + self.initial_teacher_id
             teacher_availability = [
                     ts for j, ts in enumerate(timeslots) if j != i]
@@ -204,7 +208,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         subject_id = self.initial_subject_id
         sections = []
         for t in teachers:
-            for i in xrange(settings["classes_per_teacher"]):
+            for i in range(settings["classes_per_teacher"]):
                 category_id = self.initial_category_id + \
                     (subject_count % settings["num_categories"])
                 grade_min = 7
@@ -212,7 +216,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 capacity = settings["room_capacity"]
                 subject_count += 1
                 duration = settings["timeslot_length"] / 60.0
-                for j in xrange(settings["sections_per_class"]):
+                for j in range(settings["sections_per_class"]):
                     sections.append(data_model.AS_ClassSection(
                         [t], duration, capacity,
                         category_id, [],
@@ -236,7 +240,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             if i in extra_settings["extra_class_teachers"]]
         resource_requests = {extra_resource_type.name: extra_resource_type}
         self.extra_section_ids = []
-        for i in xrange(extra_settings["extra_class_sections"]):
+        for i in range(extra_settings["extra_class_sections"]):
             self.extra_section_ids.append(section_id)
             sections.append(data_model.AS_ClassSection(
                 section_teachers, duration, capacity,
@@ -467,7 +471,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         lunch_timeslots = [self.timeslots[1], self.timeslots[2],
                            self.extra_timeslot]
         lunch_times = [(e.start, e.end) for e in lunch_timeslots]
-        for i in xrange(3):
+        for i in range(3):
             subj.add_section(duration=self.settings["timeslot_length"] / 60.0)
         secs = subj.get_sections()
         for i, t in enumerate(lunch_timeslots):
@@ -525,7 +529,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         It's kind of brittle to the implementation, however, because it assumes
         that the check_can_schedule_sections function is called once at the
         beginning and once at the end."""
-        sections = [self.schedule.class_sections[i] for i in xrange(
+        sections = [self.schedule.class_sections[i] for i in range(
                 self.initial_section_id, self.initial_section_id + 2)]
         room = self.schedule.classrooms["Room 1"]
         roomslots = room.availability[1:3]

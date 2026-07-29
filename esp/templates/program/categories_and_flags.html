@@ -1,0 +1,274 @@
+{% extends "main.html" %}
+
+{% block title %}
+    Class Category and Flag Type Management
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+function deleteCategory() {
+    if (confirm('Are you sure you would like to delete this class category?')) {
+       return true;
+    }
+    return false;
+}
+
+function deleteFlagType() {
+    if (confirm('Are you sure you would like to delete this class flag type?')) {
+       return true;
+    }
+    return false;
+}
+
+function deleteRecordType() {
+    if (confirm('Are you sure you would like to delete this record type?')) {
+       return true;
+    }
+    return false;
+}
+
+function initialize()
+{
+    if($j(".isbuiltin").length > 0) {
+        $j("#builtin_records").on("click", function() {
+            $j(".isbuiltin").toggle();
+        });
+    } else {
+        $j("#builtin_records").hide()
+    }
+}
+
+$j(document).ready(initialize);
+</script>
+{% endblock %}
+
+{% block content %}
+
+<h2>
+    Class Category, Flag Type, and Record Type Management
+</h2>
+
+<p>This page is for adding, removing, and editing website-wide Class Categories, Flag Types, and Record Types. Note that new categories and flag types will not automatically populate into existing programs.
+You will need to use the main settings page for a specific program to modify which of the categories and flag types below will be available for teachers and admins (respectively) for that program.</p>
+
+<div id="program_form">
+
+    {% if open_section == "categories" %}
+    <button class="dsphead active">
+       <b>Class Categories</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Class Categories</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <p>Teachers choose categories for their classes when they register them. These categories are then displayed in schedules, catalogs, etc.
+    The following class <b>categories</b> are available to use for your programs. You can add another category or edit an existing one using the form below.
+    Note that you can not delete categories that are already being used for classes.</p>
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if cat_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if cat_form.instance.id %}
+    <input type="hidden" name="id" value="{{ cat_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="category" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Class Categories</th></tr>
+        {{ cat_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if cat_form.instance.id %}Edit{% else %}Add{% endif %} Class Category" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="4">Class Categories</th></tr>
+        <tr>
+            <td><b>Category</b></td>
+            <td><b>Symbol</b></td>
+            <td><b>Seq</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% for cat in categories %}
+        <tr>
+            <td>{{ cat.category }}</td>
+            <td>{{ cat.symbol }}</td>
+            <td>{{ cat.seq }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ cat.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="category" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteCategory()">
+                        <input type="hidden" name="id" value="{{ cat.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="category" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if cat.used_by_classes %}disabled title="This category is used for classes and can not be deleted"{% endif %}/>
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+    {% if open_section == "flagtypes" %}
+    <button class="dsphead active">
+       <b>Class Flag Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Class Flag Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <p>Flags allow you to annotate classes with particular information (e.g., classroom needs, needs further review).
+    The following flag <b>types</b> are available to use for your programs. You can add another flag type or edit an existing one using the form below.
+    Note that you can not delete flag types that are already being used for class flags.</p>
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if flag_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if flag_form.instance.id %}
+    <input type="hidden" name="id" value="{{ flag_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="flag_type" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Class Flag Types</th></tr>
+        {{ flag_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if flag_form.instance.id %}Edit{% else %}Add{% endif %} Class Flag Type" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="6">Class Flag Types</th></tr>
+        <tr>
+            <td><b>Name</b></td>
+            <td><b>Color</b></td>
+            <td><b>Seq</b></td>
+            <td><b>Show in Scheduler?</b></td>
+            <td><b>Show in Dashboard?</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% for ft in flag_types %}
+        <tr>
+            <td>{{ ft.name }}</td>
+            <td>{{ ft.color }}</td>
+            <td>{{ ft.seq }}</td>
+            <td>{{ ft.show_in_scheduler }}</td>
+            <td>{{ ft.show_in_dashboard }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ ft.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="flag_type" />
+                        <input type="submit" value="Edit" class="btn btn-primary" />
+                    </form>
+                    <form method="post" onsubmit="return deleteFlagType()">
+                        <input type="hidden" name="id" value="{{ ft.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="flag_type" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if ft.used_by_flags %}disabled title="This flag type is used for flags and can not be deleted"{% endif %}/>
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    
+    {% if open_section == "recordtypes" %}
+    <button class="dsphead active">
+       <b>Record Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont active">
+    {% else %}
+    <button class="dsphead">
+       <b>Record Types</b> (click to expand/contract)
+    </button>
+
+    <div class="dspcont">
+    {% endif %}
+
+    <p>Records allow you to mark that a user has performed some action (e.g., checked into a program or took a survey) at a specific time.
+    The following record <b>types</b> are available to use for your programs (many of which are built-in). You can add another record type or edit an existing one using the form below.
+    Note that you can not edit or delete record types that are built-in. You also can not delete record types that are already being used for user records.</p>
+
+    <form method="post">
+    <input type="hidden" name="command" value="{% if rec_form.instance.id %}edit{% else %}add{% endif %}" />
+    {% if rec_form.instance.id %}
+    <input type="hidden" name="id" value="{{ rec_form.instance.id }}" />
+    {% endif %}
+    <input type="hidden" name="object" value="record_type" />
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="2" class="small">Add/Edit Record Types</th></tr>
+        {{ rec_form }}
+        <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="{% if rec_form.instance.id %}Edit{% else %}Add{% endif %} Record Type" /></td></tr>
+    </table>
+    </form>
+
+    <br />
+
+    <table align="center" cellpadding="0" cellspacing="0" width="100%">
+        <tr><th colspan="3">Record Types</th></tr>
+        {% for rt in record_types %}
+        {% ifchanged rt.is_custom %}
+        <tr{% if not rt.is_custom %} id="builtin_records"{% endif %}><th colspan="3">{% if rt.is_custom %}Custom Record Types{% else %}Built-in Record Types (click to expand){% endif %}</th></tr>
+        <tr{% if not rt.is_custom %} class="isbuiltin" hidden{% endif %}>
+            <td><b>Name</b></td>
+            <td><b>Description</b></td>
+            <td><b>Options</b></td>
+        </tr>
+        {% endifchanged %}
+        <tr{% if not rt.is_custom %} class="isbuiltin" hidden{% endif %}>
+            <td>{{ rt.name }}</td>
+            <td>{{ rt.description }}</td>
+            <td>
+                <center>
+                    <form method="post">
+                        <input type="hidden" name="id" value="{{ rt.id }}" />
+                        <input type="hidden" name="command" value="load" />
+                        <input type="hidden" name="object" value="record_type" />
+                        <input type="submit" value="Edit" class="btn btn-primary" {% if not rt.is_custom %}disabled title="Can not edit built-in record types" {% endif %}/>
+                    </form>
+                    <form method="post" onsubmit="return deleteRecordType()">
+                        <input type="hidden" name="id" value="{{ rt.id }}" />
+                        <input type="hidden" name="command" value="delete" />
+                        <input type="hidden" name="object" value="record_type" />
+                        <input type="submit" value="Delete" class="btn btn-danger" {% if not rt.is_custom %}disabled title="Can not delete built-in record types" {% endif %}{% if rt.used_by_records %}disabled title="This record type is used for records and can not be deleted"{% endif %}/>
+                    </form>
+                </center>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+</div>
+
+<br /><br /><br />
+
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+
+{% endblock %}

@@ -1,4 +1,5 @@
-#adminbar {
+/* use `body` prefix to make sure we override fruitsalad main.less's #adminbar */
+body #adminbar {
 	background: none repeat scroll 0 0 #EEEEEE;
 	border: 1px solid #AAAAAA;
 	left: 20px;

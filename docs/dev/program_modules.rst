@@ -64,6 +64,9 @@ class FooBarModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    isStep(self):
+        return False
+
     class Meta:
         proxy = True
         app_label = 'modules'
@@ -109,8 +112,16 @@ Your program module should have:
   * ``choosable``: whether the module should be included in all programs by default. Set it equal to ``1`` to include it by default or ``0`` to ask admins if they want to include it every time they set up a new program. Unless your module might confuse admins using the program, you will probably want to include it by default. If your module is extremely niche or difficult, you can set ``choosable=2`` to exclude it by default. If you set ``choosable=0``, then you should also create a new question in `esp/esp/program/forms.py` describing your module and asking admins if they want to include it upon creating a new program.
   * ``required`` (optional, default False): True if the student/teacher should by default be required to complete the module as a part of registration
   * ``class Meta: proxy = True`` (this is a Django thing that tells it not to create a new database table specifically for instances of your module)
-  * Optionally, a method ``isCompleted(self)`` that returns a boolean to figure out whether the user has completed the module (e.g. filled out the medical form)
-  * Optionally, a method ``students(self, QObject=False)`` and ``studentDesc(self)``, which return dicts where each key maps to a ``QuerySet`` and a string describing them, respectively, to be added to the list of student stats on the dashboard.  If ``QObject=True``, the method should return a dict of ``Q`` objects instead.  The corresponding methods for teachers may also be included.
+
+* Optionally, a method ``isStep(self)`` that returns a boolean to figure out whether a module should be included as part of student or teacher registration (the default is ``True``)
+* Optionally, a method ``isCompleted(self)`` that returns a boolean to figure out whether the user has completed the module (e.g. filled out the medical form)
+* Optionally, a method ``students(self, QObject=False)`` and ``studentDesc(self)``, which return dicts where each key maps to a ``QuerySet`` and a string describing them, respectively, to be added to the list of student stats on the dashboard.  If ``QObject=True``, the method should return a dict of ``Q`` objects instead.  The corresponding methods for teachers may also be included.
+
+For management modules, also note the following:
+* If a management module requires setup, it should have ``isStep`` return ``True`` to be included in the management checklist (recall that the default is already ``True``, so if you don't want this behavior, you should have ``isStep`` return ``False``)
+* For the item in the checklist, the text can be manually overriden with the ``setup_title`` attribute and the linked URL (default is the ``main_call``) can be manually overriden with ``setup_path``
+* ``isCompleted`` should return a boolean to indicate whether the proper setup has been completed
+* As with registration, ``seq`` determines the order of modules in the checklist
 
 It will then (optionally) have one method with the decorator ``@main_call``, and optionally one or more methods with the decorator ``@aux_call``.  (It can have other methods, too; they are not handled specially.)  These are the views of the program module; they behave somewhat like django views, with the following caveats:
 

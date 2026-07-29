@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -99,11 +100,11 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Test to see whether the graduation year is required
         self.client.login(username=self.students[2].username, password='password')
         response = self.client.post('%sprofile' % self.program.get_learn_url(), {'graduation_year': '', 'profile_page': ''})
-        lines = response.content.split('\n')
+        lines = response.content.decode('UTF-8').split('\n')
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):
-            if '<select class="required" id="id_graduation_year" name="graduation_year">' in line:
+            if 'id="id_graduation_year"' in line:
                 break
         self.assertTrue(i < len(lines)-1) ## Found the relevant line
 
@@ -119,5 +120,5 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
         for line in lines[i:i+j]:
-            found_default = found_default or ('<option value="" selected="selected"></option>' in line)
+            found_default = found_default or ('<option value="" selected></option>' in line)
         self.assertTrue(found_default)

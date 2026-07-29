@@ -1,4 +1,5 @@
 
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,19 +34,26 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db.models.aggregates import Min
 from django.db.models.query      import Q
+
+from argcache import cache_function_for
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import StudentRegistration, ClassSection
 from esp.utils.web import render_to_response
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, Record
 from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
+from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
+from esp.tagdict.models import Tag
 
 import datetime
 
 class OnSiteAttendance(ProgramModuleObj):
+    doc = """Provides statistics on program attendance and allows admins to take attendance for classes."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -86,9 +94,9 @@ class OnSiteAttendance(ProgramModuleObj):
                 #Checked-out students
                 checked_out = prog.checkedOutStudents(time_max)
                 #Students that have been checked in for the program at any time before the end of this timeslot on the specified day, excluding students that have been checked out
-                checked_in = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__lt=time_max)).exclude(id__in=checked_out).distinct()
+                checked_in = ESPUser.objects.filter(Q(record__event__name='attended', record__program=prog, record__time__lt=time_max)).exclude(id__in=checked_out).distinct()
                 #Students that have been checked in for the program during this timeslot on the specified day
-                checked_in_during_ts = ESPUser.objects.filter(Q(record__event='attended', record__program=prog, record__time__range=(time_min, time_max))).distinct()
+                checked_in_during_ts = ESPUser.objects.filter(Q(record__event__name='attended', record__program=prog, record__time__range=(time_min, time_max))).distinct()
                 #Students that have been checked in for the program at any time before the end of this timeslot on the specified day (and are not checked out) but are not attending a class during this timeslot on the specified day
                 not_attending = checked_in.exclude(id__in=attended)
                 #Get the classes that they aren't attending (if any)
@@ -97,7 +105,7 @@ class OnSiteAttendance(ProgramModuleObj):
                     student.missed_class = enrolled_srs.get(student, None)
                 #Students attending classes during this timeslot on the specified day that they were enrolled in because they are attending it (and were not enrolled in beforehand)
                 onsite_srs = {sr.user: sr.section for sr in StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="OnSite/AttendedClass").select_related('user')}
-                onsite = onsite_srs.keys()
+                onsite = list(onsite_srs.keys())
                 for student in onsite:
                     student.enrolled = True
                     student.attended_class = onsite_srs.get(student, None)
@@ -116,7 +124,7 @@ class OnSiteAttendance(ProgramModuleObj):
                             student.enrolled_class = enrolled_section
                             onsite.append(student)
                 #Sections during this timeslot with no attendance recorded on the specified day
-                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.valid_objects(when).filter(section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
+                no_attendance = ClassSection.objects.filter(meeting_times=timeslot, status__gt=0).exclude(id__in=StudentRegistration.objects.filter(start_date__date=when.date(), section__meeting_times=timeslot, relationship__name="Attended").values_list('section__id', flat = True))
                 context.update({
                                 'attended': attended,
                                 'checked_in': checked_in,
@@ -126,13 +134,66 @@ class OnSiteAttendance(ProgramModuleObj):
                                 'not_attending': not_attending,
                                 'no_attendance': no_attendance
                                })
+        else:
+            att_dict = self.times_attending_class(prog)
+            att_keys = sorted(att_dict.keys())
+            timess = [
+                ("checked in to the program", [(1, time) for time in self.times_checked_in(prog)], True), # cumulative
+                ("attended a class", [(len(att_dict[time]), time) for time in att_keys], False), # not cumulative
+            ]
+            timess_data, start = BigBoardModule.make_graph_data(timess)
+            context["left_axis_data"] = [{"axis_name": "# students", "series_data": timess_data, "first_hour": start}]
 
         return render_to_response(self.baseDir()+'attendance.html', request, context)
+
+    @cache_function_for(105)
+    def times_checked_in(self, prog):
+        return list(
+            Record.objects
+            .filter(program=prog, event__name='attended')
+            .values('user').annotate(Min('time'))
+            .order_by('time__min').values_list('time__min', flat=True))
+
+    @cache_function_for(105)
+    def times_attending_class(self, prog):
+        srs = StudentRegistration.objects.filter(section__parent_class__parent_program=prog,
+            relationship__name="Attended", section__meeting_times__isnull=False
+            ).order_by('start_date')
+        att_dict = {}
+        for sr in srs:
+            # For classes that are multiple hours, we want to count a student for
+            # each hour starting from when they are marked and ending at the end of the class
+            # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
+            start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
+            end_time = sr.section.end_time().end.replace(
+                year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
+                minute = 0, second = 0, microsecond = 0)
+            user = sr.user
+            time = start_time
+            # loop through hours until we get to the end time of the section
+            while(True):
+                if time in att_dict:
+                    # Only count each student a maximum of one time per hour
+                    if user not in att_dict[time]:
+                        att_dict[time].append(user)
+                else:
+                    att_dict[time] = [user]
+                time = time + datetime.timedelta(hours = 1)
+                if time > end_time:
+                    break
+        return att_dict
 
     @aux_call
     @needs_onsite
     def section_attendance(self, request, tl, one, two, module, extra, prog):
-        context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
+        context = {
+            'program': prog,
+            'tl': tl,
+            'one': one,
+            'two': two,
+            'enroll_setting': Tag.getProgramTag('section_attendance_enroll', prog),
+            'unenroll_setting': Tag.getProgramTag('section_attendance_unenroll', prog),
+        }
 
         timeslots = Event.objects.filter(id=extra, program = prog)
         if len(timeslots) == 1:

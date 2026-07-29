@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from esp.utils.web import render_to_response
 
 def javascript_tests(request):

@@ -1,26 +1,68 @@
-{% for section in theme.nav_structure %}
-{% if section.header %}
-<li class="nav-header">
-    {# links on headers are optional #}
-    {% if section.header_link %}
-    <a href="{{section.header_link}}">
-    {% endif %}
-        {{section.header}}
-    {% if section.header_link %}
-    </a>
-    {% endif %}
-</li>
-{% endif %}
-
-{% for item in section.links %}
-{# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
-<li>
-    <a href="{{item.link}}">
-        {% if item.icon %}
-        <i class="glyphicon glyphicon-{{item.icon}}"></i>
+<ul class="nav nav-list sidebar" id="nav_sidebar">
+    {% for section in theme.nav_structure %}
+    {% if section.header %}
+    <li class="nav-header">
+        {# links on headers are optional #}
+        {% if section.header_link %}
+        <a href="{{section.header_link}}">
         {% endif %}
-        {{item.text}}
-    </a>
-</li>
-{% endfor %}
-{% endfor %}
+            {{section.header}}
+        {% if section.header_link %}
+        </a>
+        {% endif %}
+    </li>
+    {% endif %}
+
+    {% for item in section.links %}
+    {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
+    <li>
+        <a href="{{item.link}}">
+            {% if item.icon %}
+            <i class="glyphicon glyphicon-{{item.icon}}"></i>
+            {% endif %}
+            {{item.text}}
+        </a>
+    </li>
+    {% endfor %}
+    {% endfor %}
+</ul>
+
+<div class="accordion sidebar" id="nav_accordion">
+    <div class="accordion-group">
+        <div class="accordion-heading">
+            <a class="accordion-toggle" data-toggle="collapse" data-parent="#nav_accordion" href="#collapseOne">
+                <i class="glyphicon glyphicon-menu-hamburger"></i> Navigation
+            </a>
+        </div>
+        <div id="collapseOne" class="accordion-body collapse">
+            <ul class="nav nav-list sidebar">
+            {% for section in theme.nav_structure %}
+            {% if section.header %}
+            <li class="nav-header">
+                {# links on headers are optional #}
+                {% if section.header_link %}
+                <a href="{{section.header_link}}">
+                {% endif %}
+                    {{section.header}}
+                {% if section.header_link %}
+                </a>
+                {% endif %}
+            </li>
+            {% endif %}
+
+            {% for item in section.links %}
+            {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
+            <li>
+                <a href="{{item.link}}">
+                    {% if item.icon %}
+                    <i class="glyphicon glyphicon-{{item.icon}}"></i>
+                    {% endif %}
+                    {{item.text}}
+                </a>
+            </li>
+            {% endfor %}
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>

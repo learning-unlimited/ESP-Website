@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+
+{% block title %}User Group Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+function confirmClean(checkbox) {
+    if (checkbox.checked) {
+        var r = confirm("Are you sure you'd like to remove all existing users that you have not selected from this group?");
+        if (!r) {
+            checkbox.checked = false;
+        }
+    }
+}
+</script>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>User Group Portal</h1>
+
+<h2>Step 2:</h2>
+<p>You have selected {{ num_users }} users. Use the settings below to add them to a new or existing group.</p>
+
+<form action="/manage/{{ program.getUrlBase }}/usergroupfinal?filterid={{ filterid }}" method="post" name="usergroup">
+<h3>Either select a group from the dropdown or type the name for a new group:</h3>
+<select name="group_name_old" id="group_select">
+    <option></option>
+    {% for group in groups %}
+    <option value="{{ group }}">{{ group }}</option>
+    {% endfor %}
+</select>
+<input name="group_name_new" maxlength="150" type="text">
+<br>
+<input type="checkbox" name="group_clean" onchange='confirmClean(this);'> Remove existing users from this group that I have not selected.<br><br>
+<input type="submit" value="Update/Create Group" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

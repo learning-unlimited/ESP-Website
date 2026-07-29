@@ -1,0 +1,68 @@
+#statistics_form_contents ul
+{
+    list-style-type: none;
+    padding-left: 0px;
+}
+#statistics_form_contents select
+{
+    margin-bottom: 5px;
+}
+#statistics_form_contents select[multiple]
+{
+    border: 1px solid #999999;
+    font-size: 0.9em;
+}
+#statistics_form_contents input[type=submit]
+{
+    border: 1px solid #999999;
+    background-color: #99CCFF;
+    font-size: 1.5em;
+    padding: 3px 15px 3px 15px;
+}
+#statistics_form_contents input[type=submit]:hover
+{
+    background-color: #999999;
+}
+#statistics_form_contents table, #result table {
+    width: 100%;
+}
+#statistics_form_contents tr {
+    text-align: center;
+}
+#statistics_form_contents th {
+    text-align: right;
+    padding-right: 10px;
+}
+#statistics_form_contents td {
+    text-align: left;
+    padding-left: 10px;
+}
+#statistics_form_contents td, #statistics_form_contents th
+{
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+#statistics_form_contents label
+{
+    margin: 0px;
+}
+#statistics_form_contents input[type=checkbox] + br
+{
+  display: none;
+}
+#statistics_form_contents input[type=checkbox] + br + span
+{
+  margin-left: 5px;
+}
+#statistics_form_contents input[type="radio"], #statistics_form_contents input[type="checkbox"]
+{
+    margin: 0px;
+}
+#result table, #result tr, #result td, #result th {
+    border: black solid 1px;
+    border-spacing: 2px;
+    padding: 2px;
+}
+#result table {
+    margin-bottom: 10px;
+}

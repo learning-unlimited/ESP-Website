@@ -1,0 +1,39 @@
+{# expects program and section #}
+
+<tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
+  <td class="clsleft bordertop2" colspan="7">
+    <em>{{ program.getModeratorGerund }}</em> {{ sec.parent_class }}
+  </td>
+</tr>
+<tr>
+  <td class="clsleft"><b>Teachers:</b></td>
+  <td class="clsmiddle" colspan="6">{% for t in sec.parent_class.get_teachers %}{{ t.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+</tr>
+<tr>
+  <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
+    Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
+    <span style="font-weight: bold; color: #0C0;">Accepted</span>
+    {% elif sec.isCancelled %}
+    <span style="font-weight: bold; color: #C00;">Cancelled</span>
+    {% else %}
+    <span style="font-weight: bold; color: #C00;">Rejected</span>
+    {% endif %}
+    {% else %}
+    <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+    {% endif %}
+  </td>
+  <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br /><br>Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}
+  {% if friendly_times_with_date %}
+    {% for f in sec.friendly_times %}
+      {{ f }}{% if not forloop.last %},<br>&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}
+    {% endfor %}
+  {% else %}
+    {% for f in sec.friendly_times %}
+      {{ f }}{% if not forloop.last %},<br>&nbsp;&nbsp;&nbsp;&nbsp;{% endif %}
+    {% endfor %}
+  {% endif %}
+      {% if sec.get_moderators %}<br />{{ program.getModeratorTitle }}s: {% for a in sec.get_moderators %}{{ a.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}
+      {% endif %}
+  </td>
+  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) </td>
+</tr>

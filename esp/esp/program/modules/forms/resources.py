@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import division
 from django import forms
 from django.utils.safestring import mark_safe
 from django.db.models import IntegerField, Case, When, Count
@@ -10,15 +12,30 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget, DateWidget
 from esp.tagdict.models import Tag
+import six
+from six.moves import range
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    name = forms.CharField(help_text='Approximate time block (e.g. "Sat 9 - 10 AM")')
+    name = forms.CharField(help_text='Approximate timeslot (e.g. "Sat 9 - 10 AM")')
     description = forms.CharField(required=False, widget=forms.Textarea, help_text='Include the exact times here (e.g. "First class period: Sat 9:05 - 9:55 AM")')
     start = forms.DateTimeField(label='Start Time', help_text=mark_safe('Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00'), widget=DateTimeWidget)
     hours = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
     minutes = forms.IntegerField(widget=forms.TextInput(attrs={'size':'6'}))
-    openclass = forms.BooleanField(required=False, label='Open Class Time Block', help_text="Check this if the time block should be used for open classes only. If in doubt, don't check this.")
+    openclass = forms.BooleanField(required=False, label='Open Class Timeslot', help_text="Check this if the timeslot should be used for open classes only. If in doubt, don't check this.")
+    group = forms.IntegerField(required=False, label='Group')
+
+    def __init__(self, *args, **kwargs):
+        if 'program' in kwargs:
+            program = kwargs.pop('program')
+        else:
+            raise KeyError('Need to supply program as named argument to TimeslotForm')
+        super(TimeslotForm, self).__init__(*args, **kwargs)
+        self.fields['group'].help_text=mark_safe("""All timeslots with this value will always be included in the same timeslot group.
+                                                    Note that the assigned value is solely for grouping purposes; the blocks displayed on
+                                                    availability forms will be numbered consecutively based on the first timeslot in the block.
+                                                    Any timeslots with no value indicated will be grouped together based on the
+                                                    <a href = '%stags/teach' target='_blank'>'Availability group tolerance' tag</a>.""" % program.get_manage_url())
 
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
@@ -26,8 +43,9 @@ class TimeslotForm(forms.Form):
         self.fields['start'].initial = slot.start
         self.fields['id'].initial = slot.id
         length = (slot.end - slot.start).seconds
-        self.fields['hours'].initial = int(length / 3600)
-        self.fields['minutes'].initial = int(length / 60 - 60 * self.fields['hours'].initial)
+        self.fields['hours'].initial = int(length // 3600)
+        self.fields['minutes'].initial = int(length // 60 - 60 * self.fields['hours'].initial)
+        self.fields['group'].initial = slot.group
 
     def save_timeslot(self, program, slot):
         slot.short_description = self.cleaned_data['name']
@@ -38,6 +56,7 @@ class TimeslotForm(forms.Form):
             slot.event_type = EventType.get_from_desc("Open Class Time Block")
         else:
             slot.event_type = EventType.get_from_desc("Class Time Block")    # default event type for now
+        slot.group = self.cleaned_data['group']
         slot.program = program
         slot.save()
 
@@ -45,7 +64,7 @@ class TimeslotForm(forms.Form):
 class ResourceTypeForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
     name = forms.CharField()
-    description = forms.CharField(required=False,widget=forms.Textarea)
+    description = forms.CharField(required=False, widget=forms.Textarea)
     priority = forms.IntegerField(required=False, help_text='Assign this a unique number in relation to the priority of other resource types')
     only_one = forms.BooleanField(label='Only one?', required=False, help_text='Limit teachers to selecting only one of the options?')
     is_global = forms.BooleanField(label='Global?', required=False, help_text='Should this resource be associated with all programs?')
@@ -53,14 +72,14 @@ class ResourceTypeForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super(ResourceTypeForm, self).__init__(*args, **kwargs)
-        if not Tag.getBooleanTag('allow_global_restypes', default = False):
+        if not Tag.getBooleanTag('allow_global_restypes'):
             self.fields['is_global'].widget = forms.HiddenInput()
 
     def load_restype(self, res_type):
         self.fields['name'].initial = res_type.name
         self.fields['description'].initial = res_type.description
         self.fields['priority'].initial = res_type.priority_default
-        self.fields['is_global'].initial = (res_type.program == None)
+        self.fields['is_global'].initial = (res_type.program is None)
         self.fields['only_one'].initial = res_type.only_one
         self.fields['hidden'].initial = res_type.hidden
         self.fields['id'].initial = res_type.id
@@ -82,14 +101,14 @@ class ResourceTypeForm(forms.Form):
             res_type.hidden = False
         if self.cleaned_data['priority']:
             res_type.priority_default = self.cleaned_data['priority']
-        if choices and filter(None, choices):
-            res_type.choices = filter(None, choices)
+        if choices and [_f for _f in choices if _f]:
+            res_type.choices = [_f for _f in choices if _f]
         else:
             """ This is already set by default when making a new resource type,
                 but if you remove all of the choices from a pre-existing resource type
-                you need to reset the default. Setting attributes_pickled is equivalent to
+                you need to reset the default. Setting attributes_dumped is equivalent to
                 setting choices. """
-            res_type.attributes_pickled = ResourceType._meta.get_field('attributes_pickled').default
+            res_type.attributes_dumped = ResourceType._meta.get_field('attributes_dumped').default
 
         res_type.save()
 
@@ -111,11 +130,11 @@ class EquipmentForm(forms.Form):
     times_available = forms.MultipleChoiceField()
     num_items = forms.IntegerField(label = "Number of unique items", validators=[MinValueValidator(1)])
     resource_type = forms.ChoiceField()
-    choice = forms.CharField(label = "Choice (optional)", required=False, max_length=50)
+    choice = forms.CharField(label = "Choice (optional)", required=False, max_length=200)
 
     def __init__(self, *args, **kwargs):
         if isinstance(args[0], Program):
-            self.base_fields['resource_type'].choices = tuple([(u'', '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
+            self.base_fields['resource_type'].choices = tuple([(six.u(''), '(type)')] + list(setup_furnishings(args[0].getResourceTypes())))
             self.base_fields['times_available'].choices = setup_timeslots(args[0])
             super(EquipmentForm, self).__init__(*args[1:], **kwargs)
         else:
@@ -266,10 +285,10 @@ class ClassroomForm(forms.Form):
 def FurnishingFormForProgram(prog):
     class FurnishingForm(forms.Form):
         furnishing = forms.ChoiceField()
-        choice = forms.CharField(required=False, max_length=50, widget=forms.TextInput(attrs={'placeholder': '(option)'}))
+        choice = forms.CharField(required=False, max_length=200, widget=forms.TextInput(attrs={'placeholder': '(option)', 'style': 'margin-left: 8px'}))
         def __init__(self, *args, **kwargs):
             furnishings = setup_furnishings(prog.getResourceTypes())
-            self.base_fields['furnishing'].choices = tuple([(u'', '(furnishing)')] + list(furnishings))
+            self.base_fields['furnishing'].choices = tuple([(six.u(''), '(furnishing)')] + list(furnishings))
             super(FurnishingForm, self).__init__(*args, **kwargs)
     return FurnishingForm
 

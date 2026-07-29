@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -34,8 +35,8 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade, meets_cap, no_auth, needs_admin
-from esp.users.models import Record, ESPUser, Permission
+from esp.program.modules.base import ProgramModuleObj, main_call, needs_student, needs_student_in_grade, aux_call
+from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
 from esp.dbmail.models import send_mail
@@ -45,12 +46,13 @@ from esp.web.views.json_utils import JsonResponse
 from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.template.loader import render_to_string
-from django.contrib.auth.models import Group
 from django.db.models.query import Q
 
-import random, copy, datetime, re
+import datetime
 
 class StudentRegPhaseZero(ProgramModuleObj):
+    doc = """Allows students to enter a lottery for admission to the program."""
+
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
 
@@ -63,7 +65,11 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return {'phasezero': """Students who have entered the Student Lottery"""}
 
     def isCompleted(self):
-        return get_current_request().user.can_skip_phase_zero(self.program)
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return user.can_skip_phase_zero(self.program)
 
     @classmethod
     def module_properties(cls):
@@ -76,35 +82,64 @@ class StudentRegPhaseZero(ProgramModuleObj):
             "choosable": 0,
         }
 
+    def _inline_disabled_redirect(self, one, two, standalone_view):
+        """Aux calls ending in _inline only behave as 'inline' when the program has
+        opted in via the phasezero_inline tag; otherwise they fall back to the
+        standalone view. Falling back (rather than 404ing) keeps the endpoint
+        reachable, e.g. for tests/crawlers that hit every registered module view.
+        Keeping this check out of the standalone endpoints means the tag can never
+        change the behavior of the standalone module."""
+        return HttpResponseRedirect('/learn/%s/%s/%s' % (one, two, standalone_view))
+
     @main_call
-    @needs_student
-    @meets_grade
+    @needs_student_in_grade
     def studentregphasezero(self, request, tl, one, two, module, extra, prog):
         """
         Serves the Phase Zero student reg page. The initial page includes a button
         to enter the student lottery. Following entering the lottery, students are
         served a confirmation page.
         """
+        return self._studentregphasezero(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student_in_grade
+    def studentregphasezero_inline(self, request, tl, one, two, module, extra, prog):
+        """
+        Same as studentregphasezero, but rendered bare (no site nav/footer) for
+        embedding in an iframe on the two-phase student reg page. Only behaves as
+        inline when the 'phasezero_inline' tag is enabled for the program; the
+        standalone studentregphasezero endpoint above is unaffected by that tag
+        either way.
+        """
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'studentregphasezero')
+        return self._studentregphasezero(request, one, two, prog, inline=True)
+
+    def _studentregphasezero(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
 
-        if user.can_skip_phase_zero(self.program):
+        if user.can_skip_phase_zero(self.program) and not inline:
             #Student has permission to skip this module, redirect to main student reg page
             #This includes students that won the lottery
+            #When inline, skip the redirect so the iframe shows confirmation instead
             return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
         else:
             #Student must win the lottery to progress
             #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
-            lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+            lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
             in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-            lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+            lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
+            group_name = Tag.getProgramTag('phasezero_group_name', prog)
             context['lottery_perm'] = lottery_perm
             context['lottery_run'] = lottery_run
             context['num_allowed_users'] = num_allowed_users
+            context['group_name'] = group_name
 
             if not in_lottery:
                 if lottery_run:
@@ -115,7 +150,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                     #Lottery hasn't opened yet
                     #Show generic deadline error page
                     context['moduleObj'] = self
-                    context['extension'] = ('the deadline Student/Classes/PhaseZero was')
+                    context['extension'] = ('the deadline Student/PhaseZero was')
                     return render_to_response('errors/program/deadline-learn.html', request, context)
                 elif request.method == 'POST':
                     #Lottery is open, student just entered
@@ -141,17 +176,29 @@ class StudentRegPhaseZero(ProgramModuleObj):
                 return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
 
     @aux_call
-    @needs_student
+    @needs_student_in_grade
     def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self._joingroup(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student_in_grade
+    def joingroup_inline(self, request, tl, one, two, module, extra, prog, newclass = None):
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'joingroup')
+        return self._joingroup(request, one, two, prog, inline=True)
+
+    def _joingroup(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
-        lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
+        lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
-        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+        num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
+        context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users
@@ -200,15 +247,27 @@ class StudentRegPhaseZero(ProgramModuleObj):
     @aux_call
     @needs_student
     def leavegroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self._leavegroup(request, one, two, prog, inline=False)
+
+    @aux_call
+    @needs_student
+    def leavegroup_inline(self, request, tl, one, two, module, extra, prog, newclass = None):
+        if not Tag.getBooleanTag('phasezero_inline', prog):
+            return self._inline_disabled_redirect(one, two, 'leavegroup')
+        return self._leavegroup(request, one, two, prog, inline=True)
+
+    def _leavegroup(self, request, one, two, prog, inline):
         context = {}
         context['program'] = prog
         context['one'] = one
         context['two'] = two
+        context['phasezero_inline'] = inline
         user = request.user
         lottery_perm = Permission.user_has_perm(user, 'Student/Classes/PhaseZero', program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
         lottery_run = Tag.getBooleanTag('student_lottery_run', prog, default=False)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog, default=4))
+        context['group_name'] = Tag.getProgramTag('phasezero_group_name', prog)
         context['lottery_perm'] = lottery_perm
         context['lottery_run'] = lottery_run
         context['num_allowed_users'] = num_allowed_users
@@ -232,18 +291,18 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
 
     @aux_call
-    @needs_student
-    def studentlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+    @needs_student_in_grade
+    def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if not 'username' in request.GET or 'username' in request.POST:
+        if 'username' not in request.GET or 'username' in request.POST:
             return self.goToCore(tl)
 
         limit = 10
 
         queryset = ESPUser.objects.filter(phasezerorecord__program=prog).distinct()
 
-        if not 'username' in request.GET:
+        if 'username' not in request.GET:
             startswith = request.POST['username']
         else:
             startswith = request.GET['username']
@@ -257,7 +316,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
-            users = user_dict.values()
+            users = list(user_dict.values())
 
             # Construct combo-box items
             obj_list = [{'username': user.username, 'id': user.id, 'grade': user.getGrade(prog)} for user in users]
@@ -265,7 +324,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
             obj_list = []
 
         return JsonResponse(obj_list)
-    
+
     def send_join_emails(self,joined_student,prog):
         other_users=set()
         groups = PhaseZeroRecord.objects.filter(user=joined_student, program=prog)
@@ -285,9 +344,9 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/joingroup_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
-        
+
     def send_other_joined_group_confirmation_email(self, student,joined_student, note=None):
         email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
         email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
@@ -298,7 +357,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/other_joined_group_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def send_leavegroup_confirmation_email(self, student, note=None):
@@ -310,11 +369,14 @@ class StudentRegPhaseZero(ProgramModuleObj):
                          'note': note,
                          'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/studentregphasezero/leavegroup_confirmation_email.txt', email_context)
-        email_to = ['%s <%s>' % (student.name(), student.email)]
+        email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def isStep(self):
         return False
+
+    def inModulesList(self):
+        return True
 
     class Meta:
         proxy = True

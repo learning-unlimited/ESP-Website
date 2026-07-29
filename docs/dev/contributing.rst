@@ -38,7 +38,11 @@ From the directory ``/esp``: ::
 Write some code!
 Test your code!
 
-Look at what you’ve changed (``git status`` and/or ``git diff``), and then run ``git commit -a``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style).  Repeat a few times from “write some code!” if you want to make multiple commits.
+Look at what you’ve changed (``git status`` and/or ``git diff``), and then run ``git commit -a -m``, and type a commit message (see `<http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html>` for good commit message style), like so: ::
+
+  git commit -a -m "Hello world"
+
+Repeat a few times from “Write some code!” if you want to make multiple commits.
 
 When you’re ready to make a pull request, or want other people to be able to pull your code: ::
 

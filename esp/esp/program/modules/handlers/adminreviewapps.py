@@ -1,5 +1,7 @@
 
 
+from __future__ import absolute_import
+import six
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -33,19 +35,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, StudentAppReview, StudentRegistration, RegistrationType
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseRedirect
+from esp.program.models import ClassSubject, StudentRegistration, RegistrationType
 from django.db.models.query import Q
 
 __all__ = ['AdminReviewApps']
 
 class AdminReviewApps(ProgramModuleObj):
+    doc = """View student applications and select students to be admitted for the program."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -88,7 +89,7 @@ class AdminReviewApps(ProgramModuleObj):
         for key in students_dict:
             students += students_dict[key]
 
-        students = filter(lambda x: x.studentapplication_set.filter(program=self.program).count() > 0, students)
+        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
             student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
@@ -121,8 +122,8 @@ class AdminReviewApps(ProgramModuleObj):
         """ Accept a student into a class. """
 
         try:
-            cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
-            student = ESPUser.objects.get(id = request.GET.get('student',''))
+            cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
+            student = ESPUser.objects.get(id = request.GET.get('student', ''))
         except:
             raise ESPError('Student or class not found.', log=False)
 
@@ -139,8 +140,8 @@ class AdminReviewApps(ProgramModuleObj):
         registration). """
 
         try:
-            cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
-            student = ESPUser.objects.get(id = request.GET.get('student',''))
+            cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
+            student = ESPUser.objects.get(id = request.GET.get('student', ''))
         except:
             raise ESPError('Student or class not found.', log=False)
 
@@ -164,9 +165,9 @@ class AdminReviewApps(ProgramModuleObj):
         except ClassSubject.DoesNotExist:
             raise ESPError('Cannot find class.', log=False)
 
-        student = request.GET.get('student',None)
+        student = request.GET.get('student', None)
         if not student:
-            student = request.POST.get('student','')
+            student = request.POST.get('student', '')
 
         try:
             student = ESPUser.objects.get(id = student)
@@ -190,9 +191,6 @@ class AdminReviewApps(ProgramModuleObj):
         context['classes_to_review'] = self.program.classes()
         return context
 
-    def isStep(self):
-        return True
-
     def get_msg_vars(self, user, key):
         if key == 'schedule_app':
             return AdminReviewApps.getSchedule(self.program, user)
@@ -202,32 +200,33 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = u"""
+        schedule = six.u("""
 Student schedule for %s:
 
- Time               | Class                   | Room""" % student.name()
+ Time               | Class                   | Room""") % student.name()
 
 
         regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
-        classes = [x.section.parent_class for x in regs]
+        classes = sorted([x.section.parent_class for x in regs])
 
         # now we sort them by time/title
-        classes.sort()
 
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = u'N/A'
+                rooms = six.u('N/A')
             else:
-                rooms = u", ".join(rooms)
+                rooms = six.u(", ").join(rooms)
 
-            schedule += u"""
-%s|%s|%s""" % (u",".join(cls.friendly_times()).ljust(20),
+            schedule += six.u("""
+%s|%s|%s""") % (six.u(",").join(cls.friendly_times()).ljust(20),
                cls.title.ljust(25),
                rooms)
 
         return schedule
 
+    def isStep(self):
+        return False
 
     class Meta:
         proxy = True

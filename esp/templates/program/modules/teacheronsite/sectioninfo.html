@@ -14,18 +14,36 @@
                 <tr>
                     <td style="width:35%">Room:</td>
                     <td>
-                        {% if section.initial_rooms %}{% for r in section.initial_rooms %}{{ r.name }} (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>){% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %}
+                        {% if section.initial_rooms %}
+                            {% for r in section.initial_rooms %}
+                                {{ r.name }}
+                                {% if map_provider == 'whereis.mit.edu' %}
+                                    (<a href="{{ r.mit_whereis_url }}" target="_blank">map</a>)
+                                {% elif map_provider == 'google' %}
+                                    (<a href="/teach/{{one}}/{{two}}/onsitemap/{{ r.id }}">map</a>)
+                                {% endif %}
+                                {% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            Unassigned
+                        {% endif %}
                     </td>
                 </tr>
                     <td>Time:</td>
                     <td>{% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
                 </tr>
-                {% if section.parent_class.get_teachers.count > 1 %}
                 <tr>
-                    <td>Co-Teachers:</td>
+                    <td>Teacher(s):</td>
                     <td>
-                        {% for t in section.parent_class.get_teachers %}{% ifnotequal t user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}<br />
+                        {% for t in section.parent_class.get_teachers %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}<br />
                         (<a href="mailto:{{ section.emailcode }}-teachers@{{ EMAIL_HOST_SENDER }}">email</a>)
+                    </td>
+                </tr>
+                {% if section.get_moderators %}
+                <tr>
+                    <td>{{ program.getModeratorTitle }}(s):</td>
+                    <td>
+                        {% for m in section.get_moderators %}{{ m.first_name }} {{ m.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}<br />
                     </td>
                 </tr>
                 {% endif %}
@@ -33,15 +51,16 @@
                     <td>Enrollment:</td>
                     <td>
                         {{ section.num_students }} / {{ section.capacity }} students<br />
-                        (<a href="mailto:{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}" title="Email Section's Students">email</a>)
+                        {% if request.user not in section.get_moderators %}(<a href="mailto:{{ section.emailcode }}-students@{{ EMAIL_HOST_SENDER }}" title="Email Section's Students">email</a>){% endif %}
                         {% if sections.count > 1 %} (<a href="/teach/{{one}}/{{two}}/onsiteroster/{{ section.id }}" title="Section Roster">roster</a>){% endif %}
                     </td>
                 </tr>
+                {% if request.user not in section.get_moderators %}
                 <tr>
                     <td>Document uploads:</td>
                     <td>
                         {% for doc in section.parent_class.documents.all %}
-                            <a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a><br />
+                            <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a><br />
                         {% empty %}
                             No documents uploaded<br />
                         {% endfor %}
@@ -59,6 +78,26 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% else %}
+                {% if section.parent_class.documents.count > 0 %}
+                <tr>
+                    <td>Document uploads:</td>
+                    <td>
+                        {% for doc in section.parent_class.documents.all %}
+                            <a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a><br />
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% if section.parent_class.got_index_qsd %}
+                <tr>
+                    <td>Website:</td>
+                    <td>
+                        <a href="/learn/{{ section.parent_class.url }}/index.html" title="{{ section }}...">Visit web page</a>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endif %}
             </tbody>
         </table>
         {% if not forloop.last %}

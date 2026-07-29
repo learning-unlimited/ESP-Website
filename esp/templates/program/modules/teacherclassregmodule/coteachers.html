@@ -34,15 +34,22 @@
 </ol>
 
 {% if conflict %}
-    <p>
-    <b><font color="red">{{ conflict }}</font> has a conflicting schedule.</b><br />
-    </p>
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ conflict.name }} has a conflicting schedule.
+    </div>
+{% elif unavailableuser %}
+    <div class="alert alert-danger">
+        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            {{ unavailableuser.name }}</font> is not available when this class is scheduled ({{ unavailabletimes|join:", " }}).
+    </div>
 {% endif %}
 
 {% if error %}
-<p style="color:red; font-weight: bold;">
-{{ error }}
-</p>
+<div class="alert alert-danger">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+        {{ error }}
+</div>
 {% endif %}
 <div id="program_form">
 {% if not coteachers|length %}
@@ -77,7 +84,7 @@ You currently have no coteachers for this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
+<form action="{{request.path}}" method="post" name="addteacher">
 <table align="center" width="500">
     <tr>
         <th colspan="2">Add a coteacher</th>

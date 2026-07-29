@@ -1,29 +1,28 @@
-from esp.program.models import Program
+from __future__ import absolute_import
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, Record
+from esp.users.models   import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.tagdict.models import Tag
+import six
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
     bases = (forms.Form,)
     date_range = prog.date_range()
 
-    label_tag = Tag.getProgramTag('teacher_acknowledgement_label', prog, default=None)
-    if label_tag is not None:
-        label = str(label_tag)
-    elif date_range is None:
-        label = u"I have read the above, and I commit to teaching my %s class." % (prog.program_type)
+    if date_range is None:
+        label = six.u("I have read the above and commit to teaching at %s.") % prog.program_type
     else:
-        label = u"I have read the above, and I commit to teaching my %s class on %s." % (prog.program_type, date_range)
+        label = six.u("I have read the above and commit to teaching at %s on %s.") % (prog.program_type, date_range)
 
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
 
 class TeacherAcknowledgementModule(ProgramModuleObj):
+    doc = """Serves a form asking teachers to acknowledge some agreement."""
+
     @classmethod
     def module_properties(cls):
         return {
@@ -35,9 +34,13 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         }
 
     def isCompleted(self):
-        return Record.objects.filter(user=get_current_request().user,
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            user = get_current_request().user
+        return Record.objects.filter(user=user,
                                      program=self.program,
-                                     event="teacheracknowledgement").exists()
+                                     event__name="teacheracknowledgement").exists()
 
     @main_call
     @needs_teacher
@@ -46,9 +49,10 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
+            rt = RecordType.objects.get(name="teacheracknowledgement")
             rec, created = Record.objects.get_or_create(user=request.user,
                                                         program=self.program,
-                                                        event="teacheracknowledgement")
+                                                        event=rt)
             if context['form'].is_valid():
                 return self.goToCore(tl)
             else:
@@ -61,8 +65,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
-        from datetime import datetime
-        qo = Q(record__program=self.program, record__event="teacheracknowledgement")
+        qo = Q(record__program=self.program, record__event__name="teacheracknowledgement")
         if QObject is True:
             return {'acknowledgement': qo}
 

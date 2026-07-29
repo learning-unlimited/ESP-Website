@@ -1,3 +1,37 @@
+var auto_running = false;
+var myInterval;
+
+$j(function(){
+    function refreshAll() {
+        if (auto_running) {
+            $j("button.refresh-button").click();
+            // Allow for updating fresh interval while the refresh is already running
+            myInterval = setTimeout(refreshAll, $j("[name=refresh_interval]").val() * 1000);
+        }
+    }
+    $j("[name=refresh]").click(function() {
+        if (auto_running) {
+            auto_running = false;
+            // Change button class and text
+            $j(this).addClass("btn-success");
+            $j(this).removeClass("btn-danger");
+            $j(this).html("Start Auto Refresh");
+            
+            // Stop autorefreshing
+            clearTimeout(myInterval);
+        } else {
+            auto_running = true;
+            // Change button class and text
+            $j(this).addClass("btn-danger");
+            $j(this).removeClass("btn-success");
+            $j(this).html("Stop Auto Refresh");
+            
+            // Start autorefreshing
+            refreshAll()
+        }
+    });
+});
+
 /**
  * List of scheduling checks.
  *
@@ -172,7 +206,9 @@ var SchedulingCheck = React.createClass({
         </div>
         <div className="alittlepspace"></div>
         {helpText}
-        {table}
+        <div className="table-wrapper">
+          {table}
+        </div>
       </div>;
     }
     return <div className={`scheduling-check ${this.state.has_items ? "items" : this.state.data ? "no-items" : "loading"}`}>

@@ -1,3 +1,5 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
 <head>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
@@ -15,8 +17,10 @@
     <tr>
       <td{% if webapp_page == "schedule" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
         <br>Schedule</td>
+      {% if map_tab %}
       <td{% if webapp_page == "map" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
         <br>Map</a></td>
+      {% endif %}
       <td{% if webapp_page == "catalog" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
         <br>Catalog</td>
       {% if survey_status != "none" %}
@@ -28,3 +32,4 @@
 </div>
 {% block body %}{% endblock %}
 </body>
+</html>
