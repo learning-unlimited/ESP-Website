@@ -131,7 +131,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted mt-1 d-block">Switching themes resets the color fields below to the new theme's defaults so you can start customising from a clean slate.</small>
+                            <small class="text-muted mt-1 d-block">Switching themes resets the color fields below to the new theme's defaults so you can start customizing from a clean slate.</small>
                         </div>
                     </div></div>
                 </div>
@@ -255,7 +255,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="baseFontSize">Font Size:</label>
                             <div class="controls">
-                                <select id="baseFontSize" name="baseFontSize">
+                                <select id="baseFontSize" name="baseFontSize" data-default="{{ variable_defaults|index:'baseFontSize' }}" data-scss-default="{{ scss_variable_defaults|index:'baseFontSize' }}">
                                     <option value="{{ baseFontSize }}" style="font-size: {{ baseFontSize }};">Current: {{ baseFontSize }}</option>
                                     <option value="10px" style="font-size: 10px;">10</option>
                                     <option value="11px" style="font-size: 11px;">11</option>
@@ -273,7 +273,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <div class="control-group">
                             <label class="control-label" for="sansFontFamily">Font Family:</label>
                             <div class="controls">
-                                <select id="sansFontFamily" name="sansFontFamily" type="text">
+                                <select id="sansFontFamily" name="sansFontFamily" type="text" data-default="{{ variable_defaults|index:'sansFontFamily' }}" data-scss-default="{{ scss_variable_defaults|index:'sansFontFamily' }}">
                                     <option value="{{ sansFontFamily }}" style="font-family: {{sansFontFamily}};">Current: {{sansFontFamily}}</option>
                                     {% for family_name, family in sans_fonts %}
                                     <option value="{{family}}" style="font-family: {{family}};">{{family_name}}</option>
@@ -649,7 +649,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
         var theme = $j(this).val();
         var bw = (typeof bootswatch_esp_vars !== 'undefined' && bootswatch_esp_vars[theme])
                    ? bootswatch_esp_vars[theme] : {};
-        $j('#theme_editor_accordion input[data-default]').each(function () {
+        $j('#theme_editor_accordion input[data-default], #theme_editor_accordion select[data-default]').each(function () {
           var $input = $j(this);
           var name = $input.attr('name');
           // data-scss-default is rendered server-side from the theme's raw SCSS
@@ -662,10 +662,21 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
           if (newDefault === '') return;
           // Update data-default so the Reset Color button targets the right color.
           $input.data('default', newDefault);
-          $input.val(newDefault);
-          // Update the Spectrum color-picker preview if it is attached.
-          if ($input.hasClass('color')) {
-            try { $input.spectrum('set', newDefault); } catch (e) {}
+          if (this.tagName === 'SELECT') {
+            // Font size/family are <select> elements whose canned <option>s won't
+            // usually include the derived value (e.g. Solar's "Source Sans Pro"),
+            // so update the "Current: ..." option (always first) in place rather
+            // than relying on .val() to match an existing option.
+            var $current = $input.find('option').first();
+            $current.val(newDefault).text('Current: ' + newDefault);
+            $current.css(name === 'sansFontFamily' ? 'font-family' : 'font-size', newDefault);
+            $input.val(newDefault);
+          } else {
+            $input.val(newDefault);
+            // Update the Spectrum color-picker preview if it is attached.
+            if ($input.hasClass('color')) {
+              try { $input.spectrum('set', newDefault); } catch (e) {}
+            }
           }
         });
 
