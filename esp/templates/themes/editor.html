@@ -102,7 +102,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                             <li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Apply Without Saving</strong> often to see your changes in action.</li>
                             <li>When you're happy with your changes, just enter a name under "Save/Load Theme Settings" and press <strong>Save</strong>!</li>
                         </ol>
-                        <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='https://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
+                        <p>For even more <strong>color picking power</strong>, we recommend using a full featured color picker like <a href='https://colorschemedesigner.com' target="_blank">this one</a> to decide your colors, and enter the hex values when adding to your palette.</p>
                     </div>
                     <div class="modal-footer"></div>
                 </div>
@@ -123,7 +123,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                         <h4 class="mb-0"><button type="button" class="btn btn-link w-100 text-start collapsed" data-bs-toggle="collapse" data-bs-target="#bootswatch-theme">Bootswatch Theme</button></h4>
                     </div>
                     <div class="collapse" id="bootswatch-theme"><div class="card-body">
-                                            <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to use as the base look for {{ theme_name|capfirst }}. Leave blank for the default Bootstrap styling. <strong>When a Bootswatch theme is active, the colour fields below show that theme's defaults — change only the ones you want to customise.</strong></h5>
+                                            <h5>Select a <a href="https://bootswatch.com/" target="_blank" rel="noopener noreferrer">Bootswatch</a> theme to use as the base look for {{ theme_name|capfirst }}. Leave blank for the default Bootstrap styling. <strong>When a Bootswatch theme is active, the color fields below show that theme's defaults — change only the ones you want to customise.</strong></h5>
                         <div class="control-group">
                             <select name="bootswatch_theme" class="form-select" id="bootswatch-theme-select">
                                 <option value="">— None (default Bootstrap) —</option>
@@ -131,7 +131,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 <option value="{{ bw_theme }}"{% if bw_theme == current_bootswatch %} selected{% endif %}>{{ bw_theme|capfirst }}</option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted mt-1 d-block">Switching themes resets the colour fields below to the new theme's defaults so you can start customising from a clean slate.</small>
+                            <small class="text-muted mt-1 d-block">Switching themes resets the color fields below to the new theme's defaults so you can start customising from a clean slate.</small>
                         </div>
                     </div></div>
                 </div>
@@ -624,8 +624,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     {{ bootswatch_vars|json_script:"bootswatch-esp-vars" }}
     {{ scss_base_palette|json_script:"scss-base-palette" }}
     <script type="text/javascript">
-    // Bootswatch-theme → ESP-variable → colour value.
-    // Pre-computed server-side so the colour pickers update without a round-trip
+    // Bootswatch-theme → ESP-variable → color value.
+    // Pre-computed server-side so the color pickers update without a round-trip
     // when the admin changes the Bootswatch dropdown.
     // |json_script renders a <script type="application/json"> block that Django
     // escapes correctly for embedding in HTML; parse its text content rather than
@@ -642,8 +642,8 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
 
-      // When the Bootswatch theme dropdown changes, update every colour/font/length
-      // picker to show that theme's resolved colours.  The picker value AND the
+      // When the Bootswatch theme dropdown changes, update every color/font/length
+      // picker to show that theme's resolved colors.  The picker value AND the
       // data-default (reset target) are both updated so "Reset Color" stays correct.
       $j('#bootswatch-theme-select').on('change', function () {
         var theme = $j(this).val();
@@ -657,20 +657,20 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
           // "no Bootswatch theme" fallback no matter which theme was active on
           // page load.
           var scssDefault = $input.data('scss-default');
-          // Prefer the Bootswatch-derived colour; fall back to the SCSS default.
+          // Prefer the Bootswatch-derived color; fall back to the SCSS default.
           var newDefault = (theme && bw[name]) ? bw[name] : (scssDefault || '');
           if (newDefault === '') return;
-          // Update data-default so the Reset Color button targets the right colour.
+          // Update data-default so the Reset Color button targets the right color.
           $input.data('default', newDefault);
           $input.val(newDefault);
-          // Update the Spectrum colour-picker preview if it is attached.
+          // Update the Spectrum color-picker preview if it is attached.
           if ($input.hasClass('color')) {
             try { $input.spectrum('set', newDefault); } catch (e) {}
           }
         });
 
         // Also refresh the "Built-in Theme Palette" swatches so this section
-        // updates live like the colour/font fields above, instead of only
+        // updates live like the color/font fields above, instead of only
         // reflecting the new theme after the next Apply/reload.
         var bwColors;
         if (theme && bootswatch_esp_vars && bootswatch_esp_vars[theme]) {
