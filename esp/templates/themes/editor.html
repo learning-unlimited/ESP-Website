@@ -706,6 +706,22 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
           $baseDiv.append($j('<input type="text" name="palette" class="palette"/>').val(color));
         });
         showBasePalette();
+
+        // Update the clickable swatch grid inside every color picker so it
+        // offers the new theme's palette instead of whatever was baked into
+        // `palette_list` at page load. Spectrum has no "change palette" API
+        // (the palette is only read once, at init), so pickers must be
+        // destroyed and reinitialized to pick up the new list; showColor()
+        // re-reads each input's current value when it reinitializes, so the
+        // colors set above are preserved.
+        var customColors = $j('#palette_custom_div input.palette').map(function () {
+          return $j(this).val();
+        }).get();
+        palette_list = bwColors.concat(customColors);
+        $j('#theme_editor_accordion input.color').each(function () {
+          try { $j(this).spectrum('destroy'); } catch (e) {}
+        });
+        showColor();
       });
     });
     </script>

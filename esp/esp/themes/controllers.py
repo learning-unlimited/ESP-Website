@@ -1022,9 +1022,10 @@ class ThemeController(object):
         if theme_name is None:
             theme_name = self.get_current_theme()
 
-        # Save current parameters and palette before they are cleared
+        # Save current parameters, palette, and Bootswatch selection before they are cleared
         current_vars = self.get_current_params()
         current_palette = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+        current_bootswatch = Tag.getTag('bootswatch_theme', default='') if self.has_scss(theme_name) else ''
 
         backup_info = self.clear_theme(keep_files=keep_files)
         self.load_theme(theme_name, backup_info=backup_info)
@@ -1032,15 +1033,22 @@ class ThemeController(object):
 
         vars = current_vars
         palette = current_palette
+        bootswatch_theme = current_bootswatch
 
         if customization_name is not None and customization_name != "None":
             try:
-                (vars, palette) = self.load_customizations(customization_name)
+                (vars, palette, loaded_bootswatch) = self.load_customizations(customization_name)
             except FileNotFoundError:
                 logger.warning("Customization file for %s missing. Initializing with parameters from database.", customization_name)
-                self.save_customizations(customization_name, theme_name=theme_name, vars=current_vars, palette=current_palette)
-                (vars, palette) = self.load_customizations(customization_name)
+                self.save_customizations(customization_name, theme_name=theme_name, vars=current_vars, palette=current_palette, bootswatch_theme=current_bootswatch)
+                (vars, palette, loaded_bootswatch) = self.load_customizations(customization_name)
+            #   None means the saved file predates the Bootswatch field; keep
+            #   whatever was active before the recompile in that case.
+            if loaded_bootswatch is not None:
+                bootswatch_theme = loaded_bootswatch
 
+        if self.has_scss(theme_name):
+            Tag.setTag('bootswatch_theme', value=bootswatch_theme)
         if vars:
             self.customize_theme(vars)
         if palette:
@@ -1289,13 +1297,19 @@ class ThemeController(object):
             raise SuspiciousFileOperation(f'Attempted path traversal in theme save name: {save_name!r}')
         return path
 
-    def save_customizations(self, save_name, theme_name=None, vars=None, palette=None):
+    def save_customizations(self, save_name, theme_name=None, vars=None, palette=None, bootswatch_theme=None):
         if theme_name is None:
             theme_name = self.get_current_theme()
         if vars is None:
             vars = self.get_current_params()
         if palette is None:
             palette = self.get_palette()['custom']
+        if bootswatch_theme is None:
+            #   Default to whatever Bootswatch theme is currently active, so
+            #   internal callers (e.g. the "-last" backup made when switching
+            #   themes) keep capturing it without every call site having to
+            #   know about Bootswatch.
+            bootswatch_theme = Tag.getTag('bootswatch_theme', default='') if self.has_scss(theme_name) else ''
 
         vars_orig = self.find_theme_variables(theme_name, flat=True)
         keys = copy.copy(list(vars.keys()))
@@ -1308,6 +1322,7 @@ class ThemeController(object):
         context['base_theme'] = theme_name
         context['save_name'] = save_name
         context['palette'] = palette
+        context['bootswatch_theme'] = bootswatch_theme
 
         with open(self._safe_customization_path(save_name), 'w') as f:
             f.write(render_to_string('themes/custom_vars.less', context))
@@ -1340,11 +1355,22 @@ class ThemeController(object):
             palette.add(match)
         palette = list(palette)
 
+        #   Collect the Bootswatch theme that was active when this
+        #   customisation was saved.  None (not just absent/empty) means the
+        #   file predates this field -- callers should leave the site's
+        #   current Bootswatch selection untouched rather than treating a
+        #   legacy save as "explicitly no Bootswatch theme".
+        bootswatch_theme = None
+        bootswatch_match = re.search(r'// Bootswatch Theme: (.*?)\n', data)
+        if bootswatch_match:
+            bootswatch_theme = '' if bootswatch_match.group(1) == 'None' else bootswatch_match.group(1)
+
         self.set_current_customization(save_name)
 
         logger.debug("vars: %s", vars)
         logger.debug("palette: %s", palette)
-        return (vars, palette)
+        logger.debug("bootswatch_theme: %s", bootswatch_theme)
+        return (vars, palette, bootswatch_theme)
 
     def delete_customizations(self, save_name):
         os.remove(self._safe_customization_path(save_name))

@@ -379,6 +379,12 @@ def editor(request):
         #   Handle form submission
         vars = None
         palette = None
+        #   Bootswatch theme to persist to the site-wide tag this request, or
+        #   None to leave the tag untouched.  Resolved per-branch below so that
+        #   Save/Apply pick it up from the submitted dropdown while Load
+        #   restores whatever Bootswatch theme was active when that
+        #   customisation was saved (see ThemeController.load_customizations).
+        bootswatch_theme = None
 
         if 'save' in request.POST:
             if request.POST['saveThemeName'] == '':
@@ -391,40 +397,55 @@ def editor(request):
                 theme_name = request.POST['saveThemeName']
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
-            tc.save_customizations(theme_name, vars=vars, palette=palette)
+            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
+                bootswatch_theme = request.POST['bootswatch_theme']
+                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
+                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            #   Set the tag before saving/customizing so save_customizations()
+            #   (which defaults bootswatch_theme from the tag) and
+            #   customize_theme()'s override diffing both see this request's
+            #   selection rather than the previous one.
+            if bootswatch_theme is not None:
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
+            tc.save_customizations(theme_name, vars=vars, palette=palette, bootswatch_theme=bootswatch_theme)
             tc.set_current_customization(theme_name)
         elif 'load' in request.POST:
-            (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
+            (vars, palette, loaded_bootswatch) = tc.load_customizations(request.POST['loadThemeName'])
+            #   loaded_bootswatch is None for customisations saved before this
+            #   Bootswatch-aware format existed; leave the current tag as-is
+            #   in that case rather than silently clearing it.
+            if tc.has_scss(tc.get_current_theme()) and loaded_bootswatch is not None:
+                if loaded_bootswatch and loaded_bootswatch not in tc.get_bootswatch_themes():
+                    #   The saved theme is no longer available (e.g. removed
+                    #   from the npm package) -- fall back to no Bootswatch
+                    #   theme rather than raising on a routine Load.
+                    loaded_bootswatch = ''
+                bootswatch_theme = loaded_bootswatch
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
         elif 'delete' in request.POST:
             tc.delete_customizations(request.POST['loadThemeName'])
         elif 'apply' in request.POST:
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
-
-        #   Save Bootswatch theme selection for SCSS themes.
-        #   Only touch the tag when the form actually submitted the field, so
-        #   programmatic POSTs (e.g. scripts posting {'apply': ...} without the
-        #   select) don't silently clear the site's skin.  Validate before
-        #   persisting: compile_css raises on unknown names, so a bad value
-        #   saved here would break every subsequent recompile.
-        bootswatch_switched = False
-        if (tc.has_scss(tc.get_current_theme())
-                and ('apply' in request.POST or 'save' in request.POST)
-                and 'bootswatch_theme' in request.POST):
-            new_bw = request.POST['bootswatch_theme']
-            old_bw = Tag.getTag('bootswatch_theme', default='')
-            if new_bw and new_bw not in tc.get_bootswatch_themes():
-                raise ESPError(f'Unknown Bootswatch theme: {new_bw!r}', log=False)
-            if new_bw != old_bw:
-                bootswatch_switched = True
-            Tag.setTag('bootswatch_theme', value=new_bw)
-
-        # When switching to a different Bootswatch theme via Apply (not Save/Load),
-        # drop the form values so the new Bootswatch theme's colours render cleanly
-        # without being masked by stale overrides from the previous customisation.
-        # The $esp-overridden list will be empty and all Bootswatch defaults apply.
-        if bootswatch_switched and 'apply' in request.POST:
-            vars = {}
+            #   Only touch the tag when the form actually submitted the field,
+            #   so programmatic POSTs (e.g. scripts posting {'apply': ...}
+            #   without the select) don't silently clear the site's skin.
+            #   Validate before persisting: compile_css raises on unknown
+            #   names, so a bad value saved here would break every subsequent
+            #   recompile.
+            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
+                bootswatch_theme = request.POST['bootswatch_theme']
+                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
+                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            #   Set the tag before customize_theme() below so its override
+            #   diffing (customize_theme -> get_effective_defaults) is based
+            #   on this request's Bootswatch selection.  This lets an Apply
+            #   that both switches the Bootswatch theme *and* edits a field
+            #   (e.g. the font) apply both changes together: fields left at
+            #   the new theme's derived default are not recorded as
+            #   overrides, while genuinely-changed fields are.
+            if bootswatch_theme is not None:
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
 
         #   Re-generate the CSS for the current theme given the supplied settings.
         #   Use "vars is not None" (not "if vars") so that an empty dict from a

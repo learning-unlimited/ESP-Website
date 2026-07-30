@@ -262,6 +262,58 @@ class ThemesTest(TestCase):
         #   We're done.  Log out.
         self.client.logout()
 
+    def testEditorBootswatchApplyAndSaveLoad(self):
+        """ PR #5862 review comments #2 and #3:
+        - Switching the Bootswatch dropdown and editing a field in the same
+          "Apply" must apply both changes together, not drop the field edit.
+        - Saving a customization while a Bootswatch theme is active must
+          persist that theme, so Loading the customization later restores it
+          regardless of whichever Bootswatch theme happens to be active. """
+        tc = ThemeController()
+        scss_themes = [n for n in tc.get_theme_names() if tc.uses_scss_pipeline(n)]
+        bw_themes = tc.get_bootswatch_themes()
+        if not scss_themes or not bw_themes:
+            self.skipTest('No SCSS theme / Bootswatch package available')
+        theme_name = scss_themes[0]
+        bw_a = bw_themes[0]
+        bw_b = bw_themes[1] if len(bw_themes) > 1 else bw_themes[0]
+
+        tc.clear_theme()
+        tc.load_theme(theme_name)
+        Tag.unSetTag('bootswatch_theme')
+
+        self.client.login(username=self.admin.username, password='password')
+        try:
+            #   Comment #2: switch the Bootswatch theme AND edit a field in
+            #   one Apply -- both must take effect.
+            custom_color = '#%06X' % random.randint(0, 1 << 24)
+            config_dict = {'apply': True, 'bootswatch_theme': bw_a, 'linkColor': custom_color}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(Tag.getTag('bootswatch_theme', default=''), bw_a)
+            self.assertEqual(tc.get_current_params().get('linkColor'), custom_color)
+
+            #   Comment #3: saving while bw_a is active persists it in the
+            #   customization file; switching the live tag away and then
+            #   Loading that customization must restore bw_a.
+            config_dict = {'save': True, 'bootswatch_theme': bw_a, 'linkColor': custom_color,
+                            'saveThemeName': 'bootswatch_save_test'}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+
+            Tag.setTag('bootswatch_theme', value=bw_b)
+            config_dict = {'load': True, 'loadThemeName': 'bootswatch_save_test'}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(Tag.getTag('bootswatch_theme', default=''), bw_a)
+        finally:
+            self.client.logout()
+            try:
+                tc.delete_customizations('bootswatch_save_test')
+            except OSError:
+                pass
+            Tag.unSetTag('bootswatch_theme')
+
     def testRecompileThemeCreatesMissingCustomization(self):
         """ Check that recompile_theme does not crash and leaves the system in a consistent state
             by creating the customization file if it is missing. """
