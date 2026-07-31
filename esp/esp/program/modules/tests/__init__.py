@@ -83,3 +83,4 @@ from esp.program.modules.tests.test_studentlunchselection import StudentLunchSel
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest
 from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
+from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
