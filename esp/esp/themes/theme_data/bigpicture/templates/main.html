@@ -16,9 +16,12 @@
 
 <a href="#main" class="skip-nav">Skip to main content</a>
 
+{% comment %}
+{% block navbar %}{% include "navbar.html" %}{% endblock navbar%}
+{% endcomment %}
 {% block navbar %}
 <nav class="navbar navbar-dark">
-  {% block loginbox %}{% include "users/loginbox_content.html" %}{% endblock %}
+  {% include "users/loginbox_content.html" %}
 </nav>
 {% endblock navbar%}
 

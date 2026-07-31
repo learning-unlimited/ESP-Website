@@ -132,9 +132,7 @@ urlpatterns += [
 # Specific .html pages that have defaults
 urlpatterns += [
     re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
-    re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='faq'),
     re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
-    re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='contact_us'),
 ]
 
 urlpatterns += [

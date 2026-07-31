@@ -2,7 +2,15 @@
 {% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% block stylesheets %}
-<link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+{% comment %}
+{% if request.user.is_authenticated %}
+{% if request.user.isTeacher %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/teach/index.html">
+{% else %}
+<meta http-equiv="refresh" content="0; url=http://{{ request.META.HTTP_HOST }}/learn/index.html">
+{% endif %}
+{% endif %}
+{% endcomment %}
 {% endblock %}
 
 {% block javascript %}
@@ -74,39 +82,26 @@
         <div class="dr"></div>
       </div>
       <div id="login_div_index">
+        {% if not request.user.is_authenticated %}
         <!-- login -->
-        <div class="not_logged_in">
-          <form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
-            <input type="hidden" name="next" value="/" />
-            <input type="text" id="login_user_index" name="username" />
-            <input type="password" id="login_pswd_index" name="password" />
-            <span id="login_arrow1"></span>
-            <input type="submit" id="login_submit" name="login_submit" value="Log in" />
-            <span id="login_arrow2"></span>
-            <a href="/myesp/register" id="login_signup">Sign up</a>
-            <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
-          </form>
-        </div>
+        <form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
+          <input type="hidden" name="next" value="/" />
+          <input type="text" id="login_user_index" name="username" />
+          <input type="password" id="login_pswd_index" name="password" />
+          <span id="login_arrow1"></span>
+          <input type="submit" id="login_submit" name="login_submit" value="Log in" />
+          <span id="login_arrow2"></span>
+          <a href="/myesp/register" id="login_signup">Sign up</a>
+          <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
+        </form>
+        {% else %}
         <!-- logout -->
-        <div class="logged_in">
-          <div id="login_greeting_index">
-            Hello, <strong><span id="user_first_name"></span> <span id="user_last_name"></span></strong>!<br />
-            (<a href="{% url 'signout' %}">Logout</a><span class="admin"> | <a href="{% url 'manage_programs' %}">Manage</a></span>)
-          </div>
+        <div id="login_greeting_index">
+          Hello, <strong>{{ request.user.first_name }} {{ request.user.last_name }}</strong>!<br />
+          (<a href="{% url 'signout' %}">Logout</a>{% if request.user.isAdministrator %} | <a
+            href="{% url 'manage_programs' %}">Manage</a>{% endif %})
         </div>
-        <script type="text/javascript">
-          /* Fill the greeting name during parsing (before first paint) to avoid a
-             flash of empty text. */
-          (function () {
-            try {
-              if (!window.esp_user) { return; }
-              var f = document.getElementById("user_first_name");
-              var l = document.getElementById("user_last_name");
-              if (f) { f.textContent = ("" + (esp_user.cur_first_name || esp_user.cur_username || "")).trim(); }
-              if (l) { l.textContent = ("" + (esp_user.cur_last_name || "")).trim(); }
-            } catch (e) {}
-          })();
-        </script>
+        {% endif %}
 
       </div>
     </div>

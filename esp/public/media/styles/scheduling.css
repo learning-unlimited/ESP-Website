@@ -107,12 +107,6 @@ td.selected-section {
     z-index: 1000;
 }
 
-td.recurring-selected-cell {
-    outline: 4px solid #1e90ff;
-    position: relative;
-    z-index: 1000;
-}
-
 td.matrix-cell > a {
     text-decoration: none;
     color: inherit !important;
@@ -267,7 +261,6 @@ button.sidetoolbar {
 #legend td {
     height: 30px;
     padding: .5vh;
-    outline-offset: -4px;
 }
 
 #loadingOverlay {

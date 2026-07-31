@@ -301,8 +301,6 @@ class TemplateOverrideTest(DjangoTestCase):
         request.user = admin
 
         response = diff_templateoverride(request, to.id)
-        response.render()
-
         self.assertEqual(response.status_code, 200)
 
         html = response.content.decode('utf-8')

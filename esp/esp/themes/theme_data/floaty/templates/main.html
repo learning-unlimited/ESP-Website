@@ -32,7 +32,7 @@
 }
     </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
-        <div id="adminbar" class="admin" style="position: fixed !important">
+        <div id="adminbar" class="admin hidden" style="position: fixed !important">
             <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
             <div id="adminbar_content"></div>
         </div>
@@ -89,12 +89,12 @@
 <div id="boxes_area">
     <!-- Login -->
     <div class="box" style="text-align: right;">
-    {% block loginbox %}{% include "users/loginbox_content.html" %}{% endblock %}
+    {% include "users/loginbox_content.html" %}
     </div>
     
 
     <!-- Onsite -->
-    <div class="box onsite">
+    <div class="box onsite hidden">
     <div class="box_header"><a href="{% url 'myesp_onsite' %}">Onsite registration</a></div>
     </div>
 

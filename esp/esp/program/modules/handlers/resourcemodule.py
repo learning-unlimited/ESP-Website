@@ -98,40 +98,24 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'edit':
             #   pre-fill form
-            try:
-                current_slot = Event.objects.get(id=request.GET['id'], program=prog)
-            except (KeyError, ValueError, Event.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
+            current_slot = Event.objects.get(id=request.GET['id'])
             context['timeslot_form'] = TimeslotForm(auto_id="timeslot_%s", program = prog)
             context['timeslot_form'].load_timeslot(current_slot)
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
-            try:
-                timeslot = Event.objects.get(id=request.GET['id'], program=prog)
-            except (KeyError, ValueError, Event.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
             context['prog'] = self.program
-            context['timeslot'] = timeslot
+            context['timeslot'] = Event.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'timeslot_delete.html', request, context)
 
         if request.method == 'POST':
             data = request.POST
 
             if data['command'] == 'reallyremove':
-                try:
-                    Event.objects.get(id=data.get('id'), program=prog)
-                except (ValueError, Event.DoesNotExist):
-                    return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
                 controller.delete_timeslot(data['id'])
 
             elif data['command'] == 'addedit':
                 #   add/edit timeslot
-                if data.get('id'):
-                    try:
-                        Event.objects.get(id=data['id'], program=prog)
-                    except (ValueError, Event.DoesNotExist):
-                        return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
                 form = TimeslotForm(data, auto_id="timeslot_%s", program = prog)
                 if form.is_valid():
                     controller.add_or_edit_timeslot(form)
@@ -148,10 +132,7 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'edit':
             #   pre-fill form
-            try:
-                current_slot = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=request.GET['id'])
-            except (KeyError, ValueError, ResourceType.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
+            current_slot = ResourceType.objects.get(id=request.GET['id'])
             context['restype_form'] = ResourceTypeForm(auto_id="restype_%s")
             context['restype_form'].load_restype(current_slot)
             choices = [{'choice': choice} for choice in current_slot.choices]
@@ -160,31 +141,18 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
-            try:
-                restype = self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=request.GET['id'])
-            except (KeyError, ValueError, ResourceType.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
             context['prog'] = self.program
-            context['restype'] = restype
+            context['restype'] = ResourceType.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'restype_delete.html', request, context)
 
         if request.method == 'POST':
             data = request.POST
 
             if data['command'] == 'reallyremove':
-                try:
-                    self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=data.get('id'))
-                except (ValueError, ResourceType.DoesNotExist):
-                    return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
                 controller.delete_restype(data['id'])
 
             elif data['command'] == 'addedit':
                 #   add/edit restype
-                if data.get('id'):
-                    try:
-                        self.program.getResourceTypes(include_global=Tag.getBooleanTag('allow_global_restypes')).get(id=data['id'])
-                    except (ValueError, ResourceType.DoesNotExist):
-                        return (HttpResponseBadRequest('Invalid or missing resource type ID.'), {})
                 form = ResourceTypeForm(data, auto_id="restype_%s")
                 num_choices = int(data.get('resourcechoices-TOTAL_FORMS', '0'))
                 ResourceChoiceSet = formset_factory(ResourceChoiceForm, max_num = 10, extra = 0 if num_choices else 1)
@@ -209,10 +177,7 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'edit':
             #   pre-fill form
-            try:
-                current_room = self.program.getClassrooms().get(id=request.GET['id'])
-            except (KeyError, ValueError, Resource.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
+            current_room = Resource.objects.get(id=request.GET['id'])
             context['classroom_form'] = ClassroomForm(self.program, auto_id="classroom_%s")
             context['classroom_form'].load_classroom(self.program, current_room)
             furnishings = [{'furnishing': furnishing.res_type.id, 'choice': furnishing.attribute_value} for furnishing in current_room.associated_resources()]
@@ -221,12 +186,8 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
-            try:
-                classroom = self.program.getClassrooms().get(id=request.GET['id'])
-            except (KeyError, ValueError, Resource.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
             context['prog'] = self.program
-            context['classroom'] = classroom
+            context['classroom'] = Resource.objects.get(id=request.GET['id'])
             resources = self.program.getClassrooms().filter(name=context['classroom'].name)
             context['timeslots'] = [r.event for r in resources]
             sections = ClassSection.objects.filter(resourceassignment__resource__id__in=resources.values_list('id', flat=True)).distinct()
@@ -238,18 +199,9 @@ class ResourceModule(ProgramModuleObj):
             data = request.POST
 
             if data['command'] == 'reallyremove':
-                try:
-                    self.program.getClassrooms().get(id=data.get('id'))
-                except (ValueError, Resource.DoesNotExist):
-                    return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
                 controller.delete_classroom(data['id'])
 
             elif data['command'] == 'addedit':
-                if data.get('id'):
-                    try:
-                        self.program.getClassrooms().get(id=data['id'])
-                    except (ValueError, Resource.DoesNotExist):
-                        return (HttpResponseBadRequest('Invalid or missing classroom ID.'), {})
                 form = ClassroomForm(self.program, data, auto_id="classroom_%s")
                 num_forms = int(data.get('furnishings-TOTAL_FORMS', '0'))
                 FurnishingFormSet = formset_factory(FurnishingFormForProgram(prog), max_num = 1000, extra = 0)
@@ -512,40 +464,24 @@ class ResourceModule(ProgramModuleObj):
 
         if request.GET.get('op') == 'edit':
             #   pre-fill form
-            try:
-                equip = self.program.getFloatingResources(queryset=True).get(id=request.GET['id'])
-            except (KeyError, ValueError, Resource.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
+            equip = Resource.objects.get(id=request.GET['id'])
             context['equipment_form'] = EquipmentForm(self.program, auto_id="equipment_%s")
             context['equipment_form'].load_equipment(self.program, equip)
 
         if request.GET.get('op') == 'delete':
             #   show delete confirmation page
-            try:
-                equipment = self.program.getFloatingResources(queryset=True).get(id=request.GET['id'])
-            except (KeyError, ValueError, Resource.DoesNotExist):
-                return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
             context['prog'] = self.program
-            context['equipment'] = equipment
+            context['equipment'] = Resource.objects.get(id=request.GET['id'])
             response = render_to_response(self.baseDir()+'equipment_delete.html', request, context)
 
         if request.method == 'POST':
             data = request.POST
 
             if data['command'] == 'reallyremove':
-                try:
-                    self.program.getFloatingResources(queryset=True).get(id=data.get('id'))
-                except (ValueError, Resource.DoesNotExist):
-                    return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
                 controller.delete_equipment(data['id'])
 
             elif data['command'] == 'addedit':
-                #   add/edit equipment
-                if data.get('id'):
-                    try:
-                        self.program.getFloatingResources(queryset=True).get(id=data['id'])
-                    except (ValueError, Resource.DoesNotExist):
-                        return (HttpResponseBadRequest('Invalid or missing equipment ID.'), {})
+                #   add/edit restype
                 form = EquipmentForm(self.program, data, auto_id="equipment_%s")
 
                 if form.is_valid():

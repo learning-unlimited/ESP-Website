@@ -11,16 +11,12 @@ function Timeslots(timeslots_data, lunch_timeslots){
     this.helpers_add_timeslots_order = function(timeslot_object){
         var timeslot_array = [];
         $j.each(timeslot_object, function(timeslot_id, timeslot){
-            if (timeslot &&
-                Array.isArray(timeslot.start) &&
-                Array.isArray(timeslot.end)) {
                 timeslot_array.push(timeslot);
-            }
-        });
+                });
 
         // Sort timeslots by start time
         var sorted_timeslot_array = timeslot_array.sort(function(a,b){
-            for (var i = 0; i < a.start.length; i++) {
+            for (i=0; i<a.start.length; i++) {
                 var comp = a.start[i] - b.start[i];
                 if (comp != 0) {
                     return comp;
@@ -30,7 +26,7 @@ function Timeslots(timeslots_data, lunch_timeslots){
         });
 
         // Update the order in the original timeslot_object
-        for (var i = 0; i < sorted_timeslot_array.length; i++){
+        for (i=0; i<sorted_timeslot_array.length; i++){
             var t = sorted_timeslot_array[i];
             timeslot_object[t.id].order = i;
         }
@@ -44,9 +40,6 @@ function Timeslots(timeslots_data, lunch_timeslots){
     if(lunch_timeslots) {
         $j.each(lunch_timeslots, function(index, lunch_id) {
             var lunch_slot = this.timeslots[lunch_id];
-            if (!lunch_slot || !Array.isArray(lunch_slot.end)) {
-                return;
-            }
             var lunch_slot_day = lunch_slot.end[2];
             if(this.lunch_timeslots[lunch_slot_day]) {
                 this.lunch_timeslots[lunch_slot_day].push(lunch_slot);

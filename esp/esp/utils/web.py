@@ -183,7 +183,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
                            If False, render without context processors.
 
     Returns:
-        TemplateResponse object with rendered template
+        HttpResponse object with rendered template
     """
     if isinstance(template, str):
         template = [ template ]
@@ -211,8 +211,7 @@ def render_to_response(template, request, context, content_type=None, use_reques
         context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if use_request_context:
-        from django.template.response import TemplateResponse
-        return TemplateResponse(request, template, context, content_type=content_type)
+        return django.shortcuts.render(request, template, context, content_type=content_type)
     else:
         # For rendering without context processors, use template rendering directly.
         # Keep ``messages`` available for legacy templates/tests that expect it.
