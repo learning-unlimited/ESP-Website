@@ -2315,3 +2315,4 @@ class ProgramValidatorsTest(TestCase):
         )
         self.assertEqual(program.grade_max, 12)
         program.delete()
+
