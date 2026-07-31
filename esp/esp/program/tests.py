@@ -2160,7 +2160,6 @@ class HeardAboutNormalizationTest(TestCase):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
 
-
 class ProgramValidatorsTest(TestCase):
     """Tests for Program model field validators."""
 
@@ -2191,7 +2190,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_program_name_rejects_angle_brackets(self):
         """Test that program name rejects angle brackets."""
@@ -2204,7 +2202,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_program_name_accepts_punctuation(self):
         """Test that program name accepts common punctuation."""
@@ -2220,7 +2217,6 @@ class ProgramValidatorsTest(TestCase):
     def test_program_url_rejects_invalid_format(self):
         """Test that program URL rejects invalid formats."""
         from django.core.exceptions import ValidationError
-        # Missing slash separator
         program = Program(
             url='Test2024_Spring',
             name='Test Program',
@@ -2229,7 +2225,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_program_url_rejects_spaces(self):
         """Test that program URL rejects spaces."""
@@ -2242,7 +2237,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_program_url_rejects_html_chars(self):
         """Test that program URL rejects HTML characters."""
@@ -2255,7 +2249,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_program_url_valid_format(self):
         """Test that valid URL format is accepted."""
@@ -2279,7 +2272,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_grade_max_rejects_negative(self):
         """Test that grade_max rejects negative values."""
@@ -2292,7 +2284,6 @@ class ProgramValidatorsTest(TestCase):
         )
         with self.assertRaises(ValidationError):
             program.full_clean()
-        program.delete()
 
     def test_grade_min_accepts_zero(self):
         """Test that grade_min accepts zero (for kindergarten)."""
@@ -2315,4 +2306,4 @@ class ProgramValidatorsTest(TestCase):
         )
         self.assertEqual(program.grade_max, 12)
         program.delete()
-
+        
