@@ -149,7 +149,6 @@ class TeacherEventsManageModuleAvailabilityRoleTest(TestCase):
 
     def setUp(self):
         super().setUp()
-        # Fix 1: Use existing user_role_setup helper
         from esp.tests.util import user_role_setup
         user_role_setup()
 
@@ -175,7 +174,6 @@ class TeacherEventsManageModuleIsCompletedTest(TestCase):
             mock_filter.return_value.exists.return_value = False
             with patch('esp.program.modules.handlers.teachereventsmanagemodule.Event.objects.filter') as mock_f:
                 mock_f.return_value.exists.return_value = False
-                # Test the logic directly
                 self.assertFalse(mock_f.return_value.exists())
 
     def test_is_completed_true_when_events_exist(self):
@@ -248,7 +246,6 @@ class TeacherEventsManageModuleViewTest(ProgramFrameworkTest):
 
     def test_non_admin_sees_not_admin_error(self):
         """Non-admin users should see the not-an-admin error page."""
-        # Fix 3: Use assertTemplateUsed instead of assertNotContains
         self.client.login(
             username=self.student.username,
             password='password'
@@ -263,7 +260,6 @@ class TeacherEventsManageModuleViewTest(ProgramFrameworkTest):
             description='Interview',
             defaults={'is_teacher_type': True}
         )
-        # Fix 4: imports moved to top of file
         event = Event.objects.create(
             program=self.program,
             event_type=event_type,
