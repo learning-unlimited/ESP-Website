@@ -44,6 +44,7 @@ from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
+from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
@@ -67,7 +68,15 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
+    # Class-level attributes that subclasses can override.
+    # Use immutable defaults to avoid accidental cross-module mutation.
+    always_enabled = False
+    seq_locked = False
+    conflicts_with = ()
+
+    start_date = models.DateTimeField(blank=True, null=True, default=None,
+                                      help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
@@ -282,8 +291,8 @@ class ProgramModuleObj(models.Model):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -315,8 +324,8 @@ class ProgramModuleObj(models.Model):
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -331,7 +340,13 @@ class ProgramModuleObj(models.Model):
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement']
+                                       'SurveyManagement',
+                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
+                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
+                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

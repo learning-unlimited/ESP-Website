@@ -97,7 +97,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
       <p>{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</p>
       {% if form.errors %}
         <div role="alert" class="alert alert-danger">
-            <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+            <span class="bi bi-info-circle" aria-hidden="true"></span>
                 Please correct the errors in the form.
         </div>
       {% endif %}
@@ -141,7 +141,12 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         {{ form.requests.errors }}
         <br><br>
         <div class="noclick">
-        {{ form.confirm }} {{ form.confirm.help_text }}
+        {# d-flex keeps the checkbox and text on one line in all themes (Sketchy uses #}
+        {# larger SVG checkboxes that push text off-baseline without flex alignment).  #}
+        <label class="d-flex align-items-center gap-2" for="{{ form.confirm.html_name }}">
+            {{ form.confirm }}
+            <span>{{ form.confirm.help_text }}</span>
+        </label>
         </div>
         {{ form.non_field_errors }}
         <br><br>
