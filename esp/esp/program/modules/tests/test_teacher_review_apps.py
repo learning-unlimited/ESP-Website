@@ -33,9 +33,10 @@ Learning Unlimited, Inc.
 """
 
 import random
+from datetime import datetime
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
-from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse
+from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentRegistration
 
 class TeacherReviewAppsTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -87,6 +88,20 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         class_roster = []
         for reg_type, students in self.cls.students_dict().items():
             class_roster.extend(students)
+
+        # review_students() walks the class roster in the same order it's sorted
+        # by there (added_class, i.e. registration start_date), looking forward
+        # from "prev" for the next student with a completed application. Sort
+        # the roster the same way here before picking prev/next so the two
+        # chosen students are guaranteed to appear in that same relative order
+        # -- otherwise picking them by students_dict() iteration order (which
+        # has no relation to added_class) makes the redirect assertion flaky.
+        def added_class(student):
+            reg = StudentRegistration.valid_objects().filter(
+                section__parent_class=self.cls, user=student).first()
+            return reg.start_date if reg else datetime.min
+        class_roster.sort(key=added_class)
+
         for student in class_roster[:2]:
             app = student.getApplication(self.program, create=True)
             self.students_with_apps.append(student)
