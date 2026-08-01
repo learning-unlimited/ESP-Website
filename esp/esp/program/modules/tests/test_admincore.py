@@ -60,7 +60,7 @@ class AdminCoreSettingsTest(ProgramFrameworkTest):
         line_item = pac.default_admission_lineitemtype()
         line_item.refresh_from_db()
         self.assertEqual(line_item.amount_dec, Decimal('125.00'))
-        
+
         # Verify sibling discount line item type was also updated
         sibling_discount_line_item = pac.default_siblingdiscount_lineitemtype()
         if sibling_discount_line_item:
