@@ -310,6 +310,14 @@ def check_can_schedule_sections(section_infos, schedule):
                 # Make sure the teacher isn't teaching
                 for other_section in other_sections:
                     if other_section.id in saving_section_ids:
+                        other_as_section = schedule.class_sections.get(other_section.id)
+                        if other_as_section is not None and other_as_section.is_scheduled():
+                            other_start = other_as_section.assigned_roomslots[0].timeslot.start
+                            other_end = other_as_section.assigned_roomslots[-1].timeslot.end
+                            if not (other_start >= end_time or other_end <= start_time):
+                                raise SchedulingError(
+                                    f"Teacher {teacher_id} of section {section_obj.emailcode()} is already teaching "
+                                    f"section {other_section.emailcode()}")
                         continue
                     for other_time in other_section.meeting_times.all():
                         if not (other_time.start >= end_time
