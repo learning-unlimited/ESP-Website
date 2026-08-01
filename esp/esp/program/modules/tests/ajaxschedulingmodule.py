@@ -56,9 +56,9 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
             sec.save()
 
         #some useful urls
-        self.ajax_url_base = '/manage/%s/' % self.program.getUrlBase()
+        self.ajax_url_base = f'/manage/{self.program.getUrlBase()}/'
         self.changelog_url = self.ajax_url_base + 'ajax_change_log'
-        self.schedule_class_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'
+        self.schedule_class_url = f'/manage/{self.program.getUrlBase()}/ajax_schedule_class'
 
 
     def loginAdmin(self):
@@ -129,13 +129,13 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Fetch two consecutive vacancies in two different rooms
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        a1 = '\n'.join([f'{r.event.id},{r.identical_id()}' for r in rooms[0:2]])
         rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.assertTrue(rooms.count() >= 2, "Not enough timeslots to run this test.")
-        a2 = '\n'.join(['%s,%s' % (r.event.id, r.identical_id()) for r in rooms[0:2]])
+        a2 = '\n'.join([f'{r.event.id},{r.identical_id()}' for r in rooms[0:2]])
 
         # Schedule one class.
-        ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
+        ajax_url = f'/manage/{self.program.getUrlBase()}/ajax_schedule_class'
         s1, s2 = t.getTaughtSections(self.program)[:2]
         timeslots = self.program.getTimeSlots().order_by('start')
         self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
@@ -189,7 +189,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.assertTrue(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
-        #TODO:  more detailed testing here
+        entry = changelog[0]
+        self.assertEqual(entry['id'], section.id, "Change log entry was for the wrong class section: " + str(changelog))
+        self.assertTrue(entry['is_scheduling'], "Change log entry should be a scheduling entry: " + str(changelog))
+        self.assertEqual(entry['timeslots'], [], "Timeslots should be empty for an unscheduled class: " + str(changelog))
+        self.assertEqual(entry['room_name'], '', "Room name should be empty for an unscheduled class: " + str(changelog))
 
     def testChangeLogFailedScheduling(self):
         #change log should not include failed scheduling of classes
