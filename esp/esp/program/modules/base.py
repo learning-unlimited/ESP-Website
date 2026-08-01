@@ -108,12 +108,20 @@ class ProgramModuleObj(ExpirableModel):
                 role_name = tl_to_role[self.module.module_type]
 
             if not role_name:
-                logger.warning(f"sync_permissions: Could not infer role name for permission_type '{perm_type}' on module '{self.module.handler}'. Skipping synchronization.")
+                logger.warning(
+                    "sync_permissions: could not determine role for permission_type=%s (module=%s)",
+                    perm_type,
+                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                )
                 continue
 
             group = Group.objects.filter(name=role_name).first()
             if not group:
-                logger.warning(f"sync_permissions: Auth Group '{role_name}' does not exist for permission_type '{perm_type}' on module '{self.module.handler}'. Skipping synchronization.")
+                logger.warning(
+                    "sync_permissions: group %s not found; skipping permission_type=%s",
+                    role_name,
+                    perm_type,
+                )
                 continue
 
             perms = Permission.objects.filter(
