@@ -49,7 +49,10 @@ def ajax_autocomplete(request):
 
 
     # import the model
-    Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
+    try:
+        Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
+    except AttributeError:
+        return JsonResponse({'error': 'Malformed Input'}, status=400)
 
     from esp.program.models import Program
     try:
