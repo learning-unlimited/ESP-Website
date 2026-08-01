@@ -596,6 +596,13 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
     },
+    'multiweek_schedule': {
+        'is_boolean': True,
+        'help_text': 'Expand recurring/multi-date class sections into one row per meeting date on printable student and teacher schedules (useful for multi-week programs).',
+        'default': False,
+        'category': 'manage',
+        'is_setting': True,
+    },
     # These help_text tags are in order of the fields in TeacherClassRegForm
     'teacherreg_help_text_title': {
         'is_boolean': False,
