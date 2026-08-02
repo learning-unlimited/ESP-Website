@@ -242,7 +242,6 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
-    padding-bottom: 15px;
 }
 
 .tl-row-label {

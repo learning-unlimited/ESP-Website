@@ -840,16 +840,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 category = 'general'
 
             handler_names = [handler_by_id.get(i, '') for i in ids]
-            is_always_enabled = is_checked and any(
-                h in ('RegProfileModule', 'AvailabilityModule', 'StudentRegTwoPhase') or 'AcknowledgementModule' in h
-                for h in handler_names if h
-            )
-
             module_questions_categorized[category].append({
                 'value': val,
                 'label': label,
-                'checked': is_checked,
-                'always_enabled': is_always_enabled
+                'checked': is_checked
             })
 
         context['module_questions_categorized'] = module_questions_categorized
