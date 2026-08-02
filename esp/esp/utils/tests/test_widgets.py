@@ -4,7 +4,7 @@ from django.test import SimpleTestCase
 from esp.utils.widgets import (
     ClassAttrMergingSelect, NullCheckboxSelect, DummyWidget,
     BlankSelectWidget, NullRadioSelect, ContactFieldsWidget,
-    DateTimeWidget, SplitDateWidget, NavStructureWidget 
+    DateTimeWidget, SplitDateWidget, NavStructureWidget
 )
 
 class UtilsWidgetsTests(SimpleTestCase):
@@ -86,4 +86,4 @@ class UtilsWidgetsTests(SimpleTestCase):
         widget = NavStructureWidget()
         test_data = [{"header": "Home", "links": []}]
         result = widget.value_from_datadict({'nav': json.dumps(test_data)}, {}, 'nav')
-        self.assertEqual(result[0]['header'], "Home") 
+        self.assertEqual(result[0]['header'], "Home")
