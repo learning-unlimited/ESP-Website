@@ -162,8 +162,8 @@ td.teacher-is-teaching-this-cell {
 
 .scheduler-toast {
     position: fixed;
-    top: auto;
-    bottom: 24px;
+    top: 24px;
+    bottom: auto;
     left: 50%;
     max-width: 360px;
     padding: 12px 16px;

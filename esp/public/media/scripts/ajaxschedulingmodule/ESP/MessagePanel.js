@@ -61,7 +61,7 @@ function MessagePanel(el, initialMessage) {
      */
     this.init = function () {
         if (initialMessage) {
-            this.addMessage(initialMessage);
+            this.el.append(initialMessage);
         }
     };
 
@@ -71,6 +71,13 @@ function MessagePanel(el, initialMessage) {
      * @param msg: The message to add
      */
     this.addMessage = function (msg, type) {
+        if (!type && typeof msg === "string") {
+            if (/^\s*Error:/i.test(msg)) {
+                type = "error";
+            } else if (/^\s*Success:/i.test(msg)) {
+                type = "success";
+            }
+        }
         if (type) {
             this.showToast(msg, type);
         }

@@ -353,7 +353,7 @@ function ModeratorDirectory(el, moderators) {
         this.unselectModerator();
         if (section.moderators.includes(moderator.id)) {
             moderator.sections.splice(moderator.sections.indexOf(section.id), 1);
-            section.moderators.splice(section.moderators.indexOf(moderator), 1);
+            section.moderators.splice(section.moderators.indexOf(moderator.id), 1);
             section.moderator_data.splice(section.moderator_data.indexOf(moderator), 1);
             $j("body").trigger("schedule-changed");
             this.matrix.messagePanel.addMessage("Success: " + moderator.first_name + " " + moderator.last_name + " was unassigned from " + section.emailcode, "success")
