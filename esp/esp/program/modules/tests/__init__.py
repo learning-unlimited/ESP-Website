@@ -79,6 +79,7 @@ from esp.program.modules.tests.lotteryfrontendmodule import LotteryFrontendModul
 from esp.program.modules.tests.test_student_reg_phase_zero import StudentRegPhaseZeroTestCase
 from esp.program.modules.tests.test_teacher_review_apps import TeacherReviewAppsTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.test_student_reg_phase_zero_manage import StudentRegPhaseZeroManageTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest, TeacherEventsCalendarDataTest
 from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest
 from esp.program.modules.tests.test_teachereventsmanage_module import (
