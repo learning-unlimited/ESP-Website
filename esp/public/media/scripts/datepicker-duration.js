@@ -15,13 +15,13 @@ function setupDatepickerDurationLabel(widget, id, mediaUrl, dateFormat, timeForm
       );
       if (abshours > 24 * 120) {
         $info.prop('class', 'label label-important');
-        $gi.prop('class', 'glyphicon glyphicon-alert');
+        $gi.prop('class', 'bi bi-exclamation-circle');
       } else {
         $info.prop('class', 'label label-info');
         if (hours < 0) {
-          $gi.prop('class', 'glyphicon glyphicon-backward');
+          $gi.prop('class', 'bi bi-skip-backward');
         } else {
-          $gi.prop('class', 'glyphicon glyphicon-forward');
+          $gi.prop('class', 'bi bi-skip-forward');
         }
       }
       $duration.text(hours < 0 ? (duration + " ago") : ("in " + duration));

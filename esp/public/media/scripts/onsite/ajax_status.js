@@ -281,6 +281,14 @@ function print_schedule()
     });
 }
 
+function download_schedule_pdf()
+{
+    if (!state.student_id)
+        return;
+    var schedule_url = program_base_url + "schedule_pdf?user=" + state.student_id;
+    window.open(schedule_url, "_blank");
+}
+
 function add_message(msg, cls)
 {
     if (!cls)
@@ -446,10 +454,13 @@ function set_current_student(student_id)
         render_classchange_table(student_id);
         $j("#status_switch").prop("disabled", false);
         $j("#schedule_print").prop("disabled", false);
+        $j("#schedule_pdf").prop("disabled", false);
         $j("#status_switch").off("click");
         $j("#schedule_print").off("click");
+        $j("#schedule_pdf").off("click");
         $j("#status_switch").on("click", function () {set_current_student(null);});
         $j("#schedule_print").on("click", function () {print_schedule();});
+        $j("#schedule_pdf").on("click", function () {download_schedule_pdf();});
     }
     else
     {
@@ -459,6 +470,7 @@ function set_current_student(student_id)
         $j("#student_selector").attr("value", "");
         $j("#status_switch").attr("disabled", "disabled");
         $j("#schedule_print").attr("disabled", "disabled");
+        $j("#schedule_pdf").attr("disabled", "disabled");
     }
 }
 
