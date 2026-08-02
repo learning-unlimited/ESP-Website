@@ -101,6 +101,7 @@ class StudentLunchSelectionForm(forms.Form):
 
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""
+    permission_types = ('Student/Classes/Lunch',)
 
     @classmethod
     def module_properties(cls):
