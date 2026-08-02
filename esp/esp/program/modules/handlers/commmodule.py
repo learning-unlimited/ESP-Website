@@ -106,6 +106,34 @@ def _program_urls_in_text(text, current_program_url):
     return sorted(found)
 
 
+def _get_school_context_dict(user, program):
+    school_obj = None
+    if hasattr(user, 'studentinfo') and user.studentinfo and getattr(user.studentinfo, 'k12school', None):
+        school_obj = user.studentinfo.k12school
+    elif hasattr(user, 'educatorinfo') and user.educatorinfo and getattr(user.educatorinfo, 'school', None):
+        school_obj = user.educatorinfo.school
+    else:
+        from esp.users.models import K12School
+        schools = K12School.objects.filter(contact__user=user) if hasattr(user, 'pk') else None
+        if schools and schools.exists():
+            school_obj = schools.first()
+
+    if school_obj:
+        roster_users = school_obj.get_student_roster(program)
+        return {
+            'name': school_obj.name or '',
+            'roster': ", ".join([u.name() for u in roster_users]) if roster_users else "No enrolled students",
+            'attendance': school_obj.get_student_attendance(program),
+            'contact_titleandlastname': school_obj.get_contact_titleandlastname(),
+        }
+    return {
+        'name': 'Sample School',
+        'roster': 'Student Roster (Sample)',
+        'attendance': '0 students enrolled (Sample)',
+        'contact_titleandlastname': 'Mr./Ms. Contact',
+    }
+
+
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -242,6 +270,7 @@ class CommModule(ProgramModuleObj):
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser),
+                       'school' : _get_school_context_dict(firstuser, self.program),
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
@@ -520,6 +549,7 @@ class CommModule(ProgramModuleObj):
             'user': ActionHandler(request.user, request.user),
             'program': ActionHandler(self.program, request.user),
             'request': ActionHandler(MessageRequest(), request.user),
+            'school': _get_school_context_dict(request.user, self.program),
         }
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
