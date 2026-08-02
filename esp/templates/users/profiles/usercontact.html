@@ -46,7 +46,7 @@
 </div>
 {% endif %}
 
-{% if form.address_street or form.address_city or form.address_state or form.address_zip %}
+{% if form.address_street or form.address_city or form.address_state or form.address_zip or form.address_postcode %}
 <h4>Address:</h4>
 {% endif %}
 
@@ -63,10 +63,10 @@
 </div>
 {% endif %}
 
-{% if form.address_city or form.address_state or form.address_zip %}
+{% if form.address_city or form.address_state or form.address_zip or form.address_postcode %}
 <div class="control-group">
     <label class="control-label" for="id_address_city">
-    <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip %}zip{% endif %}</i></small>
+    <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip or form.address_postcode %}<span id="postal_label_text">zip</span>{% endif %}</i></small>
     </label>
     <div class="controls controls-row">
         {{ form.address_city }} {% if form.address_city.errors %}
@@ -79,6 +79,12 @@
         
         {{ form.address_zip }} {% if form.address_zip.errors %}
         <br /><span class="form_error" role="alert">{{ form.address_zip.errors|join:", " }}</span>
+        {% endif %}
+
+        {% if form.address_postcode %}
+        {{ form.address_postcode }} {% if form.address_postcode.errors %}
+        <br /><span class="form_error" role="alert">{{ form.address_postcode.errors|join:", " }}</span>
+        {% endif %}
         {% endif %}
         
         {{ form.address_country }} {% if form.address_country.errors %}

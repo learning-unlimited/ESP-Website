@@ -510,3 +510,119 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
             self.assertEqual(self.student.getGrade(), 9)
         finally:
             other_student.delete()
+
+
+class InternationalAddressPostcodeTest(CacheFlushTestCase):
+    """
+    Tests for international address support and postcode validation.
+    """
+
+    def setUp(self):
+        user_role_setup()
+        _setup_student_tags()
+        self.student = _make_user('postcode_student', 'Student')
+
+    def tearDown(self):
+        self.student.delete()
+
+    def _make_form(self, data):
+        from esp.users.forms.user_profile import UserContactForm
+        return UserContactForm(user=self.student, data=data)
+
+    def _valid_contact_data(self):
+        return {
+            'first_name': 'Test',
+            'last_name': 'User',
+            'e_mail': 'testuser@example.com',
+            'phone_day': '',
+            'phone_cell': '+16175551234',
+            'address_street': '123 Main St',
+            'address_city': 'Springfield',
+            'address_state': 'MA',
+            'address_zip': '02134',
+            'address_postcode': '',
+            'address_country': 'US',
+        }
+
+    def test_us_address_zip_required_postcode_optional(self):
+        """For US addresses, ZIP is required and postcode is ignored."""
+        data = self._valid_contact_data()
+        data['address_zip'] = '02139'
+        data['address_postcode'] = ''
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+        # ZIP missing should fail
+        data['address_zip'] = ''
+        form = self._make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('address_zip', form.errors)
+
+    def test_international_address_postcode_required_zip_optional(self):
+        """For International addresses, postcode is required and ZIP is ignored."""
+        data = self._valid_contact_data()
+        data['address_state'] = 'International'
+        data['address_country'] = 'CA'
+        data['address_zip'] = ''
+        data['address_postcode'] = 'K1A 0B1'
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+        # Postcode missing should fail
+        data['address_postcode'] = ''
+        form = self._make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('address_postcode', form.errors)
+
+    def test_long_and_alphanumeric_postcodes_accepted(self):
+        """Alphanumeric and long international postcodes up to 20 chars must be accepted."""
+        data = self._valid_contact_data()
+        data['address_state'] = 'International'
+        data['address_country'] = 'GB'
+        data['address_zip'] = ''
+
+        # Alphanumeric with spaces (UK style)
+        data['address_postcode'] = 'SW1A 1AA'
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+        # Long postcode (e.g. 15 chars)
+        data['address_postcode'] = 'A-VERY-LONG-POST'
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+    def test_emergency_contact_postcode_validation(self):
+        """Test postcode validation on EmergContactForm."""
+        from esp.users.forms.user_profile import EmergContactForm
+
+        data = {
+            'emerg_first_name': 'Parent',
+            'emerg_last_name': 'Name',
+            'emerg_e_mail': '',
+            'emerg_phone_day': '+16175551234',
+            'emerg_phone_cell': '',
+            'emerg_address_street': '123 Main St',
+            'emerg_address_city': 'Springfield',
+            'emerg_address_state': 'International',
+            'emerg_address_zip': '',
+            'emerg_address_postcode': 'SW1A 1AA',
+            'emerg_address_country': 'GB',
+        }
+
+        # Valid international postcode
+        form = EmergContactForm(user=self.student, data=data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+        # Missing postcode for international address should fail
+        data['emerg_address_postcode'] = ''
+        form = EmergContactForm(user=self.student, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('emerg_address_postcode', form.errors)
+
+        # US address needs ZIP
+        data['emerg_address_state'] = 'MA'
+        data['emerg_address_country'] = 'US'
+        data['emerg_address_zip'] = ''
+        form = EmergContactForm(user=self.student, data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('emerg_address_zip', form.errors)
