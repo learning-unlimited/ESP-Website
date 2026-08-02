@@ -108,7 +108,7 @@ class TeacherEventsManageModuleAdminSearchTest(TestCase):
         result = TeacherEventsManageModule.get_admin_search_entry(
             program, None, "teacher_events", None
         )
-        self.assertEqual(result.category, "Configure")
+        self.assertEqual(result.category, "Registration")
 
     def test_correct_view_returns_correct_keywords(self):
         """get_admin_search_entry should include relevant keywords."""
