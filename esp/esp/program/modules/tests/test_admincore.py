@@ -169,7 +169,7 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
             mock_execute.assert_not_called()
 
     def test_wipe_test_data_execute(self):
-        """POST with confirmed=1 should delegate to TestDataCleanupController.execute."""
+        """POST with confirmed=1 should delegate to DataCleanupController.execute."""
         url = f"/manage/{self.program.url}/wipe_test_data"
         with patch('esp.program.modules.handlers.admincore.DataCleanupController.execute') as mock_execute:
             response = self.client.post(url, {'username': 'test_user_wipe', 'confirmed': '1'})
