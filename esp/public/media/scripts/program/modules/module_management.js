@@ -49,6 +49,8 @@ $j(document).ready(function() {
 
     // Prevent browser focus-scroll bugs from shifting the layout when modals open/close
     $j('.tl-wrapper, .tl-workspace').on('scroll', function() {
+        // Only lock the outer containers while a modal is open; otherwise allow normal scrolling
+        if (!($editPanel.hasClass('active') || $addDrawer.hasClass('active'))) return;
         if (this.scrollLeft !== 0) {
             this.scrollLeft = 0;
         }
@@ -130,9 +132,11 @@ $j(document).ready(function() {
             if (mod.start_date) {
                 var d = new Date(mod.start_date);
                 if (!minDate || d < minDate) minDate = new Date(d);
+                if (!maxDate || d > maxDate) maxDate = new Date(d);
             }
             if (mod.end_date) {
                 var d = new Date(mod.end_date);
+                if (!minDate || d < minDate) minDate = new Date(d);
                 if (!maxDate || d > maxDate) maxDate = new Date(d);
             }
         });
@@ -255,8 +259,14 @@ $j(document).ready(function() {
         var leftMs = sDate - timelineStart;
         var widthMs = eDate - sDate;
         
-        var leftPct = Math.max(0, (leftMs / totalMs) * 100);
+        var leftPct = (leftMs / totalMs) * 100;
         var widthPct = (widthMs / totalMs) * 100;
+        
+        if (leftPct > 99.5) leftPct = 99.5;
+        if (leftPct < 0) {
+            widthPct += leftPct;
+            leftPct = 0;
+        }
         
         if (leftPct + widthPct > 100) {
             widthPct = 100 - leftPct;

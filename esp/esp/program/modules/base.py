@@ -40,6 +40,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -74,6 +75,74 @@ class ProgramModuleObj(ExpirableModel):
     always_enabled = False
     seq_locked = False
     conflicts_with = ()
+    permission_types = ()
+
+    def get_permission_types(self):
+        """
+        Return a list or tuple of Permission strings from PERMISSION_CHOICES_FLAT
+        associated with this module.
+        Subclasses can override the class attribute `permission_types` or this method.
+        """
+        return self.permission_types
+
+    def sync_permissions(self):
+        """
+        Synchronize this module's start_date and end_date with the backend Permission table
+        for all associated permission_types.
+        Skips synchronization if get_permission_types() returns empty.
+        """
+        perm_types = self.get_permission_types()
+        if not perm_types:
+            return
+
+        tl_to_role = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+        for perm_type in perm_types:
+            role_name = None
+            if perm_type.startswith("Student"):
+                role_name = "Student"
+            elif perm_type.startswith("Teacher"):
+                role_name = "Teacher"
+            elif perm_type.startswith("Volunteer"):
+                role_name = "Volunteer"
+            elif hasattr(self.module, 'module_type') and self.module.module_type in tl_to_role:
+                role_name = tl_to_role[self.module.module_type]
+
+            if not role_name:
+                logger.warning(
+                    "sync_permissions: could not determine role for permission_type=%s (module=%s)",
+                    perm_type,
+                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                )
+                continue
+
+            group = Group.objects.filter(name=role_name).first()
+            if not group:
+                logger.warning(
+                    "sync_permissions: group %s not found; skipping permission_type=%s",
+                    role_name,
+                    perm_type,
+                )
+                continue
+
+            perms = Permission.objects.filter(
+                program=self.program,
+                role=group,
+                permission_type=perm_type,
+                user__isnull=True,
+                user_filter__isnull=True
+            )
+            if perms.exists():
+                perms.update(start_date=self.start_date, end_date=self.end_date)
+            else:
+                Permission.objects.create(
+                    program=self.program,
+                    role=group,
+                    permission_type=perm_type,
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                    user=None,
+                    user_filter=None
+                )
 
     start_date = models.DateTimeField(blank=True, null=True, default=None,
                                       help_text="If blank, has always started.")
