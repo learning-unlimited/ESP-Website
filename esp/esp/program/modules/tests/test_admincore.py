@@ -161,7 +161,7 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
     def test_wipe_test_data_preview(self):
         """POST without confirmed=1 should return a preview, not execute."""
         url = f"/manage/{self.program.url}/wipe_test_data"
-        with patch('esp.program.modules.handlers.admincore.TestDataCleanupController.execute') as mock_execute:
+        with patch('esp.program.modules.handlers.admincore.DataCleanupController.execute') as mock_execute:
             response = self.client.post(url, {'username': 'test_user_wipe'})
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.context['preview'])
@@ -171,7 +171,7 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
     def test_wipe_test_data_execute(self):
         """POST with confirmed=1 should delegate to TestDataCleanupController.execute."""
         url = f"/manage/{self.program.url}/wipe_test_data"
-        with patch('esp.program.modules.handlers.admincore.TestDataCleanupController.execute') as mock_execute:
+        with patch('esp.program.modules.handlers.admincore.DataCleanupController.execute') as mock_execute:
             response = self.client.post(url, {'username': 'test_user_wipe', 'confirmed': '1'})
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.context['success'])
