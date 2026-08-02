@@ -1,4 +1,3 @@
-
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -42,6 +41,7 @@ from esp.themes.controllers import ThemeController
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
+from django.urls import reverse
 from django.conf import settings
 
 from datetime import datetime
@@ -151,6 +151,7 @@ THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. 
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
 
+
 @admin_required
 def landing(request):
     if settings.LOCAL_THEME:
@@ -161,6 +162,7 @@ def landing(request):
     context['last_customization_name'] = tc.get_current_customization()
     context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
     return render_to_response('themes/landing.html', request, context)
+
 
 @admin_required
 def selector(request, keep_files=None):
@@ -191,6 +193,7 @@ def selector(request, keep_files=None):
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', request, context)
+
 
 @admin_required
 def logos(request):
@@ -254,11 +257,11 @@ def logos(request):
             Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
             _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', "header\..*\.png")]
+    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
+    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
     favicon_paths = tc.list_filenames(
     settings.MEDIA_ROOT + 'images/backups',
-    "favicon\..*\.ico"
+    r"favicon\..*\.ico"
     )
 
     favicon_paths.sort(
@@ -277,6 +280,7 @@ def logos(request):
     context['current_favicon_version'] = Tag.getTag("current_favicon_version")
 
     return render_to_response('themes/logos.html', request, context)
+
 
 @admin_required
 def confirm_overwrite(request, current_theme=None, differences=None, orig_view=None):
@@ -320,6 +324,7 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     context['orig_view'] = orig_view
     return render_to_response('themes/confirm_overwrite.html', request, context)
 
+
 @admin_required
 def configure(request, current_theme=None, force_display=False, keep_files=None):
     if settings.LOCAL_THEME:
@@ -352,7 +357,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
                 tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect('/themes/')
+            return HttpResponseRedirect(reverse('themes_landing'))
     else:
         form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
 
@@ -361,6 +366,7 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
     context['confirm_overwrite'] = request.POST.get('confirm_overwrite', '0')
 
     return render_to_response('themes/configure_form.html', request, context)
+
 
 @admin_required
 def editor(request):
@@ -373,37 +379,108 @@ def editor(request):
         #   Handle form submission
         vars = None
         palette = None
+        #   Bootswatch theme to persist to the site-wide tag this request, or
+        #   None to leave the tag untouched.  Resolved per-branch below so that
+        #   Save/Apply pick it up from the submitted dropdown while Load
+        #   restores whatever Bootswatch theme was active when that
+        #   customisation was saved (see ThemeController.load_customizations).
+        bootswatch_theme = None
 
         if 'save' in request.POST:
             if request.POST['saveThemeName'] == '':
                 theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
-                    random_slug  = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
+                    random_slug = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
                     theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
-            tc.save_customizations(theme_name, vars=vars, palette=palette)
+            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
+                bootswatch_theme = request.POST['bootswatch_theme']
+                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
+                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            #   Set the tag before saving/customizing so save_customizations()
+            #   (which defaults bootswatch_theme from the tag) and
+            #   customize_theme()'s override diffing both see this request's
+            #   selection rather than the previous one.
+            if bootswatch_theme is not None:
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
+            tc.save_customizations(theme_name, vars=vars, palette=palette, bootswatch_theme=bootswatch_theme)
             tc.set_current_customization(theme_name)
         elif 'load' in request.POST:
-            (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
+            (vars, palette, loaded_bootswatch) = tc.load_customizations(request.POST['loadThemeName'])
+            #   loaded_bootswatch is None for customisations saved before this
+            #   Bootswatch-aware format existed; leave the current tag as-is
+            #   in that case rather than silently clearing it.
+            if tc.has_scss(tc.get_current_theme()) and loaded_bootswatch is not None:
+                if loaded_bootswatch and loaded_bootswatch not in tc.get_bootswatch_themes():
+                    #   The saved theme is no longer available (e.g. removed
+                    #   from the npm package) -- fall back to no Bootswatch
+                    #   theme rather than raising on a routine Load.
+                    loaded_bootswatch = ''
+                bootswatch_theme = loaded_bootswatch
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
         elif 'delete' in request.POST:
             tc.delete_customizations(request.POST['loadThemeName'])
         elif 'apply' in request.POST:
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
+            #   Only touch the tag when the form actually submitted the field,
+            #   so programmatic POSTs (e.g. scripts posting {'apply': ...}
+            #   without the select) don't silently clear the site's skin.
+            #   Validate before persisting: compile_css raises on unknown
+            #   names, so a bad value saved here would break every subsequent
+            #   recompile.
+            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
+                bootswatch_theme = request.POST['bootswatch_theme']
+                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
+                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            #   Set the tag before customize_theme() below so its override
+            #   diffing (customize_theme -> get_effective_defaults) is based
+            #   on this request's Bootswatch selection.  This lets an Apply
+            #   that both switches the Bootswatch theme *and* edits a field
+            #   (e.g. the font) apply both changes together: fields left at
+            #   the new theme's derived default are not recorded as
+            #   overrides, while genuinely-changed fields are.
+            if bootswatch_theme is not None:
+                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
 
-        #   Re-generate the CSS for the current theme given the supplied settings
-        if vars:
+        #   Re-generate the CSS for the current theme given the supplied settings.
+        #   Use "vars is not None" (not "if vars") so that an empty dict from a
+        #   load with no saved customisations still triggers a recompile.
+        if vars is not None:
             tc.customize_theme(vars)
         if palette is not None:
             tc.set_palette(palette)
 
+        #   Post/Redirect/Get: redirect after handling the POST so a browser
+        #   reload issues a fresh GET instead of re-submitting the form.  Without
+        #   this, every reload pops the "Confirm Form Resubmission" dialog and
+        #   replays the previous apply/save — which is why the editor appeared to
+        #   "pick up colours from the previous theme" on reload.  The GET below
+        #   always rebuilds the pickers from the persisted state (Bootswatch tag +
+        #   saved customisations), so the displayed values are now deterministic.
+        return HttpResponseRedirect(reverse('themes_editor'))
+
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
-    context = tc.find_less_variables(flat=True)
+
+    #   Resolve Bootswatch selection early — needed to layer colours correctly.
+    current_bootswatch = ''
+    if tc.has_scss(current_theme):
+        current_bootswatch = Tag.getTag('bootswatch_theme', default='')
+
+    #   Bootswatch-derived ESP variable values (empty dict when no BW theme selected).
+    bw_vars = tc.get_bootswatch_esp_vars(current_bootswatch, esp_theme=current_theme) if current_bootswatch else {}
+
+    #   Build editor context in priority order (lowest → highest):
+    #     1. SCSS file defaults
+    #     2. Bootswatch-derived colours (override SCSS defaults so pickers show real colours)
+    #     3. Admin's explicitly saved overrides (highest priority)
+    context = tc.find_theme_variables(flat=True)
+    context.update(bw_vars)
     context.update(tc.get_current_params())
     context['palette'] = tc.get_palette()
     context['theme_name'] = current_theme
@@ -415,11 +492,31 @@ def editor(request):
     #   Load a bunch of preset fonts
     context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
 
+    #   Bootswatch support for SCSS themes
+    if tc.has_scss(current_theme):
+        context['bootswatch_themes'] = tc.get_bootswatch_themes()
+        context['current_bootswatch'] = current_bootswatch
+        #   Pre-compute all Bootswatch themes' ESP variable maps for the
+        #   client-side dropdown change handler.  This lets the pickers update
+        #   immediately without a round-trip when the admin switches themes.
+        #   Passed as a plain dict (not pre-dumped JSON) so the template can
+        #   render it with |json_script, which HTML/JS-escapes it safely for
+        #   embedding in a <script> tag — interpolating a raw json.dumps()
+        #   string directly into a <script> block gets Django's normal
+        #   autoescaping applied to it (" -> &quot;), producing a JS syntax
+        #   error that silently left `bootswatch_esp_vars` undefined, which
+        #   broke every dropdown-driven colour update client-side.
+        context['bootswatch_vars'] = tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
+        #   Raw ESP-default swatches (Bootswatch-unaware), so the dropdown
+        #   change handler can rebuild the "Built-in Theme Palette" when the
+        #   admin switches back to "None" without a server round-trip.
+        context['scss_base_palette'] = sorted(tc.get_scss_base_palette())
+
     #   Load the theme-specific options
-    adv_vars = tc.find_less_variables(current_theme, theme_only=True)
+    adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
     context['adv_vars'] = {}
     for filename in adv_vars:
-        category_name = os.path.basename(filename)[:-5]
+        category_name = os.path.splitext(os.path.basename(filename))[0]
         category_vars = []
         keys = sorted(adv_vars[filename].keys())
         for key in keys:
@@ -438,9 +535,22 @@ def editor(request):
             else:
                 category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
-    context['variable_defaults'] = tc.get_variable_defaults(current_theme)
+    variable_defaults = tc.get_variable_defaults(current_theme)
+    #   Snapshot the raw SCSS defaults (Bootswatch-unaware) before overlaying
+    #   bw_vars below, so the "no Bootswatch theme" JS fallback (data-scss-default)
+    #   always has the true SCSS value to restore, even when a Bootswatch theme
+    #   was already active when the page was rendered.
+    context['scss_variable_defaults'] = dict(variable_defaults)
+    #   When a Bootswatch theme is active the natural "reset-to" target for each
+    #   colour picker is the Bootswatch-derived colour, not the raw SCSS default.
+    variable_defaults.update(bw_vars)
+    context['variable_defaults'] = variable_defaults
+    for key, val in variable_defaults.items():
+        if key not in context:
+            context[key] = val
 
     return render_to_response('themes/editor.html', request, context)
+
 
 @admin_required
 def recompile(request, keep_files=None):
@@ -457,5 +567,5 @@ def recompile(request, keep_files=None):
         return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect('/themes/')
+    return HttpResponseRedirect(reverse('themes_landing'))
 

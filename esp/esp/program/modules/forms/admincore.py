@@ -19,7 +19,7 @@ def get_rt_choices():
     choices = [("All", "All")]
     for rt in RegistrationType.objects.all().order_by('name'):
         if rt.displayName:
-            choices.append((rt.name, '%s (displayed as "%s")' % (rt.name, rt.displayName)))
+            choices.append((rt.name, f'{rt.name} (displayed as "{rt.displayName}")'))
         else:
             choices.append((rt.name, rt.name))
     return choices
@@ -92,10 +92,13 @@ class ProgramSettingsForm(ProgramCreationForm):
             'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
+_ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', r'\.')
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)?learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
+    progress_mode = forms.IntegerField( min_value=0, max_value=2, help_text=ClassRegModuleInfo._meta.get_field('progress_mode').help_text)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -111,6 +114,11 @@ class TeacherRegSettingsForm(BetterModelForm):
 
 class StudentRegSettingsForm(BetterModelForm):
     """ Form for changing student class registration settings. """
+    class_cap_multiplier = forms.DecimalField(min_value=0, max_digits=3, decimal_places=2, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_multiplier').help_text)
+    class_cap_offset = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_offset').help_text)
+    priority_limit = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('priority_limit').help_text)
+    progress_mode = forms.IntegerField(min_value=0,max_value=2, help_text=StudentClassRegModuleInfo._meta.get_field('progress_mode').help_text)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

@@ -28,50 +28,50 @@ Surveys for students and teachers can be associated with {{ program.program_type
 	<div class="button_wrapper">
         <div class="module_button">
             <a href="/manage/{{ program.getUrlBase }}/surveys/manage"><button type="button" class="module_link_large">
-                <div class="module_link_main"><i class="glyphicon glyphicon-tasks"></i> Create a new survey</div>
+                <div class="module_link_main"><i class="bi bi-list-task"></i> Create a new survey</div>
             </button></a>
         </div>
 		<div class="module_button">
 			{% if surveys %}
 			<a href="/manage/{{ program.getUrlBase }}/surveys/review"><button type="button" class="module_link_large">
-				<div class="module_link_main"><i class="glyphicon glyphicon-stats"></i> Review all survey results</div>
+				<div class="module_link_main"><i class="bi bi-bar-chart"></i> Review all survey results</div>
 			</button></a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
-				<div class="module_link_main"><i class="glyphicon glyphicon-stats"></i> Review all survey results</div>
+				<div class="module_link_main"><i class="bi bi-bar-chart"></i> Review all survey results</div>
 			</button>
 			{% endif %}
         </div>
 		<div class="module_button">
 			{% if surveys %}
 			<a href="/manage/{{ program.getUrlBase }}/surveys/review_pdf"><button type="button" class="module_link_large">
-				<div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Review all survey results (PDF format)</div>
+				<div class="module_link_main"><i class="bi bi-file-earmark"></i> Review all survey results (PDF format)</div>
 			</button></a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
-				<div class="module_link_main"><i class="glyphicon glyphicon-file"></i> Review all survey results (PDF format)</div>
+				<div class="module_link_main"><i class="bi bi-file-earmark"></i> Review all survey results (PDF format)</div>
 			</button>
 			{% endif %}
         </div>
 		<div class="module_button">
 			{% if surveys %}
 			<a href="/manage/{{ program.getUrlBase }}/surveys/dump"><button type="button" class="module_link_large">
-				<div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Export all survey results (XLS format)</div>
+				<div class="module_link_main"><i class="bi bi-card-list"></i> Export all survey results (XLS format)</div>
 			</button></a>
 			{% else %}
 			<button type="button" class="module_link_large_dead" title="No surveys have been created for this program!">
-				<div class="module_link_main"><i class="glyphicon glyphicon-list-alt"></i> Export all survey results (XLS format)</div>
+				<div class="module_link_main"><i class="bi bi-card-list"></i> Export all survey results (XLS format)</div>
 			</button>
 			{% endif %}
         </div>
 		<div class="module_button">
 			{% if surveys %}
 			<a href="/manage/{{ program.getUrlBase }}/surveys/top_classes"><button type="button" class="module_link_large">
-				<div class="module_link_main"><i class="glyphicon glyphicon-heart"></i> List the favorite classes</div>
+				<div class="module_link_main"><i class="bi bi-heart"></i> List the favorite classes</div>
 			</button></a>
 			{% else %}
 			<button type="button" class="module_link_large_dead"  title="No surveys have been created for this program!">
-				<div class="module_link_main"><i class="glyphicon glyphicon-heart"></i> List the favorite classes</div>
+				<div class="module_link_main"><i class="bi bi-heart"></i> List the favorite classes</div>
 			</button>
 			{% endif %}
         </div>
@@ -96,6 +96,8 @@ Surveys for students and teachers can be associated with {{ program.program_type
 		{% endfor %}
 	</ul>
 </div>
+
+<p class="text-muted"><em><span class="bi bi-info-circle"></span> Teachers can also view their survey results across all programs at <a href="/myesp/survey_responses">/myesp/survey_responses</a>. Admins can use the same page to look up any teacher.</em></p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
