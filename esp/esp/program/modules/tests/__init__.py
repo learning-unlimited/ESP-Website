@@ -81,6 +81,14 @@ from esp.program.modules.tests.test_teacher_review_apps import TeacherReviewApps
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest, TeacherEventsCalendarDataTest
 from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest
+from esp.program.modules.tests.test_teachereventsmanage_module import (
+    TeacherEventsManageModulePropertiesTest,
+    TeacherEventsManageModuleAdminSearchTest,
+    TeacherEventsManageModuleIsStepTest,
+    TeacherEventsManageModuleAvailabilityRoleTest,
+    TeacherEventsManageModuleIsCompletedTest,
+    TeacherEventsManageModuleViewTest,
+)
 from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
