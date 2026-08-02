@@ -8,15 +8,15 @@ from esp.utils.widgets import (
 )
 
 class UtilsWidgetsTests(SimpleTestCase):
-    
+
     def test_class_attr_merging_select(self):
         """Test that extra 'class' attributes are merged, not overwritten."""
         widget = ClassAttrMergingSelect()
         base_attrs = {'class': 'base-class', 'id': 'my-id'}
         extra_attrs = {'class': 'extra-class', 'name': 'test-name'}
-        
+
         merged = widget.build_attrs(base_attrs, extra_attrs)
-        
+
         self.assertEqual(merged['class'], 'base-class extra-class')
         self.assertEqual(merged['id'], 'my-id')
         self.assertEqual(merged['name'], 'test-name')
@@ -24,7 +24,7 @@ class UtilsWidgetsTests(SimpleTestCase):
     def test_null_checkbox_select_logic(self):
         """Test that 'on', 'true', and 'false' strings are parsed to booleans."""
         widget = NullCheckboxSelect()
-        
+
         self.assertTrue(widget.value_from_datadict({'my_field': 'on'}, {}, 'my_field'))
         self.assertTrue(widget.value_from_datadict({'my_field': 'true'}, {}, 'my_field'))
         self.assertFalse(widget.value_from_datadict({'my_field': 'false'}, {}, 'my_field'))
@@ -40,7 +40,7 @@ class UtilsWidgetsTests(SimpleTestCase):
         widget = BlankSelectWidget(blank_choice=('empty_val', 'Empty Label'))
         self.assertEqual(widget.blank_value, 'empty_val')
         self.assertEqual(widget.blank_label, 'Empty Label')
-        
+
         default_widget = BlankSelectWidget()
         self.assertEqual(default_widget.blank_value, '')
         self.assertEqual(default_widget.blank_label, '')
@@ -59,9 +59,9 @@ class UtilsWidgetsTests(SimpleTestCase):
         ]
         test_json = json.dumps(test_data_list)
         test_data = {'contact_data': test_json}
-        
+
         result = widget.value_from_datadict(test_data, {}, 'contact_data')
-        
+
         # Verify the structure matches what was dumped
         self.assertEqual(len(result), 2)
         self.assertEqual(result[0]["icon"], "envelope")
