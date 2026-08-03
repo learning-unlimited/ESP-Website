@@ -1,12 +1,11 @@
-<ul class="navbar-nav admin hidden">
+<ul class="navbar-nav admin">
   <li class="nav-item dropdown">
-    <a class="nav-link navbar-item-label" data-toggle="dropdown">Admin Toolbar</a>
-    <a class="nav-link dropdown-toggle caret-wrapper" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Admin menu"><b class="caret"></b></a>
+    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" data-bs-display="static" aria-haspopup="true" aria-expanded="false" aria-label="Admin Toolbar menu">Admin Toolbar</a>
     <ul class="dropdown-menu">
       {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
       {% load modules %}
       <link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
-      <div class="admin hidden">
+      <div class="admin">
         <div id="adminbar_content"></div>
       </div>
       {{ theme.toolbar_links|json_script:"toolbar-links-data" }}
@@ -29,7 +28,7 @@
     </ul>
   </li>
 </ul>
-<ul class="navbar-nav unmorph hidden">
+<ul class="navbar-nav unmorph">
   <li class="nav-item">
     <a class="nav-link" href="/myesp/switchback/">
       <i class="bi bi-person"></i> Unmorph to <span class="unmorph-target-name"></span>

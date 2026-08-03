@@ -107,26 +107,115 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         data = json.loads(response.content)
         self.assertFalse(data["success"])
 
-    def test_module_schedule_required_toggle_api(self):
-        """Toggle required flags and label."""
+    def test_module_schedule_update_syncs_permissions(self):
+        """Updating module schedule dates automatically syncs Permission records."""
         self.client.force_login(self.admin)
+        from esp.program.models import ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        from esp.users.models import Permission
+        from django.contrib.auth.models import Group
+
+        mod = ProgramModule.objects.filter(handler="StudentClassRegModule").first()
+        if not mod:
+            mod = ProgramModule.objects.create(
+                admin_title="Student Class Registration",
+                module_type="learn",
+                handler="StudentClassRegModule",
+                seq=10
+            )
+        self.program.program_modules.add(mod)
+        pmo = ProgramModuleObj.getFromProgModule(self.program, mod)
+
+        student_group = Group.objects.get(name="Student")
+        # Ensure no existing permission record for Student/Classes on this program
+        Permission.objects.filter(
+            program=self.program,
+            role=student_group,
+            permission_type="Student/Classes"
+        ).delete()
 
         payload = {
-            "module_id": self.pmo.id,
-            "required": True,
-            "required_label": "Must do this!"
+            "module_id": pmo.id,
+            "start_date": self.past.isoformat(),
+            "end_date": self.future.isoformat(),
+            "seq": 10
         }
 
         response = self.client.post(
-            reverse("module_schedule_required_toggle_api", kwargs=self.url_kwargs),
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
             data=json.dumps(payload),
             content_type="application/json"
         )
         self.assertEqual(response.status_code, 200)
 
-        self.pmo.refresh_from_db()
-        self.assertTrue(self.pmo.required)
-        self.assertEqual(self.pmo.required_label, "Must do this!")
+        # Check DB for created Permission record
+        perm = Permission.objects.filter(
+            program=self.program,
+            role=student_group,
+            permission_type="Student/Classes",
+            user__isnull=True,
+            user_filter__isnull=True
+        ).first()
+        self.assertIsNotNone(perm)
+        self.assertEqual(perm.start_date, self.past)
+        self.assertEqual(perm.end_date, self.future)
+
+        # Test updating the dates again
+        new_past = self.past - timedelta(days=2)
+        new_future = self.future + timedelta(days=2)
+        payload = {
+            "module_id": pmo.id,
+            "start_date": new_past.isoformat(),
+            "end_date": new_future.isoformat(),
+            "seq": 10
+        }
+        response = self.client.post(
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        perm.refresh_from_db()
+        self.assertEqual(perm.start_date, new_past)
+        self.assertEqual(perm.end_date, new_future)
+
+        # Also test TeacherClassRegModule
+        teacher_mod = ProgramModule.objects.filter(handler="TeacherClassRegModule").first()
+        if not teacher_mod:
+            teacher_mod = ProgramModule.objects.create(
+                admin_title="Teacher Class Registration",
+                module_type="teach",
+                handler="TeacherClassRegModule",
+                seq=10
+            )
+        self.program.program_modules.add(teacher_mod)
+        tpmo = ProgramModuleObj.getFromProgModule(self.program, teacher_mod)
+        teacher_group = Group.objects.get(name="Teacher")
+
+        payload = {
+            "module_id": tpmo.id,
+            "start_date": self.past.isoformat(),
+            "end_date": self.future.isoformat(),
+            "seq": 10
+        }
+        response = self.client.post(
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        tperm = Permission.objects.filter(
+            program=self.program,
+            role=teacher_group,
+            permission_type="Teacher/Classes/All",
+            user__isnull=True,
+            user_filter__isnull=True
+        ).first()
+        self.assertIsNotNone(tperm)
+        self.assertEqual(tperm.start_date, self.past)
+        self.assertEqual(tperm.end_date, self.future)
 
     def test_module_schedule_preview_api(self):
         """Preview API filters based on `at` timestamp."""
@@ -162,3 +251,104 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
                 if m["id"] == self.pmo.id:
                     found = True
         self.assertFalse(found)
+
+    def test_reorder_success(self):
+        """POST a valid reorder should update seq values in the DB."""
+        self.client.force_login(self.admin)
+
+        # Get another PMO from the program (there should be at least one)
+        another_mod = ProgramModule.objects.filter(
+            id__in=self.program.program_modules.values_list('id', flat=True)
+        ).exclude(id=self.pmo.module.id).first()
+
+        if another_mod is None:
+            self.skipTest("Need at least two modules to test reorder.")
+
+        pmo2 = ProgramModuleObj.getFromProgModule(self.program, another_mod)
+
+        url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+        payload = {
+            "order": [
+                {"id": self.pmo.id, "seq": 50},
+                {"id": pmo2.id, "seq": 10}
+            ]
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertTrue(data["success"])
+
+        self.pmo.refresh_from_db()
+        pmo2.refresh_from_db()
+        self.assertEqual(self.pmo.seq, 50)
+        self.assertEqual(pmo2.seq, 10)
+
+    def test_reorder_rejects_locked_module(self):
+        """Attempting to reorder a position_locked module should return 403 and not save anything."""
+        self.client.force_login(self.admin)
+
+        original_seq = self.pmo.seq
+        original_handler = self.pmo.module.handler
+
+        # Temporarily make this module locked in the DB
+        self.pmo.module.handler = 'RegProfileModule'
+        self.pmo.module.save()
+
+        try:
+            url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+            payload = {
+                "order": [
+                    {"id": self.pmo.id, "seq": 999}
+                ]
+            }
+            response = self.client.post(url, json.dumps(payload), content_type="application/json")
+            self.assertEqual(response.status_code, 403)
+            data = json.loads(response.content)
+            self.assertFalse(data["success"])
+            self.assertIn("locked", data["error"])
+        finally:
+            self.pmo.module.handler = original_handler
+            self.pmo.module.save()
+
+        # Verify the seq was not changed (transaction was rolled back)
+        self.pmo.refresh_from_db()
+        self.assertEqual(self.pmo.seq, original_seq)
+
+    def test_reorder_rejects_wrong_program(self):
+        """Module IDs from a different program should be silently ignored."""
+        from esp.program.models import Program
+        self.client.force_login(self.admin)
+
+        # Create a minimal second program and a PMO for it
+        prog2 = Program.objects.create(
+            url="OtherDev/2026",
+            name="Other Dev 2026",
+            grade_min=7,
+            grade_max=12,
+        )
+        extra_mod = ProgramModule.objects.filter(
+            id__in=self.program.program_modules.values_list('id', flat=True)
+        ).first()
+        prog2.program_modules.add(extra_mod)
+        pmo_other = ProgramModuleObj.getFromProgModule(prog2, extra_mod)
+        original_seq = pmo_other.seq
+
+        url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+        payload = {
+            "order": [
+                {"id": pmo_other.id, "seq": 10}
+            ]
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        pmo_other.refresh_from_db()
+        # The seq should be unchanged because pmo_other belongs to prog2, not self.program
+        self.assertEqual(pmo_other.seq, original_seq)
+
+    def test_reorder_requires_post(self):
+        """GET to the reorder endpoint should return 405 Method Not Allowed."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 405)
+

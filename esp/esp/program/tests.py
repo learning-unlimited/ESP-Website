@@ -53,6 +53,7 @@ from django.core.management import call_command
 
 from django.test import LiveServerTestCase
 from django.test.client import Client
+from django.urls import reverse
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
@@ -259,6 +260,11 @@ class ViewUserInfoTest(TestCase):
         self.assertTrue(self.user.first_name in str(response.content, encoding='UTF-8'))
         self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
         self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
+
+        # Test to make sure we get an error when username parameter is missing
+        response = c.get("/manage/userview")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b'must specify a username', response.content)
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -835,6 +841,67 @@ class ProgramFrameworkTest(TestCase):
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
 
+class RegistrationProfileTest(ProgramFrameworkTest):
+
+    def test_getLastForProgram_does_not_auto_save(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test',
+            last_name='Student',
+            username='teststudent1450',
+            email='teststudent1450@example.com',
+        )
+
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile = RegistrationProfile.getLastForProgram(student, self.program)
+
+        self.assertEqual(profile.program, self.program)
+        self.assertIsNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile.save()
+        self.assertIsNotNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 1)
+
+    def test_getLastForProgram_with_existing_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test2',
+            last_name='Student',
+            username='teststudent1450b',
+            email='teststudent1450b@example.com',
+        )
+
+        profile = RegistrationProfile.objects.create(
+            user=student,
+            program=self.program,
+            most_recent_profile=True
+        )
+        original_id = profile.id
+
+        retrieved = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(retrieved.id, original_id)
+        self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
+
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
     def setUp(self):
@@ -1198,6 +1265,44 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         options.class_cap_offset = 0
         options.save()
         self.assertEqual(sec.capacity, initial_capacity)
+
+    def test_ignore_changes_with_room_cap_multiplier(self):
+        """When ignore_changes=True, _get_room_capacity bypasses the room-cap multiplier."""
+        mult_test = decimal.Decimal('0.6')
+        offset_test = 4
+
+        self.program.getModules()
+        self.schedule_randomly()
+
+        sec = next(
+            (s for s in self.program.sections() if s.classrooms()),
+            None,
+        )
+        self.assertIsNotNone(sec, "No sections have rooms after schedule_randomly()")
+        options = sec.parent_program.studentclassregmoduleinfo
+        rooms = sec.classrooms()
+        room_capacity = rooms[0].num_students
+
+        # Enable room-cap multiplier and set values
+        options.apply_multiplier_to_room_cap = True
+        options.class_cap_multiplier = mult_test
+        options.class_cap_offset = offset_test
+        options.save()
+
+        # _get_room_capacity with ignore_changes=True returns raw room capacity
+        self.assertEqual(
+            sec._get_room_capacity(ignore_changes=True),
+            room_capacity,
+        )
+
+        # Without ignore_changes the room-cap multiplier is applied
+        capped = int(room_capacity * mult_test + offset_test)
+        self.assertEqual(sec._get_room_capacity(), capped)
+
+        # isFullIgnoreChanges calls isFull(ignore_changes=True) internally;
+        # with zero enrolled students and the unadjusted capacity, it should not be full
+        self.assertEqual(sec.num_students(), 0)
+        self.assertFalse(sec.isFullIgnoreChanges())
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
@@ -2175,3 +2280,104 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ProgramCreationFormDateValidationTest(TestCase):
+    """Tests that ProgramCreationForm rejects registration date ranges where
+    end is not strictly after start."""
+
+    def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
+        """Return a minimal set of form fields sufficient to trigger the date
+        validation logic (other required fields are filled with sane defaults)."""
+        return {
+            'program_type': 'Splash',
+            'term': '2026_Fall',
+            'term_friendly': 'Fall 2026',
+            'grade_min': '7',
+            'grade_max': '12',
+            'director_email': 'info@test.learningu.org',
+            'program_size_max': '3000',
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'base_cost': '0',
+            'program_modules': [],
+            'class_categories': [],
+            'admins': [],
+        }
+
+    def test_teacher_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end <= teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-08-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('teacher_reg_end'),
+            "Expected a validation error for teacher_reg_end before teacher_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_student_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end <= student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-09-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('student_reg_end'),
+            "Expected a validation error for student_reg_end before student_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_teacher_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end == teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-09-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_student_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end == student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-10-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_valid_registration_date_ranges(self):
+        """ProgramCreationForm has no date-range error when both end dates are
+        strictly after their respective start dates."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-11-15 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        # A duplicate-URL check may fire (no DB here), but we specifically
+        # assert there is no cross-field date-range error.
+        self.assertNotIn('teacher_reg_end', form.errors)
+        self.assertNotIn('student_reg_end', form.errors)
+
+
+class SubmitTransactionRequiresPostTest(TestCase):
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('manage_submit_transaction'))
+        self.assertEqual(response.status_code, 405)
