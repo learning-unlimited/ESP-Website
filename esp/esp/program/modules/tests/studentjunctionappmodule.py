@@ -1,11 +1,10 @@
 """
 Unit tests for StudentJunctionAppModule (studentjunctionappmodule.py).
-
 """
+from esp.program.models import RegistrationType, StudentRegistration
 from esp.program.models.app_ import StudentApplication, StudentAppQuestion
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser
 
 
 class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
@@ -15,26 +14,33 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         super().setUp(*args, **kwargs)
         self.add_user_profiles()
         self.module = self.get_module_obj('StudentJunctionAppModule')
-        # Enable student apps for this program
         self.question = StudentAppQuestion.objects.create(
             program=self.program,
             question='Why do you want to attend?',
             directions='Write a short paragraph.',
         )
 
+    def _make_app(self, student, done=False):
+        # StudentApplication.__init__ already calls save(); do not use objects.create()
+        app = StudentApplication(user=student, program=self.program)
+        if done:
+            app.done = True
+            app.save()
+        return app
+
     def test_is_using_student_apps(self):
         self.assertTrue(self.program.isUsingStudentApps())
 
     def test_students_queryset_started(self):
         student = self.students[0]
-        StudentApplication.objects.create(user=student, program=self.program, done=False)
+        self._make_app(student, done=False)
         result = self.module.students(QObject=False)
         self.assertIn(student, result['studentapps'])
         self.assertNotIn(student, result['studentapps_complete'])
 
     def test_students_queryset_complete(self):
         student = self.students[1]
-        StudentApplication.objects.create(user=student, program=self.program, done=True)
+        self._make_app(student, done=True)
         result = self.module.students(QObject=False)
         self.assertIn(student, result['studentapps_complete'])
         self.assertIn(student, result['studentapps'])
@@ -53,26 +59,26 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         self.assertTrue(self.module.isCompleted(user=student))
 
     def test_is_completed_when_no_questions(self):
-        # Remove program-level questions so empty app is complete
         StudentAppQuestion.objects.filter(program=self.program).delete()
+        StudentAppQuestion.objects.filter(subject__parent_program=self.program).delete()
         student = self.students[2]
-        # Fresh app with no questions
-        app = StudentApplication.objects.create(user=student, program=self.program, done=False)
+        app = student.getApplication(self.program)
+        app.done = False
+        app.save()
         app.questions.clear()
         self.assertTrue(self.module.isCompleted(user=student))
 
-    def test_is_completed_false_with_unanswered_questions(self):
+    def test_is_completed_false_with_unanswered_class_questions(self):
         student = self.students[3]
-        # Apply to a class so class-level questions can attach, or use program question
         cls = self.program.classes()[0]
         cls.studentappquestion_set.create(
             question='Why this class?',
             directions='',
         )
-        # Mark student as applied
         sec = cls.get_sections()[0]
-        from esp.program.models import RegistrationType, StudentRegistration
-        rt, _ = RegistrationType.objects.get_or_create(name='Applied', defaults={'category': 'student'})
+        rt, _ = RegistrationType.objects.get_or_create(
+            name='Applied', defaults={'category': 'student'}
+        )
         StudentRegistration.objects.get_or_create(
             user=student, section=sec, relationship=rt
         )
@@ -80,10 +86,8 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         app.done = False
         app.save()
         app.set_questions()
-        # With applied class questions and no responses, not complete
+        app.responses.clear()
         if app.questions.exists():
-            # Clear responses to force incomplete
-            app.responses.clear()
             self.assertFalse(self.module.isCompleted(user=student))
 
     def test_student_desc_keys(self):
