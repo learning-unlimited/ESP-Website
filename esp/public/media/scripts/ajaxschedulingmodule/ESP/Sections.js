@@ -437,7 +437,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }
 
         if (this.selectedRecurringRoomId && this.selectedRecurringRoomId !== room_id) {
-            this.matrix.messagePanel.addMessage("Error: recurring slots for one section must be in the same room.", "red");
+            this.matrix.messagePanel.addMessage("Error: recurring slots for one section must be in the same room.", "error");
             return;
         }
 
@@ -469,12 +469,12 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         // Otherwise, get the full group of timeslots needed for this new occurrence (handles multi-block classes).
         var group = this.matrix.timeslots.get_timeslots_to_schedule_section(section, timeslot_id);
         if (group === null) {
-            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "red");
+            this.matrix.messagePanel.addMessage("Error: not enough contiguous timeslots from here to schedule this class.", "error");
             return;
         }
 
         if (group.some(function(ts_id) { return this.selectedRecurringTimeslots.indexOf(ts_id) >= 0; }.bind(this))) {
-            this.matrix.messagePanel.addMessage("Error: this occurrence overlaps with an already-selected occurrence.", "red");
+            this.matrix.messagePanel.addMessage("Error: this occurrence overlaps with an already-selected occurrence.", "error");
             return;
         }
 
@@ -503,7 +503,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         if (!validation.valid) {
             this.selectedRecurringTimeslots = priorTimeslots;
             this.selectedRecurringRoomId = priorRoomId;
-            this.matrix.messagePanel.addMessage(validation.reason, "red");
+            this.matrix.messagePanel.addMessage(validation.reason, "error");
             return;
         }
         this.renderRecurringSelection();
@@ -514,7 +514,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             return;
         }
         if (!(this.selectedRecurringRoomId && this.selectedRecurringTimeslots.length > 0)) {
-            this.matrix.messagePanel.addMessage("Error: choose at least one timeslot before saving recurring schedule.", "red");
+            this.matrix.messagePanel.addMessage("Error: choose at least one timeslot before saving recurring schedule.", "error");
             return;
         }
         var section = this.selectedSection;
@@ -547,7 +547,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         }
 
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "error");
             this.unselectSection();
             return;
         }
@@ -563,7 +563,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 this.scheduleSectionLocal(section,
                     old_assignment.room_id,
                     old_assignment.timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "error");
                 console.log(msg);
             }.bind(this)
         );
@@ -798,7 +798,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.unscheduleSection = function(section, callback = function(){}){
         // Make sure section not locked
         if (section.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "red");
+            this.matrix.messagePanel.addMessage("Error: the specified section is locked (" + section.schedulingComment + ")! Unlock it first.", "error");
             this.unselectSection();
             return;
         }
@@ -815,7 +815,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If the server returns an error, put the class back in its original spot
             function(msg){
                 this.scheduleSectionLocal(section, old_room_id, old_schedule_timeslots);
-                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "error");
                 console.log(msg);
             }.bind(this)
         );
@@ -833,11 +833,11 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
     this.swapSections = function(section1, section2) {
         // Abort if either section is locked
         if (section1.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", "red");
+            this.matrix.messagePanel.addMessage("Error: the first selected section is locked (" + section1.schedulingComment + ")! Unlock it first.", "error");
             this.unselectSection();
             return;
         } else if (section2.schedulingLocked){
-            this.matrix.messagePanel.addMessage("Error: the second selected section is locked (" + section2.schedulingComment + ")! Unlock it first.", "red");
+            this.matrix.messagePanel.addMessage("Error: the second selected section is locked (" + section2.schedulingComment + ")! Unlock it first.", "error");
             this.unselectSection();
             return;
         }
@@ -865,7 +865,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
             // Abort if there isn't enough time for section 2 in classroom 1
             if(new_timeslots2 === null){
-                this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", "red");
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the second section to the new room.", "error");
                 this.unselectSection();
                 return;
             }
@@ -884,7 +884,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
 
             // Abort if there isn't enough time for section 1 in classroom 2
             if(new_timeslots1 === null){
-                this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", "red");
+                this.matrix.messagePanel.addMessage("Error: not enough time to swap the first section to the new room.", "error");
                 this.unselectSection();
                 return;
             }
@@ -919,7 +919,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room2, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "error");
                             this.unselectSection();
                             return;
                         }
@@ -947,7 +947,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                         var valid = this.matrix.validateAssignment(sec, room1, new_timeslots, ignore_sections);
                         if(!valid.valid){
                             console.log(valid.reason);
-                            this.matrix.messagePanel.addMessage(valid.reason, "red");
+                            this.matrix.messagePanel.addMessage(valid.reason, "error");
                             this.unselectSection();
                             return;
                         }
@@ -975,7 +975,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
             // If there's an error, locally reschedule the sections in their old locations
             function(msg) {
                 this.swapSectionsLocal(old_assignments1, old_assignments2);
-                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "error");
                 console.log(msg);
             }.bind(this)
         );
@@ -1050,7 +1050,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
                 // if unsuccessful, revert the comment locked status and show an error
                 section.schedulingComment = old_comment;
                 section.schedulingLocked = old_locked;
-                this.matrix.messagePanel.addMessage("Error: " + msg, "red");
+                this.matrix.messagePanel.addMessage("Error: " + msg, "error");
                 console.log(msg);
                 this.unselectSection();
             }.bind(this));
