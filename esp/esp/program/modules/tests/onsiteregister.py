@@ -1,6 +1,5 @@
 """
 Unit tests for OnSiteRegister (onsiteregister.py).
-
 """
 from unittest.mock import patch
 
@@ -18,9 +17,14 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         kwargs.update({'num_students': 2, 'num_teachers': 1, 'num_admins': 1})
         super().setUp(*args, **kwargs)
         self.module = self.get_module_obj('OnSiteRegister')
-        for name in ('attended', 'Med', 'Liab', 'OnSite', 'Attended'):
-            RecordType.objects.get_or_create(name=name)
+        # Built-in RecordTypes come from migrations; only ensure Student group exists.
         Group.objects.get_or_create(name='Student')
+        for name in ('attended', 'med', 'liab', 'onsite'):
+            if not RecordType.objects.filter(name=name).exists():
+                RecordType.objects.create(
+                    name=name,
+                    description='Test record type %s' % name,
+                )
 
     def _url(self):
         return self.get_module_url('onsite', 'onsite_create')
@@ -66,16 +70,16 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
             RegistrationProfile.objects.filter(user=new_user, program=self.program).exists()
         )
         self.assertTrue(
-            Record.objects.filter(user=new_user, program=self.program, event__name='OnSite').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='onsite').exists()
         )
         self.assertTrue(
-            Record.objects.filter(user=new_user, program=self.program, event__name='Attended').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='attended').exists()
         )
         self.assertTrue(
-            Record.objects.filter(user=new_user, program=self.program, event__name='Med').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='med').exists()
         )
         self.assertTrue(
-            Record.objects.filter(user=new_user, program=self.program, event__name='Liab').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='liab').exists()
         )
         mock_recover.assert_called_once()
 
@@ -117,11 +121,11 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         new_user = ESPUser.objects.get(email='minimal@example.com')
         self.assertFalse(
-            Record.objects.filter(user=new_user, program=self.program, event__name='Med').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='med').exists()
         )
         self.assertFalse(
-            Record.objects.filter(user=new_user, program=self.program, event__name='Liab').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='liab').exists()
         )
         self.assertTrue(
-            Record.objects.filter(user=new_user, program=self.program, event__name='OnSite').exists()
+            Record.objects.filter(user=new_user, program=self.program, event__name='onsite').exists()
         )
