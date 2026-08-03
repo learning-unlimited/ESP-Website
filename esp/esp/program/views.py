@@ -548,8 +548,11 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
+    username = request.GET.get('username')
+    if not username:
+        raise ESPError("You must specify a username to view.", log=False)
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
@@ -1701,6 +1704,9 @@ def module_schedule_update_api(request, program_type, program_term):
             mod.required = True
 
         mod.save()
+        mod_hydrated.start_date = mod.start_date
+        mod_hydrated.end_date = mod.end_date
+        mod_hydrated.sync_permissions()
 
         return JsonResponse({
             "success": True,

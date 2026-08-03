@@ -160,6 +160,38 @@ td.teacher-is-teaching-this-cell {
     overflow-y: scroll;
 }
 
+.scheduler-toast {
+    position: fixed;
+    top: 24px;
+    bottom: auto;
+    left: 50%;
+    max-width: 360px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 2147483647;
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scheduler-toast-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.scheduler-toast-error {
+    background-color: #ef4444;
+}
+
+.scheduler-toast-success {
+    background-color: #10b981;
+}
+
 input.numeric {
     width: 40px;
 }
@@ -173,11 +205,14 @@ input.numeric {
 }
 
 #side-panel-wrapper {
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 #info-panel {
     height: 35%;
+    padding-top: 10px;
     padding-bottom: 10px;
     margin-bottom: calc(11px - .2em);
 }
@@ -209,7 +244,7 @@ input.numeric {
 }
 
 #side-panel {
-    height: 61%;
+    min-height: 0;
     bottom: 0;
 }
 
@@ -238,6 +273,14 @@ button.sidetoolbar {
 
 .ft_c {
     height: unset !important; /* allows us to hide rows properly */
+}
+
+#message-div {
+    height: 100%;
+}
+
+#message-div p {
+    margin: 5px;
 }
 
 #message-div strong {
