@@ -1,118 +1,26 @@
 """
 Unit tests for email relay alias resolution and sender validation.
-"""
 
-import itertools
+Tests import production helpers from esp.dbmail.relay (not local copies).
+"""
 
 from django.conf import settings
 from django.contrib.auth.models import Group
-from django.db.models.functions import Lower
 from django.test import TestCase
 
 from esp.dbmail.models import PlainRedirect
+from esp.dbmail.relay import (
+    FORWARDER_HEADER,
+    get_final_recipients,
+    get_final_sender,
+    has_been_forwarded,
+    resolve_aliases_via_espuser,
+    resolve_aliases_via_plain_redirect,
+    select_sender_by_priority,
+    split_recipients,
+    users_for_from_field,
+)
 from esp.users.models import ESPUser
-
-LEARNINGU_DOMAIN = '.learningu.org'
-
-
-def split_recipients(raw_recipients):
-    """
-    Partition a list of raw recipient strings into:
-      - external_addrs: real, non-learningu.org addresses
-      - aliases:        learningu.org addresses to be resolved
-      - invalid:        strings with no '@' sign
-    """
-    external_addrs = []
-    aliases = []
-    invalid = []
-    for addr in raw_recipients:
-        if addr.endswith(LEARNINGU_DOMAIN):
-            aliases.append(addr)
-        elif '@' in addr:
-            external_addrs.append(addr)
-        else:
-            invalid.append(addr)
-    return external_addrs, aliases, invalid
-
-
-def resolve_aliases_via_plain_redirect(aliases):
-    """
-    Look up PlainRedirect rows whose `original` matches the local part of
-    each alias.  Comma-separated destinations are expanded, and any
-    destination that itself ends in LEARNINGU_DOMAIN is filtered out.
-    Returns a flat list of resolved email addresses.
-    """
-    local_parts = [a.split('@')[0].lower() for a in aliases]
-    redirects = (
-        PlainRedirect.objects
-        .annotate(original_lower=Lower('original'))
-        .filter(original_lower__in=local_parts)
-        .exclude(destination__isnull=True)
-        .exclude(destination='')
-    )
-    expanded = list(itertools.chain.from_iterable(
-        r.destination.split(',') for r in redirects
-    ))
-    return [addr for addr in expanded if not addr.endswith(LEARNINGU_DOMAIN)]
-
-
-def resolve_aliases_via_espuser(aliases):
-    """
-    Look up ESPUser rows whose username matches the local part of each alias.
-    Returns a list of the users' email addresses, excluding any that end in
-    LEARNINGU_DOMAIN.
-    """
-    local_parts = [a.split('@')[0].lower() for a in aliases]
-    users = (
-        ESPUser.objects
-        .annotate(username_lower=Lower('username'))
-        .filter(username_lower__in=local_parts)
-    )
-    return [u.email for u in users if not u.email.endswith(LEARNINGU_DOMAIN)]
-
-
-def validate_sender_and_get_users(from_field):
-    """
-    Given the raw `from_field` string (e.g. 'Name <user@host>'), extract the
-    email address and return a queryset of matching ESPUser objects.
-    Returns an empty queryset when the address is blank or None.
-    """
-    if not from_field or not from_field.strip():
-        return ESPUser.objects.none()
-
-    addr = from_field.strip()
-    if '<' in addr and '>' in addr:
-        addr = addr.split('<')[1].split('>')[0]
-
-    if addr.endswith(settings.EMAIL_HOST_SENDER):
-        return ESPUser.objects.filter(
-            username__iexact=addr.split('@')[0]
-        ).order_by('date_joined')
-    else:
-        return ESPUser.objects.filter(
-            email__iexact=addr
-        ).order_by('date_joined')
-
-
-def select_sender_by_priority(users):
-    """
-    Given a queryset/list of ESPUser objects, return the single user to use
-    as the email sender, using the priority hierarchy:
-      Administrator > Teacher > Volunteer > Student > Educator
-    Falls back to the first (earliest date_joined) user when no group matches.
-    """
-    users = list(users)
-    if not users:
-        return None
-    if len(users) == 1:
-        return users[0]
-
-    for group_name in ['Administrator', 'Teacher', 'Volunteer', 'Student', 'Educator']:
-        group_users = [u for u in users if u.groups.filter(name=group_name).exists()]
-        if group_users:
-            return group_users[0]
-
-    return users[0]
 
 
 class PlainRedirectLookupTest(TestCase):
@@ -125,51 +33,43 @@ class PlainRedirectLookupTest(TestCase):
         PlainRedirect.objects.create(original='empty', destination='')
         PlainRedirect.objects.create(
             original='internal',
-            destination='someone@mit.learningu.org'
+            destination='someone@mit.learningu.org',
         )
 
     def test_basic_lookup_resolves_address(self):
-        aliases = ['directors@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect(['directors@mit.learningu.org'])
         self.assertIn('alice@example.com', result)
 
     def test_comma_separated_destinations_are_expanded(self):
-        aliases = ['splash@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect(['splash@mit.learningu.org'])
         self.assertIn('bob@example.com', result)
         self.assertIn('carol@example.com', result)
         self.assertEqual(len(result), 2)
 
     def test_lookup_is_case_insensitive(self):
-        aliases = ['SPLASH2@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect(['SPLASH2@mit.learningu.org'])
         self.assertIn('dave@example.com', result)
 
     def test_empty_destination_is_excluded(self):
-        aliases = ['empty@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect(['empty@mit.learningu.org'])
         self.assertEqual(result, [])
 
     def test_nonexistent_alias_returns_empty_list(self):
-        aliases = ['doesnotexist@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect(['doesnotexist@mit.learningu.org'])
         self.assertEqual(result, [])
 
     def test_internal_learningu_destination_is_filtered_out(self):
-        aliases = ['internal@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
-        self.assertEqual(
-            result, [],
-            "Resolved addresses ending in learningu.org should be filtered out",
-        )
-
-    def test_empty_alias_list_returns_empty(self):
-        result = resolve_aliases_via_plain_redirect([])
+        result = resolve_aliases_via_plain_redirect(['internal@mit.learningu.org'])
         self.assertEqual(result, [])
 
+    def test_empty_alias_list_returns_empty(self):
+        self.assertEqual(resolve_aliases_via_plain_redirect([]), [])
+
     def test_multiple_aliases_resolved_together(self):
-        aliases = ['directors@mit.learningu.org', 'splash@mit.learningu.org']
-        result = resolve_aliases_via_plain_redirect(aliases)
+        result = resolve_aliases_via_plain_redirect([
+            'directors@mit.learningu.org',
+            'splash@mit.learningu.org',
+        ])
         self.assertIn('alice@example.com', result)
         self.assertIn('bob@example.com', result)
         self.assertIn('carol@example.com', result)
@@ -188,39 +88,32 @@ class ESPUserAliasResolutionTest(TestCase):
         self.internal_user = ESPUser.objects.create_user(
             username='internal_teacher',
             email='internal_teacher@mit.learningu.org',
-            password='pw'
+            password='pw',
         )
 
     def test_alias_resolves_to_user_email(self):
-        aliases = ['jsmith@mit.learningu.org']
-        result = resolve_aliases_via_espuser(aliases)
+        result = resolve_aliases_via_espuser(['jsmith@mit.learningu.org'])
         self.assertIn('jsmith@gmail.com', result)
 
     def test_alias_resolution_is_case_insensitive(self):
-        aliases = ['jdoe@mit.learningu.org']
-        result = resolve_aliases_via_espuser(aliases)
+        result = resolve_aliases_via_espuser(['jdoe@mit.learningu.org'])
         self.assertIn('jdoe@hotmail.com', result)
 
     def test_users_with_internal_email_are_filtered_out(self):
-        aliases = ['internal_teacher@mit.learningu.org']
-        result = resolve_aliases_via_espuser(aliases)
-        self.assertEqual(
-            result, [],
-            "Users whose own email ends in learningu.org must be filtered out",
-        )
+        result = resolve_aliases_via_espuser(['internal_teacher@mit.learningu.org'])
+        self.assertEqual(result, [])
 
     def test_unknown_alias_returns_empty_list(self):
-        aliases = ['nobody@mit.learningu.org']
-        result = resolve_aliases_via_espuser(aliases)
-        self.assertEqual(result, [])
+        self.assertEqual(resolve_aliases_via_espuser(['nobody@mit.learningu.org']), [])
 
     def test_empty_alias_list_returns_empty(self):
-        result = resolve_aliases_via_espuser([])
-        self.assertEqual(result, [])
+        self.assertEqual(resolve_aliases_via_espuser([]), [])
 
     def test_multiple_aliases_resolved_together(self):
-        aliases = ['jsmith@mit.learningu.org', 'jdoe@mit.learningu.org']
-        result = resolve_aliases_via_espuser(aliases)
+        result = resolve_aliases_via_espuser([
+            'jsmith@mit.learningu.org',
+            'jdoe@mit.learningu.org',
+        ])
         self.assertIn('jsmith@gmail.com', result)
         self.assertIn('jdoe@hotmail.com', result)
 
@@ -230,29 +123,28 @@ class RecipientSplittingTest(TestCase):
 
     def test_external_address_goes_to_external_list(self):
         external, aliases, invalid = split_recipients(['alice@example.com'])
-        self.assertIn('alice@example.com', external)
+        self.assertEqual(external, ['alice@example.com'])
         self.assertEqual(aliases, [])
         self.assertEqual(invalid, [])
 
     def test_learningu_org_address_goes_to_aliases(self):
         external, aliases, invalid = split_recipients(['alice@mit.learningu.org'])
-        self.assertIn('alice@mit.learningu.org', aliases)
+        self.assertEqual(aliases, ['alice@mit.learningu.org'])
         self.assertEqual(external, [])
         self.assertEqual(invalid, [])
 
     def test_address_without_at_sign_goes_to_invalid(self):
         external, aliases, invalid = split_recipients(['notanemail'])
-        self.assertIn('notanemail', invalid)
+        self.assertEqual(invalid, ['notanemail'])
         self.assertEqual(external, [])
         self.assertEqual(aliases, [])
 
     def test_mixed_recipient_list_is_split_correctly(self):
-        recipients = [
+        external, aliases, invalid = split_recipients([
             'real@example.com',
             'alias@school.learningu.org',
             'badaddress',
-        ]
-        external, aliases, invalid = split_recipients(recipients)
+        ])
         self.assertEqual(external, ['real@example.com'])
         self.assertEqual(aliases, ['alias@school.learningu.org'])
         self.assertEqual(invalid, ['badaddress'])
@@ -273,46 +165,37 @@ class SenderValidationTest(TestCase):
         )
 
     def test_external_sender_found_by_email(self):
-        users = validate_sender_and_get_users('sender@external.com')
+        users = users_for_from_field('sender@external.com')
         self.assertEqual(list(users), [self.user])
 
     def test_external_sender_lookup_is_case_insensitive(self):
-        users = validate_sender_and_get_users('SENDER@EXTERNAL.COM')
+        users = users_for_from_field('SENDER@EXTERNAL.COM')
         self.assertEqual(list(users), [self.user])
 
     def test_internal_sender_found_by_username(self):
         from_field = 'sender1@%s' % settings.EMAIL_HOST_SENDER
-        users = validate_sender_and_get_users(from_field)
+        users = users_for_from_field(from_field)
         self.assertEqual(list(users), [self.user])
 
     def test_sender_with_display_name_is_parsed(self):
-        from_field = 'Alice Smith <sender@external.com>'
-        users = validate_sender_and_get_users(from_field)
+        users = users_for_from_field('Alice Smith <sender@external.com>')
         self.assertEqual(list(users), [self.user])
 
     def test_unknown_sender_returns_empty_queryset(self):
-        users = validate_sender_and_get_users('nobody@unknown.com')
-        self.assertFalse(users.exists())
+        self.assertFalse(users_for_from_field('nobody@unknown.com').exists())
 
     def test_empty_from_field_returns_empty_queryset(self):
-        users = validate_sender_and_get_users('')
-        self.assertFalse(users.exists())
+        self.assertFalse(users_for_from_field('').exists())
 
     def test_none_from_field_returns_empty_queryset(self):
-        users = validate_sender_and_get_users(None)
-        self.assertFalse(users.exists())
+        self.assertFalse(users_for_from_field(None).exists())
 
     def test_whitespace_only_from_field_returns_empty_queryset(self):
-        users = validate_sender_and_get_users('   ')
-        self.assertFalse(users.exists())
+        self.assertFalse(users_for_from_field('   ').exists())
 
 
 class SenderPriorityTest(TestCase):
-    """
-    Tests for the user priority hierarchy used when multiple accounts share
-    the same email address:
-      Administrator > Teacher > Volunteer > Student > Educator
-    """
+    """Priority: Administrator > Teacher > Volunteer > Student > Educator."""
 
     def _make_user(self, username, email, group_name=None):
         u = ESPUser.objects.create_user(username=username, email=email, password='pw')
@@ -323,42 +206,35 @@ class SenderPriorityTest(TestCase):
 
     def test_single_user_is_returned_directly(self):
         user = self._make_user('solo', 'solo@x.com')
-        selected = select_sender_by_priority([user])
-        self.assertEqual(selected, user)
+        self.assertEqual(select_sender_by_priority([user]), user)
 
     def test_administrator_beats_teacher(self):
         teacher = self._make_user('teacher1', 'shared@x.com', 'Teacher')
         admin = self._make_user('admin1', 'shared@x.com', 'Administrator')
-        selected = select_sender_by_priority([teacher, admin])
-        self.assertEqual(selected, admin)
+        self.assertEqual(select_sender_by_priority([teacher, admin]), admin)
 
     def test_teacher_beats_student(self):
         student = self._make_user('student1', 'shared@x.com', 'Student')
         teacher = self._make_user('teacher1', 'shared@x.com', 'Teacher')
-        selected = select_sender_by_priority([student, teacher])
-        self.assertEqual(selected, teacher)
+        self.assertEqual(select_sender_by_priority([student, teacher]), teacher)
 
     def test_volunteer_beats_student(self):
         student = self._make_user('student1', 'shared@x.com', 'Student')
         volunteer = self._make_user('volunteer1', 'shared@x.com', 'Volunteer')
-        selected = select_sender_by_priority([student, volunteer])
-        self.assertEqual(selected, volunteer)
+        self.assertEqual(select_sender_by_priority([student, volunteer]), volunteer)
 
     def test_student_beats_educator(self):
         educator = self._make_user('edu1', 'shared@x.com', 'Educator')
         student = self._make_user('student1', 'shared@x.com', 'Student')
-        selected = select_sender_by_priority([educator, student])
-        self.assertEqual(selected, student)
+        self.assertEqual(select_sender_by_priority([educator, student]), student)
 
     def test_no_group_match_falls_back_to_first_user(self):
         u1 = self._make_user('first', 'shared@x.com')
         u2 = self._make_user('second', 'shared@x.com')
-        selected = select_sender_by_priority([u1, u2])
-        self.assertEqual(selected, u1)
+        self.assertEqual(select_sender_by_priority([u1, u2]), u1)
 
     def test_empty_user_list_returns_none(self):
-        selected = select_sender_by_priority([])
-        self.assertIsNone(selected)
+        self.assertIsNone(select_sender_by_priority([]))
 
     def test_full_hierarchy_ordering(self):
         educator = self._make_user('edu', 'h@x.com', 'Educator')
@@ -367,7 +243,6 @@ class SenderPriorityTest(TestCase):
         teacher = self._make_user('tea', 'h@x.com', 'Teacher')
         admin = self._make_user('adm', 'h@x.com', 'Administrator')
         all_users = [educator, student, volunteer, teacher, admin]
-
         self.assertEqual(select_sender_by_priority(all_users), admin)
         self.assertEqual(
             select_sender_by_priority([educator, student, volunteer, teacher]),
@@ -380,12 +255,14 @@ class SenderPriorityTest(TestCase):
         self.assertEqual(select_sender_by_priority([educator, student]), student)
         self.assertEqual(select_sender_by_priority([educator]), educator)
 
+    def test_get_final_sender_uses_priority(self):
+        self._make_user('teacher1', 'shared@x.com', 'Teacher')
+        admin = self._make_user('admin1', 'shared@x.com', 'Administrator')
+        self.assertEqual(get_final_sender('shared@x.com'), admin)
+
 
 class EndToEndRelayLogicTest(TestCase):
-    """
-    Integration-style tests for the full alias-resolution pipeline
-    (split → PlainRedirect resolve → ESPUser resolve → merge).
-    """
+    """Integration-style tests for get_final_recipients pipeline."""
 
     def setUp(self):
         PlainRedirect.objects.create(original='directors', destination='dir@example.com')
@@ -394,37 +271,44 @@ class EndToEndRelayLogicTest(TestCase):
         )
 
     def test_mix_of_external_and_alias_recipients(self):
-        raw = ['real@example.com', 'directors@mit.learningu.org']
-        external, aliases, _ = split_recipients(raw)
-        resolved = resolve_aliases_via_plain_redirect(aliases)
-        resolved += resolve_aliases_via_espuser(aliases)
-        final = external + resolved
+        final = get_final_recipients([
+            'real@example.com',
+            'directors@mit.learningu.org',
+        ])
         self.assertIn('real@example.com', final)
         self.assertIn('dir@example.com', final)
 
     def test_alias_resolved_via_espuser_username(self):
-        raw = ['teacher1@mit.learningu.org']
-        external, aliases, _ = split_recipients(raw)
-        resolved = resolve_aliases_via_espuser(aliases)
-        self.assertIn('teacher@gmail.com', resolved)
+        final = get_final_recipients(['teacher1@mit.learningu.org'])
+        self.assertIn('teacher@gmail.com', final)
 
     def test_all_learningu_aliases_with_no_matches_gives_empty(self):
-        raw = ['unknown@mit.learningu.org']
-        external, aliases, _ = split_recipients(raw)
-        plain_resolved = resolve_aliases_via_plain_redirect(aliases)
-        user_resolved = resolve_aliases_via_espuser(aliases)
-        final = external + plain_resolved + user_resolved
-        self.assertEqual(
-            final, [],
-            "Email with no resolvable aliases and no real recipients should produce empty list",
-        )
+        final = get_final_recipients(['unknown@mit.learningu.org'])
+        self.assertEqual(final, [])
 
     def test_purely_external_recipients_pass_through_unchanged(self):
-        raw = ['alice@example.com', 'bob@example.com']
-        external, aliases, _ = split_recipients(raw)
-        resolved = (
-            resolve_aliases_via_plain_redirect(aliases)
-            + resolve_aliases_via_espuser(aliases)
-        )
-        final = external + resolved
-        self.assertCountEqual(final, ['alice@example.com', 'bob@example.com'])
+        final = get_final_recipients(['alice@example.com', 'bob@example.com'])
+        self.assertEqual(final, ['alice@example.com', 'bob@example.com'])
+
+    def test_duplicates_are_removed_preserving_order(self):
+        PlainRedirect.objects.create(original='dup', destination='real@example.com')
+        final = get_final_recipients([
+            'real@example.com',
+            'dup@mit.learningu.org',
+        ])
+        self.assertEqual(final, ['real@example.com'])
+
+
+class ForwardedHeaderTest(TestCase):
+    def test_detects_forwarder_header_in_bytes(self):
+        raw = b'From: a@b.com\n' + FORWARDER_HEADER.encode('utf-8') + b'\n\nbody'
+        self.assertTrue(has_been_forwarded(raw))
+
+    def test_detects_forwarder_header_in_str(self):
+        raw = 'From: a@b.com\n%s\n\nbody' % FORWARDER_HEADER
+        self.assertTrue(has_been_forwarded(raw))
+
+    def test_missing_header_is_false(self):
+        self.assertFalse(has_been_forwarded(b'From: a@b.com\n\nhello'))
+        self.assertFalse(has_been_forwarded(''))
+        self.assertFalse(has_been_forwarded(None))
