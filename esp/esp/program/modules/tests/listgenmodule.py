@@ -1,7 +1,6 @@
 """
 Unit tests for ListGenModule (listgenmodule.py).
 
-Refs: #5298
 """
 from django.db.models import Q
 from django.http import QueryDict
