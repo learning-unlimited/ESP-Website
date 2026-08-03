@@ -1,7 +1,6 @@
 """
 Unit tests for OnSiteRegister (onsiteregister.py).
 
-Refs: #5197
 """
 from unittest.mock import patch
 
