@@ -1,7 +1,6 @@
 """
 Unit tests for TeacherModeratorModule (teachermoderatormodule.py).
 
-Refs: #5232
 """
 from esp.program.models import ModeratorRecord
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
