@@ -59,13 +59,13 @@ class LineItemsModuleAdminSearchTest(TestCase):
         self.assertEqual(result.url, "/manage/test/program/lineitems")
 
     def test_correct_view_name_returns_correct_category(self):
-        """get_admin_search_entry should return entry in 'Configure' category."""
+        """get_admin_search_entry should return entry in 'Program Management and Settings' category."""
         program = MagicMock()
         program.getUrlBase.return_value = "test/program"
         result = LineItemsModule.get_admin_search_entry(
             program, None, "lineitems", None
         )
-        self.assertEqual(result.category, "Configure")
+        self.assertEqual(result.category, "Program Management and Settings")
 
     def test_correct_view_name_returns_correct_keywords(self):
         """get_admin_search_entry should include relevant financial keywords."""
