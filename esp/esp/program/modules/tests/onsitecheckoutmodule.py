@@ -1,7 +1,6 @@
 """
 Unit tests for OnSiteCheckoutModule (onsitecheckoutmodule.py).
 
-Refs: #5230
 """
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
