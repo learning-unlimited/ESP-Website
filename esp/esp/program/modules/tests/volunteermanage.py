@@ -1,11 +1,10 @@
 """
 Unit tests for VolunteerManage (volunteermanage.py).
-
 """
 from datetime import datetime, timedelta
 
 from esp.cal.models import Event, EventType
-from esp.program.models import VolunteerRequest
+from esp.program.models import VolunteerOffer, VolunteerRequest
 from esp.program.modules.handlers.volunteermanage import VolunteerManage
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
@@ -53,12 +52,10 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
 
     def test_create_volunteer_request(self):
         self.login_as('admin')
-        start = '07/07/2222 09:00'
-        end = '07/07/2222 11:00'
         response = self.client.post(self._url(), {
             'vr_id': '',
-            'start_time': start,
-            'end_time': end,
+            'start_time': '07/07/2222 09:00',
+            'end_time': '07/07/2222 11:00',
             'num_volunteers': '5',
             'description': 'Security',
         })
@@ -102,7 +99,15 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertFalse(VolunteerRequest.objects.filter(id=vr_id).exists())
 
     def test_csv_export(self):
-        self._make_request()
+        vr = self._make_request()
+        VolunteerOffer.objects.create(
+            request=vr,
+            name='Vol One',
+            email='vol@example.com',
+            phone='+12015550100',
+            comments='Ready',
+            confirmed=True,
+        )
         self.login_as('admin')
         response = self.client.get(self._url() + '/csv')
         self.assertEqual(response.status_code, 200)
@@ -110,6 +115,8 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         content = response.content.decode('utf-8')
         self.assertIn('Activity', content)
         self.assertIn('Registration Desk', content)
+        self.assertIn('Vol One', content)
+        self.assertIn('vol@example.com', content)
 
     def test_get_admin_search_entry(self):
         entry = VolunteerManage.get_admin_search_entry(
