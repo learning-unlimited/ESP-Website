@@ -1,7 +1,6 @@
 """
 Unit tests for TeacherOnsite (teacheronsite.py).
 
-Refs: #5196
 """
 from esp.program.modules.handlers.teacheronsite import TeacherOnsite
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
