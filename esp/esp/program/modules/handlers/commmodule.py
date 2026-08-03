@@ -47,6 +47,7 @@ from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.sanitize import strip_base64_images
+from django.utils.datastructures import MultiValueDictKeyError
 
 import re
 
@@ -182,10 +183,13 @@ class CommModule(ProgramModuleObj):
         from esp.users.models import PersistentQueryFilter
         from django.conf import settings
 
-        filterid, listcount, subject, body = [request.POST['filterid'],
-                                              request.POST['listcount'],
-                                              request.POST['subject'],
-                                              request.POST['body']    ]
+        try:
+            filterid = request.POST['filterid']
+            listcount = request.POST['listcount']
+            subject = request.POST['subject']
+            body = request.POST['body']
+        except MultiValueDictKeyError as e:
+            raise ESPError(f"Missing required POST field: {e}")
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -295,12 +299,14 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
 
-        filterid, fromemail, replytoemail, subject, body = [
-                                    request.POST['filterid'],
-                                    request.POST['from'],
-                                    request.POST['replyto'],
-                                    request.POST['subject'],
-                                    request.POST['body']    ]
+        try:
+            filterid = request.POST['filterid']
+            fromemail = request.POST['from']
+            replytoemail = request.POST['replyto']
+            subject = request.POST['subject']
+            body = request.POST['body']
+        except MultiValueDictKeyError as e:
+                raise ESPError(f"Missing required POST field: {e}")
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -470,13 +476,15 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, replytoemail, subject, body = [
-                                                         request.POST['filterid'],
-                                                         request.POST['listcount'],
-                                                         request.POST['from'],
-                                                         request.POST['replyto'],
-                                                         request.POST['subject'],
-                                                         request.POST['body']    ]
+        try:
+            filterid = request.POST['filterid']
+            listcount = request.POST['listcount']
+            fromemail = request.POST['from']
+            replytoemail = request.POST['replyto']
+            subject = request.POST['subject']
+            body = request.POST['body']
+        except MultiValueDictKeyError as e:
+            raise ESPError(f"Missing required POST field: {e}")
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
