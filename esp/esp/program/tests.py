@@ -2279,9 +2279,7 @@ class HeardAboutNormalizationTest(TestCase):
 
 class ProgramCreationFormDateValidationTest(TestCase):
     """Tests that ProgramCreationForm rejects registration date ranges where
-    end is not strictly after start.  Addresses the Copilot review comment on
-    PR #5748 requesting coverage of the cross-field date validation added in
-    ProgramCreationForm.clean()."""
+    end is not strictly after start."""
 
     def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
         """Return a minimal set of form fields sufficient to trigger the date
