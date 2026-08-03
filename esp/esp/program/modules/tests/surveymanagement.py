@@ -1,7 +1,6 @@
 """
 Unit tests for SurveyManagement (surveymanagement.py).
 
-Refs: #5189
 """
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
