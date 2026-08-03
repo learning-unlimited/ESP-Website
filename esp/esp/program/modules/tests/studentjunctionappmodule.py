@@ -87,8 +87,11 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         app.save()
         app.set_questions()
         app.responses.clear()
-        if app.questions.exists():
-            self.assertFalse(self.module.isCompleted(user=student))
+        self.assertTrue(
+            app.questions.exists(),
+            "Setup must attach at least one application question before asserting incompleteness",
+        )
+        self.assertFalse(self.module.isCompleted(user=student))
 
     def test_student_desc_keys(self):
         desc = self.module.studentDesc()
