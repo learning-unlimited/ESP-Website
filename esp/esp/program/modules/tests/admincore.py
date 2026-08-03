@@ -74,7 +74,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
 
 class ModuleManagementConstraintsTest(ProgramFrameworkTest):
     """Tests that backend enforces module ordering/required constraints on save,
-    and that the view exposes constraint metadata for the UI.  Issue #3656."""
+    and that the view exposes constraint metadata for the UI."""
 
     def setUp(self):
         # RegProfileModule returns two module_properties entries (learn + teach),
@@ -464,7 +464,7 @@ class DeadlineDateValidationTest(ProgramFrameworkTest):
 
 
 class ModuleManagementCsrfTest(ProgramFrameworkTest):
-    """Regression tests for module-management CSRF enforcement. Issue #4637."""
+    """Regression tests for module-management CSRF enforcement."""
 
     def setUp(self):
         modules = []
