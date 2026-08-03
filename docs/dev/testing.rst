@@ -331,12 +331,13 @@ Naming
 Code Coverage
 -------------
 
-CI uploads coverage to Codecov, which enforces two gates (``codecov.yml``):
+CI uploads coverage to Codecov, which enforces one gate (``codecov.yml``):
+overall project coverage must stay at or above 75%. It appears as the
+``codecov/project`` check on the pull request.
 
-- **Project coverage**: Overall coverage must stay at or above 70%
-- **Patch coverage**: New and changed lines in a PR must be at least 60% covered
-
-Both appear as checks on the pull request.
+There is no per-pull-request patch coverage gate at present, so new code is not
+required to hit a coverage number to merge. Add tests anyway -- the project
+floor only holds if contributions carry their own coverage.
 
 Debugging Failed Tests
 -----------------------
