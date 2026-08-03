@@ -1,7 +1,6 @@
 """
 Unit tests for VolunteerManage (volunteermanage.py).
 
-Refs: #5188
 """
 from datetime import datetime, timedelta
 
