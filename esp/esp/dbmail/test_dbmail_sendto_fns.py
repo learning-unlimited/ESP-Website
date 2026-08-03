@@ -17,6 +17,7 @@ from __future__ import absolute_import
 
 from unittest.mock import patch
 
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from esp.dbmail import sendto_fns
@@ -382,13 +383,26 @@ class SendtoFnDispatchTest(CacheFlushTestCase):
         )
 
     def test_assert_is_valid_raises_esperror_for_unknown_name(self):
-        """Invalid names surface as ESPError, not ImproperlyConfigured.
-
-        Note: the raise site calls ESPError(True, '<explanation>'), and
-        ESPError() treats a bool first argument as the `log` flag and drops the
-        rest, so the explanation never reaches the user - the exception is
-        raised with no message at all. This asserts only the type; the message
-        is deliberately not asserted, since the current text is empty.
-        """
+        """Invalid names surface as ESPError, not ImproperlyConfigured."""
         with self.assertRaises(ESPError_Log):
             MessageRequest.assert_is_valid_sendto_fn_or_ESPError('send_to_nobody')
+
+    def test_esperror_carries_the_explanation(self):
+        """The raised ESPError must carry its message, not just its type.
+
+        ESPError() takes (message, log). Passing the log flag positionally
+        first means the message lands in `log` and is dropped, and the helper
+        ends up raising the bare exception class - which the error middleware
+        logs as an empty message and shows as a blank error page. These
+        assertions pin the message so that mistake cannot come back.
+        """
+        with self.assertRaises(ESPError_Log) as ctx:
+            MessageRequest.assert_is_valid_sendto_fn_or_ESPError('send_to_nobody')
+
+        message = str(ctx.exception)
+        self.assertIn('send_to_nobody', message)
+        self.assertIn('Invalid sendto function', message)
+        # The ImproperlyConfigured text is quoted into the explanation.
+        self.assertIn('not one of the available', message)
+        self.assertIn(
+            settings.DEFAULT_EMAIL_ADDRESSES['support'], message)
