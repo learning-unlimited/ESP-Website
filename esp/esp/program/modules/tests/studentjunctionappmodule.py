@@ -1,7 +1,6 @@
 """
 Unit tests for StudentJunctionAppModule (studentjunctionappmodule.py).
 
-Refs: #5231
 """
 from esp.program.models.app_ import StudentApplication, StudentAppQuestion
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
