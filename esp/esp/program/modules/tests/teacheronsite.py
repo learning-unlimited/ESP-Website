@@ -32,6 +32,7 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.context['webapp_page'], 'schedule')
         self.assertIn('classes', response.context)
         self.assertIn('checked_in', response.context)
+        self.assertTemplateUsed(response, 'program/modules/teacheronsite/schedule.html')
 
     def test_student_cannot_access_teacheronsite(self):
         self.login_as('student')
@@ -41,37 +42,34 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
 
     def test_onsitemap_page(self):
         self.login_as('teacher')
-        response = self.client.get(self.get_module_url('teach', 'onsitemap'))
-        self.assertEqual(response.status_code, 200)
-        # Prefer context key when present; otherwise require a successful template render.
-        if response.context is not None and 'webapp_page' in response.context:
-            self.assertEqual(response.context['webapp_page'], 'map')
-        else:
-            self.assertTemplateUsed(response, 'program/modules/teacheronsite/map.html')
+        response = self.assert_view_ok(self.get_module_url('teach', 'onsitemap'))
+        self.assertEqual(response.context['webapp_page'], 'map')
+        self.assertIn('center', response.context)
+        self.assertIn('zoom', response.context)
+        self.assertTemplateUsed(response, 'program/modules/teacheronsite/map.html')
 
     def test_onsitedetails_page(self):
         self.login_as('teacher')
-        response = self.client.get(self.get_module_url('teach', 'onsitedetails'))
-        self.assertEqual(response.status_code, 200)
-        if response.context is not None and 'webapp_page' in response.context:
-            self.assertEqual(response.context['webapp_page'], 'details')
-            self.assertIn('sections', response.context)
-        else:
-            self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectioninfo.html')
+        response = self.assert_view_ok(self.get_module_url('teach', 'onsitedetails'))
+        self.assertEqual(response.context['webapp_page'], 'details')
+        self.assertEqual(response.context['section_page'], 'info')
+        self.assertIn('sections', response.context)
+        self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectioninfo.html')
 
     def test_onsiteroster_page(self):
         self.login_as('teacher')
-        response = self.client.get(self.get_module_url('teach', 'onsiteroster'))
-        self.assertEqual(response.status_code, 200)
-        if response.context is not None and 'webapp_page' in response.context:
-            self.assertEqual(response.context['webapp_page'], 'details')
-        else:
-            self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectionroster.html')
+        response = self.assert_view_ok(self.get_module_url('teach', 'onsiteroster'))
+        self.assertEqual(response.context['webapp_page'], 'details')
+        self.assertEqual(response.context['section_page'], 'roster')
+        self.assertIn('sections', response.context)
+        self.assertIn('not_found', response.context)
+        self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectionroster.html')
 
     def test_onsitesurvey_page(self):
         self.login_as('teacher')
-        response = self.client.get(self.get_module_url('teach', 'onsitesurvey'))
-        self.assertEqual(response.status_code, 200)
+        response = self.assert_view_ok(self.get_module_url('teach', 'onsitesurvey'))
+        self.assertEqual(response.context['webapp_page'], 'survey')
+        self.assertEqual(response.context['survey_page'], 'survey')
 
     def test_get_admin_search_entry_main_view(self):
         entry = TeacherOnsite.get_admin_search_entry(
