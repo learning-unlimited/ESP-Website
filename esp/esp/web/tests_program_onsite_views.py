@@ -12,19 +12,17 @@ Covers:
 
   myesp_onsite():
     non-onsite user raises ESPError
-    zero onsite programs → render picker (empty)
     single onsite program → redirect to /onsite/.../main
     multiple onsite programs → render picker
-
-PR 7/10 — esp/web module coverage improvement
 """
 
 from django.http import Http404
 from django.test import RequestFactory
 
+from esp.middleware import ESPError
 from esp.program.models import Program
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, Permission
+from esp.users.models import Permission
 from esp.web.views.main import program
 from esp.web.views.myesp import myesp_onsite
 
@@ -81,12 +79,13 @@ class ProgramViewMissingTest(ProgramFrameworkTest):
         #  but the resolution of 'current' → real instance must NOT raise 404 first)
         prog = self.program
         request = _get(self.factory, '/learn/%s/current/' % prog.program_type, self.students[0])
-        # Http404 raised for missing module, NOT for missing program
-        try:
+        # Http404 must be raised for the missing module, not for missing program.
+        with self.assertRaises(Http404) as cm:
             program(request, 'learn', prog.program_type, 'current', 'nonexistent_module')
-        except Http404 as e:
-            # Confirm the 404 is about the module, not "No current program"
-            self.assertNotIn('No current program', str(e))
+        # Confirm 'current' resolved to the actual program before the 404 occurred.
+        self.assertTrue(hasattr(request, 'program'))
+        self.assertEqual(request.program, prog)
+        self.assertNotIn('No current program', str(cm.exception))
 
     def test_program_type_mismatch_raises_404(self):
         # Correct instance name but wrong program type → Http404
@@ -121,7 +120,7 @@ class MyESPOnsiteTest(ProgramFrameworkTest):
         # Regular student with no Onsite permission → ESPError
         regular_user = self.students[0]
         request = self._onsite_request(regular_user)
-        with self.assertRaises(Exception):
+        with self.assertRaises(ESPError):
             myesp_onsite(request)
 
     def test_single_program_redirects(self):
@@ -136,9 +135,8 @@ class MyESPOnsiteTest(ProgramFrameworkTest):
         self.assertIn('/main', response['Location'])
 
     def test_multiple_programs_renders_picker(self):
-        # Duplicate the program URL to simulate a second program
-        from esp.program.models import Program as Prog
-        second = Prog.objects.create(
+        # Create a second distinct program so the onsite picker has multiple options
+        second = Program.objects.create(
             url='TestProgram/2222_Fall',
             name='TestProgram Fall 2222',
             grade_min=7, grade_max=12,
