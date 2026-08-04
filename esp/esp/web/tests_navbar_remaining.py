@@ -116,7 +116,7 @@ class MyESPSwitchbackTest(TestCase):
         request = self.factory.get('/myesp/switchback/')
         request.user = user
         request.session = {}
-        with self.assertRaises(ESPError):
+        with self.assertRaises(ESPError()):
             myesp_switchback(request)
 
 
@@ -143,6 +143,7 @@ class ArchiveTeachersDirectTest(TestCase):
         request = self.factory.get('/archive/teachers/')
         request.user = self.user
         response = archive_teachers(request, 'year', '2024')
+        response.render()
         self.assertIn(b'Teachers', response.content)
 
     def test_accepts_different_category_options(self):
@@ -173,4 +174,5 @@ class ArchiveProgramsDirectTest(TestCase):
         request = self.factory.get('/archive/programs/')
         request.user = self.user
         response = archive_programs(request, 'year', '2024')
+        response.render()
         self.assertIn(b'Programs', response.content)
