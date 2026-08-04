@@ -20,7 +20,7 @@ archives() dispatcher because the dispatcher calls them with 4 arguments
 from django.contrib.auth.models import Group
 from django.test import RequestFactory
 
-from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 from esp.web.models import NavBarCategory, NavBarEntry
@@ -116,7 +116,7 @@ class MyESPSwitchbackTest(TestCase):
         request = self.factory.get('/myesp/switchback/')
         request.user = user
         request.session = {}
-        with self.assertRaises(ESPError()):
+        with self.assertRaises(ESPError_NoLog):
             myesp_switchback(request)
 
 
