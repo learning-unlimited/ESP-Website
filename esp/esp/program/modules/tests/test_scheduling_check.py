@@ -60,7 +60,7 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
     def test_scheduling_check_runner_respects_unreviewed_get_flag(self):
         request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase(), {'unreviewed': '1'})
         request.user = self.admins[0]
-        ThreadLocals().process_request(request)
+        ThreadLocals(get_response=lambda r: None).process_request(request)
 
         runner = SchedulingCheckRunner(self.program)
         self.assertTrue(runner.incl_unreview)
@@ -69,7 +69,7 @@ class SchedulingCheckHelpersTest(ProgramFrameworkTest):
         request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
         request.user = self.admins[0]
         request.session = {}
-        ThreadLocals().process_request(request)
+        ThreadLocals(get_response=lambda r: None).process_request(request)
 
         pm = ProgramModule.objects.get(handler='SchedulingCheckModule')
         moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
