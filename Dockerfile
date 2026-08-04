@@ -88,9 +88,16 @@ COPY --from=builder /usr/bin/node /usr/bin/node
 COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
 RUN ln -s /usr/lib/node_modules/less/bin/lessc /usr/local/bin/lessc
 
-# Copy pre-installed theme npm dependencies from builder
+# Copy pre-installed theme npm dependencies from builder.
+# Also bake a second copy at /opt/theme_node_modules_baked so the entrypoint
+# can restore a stale named volume without needing npm at runtime.
 COPY --from=builder /tmp/theme-npm/node_modules \
      /app/esp/public/media/theme_editor/node_modules
+COPY --from=builder /tmp/theme-npm/node_modules /opt/theme_node_modules_baked
+COPY --from=builder /tmp/theme-npm/package-lock.json /tmp/theme-pkg-lock.json
+RUN sha256sum /tmp/theme-pkg-lock.json | cut -d' ' -f1 \
+      > /opt/theme_node_modules_baked/.lock-hash && \
+    rm /tmp/theme-pkg-lock.json
 
 # Copy Python packages from builder
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages

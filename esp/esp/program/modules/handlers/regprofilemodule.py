@@ -188,6 +188,7 @@ EquityOutreachCohorts = _EquityOutreachCohorts
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
     doc = """Serves the profile editor during student and/or teacher registration."""
+    permission_types = ('Student/Profile', 'Teacher/Profile')
 
     @classmethod
     def module_properties(cls):

@@ -183,7 +183,7 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
-                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
+                                                        ('If students must apply to individual classes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
                                                         ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(admin_title='Moderator Signup')]),
                                                         ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Certificate Module')]),
                                                        ])
@@ -249,6 +249,16 @@ class ProgramCreationForm(BetterModelForm):
                 if g_min > g_max:
                     # Using the syntax you requested to attach the error to a specific field
                     self.add_error('grade_max', "The maximum grade must be greater than or equal to the minimum grade.")
+
+        teacher_reg_start = self.cleaned_data.get('teacher_reg_start')
+        teacher_reg_end = self.cleaned_data.get('teacher_reg_end')
+        if teacher_reg_start and teacher_reg_end and teacher_reg_end <= teacher_reg_start:
+            self.add_error('teacher_reg_end', 'Teacher registration end date must be after start date.')
+
+        student_reg_start = self.cleaned_data.get('student_reg_start')
+        student_reg_end = self.cleaned_data.get('student_reg_end')
+        if student_reg_start and student_reg_end and student_reg_end <= student_reg_start:
+            self.add_error('student_reg_end', 'Student registration end date must be after start date.')
 
     class Meta:
         fieldsets = [

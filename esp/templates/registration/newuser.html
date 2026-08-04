@@ -2,6 +2,9 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{# This page has its own account form, so suppress the sidebar/navbar login box. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -25,7 +28,7 @@
     <form action="/myesp/passwdrecover/" method="post">
       <input type="hidden" name="email" value="{{ u.email }}" />
       <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" class="btn btn-default" />
+      <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
     </form>
     )
     </li>
