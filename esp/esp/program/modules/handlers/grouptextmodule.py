@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -33,10 +32,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PARTICIPANTS,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
+from esp.users.models import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
@@ -46,6 +48,7 @@ from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
 
 from phonenumbers import format_number, PhoneNumberFormat
+
 
 class GroupTextModule(ProgramModuleObj):
     doc = """Text users that match specific search criteria."""
@@ -80,53 +83,73 @@ class GroupTextModule(ProgramModuleObj):
 
     @staticmethod
     def is_configured():
-        """ Check if Twilio configuration settings are set.
-            The text message module will not work without them. """
+        """Check if Twilio configuration settings are set.
+        The text message module will not work without them."""
 
-        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, str):
+        if not hasattr(settings, "TWILIO_ACCOUNT_SID") or not isinstance(
+            settings.TWILIO_ACCOUNT_SID, str
+        ):
             return False
-        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, str):
+        if not hasattr(settings, "TWILIO_AUTH_TOKEN") or not isinstance(
+            settings.TWILIO_AUTH_TOKEN, str
+        ):
             return False
-        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
+        if not hasattr(settings, "TWILIO_ACCOUNT_NUMBERS") or (
+            not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list)
+            and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)
+        ):
             return False
 
         return True
 
-    
     @aux_call
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
-            raise ESPError()('Filter or message have not been properly set')
+        if (
+            request.method != "POST"
+            or "filterid" not in request.GET
+            or "message" not in request.POST
+        ):
+            raise ESPError()("Filter or message have not been properly set")
 
         if not self.is_configured():
-            return render_to_response(self.baseDir() + 'not_configured.html', request, {})
+            return render_to_response(
+                self.baseDir() + "not_configured.html", request, {}
+            )
 
         # Safely fetch the filter object and handle invalid or missing filterid gracefully
-        filter_id = request.GET.get('filterid')
+        filter_id = request.GET.get("filterid")
         try:
             filterObj = PersistentQueryFilter.objects.get(id=filter_id)
         except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
-            raise ESPError()('The requested query filter is invalid or no longer exists.')
+            raise ESPError()(
+                "The requested query filter is invalid or no longer exists."
+            )
 
-        message = request.POST['message']
+        message = request.POST["message"]
         override = False
-        if 'text-override' in request.POST:
-            override = request.POST['text-override']
+        if "text-override" in request.POST:
+            override = request.POST["text-override"]
 
-        log = self.sendMessages(filterObj, message, override = override)
+        log = self.sendMessages(filterObj, message, override=override)
 
-        return render_to_response(self.baseDir()+'finished.html', request, {'log': log, 'override': override})
+        return render_to_response(
+            self.baseDir() + "finished.html",
+            request,
+            {"log": log, "override": override},
+        )
 
     @main_call
     @needs_admin
     def grouptextpanel(self, request, tl, one, two, module, extra, prog):
         if not self.is_configured():
-            return render_to_response(self.baseDir() + 'not_configured.html', request, {})
+            return render_to_response(
+                self.baseDir() + "not_configured.html", request, {}
+            )
 
         usc = UserSearchController()
         context = {}
-        context['program'] = prog
+        context["program"] = prog
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
@@ -134,21 +157,27 @@ class GroupTextModule(ProgramModuleObj):
                 filterObj = usc.filter_from_postdata(prog, data)
             except (ESPError_Log, ESPError_NoLog) as e:
                 context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+                context["error"] = str(e)
+                return render_to_response(
+                    self.baseDir() + "search.html", request, context
+                )
 
-            context['filterid'] = filterObj.id
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
-            return render_to_response(self.baseDir()+'options.html', request, context)
+            context["filterid"] = filterObj.id
+            context["num_users"] = (
+                ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            )
+            context["est_time"] = (
+                float(context["num_users"]) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
+            )
+            return render_to_response(self.baseDir() + "options.html", request, context)
 
         context.update(usc.prepare_context(prog, target_path=request.path))
-        return render_to_response(self.baseDir()+'search.html', request, context)
+        return render_to_response(self.baseDir() + "search.html", request, context)
 
     @staticmethod
-    def sendMessages(filterobj, body, override = False):
-        """ Attempts to send a text message with body to users matching filterobj
-            Returns a log of actions which can be displayed to user. """
+    def sendMessages(filterobj, body, override=False):
+        """Attempts to send a text message with body to users matching filterobj
+        Returns a log of actions which can be displayed to user."""
 
         users = filterobj.getList(ESPUser)
         try:
@@ -164,39 +193,47 @@ class GroupTextModule(ProgramModuleObj):
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
+            raise ESPError()(
+                "You must configure the Twilio account settings before attempting to send texts using this module"
+            )
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0
 
         send_log = []
-        send_log.append('Sending message to ' + str(users.count()) + ' users')
+        send_log.append("Sending message to " + str(users.count()) + " users")
 
         for user in users:
 
             #   Only get contact info for the actual user (not guardians or emergency contacts)
-            contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).order_by('-id').first()
+            contactInfo = (
+                ContactInfo.objects.filter(user=user, as_user__isnull=False)
+                .order_by("-id")
+                .first()
+            )
             if not contactInfo:
-                send_log.append("Could not find contact info for "+str(user))
+                send_log.append("Could not find contact info for " + str(user))
                 continue
-            send_log.append("Found contact info for "+str(user))
+            send_log.append("Found contact info for " + str(user))
 
             # the user has elected to not receive text messages
             # unless override is true
             if not contactInfo.receive_txt_message and not override:
-                send_log.append(str(user)+" does not want text messages, fine")
+                send_log.append(str(user) + " does not want text messages, fine")
                 continue
             client = Client(account_sid, auth_token)
 
             # format the number for Twilio
-            formattedNumber = format_number(contactInfo.phone_cell, PhoneNumberFormat.E164)
+            formattedNumber = format_number(
+                contactInfo.phone_cell, PhoneNumberFormat.E164
+            )
 
             if formattedNumber:
-                send_log.append("Sending text message to "+formattedNumber)
+                send_log.append("Sending text message to " + formattedNumber)
                 try:
-                    client.messages.create(body=body,
-                                           to=formattedNumber,
-                                           from_=ourNumbers[numberIndex])
+                    client.messages.create(
+                        body=body, to=formattedNumber, from_=ourNumbers[numberIndex]
+                    )
                 except TwilioRestException as error:
                     send_log.append(error.msg)
                 numberIndex = (numberIndex + 1) % len(ourNumbers)
@@ -208,4 +245,4 @@ class GroupTextModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"
