@@ -183,7 +183,7 @@ class ProgramCreationForm(BetterModelForm):
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(handler='ClassChangeRequestModule')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(handler='StudentAcknowledgementModule')]),
                                                         ('Do students have to apply to individual classes?', [x.id for x in (ProgramModule.objects.filter(handler='AdminReviewApps') | ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage'))]),
-                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(handler__in=['AdmissionsDashboard', 'TeacherReviewApps', 'AdminReviewApps'])]),
+                                                        ('If students must apply to individual classes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(handler__in=['AdmissionsDashboard', 'TeacherReviewApps', 'AdminReviewApps'])]),
                                                         ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(handler='TeacherModeratorModule')]),
                                                         ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(handler='StudentCertModule')]),
                                                        ])
