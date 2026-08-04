@@ -352,7 +352,6 @@ function save_changes() {
     $j('#save-button').prop('disabled', true).text('Saving...');
     if (!$j.isEmptyObject(pending_changes)) {
         // can't save while there are pending changes
-        console.log('foo');
         return;
     }
     pending_changes = $j.extend({}, unsaved_changes)

@@ -17,7 +17,7 @@
 #
 # > import reversion
 # > reversion.__file__
-# '/path/to/env/lib/python3.7/site-packages/reversion/__init__.py'
+# '/path/to/env/lib/python3.12/site-packages/reversion/__init__.py'
 #
 # If the result starts with the path to the repo, rather than
 # something like /usr/lib, then virtualenv auto-activation is not
@@ -65,6 +65,6 @@ fi
 
 echo "Creating Virtualenv in $VENVDIR"
 
-sudo python3.7 -m pip install "virtualenv>=1.10"
+sudo python3.12 -m pip install "virtualenv>=1.10"
 
-python3.7 -m virtualenv "$VENVDIR" --always-copy
+python3.12 -m virtualenv "$VENVDIR" --always-copy

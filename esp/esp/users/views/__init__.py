@@ -1,10 +1,12 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
-from django.template import RequestContext
 from django.urls import reverse
+from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, RegistrationProfile
@@ -23,19 +25,27 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    response.content = """
+    response.content = f"""
     <html><head>
-    <meta http-equiv="refresh" content="0; url=%s">
+    <meta http-equiv="refresh" content="0; url={location}">
     </head>
-    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    <body>
+    Thank you for logging in. Please click <a href="{location}">here</a> if you are not redirected.
+    </body>
     </html>
-    """ % (location, location)
+    """
     return response
 
+# Locations where we override redirects with smarter defaults
 mask_locations = ['/', '/myesp/signout', '/myesp/signout/', '/admin/logout/']
+
+
 def mask_redirect(user, next):
-    # We're getting redirected to somewhere undesirable.
-    # Let's try to do something smarter.
+    """
+    Redirect users to a more meaningful landing page depending
+    on their role (admin, teacher, or student).
+    """
+
     admin_home_url = Tag.getTag('admin_home_page')
     teacher_home_url = Tag.getTag('teacher_home_page')
     student_home_url = Tag.getTag('student_home_page')
@@ -49,6 +59,14 @@ def mask_redirect(user, next):
         return HttpMetaRedirect('/')
 
 class CustomLoginView(LoginView):
+    """
+    Custom login view extending Django's default LoginView.
+
+    This version includes:
+    • Handling of forwarded/merged accounts
+    • Additional template context for login error messaging
+    """
+
     template_name = 'registration/login.html'
 
     def render_to_response(self, context, **response_kwargs):
@@ -165,13 +183,16 @@ def signout(request):
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
     if request.user.is_authenticated:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
     return render_to_response('registration/logged_out.html', request, {})
 
 
 @login_required
 def disable_account(request):
+    """
+    Allow users to disable or re-enable their account.
+    """
 
     curUser = request.user
 
@@ -185,11 +206,11 @@ def disable_account(request):
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
 
     context = {
-            'user': curUser,
-            'other_users': other_users,
-            # Right now, we only deactivate the other users with the same email
-            # address if we are using mailman.
-            'will_deactivate_others': curUser.is_active and other_users and settings.USE_MAILMAN,
+        'user': curUser,
+        'other_users': other_users,
+        # Right now, we only deactivate the other users with the same email
+        # address if we are using mailman.
+        'will_deactivate_others': curUser.is_active and other_users and settings.USE_MAILMAN,
     }
 
     return render_to_response('users/disable_account.html', request, context)
@@ -233,14 +254,18 @@ def unsubscribe(request, username, token, oneclick = False):
     # so show the login page (with a custom alert message)
     else:
         next_url = reverse('unsubscribe', kwargs={'username': username, 'token': token,})
-        return HttpResponseRedirect('%s?next=%s' % (reverse('login'), next_url))
+        query_string = urlencode({'next': next_url})
+        return HttpResponseRedirect(f'{reverse("login")}?{query_string}')
 
-# have an email client (etc) POST to this view to process a
-# "oneclick" unsubscribe
 @csrf_exempt
 def unsubscribe_oneclick(request, username, token):
+    """
+    Endpoint used by email clients to trigger one-click unsubscribe.
+    """
+
     if request.POST.get("List-Unsubscribe") == "One-Click":
-        return unsubscribe(request, username, token, oneclick = True)
+        return unsubscribe(request, username, token, oneclick=True)
+
     raise ESPError("Invalid oneclick data.")
 
 @admin_required
@@ -258,14 +283,17 @@ def morph_into_user(request):
         onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
-                                '/manage/userview?username=' + morph_user.username,
-                                'User Search for '+morph_user.name(),
+                                '%s?%s' % (reverse('manage_userview'), urlencode({'username': morph_user.username})),
+                                'User Search for '+ morph_user.name(),
                                 onsite is not None)
-
     if onsite is not None:
-        return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
+        return HttpResponseRedirect(f'/learn/{onsite.getUrlBase()}/studentreg')
     else:
-        return HttpResponseRedirect('/')
+        return HttpResponseRedirect(reverse('home'))
 
 class LoginHelpView(DefaultQSDView):
+    """
+    Simple informational page providing login help to users.
+    """
+
     template_name = "users/loginhelp.html"

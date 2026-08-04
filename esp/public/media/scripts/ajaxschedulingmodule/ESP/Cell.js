@@ -46,14 +46,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         // Add the cell as data to the element
         this.el.data("cell", this);
 
-        // When cells are occupied, show a tooltip
-        $j(this.el).tooltip({
-            items: ".occupied-cell",
-            content: this.tooltip.bind(this),
-            show: {duration: 100},
-            hide: {duration: 100},
-            track: true,
-        });
+
 
         // If the cell is initialized with a section, add it.
         if (new_section != null){
