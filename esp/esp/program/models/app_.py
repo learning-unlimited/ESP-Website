@@ -190,13 +190,16 @@ class StudentApplication(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.set_questions()
+
     def set_questions(self):
         """Set questions for this application based on program and applied classes.
 
         Guards against being called on an unsaved instance or one missing FK
         values - both of which would cause IntegrityErrors or query failures.
         """
-        # FIX: use raw FK id fields to safely check without triggering DB lookups
         if not self.pk or not self.user_id or not self.program_id:
             return
         new_user = self.user
