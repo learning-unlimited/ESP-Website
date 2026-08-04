@@ -14,6 +14,7 @@ from django.core.exceptions import SuspiciousFileOperation
 
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tagdict.models import Tag
 from esp.themes.controllers import ThemeController
 from esp.themes import settings as themes_settings
 from io import open
@@ -233,30 +234,85 @@ class ThemesTest(TestCase):
                 self.assertEqual(len(re.findall(old_regexp, css, flags=re.I)), 0,
                                  f'Stale --bs-link-color: {absent_color_str} still in compiled CSS')
 
+        #   The editor uses Post/Redirect/Get, so each POST returns a 302 to the
+        #   editor; follow=True lands on the resulting 200 GET (and the CSS is
+        #   compiled during the POST, before the redirect).
         color_str1 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str1}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
         #   Test that we can save this setting, change it, and reload
         config_dict = {'save': True, 'linkColor': color_str1, 'saveThemeName': 'save_test'}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
 
         color_str2 = '#%06X' % random.randint(0, 1 << 24)
         config_dict = {'apply': True, 'linkColor': color_str2}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str2, absent_color_str=color_str1)
 
         config_dict = {'load': True, 'loadThemeName': 'save_test'}
-        response = self.client.post('/themes/customize/', config_dict)
+        response = self.client.post('/themes/customize/', config_dict, follow=True)
         self.assertEqual(response.status_code, 200)
         verify_linkcolor(color_str1)
 
         #   We're done.  Log out.
         self.client.logout()
+
+    def testEditorBootswatchApplyAndSaveLoad(self):
+        """ PR #5862 review comments #2 and #3:
+        - Switching the Bootswatch dropdown and editing a field in the same
+          "Apply" must apply both changes together, not drop the field edit.
+        - Saving a customization while a Bootswatch theme is active must
+          persist that theme, so Loading the customization later restores it
+          regardless of whichever Bootswatch theme happens to be active. """
+        tc = ThemeController()
+        scss_themes = [n for n in tc.get_theme_names() if tc.uses_scss_pipeline(n)]
+        bw_themes = tc.get_bootswatch_themes()
+        if not scss_themes or not bw_themes:
+            self.skipTest('No SCSS theme / Bootswatch package available')
+        theme_name = scss_themes[0]
+        bw_a = bw_themes[0]
+        bw_b = bw_themes[1] if len(bw_themes) > 1 else bw_themes[0]
+
+        tc.clear_theme()
+        tc.load_theme(theme_name)
+        Tag.unSetTag('bootswatch_theme')
+
+        self.client.login(username=self.admin.username, password='password')
+        try:
+            #   Comment #2: switch the Bootswatch theme AND edit a field in
+            #   one Apply -- both must take effect.
+            custom_color = '#%06X' % random.randint(0, 1 << 24)
+            config_dict = {'apply': True, 'bootswatch_theme': bw_a, 'linkColor': custom_color}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(Tag.getTag('bootswatch_theme', default=''), bw_a)
+            self.assertEqual(tc.get_current_params().get('linkColor'), custom_color)
+
+            #   Comment #3: saving while bw_a is active persists it in the
+            #   customization file; switching the live tag away and then
+            #   Loading that customization must restore bw_a.
+            config_dict = {'save': True, 'bootswatch_theme': bw_a, 'linkColor': custom_color,
+                            'saveThemeName': 'bootswatch_save_test'}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+
+            Tag.setTag('bootswatch_theme', value=bw_b)
+            config_dict = {'load': True, 'loadThemeName': 'bootswatch_save_test'}
+            response = self.client.post('/themes/customize/', config_dict, follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(Tag.getTag('bootswatch_theme', default=''), bw_a)
+        finally:
+            self.client.logout()
+            try:
+                tc.delete_customizations('bootswatch_save_test')
+            except OSError:
+                pass
+            Tag.unSetTag('bootswatch_theme')
 
     def testRecompileThemeCreatesMissingCustomization(self):
         """ Check that recompile_theme does not crash and leaves the system in a consistent state
@@ -420,6 +476,77 @@ class Bootstrap4MigrationTest(TestCase):
         with self.assertRaises(ValueError):
             self.tc.compile_css(scss_themes[0], {}, self.css_filename,
                                 bootswatch_theme='no-such-bootswatch-skin')
+
+
+class EspOverriddenBehaviorTest(TestCase):
+    """Guarantees around the $esp-overridden set when a Bootswatch theme is
+    active: fields matching the displayed (Bootswatch-derived) default must
+    not become overrides, genuinely changed fields must, and switching themes
+    must not carry stale overrides forward. (Raised in PR review as untested.)"""
+
+    def setUp(self):
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        self.tc = ThemeController()
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        if not scss_themes:
+            self.skipTest('No SCSS themes available')
+        self.theme_name = scss_themes[0]
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.bw_theme = bw_themes[0]
+        self.tc.load_theme(self.theme_name)
+        Tag.setTag('bootswatch_theme', value=self.bw_theme)
+
+    def tearDown(self):
+        themes_settings.COMPILED_CSS_FILE = self._css_file
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
+        Tag.unSetTag('bootswatch_theme')
+        Tag.setTag('current_theme_params', value='{}')
+
+    def test_effective_defaults_include_bootswatch_derivation(self):
+        """get_effective_defaults() must be overlaid with the Bootswatch theme's
+        derived colours, not just the raw SCSS defaults."""
+        bw_vars = self.tc.get_bootswatch_esp_vars(self.bw_theme, esp_theme=self.theme_name)
+        effective = self.tc.get_effective_defaults(self.theme_name, self.bw_theme)
+        for key, val in bw_vars.items():
+            self.assertEqual(effective[key], val)
+
+    def test_unchanged_prefilled_values_do_not_become_overrides(self):
+        """Submitting the form exactly as displayed (Bootswatch-derived
+        defaults, nothing edited by the admin) must not persist any override."""
+        effective = self.tc.get_effective_defaults(self.theme_name, self.bw_theme)
+        self.tc.customize_theme(dict(effective))
+        self.assertEqual(self.tc.get_current_params(), {})
+
+    def test_genuinely_changed_value_is_persisted_as_override(self):
+        """A field the admin actually edited away from the displayed default
+        must be persisted, and only that field."""
+        effective = dict(self.tc.get_effective_defaults(self.theme_name, self.bw_theme))
+        effective['linkColor'] = '#123456'
+        self.tc.customize_theme(effective)
+        saved = self.tc.get_current_params()
+        self.assertEqual(saved, {'linkColor': '#123456'})
+
+    def test_switching_bootswatch_theme_does_not_carry_over_stale_overrides(self):
+        """Save cleanly under theme A, then switch to theme B and resubmit the
+        (dropdown-updated) form untouched: theme B's override set must be
+        empty, not polluted with theme A's leftover colours."""
+        effective_a = self.tc.get_effective_defaults(self.theme_name, self.bw_theme)
+        self.tc.customize_theme(dict(effective_a))
+        self.assertEqual(self.tc.get_current_params(), {})
+
+        other_bw_themes = [t for t in self.tc.get_bootswatch_themes() if t != self.bw_theme]
+        if not other_bw_themes:
+            self.skipTest('Only one Bootswatch theme installed')
+        theme_b = other_bw_themes[0]
+        Tag.setTag('bootswatch_theme', value=theme_b)
+        effective_b = self.tc.get_effective_defaults(self.theme_name, theme_b)
+        self.tc.customize_theme(dict(effective_b))
+        self.assertEqual(self.tc.get_current_params(), {})
 
 
 class SafeCustomizationPathTest(TestCase):
