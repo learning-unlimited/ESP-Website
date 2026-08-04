@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <br /><br />
 <h1>{{program.niceName}} Lottery Preferences for {{ student.first_name }} {{ student.last_name }}</h1>
 

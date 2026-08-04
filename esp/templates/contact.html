@@ -15,6 +15,14 @@
       $j("#id_anonymous").change(function() {
         $j("#id_sender").attr('required', !this.checked);
       });
+
+      // Ensure button always starts with btn-primary, removing any stale btn-success from browser cache
+      $j(".contact-send").removeClass("btn-success").addClass("btn-primary");
+
+      // Toggle button to btn-success when form is submitted for visual feedback
+      $j(".contact-send").on("click", function() {
+        $j(this).removeClass("btn-primary").addClass("btn-success");
+      });
     });
   </script>
 {% endblock %}
@@ -56,7 +64,7 @@
 {% if contact_form.errors %}
 <div class="errors">
   There
-  {% if contact_form.errors|length_is:1 %}is an error{% else %}are errors{% endif %}
+  {% if contact_form.errors|length == 1 %}is an error{% else %}are errors{% endif %}
   in the below form. Please fix and resubmit.
 </div>
 {% endif %}

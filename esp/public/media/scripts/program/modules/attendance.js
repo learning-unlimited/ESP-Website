@@ -34,9 +34,12 @@ function update_checkboxes(table) {
 }
 
 $j(function(){
-    function markAttendance(username, secid, undo = false, callback, errorCallback){
+    function markAttendance(username, secid, undo, callback, errorCallback, undoCheckin){
         refresh_csrf_cookie();
         var data = {student: username, secid: secid, undo: undo, csrfmiddlewaretoken: csrf_token()};
+        if (undoCheckin) {
+            data.undo_checkin = true;
+        }
         $j.post('/teach/' + prog_url + '/ajaxstudentattendance', data, "json").done(callback)
         .fail(errorCallback);
     }
@@ -48,7 +51,11 @@ $j(function(){
         var secid = $me.data("secid");
         var $msg = $me.closest("td").find(".msg");
         var $checkedin = $me.closest("tr").find("[name=checkedin]");
+        var $table = $me.closest("table.sortable");
         $me.prop('disabled', true);
+        var inFlight = ($table.data('in-flight') || 0) + 1;
+        $table.data('in-flight', inFlight);
+        $table.addClass('sorttable-busy');
         markAttendance(username, secid, !checked, function(response) {
             if (response.error) {
                 alert(response.error);
@@ -63,16 +70,55 @@ $j(function(){
                     // If this is the webapp, we want to toggle the icons as well
                     $checkedin.siblings("i").html("check_box");
                 }
+                // Show undo button after marking attendance
+                if (checked) {
+                    $msg.find(".undo-attendance").remove();
+                    var $undoBtn = $j('<button>')
+                        .attr('type', 'button')
+                        .addClass('btn btn-default btn-mini undo-attendance')
+                        .text('Undo')
+                        .attr('data-checkedin', response.checkedin ? 'true' : 'false');
+                    $undoBtn.on("click", function(e) {
+                        e.preventDefault();
+                        var undoCheckin = $j(this).attr('data-checkedin') === 'true';
+                        $undoBtn.text('Undoing...').prop('disabled', true);
+                        markAttendance(username, secid, true, function(resp) {
+                            $me.prop("checked", false);
+                            $me.closest("td").attr("data-st-key", 1);
+                            $me.siblings("i").html("check_box_outline_blank");
+                            if (resp.uncheckedin) {
+                                $checkedin.prop("checked", false);
+                                $checkedin.closest("td").attr("data-st-key", 1);
+                                $checkedin.siblings("i").html("check_box_outline_blank");
+                            }
+                            $msg.text(resp.message);
+                            update_checkboxes($table);
+                        }, function() {
+                            alert("An error occurred while undoing attendance for " + username + ".");
+                            $undoBtn.text('Undo').prop('disabled', false);
+                        }, undoCheckin);
+                    });
+                    $msg.html('').append($undoBtn);
+                }
                 console.log(response.message);
             }
-            $msg.text("");
             $me.prop('disabled', false);
-            update_checkboxes($me.parents("table"));
+            var inFlight = ($table.data('in-flight') || 1) - 1;
+            $table.data('in-flight', Math.max(0, inFlight));
+            if (inFlight <= 0) {
+                $table.removeClass('sorttable-busy');
+            }
+            update_checkboxes($table);
         }, function(error) {
             alert("An error (" + error.statusText + ") occurred while attempting to update attendance for " + username + ".");
             $me.prop("checked", !checked);
             $msg.text("");
             $me.prop('disabled', false);
+            var inFlight = ($table.data('in-flight') || 1) - 1;
+            $table.data('in-flight', Math.max(0, inFlight));
+            if (inFlight <= 0) {
+                $table.removeClass('sorttable-busy');
+            }
             // If this is the webapp, we want to toggle the icons as well
             $me.siblings("i").html(!checked ? "check_box" : "check_box_outline_blank");
         });

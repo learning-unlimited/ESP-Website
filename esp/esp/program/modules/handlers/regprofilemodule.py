@@ -188,6 +188,7 @@ EquityOutreachCohorts = _EquityOutreachCohorts
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
     doc = """Serves the profile editor during student and/or teacher registration."""
+    permission_types = ('Student/Profile', 'Teacher/Profile')
 
     @classmethod
     def module_properties(cls):
@@ -274,11 +275,8 @@ class RegProfileModule(ProgramModuleObj):
             return self.goToCore(tl)
         return response
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None
 

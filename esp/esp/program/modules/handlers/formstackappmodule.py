@@ -1,8 +1,8 @@
 
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -34,13 +34,42 @@ Learning Unlimited, Inc.
 """
 
 import logging
-logger = logging.getLogger(__name__)
 
 from django.db.models.query import Q
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, main_call, aux_call
-from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser
+from django.template import Variable, Context, VariableDoesNotExist, Template
+
 from esp.application.models import FormstackStudentProgramApp
+from esp.program.modules.base import (
+    ProgramModuleObj, needs_student_in_grade, main_call, aux_call
+)
+from esp.users.models import ESPUser
+from esp.utils.web import render_to_response
+
+logger = logging.getLogger(__name__)
+
+
+def resolve_field_expression(expression, context_vars):
+    """Safely resolve a dotted expression against the given context.
+
+    Returns the string value, or None if the expression is empty,
+    whitespace-only, unresolvable, or resolves to None.
+    """
+    if not expression or not expression.strip():
+        return None
+    expression = expression.strip()
+    try:
+        resolved = Variable(expression).resolve(Context(context_vars))
+        if resolved is None:
+            return None
+        return str(resolved)
+    except VariableDoesNotExist:
+        return None
+    except Exception:
+        logger.exception(
+            "Error resolving field expression '%s'", expression
+        )
+        return None
+
 
 class FormstackAppModule(ProgramModuleObj):
     doc = """
@@ -59,11 +88,14 @@ class FormstackAppModule(ProgramModuleObj):
             "choosable": 2,
             }]
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         result = {}
 
         Q_applied = Q(studentprogramapp__program=self.program)
-        result['applied'] = Q_applied if QObject else ESPUser.objects.filter(Q_applied)
+        if QObject:
+            result['applied'] = Q_applied
+        else:
+            result['applied'] = ESPUser.objects.filter(Q_applied)
 
         return result
 
@@ -72,7 +104,7 @@ class FormstackAppModule(ProgramModuleObj):
         result['applied'] = """Students who submitted an application"""
         return result
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         # TODO
         return False
 
@@ -84,28 +116,65 @@ class FormstackAppModule(ProgramModuleObj):
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
+        context['app_is_open'] = context['form'] is not None and (
+            fsas.app_is_open or request.user.isAdmin(prog)
+        )
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
-            field, _, expr = line.partition(':')
-            try:
-                value = eval(expr, {'user': request.user})
-            except Exception as e:
-                logger.exception("Error in FormstackAppSettings: %s", e)
+            field, sep, expr = line.partition(':')
+            field_name = field.strip()
+            expr_stripped = expr.strip()
+            #   Require a colon and both halves (also skips blank lines)
+            if not sep or not field_name or not expr_stripped:
                 continue
-            autopopulated.append((field, value))
+
+            if '{{' in expr_stripped or '{%' in expr_stripped:
+                #   Render with autoescape off so the value is raw here;
+                #   studentapp.html escapes once at output, matching the
+                #   dotted-lookup path below. Do not "fix" this to autoescape on.
+                try:
+                    value = Template(expr_stripped).render(
+                        Context({'user': request.user}, autoescape=False)
+                    )
+                except Exception:
+                    expr_preview = (
+                        expr_stripped
+                        if len(expr_stripped) <= 200
+                        else expr_stripped[:197] + '...'
+                    )
+                    logger.exception(
+                        "Error rendering FormstackAppSettings autopopulated "
+                        "field %r with expr %r",
+                        field_name,
+                        expr_preview,
+                    )
+                    continue
+            else:
+                #   Backwards-compatible dotted lookup (e.g. user.username)
+                value = resolve_field_expression(expr_stripped, {'user': request.user})
+
+            #   Skip unresolved/empty; strip stray whitespace before it POSTs to Formstack
+            value = (value or '').strip()
+            if not value:
+                continue
+            autopopulated.append((field_name, value))
+
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
+
 
     @aux_call
     @needs_student_in_grade
     def finaidapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         if not fsas.finaid_form():
-            return self.goToCore(tl) # no finaid form
-        app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
-        if not (app or request.user.isAdmin(prog)): # student has not applied for the program
-            return # XXX: more useful error here
+            return self.goToCore(tl)  # no finaid form
+        app = FormstackStudentProgramApp.objects.filter(
+            user=request.user, program=prog
+        )
+        # student has not applied for the program
+        if not (app or request.user.isAdmin(prog)):
+            return  # XXX: more useful error here
         context = {}
         context['form'] = fsas.finaid_form()
         context['user_id_field'] = fsas.finaid_user_id_field

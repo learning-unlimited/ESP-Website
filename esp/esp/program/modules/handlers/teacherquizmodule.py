@@ -59,6 +59,7 @@ class TeacherQuizComboForm(ComboForm):
 
 class TeacherQuizModule(ProgramModuleObj):
     doc = """Serves a custom form quiz during teacher registration."""
+    permission_types = ('Teacher/Quiz',)
 
     # Initialization
     def __init__(self, *args, **kwargs):
@@ -97,12 +98,9 @@ class TeacherQuizModule(ProgramModuleObj):
         }
 
     # Per-user info
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """Return true if user has filled out the teacher quiz."""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     # Views
@@ -115,13 +113,13 @@ class TeacherQuizModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             if request.user.isAdmin():
-                error = 'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Logistics Quiz" module of the %s program.' % (self.program)
+                error = f'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Logistics Quiz" module of the {self.program} program.'
             else:
                 error = 'Cannot find an appropriate form for this module. Please ask your administrator to create a form and link it to the "Teacher Logistics Quiz" module.'
             raise ESPError(error, log=False)
 
         #   If the user already filled out the form, use their earlier response for the initial values
-        if self.isCompleted():
+        if self.isCompleted(request.user):
             prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
             return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherQuizComboForm, initial_data = prev_result_data,
                                extra_context = {'prog': prog, 'qsd_name': 'teach:quizheader', 'module': self.module.link_title}, program = prog)

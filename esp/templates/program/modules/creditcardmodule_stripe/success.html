@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Payment Received{% endblock %}
 
@@ -10,7 +10,7 @@
 {% block xtrajs %}
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
 
 {% load render_qsd %}

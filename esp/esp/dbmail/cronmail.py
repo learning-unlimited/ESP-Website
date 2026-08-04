@@ -36,7 +36,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 import math
-import time
 
 from esp.dbmail.models import MessageRequest, send_mail, TextOfEmail
 from datetime import datetime, timedelta
@@ -104,10 +103,6 @@ def send_email_requests():
                                           sent__isnull=True,
                                           tries__lte=retries)
 
-    wait = getattr(settings, 'EMAILTIMEOUT', None)
-    if wait is None:
-        wait = 1.5
-
     num_sent = 0
     errors = [] # if any messages failed to deliver
 
@@ -117,7 +112,7 @@ def send_email_requests():
     # .iterator() to prevent that.  Second, even when django doesn't load the
     # whole query into django objects in memory, psycopg2 still loads it all
     # internally:
-    # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
+    # https://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
     # So we do our own batching on top of that.
     batch_size = 1000
     for i in range(int(math.ceil(float(mailtxts.count()) / batch_size))):
@@ -140,8 +135,6 @@ def send_email_requests():
                 logger.warning("Encountered error while sending to " + mailtxt.send_to + ": " + exception_type_str)
             else:
                 num_sent += 1
-
-            time.sleep(wait)
 
     if num_sent > 0:
         logger.info('Sent %d messages', num_sent)

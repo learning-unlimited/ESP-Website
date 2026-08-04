@@ -16,6 +16,7 @@ def studentacknowledgementform_factory(prog):
 
 class StudentAcknowledgementModule(ProgramModuleObj):
     doc = """Serves a form asking students to acknowledge some agreement."""
+    permission_types = ('Student/Acknowledgement',)
 
     @classmethod
     def module_properties(cls):
@@ -27,11 +28,8 @@ class StudentAcknowledgementModule(ProgramModuleObj):
             "choosable": 0,
         }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user,
                                      program=self.program,
                                      event__name="studentacknowledgement").exists()
@@ -51,7 +49,7 @@ class StudentAcknowledgementModule(ProgramModuleObj):
                 return self.goToCore(tl)
             else:
                 rec.delete()
-        elif self.isCompleted():
+        elif self.isCompleted(request.user):
             context['form'] = studentacknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = studentacknowledgementform_factory(prog)()
