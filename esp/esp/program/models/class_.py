@@ -330,6 +330,7 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
@@ -1160,6 +1161,7 @@ class ClassSection(models.Model):
                 # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
                 prog = self.parent_program
                 prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.cancellation_reason = explanation
             self.status = ClassStatus.CANCELLED
             self.save()
 
@@ -1397,6 +1399,14 @@ class ClassSection(models.Model):
         list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
+
+        # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
+        if not StudentRegistration.valid_objects(now).filter(
+                user=user,
+                section__parent_class__parent_program=self.parent_program,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
 
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
