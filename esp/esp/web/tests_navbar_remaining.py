@@ -159,7 +159,7 @@ class ArchiveProgramsDirectTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.user = _make_user('arch_prog_user')
-        _ensure_default_nav_category()
+        _ensure_default_navbar_category()
 
     def test_returns_200(self):
         """Direct call returns 200 with Programs selection."""
