@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -71,7 +71,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
             title="Scheduling",
-            category="Logistics",
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
@@ -214,6 +214,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         called in production, but it is annoying.
         Clears the change log for this program. """
 
+        if request.method != 'POST':
+            return HttpResponse('Method not allowed. Use POST.', status=405)
+
         self.get_change_log(prog).entries.all().delete()
         context = {}
         return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
@@ -295,7 +298,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if action == 'removemod':
             sec.moderators.remove(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'")
         elif action == 'assignmod':
             override = request.POST['override'] == "true"
             if not override:
@@ -303,10 +306,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 avail_times = [time.id for time in mod.getAvailableTimes(prog)]
                 for time in sec.meeting_times.all():
                     if time.id not in avail_times:
-                        return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
+                        return self.makeret(prog, ret=False, msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'")
             sec.moderators.add(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'")
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
@@ -394,7 +397,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         if request.method == 'POST':
             num_affected_sections = self.clear_schedule_logic(prog, lock_level)
-            data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
+            data = {'message': f'Cleared schedule assignments for {num_affected_sections} sections.'}
             response = HttpResponse(content_type="application/json")
             json.dump(data, response)
         else:

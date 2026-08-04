@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.utils.web import render_to_response
 
@@ -59,7 +59,8 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             id="teach_teacherreg",
             url="/teach/%s/teacherreg" % base,
             title="Teacher Registration",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Teacher Reg" button appears in directory.html.
+            category=SEARCH_CATEGORY_REGISTRATION,
             keywords=["teacher registration", "propose class", "teach"],
         )
 

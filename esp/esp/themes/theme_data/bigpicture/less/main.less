@@ -96,7 +96,7 @@ div.qsd_edit_visible textarea, textarea.wide {
 input, textarea, select, .uneditable-input {
     vertical-align: baseline;
 }
-div.nav-collapse.collapse {
+div.navbar-collapse.collapse {
     height: auto !important;
 }
 
@@ -126,14 +126,12 @@ div.nav-collapse.collapse {
         font-size: 17px;
     }
     .active {
-        [class^="icon-"], [class*=" icon-"] {
-            background-image: url("/media/theme_editor/img/glyphicons-halflings-white.png");
+        .glyphicon {
+            color: @sidebarActive;
         }
     }
-    [class^="icon-"], [class*=" icon-"] {
+    .glyphicon {
         vertical-align: baseline;
-        height: 13px;
-        width: 13px;
     }
 }
 
@@ -141,7 +139,7 @@ div.nav-collapse.collapse {
     & {
         border-radius: 4px;
     }
-    .accordion-heading {
+    .panel-heading {
         & a {
             color: @sidebarLink;
             font-size: 17px;
@@ -150,7 +148,7 @@ div.nav-collapse.collapse {
             }
         }
     }
-    .accordion-body {
+    .panel-collapse {
         .sidebar {
             margin-bottom: 0px;
             border-top: white 1px solid;
@@ -188,15 +186,13 @@ div.nav-collapse.collapse {
         z-index: 2;
         right: 0;
         color: @navbarText;
-    }
-    input, select, .radio, .checkbox {
-        margin-top: 0;
-    }
-    .navbar-inner {
         margin: 0;
         padding: 6px;
         background: @navbarBackground;
         min-height: auto;
+    }
+    input, select, .radio, .checkbox {
+        margin-top: 0;
     }
     .btn {
         background: @navbarBackgroundHighlight;

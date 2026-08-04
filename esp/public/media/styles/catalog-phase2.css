@@ -1,4 +1,4 @@
-#catalog-sticky .select2-container a.select2-choice {
+#catalog-sticky .select2-container .select2-selection--single {
     color: inherit;
     text-decoration: none;
 }
