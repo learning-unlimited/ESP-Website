@@ -92,6 +92,7 @@ class GroupTextModule(ProgramModuleObj):
 
         return True
 
+    
     @aux_call
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
@@ -101,8 +102,13 @@ class GroupTextModule(ProgramModuleObj):
         if not self.is_configured():
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
 
-        # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        # Safely fetch the filter object and handle invalid or missing filterid gracefully
+        filter_id = request.GET.get('filterid')
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=filter_id)
+        except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError()('The requested query filter is invalid or no longer exists.')
+
         message = request.POST['message']
         override = False
         if 'text-override' in request.POST:
