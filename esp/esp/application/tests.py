@@ -38,6 +38,32 @@ class StudentProgramAppTest(TestCase):
     def test_default_status_unreviewed(self):
         self.assertEqual(self.app.admin_status, StudentProgramApp.UNREVIEWED)
 
+    # Added for issue #5491
+    def test_admit(self):
+        self.app.admit()
+        self.assertEqual(self.app.admin_status, StudentProgramApp.ADMITTED)
+
+    # Added for issue #5491
+    def test_unadmit(self):
+        self.app.admit()
+        self.app.unadmit()
+        self.assertEqual(self.app.admin_status, StudentProgramApp.UNREVIEWED)
+
+    # Added for issue #5491
+    def test_waitlist(self):
+        self.app.waitlist()
+        self.assertEqual(self.app.admin_status, StudentProgramApp.WAITLIST)
+
+    # Added for issue #5491
+    def test_admit_idempotency(self):
+        self.app.admit()
+        first_status = self.app.admin_status
+
+        self.app.admit()
+        second_status = self.app.admin_status
+
+        self.assertEqual(first_status, second_status)
+
     def test_choices_empty(self):
         choices = self.app.choices()
         self.assertEqual(len(choices), 0)
@@ -86,6 +112,13 @@ class StudentClassAppTest(TestCase):
         result = str(self.class_app)
         self.assertIsNotNone(result)
 
+    # Added for issue #5491
+    def test_default_status(self):
+        self.assertEqual(
+            self.class_app.admission_status,
+            StudentClassApp.UNASSIGNED,
+        )
+
     def test_admit(self):
         self.class_app.admit()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.ADMITTED)
@@ -98,3 +131,13 @@ class StudentClassAppTest(TestCase):
     def test_waitlist(self):
         self.class_app.waitlist()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.WAITLIST)
+
+    # Added for issue #5491
+    def test_admit_idempotency(self):
+        self.class_app.admit()
+        first_status = self.class_app.admission_status
+
+        self.class_app.admit()
+        second_status = self.class_app.admission_status
+
+        self.assertEqual(first_status, second_status)
