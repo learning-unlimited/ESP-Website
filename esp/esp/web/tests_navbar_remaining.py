@@ -15,16 +15,13 @@ Note: archive_teachers() and archive_programs() cannot be reached via the
 archives() dispatcher because the dispatcher calls them with 4 arguments
 (request, category, options, sortorder) but their signatures only accept 3
 (request, category, options). This is a pre-existing bug in the source.
-
-PR 10/10 — esp/web module coverage improvement
 """
 
-from unittest.mock import MagicMock
-
 from django.contrib.auth.models import Group
-from django.test import TestCase, RequestFactory
+from django.test import RequestFactory
 
 from esp.middleware import ESPError
+from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 from esp.web.models import NavBarCategory, NavBarEntry
 from esp.web.views.archives import archive_teachers, archive_programs
@@ -35,7 +32,17 @@ from esp.web.views.myesp import myesp_switchback
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _ensure_default_navbar_category():
+     return NavBarCategory.objects.get_or_create(
+         name='default',
+         defaults={
+             'path': 'default',
+             'long_explanation': 'Default navbar category for tests.',
+         },
+     )[0]
+
 def _make_user(username, role=None, is_superuser=False):
+    _ensure_default_navbar_category()
     if is_superuser:
         user = ESPUser.objects.create_superuser(
             username=username, password='testpass',
@@ -54,7 +61,11 @@ def _make_user(username, role=None, is_superuser=False):
 
 
 def _make_entry():
-    category = NavBarCategory.objects.get_or_create(name='test', path='test')[0]
+    category = NavBarCategory.objects.get_or_create(
+         name='test',
+         path='test',
+         defaults={'long_explanation': 'Test category'},
+     )[0]
     return NavBarEntry.objects.create(
         category=category,
         text='Test Entry',
@@ -105,7 +116,7 @@ class MyESPSwitchbackTest(TestCase):
         request = self.factory.get('/myesp/switchback/')
         request.user = user
         request.session = {}
-        with self.assertRaises(Exception):
+        with self.assertRaises(ESPError):
             myesp_switchback(request)
 
 
@@ -148,6 +159,7 @@ class ArchiveProgramsDirectTest(TestCase):
     def setUp(self):
         self.factory = RequestFactory()
         self.user = _make_user('arch_prog_user')
+        _ensure_default_nav_category()
 
     def test_returns_200(self):
         """Direct call returns 200 with Programs selection."""
