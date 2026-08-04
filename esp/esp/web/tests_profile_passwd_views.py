@@ -10,15 +10,14 @@ Covers:
     profile_editor() GET — pre-fills form from user + RegistrationProfile
     profile_editor() POST valid teacher — saves ContactInfo, redirects
     profile_editor() POST invalid — missing required fields → re-renders with form errors
-
-PR 8/10 — esp/web module coverage improvement
 """
 
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import Group
-from django.test import TestCase, Client, RequestFactory
+from django.test import Client, RequestFactory
 
+from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import ESPUser
 from esp.web.views.myesp import (
     myesp_passwd,
@@ -91,8 +90,8 @@ class MyESPPasswdPostTest(TestCase):
         }
         response = myesp_passwd(self._post_request(data))
         self.assertEqual(response.status_code, 200)
-        # Should NOT have Success=True in the context
-        self.assertNotIn(b'Success: True', response.content)
+        # Should have error message in the content
+        self.assertIn(b'As a security measure', response.content)
 
     def test_mismatched_new_passwords_rerenders_form(self):
         """New password and confirmation don't match → form re-rendered."""
