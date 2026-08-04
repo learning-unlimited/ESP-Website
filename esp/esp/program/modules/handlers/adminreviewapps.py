@@ -55,17 +55,6 @@ class AdminReviewApps(ProgramModuleObj):
             "choosable": 0,
             }
 
-    def students(self, QObject=False):
-        Q_accepted = Q(studentregistration__relationship__name='Accepted', studentregistration__section__parent_class__parent_program=self.program)
-
-        if QObject:
-            return {'app_accepted_to_one_program': Q_accepted}
-        else:
-            return {'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
-
-    def studentDesc(self):
-        return {'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
-
     @main_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
@@ -90,7 +79,8 @@ class AdminReviewApps(ProgramModuleObj):
         students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
-            student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
+            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
@@ -179,7 +169,6 @@ class AdminReviewApps(ProgramModuleObj):
             student.app = student.studentapplication_set.get(program = self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
@@ -203,8 +192,9 @@ Student schedule for {student.name()}:
 
  Time               | Class                   | Room"""
 
-        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
-        classes = sorted([x.section.parent_class for x in regs])
+        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted').select_related('section__parent_class').prefetch_related('section__parent_class__sections__meeting_times')
+        classes = [x.section.parent_class for x in regs]
+        classes.sort(key=lambda s: s._sort_key())
 
         # now we sort them by time/title
 

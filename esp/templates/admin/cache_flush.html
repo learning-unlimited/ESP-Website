@@ -17,20 +17,20 @@ logged out.  Only do this if you actually know what you're doing.</p>
 
 <p>Also, please fill out the following textbox with a reason explaining why
 you flushed the cache.  If you flushed it because some data on the site was
-showing up incorrectly, please state what it was so that we can fix it so that
+Showing up incorrectly, please state what it was so that we can fix it so that
 it doesn't get out-of-date next time.  (Out-of-date data indicates a bug.
 Flushing the cache may patch the bug for now, but it'll very likely come up
 later, possibly in a more annoying way.)</p>
 
 {% if error %}
-    <div class="alert alert-danger">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <div role="alert" class="alert alert-danger">
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         {{ error }}
     </div>
 {% endif %}
 {% if success %}
-    <div class="alert alert-success">
-        <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <div role="alert" class="alert alert-success">
+        <span class="bi bi-info-circle" aria-hidden="true"></span>
         {{ success }}
     </div>
 {% endif %}

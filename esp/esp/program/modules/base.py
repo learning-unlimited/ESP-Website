@@ -40,11 +40,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
-from django.utils.decorators import available_attrs
+from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
+from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
@@ -68,7 +69,83 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
+    # Class-level attributes that subclasses can override.
+    # Use immutable defaults to avoid accidental cross-module mutation.
+    always_enabled = False
+    seq_locked = False
+    conflicts_with = ()
+    permission_types = ()
+
+    def get_permission_types(self):
+        """
+        Return a list or tuple of Permission strings from PERMISSION_CHOICES_FLAT
+        associated with this module.
+        Subclasses can override the class attribute `permission_types` or this method.
+        """
+        return self.permission_types
+
+    def sync_permissions(self):
+        """
+        Synchronize this module's start_date and end_date with the backend Permission table
+        for all associated permission_types.
+        Skips synchronization if get_permission_types() returns empty.
+        """
+        perm_types = self.get_permission_types()
+        if not perm_types:
+            return
+
+        tl_to_role = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+        for perm_type in perm_types:
+            role_name = None
+            if perm_type.startswith("Student"):
+                role_name = "Student"
+            elif perm_type.startswith("Teacher"):
+                role_name = "Teacher"
+            elif perm_type.startswith("Volunteer"):
+                role_name = "Volunteer"
+            elif hasattr(self.module, 'module_type') and self.module.module_type in tl_to_role:
+                role_name = tl_to_role[self.module.module_type]
+
+            if not role_name:
+                logger.warning(
+                    "sync_permissions: could not determine role for permission_type=%s (module=%s)",
+                    perm_type,
+                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                )
+                continue
+
+            group = Group.objects.filter(name=role_name).first()
+            if not group:
+                logger.warning(
+                    "sync_permissions: group %s not found; skipping permission_type=%s",
+                    role_name,
+                    perm_type,
+                )
+                continue
+
+            perms = Permission.objects.filter(
+                program=self.program,
+                role=group,
+                permission_type=perm_type,
+                user__isnull=True,
+                user_filter__isnull=True
+            )
+            if perms.exists():
+                perms.update(start_date=self.start_date, end_date=self.end_date)
+            else:
+                Permission.objects.create(
+                    program=self.program,
+                    role=group,
+                    permission_type=perm_type,
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                    user=None,
+                    user_filter=None
+                )
+
+    start_date = models.DateTimeField(blank=True, null=True, default=None,
+                                      help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
@@ -283,8 +360,8 @@ class ProgramModuleObj(models.Model):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -316,8 +393,8 @@ class ProgramModuleObj(models.Model):
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -332,7 +409,13 @@ class ProgramModuleObj(models.Model):
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement']
+                                       'SurveyManagement',
+                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
+                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
+                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
@@ -356,6 +439,8 @@ class ProgramModuleObj(models.Model):
 
     def isRequired(self):
         return self.required
+
+    hideNotRequired = False
 
     def prepare(self, context):
         return context
@@ -562,7 +647,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
         attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
     """
     def decorator(view_method):
-        @wraps(view_method, assigned=available_attrs(view_method))
+        @wraps(view_method)
         def _check(moduleObj, request, tl, *args, **kwargs):
             if require_login and not_logged_in(request):
                 return _login_redirect(request)
