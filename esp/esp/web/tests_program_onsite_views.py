@@ -19,7 +19,7 @@ Covers:
 from django.http import Http404
 from django.test import RequestFactory
 
-from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.program.models import Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Permission
@@ -120,7 +120,7 @@ class MyESPOnsiteTest(ProgramFrameworkTest):
         # Regular student with no Onsite permission → ESPError
         regular_user = self.students[0]
         request = self._onsite_request(regular_user)
-        with self.assertRaises(ESPError()):
+        with self.assertRaises(ESPError_NoLog):
             myesp_onsite(request)
 
     def test_single_program_redirects(self):
