@@ -14,8 +14,6 @@ class AccountingModuleTest(TestCase):
         self.user.makeAdmin()
 
     def test_user_lookup_via_url_target_user(self):
-        
-        
         request = self.factory.get(
             f"/accounting/?target_user={self.user.id}"
         )
