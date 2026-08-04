@@ -91,6 +91,7 @@ class MyESPPasswdPostTest(TestCase):
         response = myesp_passwd(self._post_request(data))
         self.assertEqual(response.status_code, 200)
         # Should have error message in the content
+        response.render()
         self.assertIn(b'As a security measure', response.content)
 
     def test_mismatched_new_passwords_rerenders_form(self):
@@ -103,6 +104,7 @@ class MyESPPasswdPostTest(TestCase):
         response = myesp_passwd(self._post_request(data))
         self.assertEqual(response.status_code, 200)
         # Mismatch should not render the success state
+        response.render()
         self.assertNotIn(b'Congratulations', response.content)
         # Password should remain unchanged in the database
         self.user.refresh_from_db()
@@ -204,6 +206,7 @@ class ProfileEditorGetTest(TestCase):
                              first_name='Alice', last_name='Smith')
         request = self._get_request(teacher)
         response = profile_editor(request, role='teacher')
+        response.render()
         self.assertIn(b'Alice', response.content)
 
     def test_get_administrator_role_returns_200(self):
