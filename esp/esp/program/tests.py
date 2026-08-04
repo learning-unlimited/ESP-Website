@@ -2311,11 +2311,11 @@ class ProgramCreationFormHandlerLookupTest(TestCase):
             self.assertNotIn(teach_row.id, ids)
 
     def test_admissions_dashboard_both_rows_in_teacher_question(self):
-        """'If yes, can teachers admit them...' must include both AdmissionsDashboard rows."""
+        """'If students must apply to individual classes...' must include both AdmissionsDashboard rows."""
         rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
         if not rows:
             self.skipTest("AdmissionsDashboard rows not in DB")
-        ids = self._ids_for_question('If yes, can teachers admit them')
+        ids = self._ids_for_question('If students must apply to individual classes')
         self.assertIsNotNone(ids)
         for row in rows:
             self.assertIn(row.id, ids)
