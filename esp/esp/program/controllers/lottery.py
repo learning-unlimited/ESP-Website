@@ -38,8 +38,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from pkg_resources import parse_version
-assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
+from packaging.version import Version
+assert Version(numpy.version.short_version) >= Version("1.7.0")
 import numpy.random
 
 from datetime import date, datetime
