@@ -103,6 +103,12 @@ class MyESPPasswdPostTest(TestCase):
         }
         response = myesp_passwd(self._post_request(data))
         self.assertEqual(response.status_code, 200)
+        # Mismatch should not render the success state
+        self.assertNotIn(b'Congratulations', response.content)
+        # Password should remain unchanged in the database
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.plain_password))
+        self.assertFalse(self.user.check_password('newpassword456'))
 
 
 # ---------------------------------------------------------------------------
@@ -151,9 +157,9 @@ class MyESPStopTestingValidAdminTest(TestCase):
         with patch('django.contrib.auth.login'), \
              patch('django.contrib.auth.logout'):
             response = myesp_stop_testing(request)
-        # delete_cookie sets cookie to empty string with max-age=0
+        # delete_cookie sets cookie to empty string with max-age='0'
         self.assertIn('esp_testing_role', response.cookies)
-        self.assertEqual(response.cookies['esp_testing_role']['max-age'], 0)
+        self.assertEqual(response.cookies['esp_testing_role']['max-age'], '0')
 
 
 # ---------------------------------------------------------------------------
