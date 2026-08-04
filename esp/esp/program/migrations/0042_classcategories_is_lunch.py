@@ -9,7 +9,7 @@ def forwards_func(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0040_printablejob'),
+        ('program', '0041_classsection_cancellation_reason'),
     ]
 
     operations = [
