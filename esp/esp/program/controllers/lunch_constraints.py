@@ -110,11 +110,11 @@ class LunchConstraintGenerator(object):
         return expression
 
     def get_lunch_category(self):
-        qs = ClassCategories.objects.filter(is_lunch=True, symbol='L').order_by('-id')
+        qs = ClassCategories.objects.filter(is_lunch=True).order_by('-id')
         if qs.exists():
             lunch_category = qs[0]
         else:
-            lunch_category, created = ClassCategories.objects.get_or_create(is_lunch=True, symbol='L')
+            lunch_category, created = ClassCategories.objects.get_or_create(category='Lunch', is_lunch=True, symbol='L')
         self.program.class_categories.add(lunch_category)
         return lunch_category
 
