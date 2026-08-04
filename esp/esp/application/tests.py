@@ -132,7 +132,6 @@ class StudentClassAppTest(TestCase):
         self.class_app.waitlist()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.WAITLIST)
 
-    # Added for issue #5491
     def test_admit_idempotency(self):
         self.class_app.admit()
         first_status = self.class_app.admission_status
