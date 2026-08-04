@@ -120,7 +120,7 @@ class MyESPOnsiteTest(ProgramFrameworkTest):
         # Regular student with no Onsite permission → ESPError
         regular_user = self.students[0]
         request = self._onsite_request(regular_user)
-        with self.assertRaises(ESPError):
+        with self.assertRaises(ESPError()):
             myesp_onsite(request)
 
     def test_single_program_redirects(self):
