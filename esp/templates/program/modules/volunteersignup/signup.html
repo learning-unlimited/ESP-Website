@@ -1,5 +1,8 @@
-{% extends "main.html" %} {% block title %}Sign up to Volunteer for {{
-program.niceName }}{% endblock %} {% block stylesheets %} {{ block.super }}
+{% extends "main.html" %}
+{% block title %}Sign up to Volunteer for {{ program.niceName }}{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 <link rel="stylesheet" href="/media/styles/availability.css" type="text/css" />
 <style>
@@ -20,7 +23,9 @@ program.niceName }}{% endblock %} {% block stylesheets %} {{ block.super }}
     margin: 0;
   }
 </style>
-{% endblock %} {% block xtrajs %}
+{% endblock %}
+
+{% block xtrajs %}
 <script
   type="text/javascript"
   src="/media/scripts/program/modules/availability.js"
@@ -66,12 +71,13 @@ program.niceName }}{% endblock %} {% block stylesheets %} {{ block.super }}
       });
   });
 </script>
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block content %}
 
 <div class="volunteer-banner">
   <h1>
-    &#x1F91D; {% if isAdmin %}Manage {% endif %}Volunteer to Help Run {{
-    program.niceName }}!
+    &#x1F91D; {% if isAdmin %}Manage {% endif %}Volunteer to Help Run {{ program.niceName }}!
   </h1>
 </div>
 
@@ -101,9 +107,12 @@ Thank you, {{ complete_name }}, for volunteering! You will receive reminder emai
 The directors have been notified that you are no longer able to volunteer at {{ program.name }}.
 </p>
 </div>
-{% load render_qsd %} {% render_inline_program_qsd program "volunteer_cancelled"
-%} {% endif %} {% load render_qsd %} {% render_inline_program_qsd program
-"volunteer_signup" %}
+{% load render_qsd %}
+{% render_inline_program_qsd program "volunteer_cancelled" %}
+{% endif %}
+
+{% load render_qsd %}
+{% render_inline_program_qsd program "volunteer_signup" %}
 
 <div id="program_form">
   <form method="POST" id="volunteer_shift_form" action="{{ request.path }}">
@@ -147,13 +156,8 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         <div hidden id="checkboxes">
           {% for request in form.requests %}
           <input
-            {%
-            if
-            request.data.selected
-            %}checked
-            {%
-            endif
-            %}id="{{ request.id_for_label }}"
+            {% if request.data.selected %}checked{% endif %}
+            id="{{ request.id_for_label }}"
             name="{{ request.data.name }}"
             type="checkbox"
             value="{{ request.data.value }}"
