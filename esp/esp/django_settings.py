@@ -175,6 +175,7 @@ TEMPLATES = [
                 'esp.context_processors.espuserified_request',
                 'esp.context_processors.preload_images',
                 'esp.context_processors.email_settings',
+                'esp.context_processors.template_defaults',
                 'esp.context_processors.program',
                 'esp.context_processors.schoolyear',
                 'django.template.context_processors.i18n',

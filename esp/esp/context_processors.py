@@ -67,6 +67,24 @@ def current_site(request):
 def preload_images(request):
     return {'preload_images': preload_images_data}
 
+
+def template_defaults(request):
+    """Provide safe default template variables used by base templates.
+
+    Some templates expect variables like `login_result` and
+    `active_program_tags` to exist. Tests and code that render templates
+    via Django's template system (with context processors) rely on these
+    keys being present. This context processor ensures they are always
+    available with sensible defaults.
+    """
+    return {
+        'login_result': '',
+        'active_program_tags': [],
+        'active_program_tags_url': '',
+        'active_global_tags': [],
+        'active_global_tags_url': '',
+    }
+
 """ This list can be populated with images to be preloaded by the template.
 
     Example:
