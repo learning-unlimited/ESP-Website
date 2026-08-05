@@ -81,6 +81,7 @@ class MultiSelectCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
     doc = """Serves a form during student registration for students to purchase other items."""
+    permission_types = ('Student/ExtraCosts',)
 
     @classmethod
     def module_properties(cls):
