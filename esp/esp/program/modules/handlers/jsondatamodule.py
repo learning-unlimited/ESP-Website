@@ -291,6 +291,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cached_module_view
     def lunch_timeslots(prog):
         lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__is_lunch=True, meeting_times__parent_class__parent_program=prog).values('id'))
+        lunch_timeslots = list(prog.lunch_timeslots().values('id'))
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
         return {'timeslots': lunch_timeslots}

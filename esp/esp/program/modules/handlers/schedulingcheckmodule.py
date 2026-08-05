@@ -145,6 +145,7 @@ class SchedulingCheckRunner:
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
+        lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():

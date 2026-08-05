@@ -43,9 +43,7 @@ def load_schedule_from_db(
     timeslots = sorted(
         batch_convert_events(program.getTimeSlots(), program))
 
-    lunch_events = Event.objects.filter(
-            meeting_times__parent_class__category__is_lunch=True,
-            meeting_times__parent_class__parent_program=program)
+    lunch_events = program.lunch_timeslots()
 
     lunch_timeslots = [(e.start, e.end) for e in lunch_events]
 

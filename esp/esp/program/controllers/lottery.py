@@ -44,7 +44,6 @@ import numpy.random
 
 from datetime import date, datetime
 
-from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
@@ -247,7 +246,7 @@ class LotteryAssignmentController(object):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.timeslots:

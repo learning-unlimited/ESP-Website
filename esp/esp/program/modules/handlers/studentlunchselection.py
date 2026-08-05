@@ -36,8 +36,6 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
 from esp.program.models          import ClassSection, StudentRegistration
 from esp.users.models            import Record, RecordType
-from esp.cal.models              import Event
-
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
 
@@ -56,7 +54,7 @@ class StudentLunchSelectionForm(forms.Form):
 
         #   Set choices for timeslot field
         #   [(None, '')] +
-        events_all = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
+        events_all = self.program.lunch_timeslots()
         events_filtered = [x for x in events_all if x.start.day == self.day.day]
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
@@ -157,7 +155,7 @@ class StudentLunchSelection(ProgramModuleObj):
         return render_to_response(self.baseDir()+'select_lunch.html', request, context)
 
     def isStep(self):
-        return Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__is_lunch=True).exists()
+        return self.program.lunch_timeslots().exists()
 
     class Meta:
         proxy = True
