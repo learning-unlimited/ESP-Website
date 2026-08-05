@@ -669,7 +669,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
                 return_path = email_message.from_email
             self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
-                    email_message.message().as_string())
+                    email_message.message().as_bytes(linesep='\r\n'))
         except:
             if not self.fail_silently:
                 raise

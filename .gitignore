@@ -38,7 +38,7 @@ local_fabfile.py
 *.swp
 .espsettings
 .coverage
-
+.codegraph/
 
 # Mac
 .DS_Store

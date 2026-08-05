@@ -169,7 +169,7 @@ def remove_list_member(list, member):
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of email addresses on the specified mailing list """
-    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].decode('utf-8').split('\n')
 
     try:
         # It seems the empty string gets dragged into this list.
@@ -196,7 +196,7 @@ def all_lists(show_nonpublic=False):
     args = [MM_PATH + "list_lists", "-b"]
     if not show_nonpublic:
         args.append("-a")
-    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].decode('utf-8').split('\n')
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
@@ -208,7 +208,7 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
+    data = data[0].decode('utf-8').split('\n')
 
     # find_member's output is of the form
     #
