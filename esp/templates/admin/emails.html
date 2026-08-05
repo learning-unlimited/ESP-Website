@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load render_qsd %}
 
 {% block title %}Monitor Emails{% endblock %}
 {% block content_title %}Monitor Emails{% endblock %}
@@ -52,7 +53,10 @@ tr.email-details {
 <form action="/manage/emails" method="get">
 <p>Currently showing emails since <input name="start_date" type="date" onchange="$j(this).parents('form').submit();return false;" value="{{ start_date|date:"Y-m-d" }}"></p>
 </form>
+
+{% inline_qsd_block "manage/email_status" %}
 <p>If you notice any problems (emails aren't getting processed, emails won't send, emails are not sent to everyone, etc.), please contact <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">{{ DEFAULT_EMAIL_ADDRESSES.support }}</a>.</p>
+{% end_inline_qsd_block %}
 
 {% if not requests %}
 <p>There are no emails to monitor.</p>
