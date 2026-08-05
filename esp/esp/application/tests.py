@@ -154,5 +154,4 @@ class StudentClassAppTest(TestCase):
         self.class_app.admit()
         self.class_app.refresh_from_db()
         second_status = self.class_app.admission_status
-
         self.assertEqual(first_status, second_status)
