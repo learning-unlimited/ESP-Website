@@ -76,10 +76,12 @@ from esp.program.modules.tests.test_class_creation import (
 from esp.program.modules.tests.resolve_user import ResolveUserTest
 from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
+from esp.program.modules.tests.test_accountingmodule import AccountingModuleTest
 from esp.program.modules.tests.lotteryfrontendmodule import LotteryFrontendModuleTest
 from esp.program.modules.tests.test_student_reg_phase_zero import StudentRegPhaseZeroTestCase
 from esp.program.modules.tests.test_teacher_review_apps import TeacherReviewAppsTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
+from esp.program.modules.tests.test_scheduling_check import SchedulingCheckHelpersTest
 from esp.program.modules.tests.test_student_reg_phase_zero_manage import StudentRegPhaseZeroManageTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest, TeacherEventsCalendarDataTest
 from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest

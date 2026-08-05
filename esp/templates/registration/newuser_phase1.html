@@ -22,13 +22,13 @@ email address.  If you are sure you want a new account, please click "Proceed to
 <ul>
   {% for u in accounts %}
   <li>{{ u.username }} <br />
-  <form method="post" action="/myesp/login">
+  <form method="post" action="{% url 'login' %}">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="hidden" name="password" value="" />
-    <input type="hidden" name="next" value="/myesp/profile/" />
+    <input type="hidden" name="next" value="{% url 'myesp_profile' %}" />
     <input type="submit" value="Try logging in" class="btn btn-primary" />
   </form>
-  <form action="/myesp/passwdrecover/" method="post">
+  <form action="{% url 'passwd_recover' %}" method="post">
     <input type="hidden" name="email" value="{{ u.email }}" />
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
@@ -38,7 +38,7 @@ email address.  If you are sure you want a new account, please click "Proceed to
   {% endfor %}
   {% for u in awaitings %}
   <li>{{ u.username }} -- Awaiting activation <br />
-  <form action="/myesp/resend/" method="post">
+  <form action="{% url 'esp.users.views.resend_activation_view' %}" method="post">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="Resend Activation Email!" />
   </form>
