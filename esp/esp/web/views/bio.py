@@ -71,7 +71,6 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     lastbio      = TeacherBio.getLastBio(founduser)
 
-
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
     if request.method == 'POST' and 'remove_picture_btn' in request.POST:
@@ -137,7 +136,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
             progbio.save()
             if external:
                 return True
-            return HttpResponseRedirect(progbio.url())
+            return HttpResponseRedirect('.')
 
     else:
         formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio,
