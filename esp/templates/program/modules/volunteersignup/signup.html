@@ -132,19 +132,19 @@ The directors have been notified that you are no longer able to volunteer at {{ 
         </div>
       {% endif %}
       <div class="noclick">
-        {{ form.name.label_tag }} {{ form.name.errors }} {{ form.name }}
-        {{ form.email.label_tag }} {{ form.email.errors }} {{ form.email }}
-        {{ form.phone.label_tag }} {{ form.phone.errors }} {{ form.phone }}
+        {{ form.name.label_tag }} {{ form.name.errors }} {{ form.name }}<br /><br />
+        {{ form.email.label_tag }} {{ form.email.errors }} {{ form.email }}<br /><br />
+        {{ form.phone.label_tag }} {{ form.phone.errors }} {{ form.phone }}<br /><br />
         {% if form.shirt_size %}
-          {{ form.shirt_size.label_tag }} {{ form.shirt_size.errors }} {{ form.shirt_size }}
+          {{ form.shirt_size.label_tag }} {{ form.shirt_size.errors }} {{ form.shirt_size }}<br /><br />
         {% endif %}
         {% if form.shirt_type %}
-          {{ form.shirt_type.label_tag }} {{ form.shirt_type.errors }} {{ form.shirt_type }}
+          {{ form.shirt_type.label_tag }} {{ form.shirt_type.errors }} {{ form.shirt_type }}<br /><br />
         {% endif %}
         {% if form.comments %}
-          {{ form.comments.label_tag }}
+          {{ form.comments.label_tag }}<br />
           <span style="font-size: smaller">{{ form.comments.help_text }}</span>
-          {{ form.comments.errors }} {{ form.comments }}
+          {{ form.comments.errors }} {{ form.comments }}<br /><br />
         {% endif %}
       </div>
       <br />
