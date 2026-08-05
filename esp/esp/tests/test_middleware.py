@@ -10,6 +10,7 @@ from django.contrib.auth.models import Group
 from django.http import HttpResponse
 from django.test import RequestFactory
 
+from esp.middleware.cache_control import CacheControlMiddleware
 from esp.middleware.espauthmiddleware import ESPAuthMiddleware, get_user
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import AnonymousESPUser, ESPUser
@@ -94,3 +95,41 @@ class ESPAuthMiddlewareProcessResponseTest(TestCase):
         self.assertIn('cur_username', cookie_names)
         self.assertIn('cur_userid', cookie_names)
         self.assertIn('cur_email', cookie_names)
+
+
+def _cache_control_directives(cache_control):
+    """Return the set of directive names (lowercase) from a Cache-Control value."""
+    if not cache_control:
+        return set()
+    names = set()
+    for part in cache_control.split(','):
+        part = part.strip().lower()
+        if part:
+            names.add(part.split('=', 1)[0])
+    return names
+
+
+class CacheControlMiddlewareTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.factory = RequestFactory()
+        self.middleware = CacheControlMiddleware(get_response=lambda r: HttpResponse())
+
+    def test_adds_cache_control_when_missing(self):
+        request = self.factory.get('/')
+        response = HttpResponse()
+
+        processed = self.middleware.process_response(request, response)
+        directives = _cache_control_directives(processed.get('Cache-Control'))
+
+        self.assertIn('private', directives)
+        self.assertIn('no-cache', directives)
+
+    def test_does_not_override_existing_cache_control(self):
+        request = self.factory.get('/')
+        response = HttpResponse()
+        response['Cache-Control'] = 'max-age=3600'
+
+        processed = self.middleware.process_response(request, response)
+
+        self.assertEqual(processed.get('Cache-Control'), 'max-age=3600')
