@@ -1,5 +1,5 @@
+from esp.datatypes.models import LineItemOptions, LineItemType
 from esp.program.modules.handlers.studentextracosts import StudentExtraCosts
-from esp.program.models import LineItemOptions, LineItemType
 from esp.program.modules.tests.test_framework import ProgramFrameworkTest
 
 
