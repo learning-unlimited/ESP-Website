@@ -55,7 +55,7 @@
             <h3>Current logo:</h3>
             <img src="/media/images/theme/logo.png?v={{ current_logo_version }}" alt="No logo selected/uploaded">
             <br /><br />
-            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+            <form method="post" action="{% url 'themes_logos' %}" enctype="multipart/form-data">
                 <table>
                     <tr class="options">
                         <td>
@@ -91,7 +91,7 @@
             <h3>Current header:</h3>
             <img src="/media/images/theme/header.png?v={{ current_header_version }}" alt="No header selected/uploaded">
             <br /><br />
-            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+            <form method="post" action="{% url 'themes_logos' %}" enctype="multipart/form-data">
                 <table>
                     <tr class="options">
                         <td>
@@ -127,7 +127,7 @@
             <h3>Current favicon:</h3>
             <img src="/media/images/favicon.ico?v={{ current_favicon_version }}" alt="No favicon selected">
             <br /><br />
-            <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+            <form method="post" action="{% url 'themes_logos' %}" enctype="multipart/form-data">
                 <table>
                     <tr class="options">
                         <td>
@@ -155,10 +155,10 @@
         </center>
     </div>
     <div align="center">
-        <a href="/themes/">
+        <a href="{% url 'themes_landing' %}">
             <button type="button" class="btn btn-lg btn-primary">Return to themes page</button>
         </a>
-        <a href="/">
+        <a href="{% url 'home' %}">
             <button type="button" class="btn btn-lg btn-default">Return to home page</button>
         </a>
         <br/><br/>
