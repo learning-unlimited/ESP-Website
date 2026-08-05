@@ -271,6 +271,18 @@ for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)
 
+# filebrowser's admin.py registers FileBrowser onto the plain
+# django.contrib.admin.site, not ESP's custom esp.admin.admin_site that
+# actually serves /admin/ (see esp.urls). Under Django 1.11,
+# AdminSite.each_context() builds 'available_apps' by reversing an
+# admin:app_list URL for every registered model - which fails for
+# filebrowser since no such URL exists on the custom site's namespace,
+# 500ing /admin/doc/ (the one stock Django view that touches the
+# default site directly). ESP's real filebrowser UI is served via
+# filebrowser_site.urls at /admin/filebrowser/, so this registration is
+# unused and safe to disable.
+FILEBROWSER_SHOW_IN_DASHBOARD = False
+
 
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
