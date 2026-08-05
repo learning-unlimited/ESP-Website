@@ -371,6 +371,29 @@ div.navbar-collapse {
     .navbar.bg-dark .dropdown-menu > li > div {
         color: $dropdown-link-color;
     }
+
+    //  Navbar customizer values applied on top of the Bootswatch theme — only
+    //  for the fields the admin actually changed (see $esp-overridden).
+    @if index($esp-overridden, 'navbarInverseBackground') {
+        .navbar.bg-dark { background: $navbarInverseBackground !important; }
+    }
+    @if index($esp-overridden, 'navbarInverseLinkColor') {
+        .navbar-dark .navbar-nav .nav-link,
+        .navbar-dark .navbar-brand { color: $navbarInverseLinkColor !important; }
+    }
+    @if index($esp-overridden, 'navbarInverseLinkColorHover') {
+        .navbar-dark .navbar-nav .nav-link:hover,
+        .navbar-dark .navbar-nav .nav-link:focus { color: $navbarInverseLinkColorHover !important; }
+    }
+    @if index($esp-overridden, 'navbarInverseBrandColor') {
+        .navbar-dark .navbar-brand { color: $navbarInverseBrandColor !important; }
+    }
+    @if index($esp-overridden, 'navbarInverseBackgroundHighlight') {
+        .navbar-dark .navbar-nav .nav-item.active,
+        .navbar-dark .navbar-nav .nav-item.show,
+        .navbar-dark .navbar-nav .nav-item:hover,
+        .navbar-dark .navbar-nav .nav-item:focus-within { background-color: $navbarInverseBackgroundHighlight !important; }
+    }
 } @else {
     .navbar.bg-dark {
         background-color: $navbarInverseBackground !important;

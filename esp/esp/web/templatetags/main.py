@@ -1,4 +1,4 @@
-﻿from esp.themes.controllers import ThemeController
+from esp.themes.controllers import ThemeController
 
 from django import template
 
@@ -96,7 +96,8 @@ def extract_theme(url):
     tc = ThemeController()
     settings = tc.get_template_settings()
     max_chars_matched = 0
-    for category in settings['nav_structure']:
+    nav_structure = settings.get('nav_structure') or []
+    for category in nav_structure:
         if 'header_link' not in category:
             continue
         num_chars_matched = count_matching_chars(url, category['header_link'])
@@ -121,14 +122,15 @@ def get_nav_category(path):
     settings = tc.get_template_settings()
                 #   Search for current nav category based on request path
     first_level = ''.join(path.lstrip('/').split('/')[:1])
-    for category in settings['nav_structure']:
+    nav_structure = settings.get('nav_structure') or []
+    for category in nav_structure:
         if 'header_link' not in category:
             continue
         if category['header_link'].lstrip('/').startswith(first_level):
             return category
     #   Search failed - use default nav category
     default_nav_category = 'learn'
-    for category in settings['nav_structure']:
+    for category in nav_structure:
         if 'header_link' not in category:
             continue
         if category['header_link'].lstrip('/').startswith(default_nav_category):
