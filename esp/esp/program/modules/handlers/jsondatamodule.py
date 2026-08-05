@@ -290,7 +290,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def lunch_timeslots(prog):
-        lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__is_lunch=True, meeting_times__parent_class__parent_program=prog).values('id'))
         lunch_timeslots = list(prog.lunch_timeslots().values('id'))
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
@@ -1088,11 +1087,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             def student_count(clslist):
-                lst = [0] + [x.num_students() for x in clslist if x.category.category != 'Lunch']
+                lst = [0] + [x.num_students() for x in clslist if not x.category.is_lunch]
                 return reduce(operator.add, lst)
 
             def student_max_count(clslist):
-                lst = [0] + [x.capacity for x in clslist if x.category.category != 'Lunch']
+                lst = [0] + [x.capacity for x in clslist if not x.category.is_lunch]
                 return reduce(operator.add, lst)
 
             curTimeslot['studentcount'] = {

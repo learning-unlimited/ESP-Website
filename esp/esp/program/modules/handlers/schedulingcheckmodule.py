@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.resources.models import ResourceRequest, ResourceType
@@ -144,7 +144,6 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__is_lunch=True).order_by('start').distinct()
         lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
@@ -405,8 +404,9 @@ class SchedulingCheckRunner:
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
         if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is not None and lunch_category.category in self.class_categories:
+            self.class_categories.remove(lunch_category.category)
 
         #generating a dictionary of class categories
         class_cat_d = {}
