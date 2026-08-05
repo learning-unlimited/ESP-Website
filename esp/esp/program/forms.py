@@ -594,7 +594,7 @@ class RecordTypeForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = ClassCategories
-        fields = ['category', 'symbol', 'seq']
+        fields = ['category', 'symbol', 'seq', 'is_lunch']
         widgets = {
             'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})
         }
