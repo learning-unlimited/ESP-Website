@@ -2252,10 +2252,30 @@ class ClassCategories(models.Model):
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
 
+    @classmethod
+    def get_lunch(cls):
+        """Return the lunch category, or None if none is configured."""
+        return cls.objects.filter(is_lunch=True).first()
+
+    def clean(self):
+        # Enforce the single-lunch-category restriction with a friendly message
+        if self.is_lunch and ClassCategories.objects.filter(
+                is_lunch=True).exclude(pk=self.pk).exists():
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                {'is_lunch': 'A lunch category already exists; only one lunch category is allowed.'})
+
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_lunch'],
+                condition=models.Q(is_lunch=True),
+                name='unique_lunch_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
