@@ -37,7 +37,7 @@ from esp.middleware import ESPError
 from esp.users.models import admin_required
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
-from esp.themes.controllers import ThemeController
+from esp.themes.controllers import ThemeController, customization_name_re
 
 from esp.utils.web import render_to_response
 from django.http import HttpResponseRedirect
@@ -49,6 +49,7 @@ import json
 import logging
 import random
 import string
+import re
 import os.path
 import shutil
 
@@ -150,7 +151,6 @@ def _generate_favicon_variants(ico_path, images_dir):
 THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
                      "If you want to switch to one of the standard themes, " + \
                      "please contact the web team."
-
 
 @admin_required
 def landing(request):
@@ -395,6 +395,8 @@ def editor(request):
                     theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
             else:
                 theme_name = request.POST['saveThemeName']
+            if not customization_name_re.match(theme_name):
+                raise ESPError('Invalid customization name', log=False)
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
             if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
@@ -410,7 +412,10 @@ def editor(request):
             tc.save_customizations(theme_name, vars=vars, palette=palette, bootswatch_theme=bootswatch_theme)
             tc.set_current_customization(theme_name)
         elif 'load' in request.POST:
-            (vars, palette, loaded_bootswatch) = tc.load_customizations(request.POST['loadThemeName'])
+            load_theme_name = request.POST['loadThemeName']
+            if not customization_name_re.match(load_theme_name):
+                raise ESPError('Invalid customization name', log=False)
+            (vars, palette, loaded_bootswatch) = tc.load_customizations(load_theme_name)
             #   loaded_bootswatch is None for customisations saved before this
             #   Bootswatch-aware format existed; leave the current tag as-is
             #   in that case rather than silently clearing it.
@@ -423,7 +428,10 @@ def editor(request):
                 bootswatch_theme = loaded_bootswatch
                 Tag.setTag('bootswatch_theme', value=bootswatch_theme)
         elif 'delete' in request.POST:
-            tc.delete_customizations(request.POST['loadThemeName'])
+            load_theme_name = request.POST['loadThemeName']
+            if not customization_name_re.match(load_theme_name):
+                raise ESPError('Invalid customization name', log=False)
+            tc.delete_customizations(load_theme_name)
         elif 'apply' in request.POST:
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')

@@ -262,7 +262,12 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    try:
+        _uid = os.getuid()
+    except AttributeError:
+        # Windows doesn't provide getuid(); fall back to the process id
+        _uid = os.getpid()
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(_uid))
     os.makedirs(tempdir, mode=0o700, exist_ok=True)
     try:
         os.chmod(tempdir, 0o700)
