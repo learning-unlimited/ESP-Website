@@ -128,6 +128,7 @@ def json_encode(obj):
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
+    permission_types = ('Student/Classes',)
 
     @classmethod
     def module_properties(cls):

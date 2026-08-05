@@ -261,6 +261,11 @@ class ViewUserInfoTest(TestCase):
         self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
         self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
+        # Test to make sure we get an error when username parameter is missing
+        response = c.get("/manage/userview")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b'must specify a username', response.content)
+
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
         self.assertEqual(response.status_code, 500)
@@ -1269,10 +1274,13 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         self.program.getModules()
         self.schedule_randomly()
 
-        sec = random.choice(list(self.program.sections()))
+        sec = next(
+            (s for s in self.program.sections() if s.classrooms()),
+            None,
+        )
+        self.assertIsNotNone(sec, "No sections have rooms after schedule_randomly()")
         options = sec.parent_program.studentclassregmoduleinfo
         rooms = sec.classrooms()
-        self.assertGreater(len(rooms), 0)
         room_capacity = rooms[0].num_students
 
         # Enable room-cap multiplier and set values
@@ -2272,6 +2280,148 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ProgramCreationFormHandlerLookupTest(TestCase):
+    """
+    Verify that ProgramCreationForm.program_module_question_ids is built using
+    handler lookups (not admin_title), and that the AdmissionsDashboard
+    manage-only special case is preserved correctly.
+    """
+
+    def setUp(self):
+        self.form = ProgramCreationForm()
+
+    def _ids_for_question(self, question_text):
+        for key, ids in self.form.program_module_question_ids.items():
+            if question_text in str(key):
+                return ids
+        return None
+
+    def test_admissions_dashboard_manage_only_question(self):
+        """'Do students have to apply...' must include AdmissionsDashboard manage row only."""
+        manage_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage').first()
+        teach_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='teach').first()
+        if manage_row is None:
+            self.skipTest("AdmissionsDashboard manage row not in DB")
+        ids = self._ids_for_question('Do students have to apply to individual classes?')
+        self.assertIsNotNone(ids)
+        self.assertIn(manage_row.id, ids)
+        if teach_row is not None:
+            self.assertNotIn(teach_row.id, ids)
+
+    def test_admissions_dashboard_both_rows_in_teacher_question(self):
+        """'If students must apply to individual classes...' must include both AdmissionsDashboard rows."""
+        rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
+        if not rows:
+            self.skipTest("AdmissionsDashboard rows not in DB")
+        ids = self._ids_for_question('If students must apply to individual classes')
+        self.assertIsNotNone(ids)
+        for row in rows:
+            self.assertIn(row.id, ids)
+
+    def test_handler_based_lookup_includes_expected_module(self):
+        """Spot-check: CreditCardModule_Stripe appears under the credit card question."""
+        pm = ProgramModule.objects.filter(handler='CreditCardModule_Stripe').first()
+        if pm is None:
+            self.skipTest("CreditCardModule_Stripe not in DB")
+        ids = self._ids_for_question('will you accept payment by credit card')
+        self.assertIsNotNone(ids)
+        self.assertIn(pm.id, ids)
+
+class ProgramCreationFormDateValidationTest(TestCase):
+    """Tests that ProgramCreationForm rejects registration date ranges where
+    end is not strictly after start."""
+
+    def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
+        """Return a minimal set of form fields sufficient to trigger the date
+        validation logic (other required fields are filled with sane defaults)."""
+        return {
+            'program_type': 'Splash',
+            'term': '2026_Fall',
+            'term_friendly': 'Fall 2026',
+            'grade_min': '7',
+            'grade_max': '12',
+            'director_email': 'info@test.learningu.org',
+            'program_size_max': '3000',
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'base_cost': '0',
+            'program_modules': [],
+            'class_categories': [],
+            'admins': [],
+        }
+
+    def test_teacher_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end <= teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-08-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('teacher_reg_end'),
+            "Expected a validation error for teacher_reg_end before teacher_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_student_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end <= student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-09-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('student_reg_end'),
+            "Expected a validation error for student_reg_end before student_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_teacher_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end == teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-09-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_student_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end == student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-10-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_valid_registration_date_ranges(self):
+        """ProgramCreationForm has no date-range error when both end dates are
+        strictly after their respective start dates."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-11-15 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        # A duplicate-URL check may fire (no DB here), but we specifically
+        # assert there is no cross-field date-range error.
+        self.assertNotIn('teacher_reg_end', form.errors)
+        self.assertNotIn('student_reg_end', form.errors)
 
 
 class SubmitTransactionRequiresPostTest(TestCase):
