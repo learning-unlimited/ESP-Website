@@ -234,13 +234,23 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option_amount = None
                             if option_id:
                                 option = LineItemOptions.objects.get(id=option_id)
-                                #   Give error if no amount was typed in
-                                if option.is_custom and not option_amount:
-                                    preserve_items.append(lineitem_type.text)
+
+                                # Check for custom amount validity
+                                is_invalid_custom = False
+                                if option.is_custom:
+                                    if not option_amount:
+                                        is_invalid_custom = True
+                                    else:
+                                        try:
+                                            float(option_amount)
+                                        except (ValueError, TypeError):
+                                            is_invalid_custom = True
+
+                                if is_invalid_custom:
+                                    preserve_items[lineitem_type.text] = form
                                     forms_all_valid = False
-                                    error_custom = True
                                 else:
-                                    #   Use default amount if this option doesn't allow a custom amount
+                                    # Use default amount if this option doesn't allow a custom amount
                                     if not option.is_custom:
                                         option_amount = option.amount_dec_inherited
                                     form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
