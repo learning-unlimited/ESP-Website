@@ -55,7 +55,7 @@
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
     {% endif %}
     {% if "Teacher" in user.getUserTypes %}
-        <a id="biolink" class="sidelink" href="{% url 'teacher_bio' user.username %}">Go to teacher bio</a>
+        <a id="biolink" class="sidelink" href="{% url 'teacher_bio' tl='teach' username=request.user.username %}">Go to teacher bio</a>
     {% endif %}
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
