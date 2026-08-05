@@ -9,7 +9,7 @@
 We have detected differences between the image and script files provided by the theme, and the files on the server.  This may be because the theme has been updated and/or you customized the files on the server.  For each of the files below, please confirm whether you would like to overwrite the current file with the new one.
 </p>
 
-<form id="confirm_overwrite_form" method="POST" action="/themes/confirm_overwrite/">
+<form id="confirm_overwrite_form" method="POST" action="{% url 'themes_confirm_overwrite' %}">
 <input type="hidden" name="confirm_overwrite" value="1" />
 <input type="hidden" name="action" value="select" />
 <input type="hidden" name="orig_view" value="{{ orig_view }}" />
