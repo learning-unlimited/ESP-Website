@@ -79,6 +79,7 @@ class MyESPPasswdPostTest(TestCase):
         response = myesp_passwd(self._post_request(data))
         self.assertEqual(response.status_code, 200)
         # The success template renders a congratulations message
+        response.render()
         self.assertIn(b'Congratulations', response.content)
 
     def test_wrong_old_password_rerenders_form(self):
