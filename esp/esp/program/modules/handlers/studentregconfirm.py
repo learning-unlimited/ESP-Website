@@ -39,6 +39,7 @@ from django.http import HttpResponseRedirect
 
 class StudentRegConfirm(ProgramModuleObj):
     doc = """Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg"""
+    permission_types = ('Student/Confirm',)
     @classmethod
     def module_properties(cls):
         return {

@@ -67,6 +67,7 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
 
         self.lunch_category, _ = ClassCategories.objects.get_or_create(
             category='Lunch',
+            is_lunch=True,
             defaults={'symbol': 'L'},
         )
 

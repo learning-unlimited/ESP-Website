@@ -12,7 +12,7 @@
         <th colspan="4">All Open Classes - Currently {{ current_time }}</th>
     </tr>
     {% for class in classes %}
-        {% if class.category.category != "Lunch" %}
+        {% if not class.category.is_lunch %}
         {% if not class.isFullIgnoreChanges %}
          {% if use_categories %}
             {% ifchanged %}
