@@ -2,6 +2,9 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{# This page has its own account form, so suppress the sidebar/navbar login box. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -16,16 +19,16 @@
   <ul>
     {% for u in accounts %}
     <li>Username: "{{ u.username }}" (
-    <form method="post" action="/myesp/login">
+    <form method="post" action="{% url 'login' %}">
       <input type="hidden" name="username" value="{{ u.username }}" />
       <input type="hidden" name="password" value="" />
-      <input type="hidden" name="next" value="/myesp/profile/" />
+      <input type="hidden" name="next" value="{% url 'myesp_profile' %}" />
       <input type="submit" value="Try logging in" class="btn btn-primary" />
     </form>
-    <form action="/myesp/passwdrecover/" method="post">
+    <form action="{% url 'passwd_recover' %}" method="post">
       <input type="hidden" name="email" value="{{ u.email }}" />
       <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" class="btn btn-default" />
+      <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
     </form>
     )
     </li>
@@ -64,7 +67,7 @@
 
     <div class="errors">
       <p>There
-      {% if form.errors|length_is:1 %}is an error{% else %}
+      {% if form.errors|length == 1 %}is an error{% else %}
       are errors{% endif %} in the below form. Please fix and resubmit.<p>
     </div>
 

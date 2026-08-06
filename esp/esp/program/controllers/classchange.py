@@ -36,8 +36,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from pkg_resources import parse_version
-assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
+from packaging.version import Version
+assert Version(numpy.version.short_version) >= Version("1.7.0")
 import numpy.random
 import queue
 import random
@@ -48,7 +48,6 @@ import os
 import sys
 import time
 
-from esp.cal.models import Event
 from esp.users.models import ESPUser
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program, ClassSection
 from esp.dbmail.models import send_mail
@@ -78,7 +77,7 @@ class ClassChangeController(object):
         for cls in sections:
             schedule += "<tr>\n<td>"+", ".join(cls.friendly_times())+("<br />"+", ".join(cls.prettyrooms()) if show_rooms else "")+"</td>\n<td>"+cls.title()+"<br />"+", ".join(cls.parent_class.getTeacherNames())+"</td>\n<td>"+cls.emailcode()+"</td>\n</tr>\n"
         schedule += "</table>\n"
-        return schedule.encode('ascii', 'ignore')
+        return schedule
 
     def get_changed_student_email_text(self, student_ind, for_real = False):
         student = self.students[student_ind]
@@ -90,7 +89,6 @@ class ClassChangeController(object):
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def get_unchanged_student_email_text(self, student_ind, for_real = False):
@@ -102,10 +100,9 @@ class ClassChangeController(object):
             text += f"{self.get_student_schedule(student_ind, for_real)}\n\n<br /><br />\n\n"
             text += "See you soon!<br /><br />"
         else:
-            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /<br />\n\n"
+            text += "We're sorry that we couldn't accommodate your class preferences this time, and we hope to see you at a future " + self.program.niceName() + " program.<br /><br />\n\n"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
-        text = text.encode('ascii', 'ignore')
         return text
 
     def _init_Q_objects(self):
@@ -155,7 +152,7 @@ class ClassChangeController(object):
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class', 'parent_class__parent_program').distinct()
         if not self.options['use_closed_classes']:
             self.sections = self.sections.filter(registration_status=0).distinct()
-        self.timeslots = self.program.getTimeSlots().order_by('id').distinct()
+        self.timeslots = self.program.getTimeSlots().order_by('start').distinct()
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.students)
         self.num_sections = len(self.sections)
@@ -423,7 +420,7 @@ class ClassChangeController(object):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.timeslots:
@@ -480,7 +477,7 @@ class ClassChangeController(object):
         #   Populate section overlap matrix
         for i in range(self.num_sections):
             group_ids = numpy.nonzero(self.parent_classes == self.parent_classes[i])[0]
-            self.same_subject[numpy.meshgrid(group_ids, group_ids)] = True
+            self.same_subject[tuple(numpy.meshgrid(group_ids, group_ids))] = True
 
             sec_times = numpy.transpose(numpy.nonzero(self.section_schedules[i,:]))
             for [ts_ind,] in sec_times:
@@ -706,7 +703,7 @@ class ClassChangeController(object):
             logger.info(text_fn(student_ind, for_real=False) + sent_to)
             sys.stdout.flush()
         if f:
-            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"').encode('ascii', 'ignore'))
+            f.write((text_fn(student_ind, for_real=False) + sent_to).replace('\u2019', "'").replace('\u201c', '"').replace('\u201d', '"'))
         if for_real:
             send_mail(self.subject, text_fn(student_ind, for_real=True), self.from_email, recipient_list, bcc=self.bcc, extra_headers=self.extra_headers)
             time.sleep(self.timeout)
@@ -720,7 +717,7 @@ class ClassChangeController(object):
             self.timeout = settings.EMAILTIMEOUT
         else:
             self.timeout = 2
-        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w')
+        f = open(os.getenv("HOME")+'/'+"classchanges.txt", 'w', encoding='utf-8')
         self.subject = "[" + self.program.niceName() + "] Class Change"
         self.from_email = ESPUser.email_sendto_address(self.program.director_email, self.program.niceName())
         self.bcc = [self.from_email]

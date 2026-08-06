@@ -22,4 +22,4 @@ Testing
 -------
 * You should always test features manually on your dev server before you push them to a server.  Seriously, do it.
 * We use the `Django Debug Toolbar <//django-debug-toolbar.readthedocs.org>`_, which will show up automatically on the right of all pages on a dev server.  It has useful things to tell you how slow your page is, and help debug errors.
-* We also have automated tests; they don't cover as much of the codebase as we'd like, but they do exist.  They get automatically run by Travis when you push to Github; you can also run some locally, although you probably don't want to run the whole test suite locally.  You should write more tests!  See the Django testing docs for details on how.
+* We also have automated tests; they don't cover as much of the codebase as we'd like, but they do exist.  They get automatically run by GitHub Actions when you push to GitHub; you can also run some locally, although you probably don't want to run the whole test suite locally.  You should write more tests!  See the Django testing docs for details on how.
