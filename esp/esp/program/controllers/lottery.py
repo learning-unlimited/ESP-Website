@@ -491,14 +491,21 @@ class LotteryAssignmentController(object):
         # Get section indices for lunch sections
         # self.section_indices and self.timeslot_indices are numpy arrays
         # mapping object IDs to indices (or -1 if not present), so we must
-        # look up the index and ensure it is valid instead of using `in`.
+        # look up the index and ensure it is valid and within bounds instead of using `in`.
         lunch_section_indices = {}
         for ts_id, sec_id in lunch_by_timeblock.items():
-            sec_index = self.section_indices[sec_id]
-            if sec_index >= 0:
-                ts_index = self.timeslot_indices[ts_id]
-                if ts_index >= 0:
-                    lunch_section_indices[ts_index] = sec_index
+            if 0 <= sec_id < len(self.section_indices):
+                sec_index = self.section_indices[sec_id]
+                if sec_index >= 0:
+                    if 0 <= ts_id < len(self.timeslot_indices):
+                        ts_index = self.timeslot_indices[ts_id]
+                        if ts_index >= 0:
+                            lunch_section_indices[ts_index] = sec_index
+
+        if not lunch_section_indices or self.num_students == 0:
+            if self.options['stats_display']:
+                logger.info('   No valid lunch section indices or students found, skipping lunch assignment')
+            return
 
         # Precompute current enrollment counts for all lunch sections (O(1) lookup/update)
         lunch_enrollment = {}
@@ -531,9 +538,10 @@ class LotteryAssignmentController(object):
             # timeslot_indices is a numpy array indexed by ID value.
             day_lunch_timeslots = []
             for ts_id in self.lunch_timeslots[day_index]:
-                ts_index = self.timeslot_indices[ts_id]
-                if ts_index >= 0:
-                    day_lunch_timeslots.append(ts_index)
+                if 0 <= ts_id < len(self.timeslot_indices):
+                    ts_index = self.timeslot_indices[ts_id]
+                    if ts_index >= 0:
+                        day_lunch_timeslots.append(ts_index)
 
             if not day_lunch_timeslots:
                 continue
