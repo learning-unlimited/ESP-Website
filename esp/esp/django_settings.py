@@ -146,6 +146,9 @@ EMAIL_HOST = 'localhost'
 SENDGRID_SMTP_HOST = "smtp.sendgrid.net"
 SENDGRID_SMTP_PORT = 587
 SENDGRID_SMTP_USERNAME = "apikey"
+# API key used to authenticate to SendGrid. Override this in local_settings.py;
+# never commit a real key.
+SENDGRID_API_KEY = ''
 
 #################################
 # Default localization settings #

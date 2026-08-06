@@ -3,18 +3,21 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-import itertools
+import email
+import email.utils
+import hashlib
 import logging
 import os
-import sys
+import random
+import re
 import smtplib
-import traceback
-from email import policy
-from email.parser import BytesParser
-from email.utils import getaddresses
+import socket
+import sys
 
-# Custom header marker for loop prevention
-FORWARDER_HEADER = "X-Forwarded-By: lu-forwarder"
+# Marks messages this script has already forwarded, so that a message which
+# loops back into the mailgate is dropped instead of amplified.
+FORWARDER_HEADER_NAME = 'X-Forwarded-By'
+FORWARDER_HEADER_VALUE = 'lu-forwarder'
 
 # Configure paths and environment variables
 new_path = '/'.join(sys.path[0].split('/')[:-1])
@@ -39,168 +42,244 @@ if os.environ.get('VIRTUAL_ENV') is None:
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 
-# TODO: Better:
-#if sys.prefix == sys.base_prefix:
-#    os.execv("env/bin/python", ["env/bin/python"] + sys.argv)
+# TODO: replace the activate_this.py bootstrap above by re-execing this script
+# with env/bin/python whenever it is run outside the project virtualenv.
+# (activate_this.py ships with the `virtualenv` package but not stdlib `venv`.)
 
 # Import Django and site-defined modules after activating the virtual environment
 import django
 django.setup()
-from esp.dbmail.models import PlainRedirect
-from esp.users.models import ESPUser
 from django.conf import settings
-from django.db.models.functions import Lower
+from django.core.mail import send_mail as django_send_mail
+from esp.dbmail.models import EmailList
+from esp.users.models import ESPUser
 
+host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
+BOUNCES = settings.DEFAULT_EMAIL_ADDRESSES['bounces']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
 DOMAIN = '.learningu.org'
+# This site's own public domain, which may be a vanity domain (e.g. `stanfordesp.org`
+# or `esp.mit.edu`) rather than a `learningu.org` subdomain.
+SITE_DOMAIN = settings.SITE_INFO[1].lower()
 
 #DEBUG=True
 DEBUG=False
-######################################################################################################################
 
 
-def get_final_sender(sender):
-    logger.debug("In final sender")
-    return sender # TODO: add look-up logic
+def _is_site_address(address):
+    """True if `address` belongs to this site.
 
-
-def get_final_recipients(recipients):
+    Covers both the vanity domain (`user@stanfordesp.org`, `user@esp.mit.edu`) and
+    the LU alias domain (`user@stanford.learningu.org`).  Bare `user@learningu.org`
+    is deliberately excluded: those are enterprise Gmail addresses, not site aliases.
+    Accepts either a bare address or a `"Name" <addr>` form.
     """
-    Expand and deduplicate recipients using the ESPUser database
+    _name, addr = email.utils.parseaddr(address)
+    domain = (addr or address).rsplit('@', 1)[-1].lower()
+    return domain == SITE_DOMAIN or domain.endswith(DOMAIN)
+
+
+def _has_been_forwarded(message):
+    """True if this message has already passed through this script."""
+    return any(FORWARDER_HEADER_VALUE in value
+               for value in message.get_all(FORWARDER_HEADER_NAME, []))
+
+
+def _drop_self_referential(recipients):
+    """Remove recipients that point back at this site, which would loop.
+
+    The X-Forwarded-By marker catches loops on the second pass; this catches them
+    on the first, so a misconfigured user email never generates the extra send.
     """
-    logger.debug("In final recipients")
-    resolved = []
-    aliases = []
-    for recipient in recipients:
-        # If the recipient has an email address that does not end with @anysite.learningu.org, keep them
-        # Note we `DOMAIN` instead of the `HOSTNAME` because the latter resolves to `thissite.learningu.org`
-        # in settings,  and we want `anysite.learningu.org` while still allowing user@learningu.org because
-        # those resolve to enterprise Gmail addresses
-        if recipient.endswith(DOMAIN):
-            aliases.append(recipient)
-        elif '@' in recipient:
-            resolved.append(recipient)
-        else:
-            logger.warning('Email address without `@` symbol: `{}`'.format(recipient))
-    redirects = PlainRedirect.objects.annotate(original_lower=Lower("original"
-                )).filter(original_lower__in=[x.split('@')[0].lower() for x in aliases]
-                ).exclude(destination__isnull=True).exclude(destination='')
-    # Split out individual email addresses if any of the redirects is a list
-    redirects = list(itertools.chain.from_iterable(map(lambda x: x.destination.split(',') if x.destination else [], redirects)))
-    users = ESPUser.objects.annotate(username_lower=Lower("username"
-            )).filter(username_lower__in=[x.split('@')[0].lower() for x in aliases])
-    # Grab the emails from the users
-    users = [x.email for x in users]
-    # Theoretically at least one of these should be empty, but now doesn't seem like the time
-    # If the redirect resolve to anything@anysite.learningu.org, kill it
-    for address in redirects + users:
-        if not address.endswith(DOMAIN):
-            resolved.append(address)
-
-    # Deduplicate while preserving order
-    seen = set()
-    unique = []
-    for r in resolved:
-        if r not in seen:
-            seen.add(r)
-            unique.append(r)
-
-    return unique
+    kept = [r for r in recipients if not _is_site_address(r)]
+    if len(kept) != len(recipients):
+        logger.warning("Dropped %d recipient(s) resolving back to this site",
+                       len(recipients) - len(kept))
+    return kept
 
 
-def has_been_forwarded(raw_email):
+def _rewrite_headers(message, handler_row, instance):
+    """Header rewriting for group broadcasts (ClassList, SectionList, PlainList).
+
+    Handlers that set `preserve_headers` (e.g. UserEmail) skip this entirely.
     """
-    Detect if this email has already passed through our system.
+    del message['to']
+    del message['cc']
+    message['X-ESP-SENDER'] = 'version 2'
+    client_ip = message['X-Client-IP'] or message['Client-IP']
+    if client_ip:
+        message['X-FORWARDED-FOR'] = client_ip
+
+    subject = message['subject']
+    del message['subject']
+    if getattr(instance, 'emailcode', None):
+        subject = '[%s] %s' % (instance.emailcode, subject)
+    if handler_row.subject_prefix:
+        subject = '[%s] %s' % (handler_row.subject_prefix, subject)
+    message['Subject'] = subject
+
+    if handler_row.from_email:
+        del message['from']
+        message['From'] = handler_row.from_email
+
+    # A fresh Message-ID per broadcast, so that a recipient who receives the
+    # message by more than one route is not deduplicated down to a single copy
+    # by their mail provider.
+    del message['Message-ID']
+    message['Message-ID'] = '<%s@%s>' % (
+        hashlib.sha1(str(random.random()).encode()).hexdigest(), host)
+
+
+def deliver(message, recipients, cc_all):
+    """Send `message` to `recipients` via SendGrid SMTP.
+
+    `recipients` always comes from an EmailList handler, never from the incoming
+    message's own To/Cc/Bcc headers, so this cannot be used to relay mail to an
+    arbitrary address.
     """
-    if isinstance(raw_email, bytes):
-        try:
-            raw_email_str = raw_email.decode("utf-8", errors="ignore")
-        except Exception:
-            return False
-    else:
-        raw_email_str = raw_email
+    api_key = getattr(settings, 'SENDGRID_API_KEY', None)
+    if not api_key:
+        raise RuntimeError("SENDGRID_API_KEY is not configured; cannot send mail.")
 
-    return FORWARDER_HEADER in raw_email_str
+    del message[FORWARDER_HEADER_NAME]
+    message[FORWARDER_HEADER_NAME] = FORWARDER_HEADER_VALUE
 
-
-def forward_email(raw_email, sender, recipients):
-    """
-    Forward email via SendGrid without modifying raw MIME content so that it
-      * is S/MIME safe
-      * prevents loops (read-only check)
-      * uses separate bounce address
-    """
-
-    # Loop prevention (read-only so that we don't modify the message)
-    if has_been_forwarded(raw_email):
-        logger.warning("Email already forwarded. Skipping to prevent loop.")
-        return
-
-
-    if not recipients:
-        logger.info("No recipients after alias resolution of `{}`. Skipping.".format(recipients))
-        return
-
+    smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
     try:
-        smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
         smtp.starttls()
-        smtp.login(settings.SENDGRID_SMTP_USERNAME, settings.SENDGRID_API_KEY)
+        smtp.login(settings.SENDGRID_SMTP_USERNAME, api_key)
+        if cc_all:
+            del message['To']
+            message['To'] = ', '.join(recipients)
+            smtp.sendmail(BOUNCES, recipients, message.as_bytes())
+        else:
+            for recipient in recipients:
+                del message['To']
+                message['To'] = recipient
+                smtp.sendmail(BOUNCES, [recipient], message.as_bytes())
+    finally:
+        try:
+            smtp.quit()
+        except Exception:
+            logger.debug("Error closing SMTP connection", exc_info=True)
+    logger.info("Forwarded message to %s via SendGrid", recipients)
 
-        # Send one email to each recipient, using bounce address as envelope sender
-        for recipient in recipients:
-            smtp.sendmail(sender, recipient, raw_email)
 
-        smtp.quit()
+def dispatch(local_part, message):
+    """Route `message` using the EmailList table.
 
-        logger.info("Forwarded email from {} to {} via SendGrid".format(sender, recipients))
+    Returns True if some EmailList regex matched the address, whether or not a
+    message was actually sent.  A handler may legitimately decline to send (for
+    example UserEmail, which only forwards aliases belonging to teachers).
+    """
+    matched_any_handler = False
 
-    except Exception as e:
-        logger.exception("Failed to forward email: ".format(e))
-        raise
+    for handler_row in EmailList.objects.all():  # Meta.ordering = ('seq',)
+        try:
+            match = re.compile(handler_row.regex).search(local_part)
+        except re.error:
+            logger.exception("EmailList %s has an invalid regex; skipping", handler_row.pk)
+            continue
+        if not match:
+            continue
+
+        matched_any_handler = True
+
+        try:
+            module = __import__(import_location + handler_row.handler.lower(), (), (), [''])
+            HandlerClass = getattr(module, handler_row.handler)
+        except (ImportError, AttributeError):
+            logger.exception("Could not load handler %r", handler_row.handler)
+            continue
+
+        instance = HandlerClass(handler_row, message)
+        instance.process(local_part, *match.groups(), **match.groupdict())
+
+        if not instance.send:
+            continue
+
+        if not getattr(instance, 'preserve_headers', False):
+            _rewrite_headers(message, handler_row, instance)
+
+        recipients = _drop_self_referential(instance.recipients)
+        if not recipients:
+            logger.warning("Handler %s matched `%s` but produced no deliverable recipients",
+                           handler_row.handler, local_part)
+            return True
+
+        deliver(message, recipients, handler_row.cc_all)
+        return True
+
+    return matched_any_handler
+
+
+def bounce(local_part, message):
+    """No EmailList regex matched, so this is a genuinely unknown address."""
+    _sender_name, sender_email = email.utils.parseaddr(message.get('From', ''))
+    if not sender_email:
+        return
+    # Anti-loop: never bounce to our own system address
+    if sender_email.lower() == SUPPORT.lower():
+        return
+    # Only bounce to senders we recognize, so that this cannot be used to send
+    # unsolicited mail to an arbitrary address by spoofing the From header.
+    if not ESPUser.objects.filter(email__iexact=sender_email).exists():
+        logger.info("Unknown address `%s` from unregistered sender; not bouncing", local_part)
+        return
+    try:
+        django_send_mail(
+            'Undeliverable mail to %s@%s' % (local_part, host),
+            'Your message to "%s@%s" could not be delivered.\n\n'
+            'The address does not exist or is not currently accepting '
+            'messages. If you believe this is an error, please contact '
+            '%s for assistance.\n' % (local_part, host, SUPPORT),
+            SUPPORT,
+            [sender_email],
+            fail_silently=True,
+        )
+    except Exception:
+        logger.warning("Failed to send bounce to '%s'", sender_email)
 
 
 def main():
-    logger.debug("Main has been executed")
-
-    # Read the raw email exactly as Exim provides it
     raw_email = sys.stdin.buffer.read()
-    logger.debug("Read raw email from buffer")
     if not raw_email:
-        logger.info("No email to forward")
+        logger.info("No message on stdin; nothing to do")
         return
 
-    # Get sender and recipient(s) for routing logic
-    msg = BytesParser(policy=policy.default).parsebytes(raw_email)
-    logger.debug("Getting sender")
-    original_sender = msg.get("From", "")
-    logger.debug("Getting recipients")
-    addresses = getaddresses(msg.get_all("to", []) +
-                             msg.get_all("cc", []) +
-                             msg.get_all("bcc", []))
-    original_recipients = [addr for name, addr in addresses]
+    # Route on the envelope recipient supplied by the MTA, never on the
+    # message's own headers.
+    local_part = os.environ.get('LOCAL_PART')
+    if not local_part:
+        logger.error("LOCAL_PART is not set by the MTA; cannot route this message")
+        return
 
-    # Look up sender's account alias
-    logger.debug("Looking up sender")
-    final_sender = get_final_sender(original_sender)
-    logger.debug("Aliasing original `{}` as `{}`".format(original_sender, final_sender))
-    # Look up emails associated with recipient alias(es)
-    final_recipients = get_final_recipients(original_recipients)
-    logger.debug("Resolving original `{}` as `{}`".format(original_recipients, final_recipients))
+    message = email.message_from_bytes(raw_email)
 
-    # Send unchanged message to new recipient(s) with aliased sender
-    forward_email(raw_email, final_sender, final_recipients)
-    logger.info("Sent mail from `{}` to `{}`".format(final_sender, final_recipients))
+    if _has_been_forwarded(message):
+        logger.warning("Message already carries %s; dropping to prevent a mail loop",
+                       FORWARDER_HEADER_NAME)
+        return
+
+    if not dispatch(local_part, message):
+        logger.info("No EmailList handler matched `%s`", local_part)
+        bounce(local_part, message)
 
 
 if __name__ == "__main__":
-    logger.debug("Beginning")
     try:
         main()
-    except Exception as e: # TODO: improve this
-        logger.debug("Traceback: {}".format(e))
-        error_info = traceback.format_exc()
-        logger.debug("Traceback is\n{}".format(error_info))
-        raise Exception("Python script failed")
-
+    except smtplib.SMTPException:
+        # Transient delivery problem: exit EX_TEMPFAIL so the MTA queues the
+        # message and retries, rather than dropping it silently.
+        logger.exception("SMTP failure while forwarding; asking the MTA to retry")
+        sys.exit(75)
+    except Exception:
+        # A bug or a permanently undeliverable message. Exit 0 so the MTA treats
+        # delivery as handled and does not emit its own bounce.
+        logger.exception("mailgate failed; dropping message")
+        if DEBUG:
+            raise
+    sys.exit(0)
