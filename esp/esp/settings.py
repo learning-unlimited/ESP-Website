@@ -33,9 +33,62 @@ Learning Unlimited, Inc.
 """
 
 import os
-import warnings
 import tempfile
+import warnings
+import inspect
 import django
+import django.dispatch
+
+if not hasattr(inspect, 'getargspec'):
+    import collections
+    ArgSpec = collections.namedtuple('ArgSpec', ['args', 'varargs', 'keywords', 'defaults'])
+    def _patched_getargspec(func):
+        spec = inspect.getfullargspec(func)
+        return ArgSpec(spec.args, spec.varargs, spec.varkw, spec.defaults)
+    inspect.getargspec = _patched_getargspec
+
+import six
+import django.utils
+import django.utils.encoding
+django.utils.six = six
+django.utils.encoding.python_2_unicode_compatible = six.python_2_unicode_compatible
+
+import django.conf.urls
+import django.urls
+django.conf.urls.url = django.urls.re_path
+
+import django.shortcuts
+if not hasattr(django.shortcuts, 'render_to_response'):
+    def _render_to_response(template_name, context=None, *args, **kwargs):
+        # Support legacy call sites that pass (template_name, request, context_dict)
+        if args and hasattr(args[0], 'META'):
+            request = args[0]
+            context_dict = args[1] if len(args) > 1 else context
+            return django.shortcuts.render(
+                request,
+                template_name,
+                context=context_dict or {},
+                content_type=kwargs.get('content_type'),
+                status=kwargs.get('status'),
+                using=kwargs.get('using'),
+            )
+        from django.http import HttpResponse
+        from django.template.loader import render_to_string
+        return HttpResponse(
+            render_to_string(template_name, context=context or {}, request=None, using=kwargs.get('using')),
+            content_type=kwargs.get('content_type'),
+            status=kwargs.get('status'),
+        )
+    django.shortcuts.render_to_response = _render_to_response
+
+import phonenumber_field.widgets
+if not hasattr(phonenumber_field.widgets, 'PhoneNumberInternationalFallbackWidget'):
+    phonenumber_field.widgets.PhoneNumberInternationalFallbackWidget = phonenumber_field.widgets.PhoneNumberPrefixWidget
+
+_orig_signal_init = django.dispatch.Signal.__init__
+def _patched_signal_init(self, providing_args=None, use_caching=False):
+    return _orig_signal_init(self, use_caching=use_caching)
+django.dispatch.Signal.__init__ = _patched_signal_init
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR
@@ -262,7 +315,8 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    uid = getattr(os, 'getuid', lambda: os.getpid())()
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(uid))
     os.makedirs(tempdir, mode=0o700, exist_ok=True)
     try:
         os.chmod(tempdir, 0o700)
