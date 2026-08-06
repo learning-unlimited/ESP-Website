@@ -14,10 +14,10 @@ import smtplib
 import socket
 import sys
 
-# Marks messages this script has already forwarded, so that a message which
-# loops back into the mailgate is dropped instead of amplified.
-FORWARDER_HEADER_NAME = 'X-Forwarded-By'
-FORWARDER_HEADER_VALUE = 'lu-forwarder'
+# Records each address this message has been delivered to, so that a message
+# which returns to the *same* address is recognised as a loop, while a message
+# legitimately forwarded from one site address to another is not.
+DELIVERED_TO_HEADER = 'Delivered-To'
 
 # Configure paths and environment variables
 new_path = '/'.join(sys.path[0].split('/')[:-1])
@@ -59,7 +59,6 @@ import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 BOUNCES = settings.DEFAULT_EMAIL_ADDRESSES['bounces']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
-DOMAIN = '.learningu.org'
 # This site's own public domain, which may be a vanity domain (e.g. `stanfordesp.org`
 # or `esp.mit.edu`) rather than a `learningu.org` subdomain.
 SITE_DOMAIN = settings.SITE_INFO[1].lower()
@@ -68,36 +67,30 @@ SITE_DOMAIN = settings.SITE_INFO[1].lower()
 DEBUG=False
 
 
-def _is_site_address(address):
-    """True if `address` belongs to this site.
+def _delivery_address(local_part):
+    """The canonical address this message was delivered to.
 
-    Covers both the vanity domain (`user@stanfordesp.org`, `user@esp.mit.edu`) and
-    the LU alias domain (`user@stanford.learningu.org`).  Bare `user@learningu.org`
-    is deliberately excluded: those are enterprise Gmail addresses, not site aliases.
-    Accepts either a bare address or a `"Name" <addr>` form.
+    Normalised onto SITE_DOMAIN so that a message arriving via the vanity domain
+    (`alice@stanfordesp.org`) and one arriving via the LU alias
+    (`alice@stanford.learningu.org`) count as the same address when detecting loops.
     """
-    _name, addr = email.utils.parseaddr(address)
-    domain = (addr or address).rsplit('@', 1)[-1].lower()
-    return domain == SITE_DOMAIN or domain.endswith(DOMAIN)
+    return '%s@%s' % (local_part.lower(), SITE_DOMAIN)
 
 
-def _has_been_forwarded(message):
-    """True if this message has already passed through this script."""
-    return any(FORWARDER_HEADER_VALUE in value
-               for value in message.get_all(FORWARDER_HEADER_NAME, []))
+def _already_delivered_to(message, address):
+    """True if this message has already been delivered to `address`.
 
-
-def _drop_self_referential(recipients):
-    """Remove recipients that point back at this site, which would loop.
-
-    The X-Forwarded-By marker catches loops on the second pass; this catches them
-    on the first, so a misconfigured user email never generates the extra send.
+    Per-address loop detection, as used by Postfix and qmail. A message arriving a
+    second time at the *same* address is looping and must be dropped. A message
+    forwarded from one site address to another (e.g., a program director alias
+    resolving to a personal address) is not and must be allowed through.
     """
-    kept = [r for r in recipients if not _is_site_address(r)]
-    if len(kept) != len(recipients):
-        logger.warning("Dropped %d recipient(s) resolving back to this site",
-                       len(recipients) - len(kept))
-    return kept
+    target = address.strip().lower()
+    for value in message.get_all(DELIVERED_TO_HEADER, []):
+        _name, addr = email.utils.parseaddr(value)
+        if (addr or value).strip().lower() == target:
+            return True
+    return False
 
 
 def _rewrite_headers(message, handler_row, instance):
@@ -142,9 +135,6 @@ def deliver(message, recipients, cc_all):
     api_key = getattr(settings, 'SENDGRID_API_KEY', None)
     if not api_key:
         raise RuntimeError("SENDGRID_API_KEY is not configured; cannot send mail.")
-
-    del message[FORWARDER_HEADER_NAME]
-    message[FORWARDER_HEADER_NAME] = FORWARDER_HEADER_VALUE
 
     smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
     try:
@@ -203,13 +193,12 @@ def dispatch(local_part, message):
         if not getattr(instance, 'preserve_headers', False):
             _rewrite_headers(message, handler_row, instance)
 
-        recipients = _drop_self_referential(instance.recipients)
-        if not recipients:
-            logger.warning("Handler %s matched `%s` but produced no deliverable recipients",
+        if not instance.recipients:
+            logger.warning("Handler %s matched `%s` but produced no recipients",
                            handler_row.handler, local_part)
             return True
 
-        deliver(message, recipients, handler_row.cc_all)
+        deliver(message, instance.recipients, handler_row.cc_all)
         return True
 
     return matched_any_handler
@@ -258,10 +247,14 @@ def main():
 
     message = email.message_from_bytes(raw_email)
 
-    if _has_been_forwarded(message):
-        logger.warning("Message already carries %s; dropping to prevent a mail loop",
-                       FORWARDER_HEADER_NAME)
+    # Per-address loop detection. Record this delivery before forwarding, so that
+    # a message which comes back to the same address is recognised next time.
+    delivery_address = _delivery_address(local_part)
+    if _already_delivered_to(message, delivery_address):
+        logger.warning("Message has already been delivered to `%s`; dropping to "
+                       "prevent a mail loop", delivery_address)
         return
+    message[DELIVERED_TO_HEADER] = delivery_address
 
     if not dispatch(local_part, message):
         logger.info("No EmailList handler matched `%s`", local_part)
