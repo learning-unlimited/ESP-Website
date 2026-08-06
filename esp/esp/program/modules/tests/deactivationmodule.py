@@ -120,3 +120,41 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         self._assert_graceful_esp_error(
             response, 'no longer exists', 'invalid', 'deactivation',
         )
+
+
+    def test_deactivatefinal_missing_confirmation(self):
+        """Missing confirm checkbox is a graceful ESPError and does not deactivate."""
+        targets = self.students[:2]
+        for user in targets:
+            user.is_active = True
+            user.save()
+        filterObj = self._make_filter(targets)
+        response = self.client.post(self._url(filterObj.id), {})
+        self._assert_graceful_esp_error(response, 'confirm')
+        for user in targets:
+            user.refresh_from_db()
+            self.assertTrue(user.is_active)
+
+    def test_deactivatefinal_empty_user_set(self):
+        """Filter matching no users is a graceful ESPError."""
+        filterObj = self._make_filter([])
+        # Force empty Q that matches nothing active
+        from django.db.models import Q as DQ
+        empty = PersistentQueryFilter.create_from_Q(ESPUser, DQ(id=-1))
+        response = self._post_deactivatefinal(empty.id)
+        self._assert_graceful_esp_error(response, 'did not match')
+
+    def test_deactivate_search_page_renders(self):
+        """Admin can open the mass deactivation search page."""
+        response = self.client.get('/manage/%s/deactivate' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/deactivationmodule/search.html')
+
+    def test_student_cannot_access_deactivate(self):
+        self.client.logout()
+        self.assertTrue(
+            self.client.login(username=self.students[0].username, password='password')
+        )
+        response = self.client.get('/manage/%s/deactivate' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
