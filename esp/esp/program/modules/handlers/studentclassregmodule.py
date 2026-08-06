@@ -39,6 +39,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
@@ -48,7 +49,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
@@ -127,6 +128,7 @@ def json_encode(obj):
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
+    permission_types = ('Student/Classes',)
 
     @classmethod
     def module_properties(cls):
@@ -149,7 +151,8 @@ class StudentClassRegModule(ProgramModuleObj):
             id="learn_catalog",
             url="/learn/%s/catalog" % base,
             title="Student Catalog",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Catalog" button appears in directory.html.
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["catalog", "classes", "student view"],
         )
 
@@ -265,6 +268,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         schedule = []
         timeslot_dict = {}
+        # Use program-specific tolerance for determining contiguous timeblocks,
+        # falling back to Event.contiguous default (20 minutes) if unavailable.
+        contiguous_tolerance = Tag.getProgramTag('timeblock_contiguous_tolerance', program=program, default=20)
+        try:
+            contiguous_tolerance = int(contiguous_tolerance)
+        except (ValueError, TypeError):
+            contiguous_tolerance = 20
+
         for sec in classList:
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
@@ -274,24 +285,28 @@ class StudentClassRegModule(ProgramModuleObj):
             sec.verb_names = [v.name for v in sec.verbs]
             sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
 
-            # While iterating through the meeting times for a section,
-            # we use this variable to keep track of the first timeslot.
-            # In the section_dict appended to timeslot_dict,
-            # we save whether or not this is the first timeslot for this
-            # section. If it isn't, the student schedule will indicate
-            # this, and will not display the option to remove the
-            # section. This is to prevent students from removing what
-            # they have mistaken to be duplicated classes from their
-            # schedules.
-            first_meeting_time = True
+            # Track contiguous groups per section so we only mark later
+            # contiguous blocks as "continued". Non-contiguous recurring
+            # meetings (e.g. Mon+Wed) should each be treated as a first meeting.
+            previous_meeting_time = None
+            first_entry_in_group = None
 
             for mt in sec.get_meeting_times().order_by('start'):
-                section_dict = {'section': sec, 'first_meeting_time': first_meeting_time}
-                first_meeting_time = False
+                first_meeting_time = (
+                    previous_meeting_time is None or
+                    not Event.contiguous(previous_meeting_time, mt, tol=contiguous_tolerance)
+                )
+                if first_meeting_time:
+                    section_dict = {'section': sec, 'first_meeting_time': True, 'meeting_span': 1}
+                    first_entry_in_group = section_dict
+                else:
+                    section_dict = {'section': sec, 'first_meeting_time': False, 'meeting_span': 0}
+                    first_entry_in_group['meeting_span'] += 1
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:
                     timeslot_dict[mt.id] = [section_dict]
+                previous_meeting_time = mt
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -396,26 +411,37 @@ class StudentClassRegModule(ProgramModuleObj):
         except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
-        cobj = section.parent_class
-        if not scrmi.use_priority:
-            error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
-        if scrmi.use_priority or not error:
-            error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+        with transaction.atomic():
+            #   Validate that the section belongs to the expected class and program
+            #   while still taking a row lock, so concurrent registrations serialize
+            #   on the capacity checks below.
+            section = get_object_or_404(
+                ClassSection.objects.select_for_update(),
+                id=sectionid,
+                parent_class__id=classid,
+                parent_class__parent_program=prog,
+            )
+            section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+            if not scrmi.use_priority:
+                error = section_error
+            if scrmi.use_priority or not section_error:
+                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = cobj_error or section_error
 
-        if scrmi.use_priority:
-            priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
-        else:
-            priority = 1
+            if scrmi.use_priority:
+                priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
+            else:
+                priority = 1
 
-        if error and not request.user.onsite_local:
-            raise ESPError(error, log=False)
+            if error and not request.user.onsite_local:
+                raise ESPError(error, log=False)
 
-        #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
-            return True
-        else:
-            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
+            #   Desired priority level is 1 above current max
+            if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                return True
+            else:
+                raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
     @needs_student_in_grade

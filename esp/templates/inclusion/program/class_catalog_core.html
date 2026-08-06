@@ -7,14 +7,8 @@
 	 </div>
      <div class="class_subtitle_row">
      <div class="class_difficulty">
-	 {% if class.hardness_rating != "Normal" %}
-	   Difficulty:  {{ class.hardness_rating }}
-	   {% if class.hardness_rating == "Hard" %}
-	      - This class may be exceptionally difficult
-	   {% endif %}
-	   {% if class.hardness_rating == "Easy" %}
-	      - This class is meant to be accessible to most students
-	   {% endif %}
+	 {% if class.hardness_rating %}
+	   Difficulty: {{ class.hardness_rating }}{% if difficulty_description %} – {{ difficulty_description }}{% endif %}
 	 {% endif %}
     </div>
     <div class="class_teachers">

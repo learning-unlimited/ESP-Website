@@ -330,6 +330,7 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
@@ -427,7 +428,7 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
-    def _get_room_capacity(self, rooms = None):
+    def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
         if rooms is None:
             rooms = self.classrooms()
@@ -436,7 +437,7 @@ class ClassSection(models.Model):
         rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
-        if options.apply_multiplier_to_room_cap:
+        if options.apply_multiplier_to_room_cap and not ignore_changes:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
         return rc
@@ -463,7 +464,7 @@ class ClassSection(models.Model):
                     ans = self.parent_class.class_size_max
             else:
                 class_max = self.parent_class.class_size_max
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(class_max, room_cap)
 
         #hacky fix for classes with no max size
@@ -474,17 +475,17 @@ class ClassSection(models.Model):
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
-                ans = self._get_room_capacity(rooms)
+                ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0
 
@@ -1160,6 +1161,7 @@ class ClassSection(models.Model):
                 # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
                 prog = self.parent_program
                 prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.cancellation_reason = explanation
             self.status = ClassStatus.CANCELLED
             self.save()
 
@@ -1279,6 +1281,15 @@ class ClassSection(models.Model):
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
 
+    def isFullIgnoreChanges(self, webapp=False):
+        """Return section fullness based on unadjusted/base capacity.
+
+        This bypasses class-cap and room-cap multiplier/offset adjustments.
+        It is used by views like the onsite open class list, where we want to
+        show physically open classes even if registration throttles are active.
+        """
+        return self.isFull(ignore_changes=True, webapp=webapp)
+
     def time_blocks(self):
         return self.friendly_times(raw=True)
 
@@ -1389,6 +1400,14 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
+        # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
+        if not StudentRegistration.valid_objects(now).filter(
+                user=user,
+                section__parent_class__parent_program=self.parent_program,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
+
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
@@ -1398,12 +1417,14 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
+        locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
+
+        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
+            qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
-                sr = StudentRegistration(user=user, section=self, relationship=rt)
+                sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
                 sr.save()
                 if fast_force_create:
                     ## That's the bare minimum to reg someone; we're done!
@@ -2226,14 +2247,35 @@ class ClassCategories(models.Model):
     category = models.TextField(blank=False, help_text='The name of the category')
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+    is_lunch = models.BooleanField(default=False, help_text='True if this category represents Lunch')
 
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
+
+    @classmethod
+    def get_lunch(cls):
+        """Return the lunch category, or None if none is configured."""
+        return cls.objects.filter(is_lunch=True).first()
+
+    def clean(self):
+        # Enforce the single-lunch-category restriction with a friendly message
+        if self.is_lunch and ClassCategories.objects.filter(
+                is_lunch=True).exclude(pk=self.pk).exists():
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                {'is_lunch': 'A lunch category already exists; only one lunch category is allowed.'})
 
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_lunch'],
+                condition=models.Q(is_lunch=True),
+                name='unique_lunch_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
