@@ -160,12 +160,10 @@ def deliver(message, recipients, cc_all):
 def dispatch(local_part, message):
     """Route `message` using the EmailList table.
 
-    Returns True if some EmailList regex matched the address, whether or not a
-    message was actually sent.  A handler may legitimately decline to send (for
-    example UserEmail, which only forwards aliases belonging to teachers).
+    Returns True if the message was actually delivered to at least one recipient.
+    False means the message was not delivered either because no handler recognised
+    the address, or that the matched handler(s) declined to send.
     """
-    matched_any_handler = False
-
     for handler_row in EmailList.objects.all():  # Meta.ordering = ('seq',)
         try:
             match = re.compile(handler_row.regex).search(local_part)
@@ -174,8 +172,6 @@ def dispatch(local_part, message):
             continue
         if not match:
             continue
-
-        matched_any_handler = True
 
         try:
             module = __import__(import_location + handler_row.handler.lower(), (), (), [''])
@@ -188,6 +184,8 @@ def dispatch(local_part, message):
         instance.process(local_part, *match.groups(), **match.groupdict())
 
         if not instance.send:
+            logger.debug("Handler %s matched `%s` but declined to send",
+                         handler_row.handler, local_part)
             continue
 
         if not getattr(instance, 'preserve_headers', False):
@@ -196,16 +194,19 @@ def dispatch(local_part, message):
         if not instance.recipients:
             logger.warning("Handler %s matched `%s` but produced no recipients",
                            handler_row.handler, local_part)
-            return True
+            return False
 
         deliver(message, instance.recipients, handler_row.cc_all)
         return True
 
-    return matched_any_handler
+    return False
 
 
-def bounce(local_part, message):
-    """No EmailList regex matched, so this is a genuinely unknown address."""
+def bounce(delivery_address, message):
+    """Tell a registered sender that their message could not be delivered.
+
+    For security reasons, only senders who have an account on the site are notified.
+    """
     _sender_name, sender_email = email.utils.parseaddr(message.get('From', ''))
     if not sender_email:
         return
@@ -215,21 +216,25 @@ def bounce(local_part, message):
     # Only bounce to senders we recognize, so that this cannot be used to send
     # unsolicited mail to an arbitrary address by spoofing the From header.
     if not ESPUser.objects.filter(email__iexact=sender_email).exists():
-        logger.info("Unknown address `%s` from unregistered sender; not bouncing", local_part)
+        logger.info("Undeliverable mail to `%s` from unregistered sender; not bouncing",
+                    delivery_address)
         return
     try:
         django_send_mail(
-            'Undeliverable mail to %s@%s' % (local_part, host),
-            'Your message to "%s@%s" could not be delivered.\n\n'
+            'Undeliverable mail to %s' % delivery_address,
+            'Your message to "%s" could not be delivered.\n\n'
             'The address does not exist or is not currently accepting '
             'messages. If you believe this is an error, please contact '
-            '%s for assistance.\n' % (local_part, host, SUPPORT),
+            '%s for assistance.\n' % (delivery_address, SUPPORT),
             SUPPORT,
             [sender_email],
             fail_silently=True,
         )
     except Exception:
         logger.warning("Failed to send bounce to '%s'", sender_email)
+    else:
+        logger.info("Queued undeliverable notice for `%s` to `%s`",
+                    delivery_address, sender_email)
 
 
 def main():
@@ -257,8 +262,8 @@ def main():
     message[DELIVERED_TO_HEADER] = delivery_address
 
     if not dispatch(local_part, message):
-        logger.info("No EmailList handler matched `%s`", local_part)
-        bounce(local_part, message)
+        logger.info("Nothing delivered for `%s`", delivery_address)
+        bounce(delivery_address, message)
 
 
 if __name__ == "__main__":
