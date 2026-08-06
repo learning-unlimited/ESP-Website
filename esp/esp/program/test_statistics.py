@@ -22,6 +22,10 @@ from unittest.mock import patch
 
 from types import SimpleNamespace
 
+import pytest
+
+pytestmark = pytest.mark.django_db
+
 from esp.program.models import Program, RegistrationProfile
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.statistics import (
@@ -429,9 +433,9 @@ class RepeatsTest(StatisticsTestBase):
             repeat_data = dict(rd['repeat_data'])
 
             self.assertIn("1x Math, 2x Science", repeat_data)
-            self.assertEqual(repeat_data["1x Math, 2x Science"], 1) # One student has this signature
+            self.assertEqual(repeat_data["1x Math, 2x Science"], 1)
             self.assertIn("1x Math", repeat_data)
-            self.assertEqual(repeat_data["1x Math"], 1) # One student has this signature
+            self.assertEqual(repeat_data["1x Math"], 1)
 
 
 # ===========================================================================
