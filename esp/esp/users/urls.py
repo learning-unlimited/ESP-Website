@@ -12,6 +12,8 @@ urlpatterns = [
         name='esp.users.views.user_registration_phase1'),
     re_path(r'^register/information/?$', views.user_registration_phase2,
         name='esp.users.views.user_registration_phase2'),
+    re_path(r'^register/check-email/?$', views.registration_live_email_check, name='check_email'),
+    re_path(r'^register/check-username/?$', views.registration_live_username_check, name='check_username'),
     re_path(r'^activate/?$', views.registration.activate_account, name='activate_account'),
     re_path(r'^passwdrecover/(success)?/?$', views.initial_passwd_request, name='passwd_recover_success'),
     re_path(r'^passwdrecover/?$', views.initial_passwd_request, name='passwd_recover'),
