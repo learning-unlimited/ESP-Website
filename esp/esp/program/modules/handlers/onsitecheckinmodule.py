@@ -82,6 +82,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def updatePaid(self, paid=True):
         IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
 
+    @transaction.atomic
     def create_record(self, event):
         created = False
         if event=="attended":
@@ -99,6 +100,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                                          program=self.program)
         return created
 
+    @transaction.atomic
     def delete_record(self, event):
         if event=="attended":
             if self.program.isCheckedIn(self.student):
@@ -335,17 +337,18 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 if student.isStudent():
                     self.student = student
                     messages = []
-                    for key in ['attended', 'paid', 'liab', 'med']:
-                        if request.POST.get(key) == "true":
-                            if key == "attended":
-                                if prog.isCheckedIn(student):
-                                    messages.append('%s is already checked in!' % info_string)
+                    with transaction.atomic():
+                        for key in ['attended', 'paid', 'liab', 'med']:
+                            if request.POST.get(key) == "true":
+                                if key == "attended":
+                                    if prog.isCheckedIn(student):
+                                        messages.append('%s is already checked in!' % info_string)
+                                    else:
+                                        self.create_record(key)
+                                        messages.append('%s is now checked in!' % info_string)
                                 else:
                                     self.create_record(key)
-                                    messages.append('%s is now checked in!' % info_string)
-                            else:
-                                self.create_record(key)
-                                messages.append(f'{key} record set for {info_string}')
+                                    messages.append(f'{key} record set for {info_string}')
                     json_data['message'] = "\n".join(messages)
                 else:
                     json_data['message'] = '%s is not a student!' % info_string

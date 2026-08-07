@@ -50,3 +50,5 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = '%(secret_key)s'
 
 ALLOWED_HOSTS = ['localhost']
+
+GOOGLE_MAPS_EMBED_KEY = ''

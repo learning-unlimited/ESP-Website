@@ -161,6 +161,22 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
         self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
 
+    def test_coteachers_post_data_is_not_trusted(self):
+        # Login the teacher
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+
+        # Forge POST data pretending this teacher is already in the coteacher list.
+        # This should be ignored, and the add should still succeed.
+        response = self.apply_coteacher_op({
+            'op': 'add',
+            'clsid': self.cls.id,
+            'teacher_selected': self.free_teacher1.id,
+            'coteachers': str(self.free_teacher1.id),
+        })
+
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
+
     def add_resource_request(self, sec, res_type, val):
         rr = ResourceRequest()
         rr.target = sec
@@ -301,3 +317,14 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.client.login(username=self.teacher.username, password='password')
         url = '%steacherlookup' % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+    def test_makeaclass_no_durations_shows_warning(self):
+        """Assert that duration warning banner is shown when no timeslots/durations exist."""
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
+        # Delete class timeslots configured in setUp
+        Event.objects.filter(program=self.program, event_type__description='Class Time Block').delete()
+        self.assertEqual(len(self.program.countTimeSlots()), 0)
+        url = '%smakeaclass' % self.program.get_teach_url()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'no valid class meeting timeslots or durations are available')

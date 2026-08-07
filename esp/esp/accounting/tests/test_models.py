@@ -357,6 +357,49 @@ class ProgramAccountingControllerTest(TestCase):
         count, total = self.pac.payments_summary()
         self.assertEqual(count, 0)
 
+    def test_clear_all_data(self):
+        """Regression test for Django 3.2+ distinct().delete() handling.
+
+        clear_all_data() exercises two pk__in subquery wrappers that are
+        required for delete() to work after distinct() in Django 3.2+:
+          - Transfer.objects.filter(pk__in=self.all_transfers()) wraps a
+            bare .distinct() queryset.
+          - LineItemType.objects.filter(pk__in=self.get_lineitemtypes())
+            wraps a .distinct('text') (DISTINCT ON) queryset.
+
+        Without the wrappers this raises
+        TypeError: Cannot call delete() after .distinct().
+        """
+        # Populate the program so all four delete paths in clear_all_data
+        # have rows to remove.
+        self.pac.setup_accounts()
+        self.pac.setup_lineitemtypes(50.0)
+        user = ESPUser.objects.create_user(username='cleardata', password='pwd')
+        iac = IndividualAccountingController(self.program, user)
+        iac.ensure_required_transfers()
+        iac.grant_full_financial_aid()
+
+        # Sanity-check that there is data to clear.
+        self.assertTrue(LineItemType.objects.filter(program=self.program).exists())
+        self.assertTrue(Account.objects.filter(program=self.program).exists())
+        self.assertTrue(Transfer.objects.filter(line_item__program=self.program).exists())
+        self.assertTrue(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+
+        # The function under test. Must not raise under Django 3.2+.
+        self.pac.clear_all_data()
+
+        # Accounts and grants are unconditionally cleared.
+        self.assertFalse(Account.objects.filter(program=self.program).exists())
+        self.assertFalse(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+        # All transfers cascade with the program accounts.
+        self.assertFalse(Transfer.objects.filter(line_item__program=self.program).exists())
+        # Non-finaid line items (the DISTINCT ON case) are deleted via pk__in.
+        # Finaid items intentionally remain -- they're excluded from
+        # get_lineitemtypes() via ProgramAccountingController.finaid_items.
+        self.assertFalse(
+            LineItemType.objects.filter(program=self.program, text='Program admission').exists()
+        )
+
 
 class IndividualAccountingControllerTest(TestCase):
     def setUp(self):
@@ -498,3 +541,22 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
 
+    def test_apply_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 1, Decimal('15.00')])
+
+    def test_set_preference(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 1)
+        transfers = self.iac.get_transfers()
+        self.assertTrue(transfers.filter(line_item__text='T-shirt').exists())
+
+    def test_get_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 2)
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
