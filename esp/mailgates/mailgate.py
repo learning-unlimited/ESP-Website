@@ -43,11 +43,16 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+    # This file ships with the `virtualenv` package but not with stdlib `venv`,
+    # and is absent wherever packages are installed system-wide (containers, CI).
+    # Skipping it when missing keeps those environments working, and lets the
+    # test suite import this module.
+    if os.path.exists(activate_this):
+        exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'),
+             dict(__file__=activate_this))
 
 # TODO: replace the activate_this.py bootstrap above by re-execing this script
 # with env/bin/python whenever it is run outside the project virtualenv.
-# (activate_this.py ships with the `virtualenv` package but not stdlib `venv`.)
 
 # Import Django and site-defined modules after activating the virtual environment
 import django
