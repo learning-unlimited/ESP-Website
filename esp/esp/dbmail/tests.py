@@ -38,6 +38,7 @@ from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.test import override_settings
 
 from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -195,7 +196,19 @@ class UserEmailHandlerTest(TestCase):
 
         self.assertFalse(handler.send)
 
-    def test_student_with_list_id_sets_recipients(self):
+    def test_student_with_list_id_does_not_bypass(self):
+        """A forged List-Id must not open a non-staff alias.
+
+        Trusted only where Mailman is in use; see the Mailman case below.
+        """
+        msg = _make_message(list_id='<list.example.com>')
+        handler = UserEmail(self.email_list, msg)
+        handler.process('student_user', 'student_user')
+
+        self.assertFalse(handler.send)
+
+    @override_settings(USE_MAILMAN=True)
+    def test_student_with_list_id_under_mailman(self):
         msg = _make_message(list_id='<list.example.com>')
         handler = UserEmail(self.email_list, msg)
         handler.process('student_user', 'student_user')
@@ -203,6 +216,14 @@ class UserEmailHandlerTest(TestCase):
         self.assertTrue(handler.send)
         self.assertEqual(handler.recipients, ['student@example.com'])
         self.assertTrue(handler.preserve_headers)
+
+    def test_staff_sender_reaches_student(self):
+        msg = _make_message(frm='teacher@example.com')
+        handler = UserEmail(self.email_list, msg)
+        handler.process('student_user', 'student_user')
+
+        self.assertTrue(handler.send)
+        self.assertEqual(handler.recipients, ['student@example.com'])
 
     def test_nonexistent_user_does_not_send(self):
         msg = _make_message()
