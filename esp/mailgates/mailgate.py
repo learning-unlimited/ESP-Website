@@ -51,6 +51,7 @@ import django
 django.setup()
 from django.conf import settings
 from django.core.mail import send_mail as django_send_mail
+from esp.dbmail.base import sender_account
 from esp.dbmail.models import EmailList
 from esp.users.models import ESPUser
 
@@ -59,8 +60,9 @@ import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 BOUNCES = settings.DEFAULT_EMAIL_ADDRESSES['bounces']
 ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
-# This site's own public domain, which may be a vanity domain (e.g. `stanfordesp.org`
-# or `esp.mit.edu`) rather than a `learningu.org` subdomain.
+# The LU alias domain, and this site's own public domain, which may be a vanity
+# domain (e.g., `stanfordesp.org` or `esp.mit.edu`) rather than an LU subdomain.
+DOMAIN = '.learningu.org'
 SITE_DOMAIN = settings.SITE_INFO[1].lower()
 
 #DEBUG=True
@@ -91,6 +93,34 @@ def _already_delivered_to(message, address):
         if (addr or value).strip().lower() == target:
             return True
     return False
+
+
+def _is_site_address(address):
+    """True if `address` is on a domain this site is authorised to sign for.
+
+    Covers the vanity domain (`user@stanfordesp.org`) and the LU alias domain
+    (`user@stanford.learningu.org`).
+    """
+    _name, addr = email.utils.parseaddr(address)
+    domain = (addr or address).rsplit('@', 1)[-1].lower()
+    return domain == SITE_DOMAIN or domain.endswith(DOMAIN)
+
+
+def _alias_sender(message, sender):
+    """Rewrite From: to the sender's site alias, so the message passes DMARC."""
+    _name, address = email.utils.parseaddr(message.get('From', ''))
+    if address and _is_site_address(address):
+        # Already on one of our domains, so leave it alone.
+        return
+
+    del message['From']
+    message['From'] = ESPUser.email_sendto_address(
+        '%s@%s' % (sender.username, SITE_DOMAIN), sender.name())
+
+    # Remove a Reply-To pointing off our domains for safety
+    reply_to = message.get('Reply-To')
+    if reply_to and not _is_site_address(reply_to):
+        del message['Reply-To']
 
 
 def _rewrite_headers(message, handler_row, instance):
@@ -125,7 +155,7 @@ def _rewrite_headers(message, handler_row, instance):
         hashlib.sha1(str(random.random()).encode()).hexdigest(), host)
 
 
-def deliver(message, recipients, cc_all):
+def deliver(message, recipients, cc_all, sender):
     """Send `message` to `recipients` via SendGrid SMTP.
 
     `recipients` always comes from an EmailList handler, never from the incoming
@@ -135,6 +165,9 @@ def deliver(message, recipients, cc_all):
     api_key = getattr(settings, 'SENDGRID_API_KEY', None)
     if not api_key:
         raise RuntimeError("SENDGRID_API_KEY is not configured; cannot send mail.")
+
+    # Rewrite From: to the sender's site alias so the message passes DMARC
+    _alias_sender(message, sender)
 
     smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
     try:
@@ -157,7 +190,7 @@ def deliver(message, recipients, cc_all):
     logger.info("Forwarded message to %s via SendGrid", recipients)
 
 
-def dispatch(local_part, message):
+def dispatch(local_part, message, sender):
     """Route `message` using the EmailList table.
 
     Returns True if the message was actually delivered to at least one recipient.
@@ -196,7 +229,7 @@ def dispatch(local_part, message):
                            handler_row.handler, local_part)
             return False
 
-        deliver(message, instance.recipients, handler_row.cc_all)
+        deliver(message, instance.recipients, handler_row.cc_all, sender)
         return True
 
     return False
@@ -261,7 +294,14 @@ def main():
         return
     message[DELIVERED_TO_HEADER] = delivery_address
 
-    if not dispatch(local_part, message):
+    # Only registered users may send through the site
+    sender = sender_account(message)
+    if sender is None:
+        logger.info("Message to `%s` from an unregistered sender; not forwarding",
+                    delivery_address)
+        return
+
+    if not dispatch(local_part, message, sender):
         logger.info("Nothing delivered for `%s`", delivery_address)
         bounce(delivery_address, message)
 
