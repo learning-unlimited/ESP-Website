@@ -60,10 +60,9 @@ django.setup()
 from django.conf import settings
 from django.core.cache import cache
 from django.core.mail import get_connection
-from django.core.mail import send_mail as django_send_mail
 from django.core.mail.message import EmailMessage
 from esp.dbmail.base import sender_account
-from esp.dbmail.models import EmailList
+from esp.dbmail.models import EmailList, send_mail as dbmail_send_mail
 from esp.users.models import ESPUser
 
 host = socket.gethostname()
@@ -331,7 +330,7 @@ def bounce(delivery_address, message):
                     delivery_address, sender_email)
         return
     try:
-        django_send_mail(
+        dbmail_send_mail(
             'Undeliverable mail to %s' % delivery_address,
             'Your message to "%s" could not be delivered.\n\n'
             'The address does not exist or is not currently accepting '
@@ -342,7 +341,7 @@ def bounce(delivery_address, message):
             fail_silently=True,
         )
     except Exception:
-        logger.warning("Failed to send bounce to '%s'", sender_email)
+        logger.warning("Failed to send bounce to '%s'", sender_email, exc_info=True)
     else:
         logger.info("Queued undeliverable notice for `%s` to `%s`",
                     delivery_address, sender_email)
