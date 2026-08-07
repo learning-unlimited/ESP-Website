@@ -344,6 +344,7 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
@@ -1174,6 +1175,7 @@ class ClassSection(models.Model):
                 # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
                 prog = self.parent_program
                 prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.cancellation_reason = explanation
             self.status = ClassStatus.CANCELLED
             self.save()
 
@@ -1411,6 +1413,14 @@ class ClassSection(models.Model):
         list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
+
+        # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
+        if not StudentRegistration.valid_objects(now).filter(
+                user=user,
+                section__parent_class__parent_program=self.parent_program,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
 
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
@@ -2251,14 +2261,35 @@ class ClassCategories(models.Model):
     category = models.TextField(blank=False, help_text='The name of the category')
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+    is_lunch = models.BooleanField(default=False, help_text='True if this category represents Lunch')
 
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
+
+    @classmethod
+    def get_lunch(cls):
+        """Return the lunch category, or None if none is configured."""
+        return cls.objects.filter(is_lunch=True).first()
+
+    def clean(self):
+        # Enforce the single-lunch-category restriction with a friendly message
+        if self.is_lunch and ClassCategories.objects.filter(
+                is_lunch=True).exclude(pk=self.pk).exists():
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                {'is_lunch': 'A lunch category already exists; only one lunch category is allowed.'})
 
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_lunch'],
+                condition=models.Q(is_lunch=True),
+                name='unique_lunch_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'

@@ -816,6 +816,21 @@ class Program(models.Model, CustomFormsLinkModel):
     open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
+    def lunch_timeslots(self):
+        """Timeslots (Events) reserved for lunch in this program."""
+        return Event.objects.filter(
+            meeting_times__parent_class__parent_program=self,
+            meeting_times__parent_class__category__is_lunch=True,
+        ).order_by('start').distinct()
+
+    def lunch_sections(self):
+        """Lunch class sections in this program."""
+        from esp.program.models.class_ import ClassSection
+        return ClassSection.objects.filter(
+            parent_class__parent_program=self,
+            parent_class__category__is_lunch=True,
+        )
+
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
@@ -1338,6 +1353,8 @@ class Program(models.Model, CustomFormsLinkModel):
         self._getColor = retVal
         return retVal
     getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
+
+
 
     def visibleEnrollments(self):
         """
