@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -36,8 +35,14 @@ Learning Unlimited, Inc.
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest, RegistrationProfileFlowTest
-from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
+from esp.program.modules.tests.regprofilemodule import (
+    RegProfileModuleTest,
+    RegistrationProfileFlowTest,
+)
+from esp.program.modules.tests.studentreg import (
+    StudentRegTest,
+    RegistrationTypeVisibilityTest,
+)
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
@@ -46,9 +51,25 @@ from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
 from esp.program.modules.tests.commpanel import CommunicationsPanelTest
 from esp.program.modules.tests.resourcemodule import ResourceModuleTest
-from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
+from esp.program.modules.tests.admincore import (
+    RegistrationTypeManagementTest,
+    ModuleManagementConstraintsTest,
+    ModuleManagementLinkTitleTest,
+)
 from esp.program.modules.tests.adminclass import CancelClassTest
-from esp.program.modules.tests.studentregmodules import StudentExtraCostsTest, StudentRegCoreTest, StudentRegPhaseZeroTest, StudentRegConfirmTest, LotteryStudentRegTest, StudentAcknowledgementTest, StudentLunchSelectionTest, StudentSurveyModuleTest, StudentCertModuleTest, StudentOnsiteTest, StudentClassRegModuleTest
+from esp.program.modules.tests.studentregmodules import (
+    StudentExtraCostsTest,
+    StudentRegCoreTest,
+    StudentRegPhaseZeroTest,
+    StudentRegConfirmTest,
+    LotteryStudentRegTest,
+    StudentAcknowledgementTest,
+    StudentLunchSelectionTest,
+    StudentSurveyModuleTest,
+    StudentCertModuleTest,
+    StudentOnsiteTest,
+    StudentClassRegModuleTest,
+)
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.classflagmodule import ClassFlagModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
@@ -57,11 +78,18 @@ from esp.program.modules.tests.testallviews import AllViewsTest
 from esp.program.modules.tests.equityoutreach import EquityOutreachTest
 from esp.program.modules.tests.admintestingmodule import AdminTestingModuleTest
 from esp.program.modules.tests.openclasses import OpenClassesPublicTest
-from esp.program.modules.tests.test_get_hours import GetHoursQueryCountTest, GetHoursApprovedFilterTest, GetHoursScheduledFilterTest, StaticHoursTest
+from esp.program.modules.tests.test_get_hours import (
+    GetHoursQueryCountTest,
+    GetHoursApprovedFilterTest,
+    GetHoursScheduledFilterTest,
+    StaticHoursTest,
+)
 from esp.program.modules.tests.batchclassregmodule import BatchClassRegModuleTest
 from esp.program.modules.tests.formstackappmodule import FormstackAppModuleTest
 from esp.program.modules.tests.test_creditcard_required import (
-    CreditCardRequiredTest, CreditCardCybersourceRequiredTest, CreditCardSelfBlockingTest
+    CreditCardRequiredTest,
+    CreditCardCybersourceRequiredTest,
+    CreditCardSelfBlockingTest,
 )
 from esp.program.modules.tests.grouptextmodule import GroupTextModuleSendMessagesTest
 from esp.program.modules.tests.deactivationmodule import DeactivationModuleTest
@@ -74,7 +102,10 @@ from esp.program.modules.tests.test_class_creation import (
     ClassCreationControllerUnitTest,
 )
 from esp.program.modules.tests.resolve_user import ResolveUserTest
-from esp.program.modules.tests.module_progress import RegistrationProgressTagTest, RequiredModuleProgressIntegrationTest
+from esp.program.modules.tests.module_progress import (
+    RegistrationProgressTagTest,
+    RequiredModuleProgressIntegrationTest,
+)
 from esp.program.modules.tests.test_enrolled_split import EnrolledSplitViewTest
 from esp.program.modules.tests.test_accountingmodule import AccountingModuleTest
 from esp.program.modules.tests.lotteryfrontendmodule import LotteryFrontendModuleTest
@@ -97,3 +128,4 @@ from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
+from esp.program.modules.tests.studentextracosts import StudentExtraCostsTest
