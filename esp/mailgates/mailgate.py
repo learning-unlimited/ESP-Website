@@ -123,7 +123,7 @@ def _alias_sender(message, sender):
         del message['Reply-To']
 
 
-def _rewrite_headers(message, handler_row, instance, list_address):
+def _rewrite_headers(message, handler_row, instance, list_address, sender):
     """Header rewriting for group broadcasts (ClassList, SectionList, PlainList).
 
     Handlers that set `preserve_headers` (e.g. UserEmail) skip this entirely.
@@ -136,8 +136,14 @@ def _rewrite_headers(message, handler_row, instance, list_address):
         message['X-FORWARDED-FOR'] = client_ip
 
     # Point replies back at the list rather than at whoever wrote in
+    reply_to = [list_address]
+    # Also include the sender in the Reply-To if they are not already on the list.
+    member_addresses = {email.utils.parseaddr(recipient)[1].lower()
+                        for recipient in instance.recipients}
+    if (sender.email or '').lower() not in member_addresses:
+        reply_to.append('%s@%s' % (sender.username, SITE_DOMAIN))
     del message['Reply-To']
-    message['Reply-To'] = list_address
+    message['Reply-To'] = ', '.join(reply_to)
 
     subject = message['subject']
     del message['subject']
@@ -227,7 +233,7 @@ def dispatch(local_part, message, sender):
 
         if not getattr(instance, 'preserve_headers', False):
             _rewrite_headers(message, handler_row, instance,
-                             _delivery_address(local_part))
+                             _delivery_address(local_part), sender)
 
         if not instance.recipients:
             logger.warning("Handler %s matched `%s` but produced no recipients",
