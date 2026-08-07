@@ -12,6 +12,7 @@ import importlib.util
 import os
 
 from django.core import mail
+from django.core.cache import cache
 from django.test import override_settings
 
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
@@ -161,6 +162,8 @@ class MailgateBounceTest(TestCase):
         self.user = ESPUser.objects.create_user(
             username='mg_known', email='known@example.com', password='pw')
         self.user.makeRole('Teacher')
+        # Make sure to flush the cache first
+        cache.clear()
         mail.outbox = []
         self.address = mailgate._delivery_address('nosuchaddress')
 
