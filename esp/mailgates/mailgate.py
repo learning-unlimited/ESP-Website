@@ -4,8 +4,11 @@
 # Handles incoming messages etc.
 
 import email
+import email.generator
+import email.message
 import email.utils
 import hashlib
+import io
 import logging
 import os
 import random
@@ -50,7 +53,9 @@ if os.environ.get('VIRTUAL_ENV') is None:
 import django
 django.setup()
 from django.conf import settings
+from django.core.mail import get_connection
 from django.core.mail import send_mail as django_send_mail
+from django.core.mail.message import EmailMessage
 from esp.dbmail.base import sender_account
 from esp.dbmail.models import EmailList
 from esp.users.models import ESPUser
@@ -67,6 +72,40 @@ SITE_DOMAIN = settings.SITE_INFO[1].lower()
 
 #DEBUG=True
 DEBUG=False
+
+
+class _RawMIMEMessage(email.message.Message):
+    """A parsed message that accepts Django's `as_bytes(linesep=...)` call."""
+
+    def as_bytes(self, unixfrom=False, linesep='\n'):
+        buf = io.BytesIO()
+        generator = email.generator.BytesGenerator(buf, mangle_from_=False)
+        generator.flatten(self, unixfrom=unixfrom, linesep=linesep)
+        return buf.getvalue()
+
+
+class _ForwardedMessage(EmailMessage):
+    """Hands an already-parsed MIME message to a Django mail backend unchanged."""
+
+    def __init__(self, mime_message, from_email, to, connection=None):
+        super().__init__(from_email=from_email, to=to, connection=connection)
+        self._mime_message = mime_message
+
+    def message(self):
+        return self._mime_message
+
+
+def _mail_connection():
+    """Open a mail connection using whichever backend this site has configured.
+
+    Defaults to Django's SMTP backend, which reads EMAIL_HOST/EMAIL_PORT and the
+    matching credentials. A site with a local MTA therefore needs no extra
+    configuration, and a site relaying through SendGrid points those settings at
+    it. MAILGATE_EMAIL_BACKEND overrides the choice.
+    """
+    return get_connection(backend=getattr(
+        settings, 'MAILGATE_EMAIL_BACKEND',
+        'django.core.mail.backends.smtp.EmailBackend'))
 
 
 def _delivery_address(local_part):
@@ -174,38 +213,30 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
 
 
 def deliver(message, recipients, cc_all, sender):
-    """Send `message` to `recipients` via SendGrid SMTP.
+    """Send `message` to `recipients` using this site's configured mail backend.
 
     `recipients` always comes from an EmailList handler, never from the incoming
     message's own To/Cc/Bcc headers, so this cannot be used to relay mail to an
     arbitrary address.
     """
-    api_key = getattr(settings, 'SENDGRID_API_KEY', None)
-    if not api_key:
-        raise RuntimeError("SENDGRID_API_KEY is not configured; cannot send mail.")
-
     # Rewrite From: to the sender's site alias so the message passes DMARC
     _alias_sender(message, sender)
 
-    smtp = smtplib.SMTP(settings.SENDGRID_SMTP_HOST, settings.SENDGRID_SMTP_PORT)
+    # cc_all lists go out as a single message naming everyone; otherwise each
+    # recipient gets their own copy addressed to them alone.
+    batches = [recipients] if cc_all else [[recipient] for recipient in recipients]
+
+    connection = _mail_connection()
+    connection.open()
     try:
-        smtp.starttls()
-        smtp.login(settings.SENDGRID_SMTP_USERNAME, api_key)
-        if cc_all:
+        for batch in batches:
             del message['To']
-            message['To'] = ', '.join(recipients)
-            smtp.sendmail(BOUNCES, recipients, message.as_bytes())
-        else:
-            for recipient in recipients:
-                del message['To']
-                message['To'] = recipient
-                smtp.sendmail(BOUNCES, [recipient], message.as_bytes())
+            message['To'] = ', '.join(batch)
+            connection.send_messages(
+                [_ForwardedMessage(message, BOUNCES, batch, connection)])
     finally:
-        try:
-            smtp.quit()
-        except Exception:
-            logger.debug("Error closing SMTP connection", exc_info=True)
-    logger.info("Forwarded message to %s via SendGrid", recipients)
+        connection.close()
+    logger.info("Forwarded message to %s", recipients)
 
 
 def dispatch(local_part, message, sender):
@@ -302,7 +333,7 @@ def main():
         logger.error("LOCAL_PART is not set by the MTA; cannot route this message")
         return
 
-    message = email.message_from_bytes(raw_email)
+    message = email.message_from_bytes(raw_email, _class=_RawMIMEMessage)
 
     # Per-address loop detection. Record this delivery before forwarding, so that
     # a message which comes back to the same address is recognised next time.
@@ -328,10 +359,10 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except smtplib.SMTPException:
+    except (smtplib.SMTPException, ConnectionError, TimeoutError):
         # Transient delivery problem: exit EX_TEMPFAIL so the MTA queues the
         # message and retries, rather than dropping it silently.
-        logger.exception("SMTP failure while forwarding; asking the MTA to retry")
+        logger.exception("Mail transport failure while forwarding; asking the MTA to retry")
         sys.exit(75)
     except Exception:
         # A bug or a permanently undeliverable message. Exit 0 so the MTA treats
