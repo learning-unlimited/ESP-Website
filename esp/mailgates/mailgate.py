@@ -64,7 +64,7 @@ host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 BOUNCES = settings.DEFAULT_EMAIL_ADDRESSES['bounces']
-ORGANIZATION_NAME = settings.INSTITUTION_NAME + '_' + settings.ORGANIZATION_SHORT_NAME
+
 # The LU alias domain, and this site's own public domain, which may be a vanity
 # domain (e.g., `stanfordesp.org` or `esp.mit.edu`) rather than an LU subdomain.
 DOMAIN = '.learningu.org'
