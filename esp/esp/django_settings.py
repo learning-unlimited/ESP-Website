@@ -152,6 +152,10 @@ SENDGRID_API_KEY = ''
 # settings, so a site delivering through a local MTA needs no further configuration.
 MAILGATE_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
+# Minimum seconds between "undeliverable" notices sent to the same address by the
+# mailgate. Set to 0 to disable rate limiting.
+MAILGATE_BOUNCE_INTERVAL = 24 * 60 * 60
+
 #################################
 # Default localization settings #
 #################################

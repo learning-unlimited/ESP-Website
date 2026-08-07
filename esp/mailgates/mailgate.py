@@ -53,6 +53,7 @@ if os.environ.get('VIRTUAL_ENV') is None:
 import django
 django.setup()
 from django.conf import settings
+from django.core.cache import cache
 from django.core.mail import get_connection
 from django.core.mail import send_mail as django_send_mail
 from django.core.mail.message import EmailMessage
@@ -285,6 +286,24 @@ def dispatch(local_part, message, sender):
     return False
 
 
+def _bounce_allowed(sender_email):
+    """True at most once per sender per MAILGATE_BOUNCE_INTERVAL seconds.
+
+    The From header is trivially forged, so without a limit someone could spoof a
+    registered user's address, fire a run of messages at nonexistent addresses and
+    have every one of them bounce back at that user.
+    """
+    interval = getattr(settings, 'MAILGATE_BOUNCE_INTERVAL', 24 * 60 * 60)
+    if not interval:
+        return True
+    key = 'mailgate:bounce:%s' % hashlib.sha1(
+        sender_email.strip().lower().encode('utf-8')).hexdigest()
+    if cache.get(key):
+        return False
+    cache.set(key, True, interval)
+    return True
+
+
 def bounce(delivery_address, message):
     """Tell a registered sender that their message could not be delivered.
 
@@ -301,6 +320,10 @@ def bounce(delivery_address, message):
     if not ESPUser.objects.filter(email__iexact=sender_email).exists():
         logger.info("Undeliverable mail to `%s` from unregistered sender; not bouncing",
                     delivery_address)
+        return
+    if not _bounce_allowed(sender_email):
+        logger.info("Undeliverable mail to `%s`; bounce to `%s` suppressed by rate limit",
+                    delivery_address, sender_email)
         return
     try:
         django_send_mail(
