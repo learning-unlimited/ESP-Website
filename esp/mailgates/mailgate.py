@@ -123,6 +123,14 @@ def _alias_sender(message, sender):
         del message['Reply-To']
 
 
+def _prefix_subject(subject, tag):
+    """Prepend `[tag]` to `subject` unless it already carries it."""
+    marker = '[%s]' % tag
+    if marker.lower() in subject.lower():
+        return subject
+    return '%s %s' % (marker, subject) if subject else marker
+
+
 def _rewrite_headers(message, handler_row, instance, list_address, sender):
     """Header rewriting for group broadcasts (ClassList, SectionList, PlainList).
 
@@ -145,12 +153,12 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
     del message['Reply-To']
     message['Reply-To'] = ', '.join(reply_to)
 
-    subject = message['subject']
+    subject = message['subject'] or ''
     del message['subject']
     if getattr(instance, 'emailcode', None):
-        subject = '[%s] %s' % (instance.emailcode, subject)
+        subject = _prefix_subject(subject, instance.emailcode)
     if handler_row.subject_prefix:
-        subject = '[%s] %s' % (handler_row.subject_prefix, subject)
+        subject = _prefix_subject(subject, handler_row.subject_prefix)
     message['Subject'] = subject
 
     if handler_row.from_email:
