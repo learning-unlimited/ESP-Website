@@ -141,6 +141,20 @@ ORGANIZATION_SHORT_NAME = 'Splash'
 # The host for ESP site-supported email lists.
 EMAIL_HOST = 'localhost'
 
+# API key for django-sendgrid-v5, the outgoing EMAIL_BACKEND on sites that relay
+# through SendGrid. Override this in local_settings.py; never commit a real key.
+SENDGRID_API_KEY = ''
+
+# Backend used by esp/mailgates/mailgate.py to forward inbound mail. This must
+# be an SMTP-style backend rather than a Web API one. It reads the standard
+# EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD and EMAIL_USE_TLS
+# settings, so a site delivering through a local MTA needs no further configuration.
+MAILGATE_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# Minimum seconds between "undeliverable" notices sent to the same address by the
+# mailgate. Set to 0 to disable rate limiting.
+MAILGATE_BOUNCE_INTERVAL = 24 * 60 * 60
+
 #################################
 # Default localization settings #
 #################################
