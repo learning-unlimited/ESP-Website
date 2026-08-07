@@ -93,6 +93,37 @@ class SendMailTest(TestCase):
         sent = mail.outbox[0]
         self.assertIn('List-Unsubscribe', sent.extra_headers)
 
+    def test_unsubscribe_header_does_not_leak_between_calls(self):
+        """extra_headers must not be a shared mutable default.
+
+        The per-user List-Unsubscribe header is written into extra_headers, so a
+        mutable default would carry one recipient's one-click unsubscribe link
+        into every later message sent by the same process.
+        """
+        other = ESPUser.objects.create_user(
+            username='mailuser2',
+            email='mailuser2@example.com',
+            password='password',
+        )
+
+        send_mail('First', 'Body', 'from@learningu.org',
+                  ['to@example.com'], user=other)
+        send_mail('Second', 'Body', 'from@learningu.org',
+                  ['to@example.com'])
+
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn('List-Unsubscribe', mail.outbox[0].extra_headers)
+        self.assertNotIn('List-Unsubscribe', mail.outbox[1].extra_headers)
+
+    def test_callers_headers_are_not_modified(self):
+        """A caller reusing one dict across recipients must not accumulate headers."""
+        headers = {'Reply-To': 'someone@learningu.org'}
+
+        send_mail('Subject', 'Body', 'from@learningu.org',
+                  ['to@example.com'], extra_headers=headers, user=self.user)
+
+        self.assertEqual(headers, {'Reply-To': 'someone@learningu.org'})
+
 
 class ActionHandlerTest(TestCase):
     def test_getattribute_delegates_to_obj(self):

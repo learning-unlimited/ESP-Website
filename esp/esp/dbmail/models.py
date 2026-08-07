@@ -66,8 +66,11 @@ from django.core.validators import validate_email
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
-              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
-              attachments=[], *args, **kwargs):
+              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers=None, user=None,
+              attachments=None, *args, **kwargs):
+    extra_headers = dict(extra_headers or {})
+    attachments = list(attachments or [])
+
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
