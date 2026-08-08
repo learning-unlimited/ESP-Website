@@ -201,7 +201,9 @@ class FCFSPipelineIntegrationTest(ProgramFrameworkTest):
 
     def _set_student_grade(self, student, grade):
         schoolyear = ESPUser.program_schoolyear(self.program)
-        profile = student.getLastProfile()
+        # getLastProfile() returns the student's newest profile across *all*
+        # programs; getLastForProgram() scopes it to this program specifically.
+        profile = RegistrationProfile.getLastForProgram(student, self.program, tl='learn')
         profile.student_info.graduation_year = ESPUser.YOGFromGrade(grade, schoolyear)
         profile.student_info.save()
 
