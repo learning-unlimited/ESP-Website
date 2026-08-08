@@ -195,12 +195,8 @@ class ThemesTest(TestCase):
         theme_names = tc.get_theme_names()
         for theme_name in theme_names:
             theme_data_dir = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data', theme_name)
-            if tc.uses_scss_pipeline(theme_name):
-                variables_filename = os.path.join(theme_data_dir, 'scss', 'variables.scss')
-                var_pattern = r'\$([a-zA-Z0-9_]+):\s+?(\S+);'
-            else:
-                variables_filename = os.path.join(theme_data_dir, 'less', 'variables.less')
-                var_pattern = r'@([a-zA-Z0-9_]+):\s+?(\S+);'
+            variables_filename = os.path.join(theme_data_dir, 'scss', 'variables.scss')
+            var_pattern = r'\$([a-zA-Z0-9_]+):\s+?(\S+);'
             if os.path.exists(variables_filename):
                 # Themes with a config form need template settings (see testSelector).
                 if tc.get_config_form_class(theme_name) is not None:
@@ -270,7 +266,7 @@ class ThemesTest(TestCase):
           persist that theme, so Loading the customization later restores it
           regardless of whichever Bootswatch theme happens to be active. """
         tc = ThemeController()
-        scss_themes = [n for n in tc.get_theme_names() if tc.uses_scss_pipeline(n)]
+        scss_themes = [n for n in tc.get_theme_names() if tc.has_scss(n)]
         bw_themes = tc.get_bootswatch_themes()
         if not scss_themes or not bw_themes:
             self.skipTest('No SCSS theme / Bootswatch package available')
@@ -379,8 +375,8 @@ class Bootstrap4MigrationTest(TestCase):
             'theme main.scss should be included',
         )
         self.assertFalse(
-            any(f.endswith('theme_editor/less/bootstrap.less') for f in names),
-            'Committed BS2 bootstrap.less should not appear in SCSS pipeline',
+            any('.less' in f for f in names),
+            'Legacy LESS sources should not appear in SCSS pipeline',
         )
 
     def test_compile_css_produces_bs4_markers(self):
@@ -410,7 +406,7 @@ class Bootstrap4MigrationTest(TestCase):
     def test_bootswatch_themes_have_required_scss_files(self):
         """Each discovered Bootswatch theme has _variables.scss and _bootswatch.scss (Bootswatch 5 SCSS layout)."""
         bootswatch_dist = os.path.normpath(os.path.join(
-            themes_settings.less_dir, '..', 'node_modules', 'bootswatch', 'dist'
+            themes_settings.scss_dir, '..', 'node_modules', 'bootswatch', 'dist'
         ))
         for name in self.tc.get_bootswatch_themes():
             self.assertTrue(
@@ -422,41 +418,9 @@ class Bootstrap4MigrationTest(TestCase):
                 f'bootswatch/dist/{name}/_bootswatch.scss missing'
             )
 
-    def test_get_less_names_bootswatch_import_order(self):
-        """Bootswatch variables.less precedes bootstrap.less; bootswatch.less follows it (LESS pipeline only)."""
-        less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
-        if not less_only:
-            self.skipTest('All themes use SCSS; LESS Bootswatch import order test not applicable')
-        bootswatch_less = self.tc.get_bootswatch_less_themes()
-        if not bootswatch_less:
-            self.skipTest('Bootswatch 3 LESS npm package not installed')
-        names = [f.replace('\\', '/') for f in self.tc.get_less_names(less_only[0], bootswatch_theme=bootswatch_less[0])]
-        bs3_idx = next(i for i, f in enumerate(names) if 'node_modules/bootstrap/less/bootstrap.less' in f)
-        bsw_var_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('variables.less'))
-        bsw_sty_idx = next(i for i, f in enumerate(names) if 'bootswatch' in f and f.endswith('bootswatch.less'))
-        self.assertLess(bsw_var_idx, bs3_idx,
-                        'Bootswatch variables.less must come BEFORE bootstrap.less')
-        self.assertGreater(bsw_sty_idx, bs3_idx,
-                           'Bootswatch bootswatch.less must come AFTER bootstrap.less')
-
-    def test_compile_css_with_bootswatch_produces_valid_output(self):
-        """compile_css() with a Bootswatch skin compiles to non-trivial CSS (LESS pipeline only)."""
-        less_only = [n for n in self.tc.get_theme_names() if not self.tc.uses_scss_pipeline(n)]
-        if not less_only:
-            self.skipTest('All themes use SCSS; Bootswatch 3 LESS test not applicable')
-        themes_list = self.tc.get_bootswatch_less_themes()
-        if not themes_list:
-            self.skipTest('Bootswatch 3 LESS npm package not installed')
-        self.tc.compile_css(less_only[0], {}, self.css_filename, bootswatch_theme=themes_list[0])
-        with open(self.css_filename) as f:
-            css = f.read()
-        self.assertGreater(len(css), 10000)
-        self.assertIn('.navbar-toggle', css)
-        self.assertIn('.panel', css)
-
     def test_compile_css_with_scss_bootswatch_produces_valid_output(self):
         """compile_css() with a Bootswatch 5 skin on an SCSS theme compiles to non-trivial CSS."""
-        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.has_scss(n)]
         if not scss_themes:
             self.skipTest('No SCSS themes available')
         themes_list = self.tc.get_bootswatch_themes()
@@ -470,12 +434,17 @@ class Bootstrap4MigrationTest(TestCase):
 
     def test_compile_css_raises_for_unknown_explicit_bootswatch(self):
         """compile_css() raises ValueError when an unknown Bootswatch skin is passed explicitly."""
-        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.has_scss(n)]
         if not scss_themes:
             self.skipTest('No SCSS themes available')
         with self.assertRaises(ValueError):
             self.tc.compile_css(scss_themes[0], {}, self.css_filename,
                                 bootswatch_theme='no-such-bootswatch-skin')
+
+    def test_compile_css_raises_for_theme_without_scss(self):
+        """compile_css() rejects themes that lack SCSS sources."""
+        with self.assertRaises(ValueError):
+            self.tc.compile_css('nonexistent_theme_xyz', {}, self.css_filename)
 
 
 class EspOverriddenBehaviorTest(TestCase):
@@ -489,7 +458,7 @@ class EspOverriddenBehaviorTest(TestCase):
         themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
         self.tc = ThemeController()
         self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
-        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.uses_scss_pipeline(n)]
+        scss_themes = [n for n in self.tc.get_theme_names() if self.tc.has_scss(n)]
         if not scss_themes:
             self.skipTest('No SCSS themes available')
         self.theme_name = scss_themes[0]
@@ -607,18 +576,11 @@ class FindScssVariablesSecurityTest(TestCase):
                         'Unknown theme should not produce theme_data/ entries')
         self.assertTrue(any('variables_custom.scss' in f for f in names))
 
-    def test_get_less_names_unknown_theme_returns_global_files_only(self):
-        """get_less_names for an unknown theme returns no theme-specific LESS files."""
-        names = self.tc.get_less_names('nonexistent_theme_xyz')
-        self.assertFalse(any('nonexistent_theme_xyz' in f for f in names))
-
-    def test_find_theme_variables_delegates_to_less_pipeline(self):
-        """find_theme_variables calls find_less_variables when uses_scss_pipeline returns False."""
-        import unittest.mock as mock
-        with mock.patch.object(self.tc, 'uses_scss_pipeline', return_value=False):
-            with mock.patch.object(self.tc, 'find_less_variables', return_value={'x': '1'}) as mock_less:
-                result = self.tc.find_theme_variables('barebones')
-        mock_less.assert_called_once()
+    def test_find_theme_variables_uses_scss_pipeline(self):
+        """find_theme_variables always delegates to find_scss_variables."""
+        with mock.patch.object(self.tc, 'find_scss_variables', return_value={'x': '1'}) as mock_scss:
+            result = self.tc.find_theme_variables('barebones')
+        mock_scss.assert_called_once()
         self.assertEqual(result, {'x': '1'})
 
 

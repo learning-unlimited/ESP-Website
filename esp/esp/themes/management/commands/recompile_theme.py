@@ -42,10 +42,18 @@ class Command(BaseCommand):
     """Recompile the current theme."""
     def handle(self, *args, **options):
         from esp.themes.controllers import ThemeController
+        tc = ThemeController()
+        # Resolve once before any attempt. recompile_theme() calls clear_theme()
+        # which unsets current_theme_name, so a bare retry would fall back to
+        # 'default' and fail with a misleading missing-pipeline error.
+        theme_name = tc.get_current_theme()
+        customization_name = tc.get_current_customization()
         try:
             # If this changes, make sure it still respects settings.LOCAL_THEME
-            ThemeController().recompile_theme()
+            tc.recompile_theme(theme_name=theme_name,
+                               customization_name=customization_name)
         except Exception:
             logger.warning("recompile_theme failed the first time. Trying "
-                           "again... (We should really fix that bug!)")
-            ThemeController().recompile_theme()
+                           "again...")
+            tc.recompile_theme(theme_name=theme_name,
+                               customization_name=customization_name)
