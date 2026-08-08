@@ -218,11 +218,6 @@ LOGGING = {
     }
 }
 
-#   Search directories for LESS (customizable stylesheet) files
-LESS_SEARCH_PATH = [
-    os.path.join(MEDIA_ROOT, 'less'),
-]
-
 MANAGERS = ADMINS
 
 DEFAULT_HOST = SITE_INFO[1]

@@ -29,11 +29,13 @@ Setup
 
   ::
 
-    apt-get install nodejs node-less
+    apt-get install nodejs
 
 
-- Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
-- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clone, then git checkout v0.11.9-release).
+- Note: Themes compile with the Dart Sass CLI (``sass``) and Bootstrap 5 SCSS
+  packages installed under ``esp/public/media/theme_editor/`` via ``npm install``.
+- Note: You will need a current LTS Node.js.  See the Docker setup guide for the
+  supported development environment.
 
 2) Back up your database, or at least the template overrides.
 3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    
@@ -43,9 +45,8 @@ Architecture
 ------------
 Each theme consists of a set of pre-defined template overrides, images and
 styles.  This information is stored in the code repository 
-(esp/themes/theme_data directory).  The styles are stored in LESS
-(https://lesscss.org) format and compiled into CSS with user-specified
-parameters.
+(esp/themes/theme_data directory).  The styles are stored in SCSS
+format and compiled into CSS with user-specified parameters.
 
 From the end user perspective, there are 3 steps to setting up their 
 front-end design:
@@ -66,7 +67,7 @@ esp/themes/controllers.py.  The most important methods are:
 - High level theme controls: clear_theme(), load_theme(), customize_theme()
 - Back end driver functions: compile_css(), load_customizations(), save_customizations()
 
-When someone selects a theme, the LESS stylesheet sources are all compiled
+When someone selects a theme, the SCSS stylesheet sources are all compiled
 into a single CSS file (by default, public/media/styles/theme_compiled.css).
 Any template overrides conflicting with the desired theme are removed.  The
 media files provided by the theme are copied into the working directory.
