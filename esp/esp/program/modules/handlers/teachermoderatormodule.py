@@ -9,6 +9,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 class TeacherModeratorModule(ProgramModuleObj):
     doc = """Adds a form to teacher registration allowing teachers to sign up as section moderators (also adds moderator features elsewhere on the site)."""
+    permission_types = ('Teacher/Moderate',)
 
     @classmethod
     def module_properties(cls):
@@ -123,7 +124,7 @@ class TeacherModeratorModule(ProgramModuleObj):
             users = list(user_dict.values())
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': f"{user.last_name}, {user.first_name}", 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 
