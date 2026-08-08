@@ -213,6 +213,29 @@ class AnswerTest(TestCase):
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
 
+    def testAnswerCleanValidation(self):
+        '''Test that Answer.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
+        ans_null.clean()  # Should not raise
+
+        # Both set -> OK
+        ct = ContentType.objects.get_for_model(self.program)
+        ans_set = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=self.program.id)
+        ans_set.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError on save()
+        ans_ct_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_ct_only.save()
+
+        # content_type null, object_id set -> ValidationError on save()
+        ans_id_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=self.program.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_id_only.save()
+
 
 # ===== CSV Import Tests =====
 
@@ -342,21 +365,22 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
             pmo.required = False
             pmo.save()
 
-        # Create a student survey with per-class questions
         self.survey, _ = Survey.objects.get_or_create(
-            name='Test Student Survey', program=self.program, category='learn')
-        text_qtype, _ = QuestionType.objects.get_or_create(
-            name='yes-no response')
+            name='Test Survey', program=self.program, category='learn')
+        yesno_qtype, _ = QuestionType.objects.get_or_create(
+            name='yes/no', is_numeric=False, is_countable=True,
+            _param_names="")
         number_qtype, _ = QuestionType.objects.get_or_create(
             name='numeric rating', is_numeric=True, is_countable=True,
             _param_names="Number of ratings|Lower text|Middle text|Upper text")
 
         self.question_perclass, _ = Question.objects.get_or_create(
             survey=self.survey, name='Was this class good?',
-            question_type=text_qtype, per_class=True, seq=0)
+            question_type=yesno_qtype, per_class=True, seq=1,
+            _param_values="")
         self.question_rating, _ = Question.objects.get_or_create(
             survey=self.survey, name='Rate this class',
-            question_type=number_qtype, per_class=True, seq=1,
+            question_type=number_qtype, per_class=True, seq=2,
             _param_values="5|Terrible|Okay|Awesome")
 
         # Pick a teacher and a section they teach
