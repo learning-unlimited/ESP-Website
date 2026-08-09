@@ -2247,14 +2247,35 @@ class ClassCategories(models.Model):
     category = models.TextField(blank=False, help_text='The name of the category')
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+    is_lunch = models.BooleanField(default=False, help_text='True if this category represents Lunch')
 
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
+
+    @classmethod
+    def get_lunch(cls):
+        """Return the lunch category, or None if none is configured."""
+        return cls.objects.filter(is_lunch=True).first()
+
+    def clean(self):
+        # Enforce the single-lunch-category restriction with a friendly message
+        if self.is_lunch and ClassCategories.objects.filter(
+                is_lunch=True).exclude(pk=self.pk).exists():
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                {'is_lunch': 'A lunch category already exists; only one lunch category is allowed.'})
 
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_lunch'],
+                condition=models.Q(is_lunch=True),
+                name='unique_lunch_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
