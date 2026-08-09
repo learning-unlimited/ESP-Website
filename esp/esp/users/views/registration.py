@@ -8,6 +8,7 @@ log = logging.getLogger(__name__)
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
@@ -37,6 +38,7 @@ __all__ = [
     'resend_activation_view',
     'registration_live_email_check',
     'registration_live_username_check',
+    'registration_live_password_check',
 ]
 
 def _username_live_validation(username):
@@ -78,7 +80,7 @@ def _username_live_validation(username):
     return {
         'valid': True,
         'available': True,
-        'message': 'Username is available.',
+        'message': '',
     }
 
 @require_GET
@@ -113,7 +115,7 @@ def _email_live_validation(email, initial_role):
         return {
             'valid': True,
             'available': True,
-            'message': 'Email address looks valid.',
+            'message': '',
         }
 
     valid_roles = {item[0] for item in ESPUser.getAllUserTypes()}
@@ -121,7 +123,7 @@ def _email_live_validation(email, initial_role):
         return {
             'valid': True,
             'available': None,
-            'message': 'Select a role to check for existing accounts.',
+            'message': '',
         }
 
     accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(role, True))
@@ -146,7 +148,39 @@ def _email_live_validation(email, initial_role):
     return {
         'valid': True,
         'available': True,
-        'message': 'Email address is available.',
+        'message': '',
+    }
+
+def _password_live_validation(password, username, first_name, last_name):
+    """Read-only validation for password feedback during registration."""
+    candidate_password = password or ''
+
+    if not candidate_password:
+        return {
+            'valid': False,
+            'available': None,
+            'message': 'Enter a password.',
+        }
+
+    user = ESPUser(
+        username=(username or '').strip(),
+        first_name=(first_name or '').strip(),
+        last_name=(last_name or '').strip(),
+    )
+
+    try:
+        validate_password(candidate_password, user)
+    except ValidationError as err:
+        return {
+            'valid': False,
+            'available': None,
+            'message': err.messages[0] if err.messages else 'Password is not valid.',
+        }
+
+    return {
+        'valid': True,
+        'available': True,
+        'message': '',
     }
 
 @require_GET
@@ -155,6 +189,15 @@ def registration_live_email_check(request):
     email = request.GET.get('email', '')
     initial_role = request.GET.get('initial_role', '')
     return JsonResponse(_email_live_validation(email, initial_role))
+
+@require_GET
+def registration_live_password_check(request):
+    """AJAX endpoint for password validation feedback during registration."""
+    password = request.GET.get('password', '')
+    username = request.GET.get('username', '')
+    first_name = request.GET.get('first_name', '')
+    last_name = request.GET.get('last_name', '')
+    return JsonResponse(_password_live_validation(password, username, first_name, last_name))
 
 def user_registration_validate(request):
     """Handle the account creation logic when the form is submitted

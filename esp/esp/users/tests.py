@@ -568,6 +568,17 @@ class AccountCreationTest(TestCase):
             taken_payload = json.loads(taken_response.content.decode('utf-8'))
             self.assertTrue(taken_payload['valid'])
             self.assertFalse(taken_payload['available'])
+            self.assertTrue(taken_payload['message'])
+
+            no_role_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': '',
+            })
+            self.assertEqual(no_role_response.status_code, 200)
+            no_role_payload = json.loads(no_role_response.content.decode('utf-8'))
+            self.assertTrue(no_role_payload['valid'])
+            self.assertIsNone(no_role_payload['available'])
+            self.assertEqual(no_role_payload['message'], '')
 
             invalid_response = self.client.get('/myesp/register/check-email/', {
                 'email': 'invalid-email',
@@ -586,6 +597,7 @@ class AccountCreationTest(TestCase):
             free_payload = json.loads(free_response.content.decode('utf-8'))
             self.assertTrue(free_payload['valid'])
             self.assertTrue(free_payload['available'])
+            self.assertEqual(free_payload['message'], '')
         finally:
             if original_ask_about_duplicates is None:
                 Tag.unSetTag('ask_about_duplicate_accounts')
@@ -602,6 +614,7 @@ class AccountCreationTest(TestCase):
         taken_payload = json.loads(taken_response.content.decode('utf-8'))
         self.assertTrue(taken_payload['valid'])
         self.assertFalse(taken_payload['available'])
+        self.assertTrue(taken_payload['message'])
 
         invalid_response = self.client.get('/myesp/register/check-username/', {
             'username': 'bad*name',
@@ -618,6 +631,32 @@ class AccountCreationTest(TestCase):
         free_payload = json.loads(free_response.content.decode('utf-8'))
         self.assertTrue(free_payload['valid'])
         self.assertTrue(free_payload['available'])
+        self.assertEqual(free_payload['message'], '')
+
+    def test_live_password_validation_endpoint(self):
+        invalid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'short',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+        self.assertTrue(invalid_payload['message'])
+
+        valid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'Str0ng!Pass',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(valid_response.status_code, 200)
+        valid_payload = json.loads(valid_response.content.decode('utf-8'))
+        self.assertTrue(valid_payload['valid'])
+        self.assertTrue(valid_payload['available'])
+        self.assertEqual(valid_payload['message'], '')
 
 from esp.users.models import GradeChangeRequest
 
