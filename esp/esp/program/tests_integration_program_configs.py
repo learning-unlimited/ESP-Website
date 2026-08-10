@@ -353,7 +353,7 @@ class WaitlistToggleIntegrationTest(ProgramFrameworkTest):
 
         # Second student is over the cap and gets waitlisted through the real view.
         self.assertTrue(self.client.login(username=blocked_student.username, password='password'))
-        resp = self.client.get('/learn/%s/waitlist_subscribe' % self.program.getUrlBase(), follow=True)
+        resp = self.client.post('/learn/%s/waitlist_subscribe' % self.program.getUrlBase(), follow=True)
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.context['already_on_list'])
 
@@ -362,7 +362,7 @@ class WaitlistToggleIntegrationTest(ProgramFrameworkTest):
         self.assertIn(blocked_student, self._module().students(QObject=False)['waitlisted_students'])
 
         # A second visit does not create a duplicate Record.
-        resp = self.client.get('/learn/%s/waitlist_subscribe' % self.program.getUrlBase(), follow=True)
+        resp = self.client.post('/learn/%s/waitlist_subscribe' % self.program.getUrlBase(), follow=True)
         self.assertTrue(resp.context['already_on_list'])
         self.assertEqual(
             Record.objects.filter(user=blocked_student, program=self.program, event__name='waitlist').count(), 1)
