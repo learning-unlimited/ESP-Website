@@ -275,16 +275,15 @@ class Command(BaseCommand):
                 defaults=dict(admin_title=admin_title, seq=seq,
                               required=required, choosable=1))
 
-        # RegProfileModule has two variants (learn + teach) with the same handler
+        # Create the separate profile handlers
         ProgramModule.objects.get_or_create(
-            handler='RegProfileModule', module_type='learn',
+            handler='StudentRegProfileModule', module_type='learn',
             defaults=dict(admin_title='Student Profile Editor',
                           seq=0, required=True, choosable=1))
         ProgramModule.objects.get_or_create(
-            handler='RegProfileModule', module_type='teach',
+            handler='TeacherRegProfileModule', module_type='teach',
             defaults=dict(admin_title='Teacher Profile Editor',
                           seq=0, required=True, choosable=1))
-
         # Supplement with all other choosable=1 modules from the handlers directory
         from esp.program.modules import handlers as handlers_pkg
         import importlib

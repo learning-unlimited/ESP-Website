@@ -758,8 +758,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
             # Override some settings that shouldn't be changed
-            # Profile modules should always be required and always first
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "RegProfileModule")
+            # Force RegProfile modules to be required and seq=0
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"])
             for pmo in pmos:
                 pmo.seq = 0
                 pmo.required = True
@@ -806,7 +806,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         for mod in learn_modules + teach_modules:
             handler = mod.module.handler
             required_locked = (
-                handler == 'RegProfileModule' or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                 handler == 'AvailabilityModule' or
                 'AcknowledgementModule' in handler or
                 handler == 'StudentRegTwoPhase'
@@ -816,8 +816,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 handler == 'StudentRegConfirm'
             )
             position_locked = (
-                handler == 'RegProfileModule' or
-                'CreditCardModule_' in handler or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
+                "CreditCardModule_" in handler or
                 handler == 'StudentRegConfirm'
             )
             if required_locked or not_required_locked or position_locked:

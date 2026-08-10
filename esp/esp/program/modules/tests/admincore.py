@@ -80,7 +80,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         # RegProfileModule returns two module_properties entries (learn + teach),
         # so there are two ProgramModule rows with that handler.
         modules = [ProgramModule.objects.get(handler='AdminCore')]
-        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules += list(ProgramModule.objects.filter(handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']))
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
         modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
 
@@ -108,14 +108,14 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
 
     def test_reg_profile_enforced_after_illegal_post(self):
         """RegProfileModule is always seq=0 and required=True after any save."""
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             pmo.seq = 500
             pmo.required = False
             pmo.save()
 
         self._post_empty_order()
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             self.assertEqual(pmo.seq, 0)
             self.assertTrue(pmo.required)
 
@@ -158,7 +158,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertEqual(r.status_code, 200)
         constraints = r.context['module_constraints']
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             if pmo.inModulesList():
                 key = str(pmo.id)
                 self.assertIn(key, constraints)
@@ -194,7 +194,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertEqual(r.status_code, 200)
         position_locked_ids = r.context['position_locked_ids']
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             if pmo.inModulesList():
                 self.assertIn(pmo.id, position_locked_ids)
 
@@ -325,7 +325,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         # POST regardless of which reset flags are sent.  Exclude those so we can
         # test seq independence on unaffected modules.
         forced_override_names = frozenset({
-            'RegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
+            'StudentRegProfileModule', 'TeacherRegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
             'StudentRegTwoPhase',
         })
         non_override_ids = [
