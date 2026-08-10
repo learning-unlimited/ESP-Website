@@ -38,5 +38,30 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.DeleteModel(
+            name='RegProfileModule',
+        ),
+        migrations.CreateModel(
+            name='StudentRegProfileModule',
+            fields=[
+            ],
+            options={
+                'proxy': True,
+                'indexes': [],
+                'constraints': [],
+            },
+            bases=('modules.programmoduleobj',),
+        ),
+        migrations.CreateModel(
+            name='TeacherRegProfileModule',
+            fields=[
+            ],
+            options={
+                'proxy': True,
+                'indexes': [],
+                'constraints': [],
+            },
+            bases=('modules.programmoduleobj',),
+        ),
         migrations.RunPython(split_regprofilemodule, reverse_split),
     ]
