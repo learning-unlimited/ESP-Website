@@ -389,7 +389,8 @@ if __name__ == "__main__":
     except (smtplib.SMTPException, ConnectionError, TimeoutError):
         # Transient delivery problem: exit EX_TEMPFAIL so the MTA queues the
         # message and retries, rather than dropping it silently.
-        logger.exception("Mail transport failure while forwarding; asking the MTA to retry")
+        logger.warning("Mail transport failure while forwarding; asking the MTA to retry",
+                       exc_info=True)
         sys.exit(75)
     except Exception:
         # A bug or a permanently undeliverable message. Exit 0 so the MTA treats
