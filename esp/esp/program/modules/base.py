@@ -302,9 +302,29 @@ class ProgramModuleObj(ExpirableModel):
                 BaseModule.seq = old_pmo[0].seq
                 BaseModule.required = old_pmo[0].required
                 BaseModule.required_label = old_pmo[0].required_label
+                BaseModule.start_date = old_pmo[0].start_date
+                BaseModule.end_date = old_pmo[0].end_date
             else:
                 BaseModule.seq = mod.seq
                 BaseModule.required = mod.required
+                # Populate initial start_date and end_date from program permission records
+                try:
+                    handler_cls = mod.getPythonClass()
+                    perm_types = getattr(handler_cls, 'permission_types', ())
+                    if not perm_types and hasattr(handler_cls, 'get_permission_types'):
+                        perm_types = handler_cls.get_permission_types(handler_cls)
+                    if perm_types:
+                        from esp.users.models import Permission
+                        perm = Permission.objects.filter(
+                            program=prog,
+                            permission_type__in=perm_types,
+                            user__isnull=True
+                        ).first()
+                        if perm:
+                            BaseModule.start_date = perm.start_date
+                            BaseModule.end_date = perm.end_date
+                except Exception:
+                    pass
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:
