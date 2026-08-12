@@ -105,8 +105,10 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
             first_name='Alice', last_name='Wonder', email='alice.w@example.com'
         ))
         new_user = ESPUser.objects.get(email='alice.w@example.com')
+        # get_unused_username uses first initial + last name (e.g. "awonder").
         self.assertTrue(new_user.username)
-        self.assertIn('alice', new_user.username.lower())
+        self.assertTrue(new_user.username.lower().startswith('a'))
+        self.assertIn('wonder', new_user.username.lower())
 
     @patch.object(ESPUser, 'recoverPassword')
     def test_registration_without_optional_bits(self, mock_recover):
