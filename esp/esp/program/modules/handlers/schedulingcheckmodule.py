@@ -1,6 +1,7 @@
 from django.http import HttpResponse
-from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.resources.models import ResourceRequest, ResourceType
 from copy import deepcopy
 from esp.cal.models import *
@@ -29,6 +30,19 @@ class SchedulingCheckModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the scheduling diagnostics page in the admin dashboard search dropdown.
+        if view_name != "scheduling_checks":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Scheduling Diagnostics",
+            category=SEARCH_CATEGORY_CLASSES,
+            keywords=["scheduling", "diagnostics", "checks", "schedule", "conflicts"],
+        )
 
     @main_call
     @needs_admin
@@ -130,7 +144,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -223,7 +237,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category='Lunch')
+            qs = qs.exclude(parent_class__category__is_lunch=True)
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -390,8 +404,9 @@ class SchedulingCheckRunner:
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
         if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is not None and lunch_category.category in self.class_categories:
+            self.class_categories.remove(lunch_category.category)
 
         #generating a dictionary of class categories
         class_cat_d = {}

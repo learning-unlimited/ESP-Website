@@ -7,14 +7,8 @@
 	 </div>
      <div class="class_subtitle_row">
      <div class="class_difficulty">
-	 {% if class.hardness_rating != "Normal" %}
-	   Difficulty:  {{ class.hardness_rating }}
-	   {% if class.hardness_rating == "Hard" %}
-	      - This class may be exceptionally difficult
-	   {% endif %}
-	   {% if class.hardness_rating == "Easy" %}
-	      - This class is meant to be accessible to most students
-	   {% endif %}
+	 {% if class.hardness_rating %}
+	   Difficulty: {{ class.hardness_rating }}{% if difficulty_description %} – {{ difficulty_description }}{% endif %}
 	 {% endif %}
     </div>
     <div class="class_teachers">
@@ -49,8 +43,8 @@
     </div>
     
     <div class="class_footer_row">
-    <div class="row-fluid">
-        <div class="span6 class_meeting_times">
+    <div class="row">
+        <div class="col-md-6 class_meeting_times">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
@@ -61,7 +55,7 @@
         {% endif %}
       </div>
 
-      <div class="span6 class_grades">
+      <div class="col-md-6 class_grades">
          <strong>Grades</strong><br />
            <span class="gradelisting grademin" id="class_{{ class.id }}_grade_min">
            {% if not class.parent_program.incrementGrade %}
