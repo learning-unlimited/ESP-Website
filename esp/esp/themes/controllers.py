@@ -667,7 +667,7 @@ class ThemeController(object):
             theme_name = 'barebones'
         if theme_name not in _SCSS_THEMES:
             raise ValueError(
-                f'Theme {theme_name!r} has no SCSS sources; the LESS pipeline has been removed.'
+                f'Theme {theme_name!r} has no SCSS sources.'
             )
         # Use find_scss_variables() which reads via the _SCSS_THEMES-gated
         # get_scss_names() — no user-derived content reaches a subprocess.
@@ -699,7 +699,7 @@ class ThemeController(object):
     def compile_css(self, theme_name, variable_data, output_filename, bootswatch_theme=None):
         if theme_name not in _SCSS_THEMES:
             raise ValueError(
-                f'Theme {theme_name!r} has no SCSS sources; the LESS pipeline has been removed.'
+                f'Theme {theme_name!r} has no SCSS sources.'
             )
 
         # SCSS/Bootstrap 5 pipeline.  theme_name is constrained to the

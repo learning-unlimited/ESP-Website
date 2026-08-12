@@ -36,10 +36,9 @@ Setup
   ``node node_modules/sass/sass.js`` from the theme editor directory (see
   ``ThemeController.compile_scss``). Install the local packages with
   ``npm install`` under ``esp/public/media/theme_editor/`` (Bootstrap 5,
-  Bootswatch, and the ``sass`` npm package). A global ``sass`` binary is not
-  required.
-- Note: You will need a current LTS Node.js.  See the Docker setup guide for the
-  supported development environment.
+  Bootswatch, and the ``sass`` npm package).
+- Note: You will need a current LTS Node.js.  See the `Docker setup guide <docker.rst>`_ for
+  instructions on setting up the development environment.
 
 2) Back up your database, or at least the template overrides.
 3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    
@@ -78,8 +77,7 @@ media files provided by the theme are copied into the working directory.
 
 Bootstrap 5 is used to provide a baseline collection of styles that makes it
 easier to create a decent looking theme.  Optional Bootswatch skins can be
-selected from the theme editor.  The legacy LESS / Bootstrap 3 pipeline has
-been removed.
+selected from the theme editor.
 
 The setup and customization steps are kept separate because they collect
 different types of information.  The backend storage of settings is also
@@ -91,7 +89,7 @@ inferred from the SCSS sources for each theme (and a global list defined in
 colors, distances and strings that correspond directly to the stylesheet.
 Saved customizations still use the historical ``.less`` ``@name: value;``
 file format under ``public/media/theme_editor/themes/`` by default — that
-storage format is intentional and unchanged even though compilation is SCSS-only.
+storage format is intentional and unchanged even though compilation uses SCSS.
 
 In contrast, "setup" refers to potentially more structured information that
 can be used by template logic; it does not only affect the styling of the
