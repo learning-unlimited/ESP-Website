@@ -7,11 +7,11 @@ from esp.users.models import StudentInfo
 
 
 class EquityOutreachTest(ProgramFrameworkTest):
-    """Equity cohort lists are exposed via StudentRegProfileModule (no separate module)."""
+    """Equity cohort lists are exposed via StudentRegProfileModule."""
 
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler="StudentRegProfileModule", module_type="learn"),
+            ProgramModule.objects.get(handler="StudentRegProfileModule"),
         ]
         super(EquityOutreachTest, self).setUp(modules=modules, num_students=3, num_teachers=1)
         self.admin = self.admins[0]

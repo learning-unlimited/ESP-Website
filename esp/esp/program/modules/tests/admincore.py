@@ -77,8 +77,6 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
     and that the view exposes constraint metadata for the UI."""
 
     def setUp(self):
-        # RegProfileModule returns two module_properties entries (learn + teach),
-        # so there are two ProgramModule rows with that handler.
         modules = [ProgramModule.objects.get(handler='AdminCore')]
         modules += list(ProgramModule.objects.filter(handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']))
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
@@ -107,7 +105,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIn(r.status_code, [200, 302])
 
     def test_reg_profile_enforced_after_illegal_post(self):
-        """RegProfileModule is always seq=0 and required=True after any save."""
+        """RegProfile modules are always seq=0 and required=True after any save."""
         for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             pmo.seq = 500
             pmo.required = False
@@ -152,7 +150,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIsInstance(r.context['module_constraints'], dict)
 
     def test_reg_profile_flagged_in_constraints(self):
-        """RegProfileModule appears in module_constraints as required_locked and position_locked."""
+        """RegProfile modules appear in module_constraints as required_locked and position_locked."""
         self.client.login(username='admin_constraints', password='password')
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
@@ -188,7 +186,7 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIsInstance(r.context['position_locked_ids'], (set, frozenset))
 
     def test_reg_profile_in_position_locked_ids(self):
-        """RegProfileModule (position_locked) appears in position_locked_ids."""
+        """RegProfile modules (position_locked) appear in position_locked_ids."""
         self.client.login(username='admin_constraints', password='password')
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
@@ -321,7 +319,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         step_ids = [m.id for m in learn_mods + teach_mods]
 
         # The handler's override section always forces certain modules' seq/required
-        # (e.g. RegProfileModule -> seq=0, CreditCard -> seq=10000, etc.) on every
+        # (e.g. RegProfile modules -> seq=0, CreditCard -> seq=10000, etc.) on every
         # POST regardless of which reset flags are sent.  Exclude those so we can
         # test seq independence on unaffected modules.
         forced_override_names = frozenset({

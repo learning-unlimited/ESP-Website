@@ -269,21 +269,15 @@ class Command(BaseCommand):
             ('AdminVitals',           'Program Vitals',             'manage',        -2, False),
             # JSON data (needed by scheduling, catalog, etc.)
             ('JSONDataModule',        'JSON Data Module',           'json',           0, False),
+            # Profile modules
+            ('StudentRegProfileModule', 'Student Profile Editor',   'learn',          0, True),
+            ('TeacherRegProfileModule', 'Teacher Profile Editor',   'teach',          0, True),
         ]:
             ProgramModule.objects.get_or_create(
                 handler=handler, module_type=module_type,
                 defaults=dict(admin_title=admin_title, seq=seq,
                               required=required, choosable=1))
 
-        # Create the separate profile handlers
-        ProgramModule.objects.get_or_create(
-            handler='StudentRegProfileModule', module_type='learn',
-            defaults=dict(admin_title='Student Profile Editor',
-                          seq=0, required=True, choosable=1))
-        ProgramModule.objects.get_or_create(
-            handler='TeacherRegProfileModule', module_type='teach',
-            defaults=dict(admin_title='Teacher Profile Editor',
-                          seq=0, required=True, choosable=1))
         # Supplement with all other choosable=1 modules from the handlers directory
         from esp.program.modules import handlers as handlers_pkg
         import importlib

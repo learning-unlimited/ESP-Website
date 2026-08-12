@@ -227,6 +227,9 @@ class StudentRegProfileModule(ProgramModuleObj):
 
         from esp.web.views.myesp import profile_editor
 
+        #   Check user role.  Some users may have multiple roles; if one of them
+        #   is 'student' or 'teacher' then use that to set up the profile.
+        #   Otherwise, make a wild guess.
         user_roles = request.user.getUserTypes()
         user_roles = [x.lower() for x in user_roles]
         if 'teacher' in user_roles or 'student' in user_roles:
@@ -234,11 +237,15 @@ class StudentRegProfileModule(ProgramModuleObj):
         else:
             role = user_roles[0]
 
+        #   Reset email address for program registrations.
         if prog is None:
             regProf = RegistrationProfile.getLastProfile(request.user)
         else:
             regProf = RegistrationProfile.getLastForProgram(request.user, prog)
 
+        # aseering 8/20/2007: It is possible for a user to not have a
+        # contact_user associated with their registration profile.
+        # Deal nicely with this.
         if hasattr(regProf.contact_user, 'e_mail'):
             regProf.contact_user.e_mail = ''
             regProf.contact_user.save()
