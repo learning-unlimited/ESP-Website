@@ -2439,6 +2439,9 @@ class NewProgramModulePermissionsTest(TestCase):
         from esp.users.models import Permission
         from datetime import datetime
 
+        from esp.tests.util import user_role_setup
+        user_role_setup()
+
         student_start = datetime(2026, 9, 1, 0, 0)
         student_end = datetime(2026, 11, 1, 0, 0)
         teacher_start = datetime(2026, 8, 1, 0, 0)
@@ -2458,8 +2461,9 @@ class NewProgramModulePermissionsTest(TestCase):
             name='Test Perm Program',
             url='TestPerm/2026',
             grade_min=7,
-            grade_max=12
+            grade_max=12,
         )
+        program.program_modules.set(all_modules)
 
         perms, modules = prepare_program(program, data)
         commit_program(program, perms)
@@ -2483,11 +2487,9 @@ class NewProgramModulePermissionsTest(TestCase):
 
         # Verify ProgramModuleObj instances created for program inherit dates
         program.getModules()
-        student_cls_pm = ProgramModule.objects.filter(handler='StudentClassRegModule').first()
-        if student_cls_pm:
-            from esp.program.modules.base import ProgramModuleObj
-            pmo = ProgramModuleObj.objects.filter(program=program, module=student_cls_pm).first()
-            if pmo:
-                self.assertEqual(pmo.start_date, student_start)
-                self.assertEqual(pmo.end_date, student_end)
+        student_cls_pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        from esp.program.modules.base import ProgramModuleObj
+        pmo = ProgramModuleObj.objects.get(program=program, module=student_cls_pm)
+        self.assertEqual(pmo.start_date, student_start)
+        self.assertEqual(pmo.end_date, student_end)
 
