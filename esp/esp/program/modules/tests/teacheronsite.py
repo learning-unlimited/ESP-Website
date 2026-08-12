@@ -4,6 +4,7 @@ Unit tests for TeacherOnsite (teacheronsite.py).
 from esp.program.modules.handlers.teacheronsite import TeacherOnsite
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
+from esp.survey.models import Survey
 from esp.users.models import RecordType
 
 
@@ -29,6 +30,12 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         RecordType.objects.get_or_create(
             name='teacher_checked_in',
             defaults={'description': 'Teacher checked in for teaching on the day of the program'},
+        )
+        # onsitesurvey delegates to survey_view, which 500s without a teach survey.
+        Survey.objects.get_or_create(
+            name='Teacher Onsite Test Survey',
+            program=self.program,
+            category='teach',
         )
 
     def test_teacheronsite_landing_page(self):
