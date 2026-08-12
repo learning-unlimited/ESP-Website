@@ -259,7 +259,8 @@ class ProgramModuleObj(ExpirableModel):
 
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        from esp.program.modules.handlers.regprofilemodule import RegProfileModule
+        from esp.program.modules.handlers.studentregprofilemodule import StudentRegProfileModule
+        from esp.program.modules.handlers.teacherregprofilemodule import TeacherRegProfileModule
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         #   If a "core" module has been found:
@@ -272,7 +273,7 @@ class ProgramModuleObj(ExpirableModel):
                     return _login_redirect(request)
                 for m in moduleobj.findRequiredModules():
                     m.request = request
-                    if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
+                    if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
                     if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
