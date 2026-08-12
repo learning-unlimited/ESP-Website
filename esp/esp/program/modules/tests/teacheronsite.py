@@ -20,6 +20,11 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         super().setUp(*args, **kwargs)
         self.add_user_profiles()
         self.schedule_randomly()
+        # TeacherOnsite is a CoreModule; disable required-module gating so
+        # requests reach its views instead of incomplete required modules.
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
         self.module = self.get_module_obj('TeacherOnsite')
         RecordType.objects.get_or_create(
             name='teacher_checked_in',
