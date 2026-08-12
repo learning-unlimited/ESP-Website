@@ -12,7 +12,6 @@ from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
 
 
-
 class UpdateScheduleJsonTests(SimpleTestCase):
     """Regression tests for update_schedule_json early failure cases."""
 
@@ -572,10 +571,11 @@ class StudentsStatusTests(ProgramFrameworkTest):
         self.assertIsNotNone(entry, "Student not found in search results")
         self.assertTrue(entry[3])
 
+
 class ClassListReloadTests(ProgramFrameworkTest):
-    """Tests for issue #318: the scrolling onsite class list should reload
-    once it reaches the end of a scroll cycle, rather than on a fixed timer
-    that can interrupt the list mid-scroll (via <meta http-equiv="refresh">).
+    """The scrolling onsite class list should reload once it reaches the end
+    of a scroll cycle, rather than on a fixed timer that can interrupt the
+    list mid-scroll.
     """
 
     def setUp(self):
