@@ -32,7 +32,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from esp.admin import admin_site
 
@@ -400,7 +402,23 @@ class AutoClassFlagRuleAdmin(admin.ModelAdmin):
     list_filter = ['program', 'flag_type']
 admin_site.register(AutoClassFlagRule, AutoClassFlagRuleAdmin)
 
+class PhaseZeroRecordAdminForm(forms.ModelForm):
+    class Meta:
+        model = PhaseZeroRecord
+        fields = '__all__'
+        error_messages = {
+            'program': {
+                'required': _("Program is required. Please select a program."),
+            },
+        }
+
+    def clean_program(self):
+        program = self.cleaned_data.get('program')
+        if program is None:
+            raise forms.ValidationError(_("Program is required. Please select a program."))
+        return program
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']
