@@ -341,8 +341,8 @@ class ThemesTest(TestCase):
             themes_settings.themes_dir = original_themes_dir
 
 
-class Bootstrap4MigrationTest(TestCase):
-    """Unit tests for the Bootstrap 3→4 migration: npm-based SCSS compilation."""
+class ScssPipelineTest(TestCase):
+    """Unit tests for the Bootstrap 5 SCSS theme compilation pipeline."""
 
     def setUp(self):
         self._css_file = themes_settings.COMPILED_CSS_FILE
@@ -356,14 +356,14 @@ class Bootstrap4MigrationTest(TestCase):
             os.remove(self.css_filename)
 
     def test_all_themes_use_scss_pipeline(self):
-        """Every bundled theme should have a scss/ directory (Bootstrap 4 pipeline)."""
+        """Every bundled theme should have a scss/ directory (Bootstrap 5 pipeline)."""
         for theme_name in self.tc.get_theme_names():
             self.assertTrue(
                 self.tc.has_scss(theme_name),
-                f'{theme_name} is missing scss/ — expected Bootstrap 4 SCSS pipeline',
+                f'{theme_name} is missing scss/ — expected Bootstrap 5 SCSS pipeline',
             )
 
-    def test_get_scss_names_includes_bootstrap4_sources(self):
+    def test_get_scss_names_includes_theme_editor_sources(self):
         """get_scss_names() includes theme-editor and theme SCSS before Bootstrap import."""
         names = [f.replace('\\', '/') for f in self.tc.get_scss_names('barebones')]
         self.assertTrue(
@@ -379,16 +379,16 @@ class Bootstrap4MigrationTest(TestCase):
             'Legacy LESS sources should not appear in SCSS pipeline',
         )
 
-    def test_compile_css_produces_bs4_markers(self):
-        """compile_css() output contains BS4 markers and no BS3 glyphicon class."""
+    def test_compile_css_produces_bs5_markers(self):
+        """compile_css() output contains BS5 markers and no BS3 glyphicon class."""
         self.tc.compile_css('barebones', {}, self.css_filename)
         with open(self.css_filename) as f:
             css = f.read()
         self.assertGreater(len(css), 10000)
-        self.assertIn('.navbar-toggler', css, 'Missing .navbar-toggler — BS4 not compiling')
-        self.assertIn('.card', css, 'Missing .card — BS4 not compiling')
+        self.assertIn('.navbar-toggler', css, 'Missing .navbar-toggler — BS5 not compiling')
+        self.assertIn('.card', css, 'Missing .card — BS5 not compiling')
         self.assertIn('.bi', css, 'Missing .bi — Bootstrap Icons not included')
-        self.assertNotIn('.glyphicon', css, '.glyphicon present — BS3 leaked into BS4 output')
+        self.assertNotIn('.glyphicon', css, '.glyphicon present — BS3 leaked into BS5 output')
 
     def test_get_variable_defaults_roundtrip(self):
         """get_variable_defaults() compiles and returns a non-empty dict for every theme."""
@@ -445,6 +445,39 @@ class Bootstrap4MigrationTest(TestCase):
         """compile_css() rejects themes that lack SCSS sources."""
         with self.assertRaises(ValueError):
             self.tc.compile_css('nonexistent_theme_xyz', {}, self.css_filename)
+
+    def test_get_variable_defaults_raises_for_theme_without_scss(self):
+        """get_variable_defaults() rejects known theme names that lack SCSS."""
+        # Force a name that is in _ALL_THEMES but not _SCSS_THEMES by patching.
+        import esp.themes.controllers as controllers_mod
+        with mock.patch.object(controllers_mod, '_ALL_THEMES', frozenset({'fake_less_only'})):
+            with mock.patch.object(controllers_mod, '_SCSS_THEMES', frozenset()):
+                with self.assertRaises(ValueError) as ctx:
+                    self.tc.get_variable_defaults('fake_less_only')
+        self.assertIn('no SCSS sources', str(ctx.exception))
+
+
+class RecompileThemeCommandTest(TestCase):
+    """recompile_theme management command must resolve names before retry."""
+
+    def test_retry_reuses_theme_and_customization_resolved_up_front(self):
+        from esp.themes.management.commands.recompile_theme import Command
+
+        tc = mock.Mock()
+        tc.get_current_theme.return_value = 'droplets'
+        tc.get_current_customization.return_value = 'my_custom'
+        tc.recompile_theme.side_effect = [RuntimeError('first failure'), None]
+
+        with mock.patch('esp.themes.controllers.ThemeController', return_value=tc):
+            Command().handle()
+
+        self.assertEqual(tc.recompile_theme.call_count, 2)
+        for call_args in tc.recompile_theme.call_args_list:
+            self.assertEqual(call_args.kwargs['theme_name'], 'droplets')
+            self.assertEqual(call_args.kwargs['customization_name'], 'my_custom')
+        # Names are read once before any attempt (not again on retry).
+        tc.get_current_theme.assert_called_once()
+        tc.get_current_customization.assert_called_once()
 
 
 class EspOverriddenBehaviorTest(TestCase):

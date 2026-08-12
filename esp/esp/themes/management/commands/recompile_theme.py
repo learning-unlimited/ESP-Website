@@ -53,7 +53,14 @@ class Command(BaseCommand):
             tc.recompile_theme(theme_name=theme_name,
                                customization_name=customization_name)
         except Exception:
-            logger.warning("recompile_theme failed the first time. Trying "
-                           "again...")
+            # Keep the first failure's traceback so the real root cause is
+            # visible even when the retry fails for a different reason.
+            logger.warning(
+                "recompile_theme failed the first time for theme=%r "
+                "customization=%r. Trying again...",
+                theme_name,
+                customization_name,
+                exc_info=True,
+            )
             tc.recompile_theme(theme_name=theme_name,
                                customization_name=customization_name)
