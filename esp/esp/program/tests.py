@@ -44,7 +44,7 @@ from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
-
+from django.core import mail
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -1859,7 +1859,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1879,7 +1878,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1971,25 +1969,22 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
-from django.core import mail
+
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
+
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
 
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
+
 
 
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2436,10 +2431,8 @@ class NewProgramModulePermissionsTest(TestCase):
     def test_new_program_sets_module_permissions_and_dates(self):
         from esp.program.models import Program, ProgramModule
         from esp.program.setup import prepare_program, commit_program
-        from esp.users.models import Permission
         from datetime import datetime
 
-        from esp.tests.util import user_role_setup
         user_role_setup()
 
         student_start = datetime(2026, 9, 1, 0, 0)

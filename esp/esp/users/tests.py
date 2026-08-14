@@ -21,15 +21,16 @@ from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import (
     User,
     ESPUser,
+    AnonymousESPUser,
     UserForwarder,
     StudentInfo,
     Permission,
     Record,
     RecordType,
     PersistentQueryFilter,
+    DBList,
 )
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, AnonymousESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
