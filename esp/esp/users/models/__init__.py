@@ -2264,7 +2264,7 @@ class PersistentQueryFilter(models.Model):
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
         import hashlib
-        
+
         # New JSON serialization
         json_filter_data = q_to_json(q_filter)
         json_filter_str = json.dumps(json_filter_data, sort_keys=True)
@@ -2329,7 +2329,7 @@ class PersistentQueryFilter(models.Model):
         import hashlib
         if item_model is not None:
             self.item_model = str(item_model)
-        
+
         # New JSON serialization
         self.q_filter_json = q_to_json(q_filter)
         json_filter_str = json.dumps(self.q_filter_json, sort_keys=True)
