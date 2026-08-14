@@ -16,19 +16,14 @@ from esp.accounting.models import (
     Transfer,
 )
 from esp.program.models import FinancialAidRequest, Program
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class LineItemTypeTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -100,7 +95,7 @@ class LineItemTypeTest(TestCase):
 class LineItemOptionsTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -139,7 +134,7 @@ class LineItemOptionsTest(TestCase):
 class AccountTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account = Account.objects.create(
             name='test-account',
@@ -184,7 +179,7 @@ class AccountTest(TestCase):
 class TransferTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account_src = Account.objects.create(
             name='source', description='Source', program=self.program,
@@ -247,7 +242,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 class GlobalAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
 
     def test_setup_accounts(self):
         gac = GlobalAccountingController()
@@ -268,7 +263,7 @@ class GlobalAccountingControllerTest(TestCase):
 class ProgramAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         gac = GlobalAccountingController()
         gac.setup_accounts()
@@ -389,7 +384,7 @@ class ProgramAccountingControllerTest(TestCase):
 class IndividualAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
             username='teststu', password='password',

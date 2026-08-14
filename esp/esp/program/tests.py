@@ -1984,7 +1984,7 @@ from esp.users.models import Record, RecordType
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2431,10 +2431,8 @@ class NewProgramModulePermissionsTest(TestCase):
     def test_new_program_sets_module_permissions_and_dates(self):
         from esp.program.models import Program, ProgramModule
         from esp.program.setup import prepare_program, commit_program
-        from esp.users.models import Permission
         from datetime import datetime
 
-        from esp.tests.util import user_role_setup
         user_role_setup()
 
         student_start = datetime(2026, 9, 1, 0, 0)
