@@ -73,11 +73,7 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
         self.assertIn('is now checked in', json_data['message'])
 
     def test_ajaxbarcodecheckin_non_numeric_id(self):
-        """Test that a non-numeric user ID returns an informative error message.
-
-        This is a regression test for:
-        https://github.com/learning-unlimited/ESP-Website/issues/1854
-        """
+        """Test that a non-numeric user ID returns an informative error message."""
         self.assertTrue(
             self.client.login(username=self.admin.username, password='password'),
             "Couldn't log in as admin %s" % self.admin.username
@@ -175,10 +171,7 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
         return '/onsite/%s/checkin' % self.program.getUrlBase()
 
     def test_undo_checkin_no_record_does_not_crash(self):
-        """Test that undoing check-in when no Record exists does not raise IndexError.
-
-        Regression test for https://github.com/learning-unlimited/ESP-Website/issues/4988
-        """
+        """Test that undoing check-in when no Record exists does not raise IndexError."""
         self.assertTrue(
             self.client.login(username=self.admin.username, password='password'),
             "Couldn't log in as admin %s" % self.admin.username
@@ -189,7 +182,7 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
             event__name="attended", program=self.program, user=self.student
         ).delete()
 
-        # POST with undocheckin — previously crashed with IndexError
+        # POST with undocheckin
         response = self.client.post(
             self.get_checkin_url(),
             {'userid': str(self.student.id), 'undocheckin': 'true'}
@@ -197,10 +190,7 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
     def test_undo_checkout_no_record_does_not_crash(self):
-        """Test that undoing checkout when no Record exists does not raise IndexError.
-
-        Regression test for https://github.com/learning-unlimited/ESP-Website/issues/4988
-        """
+        """Test that undoing checkout when no Record exists does not raise IndexError."""
         self.assertTrue(
             self.client.login(username=self.admin.username, password='password'),
             "Couldn't log in as admin %s" % self.admin.username
@@ -211,7 +201,7 @@ class OnSiteCheckinModuleTest(ProgramFrameworkTest):
             event__name="checked_out", program=self.program, user=self.student
         ).delete()
 
-        # POST with undocheckout — previously crashed with IndexError
+        # POST with undocheckout
         response = self.client.post(
             self.get_checkin_url(),
             {'userid': str(self.student.id), 'undocheckout': 'true'}
