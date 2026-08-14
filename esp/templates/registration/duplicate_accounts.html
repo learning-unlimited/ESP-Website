@@ -19,13 +19,13 @@ If so, could you try logging in with one of the following username(s):
 <ul>
   {% for u in accounts %}
   <li>{{ u.username }} (
-  <form method="link" action="/myesp/login">
+  <form method="link" action="{% url 'login' %}">
     <input type="submit" value="Try logging in" class="btn btn-primary" />
   </form>
-  <form action="/myesp/passwdrecover" method="post">
+  <form action="{% url 'passwd_recover' %}" method="post">
     <input type="hidden" name="email" value="{{ u.email }}" />
     <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="submit" value="I forgot my password!" class="btn btn-default" />
+    <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
   </form>
   )
   </li>

@@ -228,8 +228,9 @@ class AdminClass(ProgramModuleObj):
                 sec_cancel_forms.is_bound = True
                 if sec_cancel_forms.is_valid():
                     cleaned_data = sec_cancel_forms.cleaned_data
+                    target_ids = set(cleaned_data['target'].values_list('id', flat=True))
                     for sec in sections:
-                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                        if not sec.isCancelled() and sec.id in target_ids:
                             sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
                     return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'modify_cls':

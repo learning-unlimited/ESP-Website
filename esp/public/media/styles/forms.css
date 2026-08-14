@@ -197,16 +197,18 @@ input.fancybutton:active
     border: none;
     font-weight: normal;
     font-style: normal;
-    color: black;
+    color: inherit;
     font-size: 12px;
 }
 
 #program_form td.compulsory_event_time {
     background-color: #CCC;
+    color: black;
 }
 
 #program_form td.compulsory_event_desc {
     background-color: #CCC;
+    color: black;
 }
 
 td .program_form_small{
@@ -244,6 +246,7 @@ th .program_form_small{
 
 #program_form td.colorful {
    background-color: #c6def7;
+   color: black;
 }
 
 #program_form input {
