@@ -142,6 +142,20 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
 
+    def test_commfinal_missing_required_fields(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
+        post_data = {
+            'filterid': '1',
+        }
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commfinal', post_data)
+
+        self.assertContains(response, 'Missing required POST fields')
+        self.assertContains(response, 'from')
+        self.assertContains(response, 'replyto')
+        self.assertContains(response, 'subject')
+        self.assertContains(response, 'body')
+
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
         # ProgramFrameworkTest uses start_time datetime(2222, 7, 7, 7, 5); all timeslots same day
