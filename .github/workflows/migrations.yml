@@ -92,4 +92,8 @@ jobs:
         DATABASE_NAME: test_django
       run: |
         cd esp
+        # Ensure the test database is initialized before checking for new migrations
+        export DATABASE_HOST=localhost || set DATABASE_HOST=localhost
+        export DATABASE_PORT=5432 || set DATABASE_PORT=5432
+        python manage.py migrate --noinput
         python manage.py makemigrations --check --dry-run
