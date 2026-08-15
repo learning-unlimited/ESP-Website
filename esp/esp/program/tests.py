@@ -1,3 +1,4 @@
+﻿from django.core.exceptions import ValidationError
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -2591,3 +2592,27 @@ class ProgramModuleObjCreationTest(TestCase):
         self.assertEqual(moduleobj.required_label, 'Sign up')
         self.assertEqual(moduleobj.start_date, start)
         self.assertEqual(moduleobj.end_date, end)
+
+
+class ProgramValidatorsTest(TestCase):
+    """Tests for Program model field validators."""
+
+    def test_valid_program_name_and_url(self):
+        program = Program(name="Splash 2026", url="splash-2026", grade_min=7, grade_max=12, program_size_max=100)
+        program.clean_fields(exclude=['director_email', 'anchor_class'])
+
+    def test_program_name_rejects_special_characters(self):
+        field = Program._meta.get_field('name')
+        with self.assertRaises(ValidationError):
+            field.clean("Splash@2026<script>", None)
+
+    def test_program_url_rejects_uppercase_and_spaces(self):
+        field = Program._meta.get_field('url')
+        with self.assertRaises(ValidationError):
+            field.clean("Splash 2026", None)
+
+    def test_program_url_rejects_slashes_and_underscores(self):
+        field = Program._meta.get_field('url')
+        with self.assertRaises(ValidationError):
+            field.clean("splash/2026_fall", None)
+
