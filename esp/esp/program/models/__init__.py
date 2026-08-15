@@ -496,10 +496,7 @@ class Program(models.Model, CustomFormsLinkModel):
     get_onsite_url = _get_type_url("onsite")
 
     def save(self, *args, **kwargs):
-        # Enforce model validation on every save to prevent XSS via name/url
-        self.full_clean()
-        kwargs.pop("clean", None)
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.niceName()
