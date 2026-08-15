@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -28,28 +28,42 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
-from esp.utils.web import render_to_response
-from esp.dbmail.models import send_mail
-from esp.users.models import ESPUser
-from esp.tagdict.models import Tag
-from esp.accounting.models import LineItemType
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.middleware import ESPError
-from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.handlers.donationmodule import DonationModule
-
-from django.conf import settings
-from django.db import transaction
-from django.db.models.query import Q
-from django.contrib.sites.models import Site
-from django.template.loader import render_to_string
-
 from decimal import Decimal
-import stripe
 import json
 import re
+
+import stripe
+from django.conf import settings
+from django.contrib.sites.models import Site
+from django.db import transaction
+from django.db.models.query import Q
+from django.template.loader import render_to_string
+
+from esp.accounting.controllers import (
+    IndividualAccountingController,
+    ProgramAccountingController,
+)
+from esp.accounting.models import LineItemType
+from esp.dbmail.models import send_mail
+from esp.middleware import ESPError
+from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_FINANCIAL,
+)
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    aux_call,
+    main_call,
+    meets_cap,
+    meets_deadline,
+    needs_student_in_grade,
+)
+from esp.program.modules.handlers.donationmodule import DonationModule
+from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
+from esp.utils.web import render_to_response
+
 
 class CreditCardModule_Stripe(ProgramModuleObj):
     doc = """Accept credit card payments via Stripe."""
@@ -62,339 +76,541 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             "module_type": "learn",
             "seq": 10000,
             "choosable": 0,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
-        # The "Refunds" dashboard button is not a program-module view -- it links to
+        # The "Refunds" dashboard button is not a program-module view. It links to
         # the accounting app at /accounting/refund and is shown whenever this Stripe
-        # module is attached (manage_refund in admincore.main / directory.html). Surface
-        # that same admin tool in search here, keyed off this module's main (payonline)
-        # view so the entry appears under exactly the same condition as the button.
+        # module is attached. Surface the same admin tool in search.
         if view_name != "payonline":
             return None
+
         return AdminSearchEntry(
             id="manage_refund",
             url="/accounting/refund?program=%s" % program.id,
             title="Refunds",
             category=SEARCH_CATEGORY_FINANCIAL,
-            keywords=["refund", "refunds", "credit card", "payment", "accounting"],
+            keywords=[
+                "refund",
+                "refunds",
+                "credit card",
+                "payment",
+                "accounting",
+            ],
         )
 
     def apply_settings(self):
-        if hasattr(self, '_settings_cache'):
+        if hasattr(self, "_settings_cache"):
             return self._settings_cache
-        #   Rather than using a model in module_ext.*, configure the module
-        #   from a Tag (which can be per-program or global), combining the
-        #   Tag's specifications with defaults in the code.
-        DEFAULTS = {
-            'offer_donation': True,
-            'donation_text': 'Donation to Learning Unlimited',
-            'donation_options': [10, 20, 50],
-            'invoice_prefix': settings.INSTITUTION_NAME.lower(),
-        }
-        DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
-        self.settings = DEFAULTS.copy()
-        self.settings.update(tag_data)
 
-        self._settings_cache = self.settings
+        # Rather than using a model in module_ext.*, configure the module
+        # from a Tag, which can be per-program or global, combining the
+        # Tag's specifications with defaults in the code.
+        defaults = {
+            "offer_donation": True,
+            "donation_text": "Donation to Learning Unlimited",
+            "donation_options": [10, 20, 50],
+            "invoice_prefix": settings.INSTITUTION_NAME.lower(),
+        }
+
+        defaults.update(settings.STRIPE_CONFIG)
+
+        tag_data = Tag.getProgramTag("stripe_settings", self.program)
+        if tag_data:
+            defaults.update(json.loads(tag_data))
+
+        self._settings_cache = defaults
         return self._settings_cache
 
     def get_setting(self, name, default=None):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        donate_type, created = LineItemType.objects.get_or_create(
+            program=self.program,
+            text=self.get_setting("donation_text"),
+        )
         return donate_type
 
     def isCompleted(self, user=None):
-        """ Whether the user has fully paid for this program. """
+        """Whether the user has fully paid for this program."""
         user = self._resolve_user(user)
-        return IndividualAccountingController(self.program, user).has_paid(in_full=True)
+        return IndividualAccountingController(
+            self.program, user
+        ).has_paid(in_full=True)
+
     have_paid = isCompleted
 
     def isRequired(self):
-        """Conditionally require credit card payment when student selects extra cost items.
+        """Conditionally require credit card payment when extra-cost items
+        have been selected.
 
         Returns True if:
         - An admin explicitly marked the module as required, OR
         - The 'creditcard_required_for_extracosts' tag is set for the program,
-          the student has selected matching extra cost items, AND has an
+          the student has selected matching extra-cost items, AND has an
           outstanding balance >= $0.50.
 
         The tag value controls which items trigger the requirement:
-        - '*' means any extra cost item (excludes program admission)
-        - 'Meal Ticket,T-Shirt' means only those specific items
+        - '*' means any extra-cost item, excluding program admission.
+        - 'Meal Ticket,T-Shirt' means only those specific items.
         """
         if super(CreditCardModule_Stripe, self).isRequired():
             return True
+
         return self._extracost_requires_payment()
 
     def _extracost_requires_payment(self):
-        """Check if the student selected extra cost items that require CC payment."""
+        """Check if the student selected extra-cost items requiring CC payment."""
         from esp.accounting.models import Transfer
-        tag_value = Tag.getProgramTag('creditcard_required_for_extracosts', program=self.program, default='')
+
+        tag_value = Tag.getProgramTag(
+            "creditcard_required_for_extracosts",
+            program=self.program,
+            default="",
+        )
+
         if not tag_value:
             return False
+
         request = get_current_request()
-        user = getattr(self, 'user', request.user if request else None)
+        user = getattr(self, "user", request.user if request else None)
+
         if not user or not user.is_authenticated:
             return False
+
         iac = IndividualAccountingController(self.program, user)
-        if iac.amount_due() < Decimal('0.50'):
+
+        if iac.amount_due() < Decimal("0.50"):
             return False
+
         pac = ProgramAccountingController(self.program)
-        extra_lits = pac.get_lineitemtypes(include_donations=False).exclude(
-            text__in=pac.admission_items)
-        if tag_value.strip() != '*':
-            item_names = [name.strip() for name in tag_value.split(',')]
+
+        extra_lits = pac.get_lineitemtypes(
+            include_donations=False
+        ).exclude(text__in=pac.admission_items)
+
+        if tag_value.strip() != "*":
+            item_names = [
+                name.strip()
+                for name in tag_value.split(",")
+                if name.strip()
+            ]
             extra_lits = extra_lits.filter(text__in=item_names)
+
         return Transfer.objects.filter(
-            user=user, line_item__in=extra_lits,
+            user=user,
+            line_item__in=extra_lits,
         ).exists()
 
-    def students(self, QObject = False):
-        #   This query represented students who have a payment transfer from the outside
+    def students(self, QObject=False):
+        # This query represents students who have a payment transfer from outside.
         pac = ProgramAccountingController(self.program)
-        QObj = Q(transfer__source__isnull=True, transfer__line_item=pac.default_payments_lineitemtype())
+
+        q_obj = Q(
+            transfer__source__isnull=True,
+            transfer__line_item=pac.default_payments_lineitemtype(),
+        )
 
         if QObject:
-            return {'creditcard': QObj}
-        else:
-            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
+            return {"creditcard": q_obj}
+
+        return {
+            "creditcard": ESPUser.objects.filter(q_obj).distinct()
+        }
 
     def studentDesc(self):
-        return {'creditcard': """Students who have filled out the credit card form"""}
+        return {
+            "creditcard": (
+                "Students who have filled out the credit card form"
+            )
+        }
 
     def check_setup(self):
-        """ Validate the keys specified in the stripe_settings Tag.
-            If something is wrong, return False, otherwise return True. """
+        """Validate the keys specified in the stripe_settings Tag.
 
+        If something is wrong, return False; otherwise return True.
+        """
         self.apply_settings()
 
-        #   Check for a 'donation' line item type on this program, which we will need
-        #   Note: This could also be created by default for every program,
-        #   in the accounting controllers.
-        if self.settings['offer_donation']:
-            (lit, created) = LineItemType.objects.get_or_create(
-                text=self.settings['donation_text'],
+        # Check for a donation line-item type on this program, which we need.
+        if self.get_setting("offer_donation"):
+            LineItemType.objects.get_or_create(
+                text=self.get_setting("donation_text"),
                 program=self.program,
-                required=False
+                required=False,
             )
 
-        #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
-        #   and followed by a 24 character base64-encoded string.
-        valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
-        valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
-        if not self.settings.get('publishable_key') or not self.settings.get('secret_key') or not re.match(valid_pk_re, self.settings['publishable_key']) or not re.match(valid_sk_re, self.settings['secret_key']):
+        # A Stripe account comes with publishable and secret keys.
+        valid_pk_re = r"pk_(test|live)_([A-Za-z0-9+/=]){24}"
+        valid_sk_re = r"sk_(test|live)_([A-Za-z0-9+/=]){24}"
+
+        publishable_key = self.get_setting("publishable_key")
+        secret_key = self.get_setting("secret_key")
+
+        if (
+            not publishable_key
+            or not secret_key
+            or not re.match(valid_pk_re, publishable_key)
+            or not re.match(valid_sk_re, secret_key)
+        ):
             return False
+
         return True
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Payment')
+    @meets_deadline("/Payment")
     @meets_cap
-    def payonline(self, request, tl, one, two, module, extra, prog):
-
-        #   Check that the user has completed all required modules so that they
-        #   are "finished" registering for the program.  (In other words, they
-        #   should be registered for at least one class, and filled out other
-        #   required forms, before paying by credit card.)
-        #   Skip the credit card module itself to avoid circular blocking (#3501).
+    def payonline(
+        self,
+        request,
+        tl,
+        one,
+        two,
+        module,
+        extra,
+        prog,
+    ):
+        # Check that the user has completed all required modules before
+        # paying by credit card.
         modules = prog.getModules(request.user, tl)
-        completedAll = True
+        completed_all = True
+
         for module in modules:
+            # Skip the credit card module itself to avoid circular blocking.
             if module.id == self.id:
                 continue
-            if not module.isCompleted(request.user) and module.isRequired():
-                completedAll = False
-        if not completedAll and not request.user.isAdmin(prog):
-            raise ESPError("Please go back and ensure that you have completed all required steps of registration before paying by credit card.", log=False)
 
-        #   Check for setup of module.  This is also required to initialize settings.
+            if (
+                not module.isCompleted(request.user)
+                and module.isRequired()
+            ):
+                completed_all = False
+
+        if not completed_all and not request.user.isAdmin(prog):
+            raise ESPError(
+                "Please go back and ensure that you have completed all "
+                "required steps of registration before paying by credit card.",
+                log=False,
+            )
+
+        # Check Stripe setup.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team</a> to get it set up.', True)
+            raise ESPError(
+                "The site has not yet been properly set up for credit card "
+                "payments. Administrators should contact the "
+                '<a href="mailto:{{settings.SUPPORT}}">websupport team</a> '
+                "to get it set up.",
+                True,
+            )
 
         user = request.user
-
         iac = IndividualAccountingController(self.program, request.user)
-        context = {}
-        context['module'] = self
-        context['program'] = prog
-        context['user'] = user
-        context['invoice_id'] = iac.get_id()
-        context['identifier'] = iac.get_identifier()
+
+        context = {
+            "module": self,
+            "program": prog,
+            "user": user,
+            "invoice_id": iac.get_id(),
+            "identifier": iac.get_identifier(),
+        }
+
         payment_type = iac.default_payments_lineitemtype()
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
-        offer_donation = self.settings['offer_donation']
-        donate_type = LineItemType.objects.get(program=self.program, text=self.settings['donation_text']) if offer_donation else None
-        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[_f for _f in [payment_type, sibling_type, grant_type, donate_type] if _f]).order_by('-line_item__required')
-        context['itemizedcosttotal'] = iac.amount_due()
-        #   This amount should be formatted as an integer in order to be
-        #   accepted by Stripe.
-        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
-        context['subtotal'] = iac.amount_requested()
-        context['financial_aid'] = iac.amount_finaid()
-        context['sibling_discount'] = iac.amount_siblingdiscount()
-        context['amount_paid'] = iac.amount_paid()
-        context['amount_refunded'] = iac.amount_refunded()
 
-        #   Load donation amount separately, since the client-side code needs to know about it separately.
-        donation_prefs = iac.get_preferences([donate_type,]) if offer_donation else None
+        offer_donation = self.get_setting("offer_donation")
+        donate_type = (
+            LineItemType.objects.get(
+                program=self.program,
+                text=self.get_setting("donation_text"),
+            )
+            if offer_donation
+            else None
+        )
+
+        excluded_types = [
+            item
+            for item in [
+                payment_type,
+                sibling_type,
+                grant_type,
+                donate_type,
+            ]
+            if item
+        ]
+
+        context["itemizedcosts"] = (
+            iac.get_transfers()
+            .exclude(line_item__in=excluded_types)
+            .order_by("-line_item__required")
+        )
+
+        context["itemizedcosttotal"] = iac.amount_due()
+
+        # Stripe expects the amount in integer cents.
+        context["totalcost_cents"] = int(
+            context["itemizedcosttotal"] * 100
+        )
+
+        context["subtotal"] = iac.amount_requested()
+        context["financial_aid"] = iac.amount_finaid()
+        context["sibling_discount"] = iac.amount_siblingdiscount()
+        context["amount_paid"] = iac.amount_paid()
+        context["amount_refunded"] = iac.amount_refunded()
+
+        # Load donation amount separately because client-side code needs it.
+        donation_prefs = (
+            iac.get_preferences([donate_type])
+            if offer_donation
+            else None
+        )
+
         if donation_prefs:
-            context['amount_donation'] = Decimal(donation_prefs[0][2])
-            context['has_donation'] = True
-            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=context['amount_donation'])
+            context["amount_donation"] = Decimal(donation_prefs[0][2])
+            context["has_donation"] = True
+            context["form"] = DonationModule.get_form(
+                settings=self.apply_settings(),
+                donation_initial=context["amount_donation"],
+            )
         else:
-            context['amount_donation'] = Decimal('0.00')
-            context['has_donation'] = False
-            context['form'] = DonationModule.get_form(settings=self.settings, donation_initial=None)
-        context['amount_without_donation'] = context['itemizedcosttotal'] - context['amount_donation']
+            context["amount_donation"] = Decimal("0.00")
+            context["has_donation"] = False
+            context["form"] = DonationModule.get_form(
+                settings=self.apply_settings(),
+                donation_initial=None,
+            )
 
-        if 'HTTP_HOST' in request.META:
-            context['hostname'] = request.META['HTTP_HOST']
+        context["amount_without_donation"] = (
+            context["itemizedcosttotal"]
+            - context["amount_donation"]
+        )
+
+        if "HTTP_HOST" in request.META:
+            context["hostname"] = request.META["HTTP_HOST"]
         else:
-            context['hostname'] = Site.objects.get_current().domain
-        context['institution'] = settings.INSTITUTION_NAME
-        context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
+            context["hostname"] = Site.objects.get_current().domain
 
+        context["institution"] = settings.INSTITUTION_NAME
+        context["support_email"] = settings.DEFAULT_EMAIL_ADDRESSES[
+            "support"
+        ]
 
-        return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+        return render_to_response(
+            self.baseDir() + "cardpay.html",
+            request,
+            context,
+        )
 
     def send_error_email(self, request, context):
-        """ Send an email to admins explaining the credit card error.
-            (Broken out from charge_payment view for readability.) """
+        """Send an email to admins explaining the credit card error."""
+        context["request"] = request
+        context["program"] = self.program
+        context["postdata"] = request.POST.copy()
 
-        context['request'] = request
-        context['program'] = self.program
-        context['postdata'] = request.POST.copy()
         domain_name = Site.objects.get_current().domain
-        msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
-        msg_subject = f'[ ESP CC ] Credit card error on {domain_name}: {request.user.id} {request.user.name()}'
-        # This message could contain sensitive information.  Send to the
+
+        msg_content = render_to_string(
+            self.baseDir() + "error_email.txt",
+            context,
+        )
+
+        msg_subject = (
+            f"[ ESP CC ] Credit card error on {domain_name}: "
+            f"{request.user.id} {request.user.name()}"
+        )
+
+        # This message could contain sensitive information. Send to the
         # confidential messages address, and don't bcc the archive list.
-        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [self.program.getDirectorConfidentialEmail()], bcc=None)
+        send_mail(
+            msg_subject,
+            msg_content,
+            settings.SERVER_EMAIL,
+            [self.program.getDirectorConfidentialEmail()],
+            bcc=None,
+        )
 
     @aux_call
     @needs_student_in_grade
-    def charge_payment(self, request, tl, one, two, module, extra, prog):
-        #   Check for setup of module.  This is also required to initialize settings.
+    def charge_payment(
+        self,
+        request,
+        tl,
+        one,
+        two,
+        module,
+        extra,
+        prog,
+    ):
+        # Check Stripe setup.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            raise ESPError(
+                "The site has not yet been properly set up for credit card "
+                "payments. Administrators should contact the "
+                '<a href="mailto:{{settings.SUPPORT}}">websupport team</a> '
+                "to get it set up.",
+                True,
+            )
 
-        context = {'postdata': request.POST.copy()}
+        context = {
+            "postdata": request.POST.copy()
+        }
 
-        group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
+        group_name = (
+            Tag.getTag("full_group_name")
+            or f"{settings.INSTITUTION_NAME} "
+            f"{settings.ORGANIZATION_SHORT_NAME}"
+        )
 
-        iac = IndividualAccountingController(self.program, request.user)
+        iac = IndividualAccountingController(
+            self.program,
+            request.user,
+        )
 
-        #   Set donation transfer
+        # Set donation transfer.
         form = None
-        if request.method == 'POST':
 
-            current_donation_prefs = iac.get_preferences([self.line_item_type(), ])
+        if request.method == "POST":
+            donation_type = self.line_item_type()
+            current_donation_prefs = iac.get_preferences(
+                [donation_type]
+            )
+
             if current_donation_prefs:
-                current_donation = Decimal(iac.get_preferences([self.line_item_type(), ])[0][2])
+                current_donation = Decimal(
+                    current_donation_prefs[0][2]
+                )
             else:
                 current_donation = None
-            form = DonationModule.get_form(settings=self.settings, donation_initial=current_donation, form_data=request.POST)
+
+            form = DonationModule.get_form(
+                settings=self.apply_settings(),
+                donation_initial=current_donation,
+                form_data=request.POST,
+            )
 
             if form.is_valid():
-                #   Clear the Transfers by specifying quantity 0
-                iac.set_preference('Donation to Learning Unlimited', 0)
+                # Clear the existing donation transfer by specifying
+                # quantity 0.
+                iac.set_preference(
+                    self.get_setting("donation_text"),
+                    0,
+                )
+
                 if form.amount:
-                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
+                    iac.set_preference(
+                        self.get_setting("donation_text"),
+                        1,
+                        amount=form.amount,
+                    )
 
-        #   Set Stripe key based on settings.  Also require the API version
-        #   which our code is designed for.
-        stripe.api_key = self.settings['secret_key']
-        # Keep the API version pinned so charge/refund response fields match
-        # our legacy payment code.
-        stripe.api_version = '2014-03-13'
+        # Set Stripe key based on settings.
+        stripe.api_key = self.get_setting("secret_key")
 
-        if request.POST.get('ponumber', '') != iac.get_id():
-            #   If we received a payment for the wrong PO:
-            #   This is not a Python exception, but an error nonetheless.
-            context['error_type'] = 'inconsistent_po'
-            context['error_info'] = {'request_po': request.POST.get('ponumber', ''), 'user_po': iac.get_id()}
+        # Keep the API version pinned if the legacy payment code requires it.
+        stripe.api_version = "2014-03-13"
 
-        if 'error_type' not in context:
-            #   Check the amount in the POST against the amount in our records.
-            #   If they don't match, raise an error.
-            amount_cents_post = Decimal(request.POST['totalcost_cents'])
-            amount_cents_iac = Decimal(iac.amount_due()) * 100
+        if request.POST.get("ponumber", "") != iac.get_id():
+            # Payment was submitted for the wrong PO.
+            context["error_type"] = "inconsistent_po"
+            context["error_info"] = {
+                "request_po": request.POST.get("ponumber", ""),
+                "user_po": iac.get_id(),
+            }
+
+        if "error_type" not in context:
+            # Check the amount in POST against the amount in our records.
+            amount_cents_post = Decimal(
+                request.POST["totalcost_cents"]
+            )
+
+            amount_cents_iac = Decimal(
+                iac.amount_due()
+            ) * 100
+
             if amount_cents_post != amount_cents_iac:
-                context['error_type'] = 'inconsistent_amount'
-                context['error_info'] = {
-                    'amount_cents_post': amount_cents_post,
-                    'amount_cents_iac':  amount_cents_iac,
+                context["error_type"] = "inconsistent_amount"
+                context["error_info"] = {
+                    "amount_cents_post": amount_cents_post,
+                    "amount_cents_iac": amount_cents_iac,
                 }
 
-        if 'error_type' not in context:
+        if "error_type" not in context:
             try:
                 with transaction.atomic():
-                    # Save a record of the charge if we can uniquely identify the user/program.
-                    # If this causes an error, the user will get a 500 error
-                    # page, and the card will NOT be charged.
-                    # If an exception is later raised by
-                    # stripe.Charge.create(), then the transaction will be
-                    # rolled back.
-                    # Thus, we will never be in a state where the card has been
-                    # charged without a record being created on the site, nor
-                    # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    # Save a record of the charge if we can uniquely
+                    # identify the user/program.
+                    totalcost_dollars = (
+                        Decimal(request.POST["totalcost_cents"]) / 100
+                    )
 
-                    #   Create a record of the transfer without the transaction ID.
-                    transfer = iac.submit_payment(totalcost_dollars, 'TBD')
+                    transfer = iac.submit_payment(
+                        totalcost_dollars,
+                        "TBD",
+                    )
 
-                    # Create the charge on Stripe's servers - this will charge
-                    # the user's card.
+                    # Create the charge on Stripe's servers.
                     charge = stripe.Charge.create(
-                        amount=amount_cents_post,
+                        amount=int(amount_cents_post),
                         currency="usd",
-                        source=request.POST['stripeToken'],
-                        description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
-                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        source=request.POST["stripeToken"],
+                        description=(
+                            f"Payment for {group_name} "
+                            f"{prog.niceName()} - "
+                            f"{request.user.name()}"
+                        ),
+                        statement_descriptor=group_name[:22],
                         metadata={
-                            'ponumber': request.POST['ponumber'],
+                            "ponumber": request.POST["ponumber"],
                         },
                     )
 
-                    #   Now that the charge has been performed by Stripe, save its
-                    #   transaction ID for our records.
+                    # Save Stripe's transaction ID.
                     transfer.transaction_id = charge.id
                     transfer.save()
 
             except stripe.error.CardError as e:
-                context['error_type'] = 'declined'
-                context['error_info'] = e.json_body['error']
-            except stripe.error.InvalidRequestError as e:
-                #   While this is a generic error meaning invalid parameters were supplied
-                #   to Stripe's API, we will usually see it because of a duplicate request.
-                context['error_type'] = 'invalid'
-            except stripe.error.AuthenticationError as e:
-                context['error_type'] = 'auth'
-            except stripe.error.APIConnectionError as e:
-                context['error_type'] = 'api'
-            except stripe.error.StripeError as e:
-                context['error_type'] = 'generic'
+                context["error_type"] = "declined"
+                context["error_info"] = e.json_body["error"]
 
-        if 'error_type' in context:
-            #   If we got any sort of error, send an email to the admins and render an error page.
+            except stripe.error.InvalidRequestError:
+                context["error_type"] = "invalid"
+
+            except stripe.error.AuthenticationError:
+                context["error_type"] = "auth"
+
+            except stripe.error.APIConnectionError:
+                context["error_type"] = "api"
+
+            except stripe.error.StripeError:
+                context["error_type"] = "generic"
+
+        if "error_type" in context:
+            # Send an email to admins and render the error page.
             self.send_error_email(request, context)
-            return render_to_response(self.baseDir() + 'failure.html', request, context)
 
-        #   Render the success page, which doesn't do much except direct back to studentreg.
-        context['amount_paid'] = totalcost_dollars
-        context['statement_descriptor'] = group_name[0:22]
-        context['can_confirm'] = self.deadline_met('/Confirm')
-        return render_to_response(self.baseDir() + 'success.html', request, context)
+            return render_to_response(
+                self.baseDir() + "failure.html",
+                request,
+                context,
+            )
+
+        # Render the success page.
+        context["amount_paid"] = totalcost_dollars
+        context["statement_descriptor"] = group_name[:22]
+        context["can_confirm"] = self.deadline_met("/Confirm")
+
+        return render_to_response(
+            self.baseDir() + "success.html",
+            request,
+            context,
+        )
 
     def isStep(self):
         return self.check_setup()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"
