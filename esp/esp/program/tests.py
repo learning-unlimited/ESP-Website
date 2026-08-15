@@ -2281,82 +2281,17 @@ class HeardAboutNormalizationTest(TestCase):
 class ProgramValidatorsTest(TestCase):
     """Tests for Program model field validators."""
 
-
     def test_valid_program_name_and_url(self):
-        """Test that valid program names and URLs are accepted."""
-        program = Program.objects.create(
-            url='Test/2024_Spring',
-            name='Test Program Spring 2024',
-            grade_min=7,
-            grade_max=12
-        )
-        self.assertEqual(program.name, 'Test Program Spring 2024')
-        self.assertEqual(program.url, 'Test/2024_Spring')
-        program.delete()
+        program = Program(name="Splash 2026", url="splash-2026", grade_min=7, grade_max=12)
+        program.full_clean()
 
-    def test_program_name_rejects_html_tags(self):
-        """Test that program name rejects HTML/Script tags."""
-        program = Program(
-            url='Test/2024',
-            name='Test <script>alert("xss")</script> Program',
-            grade_min=7,
-            grade_max=12
-        )
+    def test_invalid_program_name_xss(self):
+        program = Program(name="<script>alert(1)</script>", url="valid-url", grade_min=7, grade_max=12)
         with self.assertRaises(ValidationError):
             program.full_clean()
 
-    def test_program_name_rejects_angle_brackets(self):
-        """Test that program name rejects angle brackets."""
-        program = Program(
-            url='Test/2024',
-            name='Test <invalid> Program',
-            grade_min=7,
-            grade_max=12
-        )
-        with self.assertRaises(ValidationError):
-            program.full_clean()
-
-    def test_program_name_accepts_punctuation(self):
-        """Test that program name accepts common punctuation."""
-        program = Program.objects.create(
-            url='Test/2024',
-            name='Test - _ : Program 2024!',
-            grade_min=7,
-            grade_max=12
-        )
-        self.assertEqual(program.name, 'Test - _ : Program 2024!')
-        program.delete()
-
-    def test_program_url_rejects_invalid_format(self):
-        """Test that program URL rejects invalid formats."""
-        program = Program(
-            url='Test2024_Spring',
-            name='Test Program',
-            grade_min=7,
-            grade_max=12
-        )
-        with self.assertRaises(ValidationError):
-            program.full_clean()
-
-    def test_program_url_rejects_spaces(self):
-        """Test that program URL rejects spaces."""
-        program = Program(
-            url='Test / 2024_Spring',
-            name='Test Program',
-            grade_min=7,
-            grade_max=12
-        )
-        with self.assertRaises(ValidationError):
-            program.full_clean()
-
-    def test_program_url_rejects_html_chars(self):
-        """Test that program URL rejects HTML characters."""
-        program = Program(
-            url='Test/<script>',
-            name='Test Program',
-            grade_min=7,
-            grade_max=12
-        )
+    def test_invalid_program_url_xss(self):
+        program = Program(name="Valid Name", url="<script>", grade_min=7, grade_max=12)
         with self.assertRaises(ValidationError):
             program.full_clean()
 

@@ -1,0 +1,219 @@
+## esp/templates/admin/base_site.html
+46 | /manage/programs |     You probably shouldn't be here! You should check out the <a href="/manage/programs">general management page</a> or the main management pages for individual programs before resorting to using these admin pages.
+
+## esp/templates/admin/cache_flush.html
+38 | /manage/flushcache/ | <form action="/manage/flushcache/" method="POST">
+
+## esp/templates/admin/emails.html
+52 | /manage/emails | <form action="/manage/emails" method="get">
+
+## esp/templates/contact.html
+41 | /myesp/passwdrecover/ |   <form action="/myesp/passwdrecover/" method="post">
+
+## esp/templates/contact_qsd.html
+14 | /faq.html | Before contacting us with a question or concern, please check our <b><a href="/faq.html">FAQ page</a></b>.
+15 | /contact/contact | If your question is still not answered, please contact us {% if "contact_form_enabled"|getBooleanTag %}via <b><a href="/contact/contact">our contact form</a></b>{% else %} via email at <b><a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></b>{% endif %}.
+
+## esp/templates/customforms/landing.html
+12 | /customforms/create |     <em class="desc">You can play around with your existing forms below, or <a href="/customforms/create" id="create_link">click here to create</a> new ones.</em>
+
+## esp/templates/errors/anonymous_only.html
+15 | /contact/contact/esp-web/ | <a href="/contact/contact/esp-web/">contact us</a>.
+
+## esp/templates/errors/program/deadline-learn.html
+12 | /learn/index.html | This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please look in the <a href="/learn/index.html">students section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+
+## esp/templates/errors/program/deadline-teach.html
+12 | /teach/index.html | This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please look in the <a href="/teach/index.html">teachers section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+
+## esp/templates/errors/program/deadline-volunteer.html
+12 | /volunteer/index.html | This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please look in the <a href="/volunteer/index.html">volunteers section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+
+## esp/templates/errors/program/phasezero_closed.html
+12 | /learn/index.html | The program lottery for {{ program.niceName }} is now closed and it appears you did not enter. Please look in the <a href="/learn/index.html">students section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+
+## esp/templates/errors/program/program_full.html
+14 | /learn/index.html | Unfortunately, the program to which you are trying to register is full.  Please look in the <a href="/learn/index.html">students section</a> of our site for information about the schedule and program cap for this and our other programs.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+
+## esp/templates/errors/program/wronggrade.html
+14 | /learn/index.html | some of our other <a href="/learn/index.html">programs</a>, though!</em><br />
+16 | /myesp/profile | please <a href="/myesp/profile" title="{{ settings.ORGANIZATION_SHORT_NAME }} Profile Editor">edit your profile</a> or <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">contact an administrator</a> to change it.
+
+## esp/templates/faq.html
+26 | /myesp/register/ | <p align="justify">To be added to our mailing lists, you should <a href="/myesp/register/">create an account</a> on our website. Once you have done so, you will receive periodic emails with information about upcoming {{ settings.ORGANIZATION_SHORT_NAME }} programs.</p>
+29 | /myesp/accountmanage | <p align="justify">You can access these account settings at the <a href="/myesp/accountmanage">account management page</a>.</p>
+32 | /myesp/loginhelp | <p align="justify">If you are having trouble logging in to your account, you should check out our <a href="/myesp/loginhelp">login help page</a>.</p>
+
+## esp/templates/inclusion/web/navbar.html
+34 | /about/index.html | <a href="/about/index.html" onmouseover="MM_swapImage('discoveresp','','/media/images/lev2/nav/discoveresp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+40 | /learn/index.html | <a href="/learn/index.html" onmouseover="MM_swapImage('takeaclass','','/media/images/lev2/nav/takeaclass_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+46 | /teach/index.html | <a href="/teach/index.html" onmouseover="MM_swapImage('volunteertoteach','','/media/images/lev2/nav/volunteertoteach_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+53 | /getinvolved/index.html | <a href="/getinvolved/index.html" onmouseover="MM_swapImage('getinvolved','','/media/images/lev2/nav/getinvolved_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+59 | /archives/index.html | <a href="/archives/index.html" onmouseover="MM_swapImage('archivesresources','','/media/images/lev2/nav/archivesresources_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+66 | /myesp/home/ | <a href="/myesp/home/" onmouseover="MM_swapImage('myesp','','/media/images/lev2/nav/myesp_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+76 | /about/contact.html | <a href="/about/contact.html" onmouseover="MM_swapImage('contactinfo','','/media/images/lev2/nav/contactinfo_ro.gif',1)" onmouseout="MM_swapImgRestore()">
+
+## esp/templates/index.html
+26 | /learn/index.html |           <a href="/learn/index.html"><h2>Learn</h2></a>
+33 | /teach/index.html |           <a href="/teach/index.html"><h2>Teach</h2></a>
+40 | /volunteer/index.html |           <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
+
+## esp/templates/main.html
+35 | /myesp/stop_testing/ |            <a href="/myesp/stop_testing/" style="color: #a1702c; text-decoration: underline;">Stop testing &mdash; Return to
+
+## esp/templates/navbar.html
+3 | / |     <a class="navbar-brand" href="/">{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}</a>
+9 | /about/main.html |         <li class="nav-item"><a class="nav-link" href="/about/main.html">About</a></li>
+
+## esp/templates/program/manage_docs.html
+23 | /manage/docs/ |             <li><a href="/manage/docs/"{% if not doc_path %} class="active"{% endif %}>Overview</a></li>
+
+## esp/templates/program/modules/admincore/directory.html
+141 | /manage/docs/program_modules.rst |         Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are described in <a href="/manage/docs/program_modules.rst">the website documentation</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+446 | /manage/docs/program_modules.rst |             <a href="/manage/docs/program_modules.rst" style="color: #999; font-size: 1.5em;" title="Help & Documentation"><i class="bi bi-question-circle"></i></a>
+
+## esp/templates/program/modules/admincore/registrationtype_management.html
+34 | /admin/program/registrationtype/ |     <p>If you know what you're doing and you have reason to do so, you may manually manipulate RegistrationTypes in <a href="/admin/program/registrationtype/">the admin panel</a>.</p>
+
+## esp/templates/program/modules/admincore/settings.html
+34 | /manage/tags/ | Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like. If you can't find the setting here, try checking out the <a href="/manage/{{ program.getUrlBase }}/tags/">program tag settings page</a> or the <a href="/manage/tags/">the global tag settings page</a>. You can also reach out to <a href="mailto:websupport@learningu.org">websupport</a>.
+
+## esp/templates/program/modules/admincore/tags.html
+24 | /manage/tags/ | <p>Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.</p>
+
+## esp/templates/program/modules/autoschedulerfrontendmodule/config_help.html
+20 | /admin/tagdict/tag/add/ |     <li>Click the <a href="/admin/tagdict/tag/add/">Add Tag</a> button.</li>
+
+## esp/templates/program/modules/commmodule/finished.html
+35 | /manage/emails | The email is in the process of being sent. Visit <a href="/manage/emails">the email status page</a> to monitor its status. To avoid being marked as a spam source, <strong>there may be a delay</strong> with sending it to everyone on the list, so please be patient!
+
+## esp/templates/program/modules/commmodule/step2.html
+57 | /manage/redirects/ | You can create and manage your email redirects <a href="/manage/redirects/">here</a>.
+
+## esp/templates/program/modules/onsiteprintschedules/studentschedulesrenderer.html
+65 | /admin/utils/printrequest/?o=-3 | <div id="log">Log of print requests (view <a href="/admin/utils/printrequest/?o=-3">all print requests on the admin panel</a>):</div>
+
+## esp/templates/program/modules/surveymanagement/main.html
+100 | /myesp/survey_responses | <p class="text-muted"><em><span class="bi bi-info-circle"></span> Teachers can also view their survey results across all programs at <a href="/myesp/survey_responses">/myesp/survey_responses</a>. Admins can use the same page to look up any teacher.</em></p>
+
+## esp/templates/program/modules/userrecordsmodule/options.html
+15 | /manage/catsflagsrecs/ | <h4>(new record types can be created on <a href="/manage/catsflagsrecs/" target="_blank">this page</a>)</h4>
+
+## esp/templates/program/statistics.html
+34 | /manage/statistics/ | <form id="statistics_form" method="POST" action="/manage/statistics/">
+
+## esp/templates/qsdmedia/site_media.html
+107 | /manage/programs/ |     <a class="btn btn-primary" href="/manage/programs/">Return to manage programs</a>
+
+## esp/templates/registration/already_logged_in.html
+10 | / |   <a href="/" title="Home Page">Return to the homepage</a>
+
+## esp/templates/registration/duplicate_accounts.html
+22 | /myesp/login |   <form method="link" action="/myesp/login">
+25 | /myesp/passwdrecover |   <form action="/myesp/passwdrecover" method="post">
+
+## esp/templates/registration/logged_out.html
+8 | / | <p><a href='/'>Return to the homepage</a></p>
+
+## esp/templates/registration/login.html
+84 | /myesp/register/ | Don't already have an account? <a href="/myesp/register/">Click here to create one</a>. <br />
+85 | /myesp/passwdrecover/ | Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
+
+## esp/templates/registration/newuser.html
+19 | /myesp/login |     <form method="post" action="/myesp/login">
+25 | /myesp/passwdrecover/ |     <form action="/myesp/passwdrecover/" method="post">
+50 | /cgi-bin/mailman/listinfo/announcements |   If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
+50 | /cgi-bin/mailman/listinfo/announcements-local |   If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists.
+
+## esp/templates/registration/newuser_phase1.html
+22 | /myesp/login |   <form method="post" action="/myesp/login">
+28 | /myesp/passwdrecover/ |   <form action="/myesp/passwdrecover/" method="post">
+38 | /myesp/resend/ |   <form action="/myesp/resend/" method="post">
+57 | /cgi-bin/mailman/listinfo/announcements |   If you just want to receive email announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list.
+
+## esp/templates/sidebar/admin.html
+2 | /admin/ | 	{% if settings.DEBUG %}<li class="admin hidden"><a href="/admin/"><i class="bi bi-list-task"></i> Administration pages</a></li>{% endif %}
+
+## esp/templates/sidebar/me.html
+2 | / | 	<li id="side-home"><a href='/'><i class="bi bi-house"></i> Student Home</a></li>
+
+## esp/templates/survey/review.html
+26 | /myesp/survey_responses | <p>To view your survey results across all programs, <a href="/myesp/survey_responses">go here</a>.</p>
+
+## esp/templates/themes/configure_form.html
+68 | /themes/customize/ | <p>These settings primarily affect the information that is displayed on your site.  For control over the appearance, you will want to use the <a href="/themes/customize/">theme editor</a>.</p>
+71 | /themes/setup/ | <form id="theme_setup_form" method="POST" action="/themes/setup/">
+
+## esp/templates/themes/confirm_overwrite.html
+12 | /themes/confirm_overwrite/ | <form id="confirm_overwrite_form" method="POST" action="/themes/confirm_overwrite/">
+
+## esp/templates/themes/editor.html
+117 | /themes/customize/ |         <form class="form-horizontal centered-form" method="post" action="/themes/customize/">
+610 | / |         <a href="/">
+
+## esp/templates/themes/landing.html
+11 | /themes/select/ |             <a href="/themes/select/" class="btn btn-lg btn-primary w-100 mb-3">Step 1: Select a theme</a>
+12 | /themes/setup/ |             <a href="/themes/setup/" class="btn btn-lg btn-primary w-100">Step 2: Set up the theme</a>
+28 | /themes/logos/ |             <a href="/themes/logos/" class="btn btn-lg btn-primary w-100">Step 3: Upload/select a logo, header, or favicon</a>
+37 | /themes/customize/ |             <a href="/themes/customize/" class="btn btn-lg btn-primary w-100">Step 4: Customize the theme</a>
+45 | /themes/recompile/ |             <a href="/themes/recompile/" class="btn btn-lg btn-primary w-100">Install updates for the theme</a>
+
+## esp/templates/themes/logos.html
+58 | /themes/logos/ |             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+94 | /themes/logos/ |             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+130 | /themes/logos/ |             <form method="post" action="/themes/logos/" enctype="multipart/form-data">
+161 | / |         <a href="/">
+
+## esp/templates/themes/selector.html
+12 | /themes/select/ |     <form method="post" action="/themes/select/">
+32 | / |     <a href="/">
+
+## esp/templates/users/account_manage.html
+12 | /myesp/profile | <li style="width: 50%;"><a href="/myesp/profile" title="Edit your profile" style="text-decoration: none;">Edit your profile</a></li>{% if request.user.isTeacher %}
+14 | /myesp/survey_responses | <li style="width: 50%;"><a href="/myesp/survey_responses" title="View your student survey feedback across all programs" style="text-decoration: none;">View all survey responses</a></li>
+15 | /myesp/passwd | {% endif %}<li style="width: 50%;"><a href="/myesp/passwd" title="Change your password" style="text-decoration: none;">Change your password</a></li>
+16 | /myesp/disableaccount | <li style="width: 50%;"><a href="/myesp/disableaccount" title="Disable your account" style="text-decoration: none;">Disable your account</a></li>
+
+## esp/templates/users/login_duplicate_warning.html
+21 | /myesp/passwdrecover/ |   <li><a href="/myesp/passwdrecover/">Recover the password for this account</a></li>
+
+## esp/templates/users/loginbox_content.html
+11 | /myesp/profile/ |       <a id="loginbox_user_name" href="/myesp/profile/">Hello, <span id="user_first_name"></span>!</a>
+15 | /myesp/signout |       <form class="navbar-form form-inline" action="/myesp/signout">
+16 | /myesp/signout |         <a href="/myesp/signout" class="btn btn-info" style="margin-right:0px;">
+33 | /myesp/loginhelp.html |             <li><a href="/myesp/loginhelp.html">Help</a></li>
+50 | /myesp/login/ |     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
+64 | /myesp/register |           <li><a href="/myesp/register">Register</a></li>
+65 | /myesp/passwdrecover/ |           <li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
+66 | /myesp/loginhelp.html |           <li><a href="/myesp/loginhelp.html">Help</a></li>
+
+## esp/templates/users/profile_complete.html
+33 | /teach/index.html | Please head over to our <a href="/teach/index.html" title="Teach a class!">Teach</a> or
+34 | /learn/index.html | <a href="/learn/index.html" title="Take a Class!">Learn</a> section to join a program.
+
+## esp/templates/users/profiles/studentinfo.html
+112 | /getinvolved/studentreps.html |     <label for="id_studentrep" class="control-label">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label>
+
+## esp/templates/users/recovery_email.html
+38 | /contact/contact/esp-web/ | Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
+59 | /myesp/passwdrecover/ |    Please <a href="/myesp/passwdrecover/">request a new password reset</a>.
+
+## esp/templates/users/recovery_request.html
+38 | /contact/contact/esp-web/ | Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
+48 | /contact/contact/esp-web/ |    <em>Can't remember either? <a href="/contact/contact/esp-web/">Drop us a line</a> and we'll <br /> be sure to set your accounts straight.</em>
+
+## esp/templates/users/teacherbio.html
+30 | /myesp/morph |     <form id="morphteacher-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+
+## esp/templates/users/unsubscribe.html
+20 | /contact/ | Thank you for your interest in {{ settings.ORGANIZATION_SHORT_NAME }}!  If you have any questions, please <a href="/contact/">contact us</a>.
+
+## esp/templates/users/userview.html
+47 | /myesp/morph |     <form id="morphlink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+70 | /myesp/morph |             <form id="onsitelink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+97 | /manage/unenroll_student |                     <form action="/manage/unenroll_student" method="post">{% csrf_token %}
+264 | /manage/userview/ |         <form action="/manage/userview/" method="get" name="change_grade">
+279 | /manage/userview/ |                     <form action="/manage/userview/" method="get" name="approve_grade_request">
+287 | /manage/userview/ |                     <form action="/manage/userview/" method="get" name="reject_grade_request">
+
+TOTAL=106 matches across 56 files

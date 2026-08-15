@@ -311,19 +311,17 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by("-id")
 
-    # Validator for program name: Allows common punctuation but blocks HTML/Script tags
+    # Validator for program name: only allow letters, numbers, spaces and hyphens
+    program_name_validator = validators.RegexValidator(
+        r'^[a-zA-Z0-9 -]+$',
+        "Program name may only contain alphanumeric characters, spaces, and hyphens.",
+    )
 
-
-program_name_validator = validators.RegexValidator(
-    r"^[^\x00-\x1F\x7F<>]+$",
-    'Program name cannot contain control characters or the characters "<" and ">".',
-)
-
-# Validator for program URL: Enforces Segment1/Segment2 format (e.g., Splash/2024_Winter)
-program_url_validator = validators.RegexValidator(
-    r'^[^<>"\'\s/]+/[^<>"\'\s/]+$',
-    "Program URL must be of the form Segment1/Segment2 without spaces or characters like <, >, \", ', or extra slashes.",
-)
+    # Validator for program URL: lowercase alphanumeric and hyphens (slug)
+    program_url_validator = validators.RegexValidator(
+        r'^[a-z0-9-]+$',
+        "Program URL may only contain lowercase alphanumeric characters and hyphens.",
+    )
 
 
 class ProgramEmailField(models.EmailField):
@@ -351,10 +349,10 @@ class Program(models.Model, CustomFormsLinkModel):
     # customforms definitions
     form_link_name = "Program"
 
-    url = models.CharField(
-        max_length=80, unique=True, validators=[program_url_validator]
+    url = models.SlugField(
+        max_length=32, unique=True, validators=[program_url_validator]
     )
-    name = models.CharField(max_length=80, validators=[program_name_validator])
+    name = models.CharField(max_length=64, validators=[program_name_validator])
     grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
@@ -496,7 +494,8 @@ class Program(models.Model, CustomFormsLinkModel):
     get_onsite_url = _get_type_url("onsite")
 
     def save(self, *args, **kwargs):
-        # Preserve backward-compatible 'clean' kwarg but do not call full_clean()
+        # Enforce model validation on every save to prevent XSS via name/url
+        self.full_clean()
         kwargs.pop("clean", None)
         return super().save(*args, **kwargs)
 
