@@ -7,34 +7,34 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("program", "0043_alter_phasezerorecord_program"),
+        ('program', '0045_auto_20240101_0000'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="program",
-            name="name",
+            model_name='program',
+            name='name',
             field=models.CharField(
-                help_text="The full name of the program.",
+                help_text='The full name of the program.',
                 max_length=64,
                 validators=[
                     django.core.validators.RegexValidator(
-                        message="Program name may only contain alphanumeric characters, spaces, and hyphens.",
-                        regex="^[a-zA-Z0-9 -]+$",
+                        message='Program name may only contain alphanumeric characters, spaces, and hyphens.',
+                        regex='^[a-zA-Z0-9 -]+$',
                     )
                 ],
             ),
         ),
         migrations.AlterField(
-            model_name="program",
-            name="url",
+            model_name='program',
+            name='url',
             field=models.SlugField(
-                help_text="The URL fragment for this program.",
+                help_text='The URL fragment for this program.',
                 max_length=32,
                 validators=[
                     django.core.validators.RegexValidator(
-                        message="Program URL may only contain lowercase alphanumeric characters and hyphens.",
-                        regex="^[a-z0-9-]+$",
+                        message='Program URL may only contain lowercase alphanumeric characters and hyphens.',
+                        regex='^[a-z0-9-]+$',
                     )
                 ],
             ),
