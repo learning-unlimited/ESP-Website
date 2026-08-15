@@ -303,9 +303,37 @@ class ProgramModuleObj(ExpirableModel):
                 BaseModule.seq = old_pmo[0].seq
                 BaseModule.required = old_pmo[0].required
                 BaseModule.required_label = old_pmo[0].required_label
+                BaseModule.start_date = old_pmo[0].start_date
+                BaseModule.end_date = old_pmo[0].end_date
             else:
                 BaseModule.seq = mod.seq
                 BaseModule.required = mod.required
+                # Populate initial start_date and end_date from program permission records
+                try:
+                    handler_cls = mod.getPythonClass()
+                    perm_types = getattr(handler_cls, 'permission_types', ())
+                    if not perm_types and hasattr(handler_cls, 'get_permission_types'):
+                        perm_types = handler_cls.get_permission_types(handler_cls)
+                    if perm_types:
+                        role_by_module_type = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+                        role_name = role_by_module_type.get(getattr(mod, 'module_type', ''))
+                        if role_name:
+                            perm_types = [pt for pt in perm_types if pt.startswith(role_name)] or perm_types
+                        group = Group.objects.filter(name=role_name).first() if role_name else None
+                        perm_qs = Permission.objects.filter(
+                            program=prog,
+                            permission_type__in=perm_types,
+                            user__isnull=True,
+                            user_filter__isnull=True,
+                        )
+                        if group:
+                            perm_qs = perm_qs.filter(role=group)
+                        perm = perm_qs.order_by('id').first()
+                        if perm:
+                            BaseModule.start_date = perm.start_date
+                            BaseModule.end_date = perm.end_date
+                except Exception:
+                    pass
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:
