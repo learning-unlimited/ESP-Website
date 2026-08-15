@@ -84,6 +84,19 @@ from esp.qsdmedia.models import Media
 from phonenumber_field.modelfields import PhoneNumberField
 
 
+# Validator for program name: only allow letters, numbers, spaces and hyphens
+program_name_validator = validators.RegexValidator(
+    r'^[a-zA-Z0-9 -]+$',
+    "Program name may only contain alphanumeric characters, spaces, and hyphens.",
+)
+
+# Validator for program URL: lowercase alphanumeric and hyphens (slug)
+program_url_validator = validators.RegexValidator(
+    r'^[a-z0-9-]+$',
+    "Program URL may only contain lowercase alphanumeric characters and hyphens.",
+)
+
+
 # Create your models here.
 class ProgramModule(models.Model):
     """Program Modules for a Program"""
@@ -311,17 +324,6 @@ class ProgramManager(models.Manager):
         # this explicitly adds the ordering to every query
         return super().get_queryset().order_by("-id")
 
-    # Validator for program name: only allow letters, numbers, spaces and hyphens
-    program_name_validator = validators.RegexValidator(
-        r'^[a-zA-Z0-9 -]+$',
-        "Program name may only contain alphanumeric characters, spaces, and hyphens.",
-    )
-
-    # Validator for program URL: lowercase alphanumeric and hyphens (slug)
-    program_url_validator = validators.RegexValidator(
-        r'^[a-z0-9-]+$',
-        "Program URL may only contain lowercase alphanumeric characters and hyphens.",
-    )
 
 
 class ProgramEmailField(models.EmailField):
