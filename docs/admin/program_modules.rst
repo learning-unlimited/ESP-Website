@@ -31,7 +31,7 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
-* Module Schedule & Dates: See `Program Module Schedule & Permission Dates <module_schedule.rst>`_ for details on setting initial permissions, start/end dates, and date inheritance.
+* Module Schedule & Dates: See `Program Module Schedule & Permission Dates <module_schedule.rst>`_ for details on setting initial permissions, start/end dates, date inheritance, and permission synchronization.
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see `Customizing with Tags <tags.rst>`_ for more information.
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.

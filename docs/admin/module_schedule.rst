@@ -11,7 +11,7 @@ The Program Module Management System allows administrators to configure registra
 1. **Program Permissions**: Permission records associated with start and end dates (``start_date`` and ``end_date``) assigned to Django auth Groups (``Student``, ``Teacher``, ``Volunteer``).
 2. **Program Module Objects** (``ProgramModuleObj``): Subclasses of ``ExpirableModel`` that store module-specific sequence numbers (``seq``), requirement settings (``required``, ``required_label``), and active time boundaries (``start_date`` and ``end_date``).
 
-When a new program is created, initial role permissions are generated from the program setup form dates, and newly initialized ``ProgramModuleObj`` records inherit their operational dates from these permissions.
+When a new program is created, initial role permissions are generated from the program setup form dates. ``ProgramModuleObj`` records are created lazily by ``Program.getModules()``/``getFromProgModule()``, and their ``start_date``/``end_date`` default to ``NULL`` unless explicitly set (e.g., via the module schedule API).
 
 Model Architecture: ExpirableModel Subclass
 ===========================================
@@ -20,7 +20,7 @@ Model Architecture: ExpirableModel Subclass
 * ``start_date``: Nullable ``DateTimeField``. Indicates when the module opens for users.
 * ``end_date``: Nullable ``DateTimeField``. Indicates when the module closes.
 * ``NULL`` handling: A ``NULL`` timestamp is interpreted as "no expiry" (always open from that boundary).
-* ``is_valid(at_time=None)``: Helper method that evaluates whether a module object is active at a given timestamp.
+* ``is_valid(when=None)``: Helper method that evaluates whether a module object is active at a given timestamp.
 
 ProgramModuleObj Model Fields
 ------------------------------
@@ -82,7 +82,7 @@ To maintain high performance without returning stale registration views:
 
 Initial Permission and Date Generation
 ======================================
-When creating a program via the new program form (or invoking ``prepare_program()`` directly in code), the system populates initial permission records for all enabled modules selected in the program form.
+When creating a program via the new program form (or invoking ``prepare_program()`` directly in code), the system populates initial *core* student/teacher permission records based on the program form dates.
 
 Program Form Date Fields
 ------------------------
@@ -104,19 +104,9 @@ By default, ``prepare_program()`` generates base role permissions for students a
 
 Module-Associated Permission Generation
 ----------------------------------------
-For each enabled module in ``data['program_modules']``:
+``prepare_program()`` and ``commit_program()`` do **not** currently generate per-module permission records by inspecting enabled module handlers.
 
-1. The system inspects the module's Python handler class (``pm.getPythonClass()``) for specified permission types via ``permission_types`` or ``get_permission_types()``.
-2. Date assignment is determined by role prefix or ``module_type``:
-
-   * **Student / Learn modules** (``perm_type.startswith('Student')`` or ``module_type == 'learn'``):
-     Assigned ``student_reg_start`` and ``student_reg_end``.
-   * **Teacher / Teach modules** (``perm_type.startswith('Teacher')`` or ``module_type == 'teach'``):
-     Assigned ``teacher_reg_start`` and ``teacher_reg_end``.
-   * **Volunteer modules** (``perm_type.startswith('Volunteer')`` or ``module_type == 'volunteer'``):
-     Assigned dates derived from teacher or student registration windows.
-
-3. Permission tuples are committed to the database via ``commit_program()``, assigning permissions to their respective Django auth Groups (``Student``, ``Teacher``, or ``Volunteer``).
+Instead, module-specific permission dates are synchronized when ``ProgramModuleObj.sync_permissions()`` is invoked (for example, after updating a module's ``start_date``/``end_date`` through the module schedule update API). ``sync_permissions()`` inspects the module handler's ``permission_types``/``get_permission_types()`` and creates or updates matching program-level ``Permission`` records for the inferred role group.
 
 Module Object Date Inheritance (ProgramModuleObj)
 =================================================
@@ -141,18 +131,13 @@ During creation of a new ``ProgramModuleObj`` in ``getFromProgModule()``:
 
    * If a matching permission record is found, ``BaseModule.start_date`` and ``BaseModule.end_date`` are set to ``perm.start_date`` and ``perm.end_date``.
 
-Timeline Canvas UI & Admin Interactions
-=======================================
-The administrator timeline UI (``module_schedule.html``) provides a visual Gantt-style canvas for managing module schedules:
-
-* **Student / Teacher Split Views**: Modules are categorized by ``module_type`` (``learn`` vs ``teach`` vs ``volunteer``), rendering separate interactive canvases with a tab strip and side-by-side split view option.
-* **Row Drag-to-Reorder**: Vertical position determines module sequence (``seq``). Reordering sends AJAX ``PATCH`` requests to update ``seq`` values.
-* **Horizontal Time Slider**: Left and right drag handles set ``start_date`` and ``end_date``. Double-clicking the right handle sets ``end_date = NULL`` for indefinite availability.
-* **Time Scrubber & Now Marker**: A vertical marker indicates real time, and a draggable scrubber allows administrators to preview active modules at any point in time.
+Module Schedule APIs & Admin Interactions
+=========================================
+The module schedule functionality is currently exposed via JSON endpoints under ``/manage/<program_type>/<program_term>/module_schedule/`` (see the "Module Schedule API Reference" section below). These endpoints support listing modules, updating ``start_date``/``end_date``/metadata, previewing active modules at a given time, detecting conflicts, and bulk reordering.
 
 Bidirectional Permission Sync (sync_permissions)
 ================================================
-When a ``ProgramModuleObj``'s ``start_date`` or ``end_date`` is saved via the Django admin or the timeline API, the ``sync_permissions()`` method is invoked to propagate date changes back to the backend ``Permission`` table:
+When a ``ProgramModuleObj``'s ``start_date`` or ``end_date`` is updated via the module schedule update API, the ``sync_permissions()`` method is invoked to propagate date changes back to the backend ``Permission`` table. (Edits made directly in the Django admin do not currently call ``sync_permissions()`` automatically.)
 
 1. Retrieves ``permission_types`` from the module handler.
 2. Determines the correct Django auth ``Group`` (``Student``, ``Teacher``, ``Volunteer``) by inspecting the ``permission_type`` prefix or falling back to ``module_type``.
@@ -229,18 +214,17 @@ Schedule Conflict Detection Engine
 Phase-based registration programs use mutual exclusion rules (e.g. lottery signup and FCFS registration cannot run concurrently):
 
 * Handlers declare conflicting modules via a ``conflicts_with`` class attribute.
-* ``check_schedule_conflicts(program)`` scans active time windows and detects overlaps.
-* Overlapping regions are visually highlighted with a diagonal-stripe warning pattern in the timeline UI.
+* The ``/manage/<program_type>/<program_term>/module_schedule/conflicts/`` endpoint scans module time windows and reports overlaps for handlers that declare conflicts via the ``conflicts_with`` class attribute.
 
 Module Schedule API Reference
 =============================
 The module management interface interacts with the backend via REST/AJAX endpoints:
 
-* ``GET /manage/<prog>/module_schedule/``: Returns JSON payload of program module objects split by student/teacher views.
-* ``PATCH /manage/<prog>/module_schedule/update/``: Updates ``start_date``, ``end_date``, or ``seq`` sequence position for a module object.
-* ``POST /manage/<prog>/module_schedule/required_toggle/``: Toggles the ``required`` flag for a program module object.
-* ``GET /manage/<prog>/module_schedule/conflicts/``: Returns scheduling conflicts and overlapping time windows as JSON.
-* ``GET /manage/<prog>/module_schedule/preview/``: Previews active modules at a given ``?at=<timestamp>`` parameter.
+* ``GET /manage/<program_type>/<program_term>/module_schedule/``: Returns JSON payload of program module objects grouped by ``module_type``.
+* ``POST /manage/<program_type>/<program_term>/module_schedule/update/``: Updates ``start_date``, ``end_date``, ``seq``, and other editable fields for a module object.
+* ``POST /manage/<program_type>/<program_term>/module_schedule/reorder/``: Bulk updates ``seq`` for multiple module objects.
+* ``GET /manage/<program_type>/<program_term>/module_schedule/conflicts/``: Returns scheduling conflicts and overlapping time windows as JSON.
+* ``GET /manage/<program_type>/<program_term>/module_schedule/preview/?at=<timestamp>``: Previews modules active at a given time.
 
 Managing & Overriding Module Schedule Dates
 ===========================================
@@ -256,16 +240,15 @@ Administrators can view and override module start/end dates in two ways:
 
 Schedule Templates & Automated Notifications
 --------------------------------------------
-* **Schedule Templates**: ``ModuleScheduleTemplate`` allows administrators to save a program's module schedule as time offsets relative to ``program_start`` and reapply it to future programs.
-* **Open/Close Notifications**: Automated notification triggers send emails to registered users when module windows open or close via background cron commands.
+Schedule templates and automated open/close notifications are not currently implemented in this repository. If these features are added in the future, document the corresponding models/commands here.
 
 Testing Guidelines & Verification
 =================================
-Unit tests for module permissions and date inheritance reside in ``esp/esp/program/tests.py``:
+Unit tests for the module schedule endpoints and conflict detection reside in ``esp/esp/program/modules/tests/``:
 
-* ``NewProgramModulePermissionsTest.test_new_program_sets_module_permissions_and_dates``:
-  Validates permission creation, group association, date initialization, and ``ProgramModuleObj`` date inheritance.
-* **Auth Group Setup**: Fresh test databases must invoke ``user_role_setup()`` to seed ``Student``, ``Teacher``, and ``Volunteer`` groups before committing program permissions.
+* ``test_module_schedule_api.py``: Validates auth, listing modules, updating dates/metadata, and preview behavior.
+* ``test_module_schedule_conflicts_api.py``: Validates conflict detection based on ``conflicts_with`` and time-window overlap.
+* **Auth Group Setup**: Fresh test databases must invoke ``user_role_setup()`` to seed role groups before committing program permissions.
 
 Developer Reference & File Locations
 ====================================
