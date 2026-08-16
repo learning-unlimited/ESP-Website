@@ -1279,12 +1279,21 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
-    def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
+    def getModules(self, user = None, tl = None, old_prog = None, when = None):
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins.
+
+        If `when` is provided (a datetime.datetime), modules are filtered by
+        validity at that timestamp regardless of admin status.  This is used
+        for the admin preview feature on the module management page.
+        """
         modules = list(self.getModules_cached(tl, old_prog))
 
-        if user and not user.isAdmin(self):
-            modules = [m for m in modules if m.is_valid()]
+        if user:
+            if when is not None:
+                # Simulated-time preview: filter by the given timestamp
+                modules = [m for m in modules if m.is_valid(when=when)]
+            elif not user.isAdmin(self):
+                modules = [m for m in modules if m.is_valid()]
 
         if user:
             for module in modules:
