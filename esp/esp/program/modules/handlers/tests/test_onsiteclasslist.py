@@ -842,7 +842,7 @@ class ClassListFragmentAuthorizationTests(CacheFlushTestCase):
         )
         module.classList_base = types.MethodType(OnSiteClassList.classList_base, module)
         return wrapped_fn(module, request, 'onsite', None, None, None, None, self.program)
-    
+
     def test_anonymous_user_redirected(self):
         """An unauthenticated request must be redirected to the login page."""
         from django.contrib.auth.models import AnonymousUser
