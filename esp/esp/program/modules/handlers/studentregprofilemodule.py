@@ -270,7 +270,7 @@ class StudentRegProfileModule(ProgramModuleObj):
         if req and req.GET.get('simulate_time') and user.isAdministrator(self.program):
             return True
         # Also check session-based simulate_time for preview persistence
-        if req and req.session.get('simulate_time') and user.isAdministrator(self.program):
+        if req and getattr(req, 'session', None) and req.session.get('simulate_time') and user.isAdministrator(self.program):
             return True
         regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None

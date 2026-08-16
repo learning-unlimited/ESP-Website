@@ -193,6 +193,9 @@ class NeedsStudentInGradeCompositionTest(SimpleTestCase):
         request.user.id = 1 if authenticated else None
         request.user.isStudent.return_value = is_student
         request.user.isAdmin.return_value = is_admin
+        # Ensure GET is an empty dict-like so that .get('simulate_time') returns None (falsy),
+        # preventing the admin preview bypass in _meets_grade_test from short-circuiting.
+        request.GET = {}
         return request
 
     def test_unauthenticated_redirects(self):
