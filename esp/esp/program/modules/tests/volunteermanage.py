@@ -1,10 +1,11 @@
 """
 Unit tests for VolunteerManage (volunteermanage.py).
 """
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from unittest.mock import patch
 
 from esp.cal.models import Event, EventType
-from esp.program.models import VolunteerOffer, VolunteerRequest
+from esp.program.models import Program, VolunteerOffer, VolunteerRequest
 from esp.program.modules.handlers.volunteermanage import VolunteerManage
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
@@ -134,4 +135,83 @@ class VolunteerManageTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
     def test_check_volunteer_redirects_without_user(self):
         self.login_as('admin')
         response = self.client.get(self.get_module_url('manage', 'check_volunteer'))
-        self.assertIn(response.status_code, [302, 200])
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, self._url())
+
+    def _past_program_with_request(self, description='Past Desk'):
+        past = Program.objects.create(
+            url='PastProgram/1901_Spring',
+            name='PastProgram Spring 1901',
+            grade_min=7,
+            grade_max=12,
+        )
+        return past, self._make_request(program=past, description=description)
+
+    def test_import_preview_renders_confirmation(self):
+        past, past_vr = self._past_program_with_request()
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'import': '1',
+            'program': str(past.id),
+            'start_date': '07/08/2222',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('new_requests', response.context)
+        self.assertGreaterEqual(len(response.context['new_requests']), 1)
+        self.assertEqual(response.context['new_requests'][0].old_id, past_vr.id)
+        self.assertFalse(
+            VolunteerRequest.objects.filter(
+                program=self.program, timeslot__description='Past Desk'
+            ).exists()
+        )
+
+    def test_import_save_creates_selected_requests(self):
+        past, past_vr = self._past_program_with_request()
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'import_confirm': 'yes',
+            'program': str(past.id),
+            'start_date': '07/08/2222',
+            'to_import': [str(past_vr.id)],
+        })
+        self.assertEqual(response.status_code, 200)
+        new_vr = VolunteerRequest.objects.get(
+            program=self.program, timeslot__description='Past Desk'
+        )
+        self.assertEqual(new_vr.num_volunteers, past_vr.num_volunteers)
+        self.assertTrue(
+            Event.objects.filter(
+                program=self.program, description='Past Desk'
+            ).exists()
+        )
+
+    def test_import_invalid_form_sets_import_error(self):
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'import': '1',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['import_request_form'].is_valid())
+
+        request = type('Req', (), {
+            'POST': {
+                'import': '1',
+                'program': str(self.program.id),
+                'start_date': '07/08/2222',
+            },
+            'method': 'POST',
+            'user': self.admins[0],
+        })()
+        with patch(
+            'esp.program.modules.handlers.volunteermanage.VolunteerImportForm'
+        ) as MockForm:
+            inst = MockForm.return_value
+            inst.is_valid.return_value = True
+            inst.cleaned_data = {
+                'program': self.program,
+                'start_date': date(2222, 7, 8),
+            }
+            _, context = self.module.volunteer_import(
+                request, 'manage', 'one', 'two', None, None, self.program
+            )
+        self.assertIn('import_error', context)
