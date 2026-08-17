@@ -43,6 +43,7 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         response = self.assert_view_ok(self.get_module_url('teach', 'teacheronsite'))
         self.assertEqual(response.context['webapp_page'], 'schedule')
         self.assertIn('classes', response.context)
+        self.assertGreaterEqual(len(response.context['classes']), 1)
         self.assertIn('checked_in', response.context)
         self.assertTemplateUsed(response, 'program/modules/teacheronsite/schedule.html')
 
@@ -66,6 +67,7 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.context['webapp_page'], 'details')
         self.assertEqual(response.context['section_page'], 'info')
         self.assertIn('sections', response.context)
+        self.assertGreaterEqual(len(response.context['sections']), 1)
         self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectioninfo.html')
 
     def test_onsiteroster_page(self):
@@ -74,6 +76,7 @@ class TeacherOnsiteTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.context['webapp_page'], 'details')
         self.assertEqual(response.context['section_page'], 'roster')
         self.assertIn('sections', response.context)
+        self.assertGreaterEqual(len(response.context['sections']), 1)
         self.assertIn('not_found', response.context)
         self.assertTemplateUsed(response, 'program/modules/teacheronsite/sectionroster.html')
 
