@@ -152,11 +152,18 @@ class CommModule(ProgramModuleObj):
             mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
 
         # b. Warn if no grade range filter is used
-        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        filter_name = getattr(filter_obj, 'useful_name', '') or ''
+        try:
+            filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            mailer_warnings.append(
+                "Warning: The selected recipient filter is no longer valid. Please go back and reselect your recipient list."
+            )
+            filter_obj = None
 
-        if filter_name and 'grade' not in filter_name.lower():
-            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+        if filter_obj is not None:
+            filter_name = getattr(filter_obj, 'useful_name', '') or ''
+            if filter_name and 'grade' not in filter_name.lower():
+                mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
         guardian_or_emergency_sentto_values = set()
