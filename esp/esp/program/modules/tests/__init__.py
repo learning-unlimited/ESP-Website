@@ -95,3 +95,4 @@ from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
+from esp.program.modules.tests.surveymanagement import SurveyManagementTest
