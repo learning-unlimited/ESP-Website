@@ -14,7 +14,7 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         super().setUp(*args, **kwargs)
         self.add_user_profiles()
         self.module = self.get_module_obj('StudentJunctionAppModule')
-        self.question = StudentAppQuestion.objects.create(
+        StudentAppQuestion.objects.create(
             program=self.program,
             question='Why do you want to attend?',
             directions='Write a short paragraph.',
