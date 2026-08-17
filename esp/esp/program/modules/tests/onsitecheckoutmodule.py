@@ -79,10 +79,21 @@ class OnSiteCheckoutModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         response = self.client.get(self._url() + '?user=not-a-real-user-xyz')
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, 'error.html')
+        self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
+        self.assertIn('does not appear to exist', str(response.context['error']))
 
     def test_lookup_by_username(self):
         student = self.students[2]
         self.login_as('admin')
         response = self.client.get(self._url() + '?user=%s' % student.username)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['student'].id, student.id)
+
+    def test_lookup_via_search_form(self):
+        student = self.students[3]
+        self.login_as('admin')
+        response = self.client.post(self._url(), {
+            'target_user': str(student.id),
+        })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['student'].id, student.id)
