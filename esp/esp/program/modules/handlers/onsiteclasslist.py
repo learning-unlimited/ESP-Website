@@ -262,6 +262,19 @@ class OnSiteClassList(ProgramModuleObj):
         except (KeyError, ValueError, TypeError):
             result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
             desired_sections = None
+        else:
+            if not isinstance(desired_sections, list):
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
+            try:
+                desired_sections = [int(section_id) for section_id in desired_sections]
+            except (TypeError, ValueError):
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if request.GET.get('check_in') == 'true' and user and not prog.isCheckedIn(user):

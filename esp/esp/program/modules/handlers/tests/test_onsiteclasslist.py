@@ -43,6 +43,23 @@ class UpdateScheduleJsonTests(SimpleTestCase):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
 
+    def _assert_invalid_sections(self, resp):
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('sections must be a JSON list' in msg for msg in payload.get('messages', [])))
+
+    def test_sections_object_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "{}"})
+        self._assert_invalid_sections(resp)
+
+    def test_sections_scalar_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "5"})
+        self._assert_invalid_sections(resp)
+
 
 class PrintScheduleStatusTests(SimpleTestCase):
     """Regression tests for printschedule_status early failure cases."""
