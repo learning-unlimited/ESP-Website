@@ -5,10 +5,18 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import Group
 
+from esp.accounting.controllers import IndividualAccountingController
 from esp.program.models import RegistrationProfile
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, Record, RecordType
+
+_RECORD_TYPES = {
+    'attended': 'Attended program',
+    'med': 'Submitted medical form',
+    'liab': 'Submitted liability form',
+    'onsite': 'Registered for program onsite',
+}
 
 
 class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
@@ -17,14 +25,12 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         kwargs.update({'num_students': 2, 'num_teachers': 1, 'num_admins': 1})
         super().setUp(*args, **kwargs)
         self.module = self.get_module_obj('OnSiteRegister')
-        # Built-in RecordTypes come from migrations; only ensure Student group exists.
         Group.objects.get_or_create(name='Student')
-        for name in ('attended', 'med', 'liab', 'onsite'):
-            if not RecordType.objects.filter(name=name).exists():
-                RecordType.objects.create(
-                    name=name,
-                    description='Test record type %s' % name,
-                )
+        for name, description in _RECORD_TYPES.items():
+            RecordType.objects.get_or_create(
+                name=name,
+                defaults={'description': description},
+            )
 
     def _url(self):
         return self.get_module_url('onsite', 'onsite_create')
@@ -56,7 +62,8 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTemplateUsed(response, 'errors/program/notonsite.html')
 
     @patch.object(ESPUser, 'recoverPassword')
-    def test_successful_registration(self, mock_recover):
+    @patch.object(IndividualAccountingController, 'updatePaid')
+    def test_successful_registration(self, mock_paid, mock_recover):
         mock_recover.return_value = None
         self.login_as('admin')
         before = ESPUser.objects.count()
@@ -82,9 +89,11 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
             Record.objects.filter(user=new_user, program=self.program, event__name='liab').exists()
         )
         mock_recover.assert_called_once()
+        mock_paid.assert_called_once_with(self.program, new_user, True)
 
     @patch.object(ESPUser, 'recoverPassword')
-    def test_invalid_form_stays_on_page(self, mock_recover):
+    @patch.object(IndividualAccountingController, 'updatePaid')
+    def test_invalid_form_stays_on_page(self, mock_paid, mock_recover):
         self.login_as('admin')
         response = self.client.post(self._url(), {
             'first_name': '',
@@ -96,22 +105,25 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTemplateUsed(response, 'program/modules/onsiteregister/reg_info.html')
         self.assertFalse(ESPUser.objects.filter(email='not-an-email').exists())
         mock_recover.assert_not_called()
+        mock_paid.assert_not_called()
 
     @patch.object(ESPUser, 'recoverPassword')
-    def test_username_generated_from_name(self, mock_recover):
+    @patch.object(IndividualAccountingController, 'updatePaid')
+    def test_username_generated_from_name(self, mock_paid, mock_recover):
         mock_recover.return_value = None
         self.login_as('admin')
         self.client.post(self._url(), self._valid_data(
             first_name='Alice', last_name='Wonder', email='alice.w@example.com'
         ))
         new_user = ESPUser.objects.get(email='alice.w@example.com')
-        # get_unused_username uses first initial + last name (e.g. "awonder").
         self.assertTrue(new_user.username)
         self.assertTrue(new_user.username.lower().startswith('a'))
         self.assertIn('wonder', new_user.username.lower())
+        mock_paid.assert_called_once()
 
     @patch.object(ESPUser, 'recoverPassword')
-    def test_registration_without_optional_bits(self, mock_recover):
+    @patch.object(IndividualAccountingController, 'updatePaid')
+    def test_registration_without_optional_bits(self, mock_paid, mock_recover):
         mock_recover.return_value = None
         self.login_as('admin')
         response = self.client.post(self._url(), self._valid_data(
@@ -131,3 +143,4 @@ class OnSiteRegisterTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTrue(
             Record.objects.filter(user=new_user, program=self.program, event__name='onsite').exists()
         )
+        mock_paid.assert_called_once_with(self.program, new_user, False)
