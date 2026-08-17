@@ -36,7 +36,7 @@ from datetime import datetime, timedelta
 from esp.program.tests import ProgramFrameworkTest
 from esp.middleware.threadlocalrequest import get_current_request
 
-class RegProfileModuleTest(ProgramFrameworkTest):
+class StudentRegProfileModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -46,7 +46,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         super().setUp(*args, **kwargs)
 
         # Get and remember the instance of this module
-        m = ProgramModule.objects.get(handler='RegProfileModule', module_type='learn')
+        m = ProgramModule.objects.get(handler='StudentRegProfileModule', module_type='learn')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
     def runTest(self):

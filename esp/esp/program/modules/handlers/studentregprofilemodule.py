@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -36,7 +35,6 @@ from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_cal
 from esp.program.models import FinancialAidRequest, RegistrationProfile, StudentRegistration
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
-from esp.middleware.threadlocalrequest import get_current_request
 
 
 class _EquityOutreachCohorts(object):
@@ -185,34 +183,26 @@ class _EquityOutreachCohorts(object):
 EquityOutreachCohorts = _EquityOutreachCohorts
 
 
-# reg profile module
-class RegProfileModule(ProgramModuleObj):
-    doc = """Serves the profile editor during student and/or teacher registration."""
-    permission_types = ('Student/Profile', 'Teacher/Profile')
+class StudentRegProfileModule(ProgramModuleObj):
+    doc = """Serves the profile editor during student registration."""
+    permission_types = ('Student/Profile',)
 
     @classmethod
     def module_properties(cls):
-        return [ {
+        return [{
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
             "seq": 0,
             "required": True,
             "choosable": 1
-        }, {
-            "admin_title": "Teacher Profile Editor",
-            "link_title": "Update Your Profile",
-            "module_type": "teach",
-            "seq": 0,
-            "required": True,
-            "choosable": 1,
-        } ]
+        }]
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         if QObject:
-            result = {'student_profile': Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False)}
+            result = {'student_profile': Q(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False)}
         else:
-            students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
+            students = ESPUser.objects.filter(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False).distinct()
             result = {'student_profile': students}
         for key in _EquityOutreachCohorts.all_cohort_keys():
             qs = _EquityOutreachCohorts.users_for_cohort(self.program, key)
@@ -228,16 +218,6 @@ class RegProfileModule(ProgramModuleObj):
         for key in _EquityOutreachCohorts.all_cohort_keys():
             result["equity_" + key] = _EquityOutreachCohorts.cohort_label(key)
         return result
-
-    def teachers(self, QObject = False):
-        if QObject:
-            return {'teacher_profile': Q(registrationprofile__program=self.program) &
-                                       Q(registrationprofile__teacher_info__isnull=False)}
-        teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
-        return {'teacher_profile': teachers }
-
-    def teacherDesc(self):
-        return {'teacher_profile': """Teachers who have filled out a profile"""}
 
     @main_call
     @usercheck_usetl

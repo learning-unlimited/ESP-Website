@@ -572,6 +572,76 @@ class StudentsStatusTests(ProgramFrameworkTest):
         self.assertTrue(entry[3])
 
 
+class ClassListReloadTests(ProgramFrameworkTest):
+    """The scrolling onsite class list should reload once it reaches the end
+    of a scroll cycle, rather than on a fixed timer that can interrupt the
+    list mid-scroll.
+    """
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=0,
+        )
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _render(self, options):
+        request = self.factory.get('/onsite/classlist', options)
+        request.user = self.admin
+        module = SimpleNamespace(
+            program=self.program,
+            baseDir=lambda: 'program/modules/onsiteclasslist/'
+        )
+        resp = OnSiteClassList.classList_base(
+            module,
+            request,
+            'onsite',
+            None,
+            None,
+            None,
+            None,
+            self.program,
+            options=options,
+            template_name='classlist.html',
+        )
+        resp.render()
+        return resp.content.decode()
+
+    def test_no_meta_refresh_tag(self):
+        """The page must not use a blind <meta http-equiv="refresh"> reload."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        self.assertNotIn('http-equiv="refresh"', content)
+
+    def test_refresh_interval_reflects_option(self):
+        """Refresh option should be passed to JS as milliseconds."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 30 * 1000', content)
+
+    def test_refresh_option_respects_server_minimum(self):
+        """Refresh values below the configured minimum should be clamped."""
+        content = self._render({'refresh': '1', 'scrollspeed': '1'})
+        self.assertNotIn('refresh_interval_ms = 1 * 1000', content)
+
+    def test_scroll_checks_elapsed_time_before_reloading(self):
+        """Reload should happen only after checking elapsed time when the
+        scroll wraps around."""
+        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+
+        wrap_index = content.index('elt1.offsetHeight + scroll_offset < 0')
+        check_index = content.index(
+            'Date.now() - page_load_time >= refresh_interval_ms'
+        )
+        reload_index = content.index('location.reload()')
+
+        self.assertLess(wrap_index, check_index)
+        self.assertLess(check_index, reload_index)
+
+
 class OnsiteAuthorizationTests(CacheFlushTestCase):
     """Integration-level tests for the needs_onsite access guard on catalog_status.
     Uses CacheFlushTestCase directly to allow control over users and permissions.

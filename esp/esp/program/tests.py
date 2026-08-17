@@ -44,7 +44,7 @@ from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
-
+from django.core import mail
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -1859,7 +1859,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1879,7 +1878,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1971,25 +1969,22 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
-from django.core import mail
+
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
+
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
 
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
+
 
 
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2282,6 +2277,53 @@ class HeardAboutNormalizationTest(TestCase):
         self.assertEqual(self._normalize("...!!!"), "")
 
 
+class ProgramCreationFormHandlerLookupTest(TestCase):
+    """
+    Verify that ProgramCreationForm.program_module_question_ids is built using
+    handler lookups (not admin_title), and that the AdmissionsDashboard
+    manage-only special case is preserved correctly.
+    """
+
+    def setUp(self):
+        self.form = ProgramCreationForm()
+
+    def _ids_for_question(self, question_text):
+        for key, ids in self.form.program_module_question_ids.items():
+            if question_text in str(key):
+                return ids
+        return None
+
+    def test_admissions_dashboard_manage_only_question(self):
+        """'Do students have to apply...' must include AdmissionsDashboard manage row only."""
+        manage_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage').first()
+        teach_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='teach').first()
+        if manage_row is None:
+            self.skipTest("AdmissionsDashboard manage row not in DB")
+        ids = self._ids_for_question('Do students have to apply to individual classes?')
+        self.assertIsNotNone(ids)
+        self.assertIn(manage_row.id, ids)
+        if teach_row is not None:
+            self.assertNotIn(teach_row.id, ids)
+
+    def test_admissions_dashboard_both_rows_in_teacher_question(self):
+        """'If students must apply to individual classes...' must include both AdmissionsDashboard rows."""
+        rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
+        if not rows:
+            self.skipTest("AdmissionsDashboard rows not in DB")
+        ids = self._ids_for_question('If students must apply to individual classes')
+        self.assertIsNotNone(ids)
+        for row in rows:
+            self.assertIn(row.id, ids)
+
+    def test_handler_based_lookup_includes_expected_module(self):
+        """Spot-check: CreditCardModule_Stripe appears under the credit card question."""
+        pm = ProgramModule.objects.filter(handler='CreditCardModule_Stripe').first()
+        if pm is None:
+            self.skipTest("CreditCardModule_Stripe not in DB")
+        ids = self._ids_for_question('will you accept payment by credit card')
+        self.assertIsNotNone(ids)
+        self.assertIn(pm.id, ids)
+
 class ProgramCreationFormDateValidationTest(TestCase):
     """Tests that ProgramCreationForm rejects registration date ranges where
     end is not strictly after start."""
@@ -2381,3 +2423,66 @@ class SubmitTransactionRequiresPostTest(TestCase):
     def test_get_returns_405(self):
         response = self.client.get(reverse('manage_submit_transaction'))
         self.assertEqual(response.status_code, 405)
+
+
+class NewProgramModulePermissionsTest(TestCase):
+    """Tests that prepare_program sets initial start/end dates for permissions of enabled modules."""
+
+    def test_new_program_sets_module_permissions_and_dates(self):
+        from esp.program.models import Program, ProgramModule
+        from esp.program.setup import prepare_program, commit_program
+        from datetime import datetime
+
+        user_role_setup()
+
+        student_start = datetime(2026, 9, 1, 0, 0)
+        student_end = datetime(2026, 11, 1, 0, 0)
+        teacher_start = datetime(2026, 8, 1, 0, 0)
+        teacher_end = datetime(2026, 10, 1, 0, 0)
+
+        all_modules = list(ProgramModule.objects.all())
+
+        data = {
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'program_modules': all_modules,
+        }
+
+        program = Program.objects.create(
+            name='Test Perm Program',
+            url='TestPerm/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+        program.program_modules.set(all_modules)
+
+        perms, modules = prepare_program(program, data)
+        commit_program(program, perms)
+
+        # Verify Student/Classes permission exists and matches student dates
+        student_cls_perm = Permission.objects.filter(program=program, permission_type='Student/Classes').first()
+        self.assertIsNotNone(student_cls_perm)
+        self.assertEqual(student_cls_perm.start_date, student_start)
+        self.assertEqual(student_cls_perm.end_date, student_end)
+
+        # Verify Teacher/Classes/All permission exists and matches teacher dates
+        teacher_cls_perm = Permission.objects.filter(program=program, permission_type='Teacher/Classes/All').first()
+        self.assertIsNotNone(teacher_cls_perm)
+        self.assertEqual(teacher_cls_perm.start_date, teacher_start)
+        self.assertEqual(teacher_cls_perm.end_date, teacher_end)
+
+        # Verify Volunteer/Signup permission exists and has start_date set
+        volunteer_perm = Permission.objects.filter(program=program, permission_type='Volunteer/Signup').first()
+        self.assertIsNotNone(volunteer_perm)
+        self.assertIsNotNone(volunteer_perm.start_date)
+
+        # Verify ProgramModuleObj instances created for program inherit dates
+        program.getModules()
+        student_cls_pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        from esp.program.modules.base import ProgramModuleObj
+        pmo = ProgramModuleObj.objects.get(program=program, module=student_cls_pm)
+        self.assertEqual(pmo.start_date, student_start)
+        self.assertEqual(pmo.end_date, student_end)
+
