@@ -26,26 +26,26 @@ ProgramModuleObj Model Fields
 ------------------------------
 The complete set of fields on a ``ProgramModuleObj`` record:
 
-+-----------------+------------------------------+----------------------------------------------------------+
-| Field           | Type                         | Description                                              |
-+=================+==============================+==========================================================+
-| ``program``     | ForeignKey (Program)         | The program this module object belongs to.               |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``module``      | ForeignKey (ProgramModule)   | The module definition (handler, module_type, seq).       |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``seq``         | IntegerField                 | Display order (ascending). Drag-to-reorder in timeline.  |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``required``    | BooleanField                 | If True, users are forced through this step first.       |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``required_label`` | CharField (80)            | Optional text to clarify requirement (e.g. "For minors")|
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``link_title``  | CharField (64)               | Override for module's display link title. Leave blank    |
-|                 |                              | to use the module's default.                             |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``start_date``  | DateTimeField (nullable)     | When module opens. NULL = no start constraint.           |
-+-----------------+------------------------------+----------------------------------------------------------+
-| ``end_date``    | DateTimeField (nullable)     | When module closes. NULL = no end constraint.            |
-+-----------------+------------------------------+----------------------------------------------------------+
++--------------------+------------------------------+----------------------------------------------------------+
+| Field              | Type                         | Description                                              |
++====================+==============================+==========================================================+
+| ``program``        | ForeignKey (Program)         | The program this module object belongs to.               |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``module``         | ForeignKey (ProgramModule)   | The module definition (handler, module_type, seq).       |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``seq``            | IntegerField                 | Display order (ascending). Drag-to-reorder in timeline.  |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``required``       | BooleanField                 | If True, users are forced through this step first.       |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``required_label`` | CharField (80)               | Optional text to clarify requirement (e.g. "For minors") |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``link_title``     | CharField (64)               | Override for module's display link title. Leave blank    |
+|                    |                              | to use the module's default.                             |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``start_date``     | DateTimeField (nullable)     | When module opens. NULL = no start constraint.           |
++--------------------+------------------------------+----------------------------------------------------------+
+| ``end_date``       | DateTimeField (nullable)     | When module closes. NULL = no end constraint.            |
++--------------------+------------------------------+----------------------------------------------------------+
 
 Backward Compatibility & Migration Strategy
 -------------------------------------------
@@ -82,7 +82,7 @@ To maintain high performance without returning stale registration views:
 
 Initial Permission and Date Generation
 ======================================
-When creating a program via the new program form (or invoking ``prepare_program()`` directly in code), the system populates initial *core* student/teacher permission records based on the program form dates.
+When creating a program via the new program form (or invoking ``prepare_program()`` directly in code), the system populates initial student/teacher permission records based on the program form dates.
 
 Program Form Date Fields
 ------------------------
@@ -103,10 +103,9 @@ By default, ``prepare_program()`` generates base role permissions for students a
 * ``Teacher/Classes/View``, ``Teacher/MainPage``, ``Teacher/Profile``: Start on ``teacher_reg_start``.
 
 Module-Associated Permission Generation
-----------------------------------------
-``prepare_program()`` and ``commit_program()`` do **not** currently generate per-module permission records by inspecting enabled module handlers.
+---------------------------------------
 
-Instead, module-specific permission dates are synchronized when ``ProgramModuleObj.sync_permissions()`` is invoked (for example, after updating a module's ``start_date``/``end_date`` through the module schedule update API). ``sync_permissions()`` inspects the module handler's ``permission_types``/``get_permission_types()`` and creates or updates matching program-level ``Permission`` records for the inferred role group.
+Module-specific permission dates are also generated during ``prepare_program()``. The module handler's ``permission_types``/``get_permission_types()`` are inspected and matching program-level ``Permission`` records for the inferred role group are created. These ``Permission`` records synchronized whenever ``ProgramModuleObj.sync_permissions()`` is invoked (for example, after updating a module's ``start_date``/``end_date`` through the module schedule update API).
 
 Module Object Date Inheritance (ProgramModuleObj)
 =================================================
@@ -225,22 +224,6 @@ The module management interface interacts with the backend via REST/AJAX endpoin
 * ``POST /manage/<program_type>/<program_term>/module_schedule/reorder/``: Bulk updates ``seq`` for multiple module objects.
 * ``GET /manage/<program_type>/<program_term>/module_schedule/conflicts/``: Returns scheduling conflicts and overlapping time windows as JSON.
 * ``GET /manage/<program_type>/<program_term>/module_schedule/preview/?at=<timestamp>``: Previews modules active at a given time.
-
-Managing & Overriding Module Schedule Dates
-===========================================
-
-Admin Interface Configuration
------------------------------
-Administrators can view and override module start/end dates in two ways:
-
-1. **Permission Deadlines** (``http://[hostname]/admin/users/permission/``):
-   Edit program-level permission start and end dates to adjust role-wide registration windows.
-2. **Program Module Objects** (``http://[hostname]/admin/modules/programmoduleobj/``):
-   Edit module-specific ``start_date`` and ``end_date`` fields to customize when a specific module is accessible to users independently of overall program registration dates.
-
-Schedule Templates & Automated Notifications
---------------------------------------------
-Schedule templates and automated open/close notifications are not currently implemented in this repository. If these features are added in the future, document the corresponding models/commands here.
 
 Testing Guidelines & Verification
 =================================
