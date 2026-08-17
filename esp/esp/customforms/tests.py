@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 
-from esp.customforms.models import Form, Field, Page, Section
+from esp.customforms.models import Form, Field, Page, Section, Attribute
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
@@ -858,3 +858,24 @@ class FormOwnershipAccessTest(TestCase):
             {'form_id': 999999, 'question_name': self.question_name},
         )
         self.assertEqual(response.status_code, 404)
+
+
+class SetAttributeUpdateOrCreateTest(TestCase):
+    def test_set_attribute_creates_and_updates(self):
+        user, _ = ESPUser.objects.get_or_create(username='attr_owner')
+        form = Form.objects.create(title='Attr Form', created_by=user)
+        page = Page.objects.create(form=form, seq=0)
+        section = Section.objects.create(page=page, title='S', seq=0)
+        field = Field.objects.create(
+            form=form, section=section, field_type='textField',
+            seq=0, label='Q',
+        )
+        attr = field.set_attribute('charlimits', '0,100')
+        self.assertEqual(Attribute.objects.filter(field=field, attr_type='charlimits').count(), 1)
+        self.assertEqual(attr.value, '0,100')
+
+        updated = field.set_attribute('charlimits', '0,200')
+        self.assertEqual(Attribute.objects.filter(field=field, attr_type='charlimits').count(), 1)
+        self.assertEqual(updated.id, attr.id)
+        updated.refresh_from_db()
+        self.assertEqual(updated.value, '0,200')
