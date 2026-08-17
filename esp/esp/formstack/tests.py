@@ -44,3 +44,17 @@ class FormstackSubmissionTest(TestCase):
     def test_repr(self):
         sub = FormstackSubmission(200)
         self.assertEqual(repr(sub), '<FormstackSubmission: 200>')
+
+
+class FormstackMutableDefaultTests(TestCase):
+    def test_form_default_args_are_not_shared(self):
+        from esp.formstack.api import Formstack
+        fs = Formstack('key')
+        with patch.object(fs, '_Formstack__request', return_value={}) as mock_req:
+            fs.form(1)
+            fs.form(2)
+        first_args = mock_req.call_args_list[0][0][1]
+        second_args = mock_req.call_args_list[1][0][1]
+        self.assertEqual(first_args['id'], 1)
+        self.assertEqual(second_args['id'], 2)
+        self.assertIsNot(first_args, second_args)
