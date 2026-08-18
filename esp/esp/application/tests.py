@@ -1,6 +1,6 @@
 """
 Tests for esp.application.models
-Source: esp/application/models.py
+Source: esp/esp/application/models.py
 
 Tests StudentProgramApp and StudentClassApp models.
 """
@@ -110,7 +110,9 @@ class StudentClassAppTest(TestCase):
         )
 
     def test_str(self):
-        self.assertIsNotNone(str(self.class_app))
+        result = str(self.class_app)
+        self.assertIn("classstudent", result)
+        self.assertIn("app for", result)
 
     def test_default_status(self):
         self.assertEqual(
