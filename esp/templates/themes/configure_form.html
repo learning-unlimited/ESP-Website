@@ -50,7 +50,7 @@
            beige, aliceblue) so that mid-grey lands too low-contrast there.
            --bs-emphasis-color is the maximum-contrast foreground for the
            theme's light surface (black in Solar/Slate, white in BS5 dark
-           mode) and gives WCAG-compliant text on those light bg colours. */
+           mode) and gives WCAG-compliant text on those light bg colors. */
         .ui-sortable-handle {
             color: var(--bs-emphasis-color) !important;
         }
@@ -65,10 +65,10 @@
 {% if form %}
 <p>The templates used by this theme require some setup in order to display properly.  Please specify the settings for your site in the form below.  If you do not know what the appropriate parameters are, you can leave them blank and return here later to update them.</p>
 
-<p>These settings primarily affect the information that is displayed on your site.  For control over the appearance, you will want to use the <a href="/themes/customize/">theme editor</a>.</p>
+<p>These settings primarily affect the information that is displayed on your site.  For control over the appearance, you will want to use the <a href="{% url 'themes_editor' %}">theme editor</a>.</p>
 
 <div id="program_form">
-<form id="theme_setup_form" method="POST" action="/themes/setup/">
+<form id="theme_setup_form" method="POST" action="{% url 'themes_configure' %}">
 <input type="hidden" name="confirm_overwrite" value="{{ confirm_overwrite }}" />
 {% for filename in keep_files %}
 <input type="hidden" name="keep_files" id="keep_files_{{ forloop.counter0 }}" value="{{ filename }}" />

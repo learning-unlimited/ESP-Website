@@ -35,7 +35,7 @@ later, possibly in a more annoying way.)</p>
     </div>
 {% endif %}
 <p>
-<form action="/manage/flushcache/" method="POST">
+<form action="{% url 'manage_flushcache' %}" method="POST">
 <textarea name="reason" placeholder="Reason for flushing cache"></textarea>
 <input type="submit" value="Flush Cache" class="btn btn-danger" required />
 </form>

@@ -62,6 +62,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
@@ -547,8 +548,11 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
+    username = request.GET.get('username')
+    if not username:
+        raise ESPError("You must specify a username to view.", log=False)
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
@@ -863,6 +867,7 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
+@require_POST
 @transaction.non_atomic_requests
 def submit_transaction(request):
     # Before we do anything else, log the raw postback to the database
@@ -1682,7 +1687,7 @@ def module_schedule_update_api(request, program_type, program_term):
 
         # Enforce hard constraints (same as admincore POST handler)
         handler = mod.module.handler
-        if handler == "RegProfileModule":
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
             mod.seq = 0
             mod.required = True
         elif "CreditCardModule_" in handler:
@@ -1699,6 +1704,9 @@ def module_schedule_update_api(request, program_type, program_term):
             mod.required = True
 
         mod.save()
+        mod_hydrated.start_date = mod.start_date
+        mod_hydrated.end_date = mod.end_date
+        mod_hydrated.sync_permissions()
 
         return JsonResponse({
             "success": True,
@@ -1842,7 +1850,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
                 handler = mod.module.handler
 
                 position_locked = (
-                    handler == 'RegProfileModule' or
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                     'CreditCardModule_' in handler or
                     handler == 'StudentRegConfirm'
                 )
