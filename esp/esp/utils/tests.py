@@ -17,16 +17,20 @@ from reversion.models import Version
 import unittest
 from unittest.mock import patch
 
+from pymemcache.serde import pickle_serde
+
 from django.db.models.query import Q
 from django.conf import settings
 from django.core.cache.backends.base import BaseCache
+from django.core.cache.backends.memcached import PyMemcacheCache
 from django.template import loader, Template, Context, TemplateDoesNotExist
 from django.test import TestCase as DjangoTestCase
 
 from esp.middleware import ESPError_Log
 from esp.users.models import ESPUser
 from esp import utils
-from esp.utils.memcached_multikey import CacheClass
+from esp.utils.memcached_multikey import (CacheClass, DEFAULT_VALUE_CHUNK_SIZE, MULTIKEY_META_SEPARATOR,
+                                         MULTIKEY_SENTINEL)
 from esp.utils import query_builder
 from esp.utils.formats import format_lazy
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
@@ -127,17 +131,36 @@ class MemcachedKeyLengthTestCase(DjangoTestCase):
 
 
 class _InMemoryWrappedCache:
+    """
+    Stand-in for Django's memcached backend.
+
+    ``set()`` returns ``None`` on success, exactly as ``BaseMemcachedCache.set``
+    does.
+    """
     def __init__(self):
         self.store = {}
+        self.timeouts = {}
         self.fail_set_keys = set()
+        self.raise_on_get = set()
+        self.get_calls = []
+        self.get_many_calls = []
 
     def set(self, key, value, timeout=None, version=None):
         if key in self.fail_set_keys:
-            return False
+            # A failed write: the key is deleted so it cannot go stale, and the
+            # caller is told nothing at all.
+            self.store.pop(key, None)
+            return None
         self.store[key] = value
-        return True
+        self.timeouts[key] = timeout
+        return None
 
     def get(self, key, default=None, version=None):
+        self.get_calls.append(key)
+        if key in self.raise_on_get:
+            # Unpickling happens inside the real backend, so a value written by
+            # a different Python or naming a since-renamed class raises here.
+            raise ValueError("unpicklable stored value for %s" % key)
         return self.store.get(key, default)
 
     def add(self, key, value, timeout=None, version=None):
@@ -152,6 +175,10 @@ class _InMemoryWrappedCache:
         return existed
 
     def get_many(self, keys, version=None):
+        keys = list(keys)
+        self.get_many_calls.append(keys)
+        if self.raise_on_get.intersection(keys):
+            raise ValueError("unpicklable stored value in bulk read")
         return {key: self.store[key] for key in keys if key in self.store}
 
 
@@ -161,26 +188,53 @@ class MemcachedMultiKeyValueTestCase(unittest.TestCase):
         BaseCache.__init__(self.cache, {})
         self.cache._wrapped_cache = _InMemoryWrappedCache()
         self.cache._value_chunk_size = 128
+        self.cache._max_chunks = 64
+        self.cache._chunk_orphan_ttl = 3600
         if not hasattr(settings, 'CACHE_PREFIX'):
             settings.CACHE_PREFIX = ''
 
+    @property
+    def store(self):
+        return self.cache._wrapped_cache.store
+
+    def chunk_keys_for(self, key):
+        cache_key = self.cache.make_key(key)
+        parsed = self.cache._decode_multikey_metadata(self.store[cache_key])
+        if parsed is None:
+            self.fail("expected '%s' to be stored as chunks" % key)
+        chunk_count, _digest = parsed
+        return self.cache._chunk_keys(self.cache._chunk_prefix(cache_key), chunk_count)
+
     def test_large_value_round_trip_and_delete(self):
+        # Note that the wrapped backend returns None from set() on success, as
+        # Django's does.  Treating that as a failure would break every large
+        # value, so this doubles as a regression test for that contract.
         large_value = {'payload': 'x' * 2048}
 
         self.assertTrue(self.cache.set('huge', large_value))
         self.assertEqual(self.cache.get('huge'), large_value)
 
         cache_key = self.cache.make_key('huge')
-        metadata = self.cache._wrapped_cache.store[cache_key]
-        parsed = self.cache._decode_multikey_metadata(metadata)
-        self.assertIsNotNone(parsed)
-        chunk_prefix, chunk_count = parsed
-        self.assertGreater(chunk_count, 1)
+        self.assertTrue(self.store[cache_key].startswith(MULTIKEY_SENTINEL + MULTIKEY_META_SEPARATOR))
+        self.assertGreater(len(self.chunk_keys_for('huge')), 1)
 
         self.assertTrue(self.cache.delete('huge'))
-        self.assertNotIn(cache_key, self.cache._wrapped_cache.store)
-        for i in range(chunk_count):
-            self.assertNotIn(self.cache._chunk_key(chunk_prefix, i), self.cache._wrapped_cache.store)
+        self.assertNotIn(cache_key, self.store)
+        # The chunks are deliberately left behind: they are unreachable without
+        # the metadata key and expire on their own, which is what lets delete()
+        # stay a single round trip.
+        self.assertEqual(self.cache.get('huge'), None)
+
+    def test_small_value_write_does_not_read_back_first(self):
+        """The set() path is hot enough that an extra GET per write matters."""
+        self.cache._wrapped_cache.get_calls = []
+        self.cache._wrapped_cache.get_many_calls = []
+
+        self.assertTrue(self.cache.set('small', 'ok'))
+        self.assertTrue(self.cache.delete('small'))
+
+        self.assertEqual(self.cache._wrapped_cache.get_calls, [])
+        self.assertEqual(self.cache._wrapped_cache.get_many_calls, [])
 
     def test_get_many_handles_mixed_values(self):
         small_value = 'ok'
@@ -195,35 +249,242 @@ class MemcachedMultiKeyValueTestCase(unittest.TestCase):
         self.assertEqual(result['large'], large_value)
         self.assertNotIn('missing', result)
 
-    def test_overwrite_chunked_value_cleans_old_chunks(self):
-        self.cache._new_chunk_prefix = lambda cache_key: 'MK_old'
+    def test_get_many_resolves_several_chunked_keys_in_one_pass(self):
+        first = {'payload': 'a' * 2048}
+        second = {'payload': 'b' * 3072}
+
+        self.assertTrue(self.cache.set('first', first))
+        self.assertTrue(self.cache.set('second', second))
+
+        self.cache._wrapped_cache.get_many_calls = []
+        result = self.cache.get_many(['first', 'second', 'missing'])
+
+        self.assertEqual(result, {'first': first, 'second': second})
+        # One lookup for the metadata keys, one batched lookup for every chunk.
+        self.assertEqual(len(self.cache._wrapped_cache.get_many_calls), 2)
+
+    def test_overwrite_chunked_value_with_small_value(self):
         self.assertTrue(self.cache.set('huge', {'payload': 'x' * 4096}))
+        stale_chunk_keys = self.chunk_keys_for('huge')
+        self.assertGreater(len(stale_chunk_keys), 1)
 
-        old_chunk_keys = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_old_')]
-        self.assertGreater(len(old_chunk_keys), 1)
-
-        self.cache._new_chunk_prefix = lambda cache_key: 'MK_new'
-        new_value = {'payload': 'y' * 512}
+        new_value = {'payload': 'y' * 8}
         self.assertTrue(self.cache.set('huge', new_value))
         self.assertEqual(self.cache.get('huge'), new_value)
 
-        for key in old_chunk_keys:
-            self.assertNotIn(key, self.cache._wrapped_cache.store)
+    def test_overwrite_chunked_value_reuses_chunk_slots(self):
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 2048}))
+        first_chunk_keys = set(self.chunk_keys_for('huge'))
 
-    def test_partial_chunk_write_failure_keeps_previous_value(self):
-        self.cache._new_chunk_prefix = lambda cache_key: 'MK_prev'
-        previous_value = {'payload': 'z' * 4096}
-        self.assertTrue(self.cache.set('huge', previous_value))
+        replacement = {'payload': 'y' * 2048}
+        self.assertTrue(self.cache.set('huge', replacement))
 
-        self.cache._new_chunk_prefix = lambda cache_key: 'MK_fail'
-        self.cache._wrapped_cache.fail_set_keys.add('MK_fail_1')
+        self.assertEqual(self.cache.get('huge'), replacement)
+        # Chunk keys are derived from the cache key, so a rewrite overwrites in
+        # place instead of accumulating a fresh generation of orphans.
+        self.assertEqual(set(self.chunk_keys_for('huge')), first_chunk_keys)
 
-        failed_value = {'payload': 'w' * 4096}
-        self.assertFalse(self.cache.set('huge', failed_value))
-        self.assertEqual(self.cache.get('huge'), previous_value)
+    def test_missing_chunk_is_treated_as_cache_miss(self):
+        large_value = {'payload': 'x' * 2048}
+        self.assertTrue(self.cache.set('huge', large_value))
 
-        leaked_new_chunks = [key for key in self.cache._wrapped_cache.store.keys() if key.startswith('MK_fail_')]
-        self.assertEqual(leaked_new_chunks, [])
+        # Memcached evicts items independently; drop one chunk to simulate it.
+        del self.store[self.chunk_keys_for('huge')[1]]
+
+        self.assertIsNone(self.cache.get('huge'))
+        self.assertEqual(self.cache.get('huge', 'fallback'), 'fallback')
+        self.assertNotIn('huge', self.cache.get_many(['huge']))
+
+    def test_torn_chunks_are_caught_by_the_digest(self):
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 2048}))
+        chunk_keys = self.chunk_keys_for('huge')
+
+        # Simulate a reader arriving midway through a concurrent overwrite: the
+        # chunk count still matches, but one chunk belongs to a different value.
+        self.store[chunk_keys[1]] = b'!' * len(self.store[chunk_keys[1]])
+
+        self.assertIsNone(self.cache.get('huge'))
+        self.assertNotIn('huge', self.cache.get_many(['huge']))
+
+    def test_failed_chunk_write_still_reads_as_a_cache_miss(self):
+        self.assertTrue(self.cache.set('huge', {'payload': 'z' * 2048}))
+        chunk_keys = self.chunk_keys_for('huge')
+
+        # Django reports nothing, so the write looks like it succeeded and the
+        # metadata ends up pointing at a chunk that was never written.  Writing
+        # chunks in place also means what is left behind is a mix of old and
+        # new.  The reader has to be the thing that catches this.
+        self.cache._wrapped_cache.fail_set_keys.add(chunk_keys[1])
+        self.cache.set('huge', {'payload': 'w' * 2048})
+
+        self.assertIsNone(self.cache.get('huge'))
+        self.assertNotIn('huge', self.cache.get_many(['huge']))
+
+    def test_metadata_write_failure_leaves_a_cache_miss(self):
+        cache_key = self.cache.make_key('huge')
+        self.assertTrue(self.cache.set('huge', 'small original'))
+
+        self.cache._wrapped_cache.fail_set_keys.add(cache_key)
+        self.cache.set('huge', {'payload': 'x' * 2048})
+
+        # Django deletes the key when the underlying set fails, so the previous
+        # value is gone too.  A miss is correct; stale data would not be.
+        self.assertNotIn(cache_key, self.store)
+        self.assertIsNone(self.cache.get('huge'))
+
+    def test_oversized_value_is_refused_rather_than_flooding_the_cache(self):
+        self.cache._max_chunks = 2
+        self.assertFalse(self.cache.set('huge', {'payload': 'x' * 4096}))
+
+        self.assertEqual(self.store, {})
+        self.assertIsNone(self.cache.get('huge'))
+
+    def test_add_of_large_value(self):
+        large_value = {'payload': 'x' * 2048}
+
+        self.assertTrue(self.cache.add('huge', large_value))
+        self.assertEqual(self.cache.get('huge'), large_value)
+
+        self.assertFalse(self.cache.add('huge', {'payload': 'y' * 2048}))
+        self.assertEqual(self.cache.get('huge'), large_value)
+
+    def test_sentinel_metadata_is_never_returned_to_the_caller(self):
+        cache_key = self.cache.make_key('huge')
+        separator = MULTIKEY_META_SEPARATOR
+
+        for bogus in (MULTIKEY_SENTINEL + separator + 'garbage',
+                      MULTIKEY_SENTINEL + separator + '0' + separator + 'abc',
+                      # The chunk-prefix-first layout used by an earlier
+                      # revision of this backend.
+                      MULTIKEY_SENTINEL + separator + 'MK_abc' + separator + '5'):
+            self.store[cache_key] = bogus
+            self.assertIsNone(self.cache.get('huge'))
+            self.assertEqual(self.cache.get('huge', 'fallback'), 'fallback')
+            self.assertNotIn('huge', self.cache.get_many(['huge']))
+
+    def test_unreadable_stored_value_degrades_to_a_cache_miss(self):
+        """
+        An unpickle failure used to be retried eight times by try_multi and then
+        surface as a 500.  For a cache the right answer is to miss and let the
+        caller recompute.
+        """
+        self.assertTrue(self.cache.set('poison', 'anything'))
+        self.cache._wrapped_cache.raise_on_get.add(self.cache.make_key('poison'))
+
+        self.assertIsNone(self.cache.get('poison'))
+        self.assertEqual(self.cache.get('poison', 'fallback'), 'fallback')
+        self.assertEqual(self.cache.get_many(['poison']), {})
+
+    def test_cached_none_is_distinguishable_from_a_miss_in_get_many(self):
+        self.assertTrue(self.cache.set('nothing', None))
+        self.assertEqual(self.cache.get_many(['nothing', 'missing']), {'nothing': None})
+
+    def test_chunks_are_never_written_without_an_expiry(self):
+        """
+        delete() drops only the metadata key, and shrinking a value strands its
+        tail chunks, so a chunk can outlive the thing that points at it.  With
+        no expiry those orphans would sit in memcached until evicted, so a
+        configured "never expire" must not be inherited by the chunks.
+        """
+        self.cache.default_timeout = None
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 2048}))
+        chunk_keys = self.chunk_keys_for('huge')
+        self.assertGreater(len(chunk_keys), 1)
+
+        for chunk_key in chunk_keys:
+            self.assertEqual(self.cache._wrapped_cache.timeouts[chunk_key],
+                             self.cache._chunk_orphan_ttl,
+                             "chunk %s was written with no expiry" % chunk_key)
+
+    def test_configured_timeout_is_passed_through_to_chunks(self):
+        """A real configured timeout governs the chunks; the floor only
+        applies to "never expire"."""
+        self.cache.default_timeout = 300
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 2048}))
+
+        for chunk_key in self.chunk_keys_for('huge'):
+            self.assertEqual(self.cache._wrapped_cache.timeouts[chunk_key], 300)
+
+    def test_explicit_timeout_is_passed_through_to_chunks(self):
+        self.assertTrue(self.cache.set('huge', {'payload': 'x' * 2048}, timeout=900))
+
+        for chunk_key in self.chunk_keys_for('huge'):
+            self.assertEqual(self.cache._wrapped_cache.timeouts[chunk_key], 900)
+
+
+class MemcachedBackendContractTestCase(unittest.TestCase):
+    """
+    Pins the Django behaviour that esp.utils.memcached_multikey is built on.
+
+    These assertions run against the real ``PyMemcacheCache`` with only its
+    pymemcache client mocked out, so they track the installed Django rather than
+    our beliefs about it.  If an upgrade changes any of them, these tests fail
+    and CacheClass needs revisiting -- that is the point of them.
+    """
+    def backend(self):
+        backend = PyMemcacheCache('127.0.0.1:11211', {})
+        # _cache is a cached_property, so assigning here shadows it and no
+        # connection is ever made.
+        backend._cache = Mock()
+        return backend
+
+    def test_set_reports_nothing_on_success(self):
+        """
+        CacheClass._set_large_value does not check its writes because of this.
+        If this starts returning True, it should check again -- and if it
+        starts returning None only on *failure*, the chunked path would break
+        outright.
+        """
+        backend = self.backend()
+        backend._cache.set.return_value = True
+        self.assertIsNone(backend.set('k', 'v'))
+
+    def test_set_reports_nothing_on_failure_but_clears_the_key(self):
+        """
+        This is what makes an undetectable failed write safe: the key is left
+        empty rather than stale, so readers get a miss, not wrong data.
+        """
+        backend = self.backend()
+        backend._cache.set.return_value = False
+        self.assertIsNone(backend.set('k', 'v'))
+        backend._cache.delete.assert_called_once_with(backend.make_key('k'))
+
+    def test_add_still_reports_success(self):
+        """CacheClass.add relies on this to keep its single-key fast path."""
+        backend = self.backend()
+        backend._cache.add.return_value = True
+        self.assertTrue(backend.add('k', 'v'))
+        backend._cache.add.return_value = False
+        self.assertFalse(backend.add('k', 'v'))
+
+    def test_delete_still_reports_success(self):
+        backend = self.backend()
+        backend._cache.delete.return_value = True
+        self.assertTrue(backend.delete('k'))
+        backend._cache.delete.return_value = False
+        self.assertFalse(backend.delete('k'))
+
+    def test_get_many_answers_in_the_callers_key_space(self):
+        """
+        CacheClass._deserialize_chunk_map looks chunks up by the key it asked
+        for, so get_many must map the prefixed keys back before returning.
+        """
+        backend = self.backend()
+        backend._cache.get_multi.return_value = {backend.make_key('a'): 1}
+        self.assertEqual(backend.get_many(['a']), {'a': 1})
+
+    def test_bytes_are_stored_without_expansion(self):
+        """
+        The whole chunking scheme rests on this: chunks are bytes, and if
+        pymemcache re-serialized them they could outgrow memcached's 1MB item
+        limit and every large value would silently fail to cache.
+        """
+        chunk = os.urandom(DEFAULT_VALUE_CHUNK_SIZE)
+        data, flags = pickle_serde.serialize('k', chunk)
+
+        self.assertEqual(len(data), len(chunk))
+        self.assertLess(len(data), 1024 * 1024)
+        self.assertEqual(pickle_serde.deserialize('k', data, flags), chunk)
 
 
 class TemplateOverrideTest(DjangoTestCase):
