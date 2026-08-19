@@ -405,8 +405,11 @@ margin-bottom: 10px;
     display: inline-block;
     text-align: center;
     padding-left: 0px; 
-    width: 94px; 
-    vertical-align: middle;
+    width: 94px;
+    /* bottom, not middle: middle lands the 22px tabs at a fractional offset
+       (0.5625px low) inside the 22px #cross_link, so the tab bottoms and the
+       .leftedge diagonals render on half-pixels and overhang #body */
+    vertical-align: bottom;
     border-top-right-radius: @rounding_radius;
     text-decoration: none;
     background-repeat: no-repeat;
@@ -528,8 +531,7 @@ font-size: 12px;
 position: absolute;
 top: 9px; right: 48px;
 height: 20px; width: 45px;
-font-size: 1em;
-font-size: 1.3vmin;
+font-size: 10.5px;
 text-decoration: none;
 border-radius: 0px;
 border: none;
@@ -542,7 +544,7 @@ padding-right: 10px;
 #login_arrow1 {
 position: absolute;
 top: 9px; right: 93px;
-height: 1px; width: 0px;
+height: 0px; width: 0px;
 border: 10px solid transparent;
 cursor: pointer;
 }
@@ -550,7 +552,7 @@ cursor: pointer;
 #login_arrow2 {
 position: absolute;
 top: 9px; right: 48px;
-height: 1px; width: 0px;
+height: 0px; width: 0px;
 border: 10px solid transparent;
 cursor: pointer;
 z-index: 1;
@@ -561,8 +563,7 @@ position: absolute;
 top: 9px; right: 4px; 
 line-height: 20px; width: 40px;
 padding-top: 0px; padding-right: 4px;
-font-size: 1em;
-font-size: 1.3vmin;
+font-size: 10.5px;
 text-decoration: none;
 border: none;
 white-space: nowrap;

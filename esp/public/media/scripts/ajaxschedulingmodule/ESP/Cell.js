@@ -82,7 +82,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
 
             if(this.ghostSection) {
                 var color = this.cellBackground(this.ghostSection);
-                if(this.ghostSection.flags.indexOf("Special scheduling needs") !== -1) {
+                if(this.ghostSection.flags.toLowerCase().includes("special scheduling needs")) {
                     this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
                         this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
                 } else {
@@ -103,7 +103,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 this.el.addClass("selected-section");
             }
             var color = this.cellBackground(this.section);
-            if(this.section.flags.indexOf("Special scheduling needs") !== -1) {
+            if(this.section.flags.toLowerCase().includes("special scheduling needs")) {
                 this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
                     this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
             } else {
