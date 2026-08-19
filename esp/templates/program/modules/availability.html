@@ -29,7 +29,9 @@
                     </th></tr>
                     {% endifchanged %}
                     <tr><td nowrap="" class="proposed" onmousedown="Availability.mousedown_event(this);" onmouseover="Availability.mouseover_event(this);" name="{{ time.id }}">
-                      {{ time.slot.short_description }}
+                      <span class="cell-inner">
+                        <span class="avail-icon" aria-hidden="true"></span><span class="avail-text">{{ time.slot.short_description }}</span>
+                      </span>
                     </td></tr>
                   {% endfor %}
                 </tbody>

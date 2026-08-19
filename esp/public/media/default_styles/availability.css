@@ -92,6 +92,37 @@ td.group, table.group {
   text-align: center !important;
 }
 
+.cell-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.avail-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.avail-text {
+  flex: 1;
+  text-align: center;
+}
+
+.proposed .avail-icon {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect x='2' y='2' width='16' height='16' rx='3' ry='3' fill='white' stroke='%23444' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+.canDo .avail-icon, .teaching .avail-icon {
+  /* available, or scheduled to teach */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Crect x='2' y='2' width='16' height='16' rx='3' ry='3' fill='%23333' stroke='%23333' stroke-width='2'/%3E%3Cpath d='M6 10.5l2.5 2.5L14.5 7' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
 .proposed {
   background: #EFEFEF;
 }
