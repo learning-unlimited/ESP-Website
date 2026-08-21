@@ -62,12 +62,11 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
-from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
+
 
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
@@ -1556,6 +1555,8 @@ def manage_docs(request, doc_path=None):
 from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_POST, require_GET
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone
+
 
 def get_program_or_404(request, program_type, program_term):
     from esp.program.models import Program
