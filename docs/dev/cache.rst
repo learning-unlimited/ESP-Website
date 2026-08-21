@@ -196,3 +196,77 @@ although in this case the correct response is to do nothing.)
     getAvailableTimes.depend_on_row(lambda:Resource, lambda resource:
                                         {'program': Program.objects.get(anchor=resource.event.anchor),
                                             'self': resource.user})
+
+
+The Memcached Backend
+---------------------
+
+``esp.utils.memcached_multikey.CacheClass`` is the cache backend configured in
+``CACHES['default']``. It wraps Django's ``PyMemcacheCache`` and adds two things
+on top of it: 1) key shortening and 2) transparent chunking of large values.
+
+Keys
+~~~~
+
+Memcached limits keys to 250 characters. ``make_key`` prefixes each key with
+``CACHE_PREFIX`` and, if the result is still too long, replaces the overflow
+with a SHA-256 hash of the original key.
+
+Large values
+~~~~~~~~~~~~
+
+Memcached also refuses to store any single item larger than 1MB (its ``-I``
+setting). Before chunking existed, a value over that limit simply failed to
+cache, silently, every time it was written.
+
+Values whose pickled form exceeds ``MEMCACHED_MULTIKEY_CHUNK_SIZE`` are now
+split across several keys. The original key holds a small metadata string::
+
+    __ESP_MULTIKEY_V1__:<chunk_count>:<digest>
+
+and the chunks live under keys derived from a hash of the original key. Reads
+fetch the chunks in a single batched ``get_many``, reassemble them, and verify
+the digest before unpickling.
+
+Anything that goes wrong on read is logged and turned into a cache miss,
+forcing the caller to recompute.
+
+Settings
+~~~~~~~~
+
+``MEMCACHED_MULTIKEY_CHUNK_SIZE``
+    Bytes per chunk. Defaults to 900KB, which leaves headroom under memcached's
+    default 1MB item limit. Lower this if memcached runs with a smaller ``-I``.
+
+``MEMCACHED_MULTIKEY_MAX_CHUNKS``
+    Refuse to cache anything needing more chunks than this. Defaults to 16
+    (roughly 14MB). Without a ceiling, one runaway value can evict the entire
+    cache; when the limit is hit the value is not cached and a warning is
+    logged.
+
+``MEMCACHED_MULTIKEY_CHUNK_TTL``
+    Expiry applied to chunks when the configured ``TIMEOUT`` resolves to "never
+    expire". Defaults to 24 hours. Chunks must always expire: ``delete()``
+    removes only the metadata key, and shrinking a value strands its tail
+    chunks, so unreachable chunks would otherwise occupy memcached until
+    evicted.
+
+Operational notes
+~~~~~~~~~~~~~~~~~
+
+Chunking makes it possible to cache values that previously failed outright, so
+memcached will hold more data than before. Check that ``-m`` is large enough --
+the stock Debian default is 64MB, which a handful of multi-megabyte values will
+fill. Watch the ``evictions`` counter after deploying.
+
+Note also that memcached's ``slab_chunk_max`` defaults to 512KB, so a 900KB
+chunk spans two slab chunks and occupies about 1MB of slab space.
+
+Because the metadata format is versioned, mixing old and new code against one
+memcached is unsafe: code without chunking support reads the metadata key and
+hands the raw ``__ESP_MULTIKEY_V1__:...`` string back to its caller. Flush the
+cache (``manage.py flushcache``) when rolling back.
+
+Finally, cached values are pickled, so a Python upgrade or a rename of a cached
+class can invalidate them. Both degrade to cache misses rather than errors, but
+flushing the cache is still the right move after either.
