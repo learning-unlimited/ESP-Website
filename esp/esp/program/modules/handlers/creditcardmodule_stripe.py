@@ -106,7 +106,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 logger.warning(
                     'Could not parse stripe_settings tag for program %s (id=%s). '
                     'Falling back to empty settings.',
-                    self.program.url_base,
+                    self.program.url,
                     self.program.id
                 )
             tag_data = {}
