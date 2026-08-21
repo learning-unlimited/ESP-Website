@@ -282,7 +282,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             timeslots[i]['end'] = timeslots[i]['end'].timetuple()[:6]
 
         return {'timeslots': timeslots}
-    timeslots.cached_function.depend_on_model(Event)
+    timeslots.cached_function.depend_on_row(Event, lambda e: {'prog': e.program} if e.program_id else {})
     timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @aux_call
@@ -878,6 +878,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return moderator_list
     mod_nums.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
     mod_nums.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    mod_nums.depend_on_m2m(ClassSection, 'meeting_times',
+                           lambda sec, event: {'prog': sec.parent_class.parent_program})
     mod_nums.depend_on_model(Tag)
     mod_nums = staticmethod(mod_nums)
 

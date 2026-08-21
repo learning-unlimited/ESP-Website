@@ -1419,6 +1419,10 @@ class Program(models.Model, CustomFormsLinkModel):
     #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event and record.event.name == 'attended')
+    getShirtInfo.depend_on_m2m('program.ClassSubject', 'teachers',
+                               lambda cls, teacher: {'self': cls.parent_program})
+    getShirtInfo.depend_on_row('program.ClassSection',
+                               lambda sec: {'self': sec.parent_class.parent_program})
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')

@@ -614,7 +614,16 @@ class BaseESPUser(object):
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
+    getFullClasses_pretty.depend_on_m2m('program.ClassSubject', 'teachers',
+                                        lambda cls, teacher: {'self': teacher})
+    getFullClasses_pretty.depend_on_row('program.ClassSubject',
+                                        lambda cls: {'program': cls.parent_program})
+    getFullClasses_pretty.depend_on_row('program.StudentRegistration',
+                                        lambda reg: {'program': reg.section.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('program.ClassSection',
+                                        lambda sec: {'program': sec.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('tagdict.Tag', lambda tag: {},
+                                        lambda tag: tag.key == 'nearly_full_threshold')
 
     def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
         if program is None:

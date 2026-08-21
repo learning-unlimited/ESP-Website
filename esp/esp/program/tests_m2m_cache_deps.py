@@ -139,3 +139,45 @@ class PopularClassesCacheDepTest(ProgramFrameworkTest):
         self.assertIsNone(
             self.module.popular_classes(self.program, cache_only=True),
             "popular_classes cache survived a reschedule")
+
+
+class ShirtInfoAndModNumsCacheDepTest(ProgramFrameworkTest):
+    """getShirtInfo and mod_nums read prog.teachers(), which TeacherClassRegModule
+    builds from the ClassSubject.teachers m2m and section statuses, and mod_nums
+    additionally aggregates Count('meeting_times')."""
+
+    def setUp(self):
+        super().setUp(num_students=0, num_teachers=2, classes_per_teacher=1,
+                      sections_per_class=1)
+        self.cls = ClassSubject.objects.filter(parent_program=self.program).first()
+        self.section = self.cls.sections.first()
+        self.json_module = self.program.getModule('JSONDataModule')
+
+    def test_getShirtInfo_follows_teacher_changes(self):
+        self.program.getShirtInfo()
+        self.assertIsNotNone(self.program.getShirtInfo(cache_only=True))
+
+        self.cls.makeTeacher(self.teachers[1])
+
+        self.assertIsNone(self.program.getShirtInfo(cache_only=True),
+                          "adding a teacher must invalidate getShirtInfo")
+
+    def test_getShirtInfo_follows_section_changes(self):
+        self.program.getShirtInfo()
+        self.assertIsNotNone(self.program.getShirtInfo(cache_only=True))
+
+        self.section.status = 5
+        self.section.save()
+
+        self.assertIsNone(self.program.getShirtInfo(cache_only=True),
+                          "a section status change must invalidate getShirtInfo")
+
+    def test_mod_nums_follows_rescheduling(self):
+        from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+        JSONDataModule.mod_nums(self.program)
+        self.assertIsNotNone(JSONDataModule.mod_nums(self.program, cache_only=True))
+
+        self.section.meeting_times.add(self.timeslots[0])
+
+        self.assertIsNone(JSONDataModule.mod_nums(self.program, cache_only=True),
+                          "rescheduling must invalidate mod_nums")

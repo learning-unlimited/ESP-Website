@@ -371,9 +371,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
+                                              lambda e: {'prog': e.program} if e.program_id else {})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
+                                              lambda sec: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
+                                              lambda cls: {'prog': cls.parent_program})
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
