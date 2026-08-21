@@ -8,7 +8,6 @@ invalidations that must still happen.
 from datetime import datetime, timedelta
 
 from esp.cal.models import Event
-from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
 from esp.program.tests import ProgramFrameworkTest
 from esp.tests.factories import make_class, make_program
@@ -98,18 +97,19 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         self.assertIsNone(self.cached_catalog(self.program),
                           "rescheduling must invalidate the catalog")
 
-    def test_new_class_invalidates_its_own_program(self):
+def test_new_class_invalidates_its_own_program(self):
         self.warm_both()
         make_class(program=self.program, teacher=self.teachers[0],
                    title='Brand new class', category=self.categories[0],
                    sections=1, accept=True)
         self.assertIsNone(self.cached_catalog(self.program))
+        self.assertIsNotNone(self.cached_catalog(self.other_program))
 
     def test_deleting_a_class_invalidates_its_own_program(self):
         self.warm_both()
         self.a_class_in(self.program).delete()
         self.assertIsNone(self.cached_catalog(self.program))
-
+        self.assertIsNotNone(self.cached_catalog(self.other_program))
     def test_catalog_contents_are_still_correct_after_invalidation(self):
         """Scoping must not cause a stale catalog to be served."""
         self.warm_both()
