@@ -339,7 +339,6 @@ class Resource(models.Model):
         else:
             return not test_resource.is_taken(False)
     is_available.get_or_create_token(('self',))
-    is_available.get_or_create_token(('timeslot',))
     is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
     is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
 

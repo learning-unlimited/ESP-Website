@@ -1478,8 +1478,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url=f'{program}/{instance}')
         return prog_inst
-    by_prog_inst.get_or_create_token(('program',))
-    by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
+    by_prog_inst.depend_on_row('program.Program', lambda prog: {})
     by_prog_inst = classmethod(by_prog_inst)
 
     def _sibling_discount_get(self):

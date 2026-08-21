@@ -1638,7 +1638,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return result
     get_section.get_or_create_token(('self',))
     get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
-    get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    get_section.depend_on_m2m('program.ClassSection', 'meeting_times',
+                              lambda cs, ev: {'self': cs.parent_class})
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """

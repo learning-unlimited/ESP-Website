@@ -616,7 +616,7 @@ class BaseESPUser(object):
             classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
     getTaughtClassesAll.get_or_create_token(('self',))
-    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
@@ -775,7 +775,7 @@ class BaseESPUser(object):
     getAvailableTimes.get_or_create_token(('self', 'program', 'ignore_classes',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
-                 {'self':self, 'program':program, 'ignore_classes':True})
+                 {'self':self, 'program':program, 'ignore_classes':False})
     getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
