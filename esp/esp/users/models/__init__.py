@@ -566,7 +566,11 @@ class BaseESPUser(object):
             raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
             return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getModeratingSectionsFromProgram.get_or_create_token(('program',))
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                                   lambda sec, event: {'program': sec.parent_class.parent_program})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     def getModeratingTimesFromProgram(self, program, exclude = []):

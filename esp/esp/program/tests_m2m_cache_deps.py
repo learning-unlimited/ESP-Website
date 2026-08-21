@@ -181,3 +181,44 @@ class ShirtInfoAndModNumsCacheDepTest(ProgramFrameworkTest):
 
         self.assertIsNone(JSONDataModule.mod_nums(self.program, cache_only=True),
                           "rescheduling must invalidate mod_nums")
+
+
+class ModeratorCacheDepTest(ProgramFrameworkTest):
+    """Moderator-facing caches read m2m data that post_save cannot see."""
+
+    def setUp(self):
+        super().setUp(num_students=0, num_teachers=1, classes_per_teacher=1,
+                      sections_per_class=1)
+        self.moderator = self.teachers[0]
+        self.section = ClassSubject.objects.filter(
+            parent_program=self.program).first().sections.first()
+        self.section.moderators.add(self.moderator)
+
+    def test_moderating_sections_follows_rescheduling(self):
+        """Results are ordered by Min('meeting_times__start')."""
+        self.moderator.getModeratingSectionsFromProgram(self.program)
+        self.assertIsNotNone(
+            self.moderator.getModeratingSectionsFromProgram(self.program, cache_only=True))
+
+        self.section.meeting_times.add(self.timeslots[0])
+
+        self.assertIsNone(
+            self.moderator.getModeratingSectionsFromProgram(self.program, cache_only=True),
+            "rescheduling must invalidate the moderating-sections cache")
+
+    def test_moderators_json_follows_category_changes(self):
+        """The payload includes rec.class_categories, an m2m on ModeratorRecord."""
+        from esp.program.models import ModeratorRecord
+        from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+
+        rec = ModeratorRecord.objects.create(user=self.moderator, program=self.program,
+                                             will_moderate=True, num_slots=1)
+        JSONDataModule.moderators.method.cached_function(self.program)
+        self.assertIsNotNone(
+            JSONDataModule.moderators.method.cached_function(self.program, cache_only=True))
+
+        rec.class_categories.add(self.categories[0])
+
+        self.assertIsNone(
+            JSONDataModule.moderators.method.cached_function(self.program, cache_only=True),
+            "a moderator category change must invalidate the moderators payload")
