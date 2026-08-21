@@ -371,6 +371,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
+    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
     ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
                                               lambda e: {'prog': e.program} if e.program_id else {})
     ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',

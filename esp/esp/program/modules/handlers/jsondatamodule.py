@@ -562,6 +562,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
+    class_subjects.cached_function.get_or_create_token(('prog',))
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_model('tagdict.Tag')
