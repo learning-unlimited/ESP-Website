@@ -290,8 +290,33 @@ class ClassManager(Manager):
             c.parent_program = p # So that if we set attributes on one instance of the program, they show up for all instances.
 
         return classes
-    catalog_cached.depend_on_model('program.ClassSubject')
-    catalog_cached.depend_on_model('program.ClassSection')
+
+    #   Fall back to {} if there's an exception.
+    @staticmethod
+    def _catalog_key_set(program):
+        return {'program': program} if program is not None else {}
+
+    @staticmethod
+    def _catalog_key_set_for_subject(cls):
+        try:
+            return ClassManager._catalog_key_set(cls.parent_program)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _catalog_key_set_for_section(sec):
+        try:
+            return ClassManager._catalog_key_set(sec.parent_class.parent_program)
+        except Exception:
+            return {}
+
+    catalog_cached.get_or_create_token(('program',))
+    catalog_cached.depend_on_row('program.ClassSubject',
+                                 lambda cls: ClassManager._catalog_key_set_for_subject(cls))
+    catalog_cached.depend_on_row('program.ClassSection',
+                                 lambda sec: ClassManager._catalog_key_set_for_section(sec))
+    catalog_cached.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                 lambda sec, event: ClassManager._catalog_key_set_for_section(sec))
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 
