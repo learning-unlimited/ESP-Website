@@ -196,7 +196,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             m['availability'] = avail_lookup.get(m['id'], [])
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
-    moderators.method.cached_function.depend_on_model(ModeratorRecord)
+    moderators.method.cached_function.depend_on_row(ModeratorRecord,
+                                                    lambda rec: {'prog': rec.program})
+    moderators.method.cached_function.depend_on_m2m(ModeratorRecord, 'class_categories',
+                                                    lambda rec, cat: {'prog': rec.program})
     moderators.method.cached_function.depend_on_model(UserAvailability)
 
     @aux_call
