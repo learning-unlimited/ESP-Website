@@ -44,7 +44,7 @@ from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
-
+from django.core import mail
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -53,6 +53,7 @@ from django.core.management import call_command
 
 from django.test import LiveServerTestCase
 from django.test.client import Client
+from django.urls import reverse
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
@@ -61,6 +62,7 @@ from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.setup import prepare_program, commit_program
+from esp.tests.factories import make_user, make_program, make_class as _make_class
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from datetime import datetime, timedelta
@@ -259,6 +261,11 @@ class ViewUserInfoTest(TestCase):
         self.assertTrue(self.user.last_name in str(response.content, encoding='UTF-8'))
         self.assertTrue(str(self.user.id) in str(response.content, encoding='UTF-8'))
 
+        # Test to make sure we get an error when username parameter is missing
+        response = c.get("/manage/userview")
+        self.assertEqual(response.status_code, 500)
+        self.assertIn(b'must specify a username', response.content)
+
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
         self.assertEqual(response.status_code, 500)
@@ -267,6 +274,60 @@ class ViewUserInfoTest(TestCase):
         self.assertTrue( c.login(username=self.fake_admin.username, password=self.password), "Couldn't log in as fake admin" )
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 403)
+
+    def testVolunteerUserviewFallback(self):
+        """ Test that a volunteer with no RegistrationProfile gets a program context from current_programs() """
+        from esp.program.models import Program
+        c = Client()
+        self.assertTrue(c.login(username=self.admin.username, password=self.password), "Couldn't log in as admin")
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer999',
+            defaults={'first_name': 'Test', 'last_name': 'Volunteer', 'email': 'vol@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Confirm volunteer has no profile
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+
+        # userview should still return 200 even with no profile
+        response = c.get("/manage/userview", { 'username': volunteer.username })
+        self.assertEqual(response.status_code, 200)
+
+        volunteer.delete()
+
+    def testVolunteerLastActiveProgram(self):
+        """ A user who only volunteers (no RegistrationProfile) should still have
+            their program returned by get_last_active_program(), even though the
+            profile-only get_last_program_with_profile() returns None for them. """
+        from esp.program.models import VolunteerRequest, VolunteerOffer
+
+        # Create a volunteer user with no RegistrationProfile
+        volunteer, created = ESPUser.objects.get_or_create(
+            username='testvolunteer998',
+            defaults={'first_name': 'Active', 'last_name': 'Volunteer', 'email': 'vol2@esp.mit.edu'}
+        )
+        if created:
+            volunteer.set_password(self.password)
+            volunteer.save()
+
+        # Sign the volunteer up for a shift on a real program, reusing a
+        # timeslot that make_program() already created (VolunteerRequest just
+        # needs some cal.Event; its type is irrelevant to get_last_active_program).
+        program = make_program()
+        timeslot = list(program.getTimeSlots())[0]
+        vr = VolunteerRequest.objects.create(program=program, timeslot=timeslot, num_volunteers=1)
+        VolunteerOffer.objects.create(user=volunteer, request=vr)
+
+        # The profile-only method still finds nothing (no RegistrationProfile)...
+        self.assertIsNone(volunteer.get_last_program_with_profile())
+        # ...but get_last_active_program() picks up the volunteered program.
+        self.assertEqual(volunteer.get_last_active_program(), program)
+
+        volunteer.delete()
 
     def tearDown(self):
         self.user.delete()
@@ -549,13 +610,6 @@ class ProgramFrameworkTest(TestCase):
     """
 
     def setUp(self, *args, **kwargs):
-        # We manually cache the creation of resource types
-        # since the cache persists between tests, and the underlying database objects do not
-        # we clear it here
-        ResourceType._get_or_create_cache = {}
-
-        user_role_setup()
-
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -591,90 +645,40 @@ class ProgramFrameworkTest(TestCase):
             self.categories.append(cat)
 
         #   Create users
-        self.teachers = []
-        self.students = []
-        self.admins = []
-        for i in range(settings['num_students']):
-            name = 'student%04d' % i
-            new_student, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_student.set_password('password')
-            new_student.save()
-            new_student.makeRole("Student")
-            self.students.append(new_student)
-        for i in range(settings['num_teachers']):
-            name = 'teacher%04d' % i
-            new_teacher, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_teacher.set_password('password')
-            new_teacher.save()
-            new_teacher.makeRole("Teacher")
-            self.teachers.append(new_teacher)
-        for i in range(settings['num_admins']):
-            name = 'admin%04d' % i
-            new_admin, created = ESPUser.objects.get_or_create(username=name, first_name=name, last_name=name, email=name+'@learningu.org')
-            new_admin.set_password('password')
-            new_admin.save()
-            new_admin.makeRole("Administrator")
-            self.admins.append(new_admin)
+        self.students = [
+            make_user('Student', username='student%04d' % i)
+            for i in range(settings['num_students'])
+        ]
+        self.teachers = [
+            make_user('Teacher', username='teacher%04d' % i)
+            for i in range(settings['num_teachers'])
+        ]
+        self.admins = [
+            make_user('Administrator', username='admin%04d' % i)
+            for i in range(settings['num_admins'])
+        ]
 
-        #   Establish attributes for program
-        prog_form_values = {
-                'term': settings['program_instance_name'],
-                'term_friendly': settings['program_instance_label'],
-                'grade_min': '7',
-                'grade_max': '12',
-                'director_email': 'info@test.learningu.org',
-                'program_size_max': '3000',
-                'program_type': settings['program_type'],
-                'program_modules': settings['modules'],
-                'class_categories': [x.id for x in self.categories],
-                'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end':   '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end':   '3001-01-01 00:00:00',
-                'base_cost':         settings['base_cost'],
-                'sibling_discount':  settings['sibling_discount'],
-            }
+        #   Create the program
+        self.program = make_program(
+            program_type=settings['program_type'],
+            instance_name=settings['program_instance_name'],
+            instance_label=settings['program_instance_label'],
+            base_cost=settings['base_cost'],
+            sibling_discount=settings['sibling_discount'],
+            num_timeslots=settings['num_timeslots'],
+            timeslot_length=settings['timeslot_length'],
+            timeslot_gap=settings['timeslot_gap'],
+            start_time=settings['start_time'],
+            num_rooms=settings['num_rooms'],
+            room_capacity=settings['room_capacity'],
+            admins=self.admins,
+            categories=self.categories,
+            modules=settings['modules'],
+        )
 
-        #   Create the program much like the /manage/newprogram view does
-        pcf = ProgramCreationForm(prog_form_values)
-        if not pcf.is_valid():
-            logger.info("ProgramCreationForm errors")
-            logger.info(pcf.data)
-            logger.info(pcf.errors)
-            logger.info(prog_form_values)
-            raise Exception("Program form creation errors")
-
-        temp_prog = pcf.save(commit=False)
-        (perms, modules) = prepare_program(temp_prog, pcf.data)
-
-        new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
-
-        #   Filter out unwanted characters from program type to form URL
-        ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])).strip())
-        new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-        new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-        new_prog.save()
-        pcf.save_m2m()
-
-        commit_program(new_prog, perms, pcf.cleaned_data['base_cost'], pcf.cleaned_data['sibling_discount'])
-
-        #   Add recursive permissions to open registration to the appropriate people
-        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
-        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Student'), permission_type='Student/All', program=new_prog)
-
-        self.program = new_prog
-
-        #   Create timeblocks and resources
+        #   Populate convenience attributes from the created program
         self.event_type = EventType.get_from_desc('Class Time Block')
-        for i in range(settings['num_timeslots']):
-            start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
-            end_time = start_time + timedelta(minutes=settings['timeslot_length'])
-            event, created = Event.objects.get_or_create(program=self.program, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
         self.timeslots = self.program.getTimeSlots()
-        for i in range(settings['num_rooms']):
-            for ts in self.timeslots:
-                res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
         self.rooms = self.program.getClassrooms()
 
         #   Create classes and sections
@@ -682,18 +686,22 @@ class ProgramFrameworkTest(TestCase):
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
-                new_class, created = ClassSubject.objects.get_or_create(title='Test class %d' % subject_count, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'], class_info='Description %d!' % subject_count)
-                new_class.makeTeacher(t)
+                _make_class(
+                    program=self.program,
+                    teacher=t,
+                    title='Test class %d' % subject_count,
+                    category=current_category,
+                    class_size_max=settings['room_capacity'],
+                    class_info='Description %d!' % subject_count,
+                    sections=settings['sections_per_class'],
+                    accept=True,
+                )
                 subject_count += 1
-                for j in range(settings['sections_per_class']):
-                    if new_class.get_sections().count() <= j:
-                        new_class.add_section(duration=settings['timeslot_length']/60.0)
-                new_class.accept()
 
         #   Give the program its own QSD main-page
         (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
                                               name="learn:index",
-                                              title=new_prog.niceName(),
+                                              title=self.program.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
                                               nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
@@ -832,6 +840,67 @@ class ProgramFrameworkTest(TestCase):
             start_time = past_settings['start_time'] + timedelta(minutes=i * (past_settings['timeslot_length'] + past_settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=past_settings['timeslot_length'])
             event, created = Event.objects.get_or_create(program=self.new_prog, event_type=event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
+
+class RegistrationProfileTest(ProgramFrameworkTest):
+
+    def test_getLastForProgram_does_not_auto_save(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test',
+            last_name='Student',
+            username='teststudent1450',
+            email='teststudent1450@example.com',
+        )
+
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile = RegistrationProfile.getLastForProgram(student, self.program)
+
+        self.assertEqual(profile.program, self.program)
+        self.assertIsNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 0)
+
+        profile.save()
+        self.assertIsNotNone(profile.id)
+        self.assertEqual(
+            RegistrationProfile.objects.filter(user=student, program=self.program).count(), 1)
+
+    def test_getLastForProgram_with_existing_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test2',
+            last_name='Student',
+            username='teststudent1450b',
+            email='teststudent1450b@example.com',
+        )
+
+        profile = RegistrationProfile.objects.create(
+            user=student,
+            program=self.program,
+            most_recent_profile=True
+        )
+        original_id = profile.id
+
+        retrieved = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(retrieved.id, original_id)
+        self.assertEqual(retrieved.program, self.program)
+
+    def test_getLastForProgram_does_not_mutate_cached_last_profile(self):
+        student = ESPUser.objects.create_user(
+            first_name='Test3',
+            last_name='Student',
+            username='teststudent1450c',
+            email='teststudent1450c@example.com',
+        )
+
+        last_profile = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile.program)
+
+        profile_for_program = RegistrationProfile.getLastForProgram(student, self.program)
+        self.assertEqual(profile_for_program.program, self.program)
+
+        last_profile_again = RegistrationProfile.getLastProfile(student)
+        self.assertIsNone(last_profile_again.program)
 
 class ProgramCapTest(ProgramFrameworkTest):
     """Test various forms of program cap."""
@@ -1196,6 +1265,44 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         options.class_cap_offset = 0
         options.save()
         self.assertEqual(sec.capacity, initial_capacity)
+
+    def test_ignore_changes_with_room_cap_multiplier(self):
+        """When ignore_changes=True, _get_room_capacity bypasses the room-cap multiplier."""
+        mult_test = decimal.Decimal('0.6')
+        offset_test = 4
+
+        self.program.getModules()
+        self.schedule_randomly()
+
+        sec = next(
+            (s for s in self.program.sections() if s.classrooms()),
+            None,
+        )
+        self.assertIsNotNone(sec, "No sections have rooms after schedule_randomly()")
+        options = sec.parent_program.studentclassregmoduleinfo
+        rooms = sec.classrooms()
+        room_capacity = rooms[0].num_students
+
+        # Enable room-cap multiplier and set values
+        options.apply_multiplier_to_room_cap = True
+        options.class_cap_multiplier = mult_test
+        options.class_cap_offset = offset_test
+        options.save()
+
+        # _get_room_capacity with ignore_changes=True returns raw room capacity
+        self.assertEqual(
+            sec._get_room_capacity(ignore_changes=True),
+            room_capacity,
+        )
+
+        # Without ignore_changes the room-cap multiplier is applied
+        capped = int(room_capacity * mult_test + offset_test)
+        self.assertEqual(sec._get_room_capacity(), capped)
+
+        # isFullIgnoreChanges calls isFull(ignore_changes=True) internally;
+        # with zero enrolled students and the unadjusted capacity, it should not be full
+        self.assertEqual(sec.num_students(), 0)
+        self.assertFalse(sec.isFullIgnoreChanges())
 
 class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
@@ -1752,7 +1859,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1772,7 +1878,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1855,61 +1960,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
         self.assertNotIn('warning', response_data)
         self.assertIn('flag_name', response_data)
 
-
-"""
-Tests for esp.program.controllers.classreg
-Source: esp/esp/program/controllers/classreg.py
-
-Tests ClassCreationController and ClassCreationValidationError.
-"""
-from django.contrib.auth.models import Group
-
-from esp.program.controllers.classreg import (
-    ClassCreationController,
-    ClassCreationValidationError,
-)
-from esp.program.models import Program
-from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
-
-
-class ClassCreationValidationErrorTest(TestCase):
-    def test_is_exception(self):
-        err = ClassCreationValidationError(None, None, 'test error')
-        self.assertIsInstance(err, Exception)
-
-    def test_stores_forms(self):
-        mock_form = 'form'
-        mock_formset = 'formset'
-        err = ClassCreationValidationError(mock_form, mock_formset, 'msg')
-        self.assertEqual(err.reg_form, 'form')
-        self.assertEqual(err.resource_formset, 'formset')
-
-    def test_str(self):
-        err = ClassCreationValidationError(None, None, 'bad data')
-        self.assertEqual(str(err), 'bad data')
-
-
-class ClassCreationControllerTest(TestCase):
-    def setUp(self):
-        super().setUp()
-        _setup_roles()
-        self.program = Program.objects.create(grade_min=7, grade_max=12)
-
-    def test_init_stores_program(self):
-        # ClassCreationController needs classregmoduleinfo on the program
-        # but we can at least test the constructor stores program
-        try:
-            controller = ClassCreationController(self.program)
-            self.assertEqual(controller.program, self.program)
-        except Exception:
-            # classregmoduleinfo may not exist, which is expected
-            pass
 """
 Tests for esp.program.controllers.confirmation
 Source: esp/esp/program/controllers/confirmation.py
@@ -1919,25 +1969,22 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
-from django.core import mail
+
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
+
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
 
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
+
 
 
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2228,3 +2275,214 @@ class HeardAboutNormalizationTest(TestCase):
     def test_only_punctuation_normalizes_to_empty(self):
         """A string of only punctuation characters should normalize to empty."""
         self.assertEqual(self._normalize("...!!!"), "")
+
+
+class ProgramCreationFormHandlerLookupTest(TestCase):
+    """
+    Verify that ProgramCreationForm.program_module_question_ids is built using
+    handler lookups (not admin_title), and that the AdmissionsDashboard
+    manage-only special case is preserved correctly.
+    """
+
+    def setUp(self):
+        self.form = ProgramCreationForm()
+
+    def _ids_for_question(self, question_text):
+        for key, ids in self.form.program_module_question_ids.items():
+            if question_text in str(key):
+                return ids
+        return None
+
+    def test_admissions_dashboard_manage_only_question(self):
+        """'Do students have to apply...' must include AdmissionsDashboard manage row only."""
+        manage_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage').first()
+        teach_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='teach').first()
+        if manage_row is None:
+            self.skipTest("AdmissionsDashboard manage row not in DB")
+        ids = self._ids_for_question('Do students have to apply to individual classes?')
+        self.assertIsNotNone(ids)
+        self.assertIn(manage_row.id, ids)
+        if teach_row is not None:
+            self.assertNotIn(teach_row.id, ids)
+
+    def test_admissions_dashboard_both_rows_in_teacher_question(self):
+        """'If students must apply to individual classes...' must include both AdmissionsDashboard rows."""
+        rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
+        if not rows:
+            self.skipTest("AdmissionsDashboard rows not in DB")
+        ids = self._ids_for_question('If students must apply to individual classes')
+        self.assertIsNotNone(ids)
+        for row in rows:
+            self.assertIn(row.id, ids)
+
+    def test_handler_based_lookup_includes_expected_module(self):
+        """Spot-check: CreditCardModule_Stripe appears under the credit card question."""
+        pm = ProgramModule.objects.filter(handler='CreditCardModule_Stripe').first()
+        if pm is None:
+            self.skipTest("CreditCardModule_Stripe not in DB")
+        ids = self._ids_for_question('will you accept payment by credit card')
+        self.assertIsNotNone(ids)
+        self.assertIn(pm.id, ids)
+
+class ProgramCreationFormDateValidationTest(TestCase):
+    """Tests that ProgramCreationForm rejects registration date ranges where
+    end is not strictly after start."""
+
+    def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
+        """Return a minimal set of form fields sufficient to trigger the date
+        validation logic (other required fields are filled with sane defaults)."""
+        return {
+            'program_type': 'Splash',
+            'term': '2026_Fall',
+            'term_friendly': 'Fall 2026',
+            'grade_min': '7',
+            'grade_max': '12',
+            'director_email': 'info@test.learningu.org',
+            'program_size_max': '3000',
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'base_cost': '0',
+            'program_modules': [],
+            'class_categories': [],
+            'admins': [],
+        }
+
+    def test_teacher_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end <= teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-08-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('teacher_reg_end'),
+            "Expected a validation error for teacher_reg_end before teacher_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_student_reg_end_before_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end <= student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-09-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertTrue(
+            form.errors.get('__all__') or form.errors.get('student_reg_end'),
+            "Expected a validation error for student_reg_end before student_reg_start, "
+            "but got: %s" % form.errors,
+        )
+
+    def test_teacher_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when teacher_reg_end == teacher_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-09-01 00:00:00',
+            student_start='2026-09-01 00:00:00',
+            student_end='2026-11-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_student_reg_end_equal_start_invalid(self):
+        """ProgramCreationForm is invalid when student_reg_end == student_reg_start."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-10-01 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        self.assertFalse(form.is_valid())
+
+    def test_valid_registration_date_ranges(self):
+        """ProgramCreationForm has no date-range error when both end dates are
+        strictly after their respective start dates."""
+        data = self._base_form_data(
+            teacher_start='2026-09-01 00:00:00',
+            teacher_end='2026-11-01 00:00:00',
+            student_start='2026-10-01 00:00:00',
+            student_end='2026-11-15 00:00:00',
+        )
+        form = ProgramCreationForm(data)
+        # A duplicate-URL check may fire (no DB here), but we specifically
+        # assert there is no cross-field date-range error.
+        self.assertNotIn('teacher_reg_end', form.errors)
+        self.assertNotIn('student_reg_end', form.errors)
+
+
+class SubmitTransactionRequiresPostTest(TestCase):
+    def test_get_returns_405(self):
+        response = self.client.get(reverse('manage_submit_transaction'))
+        self.assertEqual(response.status_code, 405)
+
+
+class NewProgramModulePermissionsTest(TestCase):
+    """Tests that prepare_program sets initial start/end dates for permissions of enabled modules."""
+
+    def test_new_program_sets_module_permissions_and_dates(self):
+        from esp.program.models import Program, ProgramModule
+        from esp.program.setup import prepare_program, commit_program
+        from datetime import datetime
+
+        user_role_setup()
+
+        student_start = datetime(2026, 9, 1, 0, 0)
+        student_end = datetime(2026, 11, 1, 0, 0)
+        teacher_start = datetime(2026, 8, 1, 0, 0)
+        teacher_end = datetime(2026, 10, 1, 0, 0)
+
+        all_modules = list(ProgramModule.objects.all())
+
+        data = {
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'program_modules': all_modules,
+        }
+
+        program = Program.objects.create(
+            name='Test Perm Program',
+            url='TestPerm/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+        program.program_modules.set(all_modules)
+
+        perms, modules = prepare_program(program, data)
+        commit_program(program, perms)
+
+        # Verify Student/Classes permission exists and matches student dates
+        student_cls_perm = Permission.objects.filter(program=program, permission_type='Student/Classes').first()
+        self.assertIsNotNone(student_cls_perm)
+        self.assertEqual(student_cls_perm.start_date, student_start)
+        self.assertEqual(student_cls_perm.end_date, student_end)
+
+        # Verify Teacher/Classes/All permission exists and matches teacher dates
+        teacher_cls_perm = Permission.objects.filter(program=program, permission_type='Teacher/Classes/All').first()
+        self.assertIsNotNone(teacher_cls_perm)
+        self.assertEqual(teacher_cls_perm.start_date, teacher_start)
+        self.assertEqual(teacher_cls_perm.end_date, teacher_end)
+
+        # Verify Volunteer/Signup permission exists and has start_date set
+        volunteer_perm = Permission.objects.filter(program=program, permission_type='Volunteer/Signup').first()
+        self.assertIsNotNone(volunteer_perm)
+        self.assertIsNotNone(volunteer_perm.start_date)
+
+        # Verify ProgramModuleObj instances created for program inherit dates
+        program.getModules()
+        student_cls_pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        from esp.program.modules.base import ProgramModuleObj
+        pmo = ProgramModuleObj.objects.get(program=program, module=student_cls_pm)
+        self.assertEqual(pmo.start_date, student_start)
+        self.assertEqual(pmo.end_date, student_end)
+

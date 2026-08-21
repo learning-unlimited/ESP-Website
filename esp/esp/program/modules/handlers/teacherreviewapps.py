@@ -38,6 +38,7 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -45,6 +46,7 @@ __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
     doc = """Allows teachers to review student applications for their classes."""
+    permission_types = ('Teacher/AppReview',)
 
     @classmethod
     def module_properties(cls):
@@ -60,7 +62,7 @@ class TeacherReviewApps(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @meets_deadline("/AppReview")
-    @never_cache
+    @method_decorator(never_cache)
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
             cls = ClassSubject.objects.get(id = extra)

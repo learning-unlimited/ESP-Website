@@ -263,7 +263,8 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: lavender;
+    background: var(--bs-secondary-bg, lavender);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
@@ -431,14 +432,15 @@ $j(document).ready(function() {
 }
 #{{ name }}_entries .ui-sortable-handle {
     cursor: move;
-    background: beige;
+    background: var(--bs-secondary-bg, beige);
+    color: var(--bs-emphasis-color, #333);
     padding: 5px;
     border-radius: 10px;
     border: dashed 1px lightgrey;
     margin-bottom: 5px;
 }
 #{{ name }}_entries > .ui-sortable-handle {
-    background: aliceblue;
+    background: var(--bs-tertiary-bg, aliceblue);
 }
 </style>
 """

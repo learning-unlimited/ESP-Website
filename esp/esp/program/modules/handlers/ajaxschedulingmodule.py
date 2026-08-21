@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -71,7 +71,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
             title="Scheduling",
-            category="Logistics",
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
@@ -367,7 +367,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        data = list(prog.lunch_timeslots().values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response

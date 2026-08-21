@@ -40,10 +40,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
+from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
 from django.http import HttpResponseRedirect, Http404
@@ -67,7 +69,83 @@ class CoreModule(object):
     """
     pass
 
-class ProgramModuleObj(models.Model):
+class ProgramModuleObj(ExpirableModel):
+    # Class-level attributes that subclasses can override.
+    # Use immutable defaults to avoid accidental cross-module mutation.
+    always_enabled = False
+    seq_locked = False
+    conflicts_with = ()
+    permission_types = ()
+
+    def get_permission_types(self):
+        """
+        Return a list or tuple of Permission strings from PERMISSION_CHOICES_FLAT
+        associated with this module.
+        Subclasses can override the class attribute `permission_types` or this method.
+        """
+        return self.permission_types
+
+    def sync_permissions(self):
+        """
+        Synchronize this module's start_date and end_date with the backend Permission table
+        for all associated permission_types.
+        Skips synchronization if get_permission_types() returns empty.
+        """
+        perm_types = self.get_permission_types()
+        if not perm_types:
+            return
+
+        tl_to_role = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+        for perm_type in perm_types:
+            role_name = None
+            if perm_type.startswith("Student"):
+                role_name = "Student"
+            elif perm_type.startswith("Teacher"):
+                role_name = "Teacher"
+            elif perm_type.startswith("Volunteer"):
+                role_name = "Volunteer"
+            elif hasattr(self.module, 'module_type') and self.module.module_type in tl_to_role:
+                role_name = tl_to_role[self.module.module_type]
+
+            if not role_name:
+                logger.warning(
+                    "sync_permissions: could not determine role for permission_type=%s (module=%s)",
+                    perm_type,
+                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                )
+                continue
+
+            group = Group.objects.filter(name=role_name).first()
+            if not group:
+                logger.warning(
+                    "sync_permissions: group %s not found; skipping permission_type=%s",
+                    role_name,
+                    perm_type,
+                )
+                continue
+
+            perms = Permission.objects.filter(
+                program=self.program,
+                role=group,
+                permission_type=perm_type,
+                user__isnull=True,
+                user_filter__isnull=True
+            )
+            if perms.exists():
+                perms.update(start_date=self.start_date, end_date=self.end_date)
+            else:
+                Permission.objects.create(
+                    program=self.program,
+                    role=group,
+                    permission_type=perm_type,
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                    user=None,
+                    user_filter=None
+                )
+
+    start_date = models.DateTimeField(blank=True, null=True, default=None,
+                                      help_text="If blank, has always started.")
     program  = models.ForeignKey(Program, on_delete=models.CASCADE)
     module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
     seq      = models.IntegerField()
@@ -181,7 +259,8 @@ class ProgramModuleObj(models.Model):
 
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        from esp.program.modules.handlers.regprofilemodule import RegProfileModule
+        from esp.program.modules.handlers.studentregprofilemodule import StudentRegProfileModule
+        from esp.program.modules.handlers.teacherregprofilemodule import TeacherRegProfileModule
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         #   If a "core" module has been found:
@@ -194,7 +273,7 @@ class ProgramModuleObj(models.Model):
                     return _login_redirect(request)
                 for m in moduleobj.findRequiredModules():
                     m.request = request
-                    if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
+                    if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
                     if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
@@ -224,9 +303,37 @@ class ProgramModuleObj(models.Model):
                 BaseModule.seq = old_pmo[0].seq
                 BaseModule.required = old_pmo[0].required
                 BaseModule.required_label = old_pmo[0].required_label
+                BaseModule.start_date = old_pmo[0].start_date
+                BaseModule.end_date = old_pmo[0].end_date
             else:
                 BaseModule.seq = mod.seq
                 BaseModule.required = mod.required
+                # Populate initial start_date and end_date from program permission records
+                try:
+                    handler_cls = mod.getPythonClass()
+                    perm_types = getattr(handler_cls, 'permission_types', ())
+                    if not perm_types and hasattr(handler_cls, 'get_permission_types'):
+                        perm_types = handler_cls.get_permission_types(handler_cls)
+                    if perm_types:
+                        role_by_module_type = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+                        role_name = role_by_module_type.get(getattr(mod, 'module_type', ''))
+                        if role_name:
+                            perm_types = [pt for pt in perm_types if pt.startswith(role_name)] or perm_types
+                        group = Group.objects.filter(name=role_name).first() if role_name else None
+                        perm_qs = Permission.objects.filter(
+                            program=prog,
+                            permission_type__in=perm_types,
+                            user__isnull=True,
+                            user_filter__isnull=True,
+                        )
+                        if group:
+                            perm_qs = perm_qs.filter(role=group)
+                        perm = perm_qs.order_by('id').first()
+                        if perm:
+                            BaseModule.start_date = perm.start_date
+                            BaseModule.end_date = perm.end_date
+                except Exception:
+                    pass
             BaseModule.save()
 
         elif len(BaseModuleList) > 1:
@@ -282,8 +389,8 @@ class ProgramModuleObj(models.Model):
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
                 (self.get_full_path(), title, title)
         else:
-            link = '<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), title, self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
 
         return mark_safe(link)
 
@@ -315,8 +422,8 @@ class ProgramModuleObj(models.Model):
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" onmouseover="updateDocs(\'<p>%s</p>\');"></a><button type="button" class="module_link_large btn btn-default btn-lg"> <div class="module_link_main">%s%s</div></button></a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title, self.module.handler)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
+               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -331,7 +438,13 @@ class ProgramModuleObj(models.Model):
                                        'ListGenModule', 'ResourceModule', 'CommModule',
                                        'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
                                        'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement']
+                                       'SurveyManagement',
+                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
+                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
+                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
+                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
+                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
+                                       'CreditCardViewer']
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""

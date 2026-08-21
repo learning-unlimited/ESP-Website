@@ -152,11 +152,6 @@ class ClassManager(Manager):
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
             catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
-        else:
-            for cls in catalog:
-                for sec in cls.get_sections():
-                    if hasattr(sec, '_count_students'):
-                        del sec._count_students
 
         return catalog
 
@@ -292,8 +287,7 @@ class ClassManager(Manager):
             for s in c._sections:
                 s.parent_class = c
             c._sections.sort(key=lambda s:s.id)
-            c.parent_program = p # So that if we set attributes on one instance of the program,
-                                 # they show up for all instances.
+            c.parent_program = p # So that if we set attributes on one instance of the program, they show up for all instances.
 
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
@@ -335,6 +329,7 @@ class ClassSection(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
+    cancellation_reason = models.TextField(blank=True, null=True)
 
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections', on_delete=models.CASCADE)
 
@@ -373,19 +368,10 @@ class ClassSection(models.Model):
 
     @classmethod
     def prefetch_catalog_data(cls, queryset):
-        """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
-        now = datetime.datetime.now()
-        enrolled_type = RegistrationType.get_map()['Enrolled']
-
-        select = OrderedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))')])
-
-        select_params = [ enrolled_type.id,
-                          now,
-                          now,
-                         ]
-
+        """Take a queryset of ClassSections, prefetch their meeting_times,
+        and cache the resulting Event objects on each section in a sorted
+        internal ``_events`` list for later reuse."""
         sections = queryset.prefetch_related('meeting_times')
-        sections = sections.extra(select=select, select_params=select_params)
         sections = list(sections)
 
         # Now, to combine all of the above:
@@ -441,7 +427,7 @@ class ClassSection(models.Model):
         return self.parent_class.category
     category = property(_get_category)
 
-    def _get_room_capacity(self, rooms = None):
+    def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
         if rooms is None:
             rooms = self.classrooms()
@@ -450,7 +436,7 @@ class ClassSection(models.Model):
         rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
-        if options.apply_multiplier_to_room_cap:
+        if options.apply_multiplier_to_room_cap and not ignore_changes:
             rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
 
         return rc
@@ -477,7 +463,7 @@ class ClassSection(models.Model):
                     ans = self.parent_class.class_size_max
             else:
                 class_max = self.parent_class.class_size_max
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(class_max, room_cap)
 
         #hacky fix for classes with no max size
@@ -488,17 +474,17 @@ class ClassSection(models.Model):
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
             elif self.parent_class.class_size_optimal and len(rooms) != 0:
                 opt = self.parent_class.class_size_optimal
-                room_cap = self._get_room_capacity(rooms)
+                room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
             elif len(rooms) != 0:
-                ans = self._get_room_capacity(rooms)
+                ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0
 
@@ -937,7 +923,7 @@ class ClassSection(models.Model):
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
 
         # check to see if there's a conflict:
-        my_timeslots = self.timeslot_ids()
+        my_timeslots = set(self.timeslot_ids())
         for sec in section_list:
             if sec.parent_class == self.parent_class:
                 return 'You are already signed up for a section of this class!'
@@ -969,6 +955,24 @@ class ClassSection(models.Model):
         # this user *can* add this class!
         return False
 
+    def get_conflicts(self, user):
+        """ Return a list of sections that conflict with this one for the given user. """
+        section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
+        my_timeslots = set(self.timeslot_ids())
+        conflicts = []
+        for sec in section_list:
+            if sec.parent_class == self.parent_class:
+                conflicts.append(sec)
+                continue
+
+            if hasattr(sec, '_timeslot_ids'):
+                timeslot_ids = set(sec._timeslot_ids)
+            else:
+                timeslot_ids = set(sec.timeslot_ids())
+            if my_timeslots.intersection(timeslot_ids):
+                conflicts.append(sec)
+        return conflicts
+
     def conflicts(self, teacher, meeting_times=None):
         """Return a scheduling conflict if one exists, or None."""
         user = teacher
@@ -990,7 +994,7 @@ class ClassSection(models.Model):
         """
         # check if proposed times are the same as the current meeting_times
         current_times = self.meeting_times.all()
-        if all(time in current_times for time in meeting_times):
+        if all(t in current_times for t in meeting_times):
             return False
         # otherwise, check if all teachers are available
         for t in self.teachers:
@@ -1053,15 +1057,13 @@ class ClassSection(models.Model):
     @cache_function
     def num_students(self, verbs=['Enrolled']):
         if verbs == ['Enrolled']:
-            if not hasattr(self, '_count_students'):
-                self._count_students = self.students(verbs).count()
-            return self._count_students
+            return self.enrolled_students
         return self.students(verbs).count()
     num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
     def count_enrolled_students(self):
-        return self.num_students(use_cache=False)
+        return self.students(['Enrolled']).count()
     count_enrolled_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
@@ -1078,7 +1080,7 @@ class ClassSection(models.Model):
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
         if include_lottery_students:
-            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+            student_verbs = ['Enrolled', 'Interested'] + list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         else:
             student_verbs = ['Enrolled']
 
@@ -1158,6 +1160,7 @@ class ClassSection(models.Model):
                 # add a scheduler log entry to make the change occur if anyone currently has the scheduler open
                 prog = self.parent_program
                 prog.getModule("AJAXSchedulingModule").get_change_log(prog).appendScheduling([], "", int(self.id), None)
+            self.cancellation_reason = explanation
             self.status = ClassStatus.CANCELLED
             self.save()
 
@@ -1228,6 +1231,12 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched meeting_times."""
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title())
+
     def isFull(self, ignore_changes=False, webapp=False):
         if len(self.get_meeting_times()) == 0:
             return True
@@ -1270,6 +1279,15 @@ class ClassSection(models.Model):
 
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
+
+    def isFullIgnoreChanges(self, webapp=False):
+        """Return section fullness based on unadjusted/base capacity.
+
+        This bypasses class-cap and room-cap multiplier/offset adjustments.
+        It is used by views like the onsite open class list, where we want to
+        show physically open classes even if registration throttles are active.
+        """
+        return self.isFull(ignore_changes=True, webapp=webapp)
 
     def time_blocks(self):
         return self.friendly_times(raw=True)
@@ -1381,6 +1399,14 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
+        # If the student is no longer enrolled in any classes in this program, remove from the program mailing list
+        if not StudentRegistration.valid_objects(now).filter(
+                user=user,
+                section__parent_class__parent_program=self.parent_program,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
+
     @transaction.atomic
     def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False, webapp=False):
         if prereg_verb is None:
@@ -1390,12 +1416,14 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or fast_force_create or not self.isFull(webapp=webapp):
+        locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
+
+        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
             #    Then, create the registration for this class.
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
+            qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
-                sr = StudentRegistration(user=user, section=self, relationship=rt)
+                sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
                 sr.save()
                 if fast_force_create:
                     ## That's the bare minimum to reg someone; we're done!
@@ -2106,6 +2134,33 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             return eventList[0]
 
+    def start_time_prefetchable(self):
+        """Like ClassSection.start_time_prefetchable, but for subjects.
+
+        Returns the earliest start time across all sections.  If sections
+        and their meeting_times have been prefetched, this will not hit the DB.
+
+        Uses sections.all() instead of get_sections() to preserve Django's
+        prefetch cache (get_sections() adds order_by which can bypass it).
+        """
+        starts = []
+        for section in self.sections.all():
+            st = section.start_time_prefetchable()
+            if st is not None:
+                starts.append(st)
+        return min(starts) if starts else None
+
+    def _sort_key(self):
+        """Return a sort key tuple that works with prefetched data.
+
+        Use as:
+            subjects = qs.prefetch_related('sections__meeting_times')
+            sorted(subjects, key=lambda s: s._sort_key())
+        """
+        start = self.start_time_prefetchable()
+        # Sort None start times before real ones, matching __cmp__ semantics
+        return (start is not None, start or datetime.datetime.min, self.title)
+
     def getArchiveClass(self):
         result = ArchiveClass.objects.filter(original_id=self.id)
         if result.exists():
@@ -2191,14 +2246,35 @@ class ClassCategories(models.Model):
     category = models.TextField(blank=False, help_text='The name of the category')
     symbol = models.CharField(max_length=1, default='Z', blank=False, help_text='A single letter to represent the category', validators = [RegexValidator(r'^[A-Za-z]{1}', 'Must be a single letter.')])
     seq = models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.')
+    is_lunch = models.BooleanField(default=False, help_text='True if this category represents Lunch')
 
     def used_by_classes(self):
         return ClassSubject.objects.filter(category=self).exists()
+
+    @classmethod
+    def get_lunch(cls):
+        """Return the lunch category, or None if none is configured."""
+        return cls.objects.filter(is_lunch=True).first()
+
+    def clean(self):
+        # Enforce the single-lunch-category restriction with a friendly message
+        if self.is_lunch and ClassCategories.objects.filter(
+                is_lunch=True).exclude(pk=self.pk).exists():
+            from django.core.exceptions import ValidationError
+            raise ValidationError(
+                {'is_lunch': 'A lunch category already exists; only one lunch category is allowed.'})
 
     class Meta:
         verbose_name_plural = 'Class categories'
         app_label = 'program'
         db_table = 'program_classcategories'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['is_lunch'],
+                condition=models.Q(is_lunch=True),
+                name='unique_lunch_category',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.category} ({self.symbol})'
