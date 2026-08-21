@@ -158,7 +158,7 @@ class GroupTextModule(ProgramModuleObj):
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
+            raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0
@@ -168,12 +168,8 @@ class GroupTextModule(ProgramModuleObj):
 
         for user in users:
 
-            contactInfo = None
-            try:
-                #   Only get contact info for the actual user (not guardians or emergency contacts)
-                contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
-            except IndexError:
-                pass
+            #   Only get contact info for the actual user (not guardians or emergency contacts)
+            contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).order_by('-id').first()
             if not contactInfo:
                 send_log.append("Could not find contact info for "+str(user))
                 continue

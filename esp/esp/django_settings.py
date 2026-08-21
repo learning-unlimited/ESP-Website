@@ -206,7 +206,6 @@ FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 MIDDLEWARE_GLOBAL = [
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-    ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
@@ -453,3 +452,6 @@ ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Google Maps Embed API key
+GOOGLE_MAPS_EMBED_KEY = ''

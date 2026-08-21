@@ -12,6 +12,9 @@ TagTest::testTagCaching which expects zero queries after caching).
 """
 from esp.settings import *  # noqa: F401, F403
 
+import logging
+logging.getLogger("django.template").setLevel(logging.INFO)
+
 # Faster password hashing for tests only (insecure, do not use in production)
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',

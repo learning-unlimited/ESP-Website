@@ -46,6 +46,7 @@ __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
     doc = """Allows teachers to review student applications for their classes."""
+    permission_types = ('Teacher/AppReview',)
 
     @classmethod
     def module_properties(cls):

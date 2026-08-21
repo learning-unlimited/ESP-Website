@@ -21,15 +21,16 @@ from esp.users.forms.user_reg import ValidHostEmailField
 from esp.users.models import (
     User,
     ESPUser,
+    AnonymousESPUser,
     UserForwarder,
     StudentInfo,
     Permission,
     Record,
     RecordType,
     PersistentQueryFilter,
+    DBList,
 )
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -163,6 +164,41 @@ class ESPUserTest(TestCase):
         refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
 
         self.assertEqual(refreshed, baseline + 1)
+
+    def test_sort_key_normal_user_greater_than_anon(self):
+        anon_user = AnonymousESPUser()
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertGreater(user, anon_user)
+
+    def test_sort_key_alphabetical_order(self):
+        user_m = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_z = ESPUser(username="t2", first_name="Adam", last_name="Zebra")
+        self.assertLess(user_m, user_z)
+
+    def test_sort_key_same_last_name(self):
+        user_s = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_a = ESPUser(username="t2", first_name="Adam", last_name="Michael")
+        self.assertLess(user_a, user_s)
+
+    def test_sort_key_none_name_same_sort_position(self):
+        user1 = ESPUser(username="t1", first_name=None, last_name=None)
+        user2 = ESPUser(username="t2", first_name="", last_name="")
+        self.assertFalse(user1 < user2)
+        self.assertFalse(user2 < user1)
+
+    def test_sort_key_case_insensitive_same_sort_position(self):
+        user_lower = ESPUser(username="t1", first_name="smith", last_name="michael")
+        user_upper = ESPUser(username="t2", first_name="Smith", last_name="Michael")
+        self.assertFalse(user_lower < user_upper)
+        self.assertFalse(user_upper < user_lower)
+
+    def test_sort_key_compare_with_non_user(self):
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertFalse(user == "string") # Django Model.__eq__ returns False, does not raise
+        with self.assertRaises(TypeError): # ordering operators raise TypeError for non-BaseESPUser
+            _ = user > "string"
+        with self.assertRaises(TypeError):
+            _ = user < "string"
 
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
@@ -516,6 +552,112 @@ class AccountCreationTest(TestCase):
         match = re.search(r"\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
         self.assertEqual(match.group("user"), u.username)
         self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+
+    def test_live_email_validation_endpoint(self):
+        original_ask_about_duplicates = Tag._getTag('ask_about_duplicate_accounts')
+        try:
+            Tag.setTag('ask_about_duplicate_accounts', value='true')
+
+            user = ESPUser.objects.create(email='livecheck@example.com')
+            user.makeRole('Teacher')
+
+            taken_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'livecheck@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(taken_response.status_code, 200)
+            taken_payload = json.loads(taken_response.content.decode('utf-8'))
+            self.assertTrue(taken_payload['valid'])
+            self.assertFalse(taken_payload['available'])
+            self.assertTrue(taken_payload['message'])
+
+            no_role_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': '',
+            })
+            self.assertEqual(no_role_response.status_code, 200)
+            no_role_payload = json.loads(no_role_response.content.decode('utf-8'))
+            self.assertTrue(no_role_payload['valid'])
+            self.assertIsNone(no_role_payload['available'])
+            self.assertEqual(no_role_payload['message'], '')
+
+            invalid_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'invalid-email',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(invalid_response.status_code, 200)
+            invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+            self.assertFalse(invalid_payload['valid'])
+            self.assertIsNone(invalid_payload['available'])
+
+            free_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(free_response.status_code, 200)
+            free_payload = json.loads(free_response.content.decode('utf-8'))
+            self.assertTrue(free_payload['valid'])
+            self.assertTrue(free_payload['available'])
+            self.assertEqual(free_payload['message'], '')
+        finally:
+            if original_ask_about_duplicates is None:
+                Tag.unSetTag('ask_about_duplicate_accounts')
+            else:
+                Tag.setTag('ask_about_duplicate_accounts', value=original_ask_about_duplicates)
+
+    def test_live_username_validation_endpoint(self):
+        ESPUser.objects.create(username='AlreadyTaken123', password='password')
+
+        taken_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'AlreadyTaken123',
+        })
+        self.assertEqual(taken_response.status_code, 200)
+        taken_payload = json.loads(taken_response.content.decode('utf-8'))
+        self.assertTrue(taken_payload['valid'])
+        self.assertFalse(taken_payload['available'])
+        self.assertTrue(taken_payload['message'])
+
+        invalid_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'bad*name',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+
+        free_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'FreeName123',
+        })
+        self.assertEqual(free_response.status_code, 200)
+        free_payload = json.loads(free_response.content.decode('utf-8'))
+        self.assertTrue(free_payload['valid'])
+        self.assertTrue(free_payload['available'])
+        self.assertEqual(free_payload['message'], '')
+
+    def test_live_password_validation_endpoint(self):
+        invalid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'short',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+        self.assertTrue(invalid_payload['message'])
+
+        valid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'Str0ng!Pass',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(valid_response.status_code, 200)
+        valid_payload = json.loads(valid_response.content.decode('utf-8'))
+        self.assertTrue(valid_payload['valid'])
+        self.assertTrue(valid_payload['available'])
+        self.assertEqual(valid_payload['message'], '')
 
 from esp.users.models import GradeChangeRequest
 
