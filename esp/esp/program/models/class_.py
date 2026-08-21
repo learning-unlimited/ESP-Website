@@ -317,6 +317,8 @@ class ClassManager(Manager):
                                  lambda sec: ClassManager._catalog_key_set_for_section(sec))
     catalog_cached.depend_on_m2m('program.ClassSection', 'meeting_times',
                                  lambda sec, event: ClassManager._catalog_key_set_for_section(sec))
+    catalog_cached.depend_on_m2m('program.ClassSubject', 'teachers',
+                                 lambda subj, teacher: ClassManager._catalog_key_set_for_subject(subj))
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 

@@ -15,7 +15,7 @@ from esp.tests.factories import make_class, make_program
 
 class CatalogCacheScopeTest(ProgramFrameworkTest):
     def setUp(self):
-        super().setUp(num_students=0, num_teachers=1, classes_per_teacher=1,
+        super().setUp(num_students=0, num_teachers=2, classes_per_teacher=1,
                       sections_per_class=1)
         #   A second, independent program.  Writes to one must not disturb the
         #   other's cached catalog.
@@ -96,6 +96,45 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         self.a_class_in(self.program).sections.first().meeting_times.add(event)
         self.assertIsNone(self.cached_catalog(self.program),
                           "rescheduling must invalidate the catalog")
+
+    def test_adding_a_teacher_invalidates_at_all(self):
+        """The catalog materialises each class's teacher list, so a teacher
+        change must invalidate it.  Adding a teacher is an m2m edit, which does
+        not fire post_save on ClassSubject."""
+        self.warm_both()
+        self.a_class_in(self.program).makeTeacher(self.teachers[1])
+        self.assertIsNone(self.cached_catalog(self.program),
+                          "adding a teacher must invalidate the catalog")
+
+    def test_removing_a_teacher_invalidates_at_all(self):
+        cls = self.a_class_in(self.program)
+        cls.makeTeacher(self.teachers[1])
+        self.warm_both()
+        cls.removeTeacher(self.teachers[1])
+        self.assertIsNone(self.cached_catalog(self.program),
+                          "removing a teacher must invalidate the catalog")
+
+    def test_adding_a_teacher_spares_the_other_program(self):
+        self.warm_both()
+        self.a_class_in(self.program).makeTeacher(self.teachers[1])
+        self.assertIsNotNone(self.cached_catalog(self.other_program))
+
+    def test_catalog_serves_the_updated_teacher_list(self):
+        """The user-visible symptom: get_teachers() on a catalog entry returns
+        the cached _teachers list, so a stale cache shows a stale roster."""
+        cls = self.a_class_in(self.program)
+        self.warm_both()
+
+        before = {t.id for c in ClassSubject.objects.catalog(self.program)
+                  if c.id == cls.id for t in c.get_teachers()}
+        self.assertNotIn(self.teachers[1].id, before)
+
+        cls.makeTeacher(self.teachers[1])
+
+        after = {t.id for c in ClassSubject.objects.catalog(self.program)
+                 if c.id == cls.id for t in c.get_teachers()}
+        self.assertIn(self.teachers[1].id, after,
+                      "catalog served a stale teacher list")
 
     def test_new_class_invalidates_its_own_program(self):
         self.warm_both()
