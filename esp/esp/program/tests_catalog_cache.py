@@ -97,7 +97,7 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         self.assertIsNone(self.cached_catalog(self.program),
                           "rescheduling must invalidate the catalog")
 
-def test_new_class_invalidates_its_own_program(self):
+    def test_new_class_invalidates_its_own_program(self):
         self.warm_both()
         make_class(program=self.program, teacher=self.teachers[0],
                    title='Brand new class', category=self.categories[0],
