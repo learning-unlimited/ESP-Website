@@ -652,6 +652,7 @@ class BaseESPUser(object):
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
+    getTaughtSectionsAll.get_or_create_token(('self',))
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
@@ -667,6 +668,7 @@ class BaseESPUser(object):
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.get_or_create_token(('self', 'program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
@@ -769,6 +771,8 @@ class BaseESPUser(object):
 
         return list(valid_events)
     getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.get_or_create_token(('program',))
+    getAvailableTimes.get_or_create_token(('self', 'program', 'ignore_classes',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
                  {'self':self, 'program':program, 'ignore_classes':True})

@@ -364,6 +364,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'sections': sections, 'teachers': teachers}
+    sections.cached_function.get_or_create_token(('prog',))
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})

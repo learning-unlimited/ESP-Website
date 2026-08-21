@@ -1271,6 +1271,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         modules.sort(key=lambda m: m.seq)
         return modules
+    getModules_cached.get_or_create_token(('self',))
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
     getModules_cached.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
@@ -1297,6 +1298,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def hasModule(self, name):
         """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
         return self.program_modules.filter(handler=name).exists()
+    hasModule.get_or_create_token(('self',))
     hasModule.depend_on_row('program.Program', lambda prog: {'self': prog})
     hasModule.depend_on_model('program.ProgramModule')
     hasModule.depend_on_row('modules.ProgramModuleObj', lambda module: {'self': module.program})
@@ -1473,6 +1475,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url=f'{program}/{instance}')
         return prog_inst
+    by_prog_inst.get_or_create_token(('program',))
     by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
     by_prog_inst = classmethod(by_prog_inst)
 
@@ -1702,6 +1705,7 @@ class RegistrationProfile(models.Model):
     # We can fall back to the user's latest profile from another program when a
     # program-specific profile does not exist, so cache invalidation must depend
     # on any profile for the user (not just the exact (user, program) pair).
+    getLastForProgram.get_or_create_token(('user',))
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)

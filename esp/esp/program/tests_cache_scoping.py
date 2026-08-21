@@ -235,3 +235,56 @@ class FullClassesEnrolmentDepTest(TwoProgramCacheTest):
 
         self.assertIsNone(self.cached(self.program),
                           "a capacity change must invalidate the entry")
+
+
+class TagCacheScopeTest(ProgramFrameworkTest):
+    """_getTag(cls, key, default, target) is keyed by (key, target) but had no
+    matching token, so any tag write dumped every cached tag lookup."""
+
+    def setUp(self):
+        super().setUp(num_students=0, num_teachers=0, classes_per_teacher=0)
+        from esp.tagdict.models import Tag
+        self.Tag = Tag
+        Tag.setTag('cache_scope_a', value='1')
+        Tag.setTag('cache_scope_b', value='1')
+
+    def cached(self, key):
+        return self.Tag._getTag(key, cache_only=True)
+
+    def test_writing_one_tag_spares_other_tags(self):
+        self.Tag._getTag('cache_scope_a')
+        self.Tag._getTag('cache_scope_b')
+        self.assertIsNotNone(self.cached('cache_scope_a'))
+        self.assertIsNotNone(self.cached('cache_scope_b'))
+
+        self.Tag.setTag('cache_scope_a', value='2')
+
+        self.assertIsNone(self.cached('cache_scope_a'),
+                          "the written tag should be invalidated")
+        self.assertIsNotNone(self.cached('cache_scope_b'),
+                             "an unrelated tag's lookup should survive")
+
+
+class NumStudentsCacheScopeTest(ProgramFrameworkTest):
+    """num_students(self, verbs) is keyed by section; without a token any
+    registration dumped the count for every section."""
+
+    def setUp(self):
+        super().setUp(num_students=1, num_teachers=2, classes_per_teacher=1,
+                      sections_per_class=1)
+        secs = [c.sections.first() for c in
+                ClassSubject.objects.filter(parent_program=self.program)]
+        self.sec_a, self.sec_b = secs[0], secs[1]
+
+    def test_enrolling_in_one_section_spares_the_other(self):
+        self.sec_a.num_students()
+        self.sec_b.num_students()
+        self.assertIsNotNone(self.sec_a.num_students(cache_only=True))
+        self.assertIsNotNone(self.sec_b.num_students(cache_only=True))
+
+        self.sec_a.preregister_student(self.students[0], overridefull=True)
+
+        self.assertIsNone(self.sec_a.num_students(cache_only=True),
+                          "the enrolled section's count should be invalidated")
+        self.assertIsNotNone(self.sec_b.num_students(cache_only=True),
+                             "an unrelated section's count should survive")

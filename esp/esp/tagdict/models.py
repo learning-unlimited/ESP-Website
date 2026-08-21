@@ -119,6 +119,7 @@ class Tag(models.Model):
             if 'does not exist' in err or 'no such table' in err:
                 return default
             raise
+    _getTag.get_or_create_token(('key', 'target',))
     _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
     _getTag = classmethod(_getTag)
 
