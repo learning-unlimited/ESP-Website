@@ -44,7 +44,6 @@ from django.template.defaultfilters import slugify
 from django.utils import timezone  # add timezone from local_settings.py in labels
 
 from esp.accounting.controllers import ProgramAccountingController
-from esp.cal.models import Event
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, main_call, aux_call
@@ -175,7 +174,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                           ('TeacherQuizModule', "Set up the teacher logistics quiz", "/customforms/", Tag.getProgramTag('quiz_form_id', self.program)),
                           ('TeacherCustomFormModule', "Set up the teacher custom form", "/customforms/", Tag.getProgramTag('teach_extraform_id', self.program)),
                           ('StudentCustomFormModule', "Set up the student custom form", "/customforms/", Tag.getProgramTag('learn_extraform_id', self.program)),
-                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').exists()),
+                          ('StudentLunchSelection', "Set up multiple lunch periods", '/manage/' + self.program.url + '/lunch_constraints', self.program.lunch_timeslots().exists()),
                          ] # (handler, setup title, setup path, isCompleted)
         extra_steps = [step for step in required_steps if prog.hasModule(step[0])]
         optional_steps = [
@@ -760,7 +759,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.save()
             # Override some settings that shouldn't be changed
             # Profile modules should always be required and always first
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "RegProfileModule")
+            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"])
             for pmo in pmos:
                 pmo.seq = 0
                 pmo.required = True
@@ -807,7 +806,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         for mod in learn_modules + teach_modules:
             handler = mod.module.handler
             required_locked = (
-                handler == 'RegProfileModule' or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                 handler == 'AvailabilityModule' or
                 'AcknowledgementModule' in handler or
                 handler == 'StudentRegTwoPhase'
@@ -817,7 +816,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 handler == 'StudentRegConfirm'
             )
             position_locked = (
-                handler == 'RegProfileModule' or
+                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                 'CreditCardModule_' in handler or
                 handler == 'StudentRegConfirm'
             )
