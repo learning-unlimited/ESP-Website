@@ -198,6 +198,144 @@ although in this case the correct response is to do nothing.)
                                             'self': resource.user})
 
 
+Writing cache dependencies
+--------------------------
+
+Getting the dependencies right is the hard part of using ``@cache_function``.
+Too few dependencies and the site serves stale data, too many and the cache
+is thrown away so often it stops helping.
+
+A checklist
+~~~~~~~~~~~
+
+#. List every model, field, and relation the function body reads. This includes
+   anything reached through a property or a helper it calls.
+#. Declare a dependency for each one.
+#. Choose a key set: which of the function's *arguments* does this change
+   affect?
+#. If the key set names only some of the arguments, add a matching token.
+#. Ideally, write a test that asserts invalidation happens, *and* one that
+   asserts an unrelated key survives.
+
+A key set without a token does nothing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the trap that catches people most often. Writing a scoped key set is
+not enough::
+
+    # getFullClasses_pretty(self, program) -- two arguments
+    getFullClasses_pretty.depend_on_row('program.ClassSubject',
+                                        lambda cls: {'program': cls.parent_program})
+
+The key set names ``program`` but not ``self``, so it identifies a *set* of
+cache entries rather than one entry. argcache needs a ``Token`` to delete a set
+like that. Without one it falls back to the token every cache has (the one
+that deletes everything) and the key set has no effect at all.
+
+Declare the token explicitly::
+
+    getFullClasses_pretty.get_or_create_token(('program',))
+
+The exception is a key set that names *every* argument. That identifies exactly
+one entry, so argcache deletes it directly and no token is needed. This is why
+``timeslots(prog)`` works with just ``{'prog': ...}`` and no token, while
+``ajax_lunch_timeslots_cached(self, prog)`` needs a ``('prog',)`` token.
+
+Each key set needs its own token
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Tokens cover key sets, not functions. A cache with one dependency keyed on
+``{'self': ...}`` and another keyed on ``{'program': ...}`` needs *two* tokens.
+A single ``('self', 'program')`` token covers neither, because it describes key
+sets that specify both at once.
+
+``depend_on_model`` dumps the whole cache
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``depend_on_model(Model)`` with no key set discards every entry in the cache
+whenever any row of that model changes. That is sometimes correct: global
+configuration models such as ``ProgramModule``, ``RegistrationType`` and
+``ClassFlagType`` have no per-program rows, so any change really can affect
+every program.
+
+It is wrong when the model *does* map to something the cache is keyed on. Use
+``depend_on_row`` with a selector instead::
+
+    getTimeSlotList.depend_on_row('cal.Event',
+                                  lambda e: {'self': e.program} if e.program_id else {})
+
+Note that one wildcard dependency undoes the scoping of every other dependency
+on the same cache. A cache is only as narrowly invalidated as its loosest
+dependency.
+
+Many-to-many changes do not trigger depend_on_row/depend_on_model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the cached value depends on a many-to-many relation, you need ``depend_on_m2m``::
+
+    catalog_cached.depend_on_m2m('program.ClassSubject', 'teachers',
+                                 lambda subj, teacher: {'program': subj.parent_program})
+
+This is easy to miss because the relation is often read indirectly. The catalog
+orders classes by their sections' meeting times, so rescheduling a class would otherwise change
+the catalog without invalidating it's cache.
+
+Selectors must not raise
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+argcache does not guard against exceptions in selectors. Where a selector
+traverses relations that might be missing, catch broadly and return ``{}``:
+over-invalidating costs a rebuild, under-invalidating serves wrong data.
+
+Nullable foreign keys need a fallback
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``Event.program`` and ``ResourceType.program`` are nullable. Returning
+``{'prog': None}`` produces a key that matches nothing, so the real entries are
+never invalidated. Fall back to ``{}`` instead::
+
+    lambda e: {'prog': e.program} if e.program_id else {}
+
+Prefer depend_on_cache over repeating yourself
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If your function calls another cached function, depend on that cache rather than
+re-declaring its dependencies. The coverage is transitive and stays correct when
+the inner function changes. ``jsondatamodule.sections`` does this for
+``get_teachers``, ``friendly_times`` and ``_get_capacity``.
+
+Time-based caches need no dependencies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``@cache_function_for(seconds)`` expires on a timer and ignores dependencies
+entirely. Bounded staleness is the design, so do not add dependencies to one.
+
+Testing invalidation
+~~~~~~~~~~~~~~~~~~~~
+
+Cached functions accept ``cache_only=True``, which returns ``None`` on a miss.
+That is the hook for asserting on cache state directly, rather than trying to
+construct a value that visibly changes::
+
+    program.getTimeSlotList()                                    # warm
+    assert program.getTimeSlotList(cache_only=True) is not None
+    Event.objects.create(program=program, ...)
+    assert program.getTimeSlotList(cache_only=True) is None      # invalidated
+
+Always assert both directions. A test that only checks "the cache was cleared"
+passes just as well against a wildcard dependency, so it cannot tell you whether
+your scoping works. Warm two programs, write to one, and assert the other
+survives. Then confirm the test actually fails without your change -- a
+dependency test that passes either way is telling you nothing.
+
+For views decorated with ``@cached_module_view`` the cache object hangs off the
+wrapper, but the attribute path depends on the other decorators: some are
+reached as ``view.cached_function``, others as ``view.method.cached_function``.
+Follow whatever the function's own dependency declarations use.
+
+See ``esp/esp/program/tests_cache_scoping.py`` and
+``esp/esp/program/tests_m2m_cache_deps.py`` for worked examples.
+
 The Memcached Backend
 ---------------------
 
