@@ -368,7 +368,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
-    sections.cached_function.depend_on_model(UserAvailability)
+    sections.cached_function.depend_on_row(UserAvailability,
+        lambda ua: {'prog': ua.event.program} if ua.event.program_id else {})
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from argcache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
@@ -445,8 +446,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'sections': sections, 'teachers': teachers}
     sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
-    sections_admin.method.cached_function.depend_on_model(ResourceRequest)
-    sections_admin.method.cached_function.depend_on_model(ClassFlag)
+    sections_admin.method.cached_function.get_or_create_token(('prog',))
+    sections_admin.method.cached_function.depend_on_row(ResourceRequest,
+        lambda rr: {'prog': rr.target.parent_class.parent_program} if rr.target_id
+              else {'prog': rr.target_subj.parent_program} if rr.target_subj_id else {})
+    sections_admin.method.cached_function.depend_on_row(ClassFlag,
+        lambda cf: {'prog': cf.subject.parent_program})
 
     @aux_call
     @json_response({
@@ -482,7 +487,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'timeslot_sections': section_ids,
                 'timeslot_subjects': subject_ids}
-    classes_timeslot.cached_function.depend_on_model(Event)
+    classes_timeslot.cached_function.get_or_create_token(('prog',))
+    classes_timeslot.cached_function.depend_on_row(Event, lambda e: {'prog': e.program} if e.program_id else {})
     classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
 
     @aux_call
@@ -690,8 +696,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         }
 
         return {return_key: [return_dict]}
-    class_info.cached_function.depend_on_model(ClassSubject)
-    class_info.cached_function.depend_on_model(ClassSection)
+    class_info.cached_function.get_or_create_token(('prog',))
+    class_info.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+    class_info.cached_function.depend_on_row(ClassSection,
+        lambda sec: {'prog': sec.parent_class.parent_program})
 
     @aux_call
     @no_auth

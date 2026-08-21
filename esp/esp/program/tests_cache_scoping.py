@@ -288,3 +288,68 @@ class NumStudentsCacheScopeTest(ProgramFrameworkTest):
                           "the enrolled section's count should be invalidated")
         self.assertIsNotNone(self.sec_b.num_students(cache_only=True),
                              "an unrelated section's count should survive")
+
+
+class WildcardScopingTest(TwoProgramCacheTest):
+    """Caches whose depend_on_model wildcards were narrowed to the program that
+    actually changed.  Each model reached here has a real path to a Program."""
+
+    def test_getTimeSlotList_scoped_by_program(self):
+        self.program.getTimeSlotList()
+        self.program_b.getTimeSlotList()
+        self.assertIsNotNone(self.program.getTimeSlotList(cache_only=True))
+        self.assertIsNotNone(self.program_b.getTimeSlotList(cache_only=True))
+
+        Event.objects.create(
+            program=self.program, event_type=self.event_type,
+            start=datetime(2222, 7, 12, 9, 0), end=datetime(2222, 7, 12, 10, 0),
+            name='A slot', short_description='a', description='slot in A')
+
+        self.assertIsNone(self.program.getTimeSlotList(cache_only=True))
+        self.assertIsNotNone(self.program_b.getTimeSlotList(cache_only=True),
+                             "program B's timeslot list should survive")
+
+    def test_getTimeSlotList_global_event_still_dumps_everything(self):
+        """Event.program is nullable; a global event must invalidate broadly."""
+        self.program.getTimeSlotList()
+        self.program_b.getTimeSlotList()
+
+        Event.objects.create(
+            program=None, event_type=self.event_type,
+            start=datetime(2222, 7, 13, 9, 0), end=datetime(2222, 7, 13, 10, 0),
+            name='global', short_description='g', description='global event')
+
+        self.assertIsNone(self.program.getTimeSlotList(cache_only=True))
+        self.assertIsNone(self.program_b.getTimeSlotList(cache_only=True))
+
+    def test_getResourceTypes_scoped_by_program(self):
+        from esp.resources.models import ResourceType
+        self.program.getResourceTypes()
+        self.program_b.getResourceTypes()
+        self.assertIsNotNone(self.program.getResourceTypes(cache_only=True))
+        self.assertIsNotNone(self.program_b.getResourceTypes(cache_only=True))
+
+        ResourceType.objects.create(name='Projector A', program=self.program)
+
+        self.assertIsNone(self.program.getResourceTypes(cache_only=True))
+        self.assertIsNotNone(self.program_b.getResourceTypes(cache_only=True),
+                             "program B's resource types should survive")
+
+    def test_classes_timeslot_scoped_by_program(self):
+        from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+        cf = JSONDataModule.classes_timeslot.cached_function
+        #   `extra` is a timeslot id, so each program is keyed on its own slot.
+        ts_a = str(self.timeslots[0].id)
+        ts_b = str(self.program_b.getTimeSlots()[0].id)
+        cf(ts_a, self.program); cf(ts_b, self.program_b)
+        self.assertIsNotNone(cf(ts_a, self.program, cache_only=True))
+        self.assertIsNotNone(cf(ts_b, self.program_b, cache_only=True))
+
+        Event.objects.create(
+            program=self.program, event_type=self.event_type,
+            start=datetime(2222, 7, 14, 9, 0), end=datetime(2222, 7, 14, 10, 0),
+            name='A slot 2', short_description='a2', description='another slot in A')
+
+        self.assertIsNone(cf(ts_a, self.program, cache_only=True))
+        self.assertIsNotNone(cf(ts_b, self.program_b, cache_only=True),
+                             "program B's classes_timeslot should survive")

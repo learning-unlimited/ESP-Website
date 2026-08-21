@@ -995,7 +995,8 @@ class Program(models.Model, CustomFormsLinkModel):
             return list(self.getTimeSlots(exclude_types=[]))
         else:
             return list(self.getTimeSlots())
-    getTimeSlotList.depend_on_model('cal.Event')
+    getTimeSlotList.get_or_create_token(('self',))
+    getTimeSlotList.depend_on_row('cal.Event', lambda e: {'self': e.program} if e.program_id else {})
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -1131,7 +1132,9 @@ class Program(models.Model, CustomFormsLinkModel):
             Q_filters = Q(program=self)
 
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
-    getResourceTypes.depend_on_model('resources.ResourceType')
+    getResourceTypes.get_or_create_token(('self',))
+    getResourceTypes.depend_on_row('resources.ResourceType',
+                                   lambda rt: {'self': rt.program} if rt.program_id else {})
     getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
