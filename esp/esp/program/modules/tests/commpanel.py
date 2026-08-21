@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from unittest.mock import MagicMock
 
-from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
+from esp.program.modules.handlers.commmodule import CommModule, _make_image_urls_absolute
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
@@ -74,6 +74,10 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         # Get and remember the instance of this module
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
+
+    def test_missing_filter_id_returns_warning(self):
+        warnings = CommModule.get_mailer_warnings(10, 999999, '')
+        self.assertTrue(any('no longer valid' in warning for warning in warnings))
 
     def test_basic_comm_flow(self):
         #   Log in an administrator
@@ -228,3 +232,9 @@ class MakeImageUrlsAbsoluteTest(SimpleTestCase):
 
     def test_empty_body(self):
         self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')
+
+
+class MailerWarningsStaleFilterTest(SimpleTestCase):
+    def test_non_integer_filter_id_returns_warning(self):
+        warnings = CommModule.get_mailer_warnings(10, 'not-an-id', '')
+        self.assertTrue(any('no longer valid' in warning for warning in warnings))
