@@ -507,6 +507,8 @@ class ClassSection(models.Model):
     _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
     _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
     _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
+    _get_capacity.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges',
+                                lambda subj, csr: {})
 
 
     capacity = property(_get_capacity)

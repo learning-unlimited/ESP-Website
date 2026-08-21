@@ -885,6 +885,8 @@ class BaseESPUser(object):
             else:
                 return sections[0].meeting_times.order_by('start')[0]
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                    lambda sec, event: {'program': sec.parent_class.parent_program})
 
     def can_skip_phase_zero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
