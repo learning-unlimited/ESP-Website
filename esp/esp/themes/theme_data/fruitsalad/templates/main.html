@@ -90,7 +90,7 @@ var currentPrograms = [
 var debug = {{ settings.DEBUG|yesno:"true,false" }};
 </script>
 <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
-    <div id="page" class="{{ request.path|extract_theme }}">
+    <div id="page" class="{{ request.path|extract_theme }} {% block page_width %}{% endblock %}">
     <div id="tab_sidebar">
       <ul id="menu">
       <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png?v={{ current_logo_version }}" /></a></li>

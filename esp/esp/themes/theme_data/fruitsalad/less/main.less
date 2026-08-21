@@ -288,8 +288,12 @@ margin: 40px auto;
 width: 730px;
 }
 
+#page.fluid-width {
+width: 80%;
+min-width: 730px;
+}
+
 #header {
-width: 640px;
 height: 106px;
 position: relative;
 }
@@ -298,7 +302,8 @@ position: relative;
     line-height: normal;
     font-size: 13px;
 
-    width: 640px;
+    width: ~"calc(100% - 130px)";
+    min-width: 640px;
     margin-left: 130px;
     position: relative;
     border-bottom-left-radius: @rounding_radius; 
@@ -585,7 +590,7 @@ text-decoration: underline;
  * Content
  */
 #page_main {
-width: 600px;
+width: ~"calc(100% - 40px)";
 margin: 0px auto;
 position: relative;
 background: @contentBackground;
@@ -593,7 +598,6 @@ border-radius: @rounding_radius;
 }
 
 #content {
-width: 560px;
 padding: 20px 20px 10px;
 margin: 0px auto;
 min-height: 400px;
@@ -616,7 +620,6 @@ font-variant: small-caps;
 margin: 0; padding: 0 10px;
 line-height: 35px;
 //height: 35px;
-width: 580px;
 background: #ccc;
 position: relative;
 }
