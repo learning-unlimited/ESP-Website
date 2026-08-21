@@ -781,6 +781,182 @@ $j(document).ready(function() {
             if ($addDrawer.hasClass('active')) {
                 closeAddDrawer();
             }
+            if ($j('#exportOverlay').hasClass('active')) {
+                closeExportModal();
+            }
+            if ($j('#importOverlay').hasClass('active')) {
+                closeImportModal();
+            }
         }
     });
+
+    // ──────────────────────────────────────────────────────────────
+    // Export Schedule Modal
+    // ──────────────────────────────────────────────────────────────
+    var currentExportData = null;
+
+    window.openExportModal = function() {
+        lastFocusBeforeModal = document.activeElement;
+        $j('#exportOverlay').addClass('active');
+        $j('#exportJsonText').val('Loading schedule template...');
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/export',
+            method: 'GET',
+            success: function(res) {
+                if (res.success) {
+                    currentExportData = res;
+                    $j('#exportJsonText').val(JSON.stringify(res.schedule, null, 2));
+                } else {
+                    $j('#exportJsonText').val('Error loading schedule export.');
+                    showToast('Failed to export schedule.', 'error');
+                }
+            },
+            error: function() {
+                $j('#exportJsonText').val('Network error while exporting schedule.');
+                showToast('Network error while exporting schedule.', 'error');
+            }
+        });
+        setTimeout(function() {
+            safeFocus($j('#exportJsonText'));
+        }, 100);
+    };
+
+    window.closeExportModal = function() {
+        $j('#exportOverlay').removeClass('active');
+        if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+        }
+    };
+
+    window.copyExportData = function() {
+        var text = $j('#exportJsonText').val();
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Schedule JSON copied to clipboard!', 'success');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    };
+
+    function fallbackCopy(text) {
+        var $el = $j('#exportJsonText');
+        if ($el.length && $el.get(0).select) {
+            $el.get(0).select();
+            document.execCommand('copy');
+            showToast('Schedule JSON copied to clipboard!', 'success');
+        }
+    }
+
+    window.downloadExportData = function() {
+        var text = $j('#exportJsonText').val();
+        if (!text) return;
+        var blob = new Blob([text], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (programUrlBase ? programUrlBase.replace('/', '_') : 'program') + '_module_schedule.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Schedule JSON downloaded.', 'success');
+    };
+
+    // ──────────────────────────────────────────────────────────────
+    // Import Schedule Modal
+    // ──────────────────────────────────────────────────────────────
+    window.openImportModal = function() {
+        lastFocusBeforeModal = document.activeElement;
+        $j('#importOverlay').addClass('active');
+        $j('#importJsonText').val('');
+        $j('#importFileInput').val('');
+        
+        var now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        var nowStr = now.toISOString().slice(0, 16);
+        $j('#importStartDate').val(nowStr);
+
+        setTimeout(function() {
+            safeFocus($j('#importStartDate'));
+        }, 100);
+    };
+
+    window.closeImportModal = function() {
+        $j('#importOverlay').removeClass('active');
+        if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+        }
+    };
+
+    window.handleImportFile = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            $j('#importJsonText').val(e.target.result);
+        };
+        reader.readAsText(file);
+    };
+
+    window.applyImportSchedule = function() {
+        var startDateStr = $j('#importStartDate').val();
+        if (!startDateStr) {
+            showToast('Please select a starting date & time.', 'error');
+            return;
+        }
+
+        var jsonRaw = $j('#importJsonText').val();
+        if (!jsonRaw || !jsonRaw.trim()) {
+            showToast('Please upload or paste a valid schedule JSON.', 'error');
+            return;
+        }
+
+        var scheduleData;
+        try {
+            scheduleData = JSON.parse(jsonRaw);
+        } catch (e) {
+            showToast('Invalid JSON syntax in schedule template.', 'error');
+            return;
+        }
+
+        var payload = {
+            target_start_date: startDateStr,
+            schedule: scheduleData
+        };
+
+        var $btn = $j('#btnApplyImport');
+        $btn.prop('disabled', true).text('Importing...');
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/import',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(res) {
+                $btn.prop('disabled', false).text('Apply Schedule');
+                if (res.success) {
+                    showToast('Imported schedule successfully (' + res.updated_count + ' modules updated).', 'success');
+                    closeImportModal();
+                    loadModules();
+                } else {
+                    showToast('Error: ' + (res.error || 'Failed to import schedule.'), 'error');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).text('Apply Schedule');
+                var msg = 'Network error while importing schedule.';
+                try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+                showToast(msg, 'error');
+            }
+        });
+    };
 });
+

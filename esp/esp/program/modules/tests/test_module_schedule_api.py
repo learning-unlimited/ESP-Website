@@ -352,3 +352,85 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 405)
 
+    def test_export_schedule_api(self):
+        """GET to export endpoint returns relative schedule template."""
+        self.client.force_login(self.admin)
+
+        base_start = datetime(2026, 9, 1, 10, 0, 0)
+        base_end = base_start + timedelta(days=14)
+        self.pmo.start_date = base_start
+        self.pmo.end_date = base_end
+        self.pmo.save()
+
+        url = reverse("module_schedule_export_api", kwargs=self.url_kwargs) + f"?anchor={base_start.isoformat()}"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.content)
+        self.assertTrue(data["success"])
+        self.assertIn("anchor_date", data)
+        self.assertIn("schedule", data)
+        modules = data["schedule"]["modules"]
+        self.assertTrue(len(modules) > 0)
+
+        target_item = None
+        for item in modules:
+            if item["handler"] == self.pmo.module.handler:
+                target_item = item
+                break
+
+        self.assertIsNotNone(target_item)
+        self.assertEqual(target_item["start_offset_seconds"], 0)
+        self.assertEqual(target_item["end_offset_seconds"], 14 * 86400)
+
+    def test_import_schedule_api(self):
+        """POST to import endpoint applies relative schedule to target program."""
+        from esp.program.models import Program
+        self.client.force_login(self.admin)
+
+        target_prog = Program.objects.create(
+            url="TargetDev/2027",
+            name="Target Dev 2027",
+            grade_min=7,
+            grade_max=12
+        )
+        target_prog.program_modules.add(self.pmo.module)
+
+        target_kwargs = {
+            'program_type': 'TargetDev',
+            'program_term': '2027'
+        }
+
+        template_payload = {
+            "target_start_date": "2027-04-01T09:00:00",
+            "schedule": {
+                "version": "1.0",
+                "modules": [
+                    {
+                        "handler": self.pmo.module.handler,
+                        "seq": 15,
+                        "required": True,
+                        "link_title": "Imported Title",
+                        "start_offset_seconds": 0,
+                        "end_offset_seconds": 7 * 86400
+                    }
+                ]
+            }
+        }
+
+        url = reverse("module_schedule_import_api", kwargs=target_kwargs)
+        response = self.client.post(url, json.dumps(template_payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+
+        data = json.loads(response.content)
+        self.assertTrue(data["success"])
+        self.assertEqual(data["updated_count"], 1)
+
+        from esp.program.modules.base import ProgramModuleObj
+        target_pmo = ProgramModuleObj.getFromProgModule(target_prog, self.pmo.module)
+        self.assertEqual(target_pmo.start_date, datetime(2027, 4, 1, 9, 0, 0))
+        self.assertEqual(target_pmo.end_date, datetime(2027, 4, 8, 9, 0, 0))
+        self.assertEqual(target_pmo.link_title, "Imported Title")
+
+

@@ -61,9 +61,12 @@
                 <span>All Modules</span>
             </button>
         </div>
-        <div class="tl-actions">
+        <div class="tl-actions" style="display: flex; gap: 8px;">
+            <button class="tl-btn tl-btn-secondary" onclick="openExportModal()">Save Schedule</button>
+            <button class="tl-btn tl-btn-secondary" onclick="openImportModal()">Import Schedule</button>
             <button class="tl-btn tl-btn-primary" onclick="openAddDrawer()">+ Add Module</button>
         </div>
+
     </nav>
 
     <!-- Legend Bar -->
@@ -245,7 +248,64 @@
             <button class="tl-btn tl-btn-primary" onclick="saveModules()" style="padding: 10px 24px;">Update Modules</button>
         </div>
     </div>
+
+    <!-- Export Schedule Modal -->
+    <div id="exportOverlay" class="tl-modal-overlay" onclick="if(event.target === this) closeExportModal()">
+        <div id="exportModal" class="tl-modal" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+            <div class="tl-modal-header">
+                <div>
+                    <h2 id="exportTitle" class="tl-modal-title">Save / Export Module Schedule</h2>
+                    <p class="tl-modal-subtitle">Export this program's module schedule as a reusable template with relative offsets.</p>
+                </div>
+                <button onclick="closeExportModal()" aria-label="Close export modal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">&times;</button>
+            </div>
+            <div class="tl-modal-body">
+                <div class="tl-form-group">
+                    <label class="tl-label">Schedule Template JSON</label>
+                    <textarea id="exportJsonText" class="tl-input" rows="10" readonly style="font-family: monospace; font-size: 11px; white-space: pre; background-color: #f8fafc;"></textarea>
+                    <div class="tl-help-text">Contains module configurations, required flags, titles, and relative time offsets in seconds.</div>
+                </div>
+            </div>
+            <div class="tl-modal-footer">
+                <button class="tl-btn tl-btn-secondary" onclick="copyExportData()">Copy to Clipboard</button>
+                <button class="tl-btn tl-btn-primary" onclick="downloadExportData()">Download JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Schedule Modal -->
+    <div id="importOverlay" class="tl-modal-overlay" onclick="if(event.target === this) closeImportModal()">
+        <div id="importModal" class="tl-modal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+            <div class="tl-modal-header">
+                <div>
+                    <h2 id="importTitle" class="tl-modal-title">Import Module Schedule</h2>
+                    <p class="tl-modal-subtitle">Import a saved schedule template and align module open/close dates to a new program starting date.</p>
+                </div>
+                <button onclick="closeImportModal()" aria-label="Close import modal" style="background: none; border: none; cursor: pointer; font-size: 20px; color: #94a3b8;">&times;</button>
+            </div>
+            <div class="tl-modal-body">
+                <div class="tl-form-group">
+                    <label class="tl-label">New Program Starting Date &amp; Time</label>
+                    <input type="datetime-local" id="importStartDate" class="tl-input">
+                    <div class="tl-help-text">The modules will match the same relative open/close dates from the saved schedule starting from this timestamp.</div>
+                </div>
+                <div class="tl-form-group">
+                    <label class="tl-label">Upload Schedule JSON File</label>
+                    <input type="file" id="importFileInput" accept=".json" class="tl-input" style="padding: 4px 8px;" onchange="handleImportFile(event)">
+                </div>
+                <div class="tl-form-group">
+                    <label class="tl-label">Or Paste Schedule JSON</label>
+                    <textarea id="importJsonText" class="tl-input" rows="6" placeholder="Paste saved schedule JSON template here..." style="font-family: monospace; font-size: 11px;"></textarea>
+                </div>
+            </div>
+            <div class="tl-modal-footer">
+                <button class="tl-btn tl-btn-secondary" onclick="closeImportModal()">Cancel</button>
+                <button id="btnApplyImport" class="tl-btn tl-btn-primary" onclick="applyImportSchedule()">Apply Schedule</button>
+            </div>
+        </div>
+    </div>
 </div>
+
 
 <br/>
 <button class="dsphead">

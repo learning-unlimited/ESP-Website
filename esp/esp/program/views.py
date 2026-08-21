@@ -62,10 +62,13 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
+
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
@@ -1870,5 +1873,187 @@ def module_schedule_reorder_api(request, program_type, program_term):
         return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
     except Exception as e:
         logger.exception("module_schedule_reorder_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+
+@require_GET
+def module_schedule_export_api(request, program_type, program_term):
+    """
+    JSON API endpoint to export a program's module schedule as a relative template.
+    Inputs: program_type (str), program_term (str), optional GET param 'anchor' (ISO datetime string).
+    Outputs: JSONResponse containing anchor_date and list of serialized modules with relative time offsets in seconds.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+    modules = prog.getModules(user=request.user)
+
+    anchor_str = request.GET.get("anchor")
+    anchor_dt = None
+    if anchor_str:
+        anchor_dt = parse_datetime(anchor_str)
+        if anchor_dt and timezone.is_aware(anchor_dt):
+            anchor_dt = timezone.make_naive(anchor_dt, timezone.get_current_timezone())
+
+    if not anchor_dt:
+        valid_start_dates = [m.start_date for m in modules if m.start_date is not None]
+        if valid_start_dates:
+            anchor_dt = min(valid_start_dates)
+        else:
+            anchor_dt = timezone.now()
+            if timezone.is_aware(anchor_dt):
+                anchor_dt = timezone.make_naive(anchor_dt, timezone.get_current_timezone())
+
+    module_templates = []
+    for mod in modules:
+        start_offset = None
+        if mod.start_date is not None:
+            start_offset = int((mod.start_date - anchor_dt).total_seconds())
+
+        end_offset = None
+        if mod.end_date is not None:
+            end_offset = int((mod.end_date - anchor_dt).total_seconds())
+
+        module_templates.append({
+            "handler": mod.module.handler,
+            "admin_title": mod.module.admin_title,
+            "link_title": mod.link_title,
+            "module_type": mod.module.module_type,
+            "seq": mod.seq,
+            "required": mod.required,
+            "required_label": mod.required_label,
+            "start_offset_seconds": start_offset,
+            "end_offset_seconds": end_offset,
+        })
+
+    return JsonResponse({
+        "success": True,
+        "program_id": prog.id,
+        "program_name": prog.name,
+        "anchor_date": anchor_dt.isoformat(),
+        "schedule": {
+            "version": "1.0",
+            "modules": module_templates
+        }
+    })
+
+@require_POST
+def module_schedule_import_api(request, program_type, program_term):
+    """
+    JSON API endpoint to import a saved relative module schedule into a program.
+    Accepts JSON body:
+      - target_start_date (ISO timestamp string for new anchor point)
+      - schedule (dict containing 'modules' list of module configurations)
+    Calculates new start_date / end_date from offsets, updates ProgramModuleObj records,
+    and calls sync_permissions() for permission synchronization.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        target_start_str = data.get("target_start_date")
+        if not target_start_str:
+            return JsonResponse({"success": False, "error": "Missing 'target_start_date'"}, status=400)
+
+        target_anchor_dt = parse_datetime(target_start_str)
+        if target_anchor_dt is None:
+            return JsonResponse({"success": False, "error": "Invalid 'target_start_date' format"}, status=400)
+
+        if timezone.is_aware(target_anchor_dt):
+            target_anchor_dt = timezone.make_naive(target_anchor_dt, timezone.get_current_timezone())
+
+        schedule_data = data.get("schedule", {})
+        if isinstance(schedule_data, dict):
+            module_items = schedule_data.get("modules", [])
+        elif isinstance(schedule_data, list):
+            module_items = schedule_data
+        else:
+            return JsonResponse({"success": False, "error": "Invalid schedule payload"}, status=400)
+
+        if not isinstance(module_items, list):
+            return JsonResponse({"success": False, "error": "'modules' must be a list"}, status=400)
+
+        from esp.program.models import ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        from datetime import timedelta
+        from django.db import transaction
+
+        existing_modules = {m.module.handler: m for m in prog.getModules(user=request.user)}
+        all_program_modules = {pm.handler: pm for pm in ProgramModule.objects.all()}
+
+        updated_count = 0
+        with transaction.atomic():
+            for item in module_items:
+                handler = item.get("handler")
+                if not handler:
+                    continue
+
+                if handler in existing_modules:
+                    mod = existing_modules[handler]
+                elif handler in all_program_modules:
+                    prog_mod = all_program_modules[handler]
+                    prog.program_modules.add(prog_mod)
+                    mod = ProgramModuleObj.getFromProgModule(prog, prog_mod)
+                    existing_modules[handler] = mod
+                else:
+                    continue
+
+                mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
+
+                start_offset = item.get("start_offset_seconds")
+                if start_offset is not None:
+                    mod.start_date = target_anchor_dt + timedelta(seconds=int(start_offset))
+                else:
+                    mod.start_date = None
+
+                end_offset = item.get("end_offset_seconds")
+                if end_offset is not None:
+                    mod.end_date = target_anchor_dt + timedelta(seconds=int(end_offset))
+                else:
+                    mod.end_date = None
+
+                if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+                    return JsonResponse({
+                        "success": False,
+                        "error": f"Calculated start_date is after end_date for module '{mod.module.admin_title}'"
+                    }, status=400)
+
+                if "seq" in item and not mod_hydrated.seq_locked:
+                    mod.seq = int(item["seq"])
+                if "required" in item:
+                    mod.required = bool(item["required"])
+                if "required_label" in item and item["required_label"] is not None:
+                    mod.required_label = str(item["required_label"])
+                if "link_title" in item and item["link_title"] is not None:
+                    mod.link_title = str(item["link_title"])
+
+                if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
+                    mod.seq = 0
+                    mod.required = True
+                elif "CreditCardModule_" in handler:
+                    mod.seq = 10000
+                    mod.required = False
+                elif handler == "StudentRegConfirm":
+                    mod.seq = 99999
+                    mod.required = False
+                elif handler == "AvailabilityModule":
+                    mod.required = True
+                elif "AcknowledgementModule" in handler:
+                    mod.required = True
+                elif handler == "StudentRegTwoPhase":
+                    mod.required = True
+
+                mod.save()
+                mod_hydrated.start_date = mod.start_date
+                mod_hydrated.end_date = mod.end_date
+                mod_hydrated.sync_permissions()
+                updated_count += 1
+
+        return JsonResponse({
+            "success": True,
+            "updated_count": updated_count,
+            "target_start_date": target_anchor_dt.isoformat()
+        })
+    except ValueError as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+    except Exception as e:
+        logger.exception("module_schedule_import_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
