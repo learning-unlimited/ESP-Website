@@ -120,7 +120,7 @@ def extract_theme(url):
 def get_nav_category(path):
     tc = ThemeController()
     settings = tc.get_template_settings()
-                #   Search for current nav category based on request path
+    #   Search for current nav category based on request path
     first_level = ''.join(path.lstrip('/').split('/')[:1])
     nav_structure = settings.get('nav_structure') or []
     for category in nav_structure:

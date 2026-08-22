@@ -9,9 +9,9 @@ f.write("Class Title Delimiter: '%s'\n\n\n\n\n" % class_title_delimiter)
 
 def to_ascii(s):
     try:
-       return str(s).strip().decode('ascii')
+        return str(s).strip().decode('ascii')
     except Exception:
-       return ""
+        return ""
 
 for program in programs:
 
