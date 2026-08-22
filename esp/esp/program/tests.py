@@ -1272,12 +1272,6 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         offset_test = 4
 
         self.program.getModules()
-        sections_with_rooms = [s for s in self.program.sections() if s.classrooms()]
-        if not sections_with_rooms:
-            self.schedule_randomly()
-            sections_with_rooms = [s for s in self.program.sections() if s.classrooms()]
-        self.assertGreater(len(sections_with_rooms), 0)
-        sec = random.choice(sections_with_rooms)
         self.schedule_randomly()
 
         sec = next(
