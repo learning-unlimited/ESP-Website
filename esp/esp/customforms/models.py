@@ -64,11 +64,11 @@ class Field(models.Model):
     help_text = models.TextField(blank=True)
     required = models.BooleanField(default=False)
 
-    def __str__(self):
-        return f'{self.label}'
-
     class Meta:
         ordering = ['seq']
+
+    def __str__(self):
+        return f'{self.label}'
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
