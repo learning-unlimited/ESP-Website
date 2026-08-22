@@ -493,7 +493,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,}
@@ -517,7 +517,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         target_class = classes[0]
         context_form = FileUploadForm()
@@ -1025,13 +1025,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherClassRegForm(self.crmi, initial=current_data)
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherOpenClassRegForm(self.crmi, initial=current_data)
 
                 #   Todo...
                 ds = newclass.default_section()
