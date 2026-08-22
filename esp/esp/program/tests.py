@@ -2523,3 +2523,71 @@ class NewProgramModulePermissionsTest(TestCase):
         self.assertEqual(pmo.start_date, student_start)
         self.assertEqual(pmo.end_date, student_end)
 
+
+
+class ProgramModuleObjCreationTest(TestCase):
+    """Tests that getFromProgModule() creates at most one row per (program, module)."""
+
+    def setUp(self):
+        self.module = ProgramModule.objects.get(handler='StudentClassRegModule')
+        self.program = Program.objects.create(
+            name='PMO Race Program',
+            url='PMORace/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+
+    def test_competing_insert_is_reused(self):
+        """A row inserted between the existence check and our own insert is reused.
+
+        getFromProgModule() looks for an existing row and then inserts one if it
+        found none.  Two concurrent requests can both reach the insert, which the
+        unique_together constraint on (program, module) rejects; the loser has to
+        take the winner's row rather than raise IntegrityError.  _initial_defaults()
+        is only called on the insert path, so patching it is a stand-in for the
+        request that wins the race.
+        """
+        real_defaults = ProgramModuleObj._initial_defaults
+
+        def _defaults_then_competing_insert(prog, mod, old_prog=None):
+            defaults = real_defaults(prog, mod, old_prog)
+            ProgramModuleObj.objects.create(program=prog, module=mod, seq=99, required=False)
+            return defaults
+
+        with patch.object(ProgramModuleObj, '_initial_defaults',
+                          staticmethod(_defaults_then_competing_insert)):
+            moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module)
+
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+        #   The winner's row comes back, rather than a second row of our own.
+        self.assertEqual(moduleobj.seq, 99)
+
+    def test_repeated_calls_reuse_one_row(self):
+        first = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        second = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        self.assertEqual(first.id, second.id)
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+
+    def test_new_row_copies_values_from_old_program(self):
+        old_program = Program.objects.create(
+            name='PMO Old Program',
+            url='PMOOld/2025',
+            grade_min=7,
+            grade_max=12,
+        )
+        start = datetime(2026, 3, 1, 0, 0)
+        end = datetime(2026, 4, 1, 0, 0)
+        ProgramModuleObj.objects.create(program=old_program, module=self.module, seq=42,
+                                        required=True, required_label='Sign up',
+                                        start_date=start, end_date=end)
+
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module,
+                                                       old_prog=old_program)
+
+        self.assertEqual(moduleobj.seq, 42)
+        self.assertTrue(moduleobj.required)
+        self.assertEqual(moduleobj.required_label, 'Sign up')
+        self.assertEqual(moduleobj.start_date, start)
+        self.assertEqual(moduleobj.end_date, end)
