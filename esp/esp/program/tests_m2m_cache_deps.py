@@ -222,3 +222,36 @@ class ModeratorCacheDepTest(ProgramFrameworkTest):
         self.assertIsNone(
             JSONDataModule.moderators.method.cached_function(self.program, cache_only=True),
             "a moderator category change must invalidate the moderators payload")
+
+
+class ModeratorsAvailabilityScopeTest(ProgramFrameworkTest):
+    """moderators(prog) reads each moderator's availability; that dependency
+    used to be a wildcard, undoing the scoping of the other three."""
+
+    def setUp(self):
+        super().setUp(num_students=0, num_teachers=1, classes_per_teacher=1,
+                      sections_per_class=1)
+        from esp.tests.factories import make_program
+        self.program_b = make_program(
+            instance_name='2225_Summer', instance_label='Summer 2225',
+            categories=self.categories, admins=self.admins,
+            modules=self.settings['modules'])
+
+    def test_availability_change_spares_the_other_program(self):
+        from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+        from esp.users.models import UserAvailability
+        from django.contrib.auth.models import Group
+
+        cf = JSONDataModule.moderators.method.cached_function
+        cf(self.program); cf(self.program_b)
+        self.assertIsNotNone(cf(self.program, cache_only=True))
+        self.assertIsNotNone(cf(self.program_b, cache_only=True))
+
+        UserAvailability.objects.create(
+            user=self.teachers[0], event=self.timeslots[0],
+            role=Group.objects.get_or_create(name='Teacher')[0])
+
+        self.assertIsNone(cf(self.program, cache_only=True),
+                          "program A's moderators payload should be invalidated")
+        self.assertIsNotNone(cf(self.program_b, cache_only=True),
+                             "program B's moderators payload should survive")

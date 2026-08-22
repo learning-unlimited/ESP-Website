@@ -278,7 +278,7 @@ If the cached value depends on a many-to-many relation, you need ``depend_on_m2m
 
 This is easy to miss because the relation is often read indirectly. The catalog
 orders classes by their sections' meeting times, so rescheduling a class would otherwise change
-the catalog without invalidating it's cache.
+the catalog without invalidating its cache.
 
 Selectors must not raise
 ~~~~~~~~~~~~~~~~~~~~~~~~

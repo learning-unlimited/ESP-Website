@@ -200,7 +200,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                                                     lambda rec: {'prog': rec.program})
     moderators.method.cached_function.depend_on_m2m(ModeratorRecord, 'class_categories',
                                                     lambda rec, cat: {'prog': rec.program})
-    moderators.method.cached_function.depend_on_model(UserAvailability)
+    moderators.method.cached_function.depend_on_row(UserAvailability,
+        lambda ua: {'prog': ua.event.program} if ua.event.program_id else {})
 
     @aux_call
     @json_response()
