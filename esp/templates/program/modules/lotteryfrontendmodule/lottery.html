@@ -2,6 +2,56 @@
 
 {% block title %}Run Lottery Assignment Thing Tool{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<style type="text/css">
+.lottery-mode-box {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    transition: background 0.15s, border-color 0.15s;
+}
+.lottery-mode-box.active {
+    background: #dde4ee;
+    border-color: #8aaac8;
+}
+.lottery-mode-header {
+    cursor: pointer;
+}
+.lottery-mode-title {
+    font-weight: bold;
+    font-size: 14px;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 0.04em;
+}
+.lottery-mode-box.active .lottery-mode-title {
+    color: #345;
+}
+.lottery-mode-hint {
+    font-weight: normal;
+    text-transform: none;
+    font-size: 12px;
+    color: #999;
+    letter-spacing: normal;
+}
+.lottery-mode-box.active .lottery-mode-hint {
+    display: none;
+}
+.lottery-mode-body {
+    margin-top: 12px;
+}
+.lottery-mode-box:not(.active) .lottery-mode-body {
+    display: none;
+}
+.lottery-mode-body table th {
+    white-space: normal;
+}
+</style>
+{% endblock %}
+
 {% block xtrajs %}
 {{ block.super }}
 <script>
@@ -15,49 +65,257 @@ var program_url_base = '{{ program.getUrlBase }}';
 
 {% block content %}
 
-<h1>Generate Student Schedules</h1>
+<div class="lottery-mode-box{% if ilp_available %} active{% endif %}" data-lottery-mode="ilp">
+    <div class="lottery-mode-header" onclick="setLotteryMode('ilp')">
+        <span class="lottery-mode-title">ILP (Gurobi) Lottery <span class="lottery-mode-hint">&mdash; click to expand</span></span>
+    </div>
+    <div class="lottery-mode-body">
+	<p>The Integer Linear Programming (ILP) lottery is a newer option which will create better-optimized schedules than the legacy lottery. It works by creating an <i>objective function</i> &mdash; that is, a function which takes in the set of all class assignments and gives a numerical output indicating how good the assignments are &mdash; and using an optimizer (Gurobi) to search for a scheduling result as close as possible to the optimal objective function.</p>
+	<p>By default, the objective function prioritizes:</p>
+	<ol type="a">
+	    <li>students getting as many of their ranked/starred classes as possible (with higher value for higher-ranked classes),</li>
+            <li>avoiding sad students, with a penalty for each student with a particularly empty schedule,</li>
+	    <li>avoiding sad sections, with a penalty for each section with particularly low enrollment, and</li>
+	    <li>equitable distribution of classes across students, with each student's n<sup>th</sup> assigned class worth a bit more than their n+1<sup>th</sup> assigned class so the optimizer tends to even out the number of classes among students.</li>
+	</ol>
+        {% if ilp_available and ilp_size_cap_warnings %}
+        <div class="alert alert-warning">
+            {% for warning in ilp_size_cap_warnings %}
+            <p{% if forloop.last %} style="margin-bottom:0;"{% endif %}>{{ warning }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if not ilp_available %}
+        <p class="alert alert-warning">The ILP lottery is not available: {{ ilp_unavailable_reason }}</p>
+        {% elif ilp_preflight_issues %}
+        <div class="alert alert-warning">
+            <strong>The ILP lottery cannot run for this program:</strong>
+            <ul>
+                {% for issue in ilp_preflight_issues %}
+                <li>{{ issue }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <form id="ilpSubmitForm" class="form-inline">
+            <h3>Configuration</h3>
+            <table width="100%" cellpadding="5">
+                <tr>
+                    <th>Rank/star weights</th>
+                    <td>
+                        {% for w in rank_weight_options %}
+                        <div><label style="font-weight:normal;"><span style="display:inline-block; width:4em;">Rank {{ w.level }}</span>
+                            <input class="ilpRankWeightInput input-mini" type="text" style="width:3em;" value="{{ w.default }}" />
+                        </label></div>
+                        {% endfor %}
+                        <div><label style="font-weight:normal;"><span style="display:inline-block; width:4em;">Star</span>
+                            <input id="ilpInterestWeight" class="input-mini" type="text" style="width:3em;" value="0.5" />
+                        </label></div>
+                    </td>
+                    <td>One weight per priority level (Rank 1 = highest priority), plus the weight given to starred/interested classes</td>
+                </tr>
+                <tr>
+                    <th>Apply these weights:</th>
+                    <td>
+                        <select id="ilpSectionLenWeightPreset">
+                            <option value="per_section" selected>per section</option>
+                            <option value="per_timeblock">per section-timeblock</option>
+                        </select>
+                    </td>
+                    <td>"per section": every section weighted equally. "per section-timeblock": weight scales with section length (longer sections weighted more)</td>
+                </tr>
+                <tr><td colspan="3"><hr style="margin:4px 0;" /></td></tr>
+                <tr>
+                    <th>Empty schedule penalties</th>
+                    <td><textarea id="ilpEmptyStudentSchedulePenalties" rows="2" cols="20">{"0": 1000, "1": 100, "2": 20}</textarea></td>
+                    <td>JSON object mapping number of filled timeslots to penalty points (empty_student_schedule_penalties)</td>
+                </tr>
+                <tr><td colspan="3"><hr style="margin:4px 0;" /></td></tr>
+                <tr>
+                    <th>Empty section penalties</th>
+                    <td><textarea id="ilpEmptySectionPenaltyPoints" rows="2" cols="20">[[0, 1000], [0.3, 100], [0.5, 0], [1, 0]]</textarea></td>
+                    <td>JSON list of [fraction of section capacity, penalty points] pairs; must start at fraction 0 and end at fraction 1 (empty_section_penalty_points)</td>
+                </tr>
+                <tr><td colspan="3"><hr style="margin:4px 0;" /></td></tr>
+                <tr>
+                    <th>Deweighting method</th>
+                    <td>
+                        <select id="ilpDeweightMethod">
+                            <option value="timeslot" selected>By timeslot</option>
+                            <option value="section">By section</option>
+                            <option value="none">None</option>
+                        </select>
+                    </td>
+                    <td>Diminishing returns per additional filled timeslot/section</td>
+                </tr>
+                <tr id="ilpDeweightFactorRow">
+                    <th>Deweight factor</th>
+                    <td><input id="ilpDeweightFactor" class="input-small" type="text" value="0.8" /></td>
+                    <td>Between 0 and 1; lower = steeper diminishing returns</td>
+                </tr>
+                <tr><td colspan="3"><hr style="margin:4px 0;" /></td></tr>
+                <tr>
+                    <th>Label</th>
+                    <td><input id="ilpLabel" class="input-small" type="text" /></td>
+                    <td>Optional, to tell runs apart in the list below</td>
+                </tr>
+                {% if solver_names|length > 1 %}
+                <tr>
+                    <th>Solver</th>
+                    <td>
+                        <select id="ilpSolverName">
+                            {% for name in solver_names %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+                        </select>
+                    </td>
+                    <td></td>
+                </tr>
+                {% endif %}
+            </table>
 
-<form id="lotteryForm" class="form-inline">
-    <h3>Configuration</h3>
-    <table width="100%" cellpadding="5">
-        {% for option_key, option_value in options.items %}
-            <tr>
-                <th>{{ option_key }}</th>
-                <td>
-                    <input type="text" class="input-small" name="lottery_{{ option_key }}" value="{{ option_value.0 }}" />
-                </td>
-                <td>{{ option_value.1 }}</td>
-            </tr>
-        {% endfor %}
-    </table>
+            <details>
+                <summary>Advanced</summary>
+                <table width="100%" cellpadding="5">
+                    <tr>
+                        <th>check_grade</th>
+                        <td><input id="ilpCheckGrade" type="checkbox" /></td>
+                        <td>Whether to validate grade constraints</td>
+                    </tr>
+                    <tr>
+                        <th>fill_low_priorities</th>
+                        <td><input id="ilpFillLowPriorities" type="checkbox" disabled /></td>
+                        <td>Not yet implemented for the ILP algorithm</td>
+                    </tr>
+                    <tr>
+                        <th>MIP gap</th>
+                        <td><input id="ilpMipGap" class="input-small" type="text" value="0.0001" /></td>
+                        <td>Relative optimality gap the solver will accept before stopping</td>
+                    </tr>
+                    <tr>
+                        <th>MIP gap (absolute)</th>
+                        <td><input id="ilpMipGapAbs" class="input-small" type="text" value="1.0" /></td>
+                        <td>Absolute optimality gap the solver will accept before stopping</td>
+                    </tr>
+                    <tr>
+                        <th>Time limit (seconds)</th>
+                        <td><input id="ilpTimeLimit" class="input-small" type="text" placeholder="unlimited" /></td>
+                        <td>Leave blank for unlimited</td>
+                    </tr>
+                    <tr>
+                        <th>Threads</th>
+                        <td><input id="ilpThreads" class="input-small" type="text" placeholder="solver default" /></td>
+                        <td></td>
+                    </tr>
+                </table>
+            </details>
 
-    <h3>Run</h3>
-    <p>You will be able to review the generated schedules below before saving them.</p>
-    <button id="lotteryRun" type="submit" class="btn btn-primary btn-large custom-action">Generate Student Schedules</button>
-</form>
+            <button id="ilpSubmit" type="submit" class="btn btn-primary custom-action">Submit ILP Lottery Run</button>
+        </form>
 
-<h1>Save Student Schedules</h1>
+        <h3>Runs</h3>
+        <table id="ilpRunsTable" class="table" width="100%" cellpadding="5">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Run ID</th>
+                    <th id="ilpLabelHeader">Label</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ilpRunsBody">
+                <tr class="ilp-no-runs-row"><td colspan="6">Loading&#8230;</td></tr>
+            </tbody>
+        </table>
 
-<p>Statistics for the generated schedules appear below. After reviewing, you can save the schedules, which uploads the student-to-class assignments to the website{% if has_old_schedules %}, overwriting the existing schedules{% endif %}.</p>
-<div id="lotteryStats"></div>
-<button
-	id="lotterySaveSafe"
-	type="button"
-	class="btn btn-success lotterySave custom-action"
-	disabled
-	{% if has_old_schedules %}style="display:none;"{% endif %}
-	>
-    Save Schedules to Website
-</button>
-<button
-	id="lotterySaveOverwrite"
-	type="button"
-	class="btn btn-danger lotterySave custom-action"
-	disabled
-	{% if not has_old_schedules %}style="display:none;"{% endif %}
-	>
-    Save Schedules to Website (and overwrite existing schedules)
-</button>
+        <details id="ilpArchivedRunsDetails">
+            <summary>Archived runs</summary>
+            <table id="ilpArchivedRunsTable" class="table" width="100%" cellpadding="5">
+                <thead>
+                    <tr>
+                        <th>Run ID</th>
+                        <th>Label</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ilpArchivedRunsBody">
+                    <tr><td colspan="5">Loading&#8230;</td></tr>
+                </tbody>
+            </table>
+        </details>
+        {% endif %}
+
+    </div>
+</div>
+
+<div class="lottery-mode-box{% if not ilp_available %} active{% endif %}" data-lottery-mode="legacy">
+    <div class="lottery-mode-header" onclick="setLotteryMode('legacy')">
+        <span class="lottery-mode-title">Legacy Lottery <span class="lottery-mode-hint">&mdash; click to expand</span></span>
+    </div>
+    <div class="lottery-mode-body">
+	<p>The legacy lottery is kept as a fallback option. In the case of issues with the ILP lottery (such as Gurobi license issues), this is at least <i>something</i> you can use to assign students to classes, although you should expect lower-quality results. It's usually a good idea to run this one multiple times and save the result with the best statistics. After saving the results, you usually will want to manually "unscrew" the schedules of students who were unlucky and ended up very far from a full schedule despite submitting plenty of preferences.</p>
+
+        {% if lottery_preflight_issues %}
+        <div class="alert alert-warning">
+            <strong>The lottery cannot run for this program:</strong>
+            <ul>
+                {% for issue in lottery_preflight_issues %}
+                <li>{{ issue }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <form id="lotteryForm" class="form-inline">
+            <h3>Configuration</h3>
+            <table width="100%" cellpadding="5">
+                {% for option in options %}
+                    <tr>
+                        <th>{{ option.key }}</th>
+                        <td>
+                            {% if option.is_bool %}
+                                <input type="checkbox" name="lottery_{{ option.key }}" {% if option.default %}checked{% endif %} />
+                            {% else %}
+                                <input type="text" class="input-small" name="lottery_{{ option.key }}" value="{{ option.default }}" />
+                            {% endif %}
+                        </td>
+                        <td>{{ option.help }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+
+            <h3>Run</h3>
+            <p>You will be able to review the generated schedules below before saving them.</p>
+            <button id="lotteryRun" type="submit" class="btn btn-primary btn-large custom-action">Generate Student Schedules</button>
+        </form>
+        {% endif %}
+
+        <h3>Save Student Schedules</h3>
+
+        <p>Statistics for the generated schedules appear below. After reviewing, you can save the schedules, which uploads the student-to-class assignments to the website{% if has_old_schedules %}, overwriting the existing schedules{% endif %}.</p>
+        <div id="lotteryStats"></div>
+        <button
+            id="lotterySaveSafe"
+            type="button"
+            class="btn btn-success lotterySave custom-action"
+            disabled
+            {% if has_old_schedules %}style="display:none;"{% endif %}
+            >
+            Save Schedules to Website
+        </button>
+        <button
+            id="lotterySaveOverwrite"
+            type="button"
+            class="btn btn-danger lotterySave custom-action"
+            disabled
+            {% if not has_old_schedules %}style="display:none;"{% endif %}
+            >
+            Save Schedules to Website (and overwrite existing schedules)
+        </button>
+
+    </div>
+</div>
 
 {% include "program/modules/admincore/returnlink.html" %}
 

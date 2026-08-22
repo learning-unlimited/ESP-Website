@@ -51,6 +51,8 @@ from esp.program.models import StudentApplication, StudentAppQuestion, StudentAp
 
 from esp.program.models import ClassFlag, ClassFlagType
 
+from esp.program.models import LotteryInputSnapshot, LotteryRun
+
 from esp.accounting.models import FinancialAidGrant
 
 from esp.utils.admin_user_search import default_user_search
@@ -375,3 +377,38 @@ class ModeratorRecordAdmin(admin.ModelAdmin):
     search_fields = ['user__username']
     list_filter = ['program', 'will_moderate']
 admin_site.register(ModeratorRecord, ModeratorRecordAdmin)
+
+class LotteryInputSnapshotAdmin(admin.ModelAdmin):
+    list_display = ('id', 'program', 'input_hash', 'created_at')
+    list_filter = ['program']
+    search_fields = ['input_hash']
+    # This is a content-addressed, xz-compressed data blob -- read-only,
+    # never meant to be hand-edited via admin panel. "data" (the raw bytes field)
+    # is excluded entirely in favor of decoded_data, which shows what it
+    # actually decompresses/parses to.
+    readonly_fields = ('input_hash', 'created_at', 'decoded_data')
+    exclude = ('data',)
+    date_hierarchy = 'created_at'
+
+    def decoded_data(self, obj):
+        from django.utils.html import format_html
+        from esp.program.controllers.lottery.base import BaseLotteryAssignmentController
+        import json as json_module
+        try:
+            decoded = BaseLotteryAssignmentController.decode_snapshot_blob(bytes(obj.data))
+        except Exception as e:
+            return "Could not decode: %s" % e
+        pretty = json_module.dumps(decoded, indent=2, sort_keys=True)
+        return format_html('<pre style="max-height: 600px; overflow: auto;">{0}</pre>', pretty)
+    decoded_data.short_description = 'Decoded data (xz-decompressed, parsed JSON)'
+admin_site.register(LotteryInputSnapshot, LotteryInputSnapshotAdmin)
+
+class LotteryRunAdmin(admin.ModelAdmin):
+    list_display = ('id', 'program', 'solver_name', 'status', 'label', 'submitted_by', 'submitted_at', 'saved_at', 'archived')
+    list_select_related = ('program', 'submitted_by', 'saved_by')
+    list_filter = ['program', 'status', 'solver_name', 'archived']
+    search_fields = ['label', 'solver_job_id']
+    raw_id_fields = ('submitted_by', 'saved_by')
+    readonly_fields = ('snapshot', 'progress_series', 'enrolled_pairs', 'submitted_at')
+    date_hierarchy = 'submitted_at'
+admin_site.register(LotteryRun, LotteryRunAdmin)

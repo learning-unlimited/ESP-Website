@@ -46,18 +46,27 @@ from esp.program.views           import lsr_submit as lsr_view_submit
 from esp.utils.web               import render_to_response
 from esp.users.models            import ESPUser
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.utils.query_utils import nest_Q
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
     doc = """Allows students to enter a lottery for particular classes."""
 
     def students(self, QObject = False):
-        q = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        ids = set(
+            StudentRegistration.valid_objects().filter(
+                section__parent_class__parent_program=self.program,
+                relationship__name__startswith='Priority/',
+            ).values_list('user_id', flat=True)
+        ) | set(
+            StudentRegistration.valid_objects().filter(
+                section__parent_class__parent_program=self.program,
+                relationship__name__in=['Interested', 'GradeRangeException'],
+            ).values_list('user_id', flat=True)
+        )
         if QObject:
-            return {'lotteried_students': q}
+            return {'lotteried_students': Q(id__in=ids)}
         else:
-            return {'lotteried_students': ESPUser.objects.filter(q).distinct()}
+            return {'lotteried_students': ESPUser.objects.filter(id__in=ids)}
 
     def studentDesc(self):
         return {'lotteried_students': "Students who have entered the lottery"}

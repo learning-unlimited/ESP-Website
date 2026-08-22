@@ -430,3 +430,7 @@ ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
 ADMIN_TOOLS_THEMING_CSS = '/media/default_styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
+
+#   Remote Gurobi solver service(s) for the ILP lottery
+LOTTERY_SOLVERS = {} # {solver_name: {"url": ..., "token": ...}, ...}
+LOTTERY_DEFAULT_SOLVER = None # should be set to the name of a solver
