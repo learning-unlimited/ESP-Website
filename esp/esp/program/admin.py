@@ -253,7 +253,8 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = default_user_search(prefix='^') + ['=id', '=section__id', '=section__parent_class__id', 'section__parent_class__title']
+    list_select_related = ('user', 'relationship', 'section', 'section__parent_class', 'section__parent_class__category')
     list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
@@ -261,7 +262,8 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
+    search_fields = default_user_search(prefix='^') + ['=id', '=subject__id', 'subject__title']
+    list_select_related = ('user', 'subject')
     list_filter = ['subject__parent_program',]
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
