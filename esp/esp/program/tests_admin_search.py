@@ -22,7 +22,7 @@ class AdminSearchTest(ProgramFrameworkTest):
         self.student = self.students[0]
         self.student.first_name = 'Hermione'
         self.student.last_name = 'Granger'
-        self.student.email = 'hermione@example.com'
+        self.student.email = 'hjg@example.com'
         self.student.save()
 
         self.subject = self.program.classes()[0]
@@ -48,7 +48,7 @@ class AdminSearchTest(ProgramFrameworkTest):
         return list(queryset)
 
     def test_registration_search_by_user(self):
-        for term in (self.student.username, 'Hermione', 'Grang', 'hermione@'):
+        for term in (self.student.username, 'Hermione', 'Grang', 'hjg@'):
             self.assertIn(self.registration,
                           self.search(self.reg_admin, StudentRegistration, term),
                           'searching for %r should find the registration' % term)
