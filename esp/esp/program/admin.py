@@ -251,38 +251,18 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = ['=id', '=section__id', '^user__username', '^user__last_name', '^user__email', '=user__id']
-    list_select_related = ('user', 'section', 'section__parent_class')
+    search_fields = default_user_search(prefix='^') + ['=id', '=section__id', '=section__parent_class__id', 'section__parent_class__title']
+    list_select_related = ('user', 'relationship', 'section', 'section__parent_class', 'section__parent_class__category')
     list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
-
-    def get_search_results(self, request, queryset, search_term):
-        if search_term and not search_term.isdigit():
-            original = self.search_fields
-            self.search_fields = tuple(f for f in original if not f.startswith('='))
-            try:
-                return super().get_search_results(request, queryset, search_term)
-            finally:
-                self.search_fields = original
-        return super().get_search_results(request, queryset, search_term)
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['^user__username', '^user__last_name', '^user__email', '=user__id', '=id', '=subject__id']
+    search_fields = default_user_search(prefix='^') + ['=id', '=subject__id', 'subject__title']
     list_select_related = ('user', 'subject')
     list_filter = ['subject__parent_program',]
-
-    def get_search_results(self, request, queryset, search_term):
-        if search_term and not search_term.isdigit():
-            original = self.search_fields
-            self.search_fields = tuple(f for f in original if not f.startswith('='))
-            try:
-                return super().get_search_results(request, queryset, search_term)
-            finally:
-                self.search_fields = original
-        return super().get_search_results(request, queryset, search_term)
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
