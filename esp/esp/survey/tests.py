@@ -256,22 +256,21 @@ class TeacherSurveyAllTest(ProgramFrameworkTest):
             pmo.required = False
             pmo.save()
 
+        # Create a student survey with per-class questions
         self.survey, _ = Survey.objects.get_or_create(
-            name='Test Survey', program=self.program, category='learn')
-        yesno_qtype, _ = QuestionType.objects.get_or_create(
-            name='yes/no', is_numeric=False, is_countable=True,
-            _param_names="")
+            name='Test Student Survey', program=self.program, category='learn')
+        text_qtype, _ = QuestionType.objects.get_or_create(
+            name='yes-no response')
         number_qtype, _ = QuestionType.objects.get_or_create(
             name='numeric rating', is_numeric=True, is_countable=True,
             _param_names="Number of ratings|Lower text|Middle text|Upper text")
 
         self.question_perclass, _ = Question.objects.get_or_create(
             survey=self.survey, name='Was this class good?',
-            question_type=yesno_qtype, per_class=True, seq=1,
-            _param_values="")
+            question_type=text_qtype, per_class=True, seq=0)
         self.question_rating, _ = Question.objects.get_or_create(
             survey=self.survey, name='Rate this class',
-            question_type=number_qtype, per_class=True, seq=2,
+            question_type=number_qtype, per_class=True, seq=1,
             _param_values="5|Terrible|Okay|Awesome")
 
         # Pick a teacher and a section they teach
