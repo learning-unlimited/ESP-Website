@@ -42,6 +42,12 @@ from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
 from esp.resources.models import ResourceType
 
+PROFILE_MODULE_HANDLERS = (
+    'StudentRegProfileModule',
+    'TeacherRegProfileModule',
+)
+
+
 class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
     ## It needs more data, more interesting state in the program in question.
@@ -335,6 +341,43 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                  "grade_max above program maximum for class id=%s" % cid)
 
 
+    def testClassInfoExcludesRoomAndLocation(self):
+        """class_info endpoint must NOT expose per-section room or top-level location."""
+        cls = self.program.classes().first()
+        url = '/json/%s/class_info?class_id=%d' % (self.program.getUrlBase(), cls.id)
+
+        # Test as a student (no admin privileges)
+        self.client.login(username=self.students[0].username, password='password')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        cls_data = data['classes'][0]
+        self.assertNotIn('location', cls_data,
+                         "class_info must not expose top-level 'location' to students")
+        for sec in cls_data.get('sections', []):
+            self.assertNotIn('room', sec,
+                             "class_info must not expose per-section 'room' to students")
+
+    def testClassAdminInfoIncludesRoomAndLocation(self):
+        """class_admin_info endpoint must still expose room and location to admins."""
+        cls = self.program.classes().first()
+        url = '/json/%s/class_admin_info?class_id=%d' % (self.program.getUrlBase(), cls.id)
+
+        # Test as an admin
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        cls_data = data['classes'][0]
+        self.assertIn('location', cls_data,
+                      "class_admin_info must include top-level 'location' for admins")
+        for sec in cls_data.get('sections', []):
+            self.assertIn('room', sec,
+                          "class_admin_info must include per-section 'room' for admins")
+
+
 class JSONModuleManagementTest(ProgramFrameworkTest):
     """Tests for the JSON API endpoints for module management (#4689)."""
 
@@ -343,7 +386,9 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         modules = []
         modules.append(ProgramModule.objects.get(handler='AdminCore'))
         modules.append(ProgramModule.objects.get(handler='JSONDataModule'))
-        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules += list(ProgramModule.objects.filter(
+            handler__in=PROFILE_MODULE_HANDLERS
+        ))
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
         modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
 
@@ -417,8 +462,10 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         r = self.client.get(self._url('modules_list'))
         data = json.loads(r.content)
         reg_profile_entries = [
-            e for e in data['modules'] if e['handler'] == 'RegProfileModule'
+            e for e in data['modules']
+            if e['handler'] in PROFILE_MODULE_HANDLERS
         ]
+        self.assertTrue(reg_profile_entries)
         for entry in reg_profile_entries:
             self.assertIn('constraints', entry)
             self.assertTrue(entry['constraints']['required_locked'])
@@ -547,13 +594,12 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         self.assertEqual(r.status_code, 400)
 
     def test_module_update_enforces_constraints(self):
-        """module_update re-enforces constraints after saving (e.g. RegProfileModule stays seq=0)."""
+        """module_update keeps registration profile modules first."""
         self.client.login(username='admin_json_mgmt', password='password')
         pmo = ProgramModuleObj.objects.filter(
-            program=self.program, module__handler='RegProfileModule'
+            program=self.program, module__handler__in=PROFILE_MODULE_HANDLERS
         ).first()
-        if pmo is None:
-            return  # module not in this program; skip
+        self.assertIsNotNone(pmo)
         self.client.post(
             self._url('module_update'),
             data=json.dumps({'id': pmo.id, 'seq': 500}),
@@ -731,17 +777,16 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         self.assertEqual(r.status_code, 400)
 
     def test_modules_reorder_enforces_constraints(self):
-        """modules_reorder enforces constraints: RegProfileModule stays seq=0."""
+        """modules_reorder keeps registration profile modules first."""
         self.client.login(username='admin_json_mgmt', password='password')
         reg_pmos = list(ProgramModuleObj.objects.filter(
-            program=self.program, module__handler='RegProfileModule'
+            program=self.program, module__handler__in=PROFILE_MODULE_HANDLERS
         ))
-        if not reg_pmos:
-            return
+        self.assertTrue(reg_pmos)
         other_pmos = list(ProgramModuleObj.objects.filter(
             program=self.program
-        ).exclude(module__handler='RegProfileModule')[:2])
-        # Put RegProfileModule last — constraint enforcement must fix it.
+        ).exclude(module__handler__in=PROFILE_MODULE_HANDLERS)[:2])
+        # Put profile modules last; constraint enforcement must fix them.
         to_reorder = other_pmos + reg_pmos
         r = self.client.post(
             self._url('modules_reorder'),
@@ -801,7 +846,10 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
     def test_modules_reset_required_label(self):
         """modules_reset clears required_label overrides."""
         self.client.login(username='admin_json_mgmt', password='password')
-        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo = ProgramModuleObj.objects.get(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        )
         pmo.required_label = 'before reset'
         pmo.save()
 
@@ -817,7 +865,10 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
     def test_modules_reset_link_title(self):
         """modules_reset clears link_title overrides."""
         self.client.login(username='admin_json_mgmt', password='password')
-        pmo = ProgramModuleObj.objects.filter(program=self.program).first()
+        pmo = ProgramModuleObj.objects.get(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        )
         pmo.link_title = 'before reset'
         pmo.save()
 
@@ -854,10 +905,9 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         """modules_reset enforces hard-coded constraints after resetting seq."""
         self.client.login(username='admin_json_mgmt', password='password')
         reg_pmos = list(ProgramModuleObj.objects.filter(
-            program=self.program, module__handler='RegProfileModule'
+            program=self.program, module__handler__in=PROFILE_MODULE_HANDLERS
         ))
-        if not reg_pmos:
-            return
+        self.assertTrue(reg_pmos)
         r = self.client.post(
             self._url('modules_reset'),
             data=json.dumps({'seq': True}),
@@ -866,7 +916,7 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         self.assertEqual(r.status_code, 200)
         for pmo in reg_pmos:
             pmo.refresh_from_db()
-            # Constraint override: RegProfileModule is always seq=0.
+            # Constraint override: registration profile modules are always first.
             self.assertEqual(pmo.seq, 0)
 
     def test_modules_reset_confirm_stays_not_required(self):
@@ -886,4 +936,3 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         for pmo in confirm_pmos:
             pmo.refresh_from_db()
             self.assertFalse(pmo.required)
-
