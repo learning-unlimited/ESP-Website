@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, needs_onsite_no_switchback, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PRINTABLES
 from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration, PrintableJob
@@ -101,10 +101,10 @@ class ProgramPrintables(ProgramModuleObj):
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         base = program.getUrlBase()
         entries = {
-            "catalog": ("PDF Catalog", "Printables", ["printable", "pdf catalog", "classes"]),
-            "studentschedules": ("Student Schedules", "Printables", ["printable", "student schedules", "schedules"]),
-            "studentscheduleform": ("Student Schedule Formatter", "Printables", ["formatter", "student schedules", "printable"]),
-            "printoptions": ("All Printables", "Printables", ["printables", "all printables", "pdf", "documents"]),
+            "catalog": ("PDF Catalog", SEARCH_CATEGORY_PRINTABLES, ["printable", "pdf catalog", "classes"]),
+            "studentschedules": ("Student Schedules", SEARCH_CATEGORY_PRINTABLES, ["printable", "student schedules", "schedules"]),
+            "studentscheduleform": ("Student Schedule Formatter", SEARCH_CATEGORY_PRINTABLES, ["formatter", "student schedules", "printable"]),
+            "printoptions": ("All Printables", SEARCH_CATEGORY_PRINTABLES, ["printables", "all printables", "pdf", "documents"]),
             "teachersbytime": ("Teacher List by Time", "Other", ["teachers", "time", "printables"]),
             "teachermoderatorsbytime": ("Teacher and Moderator List by Time", "Other", ["teachers", "moderators", "time", "printables"]),
             "classesbyteacher": ("Classes by Teacher", "Other", ["classes", "teacher", "printables"]),
@@ -1318,7 +1318,6 @@ class ProgramPrintables(ProgramModuleObj):
                     job.status = 'COMPLETED'
                     job.save()
                 except Exception as e:
-                    import traceback
                     job = PrintableJob.objects.get(id=job_id)
                     job.status = 'FAILED'
                     job.error_message = traceback.format_exc()
@@ -1531,8 +1530,6 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printable_job_status(self, request, tl, one, two, module, extra, prog):
         """ Displays the status of an asynchronous PrintableJob, and downloads it when completed """
-        import mimetypes
-        import os
         from wsgiref.util import FileWrapper
         from django.core.exceptions import ValidationError
         from django.http import HttpResponse, HttpResponseRedirect

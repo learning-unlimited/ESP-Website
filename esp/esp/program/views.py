@@ -62,6 +62,7 @@ from django.core.cache import cache
 from django.urls import reverse
 from django.forms.models import model_to_dict
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
@@ -534,7 +535,12 @@ def usersearch(request):
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users[0].username}))
     elif num_users > 1:
         found_users = found_users.all()
-        sorted_users = sorted(found_users, key=lambda x: x.get_last_program_with_profile().dates()[0] if x.get_last_program_with_profile() and x.get_last_program_with_profile().dates() else datetime.date(datetime.MINYEAR, 1, 1), reverse=True)
+        def _last_active_sort_key(user):
+            # Sort by the user's most recent program (volunteers included), oldest-possible if none
+            program = user.get_last_active_program()
+            dates = program.dates() if program else None
+            return dates[0] if dates else datetime.date(datetime.MINYEAR, 1, 1)
+        sorted_users = sorted(found_users, key=_last_active_sort_key, reverse=True)
         return render_to_response('users/userview_search.html', request, { 'found_users': sorted_users })
     else:
         raise ESPError("No user found by that name! Searched for `{}`".format(userstr), log=False)
@@ -542,8 +548,11 @@ def usersearch(request):
 @admin_required
 def userview(request):
     """ Render a template displaying all the information about the specified user """
+    username = request.GET.get('username')
+    if not username:
+        raise ESPError("You must specify a username to view.", log=False)
     try:
-        user = ESPUser.objects.get(username=request.GET['username'])
+        user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
@@ -553,7 +562,11 @@ def userview(request):
         except Program.DoesNotExist:
             raise ESPError("Sorry, can't find that program.", log=False)
     else:
-        program = user.get_last_program_with_profile()
+        program = user.get_last_active_program()
+        if program is None:
+            current = Program.current_programs()
+            if current:
+                program = current[0]
 
     learn_modules = []
     teach_modules = []
@@ -854,6 +867,7 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'), 'template_prog_id': template_prog_id})
 
 @csrf_exempt
+@require_POST
 @transaction.non_atomic_requests
 def submit_transaction(request):
     # Before we do anything else, log the raw postback to the database
@@ -1561,7 +1575,7 @@ def module_schedule_api(request, program_type, program_term):
     Outputs: JSONResponse with a list of serialized modules grouped by module_type (learn/teach).
     """
     prog = get_program_or_404(request, program_type, program_term)
-    modules = prog.getModules(user=request.user)
+    modules = prog.getModules()
 
     # We serialize them into dicts grouped by module_type (learn/teach)
     data = {
@@ -1582,6 +1596,8 @@ def module_schedule_api(request, program_type, program_term):
             "link_title": mod.get_link_title(),
             "module_type": tl,
             "seq": mod.seq,
+            "always_enabled": mod.always_enabled,
+            "seq_locked": mod.seq_locked,
             "start_date": mod.start_date.isoformat() if mod.start_date else None,
             "end_date": mod.end_date.isoformat() if mod.end_date else None,
             "required": mod.required,
@@ -1593,8 +1609,8 @@ def module_schedule_api(request, program_type, program_term):
 @require_POST
 def module_schedule_update_api(request, program_type, program_term):
     """
-    JSON API endpoint to update a program module's start_date, end_date, and seq.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq.
+    JSON API endpoint to update a program module's schedule and metadata.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq, link_title, required, required_label.
     Outputs: JSONResponse with success boolean and updated module fields.
     """
     # we simulate PATCH using POST with data, or we could just use POST.
@@ -1611,6 +1627,8 @@ def module_schedule_update_api(request, program_type, program_term):
             mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
         except ProgramModuleObj.DoesNotExist:
             return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+
+        mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
         if "start_date" in data:
             val = data["start_date"]
@@ -1637,44 +1655,18 @@ def module_schedule_update_api(request, program_type, program_term):
                 mod.end_date = None
 
         if "seq" in data:
+            if mod_hydrated.seq_locked:
+                return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
             mod.seq = int(data["seq"])
 
-        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
-            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
-
-        mod.save()
-
-        return JsonResponse({
-            "success": True,
-            "module_id": mod.id,
-            "start_date": mod.start_date.isoformat() if mod.start_date else None,
-            "end_date": mod.end_date.isoformat() if mod.end_date else None,
-            "seq": mod.seq
-        })
-    except ValueError:
-        return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
-    except Exception:
-        logger.exception("module_schedule_update_api failed")
-        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
-
-@require_POST
-def module_schedule_required_toggle_api(request, program_type, program_term):
-    """
-    JSON API endpoint to toggle a program module's required flag and update its required_label.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, required (bool), required_label (str).
-    Outputs: JSONResponse with success boolean and updated module fields.
-    """
-    prog = get_program_or_404(request, program_type, program_term)
-
-    try:
-        data = json.loads(request.body)
-        module_id = data.get("module_id")
-
-        from esp.program.modules.base import ProgramModuleObj
-        try:
-            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
-        except ProgramModuleObj.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+        if "link_title" in data:
+            title = data["link_title"]
+            if not isinstance(title, str):
+                return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
+            max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+            if len(title) > max_len:
+                return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
+            mod.link_title = title
 
         if "required" in data:
             if not isinstance(data["required"], bool):
@@ -1690,18 +1682,46 @@ def module_schedule_required_toggle_api(request, program_type, program_term):
                 return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
             mod.required_label = label
 
+        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+
+        # Enforce hard constraints (same as admincore POST handler)
+        handler = mod.module.handler
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
+            mod.seq = 0
+            mod.required = True
+        elif "CreditCardModule_" in handler:
+            mod.seq = 10000
+            mod.required = False
+        elif handler == "StudentRegConfirm":
+            mod.seq = 99999
+            mod.required = False
+        elif handler == "AvailabilityModule":
+            mod.required = True
+        elif "AcknowledgementModule" in handler:
+            mod.required = True
+        elif handler == "StudentRegTwoPhase":
+            mod.required = True
+
         mod.save()
+        mod_hydrated.start_date = mod.start_date
+        mod_hydrated.end_date = mod.end_date
+        mod_hydrated.sync_permissions()
 
         return JsonResponse({
             "success": True,
             "module_id": mod.id,
+            "start_date": mod.start_date.isoformat() if mod.start_date else None,
+            "end_date": mod.end_date.isoformat() if mod.end_date else None,
+            "seq": mod.seq,
+            "link_title": mod.link_title,
             "required": mod.required,
             "required_label": mod.required_label
         })
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
-        logger.exception("module_schedule_required_toggle_api failed")
+        logger.exception("module_schedule_update_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
 
 @require_GET
@@ -1747,6 +1767,8 @@ def module_schedule_preview_api(request, program_type, program_term):
                 "link_title": mod.get_link_title(),
                 "module_type": tl,
                 "seq": mod.seq,
+                "always_enabled": mod.always_enabled,
+                "seq_locked": mod.seq_locked,
                 "start_date": mod.start_date.isoformat() if mod.start_date else None,
                 "end_date": mod.end_date.isoformat() if mod.end_date else None,
                 "required": mod.required,
@@ -1754,3 +1776,99 @@ def module_schedule_preview_api(request, program_type, program_term):
             })
 
     return JsonResponse(data)
+
+@require_GET
+def module_schedule_conflicts_api(request, program_type, program_term):
+    prog = get_program_or_404(request, program_type, program_term)
+
+    # request.user is admin, so getModules returns all modules regardless of expiration
+    all_modules = prog.getModules(user=request.user)
+    conflicts = []
+
+    for i, mod1 in enumerate(all_modules):
+        for mod2 in all_modules[i+1:]:
+            # Check for conflict declaration
+            if (mod2.module.handler in mod1.conflicts_with) or (mod1.module.handler in mod2.conflicts_with):
+                # Check for time overlap
+                start1 = mod1.start_date
+                end1 = mod1.end_date
+                start2 = mod2.start_date
+                end2 = mod2.end_date
+
+                # Overlap condition
+                cond1 = (start1 is None) or (end2 is None) or (start1 < end2)
+                cond2 = (start2 is None) or (end1 is None) or (start2 < end1)
+
+                if cond1 and cond2:
+                    overlap_starts = [s for s in (start1, start2) if s is not None]
+                    overlap_start = max(overlap_starts) if overlap_starts else None
+
+                    overlap_ends = [e for e in (end1, end2) if e is not None]
+                    overlap_end = min(overlap_ends) if overlap_ends else None
+
+                    conflicts.append({
+                        "module_id_1": mod1.id,
+                        "handler_1": mod1.module.handler,
+                        "module_id_2": mod2.id,
+                        "handler_2": mod2.module.handler,
+                        "overlap_start": overlap_start.isoformat() if overlap_start else None,
+                        "overlap_end": overlap_end.isoformat() if overlap_end else None,
+                        "description": f"{mod1.get_link_title()} overlaps with {mod2.get_link_title()}"
+                    })
+
+    return JsonResponse({"conflicts": conflicts})
+
+@require_POST
+def module_schedule_reorder_api(request, program_type, program_term):
+    """
+    JSON API endpoint to bulk update the sequence (seq) of program modules.
+    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>} dicts.
+    """
+    prog = get_program_or_404(request, program_type, program_term)
+
+    try:
+        data = json.loads(request.body)
+        order = data.get("order", [])
+        if not isinstance(order, list):
+            return JsonResponse({"success": False, "error": "'order' must be a list"}, status=400)
+
+        from esp.program.modules.base import ProgramModuleObj
+        from django.db import transaction
+
+        update_ids = [u.get("id") for u in order if "id" in u]
+        module_map = {m.id: m for m in ProgramModuleObj.objects.filter(program=prog, id__in=update_ids).select_related('module')}
+
+        with transaction.atomic():
+            for update in order:
+                mod_id = update.get("id")
+                new_seq = update.get("seq")
+
+                if mod_id not in module_map:
+                    continue
+
+                mod = module_map[mod_id]
+                handler = mod.module.handler
+
+                position_locked = (
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
+                    'CreditCardModule_' in handler or
+                    handler == 'StudentRegConfirm'
+                )
+
+                if position_locked:
+                    raise ValueError(f"Module {handler} is locked and cannot be reordered")
+
+                mod.seq = int(new_seq)
+                mod.save(update_fields=['seq'])
+
+        return JsonResponse({"success": True})
+    except ValueError as e:
+        if "locked and cannot be reordered" in str(e):
+            return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except (TypeError, KeyError):
+        return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
+    except Exception as e:
+        logger.exception("module_schedule_reorder_api failed")
+        return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
+

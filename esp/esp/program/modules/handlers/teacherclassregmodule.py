@@ -61,6 +61,7 @@ import re
 import datetime
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
+    permission_types = ('Teacher/Classes/All',)
 
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
@@ -372,14 +373,20 @@ class TeacherClassRegModule(ProgramModuleObj):
                     section = sections[0]
                     json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
-                        #should we also delete the program attendance record?
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
                         if srs.exists():
                             for sr in srs:
-                                sr.expire() #or delete??
+                                sr.expire()
                             json_data['message'] = '%s is no longer marked as attending.' % student.name()
                         else:
                             json_data['message'] = '%s was not marked as attending.' % student.name()
+                        if request.POST.get('undo_checkin', 'false').lower() == 'true':
+                            rt = RecordType.objects.get(name="attended")
+                            # Undo only the most recent check-in
+                            rec = Record.objects.filter(user=student, program=prog, event=rt).order_by('-id').first()
+                            if rec is not None:
+                                rec.delete()
+                                json_data['uncheckedin'] = True
                     else:
                         if not prog.isCheckedIn(student):
                             rt = RecordType.objects.get(name="attended")
@@ -486,7 +493,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,}
@@ -510,7 +517,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         target_class = classes[0]
         context_form = FileUploadForm()
@@ -1018,13 +1025,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherClassRegForm(self.crmi, initial=current_data)
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherOpenClassRegForm(self.crmi, initial=current_data)
 
                 #   Todo...
                 ds = newclass.default_section()
