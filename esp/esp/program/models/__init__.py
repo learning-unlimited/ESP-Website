@@ -1324,9 +1324,15 @@ class Program(models.Model, CustomFormsLinkModel):
             if main_only:
                 if mod.main_view:
                     result[(tl, mod.main_view)] = mod
+                    fn = getattr(mod, mod.main_view, None)
+                    if fn and hasattr(fn, 'call_tl'):
+                        result[(fn.call_tl, mod.main_view)] = mod
             else:
                 for view in mod.views:
                     result[(tl, view)] = mod
+                    fn = getattr(mod, view, None)
+                    if fn and hasattr(fn, 'call_tl'):
+                        result[(fn.call_tl, view)] = mod
         return result
     getModuleViews.depend_on_cache(getModules_cached, lambda **kwargs: {})
 
