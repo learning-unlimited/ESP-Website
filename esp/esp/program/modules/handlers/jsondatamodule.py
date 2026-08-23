@@ -54,6 +54,7 @@ from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, RegistrationType, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
+from esp.program.modules.module_constraints import enforce_module_constraints, get_module_constraints
 from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, UserAvailability, StudentInfo, Record
@@ -1201,58 +1202,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'teachers': teacher_dicts}
 
-    @staticmethod
-    def _module_constraints(handler):
-        """Return constraint flags for a module handler, mirroring admincore."""
-        required_locked = (
-            handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
-            handler == 'AvailabilityModule' or
-            'AcknowledgementModule' in handler or
-            handler == 'StudentRegTwoPhase'
-        )
-        not_required_locked = (
-            'CreditCardModule_' in handler or
-            handler == 'StudentRegConfirm'
-        )
-        position_locked = (
-            handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
-            'CreditCardModule_' in handler or
-            handler == 'StudentRegConfirm'
-        )
-        if required_locked or not_required_locked or position_locked:
-            return {
-                'required_locked': required_locked,
-                'not_required_locked': not_required_locked,
-                'position_locked': position_locked,
-            }
-        return None
-
-    @staticmethod
-    def _enforce_constraints(prog):
-        """Re-apply hard-coded module constraints, mirroring admincore."""
-        ProgramModuleObj.objects.filter(
-            program=prog,
-            module__handler__in=(
-                'StudentRegProfileModule',
-                'TeacherRegProfileModule',
-            ),
-        ).update(seq=0, required=True)
-        ProgramModuleObj.objects.filter(
-            program=prog, module__handler='AvailabilityModule'
-        ).update(required=True)
-        ProgramModuleObj.objects.filter(
-            program=prog, module__handler='StudentRegTwoPhase'
-        ).update(required=True)
-        ProgramModuleObj.objects.filter(
-            program=prog, module__handler='StudentRegConfirm'
-        ).update(seq=99999, required=False)
-        ProgramModuleObj.objects.filter(
-            program=prog, module__handler__contains='CreditCardModule_'
-        ).update(seq=10000, required=False)
-        ProgramModuleObj.objects.filter(
-            program=prog, module__handler__contains='AcknowledgementModule'
-        ).update(required=True)
-
     @aux_call
     @json_response()
     @needs_admin
@@ -1275,7 +1224,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     'required': pmo.required,
                     'required_label': pmo.required_label,
                 }
-                constraints = JSONDataModule._module_constraints(pmo.module.handler)
+                constraints = get_module_constraints(pmo.module.handler)
                 if constraints:
                     entry['constraints'] = constraints
                 modules.append(entry)
@@ -1328,7 +1277,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             for field, value in updates.items():
                 setattr(pmo, field, value)
             pmo.save()
-            self._enforce_constraints(prog)
+            enforce_module_constraints(prog)
 
         pmo.refresh_from_db()
         return JsonResponse({
@@ -1381,8 +1330,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 pmo.seq = seq
                 seq += 1
                 to_update.append(pmo)
-            ProgramModuleObj.objects.bulk_update(to_update, ['seq'])
-            self._enforce_constraints(prog)
+            for pmo in to_update:
+                pmo.save(update_fields=('seq',))
+            enforce_module_constraints(prog)
 
         return JsonResponse({'status': 'ok', 'updated': len(to_update)})
 
@@ -1412,12 +1362,18 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 {'error': 'Specify at least one property to reset'}, status=400)
 
         with transaction.atomic():
-            to_update = [
-                pmo
+            module_ids = [
+                pmo.id
                 for tl in ('learn', 'teach')
                 for pmo in prog.getModules(tl=tl)
                 if pmo.inModulesList()
             ]
+            # Save base objects so ProgramModuleObj cache dependencies receive
+            # post_save; concrete module proxies use a different signal sender.
+            to_update = list(
+                ProgramModuleObj.objects.filter(id__in=module_ids)
+                .select_related('module')
+            )
             for pmo in to_update:
                 if reset_seq:
                     pmo.seq = pmo.module.seq
@@ -1438,8 +1394,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             if reset_link_title:
                 update_fields.append('link_title')
 
-            ProgramModuleObj.objects.bulk_update(to_update, update_fields)
-            self._enforce_constraints(prog)
+            for pmo in to_update:
+                pmo.save(update_fields=update_fields)
+            enforce_module_constraints(prog)
 
         return JsonResponse({'status': 'ok'})
 

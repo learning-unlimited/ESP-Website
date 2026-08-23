@@ -50,6 +50,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, CoreModule, 
 from esp.program.modules.admin_search import AdminSearchEntry, serialize_admin_search_entries, SEARCH_CATEGORY_SETTINGS, SEARCH_CATEGORY_CLASSES, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.module_constraints import enforce_module_constraints, get_module_constraints
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.models import Permission, ESPUser, PersistentQueryFilter
@@ -757,40 +758,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
                 pmo.save()
-            # Override some settings that shouldn't be changed
-            # Profile modules should always be required and always first
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"])
-            for pmo in pmos:
-                pmo.seq = 0
-                pmo.required = True
-                pmo.save()
-            # Credit card modules should never be required and always be after everything except confirm reg
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "CreditCardModule_")
-            for pmo in pmos:
-                pmo.seq = 10000
-                pmo.required = False
-                pmo.save()
-            # The confirm reg module should never be required and should always be last
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegConfirm")
-            for pmo in pmos:
-                pmo.seq = 99999
-                pmo.required = False
-                pmo.save()
-            # The availability module should always be required
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "AvailabilityModule")
-            for pmo in pmos:
-                pmo.required = True
-                pmo.save()
-            # The acknowledgment modules should always be required
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "AcknowledgementModule")
-            for pmo in pmos:
-                pmo.required = True
-                pmo.save()
-            # The two phase lottery module should always be required
-            pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegTwoPhase")
-            for pmo in pmos:
-                pmo.required = True
-                pmo.save()
+            enforce_module_constraints(prog)
 
         learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]
         context['learn_modules'] = {'required': [mod for mod in learn_modules if mod.required],
@@ -801,31 +769,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         # Build per-module constraint metadata for the UI.  The JS uses this to
         # prevent illegal drags instead of silently undoing them on save.
-        # This mirrors the hard-override block at the end of the POST branch above.
         module_constraints = {}
         for mod in learn_modules + teach_modules:
-            handler = mod.module.handler
-            required_locked = (
-                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
-                handler == 'AvailabilityModule' or
-                'AcknowledgementModule' in handler or
-                handler == 'StudentRegTwoPhase'
-            )
-            not_required_locked = (
-                'CreditCardModule_' in handler or
-                handler == 'StudentRegConfirm'
-            )
-            position_locked = (
-                handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
-                'CreditCardModule_' in handler or
-                handler == 'StudentRegConfirm'
-            )
-            if required_locked or not_required_locked or position_locked:
-                module_constraints[str(mod.id)] = {
-                    'required_locked': required_locked,
-                    'not_required_locked': not_required_locked,
-                    'position_locked': position_locked,
-                }
+            constraints = get_module_constraints(mod.module.handler)
+            if constraints:
+                module_constraints[str(mod.id)] = constraints
         context['module_constraints'] = module_constraints
         # position_locked_ids: modules that cannot be dragged at all (fully frozen).
         # Modules that are only required/not_required locked can still be reordered

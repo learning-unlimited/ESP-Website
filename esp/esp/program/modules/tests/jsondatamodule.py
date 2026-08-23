@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 import json
 from collections import Counter
 
+from django.db.models.signals import post_save
 from django.utils.html import escape
 
 from esp.program.tests import ProgramFrameworkTest
@@ -798,6 +799,32 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
             pmo.refresh_from_db()
             self.assertEqual(pmo.seq, 0)
 
+    def test_modules_reorder_emits_save_signal_for_changed_sequence(self):
+        """modules_reorder invalidates caches that depend on module saves."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.get(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        )
+        saved_fields = []
+
+        def capture_save(sender, instance, update_fields, **kwargs):
+            if instance.id == pmo.id:
+                saved_fields.append(frozenset(update_fields or ()))
+
+        post_save.connect(capture_save, sender=ProgramModuleObj, weak=False)
+        try:
+            r = self.client.post(
+                self._url('modules_reorder'),
+                data=json.dumps({'module_ids': [pmo.id]}),
+                content_type='application/json',
+            )
+        finally:
+            post_save.disconnect(capture_save, sender=ProgramModuleObj)
+
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(frozenset(('seq',)), saved_fields)
+
     # -----------------------------------------------------------------------
     # modules_reset
     # -----------------------------------------------------------------------
@@ -936,3 +963,29 @@ class JSONModuleManagementTest(ProgramFrameworkTest):
         for pmo in confirm_pmos:
             pmo.refresh_from_db()
             self.assertFalse(pmo.required)
+
+    def test_modules_reset_emits_save_signal_for_changed_fields(self):
+        """modules_reset invalidates caches that depend on module saves."""
+        self.client.login(username='admin_json_mgmt', password='password')
+        pmo = ProgramModuleObj.objects.get(
+            program=self.program,
+            module__handler='AvailabilityModule',
+        )
+        saved_fields = []
+
+        def capture_save(sender, instance, update_fields, **kwargs):
+            if instance.id == pmo.id:
+                saved_fields.append(frozenset(update_fields or ()))
+
+        post_save.connect(capture_save, sender=ProgramModuleObj, weak=False)
+        try:
+            r = self.client.post(
+                self._url('modules_reset'),
+                data=json.dumps({'required_label': True}),
+                content_type='application/json',
+            )
+        finally:
+            post_save.disconnect(capture_save, sender=ProgramModuleObj)
+
+        self.assertEqual(r.status_code, 200)
+        self.assertIn(frozenset(('required_label',)), saved_fields)
