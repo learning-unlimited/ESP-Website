@@ -94,14 +94,14 @@ for c in program.classes():
                           [to_address, from_address], extra_headers=extra_headers)
             except Exception as e:
                 # print the exception
-                print "An error occurred while sending:", subject
+                print("An error occurred while sending:", subject)
                 import traceback
                 traceback.print_exc()
                 # prompt the user to retry
                 while True:
                     # loop until the user gives a yes or no answer
-                    print "Retry (y/n)?",
-                    choice = raw_input().lower()
+                    print("Retry (y/n)?", end=' ')
+                    choice = input().lower()
                     if choice in ['y', 'yes']:
                         retry = True
                         break
@@ -111,11 +111,11 @@ for c in program.classes():
                 if retry:
                     continue
                 else:
-                    print "Skipping:", subject
+                    print("Skipping:", subject)
                     break
             else:
                 # email was sent successfully
-                print "Sent:", subject
+                print("Sent:", subject)
                 break
         import time
         time.sleep(1)

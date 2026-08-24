@@ -13,5 +13,5 @@ cs = set(cascade.students()['enrolled'])
 
 result = ss.intersection(cs)
 for u in result:
-	print "%s <%s>" % (u.name(), u.email)
+    print("%s <%s>" % (u.name(), u.email))
 

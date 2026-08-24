@@ -1,5 +1,5 @@
 """
-Makes a bunch of shortlinks. 
+Makes a bunch of shortlinks.
 
 Takes in:
 -A spreadsheet stored in 'redirects_spreadsheet.csv'
@@ -38,5 +38,5 @@ if __name__ == '__main__':
         reader = csv.DictReader(f, delimiter="\t")
         for row in reader:
             args = row["shortlink"], row["destination"], {"src": row["src"]}, True
-            print args
+            print(args)
             create_shortlink(*args)

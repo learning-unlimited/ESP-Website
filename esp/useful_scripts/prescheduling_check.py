@@ -52,13 +52,13 @@ for row in sched_reader:
         try:
             current_room = section.resourceassignment_set.get(resource__event=current_start, resource__res_type__name="Classroom").resource.name
         except:
-            print "error on", section
+            print("error on", section)
             current_room = None
     else:
         current_room = None
     if start_event != current_start:
-        print section, start_event, room, current_start, current_room
+        print(section, start_event, room, current_start, current_room)
     elif current_room != room:
-        print section, room, current_room
+        print(section, room, current_room)
 
 #    print section, room, start_event
