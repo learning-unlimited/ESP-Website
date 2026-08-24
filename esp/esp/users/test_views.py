@@ -6,6 +6,9 @@ Covers the three issues reported in #4590:
   - CustomLoginView.handle_authenticated_user must not honor a ?next= that
     points off-site.
   - signout() must not honor a ?redirect= that points off-site.
+
+Also covers the mask_redirect() branch both login paths share, which nothing
+else exercised.
 """
 
 from django.test import SimpleTestCase
@@ -118,3 +121,26 @@ class SignoutRedirectTest(CacheFlushTestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.url, '/myesp/profile')
+
+
+class LoginPostRedirectTest(CacheFlushTestCase):
+    """ The redirect a successful login POST hands back.
+
+    LOGIN_REDIRECT_URL is '/', which is in mask_locations, so a plain login
+    goes through mask_redirect().  handle_authenticated_user() reaches the
+    same branch, so this covers the shared path.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.user = ESPUser.objects.create_user(username='login_tester',
+                                                password='password')
+        RegistrationProfile.objects.create(user=self.user)
+
+    def test_successful_login_redirects_home(self):
+        response = self.client.post(reverse('login'),
+                                    {'username': 'login_tester',
+                                     'password': 'password'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('url=/"', response.content.decode())
