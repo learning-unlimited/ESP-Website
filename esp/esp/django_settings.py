@@ -204,6 +204,7 @@ FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
+    (  50, 'django.middleware.security.SecurityMiddleware'),
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
@@ -272,6 +273,28 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+######################
+# Transport security #
+######################
+# NOTE: the DEBUG-dependent transport security settings (SESSION_COOKIE_SECURE,
+# CSRF_COOKIE_SECURE, SECURE_SSL_REDIRECT, SECURE_HSTS_SECONDS) are *not* set
+# here.  DEBUG defaults to False in this file and is only given its real value
+# by local_settings.py, which settings.py imports afterwards -- so anything
+# derived from DEBUG in this file would silently use the production value in
+# development.  Those settings are derived in settings.py instead, in the same
+# place as TEMPLATES[0]['OPTIONS']['debug'].  Deployment-specific transport
+# settings (SECURE_PROXY_SSL_HEADER, HSTS tuning) belong in local_settings.py;
+# see deploy/config_templates/local_settings.py for the documented options.
+
+# Keep the CSRF cookie readable by JavaScript.  Existing client-side CSRF
+# handling (csrf_init.js, csrf_check.js, and callers such as
+# customforms_response.js) reads the 'esp_csrftoken' cookie via $.cookie() to
+# populate csrfmiddlewaretoken fields and X-CSRFToken headers, so setting
+# HttpOnly would break every AJAX POST.  Before flipping this to True, migrate
+# that JS to read the token from a server-rendered DOM element
+# ({% csrf_token %}).  Tracked separately from the transport hardening above.
+CSRF_COOKIE_HTTPONLY = False
 
 ATOMIC_REQUESTS = True
 

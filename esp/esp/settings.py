@@ -77,6 +77,38 @@ TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
 TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
 TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
+######################
+# Transport security #
+######################
+# These must be derived here, *after* local_settings.py has been imported,
+# rather than in django_settings.py.  django_settings.py defaults DEBUG to
+# False and local_settings.py is what gives DEBUG its real value, so anything
+# derived from DEBUG in django_settings.py would use the production value even
+# in development -- which would redirect http://localhost:8000 to HTTPS and
+# refuse to send session/CSRF cookies over plain HTTP, breaking the documented
+# Docker development flow.
+#
+# An explicit assignment in local_settings.py always wins over the DEBUG-derived
+# default; see deploy/config_templates/local_settings.py for the deployment
+# options (including SECURE_PROXY_SSL_HEADER and HSTS tuning).
+from . import local_settings as _local_settings
+
+if not hasattr(_local_settings, 'SESSION_COOKIE_SECURE'):
+    SESSION_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'CSRF_COOKIE_SECURE'):
+    CSRF_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'SECURE_SSL_REDIRECT'):
+    SECURE_SSL_REDIRECT = not DEBUG
+if not hasattr(_local_settings, 'SECURE_HSTS_SECONDS'):
+    # Deliberately short.  HSTS is a browser-side commitment that cannot be
+    # revoked before it expires, so the default is a value a deployment can
+    # recover from within an hour if HTTPS breaks.  Raise it per deployment in
+    # local_settings.py once HTTPS is known to be stable everywhere the site is
+    # served.  SECURE_HSTS_INCLUDE_SUBDOMAINS and SECURE_HSTS_PRELOAD are left
+    # at Django's False default for the same reason: they affect sibling
+    # subdomains and, for preload, are effectively irreversible.
+    SECURE_HSTS_SECONDS = 0 if DEBUG else 3600
+
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:
     try:
