@@ -46,7 +46,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, render_deadline_for_tl
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, list_extensions, render_deadline_for_tl
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -241,18 +241,31 @@ class StudentClassRegModule(ProgramModuleObj):
                    super().deadline_met('/Classes/Lottery')
 
     def _catalog_deadline_closed(self, prog):
-        """Return True if a Student/Catalog deadline exists and is currently closed."""
-        deadline_qs = Permission.objects.filter(
+        """Return True if a Student/Catalog deadline exists and is currently closed.
+
+        The catalog responses are cached publicly, so this check deliberately
+        differs from the usual deadline handling in three ways:
+
+        - Only program-wide permissions (user=None) are considered, so that the
+          answer is the same for every visitor and stays cacheable.  Per-user
+          extensions of Student/Catalog have no effect.
+        - If no Student/Catalog permission is configured at all, the catalog is
+          open.  Most programs never set this deadline and expect a public
+          catalog; the deadline is opt-in.
+        - Implied permissions are ignored.  An open Student/All (which
+          prepare_program() creates for every program) does not open or close
+          the catalog; only an explicit Student/Catalog permission does.
+        """
+        #   One query; a program has at most a handful of these, and reusing
+        #   is_valid() keeps the open/closed rule in one place.
+        deadlines = list(Permission.objects.filter(
             permission_type='Student/Catalog',
             program=prog,
             user__isnull=True,
-        )
-        # If no deadline is configured, keep catalog endpoints open.
-        if not deadline_qs.exists():
+        ))
+        if not deadlines:
             return False
-        # If at least one deadline is configured, catalog is open only when
-        # at least one matching permission is currently valid.
-        return not deadline_qs.filter(Permission.is_valid_qobject()).exists()
+        return not any(deadline.is_valid() for deadline in deadlines)
 
     def prepare(self, context={}):
         user = get_current_request().user
@@ -743,7 +756,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         if self._catalog_deadline_closed(prog):
             response = render_deadline_for_tl('learn', request,
-                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
             response['Cache-Control'] = 'no-store'
             return response
         response = self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
@@ -756,7 +769,7 @@ class StudentClassRegModule(ProgramModuleObj):
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         if self._catalog_deadline_closed(prog):
             response = render_deadline_for_tl('learn', request,
-                    {'extension': 'the deadline Student/Catalog was', 'moduleObj': self})
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
             response['Cache-Control'] = 'no-store'
             return response
         #   Get the ProgramPrintables module for the program

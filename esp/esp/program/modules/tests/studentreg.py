@@ -531,6 +531,7 @@ class StudentRegTest(ProgramFrameworkTest):
         )
         response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
 
         # Expired deadline - should show error
         perm.end_date = timezone.now() - timedelta(hours=1)
