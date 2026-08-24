@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 import os
 import re
 import zipfile
+import sentry_sdk
 from io import BytesIO as StringIO
 from django.template import Template, loader, RequestContext
 from django.conf import settings
@@ -109,6 +110,7 @@ def error500(request, template_name='500.html'):
     context['settings'] = settings # needed by elements/html
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
+    context['sentry_event_id'] = sentry_sdk.last_event_id()
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
