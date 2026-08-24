@@ -1460,3 +1460,18 @@ class PasswordValidationTest(TestCase):
         # 'testpwuser1' is too similar to username 'testpwuser'.
         form = self._reg_form('testpwuser1')
         self.assertFalse(form.is_valid())
+
+
+class ResendActivationCaseTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create(username='johndoe', email='johndoe@example.com', is_active=False)
+        self.user.set_password('ValidPass1!')
+        self.user.password += '_actkey'
+        self.user.save()
+
+    def test_resend_accepts_different_username_case(self):
+        response = self.client.post('/myesp/resend/', {'username': 'JOHNDOE'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/resend_done.html')
+        self.assertEqual(len(mail.outbox), 1)

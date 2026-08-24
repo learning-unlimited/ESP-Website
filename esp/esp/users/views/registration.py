@@ -366,7 +366,7 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        user=ESPUser.objects.get(username=form.cleaned_data['username'])
+        user=ESPUser.objects.get(username__iexact=form.cleaned_data['username'])
         userkey=user.password[user.password.rfind("_")+1:]
         send_activation_email(user, userkey)
         return render_to_response('registration/resend_done.html', request,
