@@ -12,11 +12,11 @@
      <pre>{{ DEFAULT_EMAIL_ADDRESSES.support }}</pre>
    explaining to us how you got this message, and we'll try to fix it.
 
-   {% if request.sentry %}
+   {% if sentry_event_id %}
    <br />
    <br />
    Please include the following error ID:
-     <pre>{{ request.sentry.id }}</pre>
+     <pre>{{ sentry_event_id }}</pre>
    {% endif %}
 
    <br />
