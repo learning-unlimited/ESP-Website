@@ -112,10 +112,17 @@ class CustomLoginView(LoginView):
         if 'form' in context and not context['form'].is_valid():
             username = self.request.POST.get('username', '')
             if username:
-                if ESPUser.objects.filter(username=username).exists():
+                try:
+                    user = ESPUser.objects.get(username=username)
+                    if not user.is_active:
+                        if re.search(r'_\d+$', user.password):
+                            context['inactive_account'] = True
+                        else:
+                            context['account_disabled'] = True
+                    else:
+                        context['wrong_pw'] = True
+                except ESPUser.DoesNotExist:
                     context['wrong_pw'] = True
-                else:
-                    context['wrong_user'] = True
         if not self.request.GET:
             context['initiated_login'] = True
         return context
