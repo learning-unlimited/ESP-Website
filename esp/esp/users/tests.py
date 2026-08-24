@@ -1471,8 +1471,30 @@ class DisableAccountPostOnlyTest(TestCase):
         self.client.login(username='disableme', password='password')
 
     def test_get_does_not_change_account_state(self):
+        # The legacy ?disable=1 GET branch must not disable an active account.
         response = self.client.get('/myesp/disableaccount/?disable=1')
         self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+        # Properly disable via POST so the legacy ?enable=1 GET branch
+        # can be checked against a disabled account.
+        response = self.client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        # The legacy ?enable=1 GET branch must not re-enable a disabled account.
+        response = self.client.get('/myesp/disableaccount/?enable=1')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_post_without_csrf_token_is_rejected(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        self.assertTrue(csrf_client.login(username='disableme', password='password'))
+        response = csrf_client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 403)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
 
