@@ -12,19 +12,33 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 
 def autocomplete_wrapper(function, data, is_staff, **kwargs):
     """Call the model's ajax_autocomplete; pass request if the function accepts it."""
-    # Only pass 'request' if the function actually accepts it
+    # Both checks below read the callee's declared parameters.  inspect.signature is
+    # used rather than __code__.co_varnames because co_varnames also lists local
+    # variables (so a local named 'allow_non_staff' would read as an opt-in) and it
+    # describes the outermost function, so a decorated ajax_autocomplete reports the
+    # decorator's (*args, **kwargs) instead of the parameters it actually forwards.
     try:
         sig = inspect.signature(function)
-        if 'request' not in sig.parameters:
-            kwargs.pop('request', None)
     except (TypeError, ValueError):
+        # Some C-implemented callables have no introspectable signature.  Treat them
+        # as accepting nothing rather than guessing.
+        params = {}
+    else:
+        params = sig.parameters
+
+    # Only pass 'request' if the function actually accepts it
+    if 'request' not in params:
         kwargs.pop('request', None)
+
     if is_staff:
         return function(data, **kwargs)
-    # Unwrap classmethod/bound method to get the underlying function
-    fn = getattr(function, '__func__', function)
-    code = getattr(fn, '__code__', None)
-    if code and 'allow_non_staff' in code.co_varnames:
+
+    # Non-staff callers only get through to autocompletes that opt in by declaring an
+    # explicit 'allow_non_staff' parameter.  A bare **kwargs is deliberately *not* an
+    # opt-in: accepting arbitrary keywords says nothing about whether the data is safe
+    # to expose, and several staff-only autocompletes take **kwargs
+    # (e.g. ESPUser.ajax_autocomplete_student).
+    if 'allow_non_staff' in params:
         return function(data, **kwargs)
     return []
 

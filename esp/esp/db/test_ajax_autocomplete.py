@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 
+import functools
 import json
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.test.client import Client
 
+from esp.db.views import autocomplete_wrapper
 from esp.users.models import ESPUser, K12School
 
 
@@ -285,6 +287,11 @@ class AutocompleteNonStaffAccessTest(TestCase):
         self.non_staff.save()
         self.client.login(username='regular_user', password='pw')
 
+        # The staff-only ESPUser autocompletes look these up by name; create them so
+        # that a gating regression surfaces as leaked results rather than a lookup error.
+        Group.objects.get_or_create(name='Student')
+        Group.objects.get_or_create(name='Teacher')
+
         K12School.objects.get_or_create(name='Test Academy')
 
     def test_non_staff_cannot_search_espuser(self):
@@ -322,3 +329,109 @@ class AutocompleteNonStaffAccessTest(TestCase):
         ids = [r['id'] for r in data['result']]
         school = K12School.objects.get(name='Test Academy')
         self.assertIn(school.id, ids)
+
+    def test_non_staff_cannot_search_espuser_via_kwargs_only_funcs(self):
+        """Accepting **kwargs is not an opt-in to non-staff access.
+
+        ESPUser.ajax_autocomplete_student and friends take **kwargs but are
+        staff-only; treating a var-keyword parameter as an opt-in would expose
+        student and teacher records to any logged-in user.
+        """
+        staff_only_funcs = [
+            'ajax_autocomplete_student',
+            'ajax_autocomplete_teacher',
+            'ajax_autocomplete_approved_teacher',
+            'ajax_autocomplete_student_lottery',
+        ]
+        for ajax_func in staff_only_funcs:
+            with self.subTest(ajax_func=ajax_func):
+                response = self.client.get(AUTOCOMPLETE_URL, {
+                    'model_module': 'esp.users.models',
+                    'model_name': 'ESPUser',
+                    'ajax_func': ajax_func,
+                    'ajax_data': 'Test',
+                    'prog': '',
+                })
+                self.assertEqual(response.status_code, 200)
+                data = json.loads(response.content)
+                self.assertEqual(
+                    data['result'], [],
+                    "%s takes **kwargs but is staff-only; non-staff users must "
+                    "not receive results from it" % ajax_func)
+
+
+class AutocompleteWrapperGatingTest(SimpleTestCase):
+    """autocomplete_wrapper decides non-staff access from the callee's parameters."""
+
+    def test_explicit_parameter_opts_in(self):
+        """A declared allow_non_staff parameter is the opt-in."""
+        def ajax_autocomplete(data, allow_non_staff=True):
+            return ['called']
+
+        self.assertEqual(
+            autocomplete_wrapper(ajax_autocomplete, 'q', False), ['called'])
+
+    def test_var_keyword_alone_does_not_opt_in(self):
+        """**kwargs is not an opt-in, but staff callers still get through."""
+        def ajax_autocomplete(data, **kwargs):
+            return ['called']
+
+        self.assertEqual(autocomplete_wrapper(ajax_autocomplete, 'q', False), [])
+        self.assertEqual(
+            autocomplete_wrapper(ajax_autocomplete, 'q', True), ['called'])
+
+    def test_local_variable_is_not_an_opt_in(self):
+        """A local named allow_non_staff is not a parameter.
+
+        __code__.co_varnames lists locals alongside parameters, so this case would
+        read as an opt-in under the old check.
+        """
+        def ajax_autocomplete(data, **kwargs):
+            allow_non_staff = True
+            return ['called'] if allow_non_staff else []
+
+        self.assertEqual(autocomplete_wrapper(ajax_autocomplete, 'q', False), [])
+
+    def test_decorated_function_is_inspected_through_the_wrapper(self):
+        """A decorated autocomplete is judged by the parameters it forwards to."""
+        def passthrough(func):
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+
+        @passthrough
+        def ajax_autocomplete(data, allow_non_staff=True):
+            return ['called']
+
+        # The decorator's own parameters are (*args, **kwargs), so the old
+        # co_varnames check saw no allow_non_staff here and denied the call.
+        self.assertEqual(
+            autocomplete_wrapper(ajax_autocomplete, 'q', False), ['called'])
+
+    def test_callable_without_introspectable_signature_is_denied(self):
+        """Callables whose signature cannot be read are denied, not guessed at."""
+        class Unintrospectable(object):
+            # Mirrors C-implemented callables, for which inspect.signature raises.
+            __signature__ = 'not a signature'
+
+            def __call__(self, data, allow_non_staff=True):
+                return ['called']
+
+        self.assertEqual(autocomplete_wrapper(Unintrospectable(), 'q', False), [])
+
+    def test_request_is_only_passed_when_accepted(self):
+        """request is dropped for callees that do not declare it."""
+        def wants_request(data, allow_non_staff=True, request=None, **kwargs):
+            return ['got request'] if request is not None else ['no request']
+
+        def no_request(data, allow_non_staff=True, **kwargs):
+            return sorted(kwargs)
+
+        sentinel = object()
+        self.assertEqual(
+            autocomplete_wrapper(wants_request, 'q', False, request=sentinel),
+            ['got request'])
+        self.assertEqual(
+            autocomplete_wrapper(no_request, 'q', False, request=sentinel, prog=None),
+            ['prog'])
