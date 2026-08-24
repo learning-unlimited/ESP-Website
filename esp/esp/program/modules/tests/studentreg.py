@@ -547,6 +547,23 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('deadline', response.content.decode('utf-8').lower())
         self.assertEqual(response['Cache-Control'], 'no-store')
 
+    def test_catalog_deadline_is_configurable(self):
+        """Admins must be able to create the Student/Catalog deadline.
+
+        The catalog views key off this permission type, so it has to be offered
+        by the deadline UI and accepted by model validation.  Permission
+        .objects.create() skips both checks, so assert them explicitly.
+        """
+        from esp.program.modules.handlers.admincore import NewDeadlineForm
+
+        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn('Student/Catalog', Permission.deadline_types)
+
+        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+        Permission(permission_type='Student/Catalog', program=self.program,
+                   user=None).full_clean()
 
     def test_catalog_json_open(self):
         """catalog_json returns 200 with JSON when catalog is open."""
