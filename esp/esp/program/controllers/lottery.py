@@ -38,13 +38,12 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from pkg_resources import parse_version
-assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
+from packaging.version import Version
+assert Version(numpy.version.short_version) >= Version("1.7.0")
 import numpy.random
 
 from datetime import date, datetime
 
-from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
@@ -247,7 +246,7 @@ class LotteryAssignmentController(object):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.timeslots:
@@ -282,9 +281,6 @@ class LotteryAssignmentController(object):
                 self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
 
 
-        #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
-        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + sum([numpy.sum(self.priority[i].astype(float), 1) for i in range(1, self.effective_priority_limit+1)])
-
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
         start_times = numpy.array(self.sections.annotate(start_time=Min('meeting_times')).values_list('id', 'start_time'))
@@ -311,6 +307,9 @@ class LotteryAssignmentController(object):
 
         # Populate section lengths (hours)
         self.section_lengths = numpy.array([x.nonzero()[0].size for x in self.section_schedules])
+
+        #   Set student utility weights as total scheduled timeslots (hours) of classes each student selected; used only for computing the overall utility stat
+        self.student_utility_weights = self.interest.astype(float) @ self.section_lengths + sum([self.priority[i].astype(float) @ self.section_lengths for i in range(1, self.effective_priority_limit+1)])
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.

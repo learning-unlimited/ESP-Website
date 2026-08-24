@@ -1,3 +1,4 @@
+import json
 import logging
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,16 @@ class Tag(models.Model):
         # and object_id are both null.  However null's are special in SQL.
         # Django can't currently do this, so it's enforced by custom SQL.
         # TODO:  Write this custom SQL for backends other than PostgreSQL.
+
+    def clean(self):
+        super().clean()
+        if (self.content_type_id is None) != (self.object_id is None):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.key}: {self.value} ({self.target})"
@@ -290,3 +301,32 @@ class Tag(models.Model):
             tag_counter += 1
 
         return tag_counter
+
+    @classmethod
+    def getDifficultyDescription(cls, difficulty_key):
+        """
+        Return the human-readable description for a difficulty key from the
+        teacherreg_difficulty_choices tag (e.g. "**" -> "Introductory").
+        Returns None if the tag is not set, invalid, or the key is not found.
+        """
+        if not difficulty_key:
+            return None
+        difficulty_map = cls.getDifficultyMap()
+        return difficulty_map.get(str(difficulty_key))
+
+    @classmethod
+    def getDifficultyMap(cls):
+        """
+        Parse the teacherreg_difficulty_choices tag once and return a
+        {key_string: description} dict for O(1) lookups.
+        Returns an empty dict if the tag is not set or invalid.
+        """
+        tag_val = cls.getTag('teacherreg_difficulty_choices')
+        if not tag_val or not tag_val.strip():
+            return {}
+        try:
+            choices = json.loads(tag_val)
+            return {str(pair[0]): pair[1]
+                    for pair in choices if len(pair) >= 2}
+        except (ValueError, TypeError):
+            return {}
