@@ -152,6 +152,8 @@ urlpatterns += [
     url(r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', main.archives),
 
     url(r'^email/([0-9]+)/?$', main.public_email),
+
+    url(r'^manage/testerror/(?P<code>[0-9]+)/?$', esp.utils.views.test_error),
 ]
 
 urlpatterns += [
