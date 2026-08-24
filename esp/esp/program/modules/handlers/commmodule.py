@@ -183,10 +183,19 @@ class CommModule(ProgramModuleObj):
 
         return mailer_warnings
 
+    @staticmethod
+    def get_valid_filter_or_error(filterid):
+        """ Return the PersistentQueryFilter for filterid, or raise an
+            ESPError if the filter does not exist or the id is invalid. """
+        try:
+            return PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError("The selected recipient filter is no longer valid.  "
+                           "Please go back and reselect your recipient list.")
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -227,7 +236,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
 
-        userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
+        userlist = CommModule.get_valid_filter_or_error(filterid).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
@@ -300,7 +309,6 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest # noqa: F811
-        from esp.users.models import PersistentQueryFilter # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
@@ -352,7 +360,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
 
-        filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filterobj = CommModule.get_valid_filter_or_error(filterid)
 
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 

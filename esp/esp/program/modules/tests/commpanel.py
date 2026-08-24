@@ -79,6 +79,10 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         warnings = CommModule.get_mailer_warnings(10, 999999, '')
         self.assertTrue(any('no longer valid' in warning for warning in warnings))
 
+    def test_non_integer_filter_id_returns_warning(self):
+        warnings = CommModule.get_mailer_warnings(10, 'not-an-id', '')
+        self.assertTrue(any('no longer valid' in warning for warning in warnings))
+
     def test_basic_comm_flow(self):
         #   Log in an administrator
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
@@ -233,8 +237,3 @@ class MakeImageUrlsAbsoluteTest(SimpleTestCase):
     def test_empty_body(self):
         self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')
 
-
-class MailerWarningsStaleFilterTest(SimpleTestCase):
-    def test_non_integer_filter_id_returns_warning(self):
-        warnings = CommModule.get_mailer_warnings(10, 'not-an-id', '')
-        self.assertTrue(any('no longer valid' in warning for warning in warnings))
