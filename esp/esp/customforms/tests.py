@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 import json
 
+from django.db.utils import IntegrityError
+
 from esp.customforms.models import Form, Field, Page, Section, Attribute
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
@@ -879,3 +881,16 @@ class SetAttributeUpdateOrCreateTest(TestCase):
         self.assertEqual(updated.id, attr.id)
         updated.refresh_from_db()
         self.assertEqual(updated.value, '0,200')
+
+    def test_duplicate_attribute_blocked_at_database_level(self):
+        user, _ = ESPUser.objects.get_or_create(username='attr_owner_dupe')
+        form = Form.objects.create(title='Attr Dupe Form', created_by=user)
+        page = Page.objects.create(form=form, seq=0)
+        section = Section.objects.create(page=page, title='S', seq=0)
+        field = Field.objects.create(
+            form=form, section=section, field_type='textField',
+            seq=0, label='Q',
+        )
+        Attribute.objects.create(field=field, attr_type='charlimits', value='0,100')
+        with self.assertRaises(IntegrityError):
+            Attribute.objects.create(field=field, attr_type='charlimits', value='0,200')

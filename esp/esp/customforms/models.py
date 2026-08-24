@@ -77,6 +77,11 @@ class Attribute(models.Model):
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['field', 'attr_type'], name='unique_field_attr_type'),
+        ]
+
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
 
