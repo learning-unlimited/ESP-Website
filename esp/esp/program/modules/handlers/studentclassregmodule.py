@@ -42,17 +42,11 @@ from django.contrib.auth.models import User
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
+from django.utils.decorators import method_decorator
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, render_deadline_for_tl
-from esp.program.modules.admin_search import AdminSearchEntry
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_control
-from django.views.decorators.vary import vary_on_cookie
-from django.utils.safestring import mark_safe
-
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
