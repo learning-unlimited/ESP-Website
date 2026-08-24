@@ -46,10 +46,9 @@ import re
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models.query import Q
-from django.db.models import Min, OuterRef, Subquery, signals, Sum
+from django.db.models import Count, Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
 from django.dispatch import receiver
-from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
 from django.contrib.auth.models import AnonymousUser
@@ -136,6 +135,13 @@ class ClassSizeRange(models.Model):
         app_label='program'
 
 
+#   Catalog attributes that used to be exposed to order_by() as
+#   .extra(select=...) columns.  They are now populated from batched queries
+#   after the QuerySet has been evaluated, so they are no longer sortable.  Drop
+#   them from any stale catalog_sort_fields configuration rather than letting
+#   order_by() raise FieldError and take the whole catalog down.
+CATALOG_UNSORTABLE_FIELDS = frozenset(['media_count', '_index_qsd', '_studentapps_count'])
+
 class ClassManager(Manager):
     def __repr__(self):
         return "ClassManager()"
@@ -187,20 +193,6 @@ class ClassManager(Manager):
         classes = classes.annotate(_num_students=Sum('sections__enrolled_students'))
         classes = classes.prefetch_related('teachers')
 
-        #   Retrieve the content type for finding class documents (generic relation)
-        content_type_id = ContentType.objects.get_for_model(ClassSubject).id
-
-        select = OrderedDict([('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
-                             ('_index_qsd', 'SELECT COUNT(*) FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
-                             ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
-
-        select_params = [ content_type_id,
-                          '%/Classes/%',
-                          '%[A-Z]',
-                          '/%',
-                         ]
-        classes = classes.extra(select=select, select_params=select_params)
-
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
         if order_args_override:
@@ -210,8 +202,11 @@ class ClassManager(Manager):
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
-                #   If you found one, use it.
-                order_args = program_sort_fields.split(',')
+                #   If you found one, use it.  The help text shows examples
+                #   with spaces after the commas, so strip them off; unstripped
+                #   values make order_by() raise FieldError and would also miss
+                #   the legacy translation below.
+                order_args = [f.strip() for f in program_sort_fields.split(',') if f.strip()]
 
         #   Translate legacy ordering fields to use earliest_start so that
         #   older configurations keep working with the new stable behavior.
@@ -221,6 +216,18 @@ class ClassManager(Manager):
             else f
             for f in order_args
         ]
+
+        #   Drop fields that are no longer part of the QuerySet (see
+        #   CATALOG_UNSORTABLE_FIELDS).  A program configured to sort on one of
+        #   them should fall back to the remaining fields instead of erroring.
+        kept_order_args = [f for f in order_args if f.lstrip('-') not in CATALOG_UNSORTABLE_FIELDS]
+        if len(kept_order_args) != len(order_args):
+            logger.warning(
+                "Ignoring catalog sort field(s) %s for program %s: these are no longer database columns.",
+                [f for f in order_args if f.lstrip('-') in CATALOG_UNSORTABLE_FIELDS],
+                program,
+            )
+            order_args = kept_order_args or ['id']
 
         #   Only add the earliest_start annotation when the ordering uses it,
         #   to avoid unnecessary aggregate + joins for other sort configurations.
@@ -251,22 +258,66 @@ class ClassManager(Manager):
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
         #   See https://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
-        counter = 0
-        index = 0
-        max_count = len(classes)
-        id_list = []
-        while counter < max_count:
-            cls = classes[index]
+        seen_ids = set()
+        deduped = []
+        for counter, cls in enumerate(classes):
             cls._temp_index = counter
-            if cls.id not in id_list:
-                id_list.append(cls.id)
-                index += 1
-            else:
-                classes.remove(cls)
-            counter += 1
+            if cls.id not in seen_ids:
+                seen_ids.add(cls.id)
+                deduped.append(cls)
+        classes = deduped
 
         # All class ID's; used by later query ugliness:
         class_ids = [x.id for x in classes]
+
+        #   Fill in the catalog-only attributes that used to be computed by a
+        #   correlated subquery per catalog row (see issue #1716).  One batched
+        #   query each, keyed by class id.
+        media_counts = {}
+        studentapps_counts = {}
+        index_qsd_class_ids = set()
+
+        if class_ids:
+            #   Content type for finding class documents (generic relation)
+            content_type_id = ContentType.objects.get_for_model(ClassSubject).id
+            media_counts = dict(
+                Media.objects.filter(owner_type_id=content_type_id, owner_id__in=class_ids)
+                .values_list('owner_id')
+                .annotate(total=Count('id'))
+            )
+
+            #   Imported here rather than at module scope to avoid a circular
+            #   import, matching the rest of this module.
+            from esp.program.models.app_ import StudentAppQuestion
+            studentapps_counts = dict(
+                StudentAppQuestion.objects.filter(subject_id__in=class_ids)
+                .values_list('subject_id')
+                .annotate(total=Count('id'))
+            )
+
+            #   Class index QSDs live at 'learn/<program.url>/Classes/<emailcode>/index'
+            #   (see ClassSubject.url() and got_index_qsd()).  Pull the matching
+            #   URLs in one query and recover the class id from each.
+            qsd_url_qs = QuasiStaticData.objects.filter(
+                name='learn:index',
+                url__contains='/Classes/',
+                url__endswith='/index',
+            )
+            if program is not None:
+                qsd_url_qs = qsd_url_qs.filter(url__startswith='learn/%s/Classes/' % program.url)
+
+            #   Note: this matches lower-case category symbols too, which the
+            #   old '%[A-Z]' SQL pattern silently missed even though
+            #   ClassCategories.symbol permits them.
+            for qsd_url in qsd_url_qs.values_list('url', flat=True):
+                match = re.search(r'/Classes/[^/]*?(\d+)/index$', qsd_url)
+                if match:
+                    index_qsd_class_ids.add(int(match.group(1)))
+
+        for c in classes:
+            c.media_count = media_counts.get(c.id, 0)
+            c._studentapps_count = studentapps_counts.get(c.id, 0)
+            c._index_qsd = 1 if c.id in index_qsd_class_ids else 0
 
         # Now to get the sections corresponding to these classes...
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
@@ -292,6 +343,7 @@ class ClassManager(Manager):
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
     catalog_cached.depend_on_model('program.ClassSection')
+    catalog_cached.depend_on_model('program.StudentAppQuestion')
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 
