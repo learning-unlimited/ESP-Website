@@ -707,6 +707,20 @@ class BaseESPUser(object):
     getTypes = staticmethod(getTypes)
 
     @staticmethod
+    def awaiting_activation_Q():
+        """
+        Q object matching accounts that registered but never activated.
+
+        Deliberately narrower than is_active=False, which also matches
+        accounts disabled by an administrator, by an account merge, or by the
+        user unsubscribing.  Only accounts with an outstanding
+        PendingActivation row count as awaiting activation, so the resend
+        form and the duplicate-account warnings cannot be used to revive an
+        account that was switched off on purpose.
+        """
+        return Q(is_active=False, pending_activation__isnull=False)
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
             raise ESPError("Invalid type to find all of.")
@@ -2524,6 +2538,35 @@ class Record(models.Model):
 
     def __str__(self):
         return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
+
+class PendingActivation(models.Model):
+    """
+    Marks an account as registered but never activated.
+
+    The presence of a row means "this account is waiting for its owner to
+    click the activation link in their registration email"; the row is
+    deleted the first time the account is successfully activated.
+
+    This exists because is_active=False is overloaded.  It also covers
+    accounts that were disabled on purpose -- mass deactivation, account
+    merges, users unsubscribing -- and those must never be eligible for an
+    activation email.  Historically the two were told apart by the presence
+    of a "_<key>" suffix on the password hash, which is no longer written
+    (see esp.users.tokens for the replacement scheme), so the distinction
+    needs somewhere real to live.
+
+    No secret is stored here.  Activation tokens themselves are stateless
+    HMACs; this row only records that activation is outstanding.
+    """
+    user = models.OneToOneField(ESPUser, related_name='pending_activation',
+                                on_delete=models.CASCADE)
+    created = models.DateTimeField(blank=True, default=datetime.now)
+
+    class Meta:
+        app_label = 'users'
+
+    def __str__(self):
+        return f"{self.user} is awaiting account activation"
 
 #helper method for designing implications
 def flatten(choices):

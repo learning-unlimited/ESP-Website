@@ -75,7 +75,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -737,6 +737,12 @@ def activate_or_deactivate_user(request, activate):
             user = users[0]
             user.is_active = activate
             user.save()
+            if activate:
+                #   An admin activating the account by hand settles any
+                #   outstanding activation email; leaving the row behind would
+                #   make the account look activation-pending again if it were
+                #   later deactivated.
+                PendingActivation.objects.filter(user=user).delete()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
