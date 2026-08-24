@@ -40,7 +40,7 @@ from esp.users.models import admin_required
 from difflib import HtmlDiff
 import os.path
 from django.conf import settings
-from django.http import Http404
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseForbidden
 
 @admin_required
 def diff_templateoverride(request, template_id):
@@ -64,3 +64,22 @@ def diff_templateoverride(request, template_id):
             original_lines, override_lines,
             'original', 'override (version {})'.format(template_id))
     return render_to_response('utils/diff_templateoverride.html', request, context)
+
+
+@admin_required
+def test_error(request, code):
+    code = int(code)
+    if code == 200:
+        return HttpResponse("OK - no error triggered")
+    elif code == 400:
+        return HttpResponseBadRequest("Test 400 error - triggered manually via /manage/testerror/400")
+    elif code == 401:
+        return HttpResponse("Test 401 error - triggered manually via /manage/testerror/401", status=401)
+    elif code == 403:
+        return HttpResponseForbidden("Test 403 error - triggered manually via /manage/testerror/403")
+    elif code == 404:
+        raise Http404("Test 404 error - triggered manually via /manage/testerror/404")
+    elif code == 500:
+        raise Exception("Test error - triggered manually via /manage/testerror/500")
+    else:
+        raise Http404("Unsupported test error code %d" % code)

@@ -12,11 +12,7 @@ def teacherwaiverform_factory(prog):
     bases = (forms.Form,)
     date_range = prog.date_range()
 
-    label_tag = Tag.getProgramTag('teacher_waiver_label', prog, default=None)
-    if label_tag is not None:
-        label = str(label_tag)
-    else:
-        label = u"I have completed the online code of conduct."
+    label = Tag.getProgramTag('teacher_waiver_label', prog)
 
     d = dict(waiver=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)

@@ -2,6 +2,14 @@ ESP = (function(){
   var loaded = false;
   var queued_modules = [];
   var adminbar = document.getElementById('adminbar_content');
+  var COLLAPSE_STORAGE_PREFIX = 'esp_adminbar_collapsed_';
+
+  function applyStoredDisplay(id) {
+    var el = document.getElementById(id);
+    if (el && sessionStorage.getItem(COLLAPSE_STORAGE_PREFIX + id) == "true") {
+      el.style.display = "none";
+    }
+  }
 
   $j(document).ready(function() {
     loaded = true;
@@ -9,16 +17,19 @@ ESP = (function(){
     {
       ESP.registerAdminModule(queued_modules[i]);
     }
+    applyStoredDisplay('adminbar_content');
   });
 
   return {
     toggleDisplay: function(id) {
       var el = document.getElementById(id);
-      if (el.style.display == "none") {
-        el.style.display = "block";
-      } else {
+      var collapsed = el.style.display != "none";
+      if (collapsed) {
         el.style.display = "none";
+      } else {
+        el.style.display = "block";
       }
+      sessionStorage.setItem(COLLAPSE_STORAGE_PREFIX + id, collapsed);
     },
     registerAdminModule: function(module) {
       if (loaded) {
@@ -38,6 +49,7 @@ ESP = (function(){
         module_wrap.appendChild(module_content);
 
         adminbar.appendChild(module_wrap);
+        applyStoredDisplay(module_content.id);
       } else {
         queued_modules.push(module);
       }
