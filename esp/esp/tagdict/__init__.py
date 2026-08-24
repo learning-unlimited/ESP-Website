@@ -1324,7 +1324,7 @@ all_program_tags = {
     'minors_backgroundcheck_choices': {
         'is_boolean': False,
         'help_text': 'JSON-formatted list of 2-element [value, label] lists for the background-check choice field on the MIT Minors Policy acknowledgement form.',
-        'default': str([
+        'default': json.dumps([
             ('mit_recent_check', 'I am a current MIT affiliate who has had a valid MIT background check within the last 4 years.'),
             ('non_mit_recent_check', 'I am not an MIT affiliate, but I had a valid MIT background check within the last year.'),
             ('mit_no_check', 'I am a current MIT affiliate and will make sure to get an MIT background check after registering my classes.'),
@@ -1344,7 +1344,7 @@ all_program_tags = {
     'minors_observing_choices': {
         'is_boolean': False,
         'help_text': 'JSON-formatted list of 2-element [value, label] lists for the coteaching/observing choice field on the MIT Minors Policy acknowledgement form.',
-        'default': str([
+        'default': json.dumps([
             ('no', 'I have coteachers or commit to finding coteachers for all of my classes by the registration deadline.'),
             ('yes', "In exchange for receiving observers for my classes, I agree to sit in on an hour of another class for each hour I teach without a coteacher."),
             ('other', 'Other: I will explain in an email to the directors.'),
