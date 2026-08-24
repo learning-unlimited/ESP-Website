@@ -1,3 +1,5 @@
+import threading
+
 from django import forms
 from django.forms.models import fields_for_model
 from django.apps import apps
@@ -61,51 +63,86 @@ class CustomFormsCache:
         loaded=False,
     )
 
+    #   Guards cache population.  Readers do not take this lock; see _populate().
+    _lock = threading.Lock()
+
     def __init__(self):
         self.__dict__ = self.__shared_state
 
     def _populate(self):
         """
-        Populates the cache with metadata about models
+        Populates the cache with metadata about models.
+
+        Normally called once from CustomformsConfig.ready(), but it is safe to
+        call from multiple threads: the lock and the double-check on `loaded`
+        mean only one thread does the work.  The dicts are built locally and
+        swapped in at the end, so readers (which do not take the lock) always
+        see either the complete previous cache or the complete new one, never
+        a half-built one.
         """
         if self.loaded:
             return
 
-        for model in apps.get_models():
-            if CustomFormsLinkModel in model.__bases__:
-                if not hasattr(model, 'link_fields_list'):
-                    # only_fkey model
-                    self.only_fkey_models.update({model.form_link_name : model})
-                else:
-                    # This model has linked fields
-                    self.link_fields[model.form_link_name] = {'model': model, 'fields': {}}
-                    # Now getting the fields
-                    all_form_fields = fields_for_model(model, widgets = getattr(model, 'link_fields_widgets', None))
-                    sublist = getattr(model, 'link_fields_list')
-                    for field, display_name in sublist:
-                        field_name = model.__name__ + "_" + field
+        with self._lock:
+            #   Another thread may have populated the cache while we waited.
+            if self.loaded:
+                return
 
-                        if field in all_form_fields:
-                            field_instance = all_form_fields[field]
-                            generic_field_type = self.getGenericType(field_instance)
-                        else:
-                            field_instance = self.getCustomFieldInstance(field, f'{model.form_link_name}_{field}')
-                            generic_field_type = 'custom'
+            only_fkey_models = {}
+            link_fields = {}
 
-                        model_field = field
-                        if hasattr(model, 'link_compound_fields') and field_name in model.link_compound_fields:
-                            model_field = model.link_compound_fields[field_name]
+            for model in apps.get_models():
+                if CustomFormsLinkModel in model.__bases__:
+                    if not hasattr(model, 'link_fields_list'):
+                        # only_fkey model
+                        only_fkey_models.update({model.form_link_name : model})
+                    else:
+                        # This model has linked fields
+                        link_fields[model.form_link_name] = {'model': model, 'fields': {}}
+                        # Now getting the fields
+                        all_form_fields = fields_for_model(model, widgets = getattr(model, 'link_fields_widgets', None))
+                        sublist = getattr(model, 'link_fields_list')
+                        for field, display_name in sublist:
+                            field_name = model.__name__ + "_" + field
 
-                        self.link_fields[model.form_link_name]['fields'].update({ field_name: {
-                            'model_field': field,
-                            'disp_name': display_name,
-                            'field_type': generic_field_type,
-                            'ques': field_instance.label, # default label
-                            'required': field_instance.required,
-                        }
-                        })
+                            if field in all_form_fields:
+                                field_instance = all_form_fields[field]
+                                generic_field_type = self.getGenericType(field_instance)
+                            else:
+                                field_instance = self.getCustomFieldInstance(field, f'{model.form_link_name}_{field}')
+                                generic_field_type = 'custom'
 
-        self.loaded = True
+                            model_field = field
+                            if hasattr(model, 'link_compound_fields') and field_name in model.link_compound_fields:
+                                model_field = model.link_compound_fields[field_name]
+
+                            link_fields[model.form_link_name]['fields'].update({ field_name: {
+                                'model_field': field,
+                                'disp_name': display_name,
+                                'field_type': generic_field_type,
+                                'ques': field_instance.label, # default label
+                                'required': field_instance.required,
+                            }
+                            })
+
+            #   Swap the finished dicts in before flagging the cache as loaded.
+            self.only_fkey_models = only_fkey_models
+            self.link_fields = link_fields
+            self.loaded = True
+
+    def invalidate(self):
+        """
+        Rebuilds the cache from the current set of models.
+
+        The old cache stays in place and readable until the replacement is
+        ready, so callers reading cf_cache.link_fields / .only_fkey_models
+        without a lock never see an empty or partial cache.
+        """
+        with self._lock:
+            self.loaded = False
+        #   Outside the lock: _populate() takes it itself, and threading.Lock
+        #   is not reentrant.
+        self._populate()
 
     def getGenericType(self, field_instance):
         """
@@ -174,6 +211,7 @@ class CustomFormsCache:
         """
         Convenience method to get data for a particular linked field
         """
+        self._populate()
         for category, options in self.link_fields.items():
             if field in options['fields']: return options['fields'][field]
 
@@ -181,6 +219,7 @@ class CustomFormsCache:
         """
         Returns the model associated with a particular link field.
         """
+        self._populate()
         for category, options in self.link_fields.items():
             if field in options['fields']: return options['model']
 

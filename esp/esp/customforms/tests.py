@@ -33,11 +33,14 @@ Learning Unlimited, Inc.
 """
 
 import json
+import sys
+import threading
 
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.linkfields import CustomFormsCache, cf_cache
 from esp.customforms.views import hasPerm
-from esp.users.models import ESPUser, AnonymousESPUser
+from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -865,3 +868,155 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Page._meta.ordering, ['seq'])
         self.assertEqual(Section._meta.ordering, ['seq'])
         self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+class CustomFormsCacheTest(TestCase):
+    """
+    Tests for CustomFormsCache: population, invalidation, and the guarantee
+    that readers (which don't take the lock) never observe a partial cache.
+    """
+
+    #   Spot-check values for "the cache actually got built".  The concurrency
+    #   tests below compare against a snapshot instead, so they don't need
+    #   updating when models are added.
+    A_LINK_MODEL = 'ContactInfo'
+    A_LINK_FIELD = 'ContactInfo_e_mail'
+    AN_ONLY_FKEY_MODEL = 'Program'
+
+    def setUp(self):
+        #   CustomFormsCache is a Borg: every instance shares one dict with the
+        #   module-level cf_cache that the rest of the app reads.  Snapshot that
+        #   state and put it back afterwards, so a failure part-way through a
+        #   test can't leave the app-wide cache empty for later tests.
+        self.cache = CustomFormsCache()
+        self.cache._populate()
+        original_state = dict(self.cache.__dict__)
+        self.addCleanup(self.cache.__dict__.update, original_state)
+
+    def _unload(self):
+        """Put the cache back into its pre-population state."""
+        self.cache.loaded = False
+        self.cache.only_fkey_models = {}
+        self.cache.link_fields = {}
+
+    def test_populate_builds_the_cache(self):
+        self._unload()
+
+        self.cache._populate()
+
+        self.assertTrue(self.cache.loaded)
+        self.assertIn(self.A_LINK_MODEL, self.cache.link_fields)
+        self.assertIn(self.A_LINK_FIELD, self.cache.link_fields[self.A_LINK_MODEL]['fields'])
+        self.assertIn(self.AN_ONLY_FKEY_MODEL, self.cache.only_fkey_models)
+
+    def test_populate_does_nothing_once_loaded(self):
+        link_fields = self.cache.link_fields
+        only_fkey_models = self.cache.only_fkey_models
+
+        self.cache._populate()
+
+        #   Same dict objects, so nothing was rebuilt and no reader was disturbed.
+        self.assertIs(self.cache.link_fields, link_fields)
+        self.assertIs(self.cache.only_fkey_models, only_fkey_models)
+
+    def test_invalidate_rebuilds_the_cache(self):
+        old_link_fields = self.cache.link_fields
+        old_only_fkey_models = self.cache.only_fkey_models
+
+        self.cache.invalidate()
+
+        self.assertTrue(self.cache.loaded)
+        #   Rebuilt from scratch into new dicts...
+        self.assertIsNot(self.cache.link_fields, old_link_fields)
+        self.assertIsNot(self.cache.only_fkey_models, old_only_fkey_models)
+        #   ...with the same contents, and the old dicts left intact for anything
+        #   that is still reading them.
+        self.assertEqual(self.cache.link_fields, old_link_fields)
+        self.assertEqual(self.cache.only_fkey_models, old_only_fkey_models)
+
+    def test_read_methods_populate_on_demand(self):
+        self._unload()
+        field_data = self.cache.getLinkFieldData(self.A_LINK_FIELD)
+        self.assertTrue(self.cache.loaded)
+        self.assertIsNotNone(field_data)
+        self.assertEqual(field_data['model_field'], 'e_mail')
+
+        self._unload()
+        self.assertIs(self.cache.modelForLinkField(self.A_LINK_FIELD), ContactInfo)
+
+    def test_concurrent_populate_builds_the_cache_once(self):
+        """
+        Several threads racing into _populate() must do the work once and all
+        end up looking at the same cache.
+        """
+        self._unload()
+        num_threads = 8
+        start = threading.Barrier(num_threads)
+        errors = []
+        seen = []
+
+        def worker():
+            try:
+                start.wait(timeout=10)
+                cache = CustomFormsCache()
+                cache._populate()
+                seen.append(cache.link_fields)
+            except Exception as exc:
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(num_threads)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=30)
+
+        self.assertEqual([repr(exc) for exc in errors], [])
+        self.assertEqual(len(seen), num_threads)
+        #   One winner built the cache; everyone else saw that same dict rather
+        #   than a second copy or a partly-filled one.
+        self.assertEqual(len({id(link_fields) for link_fields in seen}), 1)
+        self.assertIn(self.A_LINK_MODEL, self.cache.link_fields)
+
+    def test_readers_never_see_a_partial_cache(self):
+        """
+        Most of customforms reads cf_cache.link_fields / .only_fkey_models
+        directly, without the lock: views.formBuilderData walks
+        link_fields.items(), and DynamicForm indexes only_fkey_models by link
+        type.  Rebuilding the cache underneath those readers must neither raise
+        RuntimeError nor expose an empty or half-built cache.
+        """
+        expected_link_models = set(self.cache.link_fields)
+        expected_only_fkey_models = set(self.cache.only_fkey_models)
+        errors = []
+        stop = threading.Event()
+
+        #   Switch threads aggressively so an unsafe rebuild is actually caught
+        #   here rather than missed by luck.
+        self.addCleanup(sys.setswitchinterval, sys.getswitchinterval())
+        sys.setswitchinterval(1e-6)
+
+        def reader():
+            try:
+                while not stop.is_set():
+                    #   A Python-level walk of the live dict, holding no lock.
+                    link_models = set()
+                    for category, options in cf_cache.link_fields.items():
+                        link_models.add(category)
+                        self.assertIn('fields', options)
+                    self.assertEqual(link_models, expected_link_models)
+                    self.assertEqual(set(cf_cache.only_fkey_models), expected_only_fkey_models)
+            except Exception as exc:
+                errors.append(exc)
+
+        readers = [threading.Thread(target=reader) for _ in range(3)]
+        for thread in readers:
+            thread.start()
+        try:
+            for _ in range(10):
+                CustomFormsCache().invalidate()
+        finally:
+            stop.set()
+            for thread in readers:
+                thread.join(timeout=30)
+
+        self.assertEqual([repr(exc) for exc in errors], [])
