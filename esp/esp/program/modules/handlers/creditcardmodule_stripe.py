@@ -322,7 +322,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             try:
                 amount_cents_post = Decimal(request.POST.get('totalcost_cents', ''))
             except (InvalidOperation, TypeError, ValueError):
-                context['error_type'] = 'invalid'
+                context['error_type'] = 'missing_fields'
                 context['error_info'] = {'missing': 'totalcost_cents'}
             else:
                 amount_cents_iac = Decimal(iac.amount_due()) * 100
@@ -335,7 +335,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         stripe_token = request.POST.get('stripeToken')
         if 'error_type' not in context and not stripe_token:
-            context['error_type'] = 'invalid'
+            context['error_type'] = 'missing_fields'
             context['error_info'] = {'missing': 'stripeToken'}
 
         if 'error_type' not in context:
