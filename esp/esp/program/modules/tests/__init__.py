@@ -1,4 +1,4 @@
-
+﻿
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -49,6 +49,9 @@ from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
 from esp.program.modules.tests.adminclass import CancelClassTest
 from esp.program.modules.tests.studentregmodules import StudentExtraCostsTest, StudentRegCoreTest, StudentRegPhaseZeroTest, StudentRegConfirmTest, LotteryStudentRegTest, StudentAcknowledgementTest, StudentLunchSelectionTest, StudentSurveyModuleTest, StudentCertModuleTest, StudentOnsiteTest, StudentClassRegModuleTest
+from esp.program.modules.tests.studentextracosts import (
+    StudentExtraCostsTest as StudentExtraCostsCustomAmountTest,
+)
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.classflagmodule import ClassFlagModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
