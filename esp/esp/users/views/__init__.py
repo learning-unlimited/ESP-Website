@@ -195,12 +195,14 @@ def disable_account(request):
 
     curUser = request.user
 
-    if 'enable' in request.GET:
-        curUser.is_active = True
-        curUser.save()
-    elif 'disable' in request.GET:
-        curUser.is_active = False
-        curUser.save()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'enable':
+            curUser.is_active = True
+            curUser.save()
+        elif action == 'disable':
+            curUser.is_active = False
+            curUser.save()
 
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
 
