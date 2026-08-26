@@ -140,7 +140,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
             progbio.save()
             if external:
                 return True
-            return HttpResponseRedirect('.')
+            return HttpResponseRedirect(progbio.url())
 
     else:
         formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio,
