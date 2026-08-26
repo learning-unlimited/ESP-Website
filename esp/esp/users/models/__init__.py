@@ -3070,8 +3070,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 

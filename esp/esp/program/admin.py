@@ -32,7 +32,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from esp.admin import admin_site
 
@@ -251,7 +253,8 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = default_user_search(prefix='^') + ['=id', '=section__id', '=section__parent_class__id', 'section__parent_class__title']
+    list_select_related = ('user', 'relationship', 'section', 'section__parent_class', 'section__parent_class__category')
     list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
@@ -259,7 +262,8 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
+    search_fields = default_user_search(prefix='^') + ['=id', '=subject__id', 'subject__title']
+    list_select_related = ('user', 'subject')
     list_filter = ['subject__parent_program',]
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
@@ -335,8 +339,8 @@ class Admin_ClassCategories(admin.ModelAdmin):
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):
-     list_display = ('program', 'range_min', 'range_max', )
-     list_filter = ('program',)
+    list_display = ('program', 'range_min', 'range_max', )
+    list_filter = ('program',)
 admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
@@ -345,6 +349,15 @@ class StudentAppAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
+
+    def has_add_permission(self, request):
+        #   Applications are created by the registration flow
+        #   (ESPUser.getApplication), which supplies the program and user and
+        #   derives the question set from them.  Both foreign keys are
+        #   editable=False, so the admin's add form can't populate them and
+        #   submitting it could only ever fail the program_id NOT NULL
+        #   constraint.  Hide the form rather than offer a broken one.
+        return False
 admin_site.register(StudentApplication, StudentAppAdmin)
 
 class Admin_StudentAppQuestion(admin.ModelAdmin):
@@ -400,7 +413,23 @@ class AutoClassFlagRuleAdmin(admin.ModelAdmin):
     list_filter = ['program', 'flag_type']
 admin_site.register(AutoClassFlagRule, AutoClassFlagRuleAdmin)
 
+class PhaseZeroRecordAdminForm(forms.ModelForm):
+    class Meta:
+        model = PhaseZeroRecord
+        fields = '__all__'
+        error_messages = {
+            'program': {
+                'required': _("Program is required. Please select a program."),
+            },
+        }
+
+    def clean_program(self):
+        program = self.cleaned_data.get('program')
+        if program is None:
+            raise forms.ValidationError(_("Program is required. Please select a program."))
+        return program
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']

@@ -291,7 +291,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         original_handler = self.pmo.module.handler
 
         # Temporarily make this module locked in the DB
-        self.pmo.module.handler = 'RegProfileModule'
+        self.pmo.module.handler = 'StudentRegProfileModule'
         self.pmo.module.save()
 
         try:

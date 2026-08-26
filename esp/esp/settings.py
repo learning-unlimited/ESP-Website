@@ -220,11 +220,6 @@ LOGGING = {
     }
 }
 
-#   Search directories for LESS (customizable stylesheet) files
-LESS_SEARCH_PATH = [
-    os.path.join(MEDIA_ROOT, 'less'),
-]
-
 MANAGERS = ADMINS
 
 DEFAULT_HOST = SITE_INFO[1]
@@ -264,8 +259,8 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    uid = getattr(os, 'getuid', lambda: os.getpid())()
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(uid))
+    uid_str = str(getattr(os, 'getuid', os.getpid)())
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + uid_str)
     os.makedirs(tempdir, mode=0o700, exist_ok=True)
     try:
         os.chmod(tempdir, 0o700)
