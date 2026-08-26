@@ -2203,6 +2203,8 @@ class VolunteerRequest(models.Model):
         app_label = 'program'
 
     def num_offers(self):
+        if self.pk is None:
+            return 0
         return self.volunteeroffer_set.count()
 
     def get_offers(self):
