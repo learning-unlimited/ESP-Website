@@ -274,37 +274,27 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
 
-# Security: ensure session and CSRF cookies are only sent over HTTPS outside debug mode.
-# These are enabled automatically when DEBUG is False; local_settings.py may still
-# override them for unusual deployment setups.
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
-# Keep this readable by JavaScript because existing client-side CSRF handling
-# (csrf_init.js, csrf_check.js, etc.) reads the 'esp_csrftoken' cookie via
-# $.cookie() to populate form fields / X-CSRFToken headers.  Setting HttpOnly
-# would break all AJAX POST requests.  Migrate JS to read the token from a
-# server-rendered DOM element (e.g. {% csrf_token %}) before enabling this.
+######################
+# Transport security #
+######################
+# NOTE: the DEBUG-dependent transport security settings (SESSION_COOKIE_SECURE,
+# CSRF_COOKIE_SECURE, SECURE_SSL_REDIRECT, SECURE_HSTS_SECONDS) are *not* set
+# here.  DEBUG defaults to False in this file and is only given its real value
+# by local_settings.py, which settings.py imports afterwards -- so anything
+# derived from DEBUG in this file would silently use the production value in
+# development.  Those settings are derived in settings.py instead, in the same
+# place as TEMPLATES[0]['OPTIONS']['debug'].  Deployment-specific transport
+# settings (SECURE_PROXY_SSL_HEADER, HSTS tuning) belong in local_settings.py;
+# see deploy/config_templates/local_settings.py for the documented options.
+
+# Keep the CSRF cookie readable by JavaScript.  Existing client-side CSRF
+# handling (csrf_init.js, csrf_check.js, and callers such as
+# customforms_response.js) reads the 'esp_csrftoken' cookie via $.cookie() to
+# populate csrfmiddlewaretoken fields and X-CSRFToken headers, so setting
+# HttpOnly would break every AJAX POST.  Before flipping this to True, migrate
+# that JS to read the token from a server-rendered DOM element
+# ({% csrf_token %}).  Tracked separately from the transport hardening above.
 CSRF_COOKIE_HTTPONLY = False
-
-# Security: HTTP Strict Transport Security (HSTS)
-# Tells browsers to only access the site via HTTPS for the specified duration.
-# Only active when SecurityMiddleware is installed and DEBUG is False.
-SECURE_HSTS_SECONDS = 0 if DEBUG else 31536000  # 1 year in production
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
-
-# Security: redirect all HTTP requests to HTTPS.
-# Enabled when DEBUG is False.  Override via the ESP_SECURE_SSL_REDIRECT
-# environment variable (set to "0" to disable, e.g. in CI) or in
-# local_settings.py.
-SECURE_SSL_REDIRECT = os.environ.get('ESP_SECURE_SSL_REDIRECT', '1' if not DEBUG else '0') != '0'
-
-# Security: tell Django to trust the X-Forwarded-Proto header set by a
-# TLS-terminating reverse proxy (e.g. Nginx, AWS ALB).  Without this,
-# request.is_secure() returns False behind such proxies and HSTS / SSL
-# redirect will not activate.  Override in local_settings.py if your
-# proxy uses a different header.
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ATOMIC_REQUESTS = True
 
