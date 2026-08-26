@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.onsitecheckinmodule import OnSiteCheckinModuleTest
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest, RegistrationProfileFlowTest
+from esp.program.modules.tests.studentregprofilemodule import StudentRegProfileModuleTest, RegistrationProfileFlowTest
 from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
@@ -84,7 +84,7 @@ from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModul
 from esp.program.modules.tests.test_scheduling_check import SchedulingCheckHelpersTest
 from esp.program.modules.tests.test_student_reg_phase_zero_manage import StudentRegPhaseZeroManageTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest, TeacherEventsCalendarDataTest
-from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest
+from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest as StudentLunchSelectionModuleTest
 from esp.program.modules.tests.test_teachereventsmanage_module import (
     TeacherEventsManageModulePropertiesTest,
     TeacherEventsManageModuleAdminSearchTest,
@@ -97,3 +97,6 @@ from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
+from esp.program.modules.tests.surveymanagement import SurveyManagementTest
+from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleTest
+from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest

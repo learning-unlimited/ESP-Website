@@ -33,13 +33,13 @@ from esp.web.views.myesp import myesp_switchback
 # ---------------------------------------------------------------------------
 
 def _ensure_default_navbar_category():
-     return NavBarCategory.objects.get_or_create(
-         name='default',
-         defaults={
-             'path': 'default',
-             'long_explanation': 'Default navbar category for tests.',
-         },
-     )[0]
+    return NavBarCategory.objects.get_or_create(
+        name='default',
+        defaults={
+            'path': 'default',
+            'long_explanation': 'Default navbar category for tests.',
+        },
+    )[0]
 
 def _make_user(username, role=None, is_superuser=False):
     _ensure_default_navbar_category()

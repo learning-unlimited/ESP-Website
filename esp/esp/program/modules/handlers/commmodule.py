@@ -137,9 +137,31 @@ class CommModule(ProgramModuleObj):
         )
 
     @staticmethod
+    def _q_has_grade_filter(q_obj):
+        """Recursively check whether a Q object contains a grade filter.
+
+        Grade filters (grade_min/grade_max) are translated into
+        ``student_info__graduation_year`` lookups in
+        ``UserSearchController.query_from_criteria``.  This method walks the
+        Q-object tree to detect such lookups.
+        """
+        from django.db.models.query import Q
+        if not isinstance(q_obj, Q):
+            return False
+        for child in q_obj.children:
+            if isinstance(child, Q):
+                if CommModule._q_has_grade_filter(child):
+                    return True
+            elif isinstance(child, tuple) and len(child) >= 1:
+                lookup = str(child[0])
+                if 'student_info__graduation_year' in lookup:
+                    return True
+        return False
+
+    @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):
-        from esp.users.models import ESPUser, PersistentQueryFilter
-        from esp.dbmail.models import MessageRequest
+        from esp.users.models import ESPUser, PersistentQueryFilter # noqa: F811
+        from esp.dbmail.models import MessageRequest # noqa: F811
         mailer_warnings = []
 
         # a. Warn if massive mailer (over 2000 recipients)
@@ -153,9 +175,7 @@ class CommModule(ProgramModuleObj):
 
         # b. Warn if no grade range filter is used
         filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        filter_name = getattr(filter_obj, 'useful_name', '') or ''
-
-        if filter_name and 'grade' not in filter_name.lower():
+        if filter_obj and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
             mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
@@ -179,7 +199,7 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter
+        from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -292,8 +312,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
-        from esp.dbmail.models import MessageRequest
-        from esp.users.models import PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest # noqa: F811
+        from esp.users.models import PersistentQueryFilter # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
@@ -396,7 +416,7 @@ class CommModule(ProgramModuleObj):
         prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
-           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
 

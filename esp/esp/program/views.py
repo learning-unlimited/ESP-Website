@@ -1687,7 +1687,7 @@ def module_schedule_update_api(request, program_type, program_term):
 
         # Enforce hard constraints (same as admincore POST handler)
         handler = mod.module.handler
-        if handler == "RegProfileModule":
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
             mod.seq = 0
             mod.required = True
         elif "CreditCardModule_" in handler:
@@ -1850,7 +1850,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
                 handler = mod.module.handler
 
                 position_locked = (
-                    handler == 'RegProfileModule' or
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                     'CreditCardModule_' in handler or
                     handler == 'StudentRegConfirm'
                 )

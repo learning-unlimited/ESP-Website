@@ -9,6 +9,7 @@ import datetime
 
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from unittest.mock import MagicMock, patch
 
 from esp.program.models import Program
@@ -173,6 +174,71 @@ class QuestionTest(TestCase):
         self.assertIsInstance(params, dict)
 
 
+class LongAnswerQuestionValidationTest(TestCase):
+    """Long Answer questions store textarea height in _param_values (Rows)."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='Long Answer Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.la_type, _ = QuestionType.objects.get_or_create(
+            name='Long Answer',
+            defaults={
+                '_param_names': 'Rows',
+                'is_numeric': False,
+                'is_countable': False,
+            },
+        )
+
+    def _question(self, param_values):
+        return Question(
+            survey=self.survey,
+            name='Tell us more',
+            question_type=self.la_type,
+            _param_values=param_values,
+            seq=0,
+        )
+
+    def test_full_clean_accepts_positive_rows(self):
+        q = self._question('8')
+        q.full_clean()
+
+    def test_full_clean_rejects_negative_rows(self):
+        q = self._question('-3')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_zero_rows(self):
+        q = self._question('0')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_empty_param(self):
+        q = self._question('')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_non_integer_rows(self):
+        q = self._question('abc')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_whitespace_only_rows(self):
+        q = self._question('   ')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_float_string_rows(self):
+        q = self._question('3.5')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
@@ -212,6 +278,29 @@ class AnswerTest(TestCase):
         self.answer.save()
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
+
+    def testAnswerCleanValidation(self):
+        '''Test that Answer.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
+        ans_null.clean()  # Should not raise
+
+        # Both set -> OK
+        ct = ContentType.objects.get_for_model(self.program)
+        ans_set = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=self.program.id)
+        ans_set.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError on save()
+        ans_ct_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_ct_only.save()
+
+        # content_type null, object_id set -> ValidationError on save()
+        ans_id_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=self.program.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_id_only.save()
 
 
 # ===== CSV Import Tests =====

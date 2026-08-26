@@ -287,8 +287,7 @@ class ClassManager(Manager):
             for s in c._sections:
                 s.parent_class = c
             c._sections.sort(key=lambda s:s.id)
-            c.parent_program = p # So that if we set attributes on one instance of the program,
-                                 # they show up for all instances.
+            c.parent_program = p # So that if we set attributes on one instance of the program, they show up for all instances.
 
         return classes
     catalog_cached.depend_on_model('program.ClassSubject')
@@ -995,7 +994,7 @@ class ClassSection(models.Model):
         """
         # check if proposed times are the same as the current meeting_times
         current_times = self.meeting_times.all()
-        if all(time in current_times for time in meeting_times):
+        if all(t in current_times for t in meeting_times):
             return False
         # otherwise, check if all teachers are available
         for t in self.teachers:
@@ -1081,7 +1080,7 @@ class ClassSection(models.Model):
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
         if include_lottery_students:
-            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+            student_verbs = ['Enrolled', 'Interested'] + list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         else:
             student_verbs = ['Enrolled']
 
@@ -1707,6 +1706,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
+    get_teachers.depend_on_row('users.ESPUser', lambda user: [{'self': cls} for cls in user.classsubject_set.all()])
 
     def students_dict(self):
         result = PropertyDict({})
