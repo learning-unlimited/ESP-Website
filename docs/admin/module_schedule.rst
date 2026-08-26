@@ -238,4 +238,4 @@ Developer Reference & File Locations
 
 * **Program Setup Utility**: ``esp/esp/program/setup.py`` (``prepare_program``, ``commit_program``)
 * **Module Base & Factory**: ``esp/esp/program/modules/base.py`` (``getFromProgModule``, ``ProgramModuleObj``)
-* **Unit Test Suite**: ``esp/esp/program/tests.py`` (``NewProgramModulePermissionsTest``)
+* **Unit Test Suite**: ``esp/esp/program/tests/test_program.py`` (``NewProgramModulePermissionsTest``)

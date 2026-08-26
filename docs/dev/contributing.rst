@@ -110,7 +110,7 @@ Testing
 **All tests must pass before submitting a pull request.** If your changes break existing tests,
 fix them before requesting a review. When adding new functionality, add corresponding tests to the appropriate application's test module or directory.
 
-This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests generally live in their respective application directories, either as a single ``tests.py`` file (e.g., ``esp/program/tests.py``) or as a ``tests/`` package (e.g., ``esp/accounting/tests``) when an app has grown enough tests to warrant splitting them up.
+This project uses pytest, with the pytest-django plugin handling integration with Django's testing infrastructure. Tests live in a ``tests/`` package inside their respective application directory (e.g., ``esp/program/tests``), with one ``test_*.py`` file per area of the app.
 
 Running Tests
 ~~~~~~~~~~~~~
@@ -119,10 +119,10 @@ To run all tests::
 
   docker compose exec -w /app/esp web pytest
 
-To run tests for a specific module (e.g., ``accounting``), point pytest at either the ``tests/`` directory or the ``tests.py`` file, depending on which layout the app uses::
+To run tests for a specific module (e.g., ``accounting``), point pytest at its ``tests/`` directory or at a single file inside it::
 
   docker compose exec -w /app/esp web pytest esp/accounting/tests
-  docker compose exec -w /app/esp web pytest esp/program/tests.py
+  docker compose exec -w /app/esp web pytest esp/program/tests/test_program.py
 
 If you don't remember the path, you can match by name instead::
 

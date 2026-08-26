@@ -31,7 +31,7 @@ Test Framework Overview
 ESP tests use pytest with the pytest-django plugin, on top of ESP-specific
 infrastructure:
 
-- **ProgramFrameworkTest** (``esp/program/tests.py``): Base class that creates a complete program with students, teachers, admins, classes, and timeslots in setUp()
+- **ProgramFrameworkTest** (``esp/program/tests/test_program.py``): Base class that creates a complete program with students, teachers, admins, classes, and timeslots in setUp()
 - **ModuleHandlerTestMixin** (``esp/program/modules/tests/support/mixins.py``): Shared helpers for testing module handlers (login, URL building, assertions)
 - **Factories** (``esp/tests/factories.py``): ``make_user()``, ``make_program()``, and ``make_class()`` build single objects directly, for tests that do not need a whole program
 
@@ -303,7 +303,7 @@ File Structure
 Tests live in the application directory of the code they cover, either as a
 single ``tests.py`` or as a ``tests/`` package once an app has enough of them::
 
-  esp/program/models/class_.py  ->  esp/program/tests.py
+  esp/program/models/class_.py  ->  esp/program/tests/test_program.py
   esp/accounting/models.py      ->  esp/accounting/tests/test_models.py
 
 Controller tests sit next to the controller they cover::
@@ -361,7 +361,7 @@ Further Reading
 ---------------
 
 - Django testing: https://docs.djangoproject.com/en/stable/topics/testing/
-- ProgramFrameworkTest source: ``esp/program/tests.py``
+- ProgramFrameworkTest source: ``esp/program/tests/test_program.py``
 - ModuleHandlerTestMixin source: ``esp/program/modules/tests/support/mixins.py``
 - Factories source: ``esp/tests/factories.py``
 - Example handler tests: ``esp/program/modules/tests/test_finaidapprove.py``
