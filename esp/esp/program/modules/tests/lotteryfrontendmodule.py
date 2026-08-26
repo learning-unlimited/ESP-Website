@@ -10,7 +10,7 @@ class LotteryFrontendModuleTest(ProgramFrameworkTest):
     """Tests for LotteryFrontendModule admin HTTP interface (issue #4953).
 
     The underlying LotteryAssignmentController algorithm is already tested by
-    LSRAssignmentTest in esp/esp/program/tests.py.  These tests focus on the
+    LSRAssignmentTest in esp/esp/program/tests/test_program.py.  These tests focus on the
     HTTP views that connect the admin UI to that controller.
     """
 
