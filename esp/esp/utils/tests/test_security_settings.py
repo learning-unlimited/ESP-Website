@@ -7,13 +7,24 @@ django_settings.py defaults DEBUG to False and local_settings.py -- which
 supplies the real value -- is imported afterwards.  Deriving them in
 django_settings.py would enable production-only hardening in development.
 These tests pin that behaviour so the settings cannot drift back.
+
+Note on the DEBUG reference value: these tests deliberately do NOT compare
+against settings.DEBUG.  pytest-django forces settings.DEBUG to False for the
+duration of the run (its django_debug_mode ini option), so at test time it no
+longer reflects how the site is configured.  The derivation in settings.py
+consumes the value local_settings.py supplies, so that is what the expected
+values are computed from here.
 """
 import unittest
 
 from django.conf import settings
 
-from esp import local_settings
+from esp import django_settings, local_settings
 
+
+# The DEBUG value the derivation in esp/settings.py actually saw: whatever
+# local_settings.py set, falling back to django_settings.py's default.
+CONFIGURED_DEBUG = getattr(local_settings, 'DEBUG', django_settings.DEBUG)
 
 DERIVED_FROM_DEBUG = (
     'SESSION_COOKIE_SECURE',
@@ -32,20 +43,21 @@ class SecuritySettingsTest(unittest.TestCase):
         self.assertEqual(settings.MIDDLEWARE[0],
                          'django.middleware.security.SecurityMiddleware')
 
-    def test_debug_derived_flags_follow_debug(self):
+    def test_debug_derived_flags_follow_configured_debug(self):
         """
-        Each flag must track DEBUG.  Before these settings were moved out of
-        django_settings.py they evaluated `not DEBUG` against that module's own
-        DEBUG = False default, so they were True even with DEBUG = True --
-        which redirects the development server to HTTPS and stops session and
-        CSRF cookies from being sent over plain HTTP.
+        Each flag must track the configured DEBUG.  Before these settings were
+        moved out of django_settings.py they evaluated `not DEBUG` against that
+        module's own DEBUG = False default, so they were True even in a
+        DEBUG = True checkout -- which redirects the development server to
+        HTTPS and stops session and CSRF cookies from being sent over plain
+        HTTP.
         """
         for name in DERIVED_FROM_DEBUG:
             if hasattr(local_settings, name):
                 # This deployment overrides the derived value on purpose.
                 continue
             with self.subTest(setting=name):
-                self.assertEqual(getattr(settings, name), not settings.DEBUG)
+                self.assertEqual(getattr(settings, name), not CONFIGURED_DEBUG)
 
     def test_hsts_not_enabled_in_debug(self):
         """
@@ -55,7 +67,7 @@ class SecuritySettingsTest(unittest.TestCase):
         """
         if hasattr(local_settings, 'SECURE_HSTS_SECONDS'):
             self.skipTest('SECURE_HSTS_SECONDS overridden in local_settings')
-        if settings.DEBUG:
+        if CONFIGURED_DEBUG:
             self.assertEqual(settings.SECURE_HSTS_SECONDS, 0)
         else:
             self.assertGreater(settings.SECURE_HSTS_SECONDS, 0)
