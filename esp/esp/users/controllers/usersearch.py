@@ -288,7 +288,19 @@ class UserSearchController(object):
 
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
-            if data['recipient_type'] not in ESPUser.getTypes():
+            if data['recipient_type'] == 'School':
+                # School contact recipients are not ESPUser types; the base_list
+                # name carries the school_status filter ('all_schools',
+                # 'schools_with_students', 'schools_without_students').
+                recipient_type = 'any'
+                q_program = Q()
+                # Propagate the chosen school_status into criteria so that
+                # query_from_criteria can apply the correct K12School filter.
+                if data['base_list'] == 'schools_with_students':
+                    data = dict(data, school_status='with_students')
+                elif data['base_list'] == 'schools_without_students':
+                    data = dict(data, school_status='without_students')
+            elif data['recipient_type'] not in ESPUser.getTypes():
                 recipient_type = 'any'
                 q_program = Q()
             else:
