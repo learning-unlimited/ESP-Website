@@ -2278,10 +2278,12 @@ class K12School(models.Model):
     def get_student_roster(self, program=None):
         """Return list of enrolled students associated with this school for a program."""
         from esp.users.models import StudentInfo
-        qs = StudentInfo.objects.filter(k12school=self)
+        qs = StudentInfo.objects.filter(k12school=self).exclude(user__isnull=True).select_related('user')
         if program:
-            qs = qs.filter(user__studentregistration__section__parent_class__parent_program=program,
-                           user__studentregistration__relationship__name='Enrolled').distinct()
+            qs = qs.filter(
+                user__studentregistration__section__parent_class__parent_program=program,
+                user__studentregistration__relationship__name='Enrolled',
+            ).distinct()
         return [info.user for info in qs]
 
     def get_student_attendance(self, program=None):

@@ -204,9 +204,9 @@ class UserSearchController(object):
                 )
                 enrolled_school_ids.discard(None)
                 if criteria['school_status'] == 'with_students':
-                    Q_include &= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__school_id__in=enrolled_school_ids))
+                    Q_include &= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__k12school_id__in=enrolled_school_ids))
                 elif criteria['school_status'] == 'without_students':
-                    Q_exclude |= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__school_id__in=enrolled_school_ids))
+                    Q_exclude |= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__k12school_id__in=enrolled_school_ids))
                 self.updated = True
 
             #   Filter by graduation years if specifically looking for teachers.
@@ -430,10 +430,13 @@ class UserSearchController(object):
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
 
         #   Add in school contacts
+        #   These lists apply to K12School contact users.
+        #   school_status filtering (with/without enrolled students) is applied
+        #   separately in query_from_criteria via the 'school_status' criteria key.
         category_lists['School'] = [
-            {'name': 'all_schools', 'list': Q(contact__isnull=False), 'description': 'All school contact emails in the database', 'preferred': True, 'all_flag': True},
-            {'name': 'schools_with_students', 'list': Q(contact__isnull=False), 'description': 'Schools with students enrolled in this program', 'preferred': True},
-            {'name': 'schools_without_students', 'list': Q(contact__isnull=False), 'description': 'Schools without students enrolled in this program', 'preferred': True},
+            {'name': 'all_schools', 'list': Q(k12school_contact__isnull=False), 'description': 'All school contact emails in the database', 'preferred': True, 'all_flag': True},
+            {'name': 'schools_with_students', 'list': Q(k12school_contact__isnull=False), 'description': 'Schools with students enrolled in this program', 'preferred': True},
+            {'name': 'schools_without_students', 'list': Q(k12school_contact__isnull=False), 'description': 'Schools without students enrolled in this program', 'preferred': True},
         ]
 
         context['lists'] = category_lists

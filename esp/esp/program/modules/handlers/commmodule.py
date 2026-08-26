@@ -107,16 +107,40 @@ def _program_urls_in_text(text, current_program_url):
 
 
 def _get_school_context_dict(user, program):
+    """
+    Look up a K12School associated with the given user for email template context.
+    Lookup order:
+      1. RegistrationProfile.student_info.k12school (student enrolled at a school)
+      2. EducatorInfo.k12school (educator at a school)
+      3. K12School.contact__user (user is listed as school contact)
+    Returns a dict of school template variables, or an empty dict if no school found
+    (callers should treat missing school as no-op rather than injecting sample data).
+    """
+    from esp.users.models import K12School, RegistrationProfile
     school_obj = None
-    if hasattr(user, 'studentinfo') and user.studentinfo and getattr(user.studentinfo, 'k12school', None):
-        school_obj = user.studentinfo.k12school
-    elif hasattr(user, 'educatorinfo') and user.educatorinfo and getattr(user.educatorinfo, 'school', None):
-        school_obj = user.educatorinfo.school
-    else:
-        from esp.users.models import K12School
-        schools = K12School.objects.filter(contact__user=user) if hasattr(user, 'pk') else None
-        if schools and schools.exists():
-            school_obj = schools.first()
+
+    if hasattr(user, 'pk'):
+        # 1. Check via RegistrationProfile.student_info (correct path for student school data)
+        profile = RegistrationProfile.objects.filter(
+            user=user, most_recent_profile=True
+        ).select_related('student_info__k12school').first()
+        if profile and profile.student_info and profile.student_info.k12school:
+            school_obj = profile.student_info.k12school
+
+        # 2. Check via EducatorInfo.k12school
+        if school_obj is None:
+            try:
+                educator_info = user.educatorinfo
+                if educator_info and educator_info.k12school:
+                    school_obj = educator_info.k12school
+            except Exception:
+                pass
+
+        # 3. Check if user is the school contact
+        if school_obj is None:
+            school_qs = K12School.objects.filter(contact__user=user)
+            if school_qs.exists():
+                school_obj = school_qs.first()
 
     if school_obj:
         roster_users = school_obj.get_student_roster(program)
@@ -126,12 +150,8 @@ def _get_school_context_dict(user, program):
             'attendance': school_obj.get_student_attendance(program),
             'contact_titleandlastname': school_obj.get_contact_titleandlastname(),
         }
-    return {
-        'name': 'Sample School',
-        'roster': 'Student Roster (Sample)',
-        'attendance': '0 students enrolled (Sample)',
-        'contact_titleandlastname': 'Mr./Ms. Contact',
-    }
+    # Return empty dict — no school found; templates should use a default or omit {{ school.* }}
+    return {}
 
 
 class CommModule(ProgramModuleObj):
