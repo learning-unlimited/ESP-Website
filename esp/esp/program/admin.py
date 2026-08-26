@@ -349,6 +349,15 @@ class StudentAppAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
+
+    def has_add_permission(self, request):
+        #   Applications are created by the registration flow
+        #   (ESPUser.getApplication), which supplies the program and user and
+        #   derives the question set from them.  Both foreign keys are
+        #   editable=False, so the admin's add form can't populate them and
+        #   submitting it could only ever fail the program_id NOT NULL
+        #   constraint.  Hide the form rather than offer a broken one.
+        return False
 admin_site.register(StudentApplication, StudentAppAdmin)
 
 class Admin_StudentAppQuestion(admin.ModelAdmin):
