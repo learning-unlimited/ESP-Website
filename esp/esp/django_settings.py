@@ -204,6 +204,7 @@ FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
+    (  50, 'django.middleware.security.SecurityMiddleware'),
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
@@ -272,6 +273,9 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+# Keep the CSRF cookie readable by JavaScript
+CSRF_COOKIE_HTTPONLY = False
 
 ATOMIC_REQUESTS = True
 
