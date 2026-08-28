@@ -347,8 +347,35 @@ class StudentClassRegModule(ProgramModuleObj):
         context['reg_open'] = bool(Permission.user_has_perm(request.user, {'learn':'Student','teach':'Teacher'}[tl]+"/Classes", prog))
 
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
-        script_str = render_to_string('users/student_schedule_inline.js', context)
-        json_data = {'student_schedule_html': schedule_str, 'script': script_str}
+
+        #   Tell the client how to re-attach behavior to the new markup, as data
+        #   rather than as JavaScript to be executed.  'links' is consumed by
+        #   register_link() and 'callbacks' names a handler that the page has
+        #   registered with register_handler(); see media/scripts/ajax_tools.js
+        #   and media/scripts/program/modules/student_schedule.js.
+        remove_links = []
+        if context.get('allow_removal'):
+            url_base = self.program.getUrlBase()
+            for entry in context['timeslots']:
+                timeslot, cls_list = entry[0], entry[1]
+                for cls in cls_list:
+                    remove_links.append({
+                        'id': 'remove_%d_%d' % (timeslot.id, cls['section'].id),
+                        'url': '/learn/%s/ajax_clearslot/%d?sec_id=%d' % (
+                            url_base, timeslot.id, cls['section'].id),
+                    })
+
+        json_data = {
+            'student_schedule_html': schedule_str,
+            'links': remove_links,
+            'callbacks': [{
+                'name': 'student_schedule',
+                'args': [{
+                    'reg_open': context['reg_open'],
+                    'onsite_local': bool(getattr(request.user, 'onsite_local', False)),
+                }],
+            }],
+        }
 
         #   Look at the 'extra' data and act appropriately:
         #   -   List, query set, or comma-separated ID list of class sections:

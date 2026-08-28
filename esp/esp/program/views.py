@@ -1270,6 +1270,18 @@ def statistics(request, program=None):
                 field_ids.append(field_name)
         return field_ids
 
+    def get_form_setup(field_ids):
+        """ Data telling ajax_tools.js how to re-attach behavior to a freshly
+            rendered statistics form.  This used to be sent as a block of
+            JavaScript under a 'script' key and eval()ed by the browser; it is
+            now plain data handled by the whitelists in ajax_tools.js.
+        """
+        return {
+            'forms': [{'id': 'statistics_form', 'url': '/manage/statistics/'}],
+            'callbacks': [{'name': 'setup_update', 'args': [field_id]}
+                          for field_id in field_ids],
+        }
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -1291,7 +1303,7 @@ def statistics(request, program=None):
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-            result['script'] = render_to_string('program/statistics/script.js', context)
+            result.update(get_form_setup(context['field_ids']))
             return HttpResponse(json.dumps(result), content_type='application/json')
 
         if form.is_valid():
@@ -1445,7 +1457,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1458,7 +1470,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
