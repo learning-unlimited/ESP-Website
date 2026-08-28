@@ -46,6 +46,7 @@ from django.http import HttpResponse, Http404
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
+from django.utils.html import strip_tags
 from django.utils.safestring import mark_safe
 
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
@@ -545,6 +546,44 @@ class StudentClassRegModule(ProgramModuleObj):
         except ESPError_NoLog as inst:
             error_message = inst.args[0] if inst.args else "An error occurred."
             return HttpResponse(json.dumps({'status' : 200, 'error': str(error_message)}), content_type='application/json')
+
+    @aux_call
+    @needs_student_in_grade
+    @meets_deadline('/Classes')
+    def ajax_validate_class(self, request, tl, one, two, module, extra, prog):
+        """ Check whether the current student could add a class, without enrolling them.
+
+            Accepts POST['class_id'], which must name a class in this program.
+            Always returns JSON of the form {'error': <message>} where the
+            message is null if the class passes every check in
+            ClassSubject.cannotAdd().  Nothing is written to the database, so
+            this is safe to call as many times as the catalog needs to.
+        """
+        def json_response(error):
+            #   cannotAdd() messages may contain markup (e.g. the class title
+            #   wrapped in <i>), but the catalog renders them as plain text, so
+            #   strip the tags here rather than escaping them twice.
+            if error:
+                error = strip_tags(error)
+            return HttpResponse(json.dumps({'error': error or None}),
+                                content_type='application/json')
+
+        try:
+            class_id = int(request.POST['class_id'])
+        except KeyError:
+            return json_response('Please choose a class.')
+        except (TypeError, ValueError):
+            return json_response('Class not found.')
+
+        #   Restrict the lookup to this program; otherwise a student could
+        #   probe classes in programs they have no business seeing, and the
+        #   enforce_max setting below would come from the wrong program.
+        cobj = ClassSubject.objects.filter(id=class_id, parent_program=prog).first()
+        if cobj is None:
+            return json_response('Class not found.')
+
+        scrmi = prog.studentclassregmoduleinfo
+        return json_response(cobj.cannotAdd(request.user, scrmi.enforce_max))
 
     @staticmethod
     def sort_categories(classes, prog, force_sort=False):

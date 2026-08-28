@@ -230,6 +230,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
             request, tl, one, two, module, extra, prog)
         context.update(catalog_context)
 
+        #   This page is public, but the "Select" button posts to
+        #   StudentClassRegModule.ajax_validate_class, which is only routable
+        #   when that module is enabled and only answers in JSON for logged-in
+        #   students.  Everyone else would just get an HTML error page back, so
+        #   hide the button rather than offer one that cannot work.
+        context['can_validate_classes'] = bool(
+            request.user.is_authenticated and
+            request.user.isStudent() and
+            prog.hasModule('StudentClassRegModule'))
+
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
 
     @aux_call

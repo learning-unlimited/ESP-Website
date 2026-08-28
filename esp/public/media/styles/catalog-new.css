@@ -163,6 +163,21 @@
     z-index: 1;
 }
 
+#catalog-new .class-validation {
+    padding: 0.3em 0.5em;
+    background-color: #DEF;
+}
+#catalog-new .class-validation-message {
+    margin-left: 0.5em;
+    vertical-align: middle;
+}
+#catalog-new .class-validation-error {
+    color: #B03030;
+}
+#catalog-new .class-validation-ok {
+    color: #2A7A2A;
+}
+
 #catalog-new .no-match {
     margin-top: 2em;
 }

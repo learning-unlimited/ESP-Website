@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import ClassSubject, Program
+from esp.tests.factories import make_class, make_program
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
@@ -272,3 +273,90 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec2.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
+
+    # ------------------------------------------------------------------
+    #   ajax_validate_class (issue #1190)
+    # ------------------------------------------------------------------
+
+    def validate_class(self, post_data, program=None):
+        """ POST to ajax_validate_class and return the decoded 'error' value.
+
+            Fails the test if the response is not JSON, since the whole point
+            of the endpoint is that the catalog can rely on the contract.
+        """
+        program = program or self.program
+        response = self.client.post(
+            '/learn/%s/ajax_validate_class' % program.getUrlBase(),
+            post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        resp_data = json.loads(str(response.content, encoding='UTF-8'))
+        self.assertIn('error', resp_data)
+        return resp_data['error']
+
+    def test_ajax_validate_class_ok(self):
+        """ A class the student can take validates with a null error. """
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+
+        sec = random.choice(self.program.sections())
+        self.assertIsNone(self.validate_class({'class_id': sec.parent_class.id}))
+
+        #   Validation must not have registered the student for anything.
+        self.assertEqual(student.getEnrolledSectionsFromProgram(self.program), [])
+
+    def test_ajax_validate_class_conflict(self):
+        """ Once enrolled, re-validating the same class reports the conflict. """
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+
+        sec1 = random.choice(self.program.sections())
+        sec1.preregister_student(student)
+
+        error = self.validate_class({'class_id': sec1.parent_class.id})
+        self.assertEqual(error, 'You are already signed up for a section of this class!')
+
+    def test_ajax_validate_class_bad_input(self):
+        """ Missing, non-numeric and unknown class ids all return JSON errors. """
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+
+        self.assertEqual(self.validate_class({}), 'Please choose a class.')
+        self.assertEqual(self.validate_class({'class_id': 'not-an-int'}), 'Class not found.')
+        self.assertEqual(self.validate_class({'class_id': ''}), 'Class not found.')
+
+        unused_id = (ClassSubject.objects.order_by('-id').values_list('id', flat=True).first() or 0) + 1
+        self.assertEqual(self.validate_class({'class_id': unused_id}), 'Class not found.')
+
+    def test_ajax_validate_class_other_program(self):
+        """ A class belonging to another program is not validated against this one. """
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+
+        other_program = make_program(
+            program_type='OtherTestProgram',
+            instance_name='2223_Summer',
+            instance_label='Summer 2223',
+            admins=self.admins,
+            categories=self.categories,
+        )
+        other_class = make_class(
+            program=other_program,
+            teacher=self.teachers[0],
+            title='Class in another program',
+            category=self.categories[0],
+            accept=True,
+        )
+
+        self.assertEqual(self.validate_class({'class_id': other_class.id}), 'Class not found.')
+
+    def test_ajax_validate_class_requires_student(self):
+        """ Non-students do not get a JSON verdict; the catalog hides the button for them. """
+        teacher = random.choice(self.teachers)
+        self.assertTrue(self.client.login(username=teacher.username, password='password'))
+
+        sec = random.choice(self.program.sections())
+        response = self.client.post(
+            '/learn/%s/ajax_validate_class' % self.program.getUrlBase(),
+            {'class_id': sec.parent_class.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertNotEqual(response.get('Content-Type'), 'application/json')

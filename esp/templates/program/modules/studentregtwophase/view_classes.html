@@ -61,4 +61,21 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
 {% endblock %}
 
 {% block class_action %}
+{% if can_validate_classes %}
+<div class="class-validation">
+  <button type="button" class="btn btn-sm btn-primary"
+          data-bind="click: $root.validateClass,
+                     disable: validating,
+                     text: validating() ? 'Checking\u2026' : 'Can I take this?'">
+  </button>
+  <span class="class-validation-message class-validation-error"
+        role="alert"
+        data-bind="text: validationError, visible: validationError"
+        style="display: none;"></span>
+  <span class="class-validation-message class-validation-ok"
+        role="status"
+        data-bind="visible: validationOk"
+        style="display: none;">You can add this class to your schedule.</span>
+</div>
+{% endif %}
 {% endblock %}

@@ -20,6 +20,10 @@ var ClassSubject = function (data) {
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.interested_saved = ko.observable(false);
+    //  Result of the last ajax_validate_class call for this class, if any.
+    self.validationError = ko.observable(null);
+    self.validationOk = ko.observable(false);
+    self.validating = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
     if (!increment_grade) {
@@ -250,6 +254,69 @@ var CatalogViewModel = function () {
 
     self.showClass = function (cls) {
         return self.searchPredicate(cls) && self.filterPredicate(cls);
+    }
+
+    //  Ask the server whether the current student could add a class, without
+    //  actually registering them.  Only the read-only catalog offers this; the
+    //  lottery catalogs (phase1/phase2) let students star anything.
+    if (catalog_type == 'view') {
+        self.validateClass = function (cls) {
+            if (cls.validating()) {
+                return;
+            }
+            //  This page has no {% csrf_token %} of its own, so the cookie may
+            //  not have been set yet.  refresh_csrf_cookie() is a no-op once
+            //  it is present.
+            if (typeof refresh_csrf_cookie === 'function') {
+                refresh_csrf_cookie();
+            }
+            cls.validating(true);
+            cls.validationError(null);
+            cls.validationOk(false);
+            var learn_url = program_base_url.replace(/^\/json/, '/learn');
+            $j.ajax({
+                type: 'POST',
+                url: learn_url + 'ajax_validate_class',
+                dataType: 'json',
+                data: {
+                    csrfmiddlewaretoken: csrf_token(),
+                    class_id: cls.id
+                },
+                success: function (resp) {
+                    //  A non-JSON body means an access-control decorator
+                    //  rendered an HTML error page (not logged in, wrong
+                    //  grade, registration closed) instead of running the view.
+                    if (!resp || typeof resp !== 'object') {
+                        cls.validationError(
+                            'We could not check this class.  Please make sure ' +
+                            'you are logged in and that registration is open.');
+                        return;
+                    }
+                    cls.validationError(resp.error || null);
+                    cls.validationOk(!resp.error);
+                },
+                error: function (xhr, textStatus) {
+                    //  The view is wrapped in decorators that render HTML
+                    //  error pages (or redirect to the login page) rather than
+                    //  returning JSON, so an unparseable body or a 403 almost
+                    //  always means the student is not allowed to register
+                    //  right now.
+                    if (textStatus === 'parsererror' || xhr.status === 403) {
+                        cls.validationError(
+                            'We could not check this class.  Please make sure ' +
+                            'you are logged in and that registration is open.');
+                    }
+                    else {
+                        cls.validationError(
+                            'We could not check this class.  Please reload the ' +
+                            'page and try again.');
+                    }
+                },
+                complete: function () {
+                    cls.validating(false);
+                }
+            });
+        };
     }
 
     self.classesShowing = function () {
