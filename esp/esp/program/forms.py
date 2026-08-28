@@ -52,6 +52,96 @@ from esp.tagdict import all_global_tags, tag_categories
 from esp.tagdict.models import Tag
 from collections import OrderedDict
 
+
+class SchoolMultiSelectField(forms.MultipleChoiceField):
+    """
+    MultipleChoiceField for statistics school filter. Accepts both:
+    - choice values from the initial list (Sch:free_text_name)
+    - dynamically added K12 school ids (K12:123) from the search widget.
+    """
+
+    def clean(self, value):
+        if not value and self.required:
+            raise forms.ValidationError(self.error_messages['required'], code='required')
+        if not value:
+            return []
+        value = list(value)
+        valid_choices = {str(k) for k, _ in self.choices}
+        for v in value:
+            if v in valid_choices:
+                continue
+            # Allow K12:id added by the search widget (not in initial choices)
+            if isinstance(v, str) and v.startswith('K12:') and v[4:].isdigit():
+                continue
+            raise forms.ValidationError(
+                self.error_messages['invalid_choice'],
+                code='invalid_choice',
+                params={'value': v},
+            )
+        self.run_validators(value)
+        return value
+
+
+class SchoolMultiSelectWithSearchWidget(forms.SelectMultiple):
+    """
+    A SelectMultiple for statistics school filter that also shows a "Search and add"
+    K12 school autocomplete. Use when the list of K12 schools is large (e.g. NCES import);
+    choices should be only free-text schools (Sch:...); K12 schools are added via search.
+    """
+    def __init__(self, attrs=None, choices=()):
+        super().__init__(attrs, choices)
+
+    def render(self, name, value, attrs=None, renderer=None):
+        if attrs is None:
+            attrs = {}
+        attrs = attrs.copy()
+        attrs.setdefault('id', 'id_%s' % name)
+        select_html = super().render(name, value, attrs, renderer)
+        search_id = attrs['id'] + '_k12_search'
+        # Help text and search input; script adds selected K12 school as option to the select
+        html = select_html + '''
+<div class="school-k12-search" style="margin-top: 6px;">
+  <label for="%s">Search and add K12 school (type 2+ characters):</label>
+  <input type="text" id="%s" class="span6" autocomplete="off" style="max-width: 400px;" />
+</div>
+<script type="text/javascript">
+$j(function() {
+  $j("#%s").autocomplete({
+    source: function(request, response) {
+      $j.ajax({
+        url: "/admin/ajax_autocomplete/",
+        dataType: "json",
+        data: {
+          model_module: "esp.users.models",
+          model_name: "K12School",
+          ajax_func: "ajax_autocomplete",
+          ajax_data: request.term,
+          prog: "",
+          limit: 25
+        },
+        success: function(data) {
+          response($j.map(data.result || [], function(item) {
+            return { label: item.ajax_str, value: item.ajax_str, id: item.id };
+          }));
+        }
+      });
+    },
+    minLength: 2,
+    select: function(event, ui) {
+      var sel = $j("#%s");
+      var optVal = "K12:" + ui.item.id;
+      if (sel.find("option").filter(function() { return this.value === optVal; }).length) return;
+      sel.append($j("<option></option>").attr("value", optVal).attr("selected", true).text(ui.item.label));
+      $j(this).val("");
+      return false;
+    }
+  });
+});
+</script>
+''' % (search_id, search_id, search_id, attrs['id'])
+        return mark_safe(html)
+
+
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
 
@@ -65,8 +155,10 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
+    grade_min = forms.IntegerField(label="Minimum grade" , min_value=0)
+    grade_max = forms.IntegerField(label="Maximum grade" , min_value=0)
     base_cost         = forms.IntegerField(label = 'Cost of Program Admission $', min_value = 0 )
-    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None,
+    sibling_discount  = forms.DecimalField(min_value = 0, max_digits=9, decimal_places=2, required=False, initial=None,
                                            help_text="The amount of the sibling discount. Leave blank if you don't use sibling discounts.")
     program_type      = forms.CharField(label = "Program Type", help_text='e.g. Splash or Cascade')
     program_module_questions   = forms.MultipleChoiceField(choices=[],
@@ -78,22 +170,22 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current modules. """
         # These modules are the "choosable" ones that admins will usually want to choose to select or exclude (i.e. not automatically include or exclude)
-        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Student Optional Fees', 'Accounting', 'Financial Aid Application', 'Easily Approve Financial Aid Requests', 'Line Items Module'])]),
-                                                        ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Credit Card Payment Module (Stripe)', 'Credit Card View Module'])]),
-                                                        ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Logistics Quiz')]),
-                                                        ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Teacher Custom Form')]),
-                                                        ('Will you have any (non-survey) forms that students should fill out?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Custom Form')]),
-                                                        ('Will you have more than one lunch period (per day)?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Lunch Period Selection')]),
-                                                        ('Would you be willing to solicit donations for LU?', [x.id for x in ProgramModule.objects.filter(admin_title='Donation Module')]),
-                                                        ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Training and Interview Signups', 'Manage Teacher Training and Interviews'])]),
-                                                        (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Two-Phase Student Registration', 'Lottery Frontend'])]),
-                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(admin_title__in=['Program Lottery Registration', 'Manage Program Lottery'])]),
-                                                        ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(admin_title='Class Change Request')]),
-                                                        ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Acknowledgement')]),
-                                                        ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Application Review for Admin', 'Admin Admissions Dashboard'])]),
-                                                        ('If yes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(admin_title__in=['Teacher Admissions Dashboard', 'Application Reviews for Teachers', 'Application Review for Admin', 'Admin Admissions Dashboard'])]),
-                                                        ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(admin_title='Moderator Signup')]),
-                                                        ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(admin_title='Student Certificate Module')]),
+        self.program_module_question_ids = OrderedDict([('Will you charge for items such as shirts or lunch?', [x.id for x in ProgramModule.objects.filter(handler__in=['StudentExtraCosts', 'AccountingModule', 'FinancialAidAppModule', 'FinAidApproveModule', 'LineItemsModule'])]),
+                                                        ('If you will charge for admission or other costs, will you accept payment by credit card?', [x.id for x in ProgramModule.objects.filter(handler__in=['CreditCardModule_Stripe', 'CreditCardViewer'])]),
+                                                        ('Do you want a pre-program quiz for teachers?', [x.id for x in ProgramModule.objects.filter(handler='TeacherQuizModule')]),
+                                                        ('Will you have any additional non-survey forms that teachers should fill out?', [x.id for x in ProgramModule.objects.filter(handler='TeacherCustomFormModule')]),
+                                                        ('Will you have any (non-survey) forms that students should fill out?', [x.id for x in ProgramModule.objects.filter(handler='StudentCustomFormModule')]),
+                                                        ('Will you have more than one lunch period (per day)?', [x.id for x in ProgramModule.objects.filter(handler='StudentLunchSelection')]),
+                                                        ('Would you be willing to solicit donations for LU?', [x.id for x in ProgramModule.objects.filter(handler='DonationModule')]),
+                                                        ('Do you plan to have teacher training or interviews?', [x.id for x in ProgramModule.objects.filter(handler__in=['TeacherEventsModule', 'TeacherEventsManageModule'])]),
+                                                        (mark_safe('Will you use lottery admission (as opposed to first come, first served) for <b>classes</b>?'), [x.id for x in ProgramModule.objects.filter(handler__in=['StudentRegTwoPhase', 'LotteryFrontendModule'])]),
+                                                        (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(handler__in=['StudentRegPhaseZero', 'StudentRegPhaseZeroManage'])]),
+                                                        ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(handler='ClassChangeRequestModule')]),
+                                                        ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(handler='StudentAcknowledgementModule')]),
+                                                        ('Do students have to apply to individual classes?', [x.id for x in (ProgramModule.objects.filter(handler='AdminReviewApps') | ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage'))]),
+                                                        ('If students must apply to individual classes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(handler__in=['AdmissionsDashboard', 'TeacherReviewApps', 'AdminReviewApps'])]),
+                                                        ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(handler='TeacherModeratorModule')]),
+                                                        ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(handler='StudentCertModule')]),
                                                        ])
         # Include additional or new modules that haven't been added to the list
         for x in ProgramModule.objects.filter(choosable=0):
@@ -106,6 +198,8 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_modules'].required = False
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
+        self.fields['program_size_max'].validators.append(validators.MinValueValidator(0))
+        self.fields['program_size_max'].widget.attrs['min'] = 0
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
     def save(self, commit=True):
@@ -131,7 +225,7 @@ class ProgramCreationForm(BetterModelForm):
         super().clean()
         if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
             #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
+            ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
                 % {'type': ptype_slug
                   ,'term': self.cleaned_data['term']
@@ -147,6 +241,24 @@ class ProgramCreationForm(BetterModelForm):
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
             if Program.objects.filter(name=new_name).exclude(id=self.instance.id).exists():
                 self.add_error('term_friendly', "A %s program already exists with this name. Please choose a new name or change the name of the old program." % self.cleaned_data['program_type'])
+            g_min = self.cleaned_data.get('grade_min')
+            g_max = self.cleaned_data.get('grade_max')
+
+            # Only run validation if both fields are filled out
+            if g_min is not None and g_max is not None:
+                if g_min > g_max:
+                    # Using the syntax you requested to attach the error to a specific field
+                    self.add_error('grade_max', "The maximum grade must be greater than or equal to the minimum grade.")
+
+        teacher_reg_start = self.cleaned_data.get('teacher_reg_start')
+        teacher_reg_end = self.cleaned_data.get('teacher_reg_end')
+        if teacher_reg_start and teacher_reg_end and teacher_reg_end <= teacher_reg_start:
+            self.add_error('teacher_reg_end', 'Teacher registration end date must be after start date.')
+
+        student_reg_start = self.cleaned_data.get('student_reg_start')
+        student_reg_end = self.cleaned_data.get('student_reg_end')
+        if student_reg_start and student_reg_end and student_reg_end <= student_reg_start:
+            self.add_error('student_reg_end', 'Student registration end date must be after start date.')
 
     class Meta:
         fieldsets = [
@@ -164,7 +276,7 @@ class ProgramCreationForm(BetterModelForm):
         }
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'size': 40,
-                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', '\.')})
+                                                                                   'pattern': r'(^.+@%s$)|(^.+@(\w+\.)?learningu\.org$)' % settings.SITE_INFO[1].replace('.', r'\.')})
 ProgramCreationForm.base_fields['director_cc_email'].widget = forms.EmailInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.EmailInput(attrs={'size': 40})
 '''
@@ -239,14 +351,18 @@ class StatisticsQueryForm(forms.Form):
 
     @staticmethod
     def get_school_choices():
-        k12schools = K12School.objects.all().order_by('name')
-        schools = list(set(StudentInfo.objects.all().exclude(school__isnull=True).exclude(school='').values_list('school', flat=True)))
-        result = []
-        for school in k12schools:
-            result.append(('K12:%d' % school.id, school.name))
-        for school in schools:
-            result.append(('Sch:%s' % school, school))
-        result.sort(key=lambda x: x[1])
+        """
+        Return only free-text (manually typed) school names from StudentInfo.
+        K12 schools are not included here to avoid loading 50k+ options; users
+        add them via the "Search and add school" autocomplete next to this field.
+        """
+        schools = list(set(
+            StudentInfo.objects.all()
+            .exclude(school__isnull=True)
+            .exclude(school='')
+            .values_list('school', flat=True)
+        ))
+        result = [('Sch:%s' % s, s) for s in sorted(schools)]
         return result
 
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
@@ -264,7 +380,7 @@ class StatisticsQueryForm(forms.Form):
 
     school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
     school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
-    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
+    school_multisel = SchoolMultiSelectField(required=False, choices=(), widget=forms.SelectMultiple(), label='School(s)', help_text='Hold down Ctrl to select more than one')
 
     zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
     zip_code = forms.CharField(required=False, widget=forms.TextInput())
@@ -285,9 +401,38 @@ class StatisticsQueryForm(forms.Form):
             self.fields['program_instances'].choices = []
 
         school_choices = StatisticsQueryForm.get_school_choices()
-        if len(school_choices) > 0:
-            self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
-            self.fields['school_multisel'].choices = school_choices
+        # Always offer "Select school(s) from list" so users can search/add K12 schools via autocomplete
+        self.fields['school_query_type'].choices = (('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school(s) from list'))
+        self.fields['school_multisel'].choices = school_choices
+        self.fields['school_multisel'].widget = SchoolMultiSelectWithSearchWidget(attrs=None, choices=school_choices)
+
+        # Preserve dynamically-added K12:<id> options on bound forms (e.g., after validation errors)
+        if self.is_bound:
+            field_name = self.add_prefix('school_multisel')
+            data = None
+            if hasattr(self.data, 'getlist'):
+                data = self.data.getlist(field_name)
+            else:
+                data = self.data.get(field_name)
+            if data:
+                if not isinstance(data, (list, tuple)):
+                    data = [data]
+                k12_ids = []
+                for value in data:
+                    if isinstance(value, str) and value.startswith('K12:'):
+                        try:
+                            k12_id = int(value.split(':', 1)[1])
+                        except (ValueError, IndexError):
+                            continue
+                        k12_ids.append(k12_id)
+                if k12_ids:
+                    existing_values = {choice[0] for choice in self.fields['school_multisel'].choices}
+                    for school in K12School.objects.filter(id__in=k12_ids):
+                        choice_value = 'K12:%s' % school.id
+                        if choice_value not in existing_values:
+                            choice_label = str(school)
+                            self.fields['school_multisel'].choices += ((choice_value, choice_label),)
+                    self.fields['school_multisel'].widget.choices = self.fields['school_multisel'].choices
 
     def clean(self):
         """ Check that either 'All Programs' is selected or a program is selected   """
@@ -449,7 +594,7 @@ class RecordTypeForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = ClassCategories
-        fields = ['category', 'symbol', 'seq']
+        fields = ['category', 'symbol', 'seq', 'is_lunch']
         widgets = {
             'symbol': forms.TextInput(attrs={'pattern': '[A-Za-z]{1}', 'title': 'Single letter'})
         }

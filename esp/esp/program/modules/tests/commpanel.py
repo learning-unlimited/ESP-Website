@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from unittest.mock import MagicMock
+
+from esp.program.modules.handlers.commmodule import _make_image_urls_absolute
 from esp.program.tests import ProgramFrameworkTest
 from esp.dbmail.models import ActionHandler, MessageRequest
 from esp.dbmail.cronmail import process_messages, send_email_requests
@@ -43,9 +46,9 @@ from django.core import mail
 from django.template import Context as DjangoContext
 from django.template import Template
 from django.template.loader import render_to_string
-from django.utils.html import strip_tags
+from django.test import SimpleTestCase
 
-from datetime import datetime, timedelta
+from datetime import datetime
 import re
 
 class CommunicationsPanelTest(ProgramFrameworkTest):
@@ -72,7 +75,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='CommModule', module_type='manage')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-    def runTest(self):
+    def test_basic_comm_flow(self):
         #   Log in an administrator
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
@@ -84,7 +87,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
             'finalsent': 'Test List',
             'submitform': 'I have my list, go on!',
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commpanel_old', post_data)
         self.assertEqual(response.status_code, 200)
 
         #   Extract filter ID from response
@@ -101,7 +104,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
             'replyto': 'replyto@testserver.learningu.org',
             'filterid': filterid,
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commfinal'), post_data)
+        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commfinal', post_data)
         self.assertEqual(response.status_code, 200)
 
         #   Check that a MessageRequest has been created
@@ -122,14 +125,16 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertEqual(msg.from_email, 'info@testserver.learningu.org')
         self.assertEqual(msg.extra_headers.get('Reply-To', ''), 'replyto@testserver.learningu.org')
 
-        #   Check that the HTML-templated email renders correctly
-        context_dict = {'user'   : ActionHandler(self.students[0], self.students[0]),
-                        'program': ActionHandler(self.program, self.students[0]),
-                        'request': ActionHandler(MessageRequest(), self.students[0]),
-                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
-        rendered_text = render_to_string('email/default_email.html', {'msgbody': 'Test Body 123',})
-        rendered_text = Template(rendered_text).render(DjangoContext(context_dict))
-        self.assertEqual(msg.body, strip_tags(rendered_text).strip())
+        #   Check the email body. send_mail detects the templated HTML, sends a
+        #   tag-stripped plaintext body, and attaches the HTML as a text/html
+        #   alternative, so assert on those properties rather than an exact
+        #   rendered-and-stripped string (whose whitespace normalization is
+        #   implementation-specific).
+        self.assertIn('Test Body 123', msg.body)
+        self.assertNotIn('<html', msg.body)
+        html_alternatives = [content for content, mimetype in getattr(msg, 'alternatives', []) if mimetype == 'text/html']
+        self.assertEqual(len(html_alternatives), 1, "Expected exactly one text/html alternative.")
+        self.assertIn('Test Body 123', html_alternatives[0])
 
 
         #   Check that the MessageRequest was marked as processed
@@ -170,3 +175,56 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertIn(expected_first_day, rendered, 'program.date should render as first program day')
         self.assertIn(expected_date_range, rendered, 'program.date_range should render as program date range')
         self.assertIn(expected_teacher_reg_deadline, rendered, 'program.teacher_reg_deadline should render as Teacher/Classes/Create end_date')
+
+class MakeImageUrlsAbsoluteTest(SimpleTestCase):
+    def _make_image_urls_absolute_request(self):
+        request = MagicMock()
+        request.build_absolute_uri.side_effect = lambda p: 'https://example.com' + p
+        return request
+
+    def test_rewrites_relative_img_src(self):
+        result = _make_image_urls_absolute('<img src="/media/uploaded/foo.png">', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_single_quoted_src(self):
+        result = _make_image_urls_absolute("<img src='/media/uploaded/foo.png'>", self._make_image_urls_absolute_request())
+        self.assertEqual(result, "<img src='https://example.com/media/uploaded/foo.png'>")
+
+    def test_leaves_protocol_relative_url_unchanged(self):
+        body = '<img src="//cdn.example.com/img.png">'
+        self.assertEqual(_make_image_urls_absolute(body, self._make_image_urls_absolute_request()), body)
+
+    def test_leaves_absolute_url_unchanged(self):
+        body = '<img src="https://other.example.com/img.png">'
+        self.assertEqual(_make_image_urls_absolute(body, self._make_image_urls_absolute_request()), body)
+
+    def test_rewrites_multiple_images(self):
+        body = '<img src="/a.png"> text <img src="/b.png">'
+        result = _make_image_urls_absolute(body, self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/a.png"> text <img src="https://example.com/b.png">')
+
+    def test_rewrites_unquoted_src(self):
+        result = _make_image_urls_absolute('<img src=/media/uploaded/foo.png>', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_uppercase_src_attribute(self):
+        result = _make_image_urls_absolute('<img SRC="/media/uploaded/foo.png">', self._make_image_urls_absolute_request())
+        self.assertEqual(result, '<img src="https://example.com/media/uploaded/foo.png">')
+
+    def test_rewrites_src_with_whitespace_around_equals(self):
+        req = self._make_image_urls_absolute_request()
+        self.assertEqual(
+            _make_image_urls_absolute('<img src ="/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+        self.assertEqual(
+            _make_image_urls_absolute('<img src= "/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+        self.assertEqual(
+            _make_image_urls_absolute('<img src = "/media/a.png">', req),
+            '<img src="https://example.com/media/a.png">',
+        )
+
+    def test_empty_body(self):
+        self.assertEqual(_make_image_urls_absolute('', self._make_image_urls_absolute_request()), '')

@@ -2,7 +2,7 @@
 
 {% block head %}
 <script src="/media/scripts/sorttable.js"></script>
-{% if sections|length_is:"1" %}
+{% if sections|length == 1 %}
 <link rel='stylesheet' type='text/css' href='/media/styles/barcodescanner.css' />
 <link rel="stylesheet" type='text/css' href="https://use.fontawesome.com/releases/v5.0.9/css/all.css">
 
@@ -37,7 +37,7 @@ function toggleCheck(element) {
             <tr>
                 <th colspan="4" class="sectiontitle">
                     <i>Roster for {{ section }}</i>
-                    {% if sections|length_is:"1" %}
+                    {% if sections|length == 1 %}
                         <br />(Use this to take attendance)
                     {% endif %}
                 </th>
@@ -76,7 +76,7 @@ function toggleCheck(element) {
                                         <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                     </td>
                                     <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
-                                        <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                        <i class="material-icons-outlined md-5{% if sections|length == 1 %} pointer{% endif %}"{% if sections|length == 1 %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                         <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                         value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                                         <br /><span class="msg"></span>
@@ -137,7 +137,7 @@ function toggleCheck(element) {
                                     <input hidden name="checkedin" type="checkbox"{% if student.checked_in %} checked{% endif %} disabled>
                                 </td>
                                 <td align="center" data-st-key="{% if student.attended %}2{% else %}1{% endif %}">
-                                    <i class="material-icons-outlined md-5{% if sections|length_is:'1' %} pointer{% endif %}"{% if sections|length_is:'1' %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
+                                    <i class="material-icons-outlined md-5{% if sections|length == 1 %} pointer{% endif %}"{% if sections|length == 1 %} onclick="toggleCheck(this);"{% endif %}>{% if student.attended %}check_box{% else %}check_box_outline_blank{% endif %}</i>
                                     <input hidden name="attending" data-username="{{ student.username }}" data-secid="{{ section.id }}"
                                     value="{{ student.id }}" type="checkbox"{% if student.attended %} checked{% endif %}>
                                     <br /><span class="msg"></span>
@@ -157,7 +157,7 @@ function toggleCheck(element) {
             </tr>
         </table>
         {% endif %}
-        {% if sections|length_is:"1" %}
+        {% if sections|length == 1 %}
         <form action="/teach/{{ one }}/{{ two }}/onsiteroster/{{ section.id }}" method="post">
         {% csrf_token %}
         <input type="hidden" name="submitted">
@@ -209,10 +209,10 @@ function toggleCheck(element) {
 <div class="navbar bottom">
   <table>
     <tr>
-      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections|length_is:'1' %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
-        <br>Section Info{% if not sections|length_is:'1' %}s{% endif %}</td>
-      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections|length_is:'1' %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
-        <br>Section Roster{% if not sections|length_is:'1' %}s{% endif %}</td>
+      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
+        <br>Section Info{% if not sections|length == 1 %}s{% endif %}</td>
+      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections|length == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
+        <br>Section Roster{% if not sections|length == 1 %}s{% endif %}</td>
     </tr>
   </table>
 </div>

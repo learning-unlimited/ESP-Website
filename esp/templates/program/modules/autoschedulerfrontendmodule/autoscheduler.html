@@ -26,7 +26,7 @@ the scheduling assistant, then save the results if you are satisfied.</p>
 {% for option_key, option_value in search.items %}
 <tr>
     <th>{{ option_key }}</th>
-    <td><input type="text" class="input-small" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td><input type="text" name="autoscheduler_search_{{ option_key }}" value="{{ option_value.0 }}" /></td>
     <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
@@ -45,7 +45,7 @@ see Resource Criterion Options below.</p>
 {% for option_key, option_value in constraints.items %}
 <tr>
     <th>{{ option_key }}</th>
-    <td><input type="text" class="input-small" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td><input type="text" name="autoscheduler_constraints_{{ option_key }}" value="{{ option_value.0 }}" /></td>
     <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
@@ -66,7 +66,7 @@ Criterion Options below.</p>
 {% for option_key, option_value in scorers.items %}
 <tr>
     <th>{{ option_key }}</th>
-    <td><input type="text" class="input-small" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td><input type="text" name="autoscheduler_scorers_{{ option_key }}" value="{{ option_value.0 }}" /></td>
     <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
@@ -95,7 +95,7 @@ see the bottom of this page.</p>
 {% for option_key, option_value in resources.items %}
 <tr>
     <th>{{ option_key }}</th>
-    <td><input type="text" class="input-small" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+    <td><input type="text" name="autoscheduler_resources_{{ option_key }}" value="{{ option_value.0 }}" /></td>
     <td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
@@ -104,7 +104,7 @@ see the bottom of this page.</p>
 
 <table width="100%" cellpadding="5">
 <tr>
-    <td colspan="3"><button type="submit" class="btn btn-primary btn-large"
+    <td colspan="3"><button type="submit" class="btn btn-primary btn-lg"
         style="background-color:blue; background-image: none;">Whee... Run the Automatic Scheduling Assistant!</button></td>
 </tr>
 <tr>

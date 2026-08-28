@@ -29,11 +29,16 @@ Setup
 
   ::
 
-    apt-get install nodejs node-less
+    apt-get install nodejs
 
 
-- Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
-- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clone, then git checkout v0.11.9-release).
+- Note: Themes compile with Dart Sass, invoked as
+  ``node node_modules/sass/sass.js`` from the theme editor directory (see
+  ``ThemeController.compile_scss``). Install the local packages with
+  ``npm install`` under ``esp/public/media/theme_editor/`` (Bootstrap 5,
+  Bootswatch, and the ``sass`` npm package).
+- Note: You will need a current LTS Node.js.  See the `Docker setup guide <docker.rst>`_ for
+  instructions on setting up the development environment.
 
 2) Back up your database, or at least the template overrides.
 3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    
@@ -43,9 +48,8 @@ Architecture
 ------------
 Each theme consists of a set of pre-defined template overrides, images and
 styles.  This information is stored in the code repository 
-(esp/themes/theme_data directory).  The styles are stored in LESS
-(http://lesscss.org) format and compiled into CSS with user-specified
-parameters.
+(esp/themes/theme_data directory).  The styles are stored in SCSS
+format and compiled into CSS with user-specified parameters.
 
 From the end user perspective, there are 3 steps to setting up their 
 front-end design:
@@ -66,27 +70,26 @@ esp/themes/controllers.py.  The most important methods are:
 - High level theme controls: clear_theme(), load_theme(), customize_theme()
 - Back end driver functions: compile_css(), load_customizations(), save_customizations()
 
-When someone selects a theme, the LESS stylesheet sources are all compiled
+When someone selects a theme, the SCSS stylesheet sources are all compiled
 into a single CSS file (by default, public/media/styles/theme_compiled.css).
 Any template overrides conflicting with the desired theme are removed.  The
 media files provided by the theme are copied into the working directory.
 
-Bootstrap is used to provide a baseline collection of styles that makes it
-easier to create a decent looking theme.  However, it does complicate the
-design of complex themes made by knowledgeable designers, so we may add an
-option to exclude it from the builds in the future.
+Bootstrap 5 is used to provide a baseline collection of styles that makes it
+easier to create a decent looking theme.  Optional Bootswatch skins can be
+selected from the theme editor.
 
 The setup and customization steps are kept separate because they collect
 different types of information.  The backend storage of settings is also
 done differently.
 
-"Customization" refers specifically to LESS
-stylesheet parameters, which are inferred from the LESS sources for each theme
-(and a global list defined in 
-public/media/theme_editor/less/variables_custom.less).  These are simple
+"Customization" refers specifically to stylesheet parameters, which are
+inferred from the SCSS sources for each theme (and a global list defined in
+``public/media/theme_editor/scss/variables_custom.scss``).  These are simple
 colors, distances and strings that correspond directly to the stylesheet.
-Customizations are stored in a user-named LESS file under
-public/media/theme_editor/themes/ by default.
+Saved customizations still use the historical ``.less`` ``@name: value;``
+file format under ``public/media/theme_editor/themes/`` by default — that
+storage format is intentional and unchanged even though compilation uses SCSS.
 
 In contrast, "setup" refers to potentially more structured information that
 can be used by template logic; it does not only affect the styling of the
@@ -122,9 +125,9 @@ Each theme is packaged in a directory under esp/themes/theme_data as follows:
           __init__.py
           config_form.py
           images/
-          less/
-            main.less
-            variables.less
+          scss/
+            main.scss
+            variables.scss
             [other style files]
           scripts/
           templates/
@@ -142,18 +145,19 @@ The required sources for each theme are:
   
   2) Styles
 
-     Any number of LESS stylesheet files can be placed in the less/
+     Any number of SCSS stylesheet files can be placed in the scss/
      directory.  These will be concatenated together and compiled
-     to the CSS used by the site.  Note that LESS allows parameters to
+     to the CSS used by the site.  Note that SCSS allows parameters to
      be specified with the following format:
      ::
 
-       @box_heading_color: #333333;
-       @box_rounding_radius: 8px;
-       @heading_font: "Helvetica Neue";
+       $box_heading_color: #333333;
+       $box_rounding_radius: 8px;
+       $heading_font: "Helvetica Neue";
        
      It's customary to collect the parameter assignments into a single
-     file named variables.less.
+     file named variables.scss.  Variable files are included before
+     Bootstrap so ``!default`` values pick up theme overrides.
   
   3) Images
 
@@ -192,16 +196,16 @@ navigation structure adjustable?
 
 Split your parameters into two groups.  Anything that shows up only in CSS
 should probably be a stylesheet parameter, and you should put this into 
-the less/variables.less file as specified by "2) Styles" above.
+the scss/variables.scss file as specified by "2) Styles" above.
 (These will appear in the "Advanced" section of the theme editor.)
 
 Anything that shows up in your HTML output should be collected by the
 setup form.  Write the desired form fields into a configuration form class 
 as specified by "5) Configuration form" above.
 
-Take your CSS sources and copy them to LESS files under the less/directory.  
+Take your CSS sources and copy them to SCSS files under the scss/ directory.  
 Make sure to replace your hardcoded parameter values with references to the 
-LESS variables you defined.  Copy scripts and images to their respective 
+SCSS variables you defined.  Copy scripts and images to their respective 
 directories.
 
 Now convert your HTML mockup into a main.html template override.  Reference
@@ -232,22 +236,21 @@ into the main branch.
 Potential pitfalls
 ++++++++++++++++++
 
-If there are any errors in your LESS code, you may not be able to compile CSS.
-Turn on THEME_DEBUG to generate intermediate LESS output and print debugging
+If there are any errors in your SCSS code, you may not be able to compile CSS.
+Turn on THEME_DEBUG to generate intermediate SCSS output and print debugging
 information to the shell.
 
-The current system is not compatible with all versions of LESS and Node.js.
-You may need to manually install compatible versions.  Version 1.3.1 of LESS
-is known to work properly.
+Themes require Node.js and the packages from
+``esp/public/media/theme_editor/package.json`` (``npm install`` in that
+directory).  Missing npm packages typically surface as Sass compile failures
+during ``manage.py recompile_theme`` / ``manage.py update``.
 
 Note that all pages on the site are going to see all of the style information
-provided by the LESS files.  So, don't expect that one page can use <h2> and 
+provided by the SCSS files.  So, don't expect that one page can use <h2> and 
 have it look different from an <h2> somewhere else (which could have been done
 in the past by including different CSS files).  Use selectors to differentiate 
 between elements.
 
 Further setup and usage information is available at:
-  http://wiki.learningu.org/Generic_Templates
-
-
+  https://wiki.learningu.org/Generic_Templates
 
