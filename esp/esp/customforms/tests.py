@@ -33,10 +33,20 @@ Learning Unlimited, Inc.
 """
 
 import json
+import time
+from unittest.mock import patch
+
+import psycopg2
+from django.db import connection, transaction
+from django.db.utils import OperationalError
+from django.test import TransactionTestCase, override_settings
 
 from esp.customforms.models import Form, Field, Page, Section
-from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.DynamicModel import (
+    DynamicModelHandler, PG_LOCK_NOT_AVAILABLE, lock_timeout, schema_lock)
 from esp.customforms.views import hasPerm
+from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -865,3 +875,183 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Page._meta.ordering, ['seq'])
         self.assertEqual(Section._meta.ordering, ['seq'])
         self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+class SchemaLockTimeoutTest(TestCase):
+    """
+    Tests for the lock_timeout safeguard around custom form schema changes.
+
+    See issue #1101: without it, a schema change that cannot get its lock waits
+    forever, and everything else that needs the same tables queues up behind
+    it.
+    """
+
+    def test_timeout_is_set_and_restored(self):
+        """The timeout applies inside the block and is undone afterwards."""
+        before = self._show_lock_timeout()
+        with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+            with lock_timeout():
+                self.assertEqual(self._show_lock_timeout(), '1234ms')
+        self.assertEqual(self._show_lock_timeout(), before)
+
+    def test_timeout_is_restored_when_the_block_fails(self):
+        """A failed schema change must not leave lock_timeout set."""
+        before = self._show_lock_timeout()
+        with self.assertRaises(ValueError):
+            with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+                with lock_timeout():
+                    raise ValueError('boom')
+        self.assertEqual(self._show_lock_timeout(), before)
+
+    def test_lock_timeout_error_becomes_a_readable_error(self):
+        """A lock timeout is reported to the user, not dumped as a 500."""
+        with self.assertRaises(ESPError_NoLog) as caught:
+            with schema_lock("Could not do the thing"):
+                raise self._operational_error(PG_LOCK_NOT_AVAILABLE)
+        self.assertIn('Could not do the thing', str(caught.exception))
+
+    def test_other_database_errors_are_not_swallowed(self):
+        """Only lock timeouts get translated; anything else propagates as-is."""
+        original = self._operational_error('08006')    # connection failure
+        with self.assertRaises(OperationalError) as caught:
+            with schema_lock("Could not do the thing"):
+                raise original
+        self.assertIs(caught.exception, original)
+
+    def test_success_is_not_disturbed(self):
+        """The wrapper is transparent when nothing goes wrong."""
+        with schema_lock("Could not do the thing"):
+            result = 'fine'
+        self.assertEqual(result, 'fine')
+
+    def _show_lock_timeout(self):
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW lock_timeout")
+            return cursor.fetchone()[0]
+
+    def _operational_error(self, sqlstate):
+        """
+        Returns a genuine OperationalError carrying the given SQLSTATE, by
+        asking PostgreSQL to raise one.  Using a real error (rather than a
+        hand-built one) is what makes these tests meaningful: it exercises the
+        same wrapping that Django does in production.
+        """
+        try:
+            #   The savepoint keeps the failure from poisoning the test's
+            #   transaction.
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "DO $$ BEGIN RAISE EXCEPTION 'database error'"
+                        f" USING ERRCODE = '{sqlstate}'; END $$")
+        except OperationalError as error:
+            return error
+        self.fail(f'PostgreSQL did not raise an error for SQLSTATE {sqlstate}')
+
+
+class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
+    """
+    End-to-end check that a schema change gives up instead of hanging when
+    another connection is holding the lock it needs.
+    """
+
+    def setUp(self):
+        self.user, _ = ESPUser.objects.get_or_create(username='lock_admin')
+        self.form = Form.objects.create(
+            title='Lock Form', created_by=self.user,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        self.dmh = DynamicModelHandler(self.form)
+        self.dmh.createTable()
+        #   Registered as soon as the table exists: this test case commits, so
+        #   a response table left behind by a failure here would break the
+        #   flush at the end of every later test in this database.
+        self.addCleanup(self.dmh.deleteTable)
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section 1', seq=1)
+        self.field = Field.objects.create(
+            form=self.form, section=section, field_type='textField', seq=1,
+            label='Question', required=False)
+
+    @override_settings(CUSTOMFORMS_LOCK_TIMEOUT='250ms')
+    def test_schema_change_gives_up_when_the_table_is_locked(self):
+        blocker = psycopg2.connect(**connection.get_connection_params())
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute(
+                    f'LOCK TABLE "customforms"."customforms_response_{self.form.id}"'
+                    ' IN ACCESS EXCLUSIVE MODE')
+
+                started = time.time()
+                with self.assertRaises(ESPError_NoLog):
+                    self.dmh.addField(self.field)
+                #   The point of the exercise: we gave up quickly rather than
+                #   blocking until the other transaction ended.
+                self.assertLess(time.time() - started, 30)
+        finally:
+            blocker.rollback()
+            blocker.close()
+
+        #   The connection must still be usable, and the timeout must not have
+        #   leaked into it.
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW lock_timeout")
+            self.assertEqual(cursor.fetchone()[0], '0')
+
+
+class FailedFormSaveRollbackTest(TestCase):
+    """
+    A custom form save that fails partway through must not leave half of the
+    form behind.  The views run inside an atomic block but catch the exception
+    themselves, so without an explicit rollback the partial work gets
+    committed -- which is how a lock timeout during createTable() would leave
+    form metadata pointing at a response table that does not exist.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='rollback_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='rollback_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_form_metadata_is_not_committed_when_the_table_cannot_be_made(self):
+        form_data = {
+            'title': 'Rollback Form',
+            'perms': '',
+            'link_id': -1,
+            'link_type': '-1',
+            'desc': 'Test',
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0},
+                    'fields': [{'data': {
+                        'field_type': 'textField', 'question_text': 'Q',
+                        'seq': 0, 'required': True, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+
+        failure = ESPError('could not get a lock', log=False)
+        with patch.object(DynamicModelHandler, 'createTable', side_effect=failure):
+            response = self.client.post(
+                "/customforms/submit/", json.dumps(form_data),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('could not get a lock',
+                      json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Rollback Form').exists())
+        self.assertFalse(Field.objects.filter(label='Q').exists())

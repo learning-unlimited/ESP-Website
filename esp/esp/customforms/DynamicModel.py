@@ -1,11 +1,15 @@
+import logging
 import re
 import os
+from contextlib import contextmanager
 
 from django.db import models
 from django.apps import apps
 from django.db import connection, transaction
 from django.db.models.fields import NOT_PROVIDED
+from django.db.utils import OperationalError
 from esp.customforms.models import Field
+from esp.middleware import ESPError
 from argcache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
@@ -13,6 +17,9 @@ from esp.customforms.linkfields import cf_cache
 from esp.qsdmedia.models import root_file_path
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+
+logger = logging.getLogger(__name__)
+
 
 def get_file_upload_path(instance, filename):
     """
@@ -23,6 +30,94 @@ def get_file_upload_path(instance, filename):
     save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
     return save_path
+
+
+#   SQLSTATE that PostgreSQL reports when a statement gives up waiting for a
+#   lock because lock_timeout expired.
+PG_LOCK_NOT_AVAILABLE = '55P03'
+
+#   How long a custom form schema operation is willing to wait for a lock
+#   before giving up.  Anything PostgreSQL's lock_timeout accepts will do;
+#   override with CUSTOMFORMS_LOCK_TIMEOUT in local_settings.py.
+DEFAULT_LOCK_TIMEOUT = '5s'
+
+
+def is_lock_timeout(exception):
+    """
+    Returns True if this OperationalError was caused by lock_timeout expiring.
+
+    We look at the SQLSTATE rather than the message text, since the message is
+    translated according to the server's lc_messages setting.
+    """
+    for candidate in (exception, exception.__cause__):
+        if getattr(candidate, 'pgcode', None) == PG_LOCK_NOT_AVAILABLE:
+            return True
+    return False
+
+
+@contextmanager
+def lock_timeout():
+    """
+    Runs the wrapped block in a transaction with PostgreSQL's lock_timeout set.
+
+    Without this, a schema change waiting on a lock (e.g. because somebody left
+    a shell_plus session open with an uncommitted transaction) blocks forever,
+    and every other query that needs the same tables queues up behind it,
+    taking down the whole site.  With it, we give up after a few seconds and
+    the caller gets an error instead.
+
+    The timeout is scoped to the block: it is set with SET LOCAL, restored on
+    the way out, and, if the block raises, unset by the rollback of the
+    transaction (or savepoint, when we are nested inside another atomic block)
+    that this context manager opens.  That matters because these methods are
+    usually called from inside a request-long atomic block, where a stray SET
+    LOCAL would otherwise apply to everything else the request does.
+    """
+    with transaction.atomic():
+        if connection.vendor != 'postgresql':
+            yield
+            return
+
+        timeout = getattr(settings, 'CUSTOMFORMS_LOCK_TIMEOUT',
+                          DEFAULT_LOCK_TIMEOUT)
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW lock_timeout")
+            previous_timeout = cursor.fetchone()[0]
+            cursor.execute("SET LOCAL lock_timeout = %s", [timeout])
+
+        yield
+
+        #   Only reached if the block succeeded.  If it raised, the atomic
+        #   block above rolls back, which undoes the SET LOCAL for us -- and we
+        #   could not run this statement on an aborted transaction anyway.
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL lock_timeout = %s", [previous_timeout])
+
+
+@contextmanager
+def schema_lock(description):
+    """
+    Wraps a schema change so that failing to get a lock raises a comprehensible
+    error rather than hanging.  'description' is used to build that error, e.g.
+    "Could not add a field to this form's response table".
+    """
+    try:
+        with lock_timeout():
+            yield
+    except OperationalError as exception:
+        if not is_lock_timeout(exception):
+            raise
+        #   Logged (rather than mailed via ESPError_Log) because the views that
+        #   call these methods turn the exception into a 400 response, so this
+        #   is the only trace a webmaster would otherwise get.
+        logger.warning("%s: timed out waiting for a database lock", description)
+        raise ESPError(
+            f"{description} because the database is busy: something else is "
+            "holding a lock on the tables that needed to change.  Nothing was "
+            "changed; please wait a moment and try again.",
+            log=False,
+        ) from exception
+
 
 class DynamicModelHandler:
     """
@@ -178,21 +273,19 @@ class DynamicModelHandler:
         if not self.field_list:
             self._getModelFieldList()
 
-        if transaction.get_autocommit():
-            with transaction.atomic():
-                with connection.schema_editor() as schema_editor:
-                    schema_editor.create_model(self.createDynModel())
-        else:
+        #   schema_lock() opens the transaction that this DDL needs, whether or
+        #   not we were already inside one.
+        with schema_lock("Could not create this form's response table"):
             with connection.schema_editor() as schema_editor:
                 schema_editor.create_model(self.createDynModel())
 
-    @transaction.atomic
     def deleteTable(self):
         """
         Deletes the response table for the current form
         """
-        with connection.schema_editor() as schema_editor:
-            schema_editor.delete_model(self.createDynModel())
+        with schema_lock("Could not delete this form's response table"):
+            with connection.schema_editor() as schema_editor:
+                schema_editor.delete_model(self.createDynModel())
         self.purgeDynModel()
 
     def _getFieldToAdd(self, ftype):
@@ -217,35 +310,38 @@ class DynamicModelHandler:
         return f"question_{field.id}"
 
     def addField(self, field):
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            new_field = self._getModelField(field.field_type)
-            if new_field:
-                new_field.column = self.get_field_name(field)
-                # We need to set a default (if one isn't set already) in case there are already responses to the form
-                if new_field.default == NOT_PROVIDED:
-                    new_field.default = ''
-                schema_editor.add_field(model, new_field)
+        with schema_lock("Could not add a question to this form"):
+            with connection.schema_editor() as schema_editor:
+                model = self.createDynModel()
+                new_field = self._getModelField(field.field_type)
+                if new_field:
+                    new_field.column = self.get_field_name(field)
+                    # We need to set a default (if one isn't set already) in case there are already responses to the form
+                    if new_field.default == NOT_PROVIDED:
+                        new_field.default = ''
+                    schema_editor.add_field(model, new_field)
 
     def updateField(self, field, old_field):
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            old_field_name = self.get_field_name(old_field)
-            new_field = self._getModelField(field.field_type)
-            if new_field:
-                new_field.column = self.get_field_name(field)
-                schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
+        with schema_lock("Could not update a question on this form"):
+            with connection.schema_editor() as schema_editor:
+                model = self.createDynModel()
+                old_field_name = self.get_field_name(old_field)
+                new_field = self._getModelField(field.field_type)
+                if new_field:
+                    new_field.column = self.get_field_name(field)
+                    schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
 
     def removeField(self, field):
         """
         Removes a column (or columns) corresponding to a particular field
         """
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            if self._getModelField(field.field_type):
-                field_name = self.get_field_name(field)
-                #   TODO: Return early if this is a linked field
-                schema_editor.remove_field(model, model._meta.get_field(field_name))
+        with schema_lock("Could not remove a question from this form"):
+            with connection.schema_editor() as schema_editor:
+                model = self.createDynModel()
+                if self._getModelField(field.field_type):
+                    field_name = self.get_field_name(field)
+                    #   TODO: Return early if this is a linked field
+                    schema_editor.remove_field(model, model._meta.get_field(field_name))
 
     def removeLinkField(self, field):
         """
@@ -253,13 +349,14 @@ class DynamicModelHandler:
         """
         if not cf_cache.isLinkField(field.field_type):
             return
-        with connection.schema_editor() as schema_editor:
-            model = self.createDynModel()
-            link_model_cls = cf_cache.modelForLinkField(field.field_type)
-            if link_model_cls.__name__ in self.link_models_list:
-                field_name = f'link_{link_model_cls.__name__}'
-                schema_editor.remove_field(model, model._meta.get_field(field_name))
-                self.link_models_list.remove(link_model_cls.__name__)
+        with schema_lock("Could not remove a linked question from this form"):
+            with connection.schema_editor() as schema_editor:
+                model = self.createDynModel()
+                link_model_cls = cf_cache.modelForLinkField(field.field_type)
+                if link_model_cls.__name__ in self.link_models_list:
+                    field_name = f'link_{link_model_cls.__name__}'
+                    schema_editor.remove_field(model, model._meta.get_field(field_name))
+                    self.link_models_list.remove(link_model_cls.__name__)
 
     def addLinkFieldColumn(self, field):
         """
@@ -268,40 +365,42 @@ class DynamicModelHandler:
         """
         if not cf_cache.isLinkField(field.field_type):
             return
-        with connection.schema_editor() as schema_editor:
-            link_model_cls = cf_cache.modelForLinkField(field.field_type)
-            if link_model_cls.__name__ not in self.link_models_list:
-                # Add in the FK-column for this model
-                model = self.createDynModel()
-                new_field = self._getLinkModelField(link_model_cls)
-                new_field.column = f'link_{link_model_cls.__name__}'
-                schema_editor.add_field(model, new_field)
-                self.link_models_list.append(link_model_cls.__name__)
+        with schema_lock("Could not add a linked question to this form"):
+            with connection.schema_editor() as schema_editor:
+                link_model_cls = cf_cache.modelForLinkField(field.field_type)
+                if link_model_cls.__name__ not in self.link_models_list:
+                    # Add in the FK-column for this model
+                    model = self.createDynModel()
+                    new_field = self._getLinkModelField(link_model_cls)
+                    new_field.column = f'link_{link_model_cls.__name__}'
+                    schema_editor.add_field(model, new_field)
+                    self.link_models_list.append(link_model_cls.__name__)
 
     def change_only_fkey(self, form, old_link_type, new_link_type, link_id):
         """
         Used to change the foreign key corresponding to only_fkey_links when a
         form is modified.
         """
-        with connection.schema_editor() as schema_editor:
-            if old_link_type != new_link_type and old_link_type and old_link_type != "-1" and old_link_type in cf_cache.only_fkey_models:
-                # Old FK column needs to go
-                model = self.createDynModel()
-                old_model_cls = cf_cache.only_fkey_models[old_link_type]
-                old_field_name = f'link_{old_model_cls.__name__}_id'
-                schema_editor.remove_field(model, model._meta.get_field(old_field_name))
+        with schema_lock("Could not change what this form is linked to"):
+            with connection.schema_editor() as schema_editor:
+                if old_link_type != new_link_type and old_link_type and old_link_type != "-1" and old_link_type in cf_cache.only_fkey_models:
+                    # Old FK column needs to go
+                    model = self.createDynModel()
+                    old_model_cls = cf_cache.only_fkey_models[old_link_type]
+                    old_field_name = f'link_{old_model_cls.__name__}_id'
+                    schema_editor.remove_field(model, model._meta.get_field(old_field_name))
 
-            form.link_type = new_link_type
-            form.link_id = link_id
-            form.save()
+                form.link_type = new_link_type
+                form.link_id = link_id
+                form.save()
 
-            if old_link_type != new_link_type and new_link_type and new_link_type != "-1" and new_link_type in cf_cache.only_fkey_models:
-                # New FK column needs to be inserted
-                model = self.createDynModel()
-                new_model_cls = cf_cache.only_fkey_models[new_link_type]
-                new_field = self._getLinkModelField(new_model_cls)
-                new_field.column = f'link_{new_model_cls.__name__}_id'
-                schema_editor.add_field(model, new_field)
+                if old_link_type != new_link_type and new_link_type and new_link_type != "-1" and new_link_type in cf_cache.only_fkey_models:
+                    # New FK column needs to be inserted
+                    model = self.createDynModel()
+                    new_model_cls = cf_cache.only_fkey_models[new_link_type]
+                    new_field = self._getLinkModelField(new_model_cls)
+                    new_field.column = f'link_{new_model_cls.__name__}_id'
+                    schema_editor.add_field(model, new_field)
 
     def createDynModel(self):
         """

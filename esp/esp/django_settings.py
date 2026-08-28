@@ -111,6 +111,12 @@ DATABASES = {'default':
     }
 }
 
+# How long a custom form schema change (creating or altering a response table)
+# waits for a database lock before giving up.  Without a limit, a single stale
+# transaction elsewhere can wedge every query that touches the same tables.
+# Any value PostgreSQL's lock_timeout accepts will work.
+CUSTOMFORMS_LOCK_TIMEOUT = '5s'
+
 ##########################
 # Default email settings #
 ##########################
