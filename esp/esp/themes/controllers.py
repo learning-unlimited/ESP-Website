@@ -99,10 +99,6 @@ def _detect_all_themes():
 
 _ALL_THEMES = _detect_all_themes()
 
-# Pre-computed map from theme name → less/ directory, mirroring _SCSS_THEME_DIRS.
-# get_less_names uses this so theme_name never appears in an os.path.join expression.
-_LESS_THEME_DIRS = {name: os.path.join(THEME_PATH, name, 'less') for name in _ALL_THEMES}
-
 def _get_theme_editor_dir():
     """Return the realpath of the theme_editor directory, validated to be inside MEDIA_ROOT.
 
@@ -118,10 +114,10 @@ def _get_theme_editor_dir():
 _THEME_EDITOR_DIR = _get_theme_editor_dir()
 _BOOTSTRAP5_SCSS = os.path.join(
     _THEME_EDITOR_DIR, 'node_modules', 'bootstrap', 'scss', 'bootstrap.scss'
-)
+).replace('\\', '/')
 _BOOTSWATCH_DIST = os.path.join(
     _THEME_EDITOR_DIR, 'node_modules', 'bootswatch', 'dist'
-)
+).replace('\\', '/')
 
 def _sanitize_scss_value(variable_name, value):
     """Return value if it is safe to embed in a SCSS declaration; log and return None otherwise.
@@ -177,22 +173,6 @@ class ThemeController(object):
         return [name for name in os.listdir(THEME_PATH)
             if name != '__pycache__' and os.path.isdir(os.path.join(THEME_PATH, name))]
 
-    def get_bootswatch_less_themes(self):
-        """Return sorted list of Bootswatch 3 theme names available from npm.
-
-        Returns an empty list when the npm package is not installed.
-        """
-        bootswatch_dir = os.path.normpath(os.path.join(
-            themes_settings.less_dir, '..', 'node_modules', 'bootswatch'
-        ))
-        if not os.path.isdir(bootswatch_dir):
-            return []
-        return sorted(
-            name for name in os.listdir(bootswatch_dir)
-            if os.path.isdir(os.path.join(bootswatch_dir, name))
-            and os.path.exists(os.path.join(bootswatch_dir, name, 'variables.less'))
-        )
-
     def get_template_settings(self):
         """
         Get the current template settings. The base settings are the initial
@@ -240,7 +220,7 @@ class ThemeController(object):
     def list_filenames(self, dir, file_regexp, mask_base=False):
         """ Quick search for files in the specified directory (dir) which match
             the specified pattern (file_regexp).  Used to determine which
-            templates and LESS files are present in a given theme. """
+            templates and stylesheet sources are present in a given theme. """
         result = []
         bd_len = len(dir)
         for dirpath, dirnames, filenames in os.walk(dir):
@@ -259,7 +239,7 @@ class ThemeController(object):
 
     def get_config_form_class(self, theme_name):
         """ Themes can define a form for configuring settings that are not
-            represented by LESS variables.  This function will retrieve that
+            represented by stylesheet variables.  This function will retrieve that
             form class if the theme has defined one. """
         #   There are two steps; if either fails, we return None and the form is skipped.
         #   Step 1: Try to get the Python module containing the form class.
@@ -273,147 +253,20 @@ class ThemeController(object):
         else:
             return None
 
-    def global_less(self, search_dirs=None):
-        if search_dirs is None:
-            search_dirs = settings.LESS_SEARCH_PATH
-        result = []
-        for dir in search_dirs:
-            result += self.list_filenames(dir, r'\.less$')
-        return result
-
-    def get_less_names(self, theme_name, theme_only=False, bootswatch_theme=None):
-        result = []
-        if not theme_only:
-            result += self.global_less()
-
-            if bootswatch_theme:
-                valid_bootswatch = self.get_bootswatch_less_themes()
-                if bootswatch_theme not in valid_bootswatch:
-                    raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
-                # Bootswatch variables must precede bootstrap.less to override its defaults.
-                # Wrong order = Bootswatch colors have zero effect.
-                result.append(os.path.normpath(os.path.join(
-                    themes_settings.less_dir, '..', 'node_modules', 'bootswatch',
-                    bootswatch_theme, 'variables.less'
-                )))
-
-            # Bootstrap 3.3.7 is installed via npm; run 'npm install' in
-            # esp/public/media/theme_editor/ before compiling.
-            # Bootstrap 3 has responsive styles built into bootstrap.less —
-            # no separate responsive.less is needed.
-            result.append(os.path.normpath(os.path.join(
-                themes_settings.less_dir, '..', 'node_modules', 'bootstrap', 'less', 'bootstrap.less'
-            )))
-
-            if bootswatch_theme:
-                # Bootswatch component styles must follow bootstrap.less
-                result.append(os.path.normpath(os.path.join(
-                    themes_settings.less_dir, '..', 'node_modules', 'bootswatch',
-                    bootswatch_theme, 'bootswatch.less'
-                )))
-
-            result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
-            result.append(os.path.join(themes_settings.less_dir, 'main.less'))
-
-        #   Make sure variables.less is included first, before any other custom LESS code
-        theme_less_dir = _LESS_THEME_DIRS.get(theme_name)
-        theme_files = self.list_filenames(theme_less_dir, r'\.less$') if theme_less_dir else []
-        nonvariable_files = []
-        for theme_file in theme_files:
-            if os.path.basename(theme_file).startswith('variables'):
-                result.append(theme_file)
-            else:
-                nonvariable_files.append(theme_file)
-        result += nonvariable_files
-
-        return result
-
     def find_theme_variables(self, theme_name=None, theme_only=False, flat=False):
-        """Return theme variable definitions using the SCSS or LESS pipeline."""
+        """Return theme variable definitions from the SCSS pipeline."""
         if theme_name is None:
             theme_name = self.get_current_theme()
-        if self.uses_scss_pipeline(theme_name):
-            return self.find_scss_variables(theme_name, theme_only=theme_only, flat=flat)
-        return self.find_less_variables(theme_name, theme_only=theme_only, flat=flat)
-
-    def find_less_variables(self, theme_name=None, theme_only=False, flat=False):
-        if theme_name is None:
-            theme_name = self.get_current_theme()
-
-        #   Return value is a mapping of names to default values (both strings)
-        results = {}
-        for filename in self.get_less_names(theme_name, theme_only=theme_only):
-            if not os.path.isfile(filename):
-                logger.debug('find_less_variables: skipping missing file %s', filename)
-                continue
-            local_results = {}
-
-            logger.debug('find_less_variables: including file %s', filename)
-
-            #   Read less file
-            less_file = open(filename)
-            less_data = less_file.read()
-            less_file.close()
-
-            #   Find variable declarations
-            for item in re.findall(r'@([a-zA-Z0-9_]+):\s*(.*?);', less_data):
-                local_results[item[0]] = item[1]
-
-            if flat:
-                #   Store all variables in same dictionary if 'flat' mode is requested
-                results.update(local_results)
-            else:
-                #   Store in a dictionary based on filename so we know where they came from
-                results[filename] = local_results
-
-        return results
-
-    def compile_less(self, less_data):
-        #   Hack to make things work on Windows systems
-        INCLUDE_PATH_SEP = ':'
-        if os.name == 'nt':
-            INCLUDE_PATH_SEP = ';'
-
-        # Include Bootstrap 3 LESS from npm so @imports inside bootstrap.less resolve
-        bootstrap3_less_dir = os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'node_modules', 'bootstrap', 'less')
-        less_search_path = INCLUDE_PATH_SEP.join(
-            settings.LESS_SEARCH_PATH +
-            [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less'), bootstrap3_less_dir]
-        )
-        logger.debug('LESS search path is "%s"', less_search_path)
-
-        #   Compile to CSS
-        lessc_args = ['lessc', '--include-path=%s' % less_search_path, '-']
-        lessc_process = subprocess.Popen(lessc_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        css_data = lessc_process.communicate(less_data.encode())[0]
-
-        if lessc_process.returncode != 0:
-            logger.error('lessc failed (code %d). Compiler output:\n%s',
-                         lessc_process.returncode,
-                         css_data.decode('UTF-8', 'replace'))
-            raise ESPError(f'The stylesheet compiler (lessc) returned error code {lessc_process.returncode}.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.<br />LESS compile command was: <pre>{" ".join(lessc_args)}</pre>', log=True)
-
-        return css_data
+        return self.find_scss_variables(theme_name, theme_only=theme_only, flat=flat)
 
     def has_scss(self, theme_name):
-        """Return True if this theme uses the SCSS/Bootstrap 4 pipeline.
+        """Return True if this theme uses the SCSS/Bootstrap pipeline.
 
         Delegates to the module-level _SCSS_THEMES frozenset which was
         computed at import time without user input, so no path expression
         involving theme_name is needed here.
         """
         return theme_name in _SCSS_THEMES
-
-    def _bootstrap3_less_available(self):
-        """Return True when the legacy Bootstrap 3 LESS npm package is installed."""
-        bootstrap3_less = os.path.join(
-            settings.MEDIA_ROOT, 'theme_editor', 'node_modules', 'bootstrap', 'less', 'bootstrap.less'
-        )
-        return os.path.isfile(bootstrap3_less)
-
-    def uses_scss_pipeline(self, theme_name):
-        """Return True when compile/get_variable_defaults should use SCSS/Bootstrap 4."""
-        return self.has_scss(theme_name) or not self._bootstrap3_less_available()
 
     def get_scss_names(self, theme_name, theme_only=False):
         """Return ordered list of SCSS files to concatenate for compilation."""
@@ -804,8 +657,7 @@ class ThemeController(object):
         return css_data
 
     def get_variable_defaults(self, theme_name=None):
-        # This is particularly important for themes that have variables files with LESS (e.g., darken())
-        # Otherwise it basically does the same thing as find_less_variables()
+        """Return declared SCSS variable defaults for the theme."""
         if theme_name is None:
             theme_name = self.get_current_theme()
         # Constrain theme_name to the import-time frozenset of known theme names.
@@ -813,43 +665,13 @@ class ThemeController(object):
         # the taint chain before any path expression below.
         if theme_name not in _ALL_THEMES:
             theme_name = 'barebones'
-
-        if theme_name in _SCSS_THEMES:
-            # For SCSS themes the declared variable values are the defaults.
-            # Use find_scss_variables() which reads via the _SCSS_THEMES-gated
-            # get_scss_names() — no user-derived content reaches a subprocess.
-            return self.find_scss_variables(theme_name, flat=True)
-
-        # LESS pipeline — theme_name is now constrained to _ALL_THEMES.
-        # Import global bootstrap variable definitions and custom overrides first so
-        # theme variables that reference them (e.g. @navbarInverseBackground) resolve
-        # correctly during the isolated compilation below.
-        less_data = ''
-        # load variable LESS from files
-        for filename in self.list_filenames(os.path.join(THEME_PATH, theme_name, 'less'), r'variables.*\.less$'):
-            less_file = open(filename)
-            logger.debug('Including LESS source %s', filename)
-            less_data += '\n' + less_file.read()
-            less_file.close()
-
-        # add list of variables
-        # this is a hack to convert the less variables to pseudo-css compiled variables
-        # which we can then extract as a python dictionary
-        less_data += '\ndiv {'
-        for item in re.findall(r'@([a-zA-Z0-9_]+):\s*(.*?);', less_data):
-            less_data += '\n' + item[0]
-            less_data += ': @' + item[0] + ';'
-        less_data += '\n}'
-
-        # compile to CSS
-        css_data = self.compile_less(less_data)
-
-        # extract the newly compiled variables
-        compiled_defaults = dict(re.findall(r'\s([a-zA-Z0-9_]+):\s*(.*?);', css_data.decode('UTF-8')))
-        defaults = self.find_less_variables(theme_name, flat=True)
-        defaults.update(compiled_defaults)
-
-        return defaults
+        if theme_name not in _SCSS_THEMES:
+            raise ValueError(
+                f'Theme {theme_name!r} has no SCSS sources.'
+            )
+        # Use find_scss_variables() which reads via the _SCSS_THEMES-gated
+        # get_scss_names() — no user-derived content reaches a subprocess.
+        return self.find_scss_variables(theme_name, flat=True)
 
     def get_effective_defaults(self, theme_name, bootswatch_theme):
         """Return {variable_name: value} defaults a customizer field should be
@@ -875,137 +697,117 @@ class ThemeController(object):
         return effective_defaults
 
     def compile_css(self, theme_name, variable_data, output_filename, bootswatch_theme=None):
-        if theme_name in _SCSS_THEMES:
-            # SCSS/Bootstrap 5 pipeline.  theme_name is constrained to the
-            # import-time _SCSS_THEMES frozenset, breaking the taint chain
-            # before any path expression or subprocess call below.
-            # Correct compilation order:
-            #   1. Variable files (before @import so !default vars pick up our values)
-            #   2. Bootswatch variables (optional)
-            #   3. @import "bootstrap"  (generates Bootstrap CSS)
-            #   4. Bootswatch component overrides (optional)
-            #   5. CSS rule files (after @import so our rules override Bootstrap's)
-            var_data = ''
-            css_data_pre = ''
-            for filename in self.get_scss_names(theme_name):
-                with open(filename) as f:
-                    logger.debug('Including SCSS source %s', filename)
-                    content = '\n' + f.read()
-                if os.path.basename(filename).startswith('variables'):
-                    var_data += content
-                else:
-                    css_data_pre += content
+        if theme_name not in _SCSS_THEMES:
+            raise ValueError(
+                f'Theme {theme_name!r} has no SCSS sources.'
+            )
 
-            if bootswatch_theme is None:
-                #   Implicit value from the site-wide tag: tolerate a stale or
-                #   unavailable name (e.g. bootswatch npm package not installed
-                #   on this host) so recompiles and deploys never break on it.
-                bootswatch_theme = Tag.getTag('bootswatch_theme', default='')
-                if bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
-                    logger.warning('Ignoring unavailable Bootswatch theme %r; '
-                                   'compiling with stock Bootstrap', bootswatch_theme)
-                    bootswatch_theme = ''
-            elif bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
-                #   Explicitly requested by the caller: fail loudly.
-                raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
-
-            bw_vars_import = bw_scss_import = ''
-            if bootswatch_theme:
-                bw_vars = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'variables')
-                bw_scss = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'bootswatch')
-                bw_vars_import = f'\n@import "{bw_vars}";\n'
-                bw_scss_import = f'\n@import "{bw_scss}";\n'
-
-            if bootswatch_theme:
-                #   Customization ON TOP of Bootswatch: apply only the customizer
-                #   fields the admin actually changed from the *displayed* default.
-                #   When a Bootswatch theme is active the editor shows each field's
-                #   Bootswatch-derived value (see get_bootswatch_esp_vars), so the
-                #   baseline we diff against is the SCSS defaults overlaid with those
-                #   derived values — a field the admin left untouched equals its
-                #   derived value and is therefore NOT in $esp-overridden, letting the
-                #   Bootswatch theme flow through unimpeded (no spurious overrides from
-                #   simply submitting the pre-filled form).  Only a field the admin
-                #   genuinely changed from what was shown counts as an override.
-                #   Names come from the theme's own SCSS (find_scss_variables),
-                #   filtered to plain identifiers, so nothing user-tainted is
-                #   interpolated into the stylesheet.
-                scss_defaults = self.find_scss_variables(theme_name, flat=True)
-                effective_defaults = self.get_effective_defaults(theme_name, bootswatch_theme)
-                overridden = [
-                    name for name in scss_defaults
-                    if name in variable_data
-                    and re.match(r'^[a-zA-Z0-9_]+$', name)
-                    and str(variable_data[name]).strip().lower()
-                        != str(effective_defaults.get(name, scss_defaults[name])).strip().lower()
-                ]
-                esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
-                scss_data = ('$bootswatch-active: true;\n'
-                             + f'$esp-overridden: {esp_overridden};\n'
-                             + bw_vars_import
-                             + var_data
-                             + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
-                             + bw_scss_import + css_data_pre)
-                #   Under Bootswatch, only substitute the fields the admin actually
-                #   changed (the $esp-overridden set).  Leaving untouched fields at
-                #   their SCSS declarations means the site renders 100% as pure
-                #   Bootswatch unless a field was explicitly edited — the pre-filled
-                #   Bootswatch-derived values shown in the editor do not leak into the
-                #   compiled CSS just because the form was submitted.
-                allowed_substitutions = set(overridden)
+        # SCSS/Bootstrap 5 pipeline.  theme_name is constrained to the
+        # import-time _SCSS_THEMES frozenset, breaking the taint chain
+        # before any path expression or subprocess call below.
+        # Correct compilation order:
+        #   1. Variable files (before @import so !default vars pick up our values)
+        #   2. Bootswatch variables (optional)
+        #   3. @import "bootstrap"  (generates Bootstrap CSS)
+        #   4. Bootswatch component overrides (optional)
+        #   5. CSS rule files (after @import so our rules override Bootstrap's)
+        var_data = ''
+        css_data_pre = ''
+        for filename in self.get_scss_names(theme_name):
+            with open(filename) as f:
+                logger.debug('Including SCSS source %s', filename)
+                content = '\n' + f.read()
+            if os.path.basename(filename).startswith('variables'):
+                var_data += content
             else:
-                scss_data = (var_data
-                             + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
-                             + css_data_pre)
-                #   No Bootswatch theme: substitute every supplied variable (the
-                #   legacy behaviour, where the editor values are the source of truth).
-                allowed_substitutions = None
+                css_data_pre += content
 
-            #   Replace all SCSS variable declarations for which we have a value defined.
-            #   Parse variable names from the already-loaded scss_data (server content,
-            #   not user input) so the name used in re.sub is never tainted by user data.
-            known_var_names = set(re.findall(r'\$([a-zA-Z0-9_-]+):', scss_data))
-            for variable_name in known_var_names:
-                if variable_name not in variable_data:
-                    continue
-                if allowed_substitutions is not None and variable_name not in allowed_substitutions:
-                    continue
-                safe_value = _sanitize_scss_value(variable_name, variable_data[variable_name])
-                if safe_value is None:
-                    continue
-                scss_data = re.sub(
-                    rf'\${re.escape(variable_name)}:(\s*)(.*?);',
-                    f'${variable_name}: {safe_value};',
-                    scss_data,
-                )
+        if bootswatch_theme is None:
+            #   Implicit value from the site-wide tag: tolerate a stale or
+            #   unavailable name (e.g. bootswatch npm package not installed
+            #   on this host) so recompiles and deploys never break on it.
+            bootswatch_theme = Tag.getTag('bootswatch_theme', default='')
+            if bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
+                logger.warning('Ignoring unavailable Bootswatch theme %r; '
+                               'compiling with stock Bootstrap', bootswatch_theme)
+                bootswatch_theme = ''
+        elif bootswatch_theme and bootswatch_theme not in self.get_bootswatch_themes():
+            #   Explicitly requested by the caller: fail loudly.
+            raise ValueError(f'Unknown Bootswatch theme: {bootswatch_theme!r}')
 
-            css_data = self.compile_scss(scss_data)
+        bw_vars_import = bw_scss_import = ''
+        if bootswatch_theme:
+            bw_vars = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'variables')
+            bw_scss = os.path.join(_BOOTSWATCH_DIST, bootswatch_theme, 'bootswatch')
+            bw_vars_import = f'\n@import "{bw_vars}";\n'
+            bw_scss_import = f'\n@import "{bw_scss}";\n'
+
+        if bootswatch_theme:
+            #   Customization ON TOP of Bootswatch: apply only the customizer
+            #   fields the admin actually changed from the *displayed* default.
+            #   When a Bootswatch theme is active the editor shows each field's
+            #   Bootswatch-derived value (see get_bootswatch_esp_vars), so the
+            #   baseline we diff against is the SCSS defaults overlaid with those
+            #   derived values — a field the admin left untouched equals its
+            #   derived value and is therefore NOT in $esp-overridden, letting the
+            #   Bootswatch theme flow through unimpeded (no spurious overrides from
+            #   simply submitting the pre-filled form).  Only a field the admin
+            #   genuinely changed from what was shown counts as an override.
+            #   Names come from the theme's own SCSS (find_scss_variables),
+            #   filtered to plain identifiers, so nothing user-tainted is
+            #   interpolated into the stylesheet.
+            scss_defaults = self.find_scss_variables(theme_name, flat=True)
+            effective_defaults = self.get_effective_defaults(theme_name, bootswatch_theme)
+            overridden = [
+                name for name in scss_defaults
+                if name in variable_data
+                and re.match(r'^[a-zA-Z0-9_]+$', name)
+                and str(variable_data[name]).strip().lower()
+                    != str(effective_defaults.get(name, scss_defaults[name])).strip().lower()
+            ]
+            esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
+            scss_data = ('$bootswatch-active: true;\n'
+                         + f'$esp-overridden: {esp_overridden};\n'
+                         + bw_vars_import
+                         + var_data
+                         + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
+                         + bw_scss_import + css_data_pre)
+            #   Under Bootswatch, only substitute the fields the admin actually
+            #   changed (the $esp-overridden set).  Leaving untouched fields at
+            #   their SCSS declarations means the site renders 100% as pure
+            #   Bootswatch unless a field was explicitly edited — the pre-filled
+            #   Bootswatch-derived values shown in the editor do not leak into the
+            #   compiled CSS just because the form was submitted.
+            allowed_substitutions = set(overridden)
         else:
-            #   Load LESS files in order of search path
-            less_data = ''
-            for filename in self.get_less_names(theme_name, bootswatch_theme=bootswatch_theme):
-                less_file = open(filename)
-                logger.debug('Including LESS source %s', filename)
-                less_data += '\n' + less_file.read()
-                less_file.close()
+            scss_data = (var_data
+                         + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
+                         + css_data_pre)
+            #   No Bootswatch theme: substitute every supplied variable (the
+            #   legacy behaviour, where the editor values are the source of truth).
+            allowed_substitutions = None
 
-            #   Make icon image path load from the CDN by default
-            if 'iconSpritePath' not in variable_data:
-                variable_data['iconSpritePath'] = f'"{settings.CDN_ADDRESS}/bootstrap/img/glyphicons-halflings.png"'
+        #   Replace all SCSS variable declarations for which we have a value defined.
+        #   Parse variable names from the already-loaded scss_data (server content,
+        #   not user input) so the name used in re.sub is never tainted by user data.
+        known_var_names = set(re.findall(r'\$([a-zA-Z0-9_-]+):', scss_data))
+        for variable_name in known_var_names:
+            if variable_name not in variable_data:
+                continue
+            if allowed_substitutions is not None and variable_name not in allowed_substitutions:
+                continue
+            safe_value = _sanitize_scss_value(variable_name, variable_data[variable_name])
+            if safe_value is None:
+                continue
+            scss_data = re.sub(
+                rf'\${re.escape(variable_name)}:(\s*)(.*?);',
+                f'${variable_name}: {safe_value};',
+                scss_data,
+            )
 
-            #   Replace all variable declarations for which we have a value defined
-            for (variable_name, variable_value) in variable_data.items():
-                if not re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', variable_name):
-                    continue
-                less_data = re.sub(
-                    rf'@{re.escape(variable_name)}:(\s*)(.*?);',
-                    lambda match, vn=variable_name, vv=variable_value: f'@{vn}: {vv};',
-                    less_data,
-                )
+        css_data = self.compile_scss(scss_data)
 
-            css_data = self.compile_less(less_data)
-
-        with open(output_filename, 'w') as output_file:
+        with open(output_filename, 'w', encoding='utf-8') as output_file:
             output_file.write(str(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
         Tag.setTag("current_theme_version", value = hex(random.getrandbits(16)))
@@ -1216,7 +1018,7 @@ class ThemeController(object):
         #   Create template overrides using data provided (our models handle versioning)
         logger.debug('Loading theme: %s', theme_name)
 
-        #   Collect LESS files from appropriate sources and compile CSS
+        # Compile SCSS sources into the active stylesheet
         self.compile_css(theme_name, {}, self.css_filename)
 
         theme_base_dir = self.base_dir(theme_name)
@@ -1277,7 +1079,7 @@ class ThemeController(object):
         #   Clear the Varnish cache
         varnish.purge_all()
 
-    ##  Customizations - stored as LESS files with modified variables only; palette is included
+    ##  Customizations - stored as .less files with modified variables only; palette is included
 
     def _safe_customization_path(self, save_name):
         """Return a validated absolute path for a customization file.
@@ -1332,12 +1134,12 @@ class ThemeController(object):
         with open(self._safe_customization_path(save_name), 'r') as f:
             data = f.read()
 
-        #   Collect LESS variables
+        #   Collect saved variables (legacy @name: value; customization format)
         vars = {}
         for match in re.findall(r'@(\w+):\s*(.*?);', data):
             vars[match[0]] = match[1]
 
-        #   Substitute LESS variables
+        #   Substitute nested variable references
         for key, val in vars.items():
             if val[1:len(val)] in list(vars.keys()):
                 vars[key] = vars[val[1:len(val)]]
@@ -1387,7 +1189,7 @@ class ThemeController(object):
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
     def get_scss_base_palette(self):
-        """Return the theme's raw SCSS/LESS-declared hex palette (the static
+        """Return the theme's raw SCSS-declared hex palette (the static
         ESP defaults), independent of any active Bootswatch theme.
 
         Exposed publicly (not just used internally) so the editor view can

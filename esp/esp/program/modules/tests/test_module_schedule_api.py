@@ -107,6 +107,115 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         data = json.loads(response.content)
         self.assertFalse(data["success"])
 
+    def test_module_schedule_update_syncs_permissions(self):
+        """Updating module schedule dates automatically syncs Permission records."""
+        self.client.force_login(self.admin)
+        from esp.program.models import ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        from esp.users.models import Permission
+        from django.contrib.auth.models import Group
+
+        mod = ProgramModule.objects.filter(handler="StudentClassRegModule").first()
+        if not mod:
+            mod = ProgramModule.objects.create(
+                admin_title="Student Class Registration",
+                module_type="learn",
+                handler="StudentClassRegModule",
+                seq=10
+            )
+        self.program.program_modules.add(mod)
+        pmo = ProgramModuleObj.getFromProgModule(self.program, mod)
+
+        student_group = Group.objects.get(name="Student")
+        # Ensure no existing permission record for Student/Classes on this program
+        Permission.objects.filter(
+            program=self.program,
+            role=student_group,
+            permission_type="Student/Classes"
+        ).delete()
+
+        payload = {
+            "module_id": pmo.id,
+            "start_date": self.past.isoformat(),
+            "end_date": self.future.isoformat(),
+            "seq": 10
+        }
+
+        response = self.client.post(
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        # Check DB for created Permission record
+        perm = Permission.objects.filter(
+            program=self.program,
+            role=student_group,
+            permission_type="Student/Classes",
+            user__isnull=True,
+            user_filter__isnull=True
+        ).first()
+        self.assertIsNotNone(perm)
+        self.assertEqual(perm.start_date, self.past)
+        self.assertEqual(perm.end_date, self.future)
+
+        # Test updating the dates again
+        new_past = self.past - timedelta(days=2)
+        new_future = self.future + timedelta(days=2)
+        payload = {
+            "module_id": pmo.id,
+            "start_date": new_past.isoformat(),
+            "end_date": new_future.isoformat(),
+            "seq": 10
+        }
+        response = self.client.post(
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        perm.refresh_from_db()
+        self.assertEqual(perm.start_date, new_past)
+        self.assertEqual(perm.end_date, new_future)
+
+        # Also test TeacherClassRegModule
+        teacher_mod = ProgramModule.objects.filter(handler="TeacherClassRegModule").first()
+        if not teacher_mod:
+            teacher_mod = ProgramModule.objects.create(
+                admin_title="Teacher Class Registration",
+                module_type="teach",
+                handler="TeacherClassRegModule",
+                seq=10
+            )
+        self.program.program_modules.add(teacher_mod)
+        tpmo = ProgramModuleObj.getFromProgModule(self.program, teacher_mod)
+        teacher_group = Group.objects.get(name="Teacher")
+
+        payload = {
+            "module_id": tpmo.id,
+            "start_date": self.past.isoformat(),
+            "end_date": self.future.isoformat(),
+            "seq": 10
+        }
+        response = self.client.post(
+            reverse("module_schedule_update_api", kwargs=self.url_kwargs),
+            data=json.dumps(payload),
+            content_type="application/json"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        tperm = Permission.objects.filter(
+            program=self.program,
+            role=teacher_group,
+            permission_type="Teacher/Classes/All",
+            user__isnull=True,
+            user_filter__isnull=True
+        ).first()
+        self.assertIsNotNone(tperm)
+        self.assertEqual(tperm.start_date, self.past)
+        self.assertEqual(tperm.end_date, self.future)
 
     def test_module_schedule_preview_api(self):
         """Preview API filters based on `at` timestamp."""
@@ -182,7 +291,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         original_handler = self.pmo.module.handler
 
         # Temporarily make this module locked in the DB
-        self.pmo.module.handler = 'RegProfileModule'
+        self.pmo.module.handler = 'StudentRegProfileModule'
         self.pmo.module.save()
 
         try:

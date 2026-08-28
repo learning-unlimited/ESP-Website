@@ -31,6 +31,10 @@ Learning Unlimited, Inc.
 from decimal import Decimal
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 import stripe
 from django.conf import settings
@@ -113,14 +117,27 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             "donation_options": [10, 20, 50],
             "invoice_prefix": settings.INSTITUTION_NAME.lower(),
         }
-
         defaults.update(settings.STRIPE_CONFIG)
 
-        tag_data = Tag.getProgramTag("stripe_settings", self.program)
-        if tag_data:
-            defaults.update(json.loads(tag_data))
+        # Handle missing or invalid 'stripe_settings' JSON to prevent
+        # apply_settings() from crashing (see issue #5474).
+        raw = Tag.getProgramTag("stripe_settings", self.program)
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except (json.JSONDecodeError, TypeError):
+            if raw:
+                logger.warning(
+                    "Could not parse stripe_settings tag for program %s (id=%s). "
+                    "Falling back to empty settings.",
+                    self.program.url,
+                    self.program.id,
+                )
+            tag_data = {}
 
-        self._settings_cache = defaults
+        defaults.update(tag_data)
+
+        self.settings = defaults
+        self._settings_cache = self.settings
         return self._settings_cache
 
     def get_setting(self, name, default=None):
