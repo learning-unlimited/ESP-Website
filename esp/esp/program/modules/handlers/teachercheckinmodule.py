@@ -511,8 +511,12 @@ class TeacherCheckinModule(ProgramModuleObj):
                               parameter for getMissingTeachers().
                               Should be given as the id number of the Event.
           'when' (optional):  See documentation for getMissingTeachers().
-                              getMissingTeachers(). Should be given in the
-                              format "%m/%d/%Y %H:%M".
+                              Should be given in the format "%m/%d/%Y %H:%M".
+                              If it is not given and 'date' (or 'start')
+                              refers to a day other than today, it defaults to
+                              23:59 on that day, so that check-in status is
+                              reported for the day being viewed rather than
+                              for today.
           'default_phone' (optional): A string that should be used if there
                               is no valid phone number for a teacher.
         """
@@ -539,13 +543,27 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['default_phone'] = default_phone
         context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
+        when = None
         if form.is_valid():
             when = form.cleaned_data['when']
-            if when is not None:
-                context['when'] = when
-                context['url_when'] = request.GET['when']
-        else:
-            when = None
+        if when is not None:
+            #   An explicit 'when' is a filter that the user asked for, so it
+            #   is echoed back in 'url_when' and carried by the links on the
+            #   page.  Re-format it rather than echoing the raw GET parameter,
+            #   so that the links always use the format this view parses.
+            context['when'] = when
+            context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
+        elif date is not None and date != datetime.now().date():
+            #   We are looking at a day other than today, so check-in status
+            #   should be reported as of the end of that day rather than as of
+            #   right now (which would report every teacher's status for
+            #   today's date instead of the date being viewed).
+            #   This deliberately does not set 'url_when': it is a default
+            #   rather than a filter the user chose, and propagating it
+            #   through the "previous/next day" and "back" links would carry
+            #   this day's timestamp onto a page for a different day.
+            when = datetime.combine(date, time(23, 59))
+            context['when'] = when
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
         context['sections'], context['arrived'], context['previously_checked_in'] = self.getMissingTeachers(
