@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.password_validation import validate_password
-from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 import socket
 
@@ -102,8 +101,7 @@ class UserRegForm(forms.Form):
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the email list only (they can be 'upgraded' to a full account)
-        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
-        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).exists():
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(ESPUser.awaiting_activation_Q()).exists():
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
@@ -141,22 +139,12 @@ class SinglePhaseUserRegForm(UserRegForm):
         self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
 class AwaitingActivationEmailForm(forms.Form):
-    """Form used to verify a user is yet to be activated (legacy and new schema)"""
+    """Form used to verify a user is yet to be activated"""
     username = forms.CharField(min_length=5, max_length=30)
 
     def clean_username(self):
         data = self.cleaned_data['username']
-        # Check for both legacy and new-style pending activation accounts
-        # Legacy: password ends with _<token>
-        # New: is_active=False and never logged in
-        awaiting_activation = Q(
-            is_active=False,
-            password__regex=r'\$(.*)_'
-        ) | Q(
-            is_active=False,
-            last_login__isnull=True
-        )
-        if not ESPUser.objects.filter(username__iexact=data).exclude(password='emailuser').filter(awaiting_activation).exists():
+        if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(ESPUser.awaiting_activation_Q()).exists():
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
 
         data = data.strip()

@@ -1,10 +1,6 @@
 import logging
-import re
 import urllib.request, urllib.parse, urllib.error
 import string
-
-from django.utils.encoding import force_bytes, force_str
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 log = logging.getLogger(__name__)
 
@@ -16,12 +12,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
-from django.db.models.query import Q
 from django.urls import reverse, reverse_lazy
 from django.http import HttpResponseRedirect, JsonResponse
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.views.decorators.http import require_GET
 
 from vanilla import CreateView
@@ -31,7 +28,7 @@ from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.user_reg import UserRegForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm, ValidHostEmailField
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, PendingActivation
 from esp.users.tokens import account_activation_token
 from esp.utils.web import render_to_response
 
@@ -70,10 +67,9 @@ def _username_live_validation(username):
             'message': 'Username may only contain letters and numbers.',
         }
 
-    awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
     exists = ESPUser.objects.filter(username__iexact=data).exclude(
         password='emailuser'
-    ).exclude(awaiting_activation).exists()
+    ).exclude(ESPUser.awaiting_activation_Q()).exists()
     if exists:
         return {
             'valid': True,
@@ -137,10 +133,7 @@ def _email_live_validation(email, initial_role):
     ).exclude(password='emailuser')
     awaiting_activation_accounts = accounts_role.filter(
         email=candidate_email,
-    ).filter(
-        is_active=False,
-        password__regex=r'\$(.*)_',
-    ).exclude(password='emailuser')
+    ).filter(ESPUser.awaiting_activation_Q()).exclude(password='emailuser')
 
     if existing_accounts.exists() or awaiting_activation_accounts.exists():
         return {
@@ -234,24 +227,26 @@ This function is overloaded to handle either one or two phase reg"""
         user.first_name = form.cleaned_data['first_name']
         user.set_password(form.cleaned_data['password'])
 
-        #   Disable account until email activation if required
-        if Tag.getBooleanTag('require_email_validation'):
+        #   Disable the account until it is activated by email, if desired
+        require_activation = Tag.getBooleanTag('require_email_validation')
+        if require_activation:
             user.is_active = False
 
         user.save()
 
+        if require_activation:
+            PendingActivation.objects.get_or_create(user=user)
+
         user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 
-        if not Tag.getBooleanTag('require_email_validation'):
+        if not require_activation:
             user = authenticate(username=form.cleaned_data['username'],
                                     password=form.cleaned_data['password'])
 
             login(request, user)
             return HttpResponseRedirect(reverse('myesp_profile'))
         else:
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = account_activation_token.make_token(user)
-            send_activation_email(user, uid, token)
+            send_activation_email(user)
             return render_to_response('registration/account_created_activation_required.html', request,
                                       {'user': user, 'site': Site.objects.get_current()})
     else:
@@ -272,11 +267,7 @@ When there are already accounts with this email address (depending on some tags)
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
             existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(
-                email=form.cleaned_data['email'],
-                is_active=False,
-                last_login__isnull=True,
-            ).exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(ESPUser.awaiting_activation_Q()).exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -338,57 +329,57 @@ def user_registration_phase2(request):
                               request, {'form':form, 'email':email})
 
 
+ALREADY_ACTIVE_MESSAGE = ('The user account supplied has already been activated. '
+                          'If you have lost your password, visit the '
+                          '<a href="/myesp/passwdrecover/">password recovery form</a>.  '
+                          'Otherwise, please '
+                          '<a href="/accounts/login/?next=/myesp/profile/">log in</a>.')
+
+
+def _finish_activation(user):
+    """Activate a pending account and clear the state that kept it pending."""
+    user.is_active = True
+    user.save()
+    PendingActivation.objects.filter(user=user).delete()
+
+
 def activate_account(request, uidb64, token):
-    """Activate account using a secure HMAC token (new-style links)."""
-    u = None
+    """Activate an account from an HMAC-signed link."""
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         u = ESPUser.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, ESPUser.DoesNotExist):
-        pass
+        u = None
 
     if u is None:
-        raise ESPError("Invalid activation link. Please use the <a href='/myesp/resend/'>resend form</a> to get a new one.", log=False)
+        raise ESPError("Invalid activation link.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>.", log=False)
 
     if u.is_active:
-        raise ESPError('This account is already activated. <a href="/accounts/login/?next=/myesp/profile/">Log in</a> or <a href="/myesp/passwdrecover/">recover your password</a>.', log=False)
+        raise ESPError(ALREADY_ACTIVE_MESSAGE, log=False)
 
     if not account_activation_token.check_token(u, token):
-        raise ESPError("This activation link is invalid or has expired. Please use the <a href='/myesp/resend/'>resend form</a> to get a new link.", log=False)
+        raise ESPError("This activation link is invalid or has expired.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>.", log=False)
 
-    # Remove legacy activation token suffix from password field if present
-    u.password = re.sub(r'_\d+$', '', u.password)
-    u.is_active = True
-    u.save()
-    return HttpResponseRedirect('/myesp/profile/')
-
-
-def activate_account_legacy(request):
-    """Handle old-style activation links (?username=X&key=Y). Kept for backward compatibility."""
-    if 'username' not in request.GET or 'key' not in request.GET:
-        raise ESPError("Invalid account activation information. Please use the <a href='/myesp/resend/'>resend form</a> to get a new link.", log=False)
-
-    try:
-        u = ESPUser.objects.get(username=request.GET['username'])
-    except ESPUser.DoesNotExist:
-        raise ESPError("Invalid account username. Please contact us if this error persists.", log=False)
-
-    if u.is_active:
-        raise ESPError('This account is already activated. <a href="/accounts/login/?next=/myesp/profile/">Log in</a> or <a href="/myesp/passwdrecover/">recover your password</a>.', log=False)
-
-    if not u.password.endswith(f"_{request.GET['key']}"):
-        raise ESPError("Incorrect key. Please use the <a href='/myesp/resend/'>resend form</a> to get a new activation link.", log=False)
-
-    u.password = u.password[:-(len(f"_{request.GET['key']}"))]
-    u.is_active = True
-    u.save()
+    _finish_activation(u)
 
     return HttpResponseRedirect(reverse('myesp_profile'))
 
-def send_activation_email(user, uid, token):
+def activate_account_legacy(request):
+    """Handle a legacy "?username=&key=" activation link."""
+    raise ESPError("This activation link is no longer valid.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>, or set a password using the <a href='/myesp/passwdrecover/'>password recovery form</a>.", log=False)
+
+def send_activation_email(user):
+    """Mail the user a fresh activation link.
+
+    The caller must have created the user's PendingActivation row already,
+    since the token is derived from it.
+    """
     t = loader.get_template('registration/activation_email.txt')
-    c = {'user': user, 'uid': uid, 'token': token, 'site': Site.objects.get_current()}
-    send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently=False)
+    c = {'user': user,
+         'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+         'token': account_activation_token.make_token(user),
+         'site': Site.objects.get_current()}
+    send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
 
 def resend_activation_view(request):
     if request.user.is_authenticated:
@@ -400,28 +391,17 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        username = form.cleaned_data['username']
-        try:
-            user = ESPUser.objects.get(username=username)
-        except ESPUser.DoesNotExist:
-            form.add_error('username', 'No account with this username is awaiting activation.')
-            return render_to_response('registration/resend.html', request,
-                                      {'form': form, 'site': Site.objects.get_current()})
-
-        if user.is_active:
-            form.add_error('username', 'This account is already activated.')
-            return render_to_response('registration/resend.html', request,
-                                      {'form': form, 'site': Site.objects.get_current()})
-
-        uid = urlsafe_base64_encode(force_bytes(user.pk))
-        token = account_activation_token.make_token(user)
-        send_activation_email(user, uid, token)
+        #   The form has already established that this username belongs to an
+        #   account awaiting activation; it matches case-insensitively, so
+        #   look the user up the same way.
+        user=ESPUser.objects.get(username__iexact=form.cleaned_data['username'])
+        send_activation_email(user)
         return render_to_response('registration/resend_done.html', request,
-                                  {'form': form, 'site': Site.objects.get_current()})
+                                  {'form':form, 'site': Site.objects.get_current()})
     else:
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html', request,
-                                  {'form': form, 'site': Site.objects.get_current()})
+                                  {'form':form, 'site': Site.objects.get_current()})
 
 
 class GradeChangeRequestView(CreateView):
