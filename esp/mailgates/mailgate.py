@@ -3,7 +3,7 @@
 # Main mailgate
 # Handles incoming messages etc.
 
-import sys, os, email, re, smtplib, socket, hashlib, random
+import sys, os, email, re, smtplib, socket
 from io import open
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
@@ -102,8 +102,7 @@ try:
                 message['From'] = handler.from_email
 
             del message['Message-ID']
-            message['Message-ID'] = '<%s@%s>' % (hashlib.sha1(str(random.random()).encode()).hexdigest(),
-                                                 host)
+            message['Message-ID'] = email.utils.make_msgid(domain=host)
 
         # Common path for ALL handlers — iterate recipients
         if handler.cc_all:

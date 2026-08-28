@@ -68,7 +68,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 from random import sample
-import hashlib
 import numpy
 import random
 import re
@@ -335,9 +334,6 @@ class ViewUserInfoTest(TestCase):
         self.fake_admin.delete()
 
 class ProfileTest(TestCase):
-
-    def setUp(self):
-        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(

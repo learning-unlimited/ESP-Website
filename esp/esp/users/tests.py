@@ -1003,6 +1003,40 @@ class PermissionTestCase(TestCase):
             end,
         )
 
+class PersistentQueryFilterHashTest(TestCase):
+    """ The sha1_hash column stores a SHA-256 digest (the column name is
+        historical).  These tests pin down that every code path agrees on the
+        same digest, so that identical filters are deduplicated rather than
+        piling up duplicate rows. """
+
+    def _expected_hash(self, q_filter):
+        import hashlib
+        import pickle
+        return hashlib.sha256(pickle.dumps(q_filter)).hexdigest()
+
+    def testCreateFromQUsesSha256(self):
+        q_filter = Q(username='hash_test_user')
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, q_filter)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(q_filter))
+
+    def testSetQUsesSha256(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(username='before'))
+        new_filter = Q(username='after')
+        pqf.set_Q(new_filter, restrict_to_active=False)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(new_filter))
+
+    def testGetFilterFromQIsIdempotent(self):
+        """ Looking up the same Q twice must reuse the stored row, which only
+            works if the lookup and the write use the same algorithm. """
+        q_filter = Q(username='hash_test_user')
+        first = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        second = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(
+            PersistentQueryFilter.objects.filter(sha1_hash=first.sha1_hash).count(),
+            1,
+        )
+
 class AjaxAutocompleteViewTest(TestCase):
     def setUp(self):
         user_role_setup()
