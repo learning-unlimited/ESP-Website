@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 import os
 import sys
 from io import open

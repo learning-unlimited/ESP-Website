@@ -60,8 +60,8 @@ class Command(BaseCommand):
         default_options.update(options)
         options = default_options
 
-        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
-        file = os.path.join(root, 'esp.wsgi')
+        root = Path(settings.BASE_DIR).resolve().parent
+        file = root / 'esp.wsgi'
 
         user = os.getenv('USER')
         sudo_user = os.getenv('SUDO_USER')

@@ -1,3 +1,4 @@
+﻿from pathlib import Path
 """
 Test cases for Django-ESP utilities
 """
@@ -517,10 +518,10 @@ class TemplateOverrideTest(DjangoTestCase):
         from esp.utils.views import _normalize_lines_for_diff
 
         # Pick a real template file that exists on disk
-        template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+        template_dir = str(Path(settings.PROJECT_ROOT) / 'templates')
         template_name = 'utils/diff_templateoverride.html'
-        original_path = os.path.join(template_dir, template_name)
-        self.assertTrue(os.path.isfile(original_path),
+        original_path = str(Path(template_dir) / template_name)
+        self.assertTrue(Path(original_path).is_file(),
                         "Test requires template file to exist on disk")
 
         # Read the original file content (as the view does)
@@ -626,10 +627,10 @@ class TemplateOverrideTest(DjangoTestCase):
 
         # Pick the same real template file that exists on disk as in
         # test_diff_single_line_change.
-        template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+        template_dir = str(Path(settings.PROJECT_ROOT) / 'templates')
         template_name = 'utils/diff_templateoverride.html'
-        original_path = os.path.join(template_dir, template_name)
-        self.assertTrue(os.path.isfile(original_path),
+        original_path = str(Path(template_dir) / template_name)
+        self.assertTrue(Path(original_path).is_file(),
                         "Test requires template file to exist on disk")
 
         # Read the original file content (as the view does)
@@ -1337,9 +1338,9 @@ class DiffTemplateOverrideViewTest(DjangoTestCase):
         self._override.enable()
 
         # Write the original template file inside the temp dir
-        template_dir = os.path.join(self._tmpdir.name, 'templates')
+        template_dir = str(Path(self._tmpdir.name) / 'templates')
         os.makedirs(template_dir)
-        self.template_path = os.path.join(template_dir, 'test_diff_template.html')
+        self.template_path = str(Path(template_dir) / 'test_diff_template.html')
         with open(self.template_path, 'w') as f:
             f.write('Original Content')
 
