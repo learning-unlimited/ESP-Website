@@ -80,7 +80,7 @@ TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 ######################
 # Transport security #
 ######################
-# Depend on DEBUG, so these must be derived after local_settings.py has been imported.
+# These depend on DEBUG, so they must be derived after local_settings.py has been imported.
 from . import local_settings as _local_settings
 
 if not hasattr(_local_settings, 'SESSION_COOKIE_SECURE'):
