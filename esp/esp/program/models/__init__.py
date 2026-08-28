@@ -863,24 +863,28 @@ class Program(models.Model, CustomFormsLinkModel):
             return status == 1
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
-    def checkedOutStudents(self, time_max = datetime.now()):
+    def checkedOutStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        return self.checkedOutStudents(time_max=datetime.now())
+        return self.checkedOutStudents()
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
-    def checkedInStudents(self, time_max = datetime.now()):
+    def checkedInStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
-        return self.checkedInStudents(time_max=datetime.now())
+        return self.checkedInStudents()
     currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
