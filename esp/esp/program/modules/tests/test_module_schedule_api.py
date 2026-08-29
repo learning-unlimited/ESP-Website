@@ -453,6 +453,9 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             'program_term': '2027'
         }
 
+        second_mod = ProgramModule.objects.exclude(id=self.pmo.module.id).first()
+        second_handler = second_mod.handler if second_mod else "StudentRegConfirm"
+
         template_payload = {
             "target_start_date": "2027-04-01T09:00:00",
             "schedule": {
@@ -467,7 +470,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
                         "end_offset_seconds": 7 * 86400
                     },
                     {
-                        "handler": "InvalidModuleOffset",
+                        "handler": second_handler,
                         "seq": 20,
                         "required": True,
                         "start_offset_seconds": 100,
