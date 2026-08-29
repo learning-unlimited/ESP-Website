@@ -881,6 +881,7 @@ $j(document).ready(function() {
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         var nowStr = now.toISOString().slice(0, 16);
         $j('#importStartDate').val(nowStr);
+        $j('#importAnchorInfo').hide().text('');
 
         setTimeout(function() {
             safeFocus($j('#importStartDate'));
@@ -895,12 +896,39 @@ $j(document).ready(function() {
         }
     };
 
+    function inspectAnchorDate(rawText) {
+        if (!rawText || !rawText.trim()) {
+            $j('#importAnchorInfo').hide().text('');
+            return;
+        }
+        try {
+            var parsed = JSON.parse(rawText);
+            var anchor = parsed.anchor_date || (parsed.schedule && parsed.schedule.anchor_date);
+            if (anchor) {
+                $j('#importAnchorInfo').text('Template original anchor date: ' + anchor).show();
+            } else {
+                $j('#importAnchorInfo').hide().text('');
+            }
+        } catch (e) {
+            $j('#importAnchorInfo').hide().text('');
+        }
+    }
+
+    $j('#importJsonText').on('input change', function() {
+        inspectAnchorDate($j(this).val());
+    });
+
     window.handleImportFile = function(event) {
         var file = event.target.files[0];
         if (!file) return;
         var reader = new FileReader();
         reader.onload = function(e) {
-            $j('#importJsonText').val(e.target.result);
+            var text = e.target.result;
+            $j('#importJsonText').val(text);
+            inspectAnchorDate(text);
+        };
+        reader.onerror = function() {
+            showToast('Error reading the selected file.', 'error');
         };
         reader.readAsText(file);
     };

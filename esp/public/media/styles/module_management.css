@@ -231,6 +231,7 @@
     display: flex;
     overflow-y: auto;
     overflow-x: hidden;
+    min-height: 0;
 }
 
 .tl-sidebar {
@@ -242,10 +243,15 @@
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
+    height: max-content;
+    min-height: 100%;
 }
 
 .tl-row-label {
     height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+    flex: 0 0 60px;
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
@@ -271,6 +277,9 @@
 /* Drag and Drop states */
 .tl-drag-placeholder {
     height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+    flex: 0 0 60px;
     border: 2px dashed #93c5fd;
     background-color: #eff6ff;
     box-sizing: border-box;
@@ -335,6 +344,8 @@
     position: relative;
     overflow-x: auto;
     overflow-y: hidden;
+    height: max-content;
+    min-height: 100%;
     background-color: #fff;
     box-sizing: border-box;
     padding-bottom: 0px;
@@ -386,11 +397,7 @@
 }
 
 .tl-blocks {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -398,6 +405,9 @@
 
 .tl-block-row {
     height: 60px;
+    min-height: 60px;
+    max-height: 60px;
+    flex: 0 0 60px;
     border-bottom: 1px solid #f1f5f9;
     position: relative;
     display: flex;

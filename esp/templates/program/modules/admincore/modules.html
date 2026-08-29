@@ -98,7 +98,7 @@
             <div class="tl-body-row">
                 <div class="tl-sidebar" id="studentSidebar"></div>
                 <div class="tl-main-grid">
-                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; height: 100%;">
+                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; min-height: 100%; height: max-content;">
                         <div class="timeline-grid tl-grid-bg"></div>
                         <div class="tl-blocks" id="studentGrid"></div>
                         <div class="tl-now-wrapper" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 20;">
@@ -126,7 +126,7 @@
             <div class="tl-body-row">
                 <div class="tl-sidebar" id="teacherSidebar"></div>
                 <div class="tl-main-grid">
-                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; height: 100%;">
+                    <div class="tl-grid-scroll-content" style="position: relative; min-width: 900px; min-height: 100%; height: max-content;">
                         <div class="timeline-grid tl-grid-bg"></div>
                         <div class="tl-blocks" id="teacherGrid"></div>
                         <div class="tl-now-wrapper" style="position: absolute; top: 0; bottom: 0; left: 0; right: 0; pointer-events: none; z-index: 20;">
@@ -285,9 +285,10 @@
             </div>
             <div class="tl-modal-body">
                 <div class="tl-form-group">
-                    <label class="tl-label">New Program Starting Date &amp; Time</label>
+                    <label class="tl-label">New Program Starting Date &amp; Time (Anchor Point)</label>
                     <input type="datetime-local" id="importStartDate" class="tl-input">
-                    <div class="tl-help-text">The modules will match the same relative open/close dates from the saved schedule starting from this timestamp.</div>
+                    <div class="tl-help-text">This acts as the anchor date (t = 0). All module start/end dates will be recalculated relative to this starting timestamp.</div>
+                    <div id="importAnchorInfo" class="tl-help-text" style="color: #2563eb; font-weight: 600; display: none; margin-top: 6px;"></div>
                 </div>
                 <div class="tl-form-group">
                     <label class="tl-label">Upload Schedule JSON File</label>

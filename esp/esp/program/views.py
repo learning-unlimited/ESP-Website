@@ -1962,7 +1962,11 @@ def module_schedule_import_api(request, program_type, program_term):
 
         schedule_data = data.get("schedule", {})
         if isinstance(schedule_data, dict):
-            module_items = schedule_data.get("modules", [])
+            module_items = schedule_data.get("modules")
+            if module_items is None and "schedule" in schedule_data and isinstance(schedule_data["schedule"], dict):
+                module_items = schedule_data["schedule"].get("modules")
+            if module_items is None:
+                module_items = []
         elif isinstance(schedule_data, list):
             module_items = schedule_data
         else:
@@ -1970,6 +1974,9 @@ def module_schedule_import_api(request, program_type, program_term):
 
         if not isinstance(module_items, list):
             return JsonResponse({"success": False, "error": "'modules' must be a list"}, status=400)
+
+        if len(module_items) == 0:
+            return JsonResponse({"success": False, "error": "No valid module configurations found in schedule payload"}, status=400)
 
         from esp.program.models import ProgramModule
         from esp.program.modules.base import ProgramModuleObj
@@ -2011,15 +2018,14 @@ def module_schedule_import_api(request, program_type, program_term):
                     mod.end_date = None
 
                 if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
-                    return JsonResponse({
-                        "success": False,
-                        "error": f"Calculated start_date is after end_date for module '{mod.module.admin_title}'"
-                    }, status=400)
+                    raise ValueError(f"Calculated start_date is after end_date for module '{mod.module.admin_title}'")
 
                 if "seq" in item and not mod_hydrated.seq_locked:
                     mod.seq = int(item["seq"])
                 if "required" in item:
-                    mod.required = bool(item["required"])
+                    if not isinstance(item["required"], bool):
+                        raise ValueError(f"Field 'required' must be a boolean value for module '{handler}'")
+                    mod.required = item["required"]
                 if "required_label" in item and item["required_label"] is not None:
                     mod.required_label = str(item["required_label"])
                 if "link_title" in item and item["link_title"] is not None:

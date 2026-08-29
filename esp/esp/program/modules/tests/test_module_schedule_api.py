@@ -433,4 +433,104 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         self.assertEqual(target_pmo.end_date, datetime(2027, 4, 8, 9, 0, 0))
         self.assertEqual(target_pmo.link_title, "Imported Title")
 
+    def test_import_schedule_api_rollback_on_invalid_date(self):
+        """If one module has invalid dates (start >= end), transaction rolls back completely."""
+        from esp.program.models import Program
+        self.client.force_login(self.admin)
+
+        target_prog = Program.objects.create(
+            url="RollbackDev/2027",
+            name="Rollback Dev 2027",
+            grade_min=7,
+            grade_max=12
+        )
+        target_prog.program_modules.add(self.pmo.module)
+        target_pmo = ProgramModuleObj.getFromProgModule(target_prog, self.pmo.module)
+        original_start = target_pmo.start_date
+
+        target_kwargs = {
+            'program_type': 'RollbackDev',
+            'program_term': '2027'
+        }
+
+        template_payload = {
+            "target_start_date": "2027-04-01T09:00:00",
+            "schedule": {
+                "version": "1.0",
+                "modules": [
+                    {
+                        "handler": self.pmo.module.handler,
+                        "seq": 15,
+                        "required": True,
+                        "link_title": "Should Rollback",
+                        "start_offset_seconds": 0,
+                        "end_offset_seconds": 7 * 86400
+                    },
+                    {
+                        "handler": "InvalidModuleOffset",
+                        "seq": 20,
+                        "required": True,
+                        "start_offset_seconds": 100,
+                        "end_offset_seconds": 50  # Invalid: start > end
+                    }
+                ]
+            }
+        }
+
+        url = reverse("module_schedule_import_api", kwargs=target_kwargs)
+        response = self.client.post(url, json.dumps(template_payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+
+        data = json.loads(response.content)
+        self.assertFalse(data["success"])
+        self.assertIn("Calculated start_date is after end_date", data["error"])
+
+        # Verify DB was rolled back for the first module
+        target_pmo.refresh_from_db()
+        self.assertEqual(target_pmo.start_date, original_start)
+        self.assertNotEqual(target_pmo.link_title, "Should Rollback")
+
+    def test_import_schedule_api_strict_boolean(self):
+        """Passing non-boolean values for 'required' returns 400 Bad Request."""
+        self.client.force_login(self.admin)
+        template_payload = {
+            "target_start_date": "2027-04-01T09:00:00",
+            "schedule": {
+                "version": "1.0",
+                "modules": [
+                    {
+                        "handler": self.pmo.module.handler,
+                        "seq": 15,
+                        "required": "false",  # String instead of bool
+                        "start_offset_seconds": 0,
+                        "end_offset_seconds": 86400
+                    }
+                ]
+            }
+        }
+        url = reverse("module_schedule_import_api", kwargs=self.url_kwargs)
+        response = self.client.post(url, json.dumps(template_payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content)
+        self.assertFalse(data["success"])
+        self.assertIn("must be a boolean", data["error"])
+
+    def test_export_and_import_schedule_api_non_admin_forbidden(self):
+        """Non-admin users receive 403 Forbidden for export and import endpoints."""
+        export_url = reverse("module_schedule_export_api", kwargs=self.url_kwargs)
+        import_url = reverse("module_schedule_import_api", kwargs=self.url_kwargs)
+
+        # Unauthenticated
+        response = self.client.get(export_url)
+        self.assertEqual(response.status_code, 403)
+        response = self.client.post(import_url, "{}", content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+
+        # Student user
+        self.client.force_login(self.student)
+        response = self.client.get(export_url)
+        self.assertEqual(response.status_code, 403)
+        response = self.client.post(import_url, "{}", content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+
 
