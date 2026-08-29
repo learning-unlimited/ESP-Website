@@ -4,6 +4,7 @@ from django.forms.models import fields_for_model
 from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm
 from collections import OrderedDict
+from django.db import transaction
 from formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
@@ -395,34 +396,38 @@ class ComboForm(SessionWizardView):
 
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
-        for k, v in link_models_cache.items():
-            if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
-                v['instance'].save()
-                curr_instance = v['instance']
-            else:
-                try:
-                    new_instance = v['model'].objects.create(**v['data'])
-                except Exception:
-                    # show some error message
-                    pass
-            if v['instance'] is not None:
-                data[f'link_{v["model"].__name__}'] = v['instance']
+        with transaction.atomic():
+            for k, v in link_models_cache.items():
+                if v['instance'] is not None:
+                    # TODO-> the following update won't work for fk fields.
+                    v['instance'].__dict__.update(v['data'])
+                    v['instance'].save()
+                    curr_instance = v['instance']
+                else:
+                    try:
+                        new_instance = v['model'].objects.create(**v['data'])
+                        v['instance'] = new_instance
+                    except Exception as e:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.exception(f"Failed to create linked model {v['model'].__name__}")
+                        raise
+                if v['instance'] is not None:
+                    data[f'link_{v["model"].__name__}'] = v['instance']
 
-        # Saving response
-        initial_keys = list(data.keys())
-        for key in initial_keys:
-            #   Check that we didn't already handle this value as a linked field
-            if key.split('_')[0] in cf_cache.link_fields:
-                del data[key]
-            #   Check that this value didn't come from a dummy field
-            if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
-                del data[key]
-        # Delete old response(s) if not anonymous (we only want one response per user)
-        if not self.form.anonymous:
-            dynModel.objects.filter(user=self.curr_request.user).delete()
-        dynModel.objects.create(**data)
+            # Saving response
+            initial_keys = list(data.keys())
+            for key in initial_keys:
+                #   Check that we didn't already handle this value as a linked field
+                if key.split('_')[0] in cf_cache.link_fields:
+                    del data[key]
+                #   Check that this value didn't come from a dummy field
+                if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
+                    del data[key]
+            # Delete old response(s) if not anonymous (we only want one response per user)
+            if not self.form.anonymous:
+                dynModel.objects.filter(user=self.curr_request.user).delete()
+            dynModel.objects.create(**data)
         return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
