@@ -2053,12 +2053,15 @@ def module_schedule_import_api(request, program_type, program_term):
                 mod_hydrated.sync_permissions()
                 updated_count += 1
 
+            if updated_count == 0:
+                raise ValueError("No valid module configurations were found or updated from the provided schedule payload.")
+
         return JsonResponse({
             "success": True,
             "updated_count": updated_count,
             "target_start_date": target_anchor_dt.isoformat()
         })
-    except ValueError as e:
+    except (ValueError, TypeError) as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
     except Exception as e:
         logger.exception("module_schedule_import_api failed")
