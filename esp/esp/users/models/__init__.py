@@ -707,6 +707,13 @@ class BaseESPUser(object):
     getTypes = staticmethod(getTypes)
 
     @staticmethod
+    def awaiting_activation_Q():
+        """
+        Q object matching accounts that were registered but never activated.
+        """
+        return Q(is_active=False, pending_activation__isnull=False)
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
             raise ESPError("Invalid type to find all of.")
@@ -2525,6 +2532,24 @@ class Record(models.Model):
     def __str__(self):
         return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
 
+class PendingActivation(models.Model):
+    """
+    Marks an account as registered but never activated.
+
+    The presence of a row means "this account is waiting for its owner to
+    click the activation link in their registration email"; the row is
+    deleted the first time the account is successfully activated.
+    """
+    user = models.OneToOneField(ESPUser, related_name='pending_activation',
+                                on_delete=models.CASCADE)
+    created = models.DateTimeField(blank=True, default=datetime.now)
+
+    class Meta:
+        app_label = 'users'
+
+    def __str__(self):
+        return f"{self.user} is awaiting account activation"
+
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -3026,8 +3051,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 

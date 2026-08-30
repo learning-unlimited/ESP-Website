@@ -40,6 +40,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 from django.db import models
+from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
@@ -74,6 +75,74 @@ class ProgramModuleObj(ExpirableModel):
     always_enabled = False
     seq_locked = False
     conflicts_with = ()
+    permission_types = ()
+
+    def get_permission_types(self):
+        """
+        Return a list or tuple of Permission strings from PERMISSION_CHOICES_FLAT
+        associated with this module.
+        Subclasses can override the class attribute `permission_types` or this method.
+        """
+        return self.permission_types
+
+    def sync_permissions(self):
+        """
+        Synchronize this module's start_date and end_date with the backend Permission table
+        for all associated permission_types.
+        Skips synchronization if get_permission_types() returns empty.
+        """
+        perm_types = self.get_permission_types()
+        if not perm_types:
+            return
+
+        tl_to_role = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+        for perm_type in perm_types:
+            role_name = None
+            if perm_type.startswith("Student"):
+                role_name = "Student"
+            elif perm_type.startswith("Teacher"):
+                role_name = "Teacher"
+            elif perm_type.startswith("Volunteer"):
+                role_name = "Volunteer"
+            elif hasattr(self.module, 'module_type') and self.module.module_type in tl_to_role:
+                role_name = tl_to_role[self.module.module_type]
+
+            if not role_name:
+                logger.warning(
+                    "sync_permissions: could not determine role for permission_type=%s (module=%s)",
+                    perm_type,
+                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                )
+                continue
+
+            group = Group.objects.filter(name=role_name).first()
+            if not group:
+                logger.warning(
+                    "sync_permissions: group %s not found; skipping permission_type=%s",
+                    role_name,
+                    perm_type,
+                )
+                continue
+
+            perms = Permission.objects.filter(
+                program=self.program,
+                role=group,
+                permission_type=perm_type,
+                user__isnull=True,
+                user_filter__isnull=True
+            )
+            if perms.exists():
+                perms.update(start_date=self.start_date, end_date=self.end_date)
+            else:
+                Permission.objects.create(
+                    program=self.program,
+                    role=group,
+                    permission_type=perm_type,
+                    start_date=self.start_date,
+                    end_date=self.end_date,
+                    user=None,
+                    user_filter=None
+                )
 
     start_date = models.DateTimeField(blank=True, null=True, default=None,
                                       help_text="If blank, has always started.")
@@ -190,7 +259,8 @@ class ProgramModuleObj(ExpirableModel):
 
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        from esp.program.modules.handlers.regprofilemodule import RegProfileModule
+        from esp.program.modules.handlers.studentregprofilemodule import StudentRegProfileModule
+        from esp.program.modules.handlers.teacherregprofilemodule import TeacherRegProfileModule
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         #   If a "core" module has been found:
@@ -203,7 +273,7 @@ class ProgramModuleObj(ExpirableModel):
                     return _login_redirect(request)
                 for m in moduleobj.findRequiredModules():
                     m.request = request
-                    if request.user.updateOnsite(request) and not isinstance(m, RegProfileModule):
+                    if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
                     if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
@@ -217,31 +287,61 @@ class ProgramModuleObj(ExpirableModel):
         raise Http404
 
     @staticmethod
+    def _initial_defaults(prog, mod, old_prog = None):
+        """ Field values to use when creating a new ProgramModuleObj row."""
+        # If an old program is specified, use the seq and required values from that program
+        if old_prog is not None:
+            old_pmo = list(ProgramModuleObj.objects.filter(program = old_prog, module = mod)[:2])
+            if len(old_pmo) == 1:
+                return {'seq': old_pmo[0].seq,
+                        'required': old_pmo[0].required,
+                        'required_label': old_pmo[0].required_label,
+                        'start_date': old_pmo[0].start_date,
+                        'end_date': old_pmo[0].end_date}
+
+        defaults = {'seq': mod.seq, 'required': mod.required}
+
+        # Populate initial start_date and end_date from program permission records
+        try:
+            handler_cls = mod.getPythonClass()
+            perm_types = getattr(handler_cls, 'permission_types', ())
+            if not perm_types and hasattr(handler_cls, 'get_permission_types'):
+                perm_types = handler_cls.get_permission_types(handler_cls)
+            if perm_types:
+                role_by_module_type = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+                role_name = role_by_module_type.get(getattr(mod, 'module_type', ''))
+                if role_name:
+                    perm_types = [pt for pt in perm_types if pt.startswith(role_name)] or perm_types
+                group = Group.objects.filter(name=role_name).first() if role_name else None
+                perm_qs = Permission.objects.filter(
+                    program=prog,
+                    permission_type__in=perm_types,
+                    user__isnull=True,
+                    user_filter__isnull=True,
+                )
+                if group:
+                    perm_qs = perm_qs.filter(role=group)
+                perm = perm_qs.order_by('id').first()
+                if perm:
+                    defaults['start_date'] = perm.start_date
+                    defaults['end_date'] = perm.end_date
+        except Exception:
+            pass
+
+        return defaults
+
+    @staticmethod
     def getFromProgModule(prog, mod, old_prog = None):
         import esp.program.modules.models
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
 
-        BaseModuleList = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module')
-        if len(BaseModuleList) < 1:
-            BaseModule = ProgramModuleObj()
-            BaseModule.program = prog
-            BaseModule.module = mod
-            # If an old program is specified, use the seq and required values from that program
-            old_pmo = ProgramModuleObj.objects.filter(program = old_prog, module = mod)
-            if len(old_pmo) == 1:
-                BaseModule.seq = old_pmo[0].seq
-                BaseModule.required = old_pmo[0].required
-                BaseModule.required_label = old_pmo[0].required_label
-            else:
-                BaseModule.seq = mod.seq
-                BaseModule.required = mod.required
-            BaseModule.save()
-
-        elif len(BaseModuleList) > 1:
-            assert False, 'Too many module objects!'
-        else:
-            BaseModule = BaseModuleList[0]
+        BaseModule = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module').first()
+        if BaseModule is None:
+            #   Use get_or_create() to prevent a race condition
+            BaseModule, _ = ProgramModuleObj.objects.get_or_create(
+                program = prog, module = mod,
+                defaults = ProgramModuleObj._initial_defaults(prog, mod, old_prog))
 
         ModuleObj   = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
