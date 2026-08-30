@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.program.tests import ProgramFrameworkTest
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
@@ -466,6 +467,58 @@ class QSDVersionHistoryTest(TestCase):
 
     def tearDown(self):
         QuasiStaticData.objects.filter(url='learn/historytest').delete()
+
+
+class ClassQSDPermissionTest(ProgramFrameworkTest):
+    """Teachers with class QSD permission should see inline edit controls."""
+
+    def setUp(self):
+        super().setUp(num_students=1, num_teachers=1, classes_per_teacher=1, num_admins=1)
+        self.teacher = self.teachers[0]
+        self.student = self.students[0]
+        self.cls = self.teacher.getTaughtClasses()[0]
+        self.qsd_url = 'learn/%s/index' % self.cls.url()
+
+        qsd_rec, created = QuasiStaticData.objects.get_or_create(
+            url=self.qsd_url,
+            defaults={
+                'name': 'learn:index',
+                'title': 'Class page',
+                'content': 'Class page content',
+                'author': self.admins[0],
+                'nav_category': default_navbarcategory(),
+                'description': '',
+                'keywords': '',
+            },
+        )
+        if not created:
+            qsd_rec.title = 'Class page'
+            qsd_rec.content = 'Class page content'
+            qsd_rec.author = self.admins[0]
+            qsd_rec.nav_category = default_navbarcategory()
+            qsd_rec.save()
+
+    def test_teacher_can_access_edit_page(self):
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'))
+        response = self.client.get('/%s.edit.html' % self.qsd_url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        self.assertIn('Static Page Editing', content)
+
+    def test_non_teacher_cannot_access_edit_page(self):
+        self.assertTrue(self.client.login(username=self.student.username, password='password'))
+        response = self.client.get('/%s.edit.html' % self.qsd_url, follow=True)
+        self.assertRedirects(response, '/%s.html' % self.qsd_url)
+        messages = list(response.context['messages'])
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "You don't have permission to edit this page.")
+
+    def test_read_page_renders_qsd_bits(self):
+        response = self.client.get('/%s.html' % self.qsd_url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('UTF-8')
+        self.assertIn('qsd_bits hidden', content)
+        self.assertIn('Edit this page', content)
 
 
 class QSDImageUploadTest(TestCase):
