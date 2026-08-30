@@ -89,8 +89,21 @@ def _qsd_conflict_payload(conflict):
     return {
         'message': message,
         'orig_id': current.pk if current is not None else '',
-        'orig_version': current.latest_version_id() if current is not None else '',
+        'orig_version': (current.latest_version_id() or '') if current is not None else '',
     }
+
+
+def _parse_orig_int(post_dict, key):
+    """
+    Parses an 'orig_id'/'orig_version' value out of an ajax_qsd POST dict,
+    treating a missing/empty value -- or the literal string 'null' (sent by
+    the client when a data-orig-* attribute was set to JS `null`, which
+    Element.setAttribute stringifies) -- as absent.
+    """
+    value = post_dict.get(key)
+    if not value or value == 'null':
+        return None
+    return int(value)
 
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
@@ -421,8 +434,8 @@ def ajax_qsd(request):
         if len(path_parts) > 3 and path_parts[3] == "Classes":
             data = clean(data, strip = True)
 
-        orig_id = int(post_dict['orig_id']) if post_dict.get('orig_id') else None
-        orig_version = int(post_dict['orig_version']) if post_dict.get('orig_version') else None
+        orig_id = _parse_orig_int(post_dict, 'orig_id')
+        orig_version = _parse_orig_int(post_dict, 'orig_version')
 
         # Editing a disabled block re-enables it -- otherwise the block would
         # keep rendering as if empty even after being "edited".
@@ -457,8 +470,8 @@ def ajax_qsd(request):
         # attributes, not form controls, so not subject to that restore
         # behavior) look perfectly fresh and wouldn't trip check_freshness
         # on their own.
-        orig_id = int(post_dict['orig_id']) if post_dict.get('orig_id') else None
-        orig_version = int(post_dict['orig_version']) if post_dict.get('orig_version') else None
+        orig_id = _parse_orig_int(post_dict, 'orig_id')
+        orig_version = _parse_orig_int(post_dict, 'orig_version')
         current = QuasiStaticData.objects.get_by_url(post_dict['url'])
         stale, history = QuasiStaticData.objects.check_freshness(post_dict['url'], orig_id, orig_version)
         result['stale'] = stale
