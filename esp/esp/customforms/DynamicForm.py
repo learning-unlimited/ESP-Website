@@ -5,6 +5,8 @@ from django.utils.safestring import mark_safe
 from form_utils.forms import BetterForm
 from collections import OrderedDict
 from django.db import transaction
+import logging
+logger = logging.getLogger(__name__)
 from formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, HttpResponse
@@ -407,9 +409,7 @@ class ComboForm(SessionWizardView):
                     try:
                         new_instance = v['model'].objects.create(**v['data'])
                         v['instance'] = new_instance
-                    except Exception as e:
-                        import logging
-                        logger = logging.getLogger(__name__)
+                    except Exception:
                         logger.exception(f"Failed to create linked model {v['model'].__name__}")
                         raise
                 if v['instance'] is not None:

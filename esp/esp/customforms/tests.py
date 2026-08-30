@@ -212,6 +212,61 @@ class CustomFormsTest(TestCase):
             if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)
+    def test_comboform_done_transaction_rollback(self):
+        """ Test that a linked model creation failure rolls back the entire transaction. """
+        from unittest.mock import patch
+        from esp.users.models import ContactInfo
+        import json
+
+        self.client.login(username=self.admin.username, password='password')
+
+        form_data = {
+            'title': 'Test Rollback Form',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Your Email', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs':{}, 'help_text': ''}},
+                        {'data': {'field_type': 'TeacherInfo_bio', 'question_text': 'Your Bio', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs':{}, 'help_text': ''}},
+                    ],
+                'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+        forms = Form.objects.filter(title='Test Rollback Form')
+        self.assertTrue(forms.exists())
+        form = forms[0]
+        fields = form.field_set.all()
+        email_field = fields.get(label='Your Email')
+        bio_field = fields.get(label='Your Bio')
+
+        self.client.login(username=self.student.username, password='password')
+
+        post_dict = {'combo_form-current_step': '0'}
+        post_dict[f'question_{email_field.id}'] = 'test@example.com'
+        post_dict[f'question_{bio_field.id}'] = 'Some bio'
+
+        initial_contact_count = ContactInfo.objects.filter(user=self.student).count()
+
+        with patch('esp.users.models.TeacherInfo.objects.create', side_effect=Exception("Simulated DB failure")):
+            with self.assertRaises(Exception) as cm:
+                self.client.post(f"/customforms/view/{form.id}/", post_dict)
+            self.assertEqual(str(cm.exception), "Simulated DB failure")
+
+        final_contact_count = ContactInfo.objects.filter(user=self.student).count()
+        self.assertEqual(initial_contact_count, final_contact_count, "ContactInfo was not rolled back!")
 
 
 class LandingViewTest(TestCase):
