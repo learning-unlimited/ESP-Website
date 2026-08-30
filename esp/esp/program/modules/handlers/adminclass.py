@@ -202,6 +202,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
+
         sections = cls.sections.all().order_by('id')
         context = {}
 
