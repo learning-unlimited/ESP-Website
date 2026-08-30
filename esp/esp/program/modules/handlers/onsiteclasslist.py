@@ -60,6 +60,22 @@ from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
+MAX_SCHEDULE_SECTIONS = 200
+
+
+def sanitize_section_ids(section_ids, messages):
+    """ Cast requested section IDs to ints, dropping invalid entries and
+        duplicates (preserving order). Warnings for dropped entries are
+        appended to messages. """
+    sanitized = []
+    for section_id in section_ids:
+        try:
+            sanitized.append(int(section_id))
+        except (TypeError, ValueError):
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+    return list(dict.fromkeys(sanitized))
+
+
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
 
@@ -262,6 +278,25 @@ class OnSiteClassList(ProgramModuleObj):
         except (KeyError, ValueError, TypeError):
             result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
             desired_sections = None
+        else:
+            if not isinstance(desired_sections, list):
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
+            raw_count = len(desired_sections)
+            desired_sections = sanitize_section_ids(desired_sections, result['messages'])
+            if not desired_sections and raw_count > 0:
+                #   Every entry was invalid; refuse rather than wipe the schedule
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
+            if len(desired_sections) > MAX_SCHEDULE_SECTIONS:
+                resp.status_code = 400
+                result['messages'].append(f'Error: too many sections requested; the limit is {MAX_SCHEDULE_SECTIONS}.')
+                json.dump(result, resp)
+                return resp
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if request.GET.get('check_in') == 'true' and user and not prog.isCheckedIn(user):

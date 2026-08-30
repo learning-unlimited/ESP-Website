@@ -43,6 +43,76 @@ class UpdateScheduleJsonTests(SimpleTestCase):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
 
+    def _assert_invalid_sections(self, resp):
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('sections must be a JSON list' in msg for msg in payload.get('messages', [])))
+
+    def test_sections_object_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "{}"})
+        self._assert_invalid_sections(resp)
+
+    def test_sections_scalar_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "5"})
+        self._assert_invalid_sections(resp)
+
+
+class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
+    """update_schedule_json must cast section IDs to ints, drop invalid
+    entries, dedupe, and reject oversized lists (#4268)."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=1,
+            num_teachers=1,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=1,
+            num_students=1,
+        )
+        self.add_user_profiles()
+        self.student = self.students[0]
+        self.section = self.program.sections()[0]
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _call(self, sections_param):
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': sections_param,
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_invalid_and_duplicate_entries_are_sanitized(self):
+        resp = self._call(json.dumps(['junk', self.section.id, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+        #   The duplicate entry must have been collapsed to a single attempt.
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_all_invalid_entries_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps(['junk']))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_oversized_list_returns_400(self):
+        resp = self._call(json.dumps(list(range(300))))
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('too many sections' in msg for msg in data['messages']))
+
 
 class PrintScheduleStatusTests(SimpleTestCase):
     """Regression tests for printschedule_status early failure cases."""
