@@ -2596,6 +2596,7 @@ class Permission(ExpirableModel):
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),

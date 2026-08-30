@@ -531,6 +531,7 @@ class StudentRegTest(ProgramFrameworkTest):
         )
         response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
 
         # Expired deadline - should show error
         perm.end_date = timezone.now() - timedelta(hours=1)
@@ -547,6 +548,52 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('deadline', response.content.decode('utf-8').lower())
         self.assertEqual(response['Cache-Control'], 'no-store')
 
+    def test_catalog_deadline_admin_bypass(self):
+        """Admins can see the catalog while it is closed; students cannot."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+
+        # A student still gets the deadline page
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # An admin gets the real catalog, marked no-store so that a shared cache
+        # cannot keep it and hand it to students afterwards
+        admin = random.choice(self.admins)
+        self.assertTrue(self.client.login(username=admin.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.expect_template(response, 'program/modules/studentclassregmodule/catalog.html')
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_catalog_deadline_is_configurable(self):
+        """Admins must be able to create the Student/Catalog deadline."""
+        from esp.program.modules.handlers.admincore import NewDeadlineForm
+
+        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn('Student/Catalog', Permission.deadline_types)
+
+        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+        Permission(permission_type='Student/Catalog', program=self.program,
+                   user=None).full_clean()
 
     def test_catalog_json_open(self):
         """catalog_json returns 200 with JSON when catalog is open."""
@@ -561,6 +608,7 @@ class StudentRegTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
         data = json.loads(response.content)
         self.assertIsInstance(data, list)
 
