@@ -371,7 +371,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         currency="usd",
                         source=request.POST['stripeToken'],
                         description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
-                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        # Stripe statement descriptors may not contain *, comma, or a double quote
+                        # (https://docs.stripe.com/changelog/2019-02-19/changes-statement-descriptor-behaviors-charges),
+                        # and reject the charge outright if they do. group_name comes from the
+                        # full_group_name Tag or institution settings, which aren't guaranteed to
+                        # avoid those characters, so strip them before truncating to Stripe's 22-character limit.
+                        statement_descriptor=re.sub(r'[*,"]', '', group_name)[0:22],
                         metadata={
                             'ponumber': request.POST['ponumber'],
                         },
