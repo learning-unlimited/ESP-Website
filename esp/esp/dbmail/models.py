@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 import json
 import logging
 logger = logging.getLogger(__name__)
-import pickle
 import re
 import sys
 
@@ -48,6 +47,8 @@ from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
 from esp.users.models import PersistentQueryFilter, ESPUser
+from esp.utils import safe_pickle
+from esp.dbmail import providers
 from django.template import Template #, VariableNode, TextNode
 
 import esp.dbmail.sendto_fns
@@ -507,28 +508,75 @@ class TextOfEmail(models.Model):
 class MessageVars(models.Model):
     """ A storage of message variables for a specific message. """
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
-    pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
+    #   DEPRECATED, kept for rows written before provider_info existed.  Blobs
+    #   in this column are HMAC-signed and are only unpickled after the
+    #   signature verifies; see esp.utils.safe_pickle.
+    pickled_provider = models.BinaryField(null=True, blank=True)
+    #   {'model': '<app_label>.<ModelName>', 'pk': ...} -- see esp.dbmail.providers
+    provider_info    = models.JSONField(null=True, blank=True)
     provider_name    = models.CharField(max_length=128)
+
+    #   Namespaces the signature on pickled_provider.
+    PROVIDER_SALT = 'dbmail.MessageVars.pickled_provider'
 
     @staticmethod
     def createVar(msgrequest, name, obj):
         """ This is used to create a variable container for a message."""
         newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
-        newMessageVar.pickled_provider = pickle.dumps(obj)
+
+        #   Registered model instances are stored by reference, which needs no
+        #   deserialization at all.  Anything else falls back to a signed
+        #   pickle so that unusual providers keep working.
+        key = providers.provider_key(obj)
+        pk = getattr(obj, 'pk', None)
+        if key is not None and providers.is_registered(key) and pk is not None:
+            newMessageVar.provider_info = {'model': key, 'pk': pk}
+        else:
+            logger.warning(
+                'MessageVars provider %r (%s) is not a registered model; '
+                'falling back to signed pickle storage.', name, key or type(obj).__name__
+            )
+            newMessageVar.pickled_provider = safe_pickle.dumps(obj, MessageVars.PROVIDER_SALT)
+
         newMessageVar.save()
         return newMessageVar
 
+    def _get_provider(self):
+        """ Return the provider object for this variable.
+
+            Prefers the by-reference representation; legacy pickled rows are
+            only unpickled once their HMAC signature verifies.
+        """
+        if self.provider_info:
+            key = self.provider_info.get('model')
+            pk = self.provider_info.get('pk')
+            if not isinstance(key, str) or not providers.is_registered(key):
+                raise ESPError(f'Unregistered provider model in provider_info: {key!r}')
+            if not isinstance(pk, (int, str)):
+                raise ESPError(f'Invalid provider pk in provider_info: {type(pk).__name__}')
+            provider = providers.get_provider_instance(key, pk)
+            if provider is None:
+                raise ESPError(f'Could not find provider {key} with pk={pk}')
+            return provider
+
+        if self.pickled_provider:
+            try:
+                return safe_pickle.loads(self.pickled_provider, self.PROVIDER_SALT)
+            except safe_pickle.UntrustedPayload as e:
+                raise ESPError(f'Refusing to load message variable {self.id}: {e}')
+            except Exception:
+                raise ESPError('Could not load variable provider object!')
+
+        raise ESPError('No provider information found for this message variable.')
+
     def getDict(self, user):
-        provider = pickle.loads(self.pickled_provider)
+        provider = self._get_provider()
         actionhandler = ActionHandler(provider, user)
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
         """ Get a variable from this object. """
-        try:
-            provider = pickle.loads(self.pickled_provider)
-        except Exception:
-            raise ESPError('Could not load variable provider object!')
+        provider = self._get_provider()
 
         if hasattr(provider, 'get_msg_vars'):
             return str(provider.get_msg_vars(user, key))

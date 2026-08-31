@@ -418,3 +418,65 @@ class MessageRequestAdminTest(TestCase):
         mr = MessageRequest.objects.filter(subject='Test subject').first()
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)
+
+
+class MessageVarsProviderTest(TestCase):
+    """MessageVars stores registered model providers by reference, and only
+    unpickles legacy blobs whose signature verifies."""
+
+    def setUp(self):
+        from esp.dbmail.models import MessageVars
+        self.MessageVars = MessageVars
+        self.user = ESPUser.objects.create(username='msgvar_test_user')
+        self.recipients = PersistentQueryFilter.create_from_Q(
+            item_model=ESPUser, q_filter=Q(id=self.user.id), description='Test filter',
+        )
+        self.msgrequest = MessageRequest.objects.create(
+            subject='s', msgtext='t', recipients=self.recipients, creator=self.user,
+        )
+
+    def test_registered_provider_stored_by_reference(self):
+        var = self.MessageVars.createVar(self.msgrequest, 'user', self.user)
+        self.assertEqual(var.provider_info, {'model': 'users.ESPUser', 'pk': self.user.pk})
+        self.assertFalse(var.pickled_provider)
+        var = self.MessageVars.objects.get(pk=var.pk)
+        self.assertEqual(var._get_provider(), self.user)
+
+    def test_unregistered_provider_falls_back_to_signed_pickle(self):
+        """Odd providers keep working, but the blob is authenticated."""
+        from esp.utils import safe_pickle
+
+        var = self.MessageVars.createVar(self.msgrequest, 'thing', {'a': 1})
+        self.assertIsNone(var.provider_info)
+        self.assertTrue(safe_pickle.is_signed(bytes(var.pickled_provider)))
+        var = self.MessageVars.objects.get(pk=var.pk)
+        self.assertEqual(var._get_provider(), {'a': 1})
+
+    def test_tampered_pickle_is_rejected(self):
+        import pickle
+
+        from esp.middleware import ESPError_Log
+
+        class Exploit(object):
+            def __reduce__(self):
+                return (print, ('pwned',))
+
+        var = self.MessageVars.createVar(self.msgrequest, 'thing', {'a': 1})
+        #   Simulate an attacker with write access to the column.
+        self.MessageVars.objects.filter(pk=var.pk).update(
+            provider_info=None, pickled_provider=pickle.dumps(Exploit())
+        )
+        var = self.MessageVars.objects.get(pk=var.pk)
+        with self.assertRaises(ESPError_Log):
+            var._get_provider()
+
+    def test_unregistered_provider_info_is_rejected(self):
+        from esp.middleware import ESPError_Log
+
+        var = self.MessageVars.createVar(self.msgrequest, 'user', self.user)
+        self.MessageVars.objects.filter(pk=var.pk).update(
+            provider_info={'model': 'os.system', 'pk': 1}
+        )
+        var = self.MessageVars.objects.get(pk=var.pk)
+        with self.assertRaises(ESPError_Log):
+            var._get_provider()

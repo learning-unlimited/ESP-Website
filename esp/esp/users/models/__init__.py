@@ -78,6 +78,7 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from esp.tagdict.models import Tag
 from esp.utils.decorators import enable_with_setting
+from esp.utils import safe_pickle
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.utils.query_utils import nest_Q
@@ -85,11 +86,6 @@ from esp.program.class_status import ClassStatus
 from esp.utils import cmp
 
 from urllib.parse import quote, urlencode as urllib_urlencode
-
-try:
-    import pickle
-except ImportError:
-    import pickle
 
 DEFAULT_USER_TYPES = [
     ['Student', {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'}],
@@ -2270,29 +2266,43 @@ class PersistentQueryFilter(models.Model):
         app_label = 'users'
         db_table = 'users_persistentqueryfilter'
 
+    #   Namespaces the signature on q_filter, so a blob signed for some other
+    #   column cannot be replayed into this one.
+    Q_FILTER_SALT = 'users.PersistentQueryFilter.q_filter'
+
     @staticmethod
     def create_from_Q(item_model, q_filter, description = ''):
         """ The main constructor, please call this. """
         import hashlib
-        dumped_filter = pickle.dumps(q_filter)
+        signed_filter, payload = safe_pickle.dumps_with_payload(q_filter, PersistentQueryFilter.Q_FILTER_SALT)
+        #   Hash the unsigned payload so that the hashes of rows written before
+        #   and after signing was introduced remain comparable.
+        sha1_hash = hashlib.sha1(payload).hexdigest()
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        query_q = Q(item_model = str(item_model), sha1_hash = sha1_hash)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
-                                                                       q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = sha1_hash,
+                                                                       defaults = {'q_filter': signed_filter})
         foo.useful_name = description
         foo.save()
         return foo
 
     def get_Q(self, restrict_to_active = True):
-        """ This will return the Q object that was passed into it. """
+        """ This will return the Q object that was passed into it.
+
+            The stored blob is only unpickled once its HMAC signature has been
+            verified, so a row rewritten by an attacker raises rather than
+            executing (see esp.utils.safe_pickle).
+        """
         try:
-            QObj = pickle.loads(self.q_filter)
+            QObj = safe_pickle.loads(self.q_filter, self.Q_FILTER_SALT)
+        except safe_pickle.UntrustedPayload as e:
+            raise ESPError(f'Refusing to load query filter {self.id}: {e}')
         except Exception:
             raise ESPError('Invalid Q object stored in database.')
 
@@ -2321,11 +2331,10 @@ class PersistentQueryFilter(models.Model):
             q_filter = q_filter & Q(is_active=True)
 
         import hashlib
-        dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        signed_filter, payload = safe_pickle.dumps_with_payload(q_filter, self.Q_FILTER_SALT)
 
-        self.q_filter = dumped_filter
-        self.sha1_hash = sha1_hash
+        self.q_filter = signed_filter
+        self.sha1_hash = hashlib.sha1(payload).hexdigest()
         self.useful_name = description
 
         if should_save:
@@ -2360,16 +2369,22 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         try:
-            qobject_string = pickle.dumps(QObject)
+            _, payload = safe_pickle.dumps_with_payload(QObject, PersistentQueryFilter.Q_FILTER_SALT)
+            sha1_hash = hashlib.sha1(payload).hexdigest()
         except Exception:
-            qobject_string = b''
-        try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
-        except PersistentQueryFilter.DoesNotExist:
+            #   Unserializable filter; fall through to create_from_Q, which will
+            #   surface the underlying error rather than matching a stray row.
+            sha1_hash = None
+
+        filterObj = None
+        if sha1_hash is not None:
+            #   sha1_hash is not unique, so take the first match rather than
+            #   risking MultipleObjectsReturned.
+            filterObj = PersistentQueryFilter.objects.filter(sha1_hash = sha1_hash).first()
+        if filterObj is None:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
                                                             description = description)
-            filterObj.save() # create a new one.
 
         return filterObj
 

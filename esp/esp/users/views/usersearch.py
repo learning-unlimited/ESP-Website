@@ -45,7 +45,6 @@ from esp.utils.web import render_to_response
 from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query import QuerySet
 from django.conf import settings
-import pickle
 
 def get_user_list(request, listDict2, extra=''):
     """ Get a list of users from some complicated mixture of other lists.

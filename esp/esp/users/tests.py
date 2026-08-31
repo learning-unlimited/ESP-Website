@@ -18,7 +18,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import SimpleLazyObject
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log
 from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
@@ -1728,3 +1728,61 @@ class DisableAccountPostOnlyTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+
+class PersistentQueryFilterSecurityTest(TestCase):
+    """The stored q_filter blob is authenticated, so a row rewritten in the
+    database cannot execute code when the filter is loaded."""
+
+    def setUp(self):
+        self.user = ESPUser.objects.create(username='pqf_test_user')
+
+    def test_round_trip(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(id=self.user.id), 'test')
+        self.assertEqual(list(ESPUser.objects.filter(pqf.get_Q())), [self.user])
+
+    def test_round_trip_with_queryset_value(self):
+        """Filters routinely embed querysets and model instances, so the
+        stored representation has to handle more than JSON-safe values."""
+        ids = ESPUser.objects.filter(id=self.user.id).values_list('pk', flat=True)
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(pk__in=ids), 'qs')
+        pqf = PersistentQueryFilter.objects.get(pk=pqf.pk)
+        self.assertEqual(list(ESPUser.objects.filter(pqf.get_Q())), [self.user])
+
+    def test_set_Q_round_trip(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(id=self.user.id), 'test')
+        other = ESPUser.objects.create(username='pqf_test_other')
+        pqf.set_Q(Q(id=other.id), ESPUser, 'updated')
+        pqf = PersistentQueryFilter.objects.get(pk=pqf.pk)
+        self.assertEqual(list(ESPUser.objects.filter(pqf.get_Q())), [other])
+
+    def test_set_Q_still_restricts_to_active(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(id=self.user.id), 'test')
+        pqf.set_Q(Q(id=self.user.id), ESPUser, 'updated')
+        pqf = PersistentQueryFilter.objects.get(pk=pqf.pk)
+        self.user.is_active = False
+        self.user.save()
+        self.assertEqual(
+            list(ESPUser.objects.filter(pqf.get_Q(restrict_to_active=False))), []
+        )
+
+    def test_getFilterFromQ_reuses_existing_row(self):
+        first = PersistentQueryFilter.getFilterFromQ(Q(id=self.user.id), ESPUser, 'a')
+        second = PersistentQueryFilter.getFilterFromQ(Q(id=self.user.id), ESPUser, 'b')
+        self.assertEqual(first.pk, second.pk)
+
+    def test_tampered_filter_is_rejected(self):
+        import pickle
+
+        class Exploit(object):
+            def __reduce__(self):
+                return (print, ('pwned',))
+
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(id=self.user.id), 'test')
+        #   Simulate an attacker with write access to the column.
+        PersistentQueryFilter.objects.filter(pk=pqf.pk).update(
+            q_filter=pickle.dumps(Exploit())
+        )
+        pqf = PersistentQueryFilter.objects.get(pk=pqf.pk)
+        with self.assertRaises(ESPError_Log):
+            pqf.get_Q()
