@@ -2257,6 +2257,50 @@ class K12School(models.Model):
         lst.append( (o.id, o.name + other_help_text) )
         return lst
 
+    def get_contact_email(self):
+        """Return primary contact email for this school, if configured."""
+        if self.contact:
+            return getattr(self.contact, 'e_mail', None) or getattr(self.contact, 'email', None) or ''
+        return ''
+
+    def get_contact_name(self):
+        """Return the contact full name for this school."""
+        if self.contact:
+            first = (self.contact.first_name or '').strip()
+            last = (self.contact.last_name or '').strip()
+            if first or last:
+                return f"{first} {last}".strip()
+        return self.name or ''
+
+    def get_contact_titleandlastname(self):
+        """Return formal salutation such as 'Mr. Smith' or fallback contact name."""
+        last = (self.contact.last_name or '').strip() if self.contact else ''
+        title = (self.contact_title or '').strip()
+        if title and last:
+            return f"{title} {last}"
+        elif last:
+            return f"Mr./Ms. {last}"
+        return self.get_contact_name()
+
+    def get_student_roster(self, program=None):
+        """Return list of enrolled students associated with this school for a program."""
+        from esp.users.models import StudentInfo
+        qs = StudentInfo.objects.filter(k12school=self).exclude(user__isnull=True).select_related('user')
+        if program:
+            qs = qs.filter(
+                user__studentregistration__section__parent_class__parent_program=program,
+                user__studentregistration__relationship__name='Enrolled',
+            ).distinct()
+        return [info.user for info in qs]
+
+    def get_student_attendance(self, program=None):
+        """Return attendance summary text for students associated with this school."""
+        students = self.get_student_roster(program)
+        if not students:
+            return "No enrolled students found."
+        return f"{len(students)} student(s) enrolled: " + ", ".join([s.name() for s in students])
+
+
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrieval (et al). """
