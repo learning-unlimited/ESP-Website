@@ -73,6 +73,21 @@ class DateWidget(DateTimeWidget):
     pythondformat = '%m/%d/%Y'
     jquerywidget = 'datepicker'
 
+    def value_from_datadict(self, data, files, name):
+        value = data.get(name, None)
+        if value in EMPTY_VALUES:
+            return None
+        if isinstance(value, datetime.datetime):
+            return value.date()
+        if isinstance(value, datetime.date):
+            return value
+        for format in django.utils.formats.get_format('DATE_INPUT_FORMATS'):
+            try:
+                return datetime.date(*(time.strptime(value, format)[:3]))
+            except ValueError:
+                continue
+        return None
+
 class ClassAttrMergingSelect(forms.Select):
 
     def build_attrs(self, base_attrs, extra_attrs=None):

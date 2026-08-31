@@ -1,19 +1,19 @@
-{% if login_result %}
+﻿{% if login_result %}
   <div class="navbar-text text-light w-100 px-3">{{ login_result }}</div>
 {% endif %}
 
-<ul class="navbar-nav logged_in hidden">
+<ul class="navbar-nav logged_in">
   <li class="nav-item dropdown dropdown-split">
-    <a class="nav-link navbar-item-label" id="loginbox_user_name" href="/myesp/profile/">
+    <a class="nav-link navbar-item-label" id="loginbox_user_name" href="{% url 'myesp_profile' %}">
       Hello, <span id="user_first_name"></span>!
     </a>
     <a class="nav-link dropdown-toggle caret-wrapper" data-bs-toggle="dropdown" data-bs-display="static" aria-haspopup="true" aria-expanded="false" aria-label="Account menu"><b class="caret"></b></a>
     <ul class="dropdown-menu dropdown-menu-end">
-      <li><a class="dropdown-item" href="/myesp/accountmanage/">Manage Account</a></li>
+      <li><a class="dropdown-item" href="{% url 'myesp_accountmanage' %}">Manage Account</a></li>
     </ul>
   </li>
   <li class="nav-item">
-    <a class="nav-link" href="/myesp/signout">
+    <a class="nav-link" href="{% url 'signout' %}">
       <button class="btn btn-secondary btn-sm" type="button">Logout</button>
     </a>
   </li>
@@ -23,9 +23,9 @@
   <li class="nav-item d-flex align-items-center flex-wrap">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="form-inline navbar-form my-1">
       <label class="visually-hidden" for="user">Username</label>
-      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox me-1" />
+      <input type="text" name="username" required id="user" size="8" value="" placeholder="Username" maxlength="255" class="form-control form-control-sm inputbox me-1" />
       <label class="visually-hidden" for="pass">Password</label>
-      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox me-1" />
+      <input type="password" name="password" required id="pass" size="8" value="" placeholder="Password" maxlength="255" class="form-control form-control-sm inputbox me-1" />
       <button class="btn btn-secondary btn-sm" id="gologin" type="submit">Login</button>
     </form>
   </li>
@@ -39,3 +39,19 @@
     </ul>
   </li>
 </ul>
+
+<script type="text/javascript">
+  /* Fill the greeting name during parsing (before first paint) to avoid a
+     flash of empty text. */
+  (function () {
+    try {
+      if (!window.esp_user) { return; }
+      var el = document.getElementById("user_first_name");
+      if (el) {
+        var n = ("" + (esp_user.cur_first_name || esp_user.cur_username || "Guest")).trim();
+        if (n && n !== "undefined") { el.textContent = n; }
+      }
+    } catch (e) {}
+  })();
+</script>
+
