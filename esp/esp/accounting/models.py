@@ -56,7 +56,7 @@ class LineItemType(models.Model):
     selection_type = models.CharField(
         max_length=16,
         default='single',
-        choices=(('single', 'Single'), ('multiple', 'Multiple')),
+        choices=[('single', 'Single'), ('multiple', 'Multiple')],
         help_text='For line items with options, whether students may select one option (single) or multiple options (multiple).',
     )
 

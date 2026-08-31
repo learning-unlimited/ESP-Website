@@ -464,38 +464,33 @@ $j(document).ready(function() {
         result = json.loads(data[name])
         return result
 
-class RadioSelectWithData(forms.RadioSelect):
+class WithOptionDataMixin(object):
+    """ Mixin for choice widgets that renders extra ``data-`` attributes on each
+        of the individual choice inputs.  ``option_data`` maps a choice value to
+        a dict of attribute names (without the ``data-`` prefix) and values.  """
+
     def __init__(self, *args, **kwargs):
-        self.option_data = kwargs.pop('option_data', {})
+        #   Choice values are frequently model IDs, so normalize the keys to
+        #   strings to avoid int/str mismatches at lookup time.
+        self.option_data = {str(key): data for key, data in kwargs.pop('option_data', {}).items()}
         super().__init__(*args, **kwargs)
 
-    # https://stackoverflow.com/a/59274893/4660582
-    def get_context(self, name, value, attrs):
-        context = super().get_context(name, value, attrs)
-        for optgroup in context['widget'].get('optgroups', []):
-            for option in optgroup[1]:
-                val = option['value']
-                data = self.option_data.get(val) or self.option_data.get(str(val)) or {}
-                for k, v in data.items():
-                    option['attrs']['data-' + k] = v
-        return context
+    #   create_option() (rather than get_context()) is the hook shared by every
+    #   rendering path, including BoundField.subwidgets, which bypasses
+    #   get_context() entirely.
+    def create_option(self, name, value, *args, **kwargs):
+        option = super().create_option(name, value, *args, **kwargs)
+        for key, data in self.option_data.get(str(value), {}).items():
+            option['attrs']['data-' + key] = data
+        return option
 
 
-class CheckboxSelectMultipleWithData(forms.CheckboxSelectMultiple):
-    def __init__(self, *args, **kwargs):
-        self.option_data = kwargs.pop('option_data', {})
-        super().__init__(*args, **kwargs)
+class RadioSelectWithData(WithOptionDataMixin, forms.RadioSelect):
+    pass
 
-    # mirrors RadioSelectWithData, but for checkboxes
-    def get_context(self, name, value, attrs):
-        context = super().get_context(name, value, attrs)
-        for optgroup in context['widget'].get('optgroups', []):
-            for option in optgroup[1]:
-                val = option['value']
-                data = self.option_data.get(val) or self.option_data.get(str(val)) or {}
-                for k, v in data.items():
-                    option['attrs']['data-' + k] = v
-        return context
+
+class CheckboxSelectMultipleWithData(WithOptionDataMixin, forms.CheckboxSelectMultiple):
+    pass
 
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""

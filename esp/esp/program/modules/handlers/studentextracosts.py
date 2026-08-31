@@ -79,69 +79,82 @@ class MultiSelectCostItem(forms.Form):
             self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=RadioSelectWithData(option_data=option_data))
 
 
-class MultiOptionCostItem(forms.Form):
-    """
-    Multiple-option selection for a single line item type.
+def custom_amount_field_name(option_id):
+    """ Name of the field holding the amount entered for a custom line item option. """
+    return 'custom_amount_%s' % option_id
 
-    Stores the selected option IDs in `options`, and custom amounts (for options
-    marked `is_custom`) in fields named `custom_amount_<optionId>`.
-    """
+
+def option_data_for_lineitem(lineitem_type):
+    """ Per-option `data-` attributes needed by extracosts.js to keep the
+        displayed total in sync with the student's selections.  """
+    return {option.id: {'cost': option.amount_dec_inherited,
+                        'is_custom': 'true' if option.is_custom else 'false',
+                        'for_finaid': 'true' if lineitem_type.for_finaid else 'false'}
+            for option in lineitem_type.lineitemoptions_set.all()}
+
+
+class MultiOptionCostItem(forms.Form):
+    """ Checkboxes allowing any number of a line item type's options to be
+        selected.  Selected option IDs are stored in `options`; the amount for
+        each option that allows a custom amount is stored in its own
+        `custom_amount_<option ID>` field.  """
 
     def __init__(self, *args, **kwargs):
         lineitem_type = kwargs.pop('lineitem_type')
-        self._lineitem_type = lineitem_type
-        required = kwargs.pop('required')
-        choices = kwargs.pop('choices')
-        option_data = kwargs.pop('option_data', {})
-        custom_option_ids = kwargs.pop('custom_option_ids', set())
+        required = kwargs.pop('required', False)
         super().__init__(*args, **kwargs)
-        self._required = required
-        self._custom_option_ids = {str(x) for x in custom_option_ids}
 
+        self.lineitem_type = lineitem_type
+        self.custom_options = [option for option in lineitem_type.lineitemoptions_set.all() if option.is_custom]
+
+        #   MultipleChoiceField validates that every submitted ID is one of this
+        #   line item type's options, so no further membership check is needed.
         self.fields['options'] = forms.MultipleChoiceField(
-            required=required,
-            label='',
-            choices=choices,
-            widget=CheckboxSelectMultipleWithData(option_data=option_data),
-        )
+            required=required, label='', choices=lineitem_type.option_choices,
+            widget=CheckboxSelectMultipleWithData(option_data=option_data_for_lineitem(lineitem_type)))
 
-        for opt_id in custom_option_ids:
-            self.fields[f'custom_amount_{opt_id}'] = forms.DecimalField(
-                required=False,
-                min_value=0,
-                max_digits=9,
-                decimal_places=2,
-                widget=forms.NumberInput(
-                    attrs={
-                        'class': 'option-custom-amount input-mini',
-                        'data-option-id': str(opt_id),
-                    }
-                ),
-            )
+        for option in self.custom_options:
+            self.fields[custom_amount_field_name(option.id)] = forms.DecimalField(
+                required=False, min_value=0, max_digits=9, decimal_places=2, label=option.description,
+                widget=forms.NumberInput(attrs={'class': 'option-custom-amount input-mini',
+                                                'data-option-id': option.id}))
 
     def clean(self):
-        cleaned = super().clean()
-        selected = set(cleaned.get('options') or [])
+        cleaned_data = super().clean()
+        #   An option allowing a custom amount needs a nonzero amount if selected.
+        #   (MultipleChoiceField has already reported an empty required selection.)
+        selected = set(cleaned_data.get('options') or [])
+        for option in self.custom_options:
+            field_name = custom_amount_field_name(option.id)
+            if str(option.id) in selected and not cleaned_data.get(field_name):
+                self.add_error(field_name, 'Please enter an amount for this selection.')
+        return cleaned_data
 
-        # When required=False, Django will allow empty selections; when required=True,
-        # `MultipleChoiceField` will raise the required error, but we also guard here
-        # because we set required on the field and still want consistent behavior.
-        if self._required and not selected:
-            self.add_error('options', forms.ValidationError(self.fields['options'].error_messages['required']))
-            return cleaned
+    @property
+    def missing_custom_amount(self):
+        """ True if a selected option that allows a custom amount has no amount. """
+        return any(name.startswith('custom_amount_') for name in self.errors)
 
-        for opt_id in sorted(self._custom_option_ids & selected):
-            amount = cleaned.get(f'custom_amount_{opt_id}')
-            if amount in (None, ''):
-                self.add_error(f'custom_amount_{opt_id}', 'Please enter an amount for this selection.')
+    def option_rows(self):
+        """ Yield a (checkbox, custom amount field or None) pair per option, so
+            that the template can render each custom amount input next to the
+            checkbox it belongs to.  """
+        custom_amount_fields = {str(option.id): self[custom_amount_field_name(option.id)]
+                                for option in self.custom_options}
+        for checkbox in self['options'].subwidgets:
+            yield (checkbox, custom_amount_fields.get(str(checkbox.data['value'])))
 
-        # Validate that all selected options belong to the line item type
-        valid_option_ids = {str(opt.id) for opt in self._lineitem_type.lineitemoptions_set.all()}
-        for opt_id in selected:
-            if opt_id not in valid_option_ids:
-                self.add_error('options', f'Option {opt_id} is not valid for {self._lineitem_type.text}.')
-
-        return cleaned
+    def preferences(self):
+        """ The (line item name, quantity, amount, option ID) tuples selected on
+            this form, one per checked option.  """
+        result = []
+        for option in self.lineitem_type.lineitemoptions_set.filter(id__in=self.cleaned_data['options']):
+            if option.is_custom:
+                amount = self.cleaned_data[custom_amount_field_name(option.id)]
+            else:
+                amount = option.amount_dec_inherited
+            result.append((self.lineitem_type.text, 1, float(amount), option.id))
+        return result
 
 
 # pick extra items to buy for each program
@@ -251,17 +264,6 @@ class StudentExtraCosts(ProgramModuleObj):
         error_custom = False
         preserve_items = {}
 
-        def option_data_for_lineitem(lineitem_type):
-            option_data = {}
-            for option in lineitem_type.lineitemoptions_set.all():
-                option_data[str(option.id)] = {
-                    'cost': option.amount_dec_inherited,
-                    'is_custom': 'true' if option.is_custom else 'false',
-                    'for_finaid': 'true' if lineitem_type.for_finaid else 'false',
-                    'option_id': str(option.id),
-                }
-            return option_data
-
         ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
 
@@ -289,15 +291,9 @@ class StudentExtraCosts(ProgramModuleObj):
                                ) }
                              for x in multiselect_single_list ] + \
                            [ { 'LineItemType': x,
-                               'CostChoice': MultiOptionCostItem(
-                                   request.POST,
-                                   prefix="multi%s" % x.id,
-                                   lineitem_type=x,
-                                   choices=x.option_choices,
-                                   required=(x.required),
-                                   option_data=option_data_for_lineitem(x),
-                                   custom_option_ids=set(x.lineitemoptions_set.filter(is_custom=True).values_list('id', flat=True)),
-                               ) }
+                               'CostChoice': MultiOptionCostItem(request.POST, prefix="multi%s" % x.id,
+                                                                 lineitem_type=x,
+                                                                 required=(x.required)) }
                              for x in multiselect_multi_list ]
             if prog.sibling_discount:
                 sibling_form = SiblingDiscountForm(request.POST, prefix="%s" % sibling_line_item.id, program=prog)
@@ -340,19 +336,9 @@ class StudentExtraCosts(ProgramModuleObj):
                                     form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
 
                     elif isinstance(form, MultiOptionCostItem):
-                        selected = form.cleaned_data.get('options') or []
-                        for opt_id in selected:
-                            option = LineItemOptions.objects.get(id=opt_id)
-                            if option.is_custom:
-                                opt_amount = form.cleaned_data.get(f'custom_amount_{opt_id}')
-                                if opt_amount in (None, ''):
-                                    preserve_items[lineitem_type.text] = form
-                                    forms_all_valid = False
-                                    error_custom = True
-                                    continue
-                            else:
-                                opt_amount = option.amount_dec_inherited
-                            form_prefs.append((lineitem_type.text, 1, float(opt_amount), int(opt_id)))
+                        #   Missing custom amounts are reported by the form itself,
+                        #   so a valid form here means every selection is priced.
+                        form_prefs.extend(form.preferences())
 
                     elif isinstance(form, SiblingDiscountForm):
                         form.save(spi)
@@ -360,12 +346,15 @@ class StudentExtraCosts(ProgramModuleObj):
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items[lineitem_type.text] = form
                     forms_all_valid = False
+                    if isinstance(form, MultiOptionCostItem) and form.missing_custom_amount:
+                        error_custom = True
 
             #   Merge previous and new preferences (update only if the form was valid)
             new_prefs = []
             for lineitem_name in preserve_items.keys():
-                if lineitem_name in [x[0] for x in prefs]:
-                    new_prefs.append(prefs[[x[0] for x in prefs].index(lineitem_name)])
+                #   A multi-select line item can have several saved preferences
+                #   (one per selected option), so keep every one of them.
+                new_prefs.extend([pref for pref in prefs if pref[0] == lineitem_name])
 
             new_prefs += form_prefs
             iac.apply_preferences(new_prefs)
@@ -383,7 +372,8 @@ class StudentExtraCosts(ProgramModuleObj):
         for lineitem_type in self.lineitemtypes():
             count_map[lineitem_type.text] = [lineitem_type.id, 1 if lineitem_type.required else 0, None, None]
 
-        for item in iac.get_preferences(self.lineitemtypes()):
+        current_prefs = list(iac.get_preferences(self.lineitemtypes()))
+        for item in current_prefs:
             for i in range(1, 4):
                 count_map[item[0]][i] = item[i]
 
@@ -421,12 +411,8 @@ class StudentExtraCosts(ProgramModuleObj):
         multiselect_costitems = []
         for x in multiselect_single_list:
             new_entry = {'type': 'select', 'LineItem': x}
-            option_data = {}
-            for option in x.lineitemoptions_set.all():
-                option_data[str(option.id)] = {'cost': option.amount_dec_inherited,
-                                          'is_custom': 'true' if option.is_custom else 'false',
-                                          'for_finaid': 'true' if x.for_finaid else 'false'}
-            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required, 'option_data': option_data}
+            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required,
+                           'option_data': option_data_for_lineitem(x)}
             if x.has_custom_options:
                 #   Provide an initial value for a custom amount if an option has been selected
                 #   and the saved amount differs from the amount this option would normally cost.
@@ -444,54 +430,20 @@ class StudentExtraCosts(ProgramModuleObj):
             multiselect_costitems.append(new_entry)
 
         multiselect_multi_costitems = []
-        prefs = list(iac.get_preferences(self.lineitemtypes()))
         for x in multiselect_multi_list:
-            new_entry = {'type': 'multiselect', 'LineItem': x}
-            option_data = {}
-            custom_option_ids = set()
-            custom_options = []
-            for option in x.lineitemoptions_set.all():
-                option_data[str(option.id)] = {
-                    'cost': option.amount_dec_inherited,
-                    'is_custom': 'true' if option.is_custom else 'false',
-                    'for_finaid': 'true' if x.for_finaid else 'false',
-                    'option_id': str(option.id),
-                }
-                if option.is_custom:
-                    custom_option_ids.add(option.id)
-                    custom_options.append(option)
-
-            # Determine initial selections + custom amounts from saved preferences.
-            selected_ids = []
-            custom_amount_initials = {}
-            for item in prefs:
-                if item[0] != x.text:
-                    continue
-                opt_id = item[3]
-                if opt_id:
-                    selected_ids.append(str(opt_id))
-                    # For custom options, restore entered amount if it differs from inherited.
-                    if opt_id in custom_option_ids:
-                        custom_amount_initials[f'custom_amount_{opt_id}'] = item[2]
-
-            initial = {'options': selected_ids}
-            initial.update(custom_amount_initials)
-
-            form = preserve_items.get(x.text) or MultiOptionCostItem(
-                prefix="multi%s" % x.id,
-                lineitem_type=x,
-                choices=x.option_choices,
-                required=x.required,
-                option_data=option_data,
-                custom_option_ids=custom_option_ids,
-                initial=initial,
-            )
-            new_entry['form'] = form
-            new_entry['custom_amount_fields'] = [
-                (opt, form[f'custom_amount_{opt.id}'])
-                for opt in custom_options
-            ]
-            multiselect_multi_costitems.append(new_entry)
+            #   Re-check the options that were previously selected, and restore
+            #   the amount that was entered for each custom option.
+            selected_prefs = [item for item in current_prefs if item[0] == x.text and item[3]]
+            initial = {'options': [item[3] for item in selected_prefs]}
+            initial.update({custom_amount_field_name(item[3]): item[2] for item in selected_prefs})
+            multiselect_multi_costitems.append({
+                'type': 'multiselect',
+                'LineItem': x,
+                'form': preserve_items.get(x.text) or MultiOptionCostItem(prefix="multi%s" % x.id,
+                                                                          lineitem_type=x,
+                                                                          required=x.required,
+                                                                          initial=initial),
+            })
 
         forms = cost_items + multi_cost_items + multiselect_costitems + multiselect_multi_costitems
         if prog.sibling_discount:

@@ -142,10 +142,9 @@ class ProgramModuleObj(models.Model):
                 return module.get_full_path()
 
     def goToCore(self, tl):
-        url = self.getCoreURL(tl)
-        if url is None:
-            url = '/myesp/'
-        return HttpResponseRedirect(url)
+        #   Fall back to the home page if the program has no core module to
+        #   return to, since HttpResponseRedirect(None) raises.
+        return HttpResponseRedirect(self.getCoreURL(tl) or '/')
 
     def require_auth(self):
         return True

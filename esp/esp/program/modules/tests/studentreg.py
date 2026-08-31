@@ -511,6 +511,68 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(workshop_transfers.count(), 2)
         self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
 
+        #   Check that the saved selections are restored when the form is reloaded,
+        #   including the amount that was entered for the custom option
+        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        forms_by_lineitem = {f['LineItem'].id: f['form'] for f in response.context['forms']}
+        workshops_form = forms_by_lineitem[lit4.id]
+        self.assertEqual(set(workshops_form.initial['options']), {opt_a.id, opt_c.id})
+        self.assertEqual(workshops_form.initial['custom_amount_%d' % opt_c.id], Decimal('5.50'))
+
+        #   Every checkbox needs the data- attributes that extracosts.js reads to keep
+        #   the displayed total in sync, and only custom options get an amount input
+        option_rows = {str(checkbox.data['value']): (checkbox, amount_field)
+                       for checkbox, amount_field in workshops_form.option_rows()}
+        self.assertEqual(set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)})
+        self.assertIsNone(option_rows[str(opt_a.id)][1])
+        self.assertIsNotNone(option_rows[str(opt_c.id)][1])
+        self.assertIn('data-cost="12.00"', str(option_rows[str(opt_a.id)][0]))
+        self.assertIn('data-for_finaid="true"', str(option_rows[str(opt_b.id)][0]))
+        self.assertIn('data-is_custom="true"', str(option_rows[str(opt_c.id)][0]))
+
+        #   The same data- attributes are needed by the single-select radio buttons
+        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]['option']))
+
+        #   Check that selecting a custom option without entering an amount is an
+        #   error, and does not discard the options that were already saved
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%d-options' % lit4.id: [str(opt_b.id), str(opt_c.id)],
+            'multi%d-custom_amount_%d' % (lit4.id, opt_c.id): '',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['error_custom'])
+        self.assertEqual(set(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         {opt_a.id, opt_c.id})
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Check that changing the selection replaces the previous options
+        post_data['multi%d-options' % lit4.id] = [str(opt_b.id)]
+        del post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         [opt_b.id])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 8)
+
+        #   Check that clearing the selection removes all of the options
+        del post_data['multi%d-options' % lit4.id]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Transfer.objects.filter(user=student, line_item=lit4).exists())
+        self.assertEqual(iac.amount_due(), program_cost + 7)
+
+        #   Restore the multi-select options for the financial aid checks below
+        post_data['multi%d-options' % lit4.id] = [str(opt_a.id), str(opt_c.id)]
+        post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)] = '5.50'
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)

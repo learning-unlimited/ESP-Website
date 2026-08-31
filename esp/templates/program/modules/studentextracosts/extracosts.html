@@ -10,7 +10,7 @@
 
 {% block xtrajs %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js?v=2"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/extracosts.js"></script>
 {% endblock %}
 
 {% block module_content %}
@@ -63,21 +63,17 @@ td>ul { list-style-type: none; padding: 0px }
             {{ f.form.option }}
         {% elif f.type == "multiselect" %}
             {% if f.form.options.errors %}<div style="color: red;">{{ f.form.options.errors|join:", " }}</div>{% endif %}
-            {{ f.form.options }}
-            {% if f.custom_amount_fields %}
-            <div style="margin-top: 10px;">
-                <b>Custom amounts</b>
-                <ul style="list-style-type: none; padding-left: 0;">
-                    {% for opt, field in f.custom_amount_fields %}
-                    <li style="margin-top: 5px;">
-                        {{ opt.description }}:
-                        {% if field.errors %}<span style="color: red;">{{ field.errors|join:", " }}</span>{% endif %}
-                        {{ field }}
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-            {% endif %}
+            <ul>
+                {% for checkbox, custom_amount in f.form.option_rows %}
+                <li>
+                    {{ checkbox }}
+                    {% if custom_amount %}
+                        {{ custom_amount }}
+                        {% if custom_amount.errors %}<span style="color: red;">{{ custom_amount.errors|join:", " }}</span>{% endif %}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
         {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;">{{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}

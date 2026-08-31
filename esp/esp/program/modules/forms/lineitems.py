@@ -19,7 +19,6 @@ class LineItemForm(forms.ModelForm):
             'for_finaid': 'Should financial aid cover this line item? Note that if this is checked, all quantities will be covered up to the max quantity. \
                            If you would like only one instance of this line item to be covered by financial aid, you should set the max quantity to 1 and make \
                            a duplicate line item with a different name and higher max quantity that is not covered by financial aid.',
-            'selection_type': 'For line items with options: allow selecting one option (single) or multiple options (multiple).',
         }
         widgets = {
             'amount_dec': forms.NumberInput(attrs={'placeholder': '(cost)'}),
