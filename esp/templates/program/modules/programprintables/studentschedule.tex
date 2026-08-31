@@ -1,6 +1,8 @@
 {% autoescape off %} {% load latex %} {% load main %} {% load getTag %} {% load schedule %}
 \documentclass[letterpaper,12pt]{article}
-\usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
+%   The head is included in the margin calculation so that the \Huge program
+%   name in the header can never be pushed off the top of the page.
+\usepackage[left=.6in,top=.5in,bottom=.5in,right=.6in,headheight=30pt,headsep=10pt,includehead]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fancyhdr}
@@ -8,11 +10,11 @@
 \usepackage{array}
 \usepackage{setspace}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
+\usepackage{graphicx}
 \usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
 
 \pagestyle{fancy}
 \fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName|texescape }} } }}
-\setlength\headheight{16pt}
 \renewcommand{\headrulewidth}{3pt}
 \renewcommand{\footrulewidth}{0pt}
 \fancyfoot{}
@@ -21,7 +23,19 @@
 \newcommand{\costsblock}{}
 \newcommand{\barcodeblock}{}
 
+%   Each student's schedule is typeset into \schedulebox first so that we can
+%   measure it.  If it is taller than the text block it gets scaled down to
+%   fit, which guarantees exactly one page per student.  The onsite schedule
+%   printer renders only the first page of the generated document, so a
+%   schedule that spills onto a second page silently loses classes.
+\newsavebox{\schedulebox}
+\newlength{\schedulemaxheight}
+
 \begin{document}
+%   \topskip glue can add a couple of points above the first box on a page, so
+%   leave a small amount of slack when deciding whether a schedule fits.
+\setlength{\schedulemaxheight}{\textheight}
+\addtolength{\schedulemaxheight}{-12pt}
 {% for student in students %}
 \renewcommand{\nameblock}{
 \textbf{Name: {{ student.name|texescape }} \\{% if schedule_format.username %}
@@ -60,13 +74,16 @@ $\Box$  {{item.line_item.text|texescape}}{% if item.option.description %} -- {{ 
 {% if schedule_format.barcode %}\barcode{% templatetag openbrace %}{{ student.id }}{% templatetag closebrace %}{% endif %}
 }
 
-\begin{multicols}{3}
+\begin{lrbox}{\schedulebox}
+\begin{minipage}[t]{\textwidth}
 
+\noindent%
+\begin{minipage}[t]{.32\linewidth}
 \begin{flushleft}
 \costsblock
 \end{flushleft}
-
-\columnbreak
+\end{minipage}\hfill%
+\begin{minipage}[t]{.32\linewidth}
 \begin{center}
 Student Schedule for \\
 
@@ -75,16 +92,14 @@ Student Schedule for \\
 \end{spacing}
 
 \end{center}
-
-\columnbreak
-
+\end{minipage}\hfill%
+\begin{minipage}[t]{.32\linewidth}
 \begin{flushright}
 \nameblock
 \vspace{1ex}
 \barcodeblock
 \end{flushright}
-
-\end{multicols}
+\end{minipage}
 
 \renewcommand\tabularxcolumn[1]{m{#1}}
 
@@ -93,7 +108,7 @@ Student Schedule for \\
 \begin{center}
 {\large \textbf{Class Schedule} \\}
 \vspace{0.25cm}
-\begin{tabularx}{\textwidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
+\begin{tabularx}{\linewidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
 \hline
 \textbf{Time and Room} & \textbf{Class and Teacher}{% if schedule_format.codes %} & \textbf{Code}{% endif %} \\
 {% if "multiweek_schedule"|getBooleanProgramTag:program %}{% classes_by_day student.classes as day_entries %}{% for entry in day_entries %}\hline
@@ -126,6 +141,14 @@ Student Schedule for \\
 
 {{ posttext }}
 
+\end{minipage}
+\end{lrbox}
+\ifdim\dimexpr\ht\schedulebox+\dp\schedulebox\relax>\schedulemaxheight
+\noindent\makebox[\textwidth][c]{\resizebox*{!}{\schedulemaxheight}{\usebox{\schedulebox}}}%
+\else
+\noindent\usebox{\schedulebox}%
+\fi
+\par
 {% if not forloop.last %}\pagebreak{% endif %}
 {% endfor %}
 

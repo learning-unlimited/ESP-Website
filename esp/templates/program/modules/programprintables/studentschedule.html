@@ -13,7 +13,7 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 .schedule {border: 1px solid black; }
 .schedule td { border: 1px solid black; }
 .schedule th { border: 1px solid black; vertical-align: top; }
-.schedule td { vertical-align: top; text-size: x-small;}
+.schedule td { vertical-align: top; font-size: x-small;}
 .schedule th.day { border-bottom: 0; }
 .schedule td.oldday { border-bottom: 0;
                       border-top: 0;}
@@ -22,8 +22,22 @@ td.newday { border-width: 2px 1px 0 1px;}
 .pagebreak {page-break-before: always; }
 .description { text-align: center; padding: .2in 0 .2in 0; }
 .meals { margin: 0; }
-.meals li { font-weight: bold; text-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
+.meals li { font-weight: bold; font-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
 .perforate { text-align: center; width: 100%; height: 2in; page-break-after: always; }
+</style>
+<style type="text/css" media="print">
+/* Keep each student's schedule within a single printed page (issue #2291).
+   Each student is already followed by a .perforate block with
+   page-break-after: always, so this only needs to claw back vertical space. */
+@page { margin: .4in; }
+body { font-size: 10px; }
+.title { font-size: 10pt; }
+.title span { font-size: 13pt; }
+.facts th, .facts td { font-size: 10pt; }
+.description { padding: .05in 0; }
+.schedule th, .schedule td { padding: 2px; font-size: xx-small; }
+table.header-table td { padding: 2px; }
+.perforate { height: .75in; }
 </style>
 
 </head>

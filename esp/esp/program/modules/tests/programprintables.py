@@ -31,6 +31,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+import re
+
 from django.test.client import RequestFactory
 
 from esp.program.tests import ProgramFrameworkTest
@@ -276,3 +278,70 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
+
+
+class StudentSchedulePageCountTest(ProgramFrameworkTest):
+    """ Regression test for issue #2291.
+
+        The onsite schedule printer only renders the first page of the
+        generated document, so a schedule that spills onto a second page
+        silently drops classes.  Build a program with far more timeslots than
+        comfortably fit on a letter page, enroll a student in every one of
+        them, and check that LaTeX still emits exactly one page per student.
+    """
+
+    #   Comfortably more classes than fit on one page at the schedule's
+    #   default 12pt body font.
+    NUM_CLASSES = 24
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': self.NUM_CLASSES,
+            'num_teachers': self.NUM_CLASSES,
+            'classes_per_teacher': 1,
+            'sections_per_class': 1,
+            'num_students': 1,
+            'num_rooms': 2,
+        })
+        super().setUp(*args, **kwargs)
+        self.add_student_profiles()
+
+        #   Put exactly one section in each timeslot and enroll our student in
+        #   all of them.  Done explicitly (rather than via schedule_randomly()
+        #   and classreg_students()) so the schedule length is deterministic.
+        timeslots = list(self.program.getTimeSlots())
+        student = self.students[0]
+        for (i, subject) in enumerate(self.program.classes()):
+            section = subject.get_sections()[0]
+            section.assign_start_time(timeslots[i % len(timeslots)])
+            section.preregister_student(student, prereg_verb='Enrolled',
+                                        fast_force_create=True)
+
+    def testScheduleFitsOnOnePage(self):
+        request = RequestFactory().get('/')
+        request.user = self.admins[0]
+        request.session = {}
+
+        students = list(self.students)
+        #   'log' returns the pdflatex log for the same document that the
+        #   'pdf'/'png' formats compile.
+        response = ProgramPrintables.get_student_schedules(
+            request, students, self.program, 'log', False)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertGreaterEqual(
+            len(students[0].classes), self.NUM_CLASSES,
+            "Test setup failed to enroll the student in enough classes; this "
+            "test only means something if the schedule would otherwise "
+            "overflow a page.")
+
+        #   pdflatex hard-wraps its log at ~79 columns, so flatten whitespace
+        #   before looking for the page count.
+        log = ' '.join(response.content.decode('utf-8', 'replace').split())
+        match = re.search(r'Output written on .*?\((\d+) pages?', log)
+        self.assertIsNotNone(
+            match, "pdflatex did not report a page count. Log tail: %s" % log[-2000:])
+        self.assertEqual(
+            int(match.group(1)), len(students),
+            "Student schedules must be exactly one page each, or the onsite "
+            "schedule printer will cut classes off (issue #2291).")
