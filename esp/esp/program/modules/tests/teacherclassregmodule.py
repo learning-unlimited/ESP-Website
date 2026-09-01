@@ -41,12 +41,13 @@ from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject, RegistrationType
+from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser, Permission
+from esp.tests.factories import make_class, make_program
+from esp.users.models import ESPUser, Permission, Record
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -328,3 +329,68 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'no valid class meeting timeslots or durations are available')
+
+    def mark_attendance(self, secid, student, program=None):
+        """POST to ajaxstudentattendance and return the decoded JSON response."""
+        program = program or self.program
+        response = self.client.post('%sajaxstudentattendance' % program.get_teach_url(),
+                                    {'student': student.username, 'secid': secid})
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content)
+
+    def assertNotAttending(self, student, section):
+        """Assert that neither an attendance registration nor a check-in was created."""
+        self.assertFalse(StudentRegistration.valid_objects().filter(
+            user=student, section=section, relationship__name='Attended').exists())
+        self.assertFalse(Record.objects.filter(
+            user=student, program=self.program, event__name='attended').exists())
+
+    def test_ajaxstudentattendance_rejects_unrelated_teacher(self):
+        """A teacher unrelated to the section must not be able to take its attendance."""
+        section = self.cls.get_sections()[0]
+        student = self.students[0]
+        self.assertFalse(self.other_teacher1.canEdit(section.parent_class))
+        self.assertFalse(self.other_teacher1.canMod(section))
+        self.assertTrue(self.client.login(username=self.other_teacher1.username, password='password'),
+                        "Couldn't log in as teacher %s" % self.other_teacher1.username)
+
+        json_data = self.mark_attendance(section.id, student)
+
+        self.assertIn('error', json_data)
+        # The rejection must not confirm that the username exists
+        self.assertNotIn('name', json_data)
+        self.assertNotAttending(student, section)
+
+    def test_ajaxstudentattendance_rejects_section_from_other_program(self):
+        """A section of another program must not be reachable through this program's URL."""
+        other_program = make_program(instance_name='2222_Winter',
+                                     instance_label='Winter 2222',
+                                     categories=self.categories,
+                                     modules=self.settings['modules'])
+        other_section = make_class(other_program, self.teacher,
+                                   title='Other program class', accept=True).get_sections()[0]
+        student = self.students[0]
+        # The teacher can edit the section itself; only the program mismatch should reject it
+        self.assertTrue(self.teacher.canEdit(other_section.parent_class))
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'),
+                        "Couldn't log in as teacher %s" % self.teacher.username)
+
+        json_data = self.mark_attendance(other_section.id, student)
+
+        self.assertIn('error', json_data)
+        self.assertNotAttending(student, other_section)
+
+    def test_ajaxstudentattendance_allows_section_teacher(self):
+        """The section's own teacher must still be able to take attendance."""
+        section = self.cls.get_sections()[0]
+        student = self.students[0]
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'),
+                        "Couldn't log in as teacher %s" % self.teacher.username)
+
+        json_data = self.mark_attendance(section.id, student)
+
+        self.assertNotIn('error', json_data)
+        self.assertEqual(json_data['secid'], section.id)
+        self.assertTrue(StudentRegistration.valid_objects().filter(
+            user=student, section=section, relationship__name='Attended').exists())
+        self.assertTrue(self.program.isCheckedIn(student))

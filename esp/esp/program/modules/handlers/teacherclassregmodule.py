@@ -351,6 +351,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                                   Otherwise, enrolls the student if they are not already enrolled.
           'unenroll' (optional):  If 'false', does not unenroll the student from conflicting sections.
                                   Otherwise, unenrolls the student from conflicting sections.
+
+        The section must belong to this program and the user must be able to
+        edit its parent class or moderate it; otherwise a JSON error is
+        returned and nothing is modified.
         """
         json_data = {}
         today_min = datetime.datetime.combine(datetime.date.today(), datetime.time.min)
@@ -360,61 +364,66 @@ class TeacherClassRegModule(ProgramModuleObj):
         onsite = RegistrationType.objects.get_or_create(name='OnSite/AttendedClass', category = "student")[0]
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
         if 'student' in request.POST and 'secid' in request.POST:
+            sections = ClassSection.objects.filter(id=request.POST['secid'])
             students = ESPUser.objects.filter(username=request.POST['student'])
-            if not students.exists():
+            # Authorize the section before touching the student, so that this
+            # view does not confirm usernames to teachers of other sections.
+            # Sections of other programs are reported as missing rather than
+            # forbidden, to avoid disclosing which section IDs exist.
+            if not sections.exists() or sections[0].parent_class.parent_program != prog:
+                json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
+            elif not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
+                json_data['error'] = 'You are not authorized to take attendance for this section!'
+            elif not students.exists():
                 json_data['error'] = 'User with username %s not found!' % request.POST['student']
             else:
+                section = sections[0]
                 student = students[0]
+                json_data['secid'] = section.id
                 json_data['name'] = student.name()
-                sections = ClassSection.objects.filter(id=request.POST['secid'])
-                if not sections.exists():
-                    json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
-                else:
-                    section = sections[0]
-                    json_data['secid'] = section.id
-                    if request.POST.get('undo', 'false').lower() == 'true':
-                        srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
-                        if srs.exists():
-                            for sr in srs:
-                                sr.expire()
-                            json_data['message'] = '%s is no longer marked as attending.' % student.name()
-                        else:
-                            json_data['message'] = '%s was not marked as attending.' % student.name()
-                        if request.POST.get('undo_checkin', 'false').lower() == 'true':
-                            rt = RecordType.objects.get(name="attended")
-                            # Undo only the most recent check-in
-                            rec = Record.objects.filter(user=student, program=prog, event=rt).order_by('-id').first()
-                            if rec is not None:
-                                rec.delete()
-                                json_data['uncheckedin'] = True
+                if request.POST.get('undo', 'false').lower() == 'true':
+                    srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
+                    if srs.exists():
+                        for sr in srs:
+                            sr.expire()
+                        json_data['message'] = '%s is no longer marked as attending.' % student.name()
                     else:
-                        if not prog.isCheckedIn(student):
-                            rt = RecordType.objects.get(name="attended")
-                            rec = Record(user=student, program=prog, event=rt)
-                            rec.save()
-                            json_data['checkedin'] = True
-                        sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
-                        sr.end_date = today_max
-                        sr.save()
-                        if student not in section.students():
-                            if request.POST.get('unenroll', 'true').lower() == 'true':
-                                sm = ScheduleMap(student, prog)
-                                for ts in [ts.id for ts in section.get_meeting_times()]:
-                                    if ts in sm.map and len(sm.map[ts]) > 0:
-                                        for sm_sec in sm.map[ts]:
-                                            sm_sec.unpreregister_student(student, verbs)
-                            if request.POST.get('enroll', 'true').lower() == 'true':
-                                for rt in [enrolled, onsite]:
-                                    srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
-                                    if srs.count() > 0:
-                                        sr = srs[0]
-                                        sr.unexpire()
-                                    else:
-                                        sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
-                                    if rt.name=='OnSite/AttendedClass':
-                                        sr.end_date = today_max
-                                        sr.save()
-                        json_data['message'] = '%s is marked as attending.' % student.name()
+                        json_data['message'] = '%s was not marked as attending.' % student.name()
+                    if request.POST.get('undo_checkin', 'false').lower() == 'true':
+                        rt = RecordType.objects.get(name="attended")
+                        # Undo only the most recent check-in
+                        rec = Record.objects.filter(user=student, program=prog, event=rt).order_by('-id').first()
+                        if rec is not None:
+                            rec.delete()
+                            json_data['uncheckedin'] = True
+                else:
+                    if not prog.isCheckedIn(student):
+                        rt = RecordType.objects.get(name="attended")
+                        rec = Record(user=student, program=prog, event=rt)
+                        rec.save()
+                        json_data['checkedin'] = True
+                    sr = StudentRegistration.objects.get_or_create(user = student, section = section, relationship = attended, start_date__range=(today_min, today_max))[0]
+                    sr.end_date = today_max
+                    sr.save()
+                    if student not in section.students():
+                        if request.POST.get('unenroll', 'true').lower() == 'true':
+                            sm = ScheduleMap(student, prog)
+                            for ts in [ts.id for ts in section.get_meeting_times()]:
+                                if ts in sm.map and len(sm.map[ts]) > 0:
+                                    for sm_sec in sm.map[ts]:
+                                        sm_sec.unpreregister_student(student, verbs)
+                        if request.POST.get('enroll', 'true').lower() == 'true':
+                            for rt in [enrolled, onsite]:
+                                srs = StudentRegistration.objects.filter(user = student, section = section, relationship = rt)
+                                if srs.count() > 0:
+                                    sr = srs[0]
+                                    sr.unexpire()
+                                else:
+                                    sr = StudentRegistration.objects.create(user = student, section = section, relationship = rt)
+                                if rt.name=='OnSite/AttendedClass':
+                                    sr.end_date = today_max
+                                    sr.save()
+                    json_data['message'] = '%s is marked as attending.' % student.name()
         return HttpResponse(json.dumps(json_data), content_type='text/json')
 
     @aux_call
