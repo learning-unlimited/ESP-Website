@@ -1,35 +1,44 @@
 import datetime
+import importlib
 import json
+import re
+from unittest import mock
 
 from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
 from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import SimpleLazyObject
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
-from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
 from esp.users.models import (
     User,
     ESPUser,
+    AnonymousESPUser,
     UserForwarder,
     StudentInfo,
     Permission,
     Record,
     RecordType,
     PersistentQueryFilter,
+    DBList,
+    PendingActivation,
 )
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, AnonymousESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType, DBList
+from esp.users.tokens import account_activation_token
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -491,9 +500,12 @@ class AccountCreationTest(TestCase):
         self.assertContains(response2, "do_reg_no_really")
 
         #check when there's a user awaiting activation
-        #(we check with a regex searching for _ in the password, since that
-        #can't happen normally)
-        u.password="blah_"
+        #(the account is inactive with an outstanding PendingActivation row,
+        #which is what registration leaves behind before the user clicks the
+        #link in their activation email)
+        u.is_active = False
+        u.save()
+        PendingActivation.objects.create(user=u)
 
         response3 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
@@ -541,16 +553,125 @@ class AccountCreationTest(TestCase):
             return
 
         self.assertFalse(u.is_active)
-        self.assertTrue("_" in u.password)
+        #the activation token is an HMAC and is never written to the database
+        self.assertIsNone(re.search(r"_\d+$", u.password))
+        self.assertTrue(PendingActivation.objects.filter(user=u).exists())
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(len(mail.outbox[0].to), 1)
         self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
-        import re
-        match = re.search(r"\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
-        self.assertEqual(match.group("user"), u.username)
-        self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+        match = re.search(r"/myesp/activate/(?P<uid>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/",
+                          mail.outbox[0].body)
+        self.assertIsNotNone(match, "activation email is missing the uid/token link")
+        self.assertEqual(force_str(urlsafe_base64_decode(match.group("uid"))), str(u.pk))
+        self.assertTrue(account_activation_token.check_token(u, match.group("token")))
+
+    def test_live_email_validation_endpoint(self):
+        original_ask_about_duplicates = Tag._getTag('ask_about_duplicate_accounts')
+        try:
+            Tag.setTag('ask_about_duplicate_accounts', value='true')
+
+            user = ESPUser.objects.create(email='livecheck@example.com')
+            user.makeRole('Teacher')
+
+            taken_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'livecheck@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(taken_response.status_code, 200)
+            taken_payload = json.loads(taken_response.content.decode('utf-8'))
+            self.assertTrue(taken_payload['valid'])
+            self.assertFalse(taken_payload['available'])
+            self.assertTrue(taken_payload['message'])
+
+            no_role_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': '',
+            })
+            self.assertEqual(no_role_response.status_code, 200)
+            no_role_payload = json.loads(no_role_response.content.decode('utf-8'))
+            self.assertTrue(no_role_payload['valid'])
+            self.assertIsNone(no_role_payload['available'])
+            self.assertEqual(no_role_payload['message'], '')
+
+            invalid_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'invalid-email',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(invalid_response.status_code, 200)
+            invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+            self.assertFalse(invalid_payload['valid'])
+            self.assertIsNone(invalid_payload['available'])
+
+            free_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(free_response.status_code, 200)
+            free_payload = json.loads(free_response.content.decode('utf-8'))
+            self.assertTrue(free_payload['valid'])
+            self.assertTrue(free_payload['available'])
+            self.assertEqual(free_payload['message'], '')
+        finally:
+            if original_ask_about_duplicates is None:
+                Tag.unSetTag('ask_about_duplicate_accounts')
+            else:
+                Tag.setTag('ask_about_duplicate_accounts', value=original_ask_about_duplicates)
+
+    def test_live_username_validation_endpoint(self):
+        ESPUser.objects.create(username='AlreadyTaken123', password='password')
+
+        taken_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'AlreadyTaken123',
+        })
+        self.assertEqual(taken_response.status_code, 200)
+        taken_payload = json.loads(taken_response.content.decode('utf-8'))
+        self.assertTrue(taken_payload['valid'])
+        self.assertFalse(taken_payload['available'])
+        self.assertTrue(taken_payload['message'])
+
+        invalid_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'bad*name',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+
+        free_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'FreeName123',
+        })
+        self.assertEqual(free_response.status_code, 200)
+        free_payload = json.loads(free_response.content.decode('utf-8'))
+        self.assertTrue(free_payload['valid'])
+        self.assertTrue(free_payload['available'])
+        self.assertEqual(free_payload['message'], '')
+
+    def test_live_password_validation_endpoint(self):
+        invalid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'short',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+        self.assertTrue(invalid_payload['message'])
+
+        valid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'Str0ng!Pass',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(valid_response.status_code, 200)
+        valid_payload = json.loads(valid_response.content.decode('utf-8'))
+        self.assertTrue(valid_payload['valid'])
+        self.assertTrue(valid_payload['available'])
+        self.assertEqual(valid_payload['message'], '')
 
 from esp.users.models import GradeChangeRequest
 
@@ -1205,10 +1326,13 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         self.assertEqual(email_errors, [])
 
 
-class ActivateAccountTest(TestCase):
-    """Tests for the activate_account view."""
+class ActivateAccountLegacyTest(TestCase):
+    """The pre-HMAC "?username=&key=" route no longer activates anything.
 
-    ACTIVATION_KEY = '123456'
+    Migration 0048 stripped the "_<key>" suffixes those links were checked
+    against, so the route only exists to explain itself to anyone still
+    holding an old email.
+    """
 
     def setUp(self):
         user_role_setup()
@@ -1217,60 +1341,263 @@ class ActivateAccountTest(TestCase):
             email='testactivate@example.com',
             password='testpassword',
         )
-        # Simulate an inactive account awaiting activation:
-        # the activation key is appended to the hashed password with '_'
-        self.user.password = self.user.password + '_' + self.ACTIVATION_KEY
         self.user.is_active = False
         self.user.save()
-        self.url = reverse('activate_account')
+        PendingActivation.objects.create(user=self.user)
+        self.url = reverse('activate_account_legacy')
 
-    def test_valid_key_activates_user(self):
-        """A valid username and key activates the account."""
-        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
+    def test_legacy_link_does_not_activate(self):
+        response = self.client.get(
+            self.url, {'username': 'testactivate', 'key': '123456'})
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        #   The account stays eligible for a fresh link.
+        self.assertTrue(PendingActivation.objects.filter(user=self.user).exists())
+
+    def test_legacy_link_without_parameters_does_not_crash(self):
+        self.assertEqual(self.client.get(self.url).status_code, 500)
+
+
+class LegacyActivationSuffixTest(TestCase):
+    """Migration 0048 strips "_<key>" from password hashes; check it is safe.
+
+    The guarantee is structural rather than statistical: after the first "$"
+    a Django hash contains only a salt ([a-zA-Z0-9]) and a digest (base64 or
+    hex), and none of those alphabets includes an underscore, so an anchored
+    "_<digits>" cannot match an untouched hash.  These samples are a
+    regression guard in case a future hasher breaks that assumption.
+    """
+
+    HASHERS = [
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+
+    def setUp(self):
+        migration = importlib.import_module(
+            'esp.users.migrations.0048_pendingactivation')
+        self.pattern = migration.LEGACY_SUFFIX_REGEX
+
+    def test_strips_a_legacy_suffix(self):
+        hashed = make_password('testpassword')
+        self.assertEqual(re.sub(self.pattern, '', hashed + '_1234567890'), hashed)
+
+    def test_leaves_real_hashes_alone(self):
+        #   pbkdf2 is deliberately slow, so sample it lightly and lean on the
+        #   cheap hasher for volume.
+        for algorithm, samples in (('pbkdf2_sha256', 5),
+                                   ('pbkdf2_sha1', 5),
+                                   ('md5', 50)):
+            with self.settings(PASSWORD_HASHERS=self.HASHERS):
+                for i in range(samples):
+                    hashed = make_password(f'password{i}', hasher=algorithm)
+                    self.assertIsNone(
+                        re.search(self.pattern, hashed),
+                        f'{algorithm} produced a hash the strip would damage: {hashed}')
+
+
+class ActivateAccountTokenTest(TestCase):
+    """Tests for the HMAC-token activate_account view."""
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testtoken',
+            email='testtoken@example.com',
+            password='testpassword',
+        )
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+
+    def activation_url(self, user=None, token=None):
+        user = user or self.user
+        if token is None:
+            token = account_activation_token.make_token(user)
+        return reverse('activate_account', kwargs={
+            'uidb64': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': token,
+        })
+
+    def test_valid_token_activates_user(self):
+        """A valid token activates the account and clears the pending row."""
+        response = self.client.get(self.activation_url())
+        self.assertRedirects(response, reverse('myesp_profile'),
+                             fetch_redirect_response=False)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+        self.assertFalse(PendingActivation.objects.filter(user=self.user).exists())
+
+    def test_token_is_single_use(self):
+        """Replaying a link that already activated the account is rejected."""
+        url = self.activation_url()
+        self.client.get(url)
+        self.user.refresh_from_db()
+        self.user.is_active = False   # as if an admin later disabled the account
+        self.user.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_token_rejected_for_deliberately_disabled_account(self):
+        """A disabled account with no pending row cannot be activated."""
+        token = account_activation_token.make_token(self.user)
+        PendingActivation.objects.filter(user=self.user).delete()
+
+        response = self.client.get(self.activation_url(token=token))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_expired_token_raises_error(self):
+        """A token older than PASSWORD_RESET_TIMEOUT is rejected."""
+        stale = (datetime.datetime.now()
+                 - datetime.timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT + 60))
+        with mock.patch.object(type(account_activation_token), '_now',
+                               return_value=stale):
+            token = account_activation_token.make_token(self.user)
+
+        response = self.client.get(self.activation_url(token=token))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_wrong_token_raises_error(self):
+        """A token that does not verify is rejected."""
+        response = self.client.get(self.activation_url(token='1a2b3c-deadbeef'))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_unknown_uid_raises_error(self):
+        """A uid that decodes to no user is rejected."""
+        url = reverse('activate_account', kwargs={
+            'uidb64': urlsafe_base64_encode(force_bytes(self.user.pk + 10000)),
+            'token': account_activation_token.make_token(self.user),
+        })
+        self.assertEqual(self.client.get(url).status_code, 500)
+
+    def test_undecodable_uid_raises_error(self):
+        """A uid that is not valid base64 is rejected rather than crashing."""
+        url = reverse('activate_account', kwargs={
+            'uidb64': 'not-base64',
+            'token': account_activation_token.make_token(self.user),
+        })
+        self.assertEqual(self.client.get(url).status_code, 500)
+
+    def test_already_active_user_raises_error(self):
+        """Activating an already active account is rejected."""
+        self.user.is_active = True
+        self.user.save()
+        self.assertEqual(self.client.get(self.activation_url()).status_code, 500)
+
+    def test_password_change_invalidates_outstanding_token(self):
+        """Registering again over a pending account supersedes the old link."""
+        stale_url = self.activation_url()
+        self.user.set_password('adifferentpassword')
+        self.user.save()
+
+        response = self.client.get(stale_url)
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        #   ...and a freshly issued link still works.
+        self.assertRedirects(self.client.get(self.activation_url()),
+                             reverse('myesp_profile'),
+                             fetch_redirect_response=False)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
 
-    def test_valid_key_strips_key_from_password(self):
-        """After activation the key suffix is removed from the stored password."""
-        expected_password = self.user.password[:-(len('_' + self.ACTIVATION_KEY))]
-        self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
-        self.user.refresh_from_db()
-        self.assertEqual(self.user.password, expected_password)
 
-    def test_valid_key_redirects_to_profile(self):
-        """After activation the user is redirected to the profile page."""
-        response = self.client.get(
-            self.url,
-            {'username': 'testactivate', 'key': self.ACTIVATION_KEY},
+class AwaitingActivationTest(TestCase):
+    """Tests for what counts as "awaiting activation".
+
+    is_active=False on its own is not enough: it also covers accounts that
+    were disabled on purpose, and those must not be able to request an
+    activation email or have their username treated as re-registerable.
+    """
+
+    def setUp(self):
+        user_role_setup()
+        self.pending = ESPUser.objects.create_user(
+            username='pendinguser',
+            email='pendinguser@example.com',
+            password='testpassword',
         )
-        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+        self.pending.is_active = False
+        self.pending.save()
+        PendingActivation.objects.create(user=self.pending)
 
-    def test_missing_username_raises_error(self):
-        """GET without username returns a 500 error response."""
-        response = self.client.get(self.url, {'key': self.ACTIVATION_KEY})
-        self.assertEqual(response.status_code, 500)
+        #   Disabled on purpose and never logged in, so last_login IS NULL.
+        #   Without the explicit PendingActivation row this is
+        #   indistinguishable from an account awaiting activation.
+        self.disabled = ESPUser.objects.create_user(
+            username='disableduser',
+            email='disableduser@example.com',
+            password='testpassword',
+        )
+        self.disabled.is_active = False
+        self.disabled.save()
 
-    def test_missing_key_raises_error(self):
-        """GET without key returns a 500 error response."""
-        response = self.client.get(self.url, {'username': 'testactivate'})
-        self.assertEqual(response.status_code, 500)
+    def test_predicate_matches_only_pending_accounts(self):
+        matched = ESPUser.objects.filter(ESPUser.awaiting_activation_Q())
+        self.assertIn(self.pending, matched)
+        self.assertNotIn(self.disabled, matched)
 
-    def test_nonexistent_user_raises_error(self):
-        """A username that does not exist returns a 500 error response."""
-        response = self.client.get(self.url, {'username': 'doesnotexist', 'key': self.ACTIVATION_KEY})
-        self.assertEqual(response.status_code, 500)
+    def test_resend_form_accepts_pending_account(self):
+        form = AwaitingActivationEmailForm({'username': 'pendinguser'})
+        self.assertTrue(form.is_valid(), form.errors)
 
-    def test_already_active_user_raises_error(self):
-        """Trying to activate an already active account returns a 500 error response."""
-        self.user.is_active = True
-        self.user.save()
-        response = self.client.get(self.url, {'username': 'testactivate', 'key': self.ACTIVATION_KEY})
-        self.assertEqual(response.status_code, 500)
+    def test_resend_form_is_case_insensitive(self):
+        form = AwaitingActivationEmailForm({'username': 'PendingUser'})
+        self.assertTrue(form.is_valid(), form.errors)
 
-    def test_wrong_key_raises_error(self):
-        """An incorrect activation key returns a 500 error response."""
-        response = self.client.get(self.url, {'username': 'testactivate', 'key': 'wrongkey'})
-        self.assertEqual(response.status_code, 500)
+    def test_resend_form_rejects_disabled_account(self):
+        """A deliberately disabled account cannot request an activation email."""
+        form = AwaitingActivationEmailForm({'username': 'disableduser'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+
+    def test_resend_view_sends_token_link(self):
+        response = self.client.post('/myesp/resend/', {'username': 'PendingUser'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        match = re.search(r"/myesp/activate/(?P<uid>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/",
+                          mail.outbox[0].body)
+        self.assertIsNotNone(match, "resent activation email is missing the uid/token link")
+        self.assertEqual(force_str(urlsafe_base64_decode(match.group("uid"))),
+                         str(self.pending.pk))
+        self.assertTrue(account_activation_token.check_token(self.pending,
+                                                            match.group("token")))
+
+    def test_resend_view_refuses_disabled_account(self):
+        response = self.client.post('/myesp/resend/', {'username': 'disableduser'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_pending_username_is_still_available(self):
+        """A user who never activated can re-register the same username.
+
+        user_registration_validate reuses the existing inactive row, so the
+        username must not be reported as taken.
+        """
+        payload = json.loads(self.client.get(
+            '/myesp/register/check-username/', {'username': 'pendinguser'},
+        ).content.decode('utf-8'))
+        self.assertTrue(payload['valid'])
+        self.assertTrue(payload['available'])
+
+    def test_disabled_username_is_not_available(self):
+        payload = json.loads(self.client.get(
+            '/myesp/register/check-username/', {'username': 'disableduser'},
+        ).content.decode('utf-8'))
+        self.assertFalse(payload['available'])
 
 
 class PasswordValidationTest(TestCase):
@@ -1353,3 +1680,51 @@ class PasswordValidationTest(TestCase):
         # 'testpwuser1' is too similar to username 'testpwuser'.
         form = self._reg_form('testpwuser1')
         self.assertFalse(form.is_valid())
+
+
+class DisableAccountPostOnlyTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create(username='disableme', email='disableme@example.com')
+        self.user.set_password('password')
+        self.user.save()
+        self.client.login(username='disableme', password='password')
+
+    def test_get_does_not_change_account_state(self):
+        # The legacy ?disable=1 GET branch must not disable an active account.
+        response = self.client.get('/myesp/disableaccount/?disable=1')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+        # Properly disable via POST so the legacy ?enable=1 GET branch
+        # can be checked against a disabled account.
+        response = self.client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        # The legacy ?enable=1 GET branch must not re-enable a disabled account.
+        response = self.client.get('/myesp/disableaccount/?enable=1')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_post_without_csrf_token_is_rejected(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        self.assertTrue(csrf_client.login(username='disableme', password='password'))
+        response = csrf_client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 403)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_post_disable_and_enable(self):
+        response = self.client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        response = self.client.post('/myesp/disableaccount/', {'action': 'enable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
