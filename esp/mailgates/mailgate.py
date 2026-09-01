@@ -11,7 +11,6 @@ import hashlib
 import io
 import logging
 import os
-import random
 import re
 import smtplib
 import socket
@@ -213,8 +212,8 @@ def _rewrite_headers(message, handler_row, instance, list_address, sender):
     # message by more than one route is not deduplicated down to a single copy
     # by their mail provider.
     del message['Message-ID']
-    message['Message-ID'] = '<%s@%s>' % (
-        hashlib.sha1(str(random.random()).encode()).hexdigest(), host)
+    del message['Message-ID']
+    message['Message-ID'] = email.utils.make_msgid(domain=host)
 
 
 def deliver(message, recipients, cc_all, sender):
@@ -300,7 +299,7 @@ def _bounce_allowed(sender_email):
     interval = getattr(settings, 'MAILGATE_BOUNCE_INTERVAL', 24 * 60 * 60)
     if not interval:
         return True
-    key = 'mailgate:bounce:%s' % hashlib.sha1(
+    key = 'mailgate:bounce:%s' % hashlib.sha256(
         sender_email.strip().lower().encode('utf-8')).hexdigest()
     if cache.get(key):
         return False
