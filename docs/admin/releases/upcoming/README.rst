@@ -12,3 +12,8 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+- Tightened the printable student schedule layout (PDF and HTML) so schedules
+  are less likely to overflow onto a second page, which the onsite schedule
+  printer silently drops. Sites that override
+  ``program/modules/programprintables/studentschedule.tex`` will not pick this
+  up automatically.

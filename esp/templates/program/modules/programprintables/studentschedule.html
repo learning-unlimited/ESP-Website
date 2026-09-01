@@ -13,7 +13,7 @@ body { font-family: georgia; margin: 0; font-size: 12px;}
 .schedule {border: 1px solid black; }
 .schedule td { border: 1px solid black; }
 .schedule th { border: 1px solid black; vertical-align: top; }
-.schedule td { vertical-align: top; text-size: x-small;}
+.schedule td { vertical-align: top; font-size: x-small;}
 .schedule th.day { border-bottom: 0; }
 .schedule td.oldday { border-bottom: 0;
                       border-top: 0;}
@@ -22,8 +22,18 @@ td.newday { border-width: 2px 1px 0 1px;}
 .pagebreak {page-break-before: always; }
 .description { text-align: center; padding: .2in 0 .2in 0; }
 .meals { margin: 0; }
-.meals li { font-weight: bold; text-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
+.meals li { font-weight: bold; font-size: x-large; list-style: none; display: block; width: 180px; border: 1px solid black; margin: 0 auto; margin-bottom: 8px;}
 .perforate { text-align: center; width: 100%; height: 2in; page-break-after: always; }
+/* Compact the fixed-height chrome so a schedule is less likely to spill onto a
+   second page, which the onsite printer would silently drop. */
+@media print {
+.title { font-size: 10pt; }
+.title span { font-size: 13pt; }
+.description { padding: .05in 0 .05in 0; }
+.schedule td, .schedule th { padding: 2px; }
+.header-table td { padding: 2px; }
+.perforate { height: 1in; }
+}
 </style>
 
 </head>

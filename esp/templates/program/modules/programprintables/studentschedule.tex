@@ -1,6 +1,8 @@
 {% autoescape off %} {% load latex %} {% load main %} {% load getTag %} {% load schedule %}
-\documentclass[letterpaper,12pt]{article}
-\usepackage[left=.75in,top=1in,bottom=.75in,right=.75in]{geometry}
+\documentclass[letterpaper,10pt]{article}
+%   includehead/head reserve space for the \Huge banner below inside the top
+%   margin, so tightening the margins cannot push the header off the page.
+\usepackage[left=.5in,right=.5in,top=.4in,bottom=.5in,includehead,head=30pt,headsep=8pt]{geometry}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
 \usepackage{fancyhdr}
@@ -8,11 +10,10 @@
 \usepackage{array}
 \usepackage{setspace}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
-\usepackage[code=Code39,X=.5mm,ratio=2.25,H=2cm]{makebarcode}
+\usepackage[code=Code39,X=.5mm,ratio=2.25,H=1.5cm]{makebarcode}
 
 \pagestyle{fancy}
 \fancyhead[C]{\Huge \textsf{\textbf{ {{ program.niceName|texescape }} } }}
-\setlength\headheight{16pt}
 \renewcommand{\headrulewidth}{3pt}
 \renewcommand{\footrulewidth}{0pt}
 \fancyfoot{}
@@ -92,7 +93,7 @@ Student Schedule for \\
 
 \begin{center}
 {\large \textbf{Class Schedule} \\}
-\vspace{0.25cm}
+\vspace{0.15cm}
 \begin{tabularx}{\textwidth}{|m{1.7in}|X|{% if schedule_format.codes %}m{0.55in}|{% endif %}{% templatetag closebrace %}
 \hline
 \textbf{Time and Room} & \textbf{Class and Teacher}{% if schedule_format.codes %} & \textbf{Code}{% endif %} \\
