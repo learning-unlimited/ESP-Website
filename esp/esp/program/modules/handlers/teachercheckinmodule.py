@@ -49,7 +49,7 @@ from django.http import HttpResponse
 from django.template.loader import get_template
 from django.db.models.aggregates import Min, Max
 from django.db.models.query   import Q
-from datetime import date as date_type, datetime, timedelta, time
+from datetime import datetime, timedelta, time
 
 from django.conf import settings
 
@@ -511,8 +511,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                               parameter for getMissingTeachers().
                               Should be given as the id number of the Event.
           'when' (optional):  See documentation for getMissingTeachers().
-                              getMissingTeachers(). Should be given in the
-                              format "%m/%d/%Y %H:%M".
+                              Should be given in the format "%m/%d/%Y %H:%M".
+                              If it is not given and 'date' (or 'start')
+                              refers to a day other than today, it defaults to
+                              23:59 on that day, so that check-in status is
+                              reported for the day being viewed.
           'default_phone' (optional): A string that should be used if there
                               is no valid phone number for a teacher.
         """
@@ -539,20 +542,20 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['default_phone'] = default_phone
         context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
+        when = None
         if form.is_valid():
             when = form.cleaned_data['when']
-            if when is not None:
-                context['when'] = when
-                context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
-        else:
-            when = None
-
-        # Default 'when' to end of date if viewing a non-today date
-        if when is None and date is not None and date != date_type.today():
-            when = datetime.combine(date, time.max)
+        if when is not None:
+            #   User asked for a particular date/time. Propogate that through
+            #   the page for the "previous/next day" and "back" links.
             context['when'] = when
             context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
-
+        elif date is not None and date != datetime.now().date():
+            #   We are looking at a day other than today, so check-in status
+            #   should be reported as of the end of that day rather than as of
+            #   right now.
+            when = datetime.combine(date, time(23, 59))
+            context['when'] = when
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
         context['sections'], context['arrived'], context['previously_checked_in'] = self.getMissingTeachers(
