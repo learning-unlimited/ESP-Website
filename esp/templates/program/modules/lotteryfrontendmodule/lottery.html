@@ -49,6 +49,13 @@
 .lottery-mode-body table th {
     white-space: normal;
 }
+.ilp-field-error {
+    border-color: #b94a48;
+    background: #fff6f6;
+}
+#ilpFormErrors ul {
+    margin-bottom: 0;
+}
 </style>
 {% endblock %}
 
@@ -208,6 +215,8 @@ var program_url_base = '{{ program.getUrlBase }}';
                 </table>
             </details>
 
+            <div id="ilpFormErrors" class="alert alert-error" style="display:none;"></div>
+
             <button id="ilpSubmit" type="submit" class="btn btn-primary custom-action">Submit ILP Lottery Run</button>
         </form>
 
@@ -320,3 +329,7 @@ var program_url_base = '{{ program.getUrlBase }}';
 {% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}
+
+TODO: empty_student_schedule_penalties, empty_section_penalty_points (second item of each tuple) - in general, things
+that correspond to point values shouldn't be negative
+- section weight monotonicity should also be checked

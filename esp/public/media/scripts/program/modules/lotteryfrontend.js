@@ -756,6 +756,110 @@ function unarchiveILPRun(run_id) {
 	});
 }
 
+// ILP form validation, mirroring the parameter checks in
+// ILPLotteryAssignmentController (esp/program/controllers/lottery/ilp.py) so a
+// typo is caught here rather than after the server has loaded every
+// registration to build the model. Only checks that need nothing but the form
+// values live here; those needing program data (penalty keys vs.
+// num_timeslots, per-section capacities) are still left to the server.
+
+function addILPError(errors, $field, msg) {
+	errors.push({$field: $field, msg: msg});
+}
+
+// parseFloat('1.5nonsense') === 1.5, which is too forgiving for a form check.
+function ilpParseNumber(value) {
+	var trimmed = $j.trim(value || '');
+	return /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(trimmed) ? parseFloat(trimmed) : NaN;
+}
+
+function isILPNumber(value) {
+	return typeof value === 'number' && isFinite(value);
+}
+
+// Both penalty fields come down to a list of [x, penalty] points whose penalty
+// is never negative and never rises; only the rules on x differ.
+function validateILPPenaltyPoints(points, errors, $field, label, rising) {
+	for (var i = 0; i < points.length; i++) {
+		if (!isILPNumber(points[i][1]) || points[i][1] < 0) {
+			return addILPError(errors, $field, label + ' must all be numbers that are at least 0.');
+		}
+		if (i > 0 && points[i][1] > points[i - 1][1]) {
+			return addILPError(errors, $field, label + ' must never increase ' + rising + '.');
+		}
+	}
+}
+
+// {"0": 1000, "1": 100, "2": 20}: filled timeslots -> penalty points.
+function validateILPStudentPenalties($field, value, errors) {
+	if (value === null || typeof value !== 'object' || $j.isArray(value)) {
+		return addILPError(errors, $field, 'Empty schedule penalties must be a JSON object, e.g. {"0": 1000, "1": 100, "2": 20}.');
+	}
+	var keys = [];
+	for (var key in value) {
+		if (Object.prototype.hasOwnProperty.call(value, key)) { keys.push($j.trim(key)); }
+	}
+	if (keys.length === 0) { return; }  // the server falls back to its default
+	keys.sort(function(a, b) { return a - b; });
+
+	// A key that isn't listed counts as a penalty of 0 on the server, so a gap
+	// (e.g. {"0": 1000, "2": 20}) trips its monotonicity check even though the
+	// listed values look fine. Require the keys to run 0, 1, 2, ... instead.
+	var points = [];
+	for (var i = 0; i < keys.length; i++) {
+		if (!/^\d+$/.test(keys[i]) || parseInt(keys[i], 10) !== i) {
+			return addILPError(errors, $field, 'Empty schedule penalty keys must be whole numbers of filled timeslots running 0, 1, 2, ... with none skipped.');
+		}
+		points.push([i, value[keys[i]]]);
+	}
+	validateILPPenaltyPoints(points, errors, $field, 'Empty schedule penalties', 'as more timeslots are filled');
+}
+
+// [[0, 1000], [0.3, 100], [0.5, 0], [1, 0]]: fraction of capacity -> penalty points.
+function validateILPSectionPoints($field, value, errors) {
+	if (!$j.isArray(value) || value.length < 2) {
+		return addILPError(errors, $field, 'Empty section penalties must be a JSON list of at least two [fraction, penalty] pairs, e.g. [[0, 1000], [0.5, 0], [1, 0]].');
+	}
+	for (var i = 0; i < value.length; i++) {
+		if (!$j.isArray(value[i]) || value[i].length !== 2 || !isILPNumber(value[i][0])) {
+			return addILPError(errors, $field, 'Every empty section penalty entry must be a pair of numbers, [fraction of capacity, penalty points].');
+		}
+		if (i > 0 && value[i][0] <= value[i - 1][0]) {
+			return addILPError(errors, $field, 'Empty section penalty fractions must strictly increase.');
+		}
+	}
+	// A negative fraction can only appear before the required 0, so this
+	// covers ilp.py's non-negative check too.
+	if (value[0][0] !== 0 || value[value.length - 1][0] !== 1) {
+		return addILPError(errors, $field, 'Empty section penalties must start at fraction 0 and end at fraction 1.');
+	}
+	validateILPPenaltyPoints(value, errors, $field, 'Empty section penalties', 'as the section fills up');
+}
+
+function clearILPFormErrors() {
+	$j('#ilpFormErrors').hide().empty();
+	$j('#ilpSubmitForm .ilp-field-error').removeClass('ilp-field-error');
+}
+
+function showILPFormErrors(errors) {
+	var $list = $j('<ul>');
+	var seen = {};
+	for (var i = 0; i < errors.length; i++) {
+		if (errors[i].$field) { errors[i].$field.addClass('ilp-field-error'); }
+		// Several fields can hit the same problem (e.g. three blank rank
+		// weights); highlight each one but only list the message once.
+		if (seen[errors[i].msg]) { continue; }
+		seen[errors[i].msg] = true;
+		$list.append($j('<li>').text(errors[i].msg));
+	}
+	var $box = $j('#ilpFormErrors');
+	$box.empty()
+		.append($j('<strong>').text('Fix these before submitting:'))
+		.append($list)
+		.show();
+	if ($box[0] && $box[0].scrollIntoView) { $box[0].scrollIntoView(); }
+}
+
 $j(document).ready(function() {
 	var $ilpForm = $j('#ilpSubmitForm');
 	if ($ilpForm.length === 0) {
@@ -778,46 +882,73 @@ $j(document).ready(function() {
 	$ilpForm.submit(function(e) {
 		e.preventDefault();
 
-		var rankWeights = $j('.ilpRankWeightInput').map(function() {
-			return parseFloat($j(this).val());
-		}).get();
+		var errors = [];
+		var values = {};
 		var deweightMethod = $j('#ilpDeweightMethod').val();
-		var objective = {
-			rank_weights: rankWeights,
-			interest_weight: parseFloat($j('#ilpInterestWeight').val()),
+		clearILPFormErrors();
+
+		// A blank optional field is simply left out of the payload; a blank
+		// required one is an error. solveKey marks the solver parameters.
+		var nonNegative = function(v) { return v >= 0; };
+		var scalarFields = [
+			{sel: '.ilpRankWeightInput', required: true, ok: nonNegative, msg: 'Every rank weight must be a number that is at least 0.'},
+			{sel: '#ilpInterestWeight', required: true, ok: nonNegative, msg: 'The star weight must be a number that is at least 0.'},
+			{sel: '#ilpDeweightFactor', required: deweightMethod !== 'none', ok: function(v) { return v > 0 && v <= 1; }, msg: 'The deweight factor must be a number greater than 0 and at most 1.'},
+			{sel: '#ilpMipGap', solveKey: 'MIPGap', ok: isILPNumber, msg: 'The MIP gap must be a number.'},
+			{sel: '#ilpMipGapAbs', solveKey: 'MIPGapAbs', ok: isILPNumber, msg: 'The absolute MIP gap must be a number.'},
+			{sel: '#ilpTimeLimit', solveKey: 'TimeLimit', ok: function(v) { return v > 0; }, msg: 'The time limit must be a number greater than 0 (leave it blank for unlimited).'},
+			{sel: '#ilpThreads', solveKey: 'Threads', ok: function(v) { return v >= 0 && v === Math.floor(v); }, msg: 'The thread count must be a whole number that is at least 0 (leave it blank for the solver default).'},
+		];
+		$j.each(scalarFields, function(_, field) {
+			$j(field.sel).each(function() {
+				var $input = $j(this);
+				var num = ilpParseNumber($input.val());
+				if (isNaN(num)) {
+					if (field.required) { addILPError(errors, $input, field.msg); }
+				} else if (!field.ok(num)) {
+					addILPError(errors, $input, field.msg);
+				} else {
+					values[field.sel] = (values[field.sel] || []).concat(num);
+				}
+			});
+		});
+
+		var jsonValues = {};
+		$j.each([
+			['#ilpEmptyStudentSchedulePenalties', 'empty_student_schedule_penalties', validateILPStudentPenalties],
+			['#ilpEmptySectionPenaltyPoints', 'empty_section_penalty_points', validateILPSectionPoints],
+		], function(_, field) {
+			var $jsonField = $j(field[0]);
+			var text = $j.trim($jsonField.val());
+			if (!text) { return; }
+			try {
+				jsonValues[field[1]] = JSON.parse(text);
+			} catch (err) {
+				return addILPError(errors, $jsonField, 'Invalid JSON in ' + field[1] + ': ' + err.message);
+			}
+			field[2]($jsonField, jsonValues[field[1]], errors);
+		});
+
+		if (errors.length > 0) {
+			showILPFormErrors(errors);
+			return;
+		}
+
+		var objective = $j.extend({
+			rank_weights: values['.ilpRankWeightInput'] || [],
+			interest_weight: values['#ilpInterestWeight'][0],
 			check_grade: $j('#ilpCheckGrade').prop('checked'),
 			section_len_weight_preset: $j('#ilpSectionLenWeightPreset').val(),
 			deweight_by_timeslot: deweightMethod === 'timeslot',
 			deweight_by_section: deweightMethod === 'section',
-			deweight_factor: parseFloat($j('#ilpDeweightFactor').val()),
-		};
+			deweight_factor: (values['#ilpDeweightFactor'] || [])[0],
+		}, jsonValues);
 
-		var jsonFields = [
-			['ilpEmptyStudentSchedulePenalties', 'empty_student_schedule_penalties'],
-			['ilpEmptySectionPenaltyPoints', 'empty_section_penalty_points'],
-		];
-		for (var i = 0; i < jsonFields.length; i++) {
-			var elemId = jsonFields[i][0], key = jsonFields[i][1];
-			var text = $j('#' + elemId).val().trim();
-			if (!text) { continue; }
-			try {
-				objective[key] = JSON.parse(text);
-			} catch (err) {
-				alert('Invalid JSON in ' + key + ': ' + err.message);
-				return;
-			}
-		}
-
-		var solve = {};
-		var mipGap = $j('#ilpMipGap').val();
-		if (mipGap) { solve['MIPGap'] = parseFloat(mipGap); }
-		var mipGapAbs = $j('#ilpMipGapAbs').val();
-		if (mipGapAbs) { solve['MIPGapAbs'] = parseFloat(mipGapAbs); }
-		var timeLimit = $j('#ilpTimeLimit').val();
-		if (timeLimit) { solve['TimeLimit'] = parseFloat(timeLimit); }
-		var threads = $j('#ilpThreads').val();
-		if (threads) { solve['Threads'] = parseInt(threads, 10); }
 		// Seed is always random -- the server fills it in, no field here.
+		var solve = {};
+		$j.each(scalarFields, function(_, field) {
+			if (field.solveKey && values[field.sel]) { solve[field.solveKey] = values[field.sel][0]; }
+		});
 
 		var payload = {objective: objective, solve: solve, label: $j('#ilpLabel').val()};
 		if ($j('#ilpSolverName').length > 0) {
