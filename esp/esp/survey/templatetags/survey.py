@@ -303,7 +303,7 @@ def histogram(answer_list, args='format=html'):
 
     context['file_name'] = file_name # This guy depends on the hash
 
-    #  No point in SHA-1 caching these guys; they're in /tmp
+    #  No point in hash-caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
     file_obj = open(file_name, 'w')
     file_obj.write(file_contents)
