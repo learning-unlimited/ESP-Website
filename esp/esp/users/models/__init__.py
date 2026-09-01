@@ -2255,8 +2255,19 @@ class PersistentQueryFilter(models.Model):
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
-    sha1_hash    = models.CharField(max_length=256)            # A SHA-256 hash of the bytestring representing the query filter
-                                                               # (column name kept as sha1_hash to avoid a schema migration)
+    sha1_hash    = models.CharField(max_length=256)            # A SHA-256 digest of the pickled query filter.  The column name is
+                                                               # historical; it held SHA-1 digests before the switch to SHA-256.
+                                                               #
+                                                               # This is only a best-effort dedup key: a miss just creates another
+                                                               # row, and nothing reads it for correctness (get_Q() unpickles
+                                                               # q_filter directly, getFilterFromID() goes by pk).  Rows written
+                                                               # before the switch keep their SHA-1 digest and are deliberately
+                                                               # NOT backfilled: migration 0038 dropped the pre-Python-3 filter
+                                                               # data without copying it, so those rows have an empty q_filter and
+                                                               # rehashing would collapse all of them onto sha256(b''), turning the
+                                                               # .get() in getFilterFromQ() into MultipleObjectsReturned.  Dedup is
+                                                               # already unreliable regardless, since the common Q(id__in=[...])
+                                                               # filters pickle differently depending on queryset row order.
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
