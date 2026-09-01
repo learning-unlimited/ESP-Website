@@ -39,15 +39,15 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models.query import Q, QuerySet
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse, Http404
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, meets_any_deadline, aux_call, meets_cap, no_auth, list_extensions, render_deadline_for_tl
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -124,9 +124,15 @@ def json_encode(obj):
     else:
         raise TypeError(repr(obj) + " is not JSON serializable")
 
+# How long the public catalog responses may be cached.  Closing the
+# Student/Catalog deadline only takes effect once these have expired in
+# browser and shared caches, so keep it short.
+CATALOG_CACHE_MAX_AGE = 120
+
 # student class picker module
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
+    permission_types = ('Student/Classes',)
 
     @classmethod
     def module_properties(cls):
@@ -241,6 +247,34 @@ class StudentClassRegModule(ProgramModuleObj):
             return self.deadline_met(extension) or \
                    super().deadline_met('/Classes/Lottery')
 
+    def _catalog_deadline_closed(self, prog):
+        """Return True if a Student/Catalog deadline exists and is currently closed."""
+        deadlines = list(Permission.objects.filter(
+            permission_type='Student/Catalog',
+            program=prog,
+            user__isnull=True,
+        ))
+        # If no deadline is configured, keep catalog endpoints open.
+        if not deadlines:
+            return False
+        # If any deadline is valid, the catalog is open.
+        return not any(deadline.is_valid() for deadline in deadlines)
+
+    def _may_view_closed_catalog(self, request):
+        """Return True if this user may see the catalog while it is closed."""
+        # Only consulted once the deadline is known to be closed, so the open
+        # (publicly cached) path never reads request.user or the session.
+        return request.user.isAdmin(self.program)
+
+    @staticmethod
+    def _catalog_cache_control(closed):
+        """Return the Cache-Control header for a catalog response."""
+        # A closed catalog is only ever served to an admin, so it must not be
+        # stored in a shared cache and handed to students afterwards.
+        if closed:
+            return 'no-store'
+        return 'public, max-age=%d' % CATALOG_CACHE_MAX_AGE
+
     def prepare(self, context={}):
         user = get_current_request().user
         program = self.program
@@ -266,6 +300,14 @@ class StudentClassRegModule(ProgramModuleObj):
 
         schedule = []
         timeslot_dict = {}
+        # Use program-specific tolerance for determining contiguous timeblocks,
+        # falling back to Event.contiguous default (20 minutes) if unavailable.
+        contiguous_tolerance = Tag.getProgramTag('timeblock_contiguous_tolerance', program=program, default=20)
+        try:
+            contiguous_tolerance = int(contiguous_tolerance)
+        except (ValueError, TypeError):
+            contiguous_tolerance = 20
+
         for sec in classList:
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
@@ -275,24 +317,28 @@ class StudentClassRegModule(ProgramModuleObj):
             sec.verb_names = [v.name for v in sec.verbs]
             sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
 
-            # While iterating through the meeting times for a section,
-            # we use this variable to keep track of the first timeslot.
-            # In the section_dict appended to timeslot_dict,
-            # we save whether or not this is the first timeslot for this
-            # section. If it isn't, the student schedule will indicate
-            # this, and will not display the option to remove the
-            # section. This is to prevent students from removing what
-            # they have mistaken to be duplicated classes from their
-            # schedules.
-            first_meeting_time = True
+            # Track contiguous groups per section so we only mark later
+            # contiguous blocks as "continued". Non-contiguous recurring
+            # meetings (e.g. Mon+Wed) should each be treated as a first meeting.
+            previous_meeting_time = None
+            first_entry_in_group = None
 
             for mt in sec.get_meeting_times().order_by('start'):
-                section_dict = {'section': sec, 'first_meeting_time': first_meeting_time}
-                first_meeting_time = False
+                first_meeting_time = (
+                    previous_meeting_time is None or
+                    not Event.contiguous(previous_meeting_time, mt, tol=contiguous_tolerance)
+                )
+                if first_meeting_time:
+                    section_dict = {'section': sec, 'first_meeting_time': True, 'meeting_span': 1}
+                    first_entry_in_group = section_dict
+                else:
+                    section_dict = {'section': sec, 'first_meeting_time': False, 'meeting_span': 0}
+                    first_entry_in_group['meeting_span'] += 1
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:
                     timeslot_dict[mt.id] = [section_dict]
+                previous_meeting_time = mt
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -397,26 +443,37 @@ class StudentClassRegModule(ProgramModuleObj):
         except (KeyError, ValueError, TypeError):
             raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
-        section = get_object_or_404(ClassSection, id=sectionid, parent_class__id=classid, parent_class__parent_program=prog)
-        cobj = section.parent_class
-        if not scrmi.use_priority:
-            error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
-        if scrmi.use_priority or not error:
-            error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp) or section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+        with transaction.atomic():
+            #   Validate that the section belongs to the expected class and program
+            #   while still taking a row lock, so concurrent registrations serialize
+            #   on the capacity checks below.
+            section = get_object_or_404(
+                ClassSection.objects.select_for_update(),
+                id=sectionid,
+                parent_class__id=classid,
+                parent_class__parent_program=prog,
+            )
+            section_error = section.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+            if not scrmi.use_priority:
+                error = section_error
+            if scrmi.use_priority or not section_error:
+                cobj = ClassSubject.objects.select_for_update().get(id=classid)
+                cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
+                error = cobj_error or section_error
 
-        if scrmi.use_priority:
-            priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
-        else:
-            priority = 1
+            if scrmi.use_priority:
+                priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
+            else:
+                priority = 1
 
-        if error and not request.user.onsite_local:
-            raise ESPError(error, log=False)
+            if error and not request.user.onsite_local:
+                raise ESPError(error, log=False)
 
-        #   Desired priority level is 1 above current max
-        if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
-            return True
-        else:
-            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
+            #   Desired priority level is 1 above current max
+            if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                return True
+            else:
+                raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
 
     @aux_call
     @needs_student_in_grade
@@ -683,13 +740,20 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @aux_call
     @no_auth
-    @method_decorator(cache_control(public=True, max_age=3600))
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
+        # If a Student/Catalog deadline exists and is closed, return a non-cacheable error.
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = HttpResponse(json.dumps({'error': 'Catalog is closed'}),
+                                    content_type='application/json', status=403)
+            response['Cache-Control'] = 'no-store'
+            return response
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
         resp = HttpResponse(content_type='application/json')
+        resp['Cache-Control'] = self._catalog_cache_control(closed)
 
         json.dump(list(classes), resp, default=json_encode)
 
@@ -721,21 +785,35 @@ class StudentClassRegModule(ProgramModuleObj):
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @method_decorator(cache_control(public=True, max_age=120))
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
+        response = self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
+        response['Cache-Control'] = self._catalog_cache_control(closed)
+        return response
 
     @aux_call
     @no_auth
     @disable_csrf_cookie_update
-    @method_decorator(cache_control(public=True, max_age=120))
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
+        closed = self._catalog_deadline_closed(prog)
+        if closed and not self._may_view_closed_catalog(request):
+            response = render_deadline_for_tl('learn', request,
+                    {'extension': list_extensions('learn', ['/Catalog']), 'moduleObj': self})
+            response['Cache-Control'] = 'no-store'
+            return response
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
         for module in prog.getModules():
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
-                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response = module.coursecatalog(request, tl, one, two, module, extra, prog)
+                response['Cache-Control'] = self._catalog_cache_control(closed)
+                return response
         raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call

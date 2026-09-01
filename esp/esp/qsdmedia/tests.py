@@ -68,6 +68,31 @@ class QSDMediaTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
+    def testMediaCleanValidation(self):
+        '''Test that Media.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        m1 = Media(friendly_name="test1", owner_type=None, owner_id=None)
+        m1.clean()  # Should not raise
+
+        # Both set -> OK
+        from esp.program.models import ClassSubject
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(ClassSubject)
+        m2 = Media(friendly_name="test2", owner_type=ct, owner_id=1)
+        m2.clean()  # Should not raise
+
+        # owner_type set, owner_id null -> ValidationError on save()
+        m3 = Media(friendly_name="test3", owner_type=ct, owner_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            m3.save()
+
+        # owner_type null, owner_id set -> ValidationError on save()
+        m4 = Media(friendly_name="test4", owner_type=None, owner_id=1)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            m4.save()
+
 class SiteMediaTest(TestCase):
     def setUp(self):
         super().setUp()

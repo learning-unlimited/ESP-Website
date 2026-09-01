@@ -240,8 +240,9 @@ class AdminClass(ProgramModuleObj):
                 sec_cancel_forms.is_bound = True
                 if sec_cancel_forms.is_valid():
                     cleaned_data = sec_cancel_forms.cleaned_data
+                    target_ids = set(cleaned_data['target'].values_list('id', flat=True))
                     for sec in sections:
-                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                        if not sec.isCancelled() and sec.id in target_ids:
                             sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
                     return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'modify_cls':
@@ -309,7 +310,7 @@ class AdminClass(ProgramModuleObj):
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         cls.delete(True)

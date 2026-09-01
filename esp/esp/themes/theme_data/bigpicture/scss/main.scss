@@ -247,6 +247,24 @@ div.navbar-collapse.collapse {
         color: $primary;
         background: color-contrast($primary);
     }
+
+    //  Navbar customizer values applied on top of the Bootswatch theme — only
+    //  for the fields the admin actually changed (see $esp-overridden).
+    @if index($esp-overridden, 'navbarBackground') {
+        .navbar { background: $navbarBackground !important; }
+    }
+    @if index($esp-overridden, 'navbarText') {
+        .navbar, .navbar .username { color: $navbarText !important; }
+    }
+    @if index($esp-overridden, 'navbarLinkColor') {
+        .navbar a.username { color: $navbarLinkColor !important; }
+    }
+    @if index($esp-overridden, 'navbarLinkColorHover') {
+        .navbar a.username:hover { color: $navbarLinkColorHover !important; }
+    }
+    @if index($esp-overridden, 'navbarBackgroundHighlight') {
+        .navbar .btn { background: $navbarBackgroundHighlight !important; }
+    }
 } @else {
     .navbar {
         color: $navbarText;

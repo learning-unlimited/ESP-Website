@@ -59,6 +59,7 @@ class TeacherQuizComboForm(ComboForm):
 
 class TeacherQuizModule(ProgramModuleObj):
     doc = """Serves a custom form quiz during teacher registration."""
+    permission_types = ('Teacher/Quiz',)
 
     # Initialization
     def __init__(self, *args, **kwargs):
