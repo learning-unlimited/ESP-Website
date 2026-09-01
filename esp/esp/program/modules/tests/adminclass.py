@@ -1,57 +1,11 @@
 import json
+from urllib.parse import urlencode
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
 from esp.users.models import ESPUser
 from django.core import mail
-
-class SafeRedirectTest(ProgramFrameworkTest):
-    """Tests for the _safe_redirect validation in approveclass, rejectclass, and proposeclass."""
-
-    def setUp(self):
-        super().setUp()
-        self.schedule_randomly()
-        self.cls = self.teachers[0].getTaughtClasses()[0]
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
-        self.adminUser.set_password('password')
-        self.adminUser.makeAdmin()
-        self.adminUser.save()
-        self.client.login(username='admin', password='password')
-        self.fallback_url = '/manage/' + self.program.url + '/manageclass/' + str(self.cls.id)
-
-    def _get_url(self, action):
-        return '/manage/' + self.program.url + '/' + action + '/' + str(self.cls.id)
-
-    def test_external_redirect_blocked_approveclass(self):
-        """External redirect URLs should be rejected, falling back to the manageclass URL."""
-        response = self.client.get(self._get_url('approveclass') + '?redirect=https://evil.com')
-        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
-
-    def test_external_redirect_blocked_rejectclass(self):
-        response = self.client.get(self._get_url('rejectclass') + '?redirect=https://evil.com')
-        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
-
-    def test_external_redirect_blocked_proposeclass(self):
-        response = self.client.get(self._get_url('proposeclass') + '?redirect=https://evil.com')
-        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
-
-    def test_internal_redirect_allowed(self):
-        """Internal path redirects should be allowed."""
-        internal_url = '/manage/' + self.program.url + '/dashboard'
-        response = self.client.get(self._get_url('approveclass') + '?redirect=' + internal_url)
-        self.assertRedirects(response, internal_url, fetch_redirect_response=False)
-
-    def test_no_redirect_param_uses_fallback(self):
-        """When no redirect parameter is provided, the fallback URL should be used."""
-        response = self.client.get(self._get_url('approveclass'))
-        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
-
-    def test_protocol_relative_redirect_blocked(self):
-        """Protocol-relative URLs (//evil.com) should be rejected."""
-        response = self.client.get(self._get_url('approveclass') + '?redirect=//evil.com')
-        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
-
 
 class CancelClassTest(ProgramFrameworkTest):
     def setUp(self):
@@ -132,3 +86,75 @@ class CancelClassTest(ProgramFrameworkTest):
         self.client.login(username='admin', password='password')
         url = '%steacherlookup' % self.program.get_manage_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+
+class SafeRedirectTest(ProgramFrameworkTest):
+    """Tests that approveclass/rejectclass/proposeclass reject off-site 'redirect' values."""
+
+    def setUp(self):
+        super().setUp()
+        self.schedule_randomly()
+        self.cls = self.teachers[0].getTaughtClasses()[0]
+
+        self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.adminUser.save()
+        self.client.login(username='admin', password='password')
+
+        self.fallback_url = '%smanageclass/%s' % (self.program.get_manage_url(), self.cls.id)
+
+    def _action_url(self, action, redirect=None):
+        url = '%s%s/%s' % (self.program.get_manage_url(), action, self.cls.id)
+        if redirect is not None:
+            url += '?' + urlencode({'redirect': redirect})
+        return url
+
+    def _status(self):
+        return ClassSubject.objects.get(pk=self.cls.id).status
+
+    def test_external_redirect_blocked_approveclass(self):
+        """An off-site redirect is dropped, but the class is still approved."""
+        self.cls.propose()
+        response = self.client.get(self._action_url('approveclass', 'https://evil.com'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+        self.assertEqual(self._status(), ClassStatus.ACCEPTED)
+
+    def test_external_redirect_blocked_rejectclass(self):
+        """An off-site redirect is dropped, but the class is still rejected."""
+        response = self.client.get(self._action_url('rejectclass', 'https://evil.com'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+        self.assertEqual(self._status(), ClassStatus.REJECTED)
+
+    def test_external_redirect_blocked_proposeclass(self):
+        """An off-site redirect is dropped, but the class is still unreviewed."""
+        response = self.client.get(self._action_url('proposeclass', 'https://evil.com'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+        self.assertEqual(self._status(), ClassStatus.UNREVIEWED)
+
+    def test_protocol_relative_redirect_blocked(self):
+        """Protocol-relative URLs (//evil.com) name another host, so they are dropped."""
+        response = self.client.get(self._action_url('approveclass', '//evil.com'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_backslash_redirect_blocked(self):
+        r"""Browsers read the backslash in \/evil.com as a slash, so it is dropped too."""
+        response = self.client.get(self._action_url('approveclass', '\\/evil.com'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
+
+    def test_internal_path_redirect_allowed(self):
+        """A relative path -- what the manage templates actually send -- is honored."""
+        internal_url = '%sdashboard' % self.program.get_manage_url()
+        response = self.client.get(self._action_url('approveclass', internal_url))
+        self.assertRedirects(response, internal_url, fetch_redirect_response=False)
+
+    def test_same_host_absolute_redirect_allowed(self):
+        """An absolute URL on this host is honored."""
+        internal_url = 'http://testserver%sdashboard' % self.program.get_manage_url()
+        response = self.client.get(self._action_url('approveclass', internal_url))
+        self.assertRedirects(response, internal_url, fetch_redirect_response=False)
+
+    def test_no_redirect_param_uses_fallback(self):
+        """With no redirect parameter at all, the manageclass URL is used."""
+        response = self.client.get(self._action_url('approveclass'))
+        self.assertRedirects(response, self.fallback_url, fetch_redirect_response=False)
