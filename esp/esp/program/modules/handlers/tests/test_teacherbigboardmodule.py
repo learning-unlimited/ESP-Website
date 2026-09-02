@@ -212,7 +212,7 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
 
     def test_teacherbigboard_no_classes_edge_case(self):
         # verify the dashboard doesn't crash if there are zero classes
-        ClassSubject.objects.filter(program=self.program).delete()
+        ClassSubject.objects.filter(parent_program=self.program).delete()
         self._flush_cache()
 
         request = self.factory.get('/manage/teacherbigboard')
