@@ -77,6 +77,22 @@ TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
 TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
 TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
+######################
+# Transport security #
+######################
+# These depend on DEBUG, so they must be derived after local_settings.py has been imported.
+from . import local_settings as _local_settings
+
+if not hasattr(_local_settings, 'SESSION_COOKIE_SECURE'):
+    SESSION_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'CSRF_COOKIE_SECURE'):
+    CSRF_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'SECURE_SSL_REDIRECT'):
+    SECURE_SSL_REDIRECT = not DEBUG
+if not hasattr(_local_settings, 'SECURE_HSTS_SECONDS'):
+    # see https://docs.djangoproject.com/en/5.2/ref/middleware/#http-strict-transport-security
+    SECURE_HSTS_SECONDS = 0 if DEBUG else 3600
+
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:
     try:

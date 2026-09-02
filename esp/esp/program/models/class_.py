@@ -1080,7 +1080,7 @@ class ClassSection(models.Model):
         from esp.program.modules.handlers.grouptextmodule import GroupTextModule
 
         if include_lottery_students:
-            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+            student_verbs = ['Enrolled', 'Interested'] + list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         else:
             student_verbs = ['Enrolled']
 
@@ -1706,6 +1706,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return self.teachers.all().order_by('last_name')
     get_teachers.depend_on_m2m('program.ClassSubject', 'teachers', lambda subj, event: {'self': subj})
+    get_teachers.depend_on_row('users.ESPUser', lambda user: [{'self': cls} for cls in user.classsubject_set.all()])
 
     def students_dict(self):
         result = PropertyDict({})

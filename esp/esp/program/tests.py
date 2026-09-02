@@ -68,7 +68,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 from random import sample
-import hashlib
 import numpy
 import random
 import re
@@ -335,9 +334,6 @@ class ViewUserInfoTest(TestCase):
         self.fake_admin.delete()
 
 class ProfileTest(TestCase):
-
-    def setUp(self):
-        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
@@ -2277,6 +2273,43 @@ class HeardAboutNormalizationTest(TestCase):
         self.assertEqual(self._normalize("...!!!"), "")
 
 
+class ClassSubjectCacheTest(ProgramFrameworkTest):
+    def test_get_teachers_cache_invalidation(self):
+        """
+        Regression test for Issue #3836:
+        Verify get_teachers() cache invalidates properly when a teacher's row is updated.
+        """
+        # Assign a teacher to a class
+        teacher = self.teachers[0]
+        test_class = self.program.classes()[0]
+        test_class.makeTeacher(teacher)
+
+        # 1. Call get_teachers() to populate the cache
+        teachers_before = test_class.get_teachers()
+        self.assertIn(teacher, teachers_before)
+
+        # Store original email
+        original_email = teacher.email
+
+        # 2. Update the teacher's email and save the user
+        new_email = "updated_email_xyz123@example.com"
+        teacher.email = new_email
+        teacher.save()
+
+        # 3. Verify subsequent get_teachers() call returns the updated email
+        #    without requiring a manual cache flush.
+        updated_teachers = test_class.get_teachers()
+
+        # Find the updated teacher object among the returned teachers
+        updated_teacher = None
+        for t in updated_teachers:
+            if t.id == teacher.id:
+                updated_teacher = t
+                break
+
+        self.assertIsNotNone(updated_teacher)
+        self.assertNotEqual(updated_teacher.email, original_email)
+        self.assertEqual(updated_teacher.email, new_email)
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
@@ -2486,3 +2519,71 @@ class NewProgramModulePermissionsTest(TestCase):
         self.assertEqual(pmo.start_date, student_start)
         self.assertEqual(pmo.end_date, student_end)
 
+
+
+class ProgramModuleObjCreationTest(TestCase):
+    """Tests that getFromProgModule() creates at most one row per (program, module)."""
+
+    def setUp(self):
+        self.module = ProgramModule.objects.get(handler='StudentClassRegModule')
+        self.program = Program.objects.create(
+            name='PMO Race Program',
+            url='PMORace/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+
+    def test_competing_insert_is_reused(self):
+        """A row inserted between the existence check and our own insert is reused.
+
+        getFromProgModule() looks for an existing row and then inserts one if it
+        found none.  Two concurrent requests can both reach the insert, which the
+        unique_together constraint on (program, module) rejects; the loser has to
+        take the winner's row rather than raise IntegrityError.  _initial_defaults()
+        is only called on the insert path, so patching it is a stand-in for the
+        request that wins the race.
+        """
+        real_defaults = ProgramModuleObj._initial_defaults
+
+        def _defaults_then_competing_insert(prog, mod, old_prog=None):
+            defaults = real_defaults(prog, mod, old_prog)
+            ProgramModuleObj.objects.create(program=prog, module=mod, seq=99, required=False)
+            return defaults
+
+        with patch.object(ProgramModuleObj, '_initial_defaults',
+                          staticmethod(_defaults_then_competing_insert)):
+            moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module)
+
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+        #   The winner's row comes back, rather than a second row of our own.
+        self.assertEqual(moduleobj.seq, 99)
+
+    def test_repeated_calls_reuse_one_row(self):
+        first = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        second = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        self.assertEqual(first.id, second.id)
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+
+    def test_new_row_copies_values_from_old_program(self):
+        old_program = Program.objects.create(
+            name='PMO Old Program',
+            url='PMOOld/2025',
+            grade_min=7,
+            grade_max=12,
+        )
+        start = datetime(2026, 3, 1, 0, 0)
+        end = datetime(2026, 4, 1, 0, 0)
+        ProgramModuleObj.objects.create(program=old_program, module=self.module, seq=42,
+                                        required=True, required_label='Sign up',
+                                        start_date=start, end_date=end)
+
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module,
+                                                       old_prog=old_program)
+
+        self.assertEqual(moduleobj.seq, 42)
+        self.assertTrue(moduleobj.required)
+        self.assertEqual(moduleobj.required_label, 'Sign up')
+        self.assertEqual(moduleobj.start_date, start)
+        self.assertEqual(moduleobj.end_date, end)
