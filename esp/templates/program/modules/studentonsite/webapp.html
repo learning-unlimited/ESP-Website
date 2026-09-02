@@ -10,25 +10,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% block head %}{% endblock %}
 </head>
+
 <body>
-<nav class="navbar">
-  <a class="navbar-item{% if webapp_page == "schedule" %} selected{% endif %}" href="/learn/{{one}}/{{two}}/studentonsite/">
-    <i class="material-icons md-5">event_note</i>
+<nav class="navbar" aria-label="Student webapp">
+  <a class="navbar-item{% if webapp_page == 'schedule' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/studentonsite/"{% if webapp_page == 'schedule' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">event_note</i>
     <span>Schedule</span>
   </a>
   {% if map_tab %}
-  <a class="navbar-item{% if webapp_page == "map" %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitemap">
-    <i class="material-icons md-5">map</i>
+  <a class="navbar-item{% if webapp_page == 'map' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitemap"{% if webapp_page == 'map' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">map</i>
     <span>Map</span>
   </a>
   {% endif %}
-  <a class="navbar-item{% if webapp_page == "catalog" %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitecatalog">
-    <i class="material-icons md-5">event</i>
+  <a class="navbar-item{% if webapp_page == 'catalog' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitecatalog"{% if webapp_page == 'catalog' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">event</i>
     <span>Catalog</span>
   </a>
   {% if survey_status != "none" %}
-  <a class="navbar-item{% if webapp_page == "survey" %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitesurvey">
-    <i class="material-icons md-5">question_answer</i>
+  <a class="navbar-item{% if webapp_page == 'survey' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitesurvey"{% if webapp_page == 'survey' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">question_answer</i>
     <span>Survey</span>
   </a>
   {% endif %}
