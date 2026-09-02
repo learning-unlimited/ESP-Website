@@ -6,6 +6,9 @@ Tests FormstackForm and FormstackSubmission objects.
 """
 from unittest.mock import MagicMock, patch
 
+from django.test import SimpleTestCase
+
+from esp.formstack.api import APIError
 from esp.formstack.objects import FormstackForm, FormstackSubmission
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -44,3 +47,11 @@ class FormstackSubmissionTest(TestCase):
     def test_repr(self):
         sub = FormstackSubmission(200)
         self.assertEqual(repr(sub), '<FormstackSubmission: 200>')
+
+
+class APIErrorTests(SimpleTestCase):
+    def test_str_includes_message(self):
+        self.assertEqual(str(APIError('Invalid API key')), 'Formstack API error: Invalid API key')
+
+    def test_str_without_args(self):
+        self.assertEqual(str(APIError()), 'Formstack API error: ')
