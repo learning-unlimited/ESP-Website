@@ -6,7 +6,7 @@ from io import open
 
 useful_scripts = Path(__file__).resolve().parent
 project = useful_scripts.parent
-sys.path.append(project)
+sys.path.append(str(project))
 
 # Check if a virtualenv has been installed and activated from elsewhere.
 # If this has happened, then the VIRTUAL_ENV environment variable should be
@@ -15,7 +15,7 @@ sys.path.append(project)
 if os.environ.get('VIRTUAL_ENV') is None:
     envroot = project.parent
     activate_this = envroot / 'env' / 'bin' / 'activate_this.py'
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+    exec(compile(open(activate_this, "rb").read(), str(activate_this), 'exec'), dict(__file__=activate_this))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 

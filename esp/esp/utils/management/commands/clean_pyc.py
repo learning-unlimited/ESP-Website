@@ -19,12 +19,12 @@ class Command(BaseCommand):
     the source tree.
     """
     def handle(self, *args, **options):
-        root = Path(settings.BASE_DIR).resolve().parent
+        root = Path(settings.BASE_DIR).absolute().parent
         for dirpath, dirnames, filenames in os.walk(root):
             for filename in filenames:
                 if filename.endswith('.pyc'):
                     pyc_path = Path(dirpath) / filename
-                    py_path = pyc_path[:-1]  # Remove trailing 'c' to get .py path
+                    py_path = pyc_path.with_suffix('.py')  # Remove trailing 'c' to get .py path
                     if not Path(py_path).is_file():
                         try:
                             os.remove(pyc_path)

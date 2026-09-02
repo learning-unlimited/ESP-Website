@@ -60,7 +60,7 @@ class Command(BaseCommand):
         default_options.update(options)
         options = default_options
 
-        root = Path(settings.BASE_DIR).resolve().parent
+        root = Path(settings.BASE_DIR).absolute().parent
         file = root / 'esp.wsgi'
 
         user = os.getenv('USER')
