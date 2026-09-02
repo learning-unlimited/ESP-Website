@@ -107,20 +107,33 @@ class VolunteerManage(ProgramModuleObj):
             form = VolunteerRequestForm(program=prog)
 
         elif 'op' in request.GET:
+          if 'op' in request.GET:
             if request.GET['op'] == 'edit':
                 form = VolunteerRequestForm(program=prog)
                 form.load(VolunteerRequest.objects.get(id=request.GET['id']))
-            elif request.GET['op'] == 'delete':
-                form = VolunteerRequestForm(program=prog)
-                VolunteerRequest.objects.get(id=request.GET['id']).delete()
-        elif request.method == 'POST':
-            form = VolunteerRequestForm(request.POST, program=prog)
-            if form.is_valid():
-                if form.cleaned_data['vr_id']:
-                    form.save(VolunteerRequest.objects.get(id=form.cleaned_data['vr_id']))
-                else:
-                    form.save()
-                form = VolunteerRequestForm(program=prog)
+              
+            # NOTICE: We deleted the 'elif op == delete' from here!
+            elif request.method == 'POST':
+            # Handle volunteer deletion via POST to ensure CSRF protection
+            if request.POST.get('op') == 'delete':
+                vr_id = request.POST.get('id')
+                try:
+                    # Security: Ensure the volunteer belongs to the current program
+                    volunteer = VolunteerRequest.objects.get(id=vr_id, program=prog)
+                    volunteer.delete()
+                    message_good = "Volunteer request deleted successfully."
+                except VolunteerRequest.DoesNotExist:
+                    message_bad = "Error: Volunteer request not found or access denied."
+            
+            else:
+                form = VolunteerRequestForm(request.POST, program=prog)
+                if form.is_valid():
+                    if form.cleaned_data.get('vr_id'):
+                        form.save(VolunteerRequest.objects.get(id=form.cleaned_data['vr_id']))
+                    else:
+                        form.save()
+       
+                    form = VolunteerRequestForm(program=prog)
         else:
             form = VolunteerRequestForm(program=prog)
 
