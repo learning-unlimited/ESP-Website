@@ -19,7 +19,7 @@ def get_rt_choices():
     choices = [("All", "All")]
     for rt in RegistrationType.objects.all().order_by('name'):
         if rt.displayName:
-            choices.append((rt.name, '%s (displayed as "%s")' % (rt.name, rt.displayName)))
+            choices.append((rt.name, f'{rt.name} (displayed as "{rt.displayName}")'))
         else:
             choices.append((rt.name, rt.name))
     return choices
@@ -41,7 +41,7 @@ class LunchConstraintsForm(forms.Form):
         self.load_data()
 
     def load_data(self):
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
         sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
         # If there are any schedule constraints for this program, check that box
@@ -92,7 +92,8 @@ class ProgramSettingsForm(ProgramCreationForm):
             'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', r'\.'))})
+_ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', r'\.')
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)?learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """

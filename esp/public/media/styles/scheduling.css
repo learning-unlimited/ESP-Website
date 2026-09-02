@@ -107,6 +107,12 @@ td.selected-section {
     z-index: 1000;
 }
 
+td.recurring-selected-cell {
+    outline: 4px solid #1e90ff;
+    position: relative;
+    z-index: 1000;
+}
+
 td.matrix-cell > a {
     text-decoration: none;
     color: inherit !important;
@@ -154,6 +160,38 @@ td.teacher-is-teaching-this-cell {
     overflow-y: scroll;
 }
 
+.scheduler-toast {
+    position: fixed;
+    top: 24px;
+    bottom: auto;
+    left: 50%;
+    max-width: 360px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 2147483647;
+    opacity: 0;
+    transform: translateX(-50%) translateY(8px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: none;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scheduler-toast-visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.scheduler-toast-error {
+    background-color: #ef4444;
+}
+
+.scheduler-toast-success {
+    background-color: #10b981;
+}
+
 input.numeric {
     width: 40px;
 }
@@ -167,11 +205,14 @@ input.numeric {
 }
 
 #side-panel-wrapper {
-    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
 #info-panel {
     height: 35%;
+    padding-top: 10px;
     padding-bottom: 10px;
     margin-bottom: calc(11px - .2em);
 }
@@ -203,7 +244,7 @@ input.numeric {
 }
 
 #side-panel {
-    height: 61%;
+    min-height: 0;
     bottom: 0;
 }
 
@@ -234,6 +275,14 @@ button.sidetoolbar {
     height: unset !important; /* allows us to hide rows properly */
 }
 
+#message-div {
+    height: 100%;
+}
+
+#message-div p {
+    margin: 5px;
+}
+
 #message-div strong {
     font-family: Courier New;
     font-size: large;
@@ -261,6 +310,7 @@ button.sidetoolbar {
 #legend td {
     height: 30px;
     padding: .5vh;
+    outline-offset: -4px;
 }
 
 #loadingOverlay {
@@ -273,4 +323,38 @@ button.sidetoolbar {
     display: block;
     text-align: center;
     background: rgba(200,200,200,0.5) url('/media/images/ajax_loader.gif') no-repeat center; /*.gif file or just div with message etc. however you like*/
+}
+
+#clear-change-log-wrapper {
+    width: 100%;
+    text-align: center;
+    min-height: 30px;
+    position: relative;
+    z-index: 10000; /* above #loadingOverlay (9999) so it stays clickable during overlay AND after removal */
+}
+
+#clear-change-log-wrapper button {
+    cursor: pointer;
+}
+
+#changelog-reload-notice {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10001;
+    background: #d9534f;
+    color: white;
+    padding: 12px 20px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+#changelog-reload-notice .reload-link {
+    color: white;
+    text-decoration: underline;
+    margin-left: 10px;
+    cursor: pointer;
 }

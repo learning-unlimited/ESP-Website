@@ -45,9 +45,10 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
-from phonenumber_field.modelfields import PhoneNumberField
-from django.core import validators
+
 from django.core.cache import cache
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Count
 from django.db.models import Q, F
@@ -69,7 +70,8 @@ from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
-from django.core.exceptions import ValidationError
+
+from phonenumber_field.modelfields import PhoneNumberField
 
 # Create your models here.
 class ProgramModule(models.Model):
@@ -357,7 +359,7 @@ class Program(models.Model, CustomFormsLinkModel):
             models.CheckConstraint(
                 check=Q(grade_min__lte=F('grade_max')),
                 name='program_grade_min_lte_grade_max'
-         ),
+            ),
         ]
 
     USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
@@ -804,6 +806,21 @@ class Program(models.Model, CustomFormsLinkModel):
     open_class_category.depend_on_row('modules.ClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
     open_class_category = property(open_class_category)
 
+    def lunch_timeslots(self):
+        """Timeslots (Events) reserved for lunch in this program."""
+        return Event.objects.filter(
+            meeting_times__parent_class__parent_program=self,
+            meeting_times__parent_class__category__is_lunch=True,
+        ).order_by('start').distinct()
+
+    def lunch_sections(self):
+        """Lunch class sections in this program."""
+        from esp.program.models.class_ import ClassSection
+        return ClassSection.objects.filter(
+            parent_class__parent_program=self,
+            parent_class__category__is_lunch=True,
+        )
+
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()
@@ -846,24 +863,28 @@ class Program(models.Model, CustomFormsLinkModel):
             return status == 1
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
-    def checkedOutStudents(self, time_max = datetime.now()):
+    def checkedOutStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        return self.checkedOutStudents(time_max=datetime.now())
+        return self.checkedOutStudents()
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
-    def checkedInStudents(self, time_max = datetime.now()):
+    def checkedInStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
-        return self.checkedInStudents(time_max=datetime.now())
+        return self.checkedInStudents()
     currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
@@ -874,7 +895,7 @@ class Program(models.Model, CustomFormsLinkModel):
     """
     def getClassrooms(self, timeslot=None):
         #   Returns the resources themselves.  See the function below for grouped-by-room.
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
 
         if timeslot is not None:
             return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
@@ -1095,7 +1116,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
         #   Show all resources pertaining to the program (except those of types that are excluded).
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
 
         if include_hidden:
             exclude_types = []
@@ -1122,7 +1143,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return Resource.objects.filter(event__program=self)
 
     def getFloatingResources(self, timeslot=None, queryset=False):
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
         #   Don't include classrooms and teachers in the floating resources.
         exclude_types = [ResourceType.get_or_create('Classroom')]
 
@@ -1161,7 +1182,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo
+        from esp.program.modules.module_ext import ClassRegModuleInfo # noqa: F811
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
@@ -1263,8 +1284,12 @@ class Program(models.Model, CustomFormsLinkModel):
     getModules_cached.depend_on_row('modules.StudentClassRegModuleInfo', lambda modinfo: {'self': modinfo.program})
 
     def getModules(self, user = None, tl = None, old_prog = None):
-        """ Gets modules for this program, optionally attaching a user. """
-        modules = self.getModules_cached(tl, old_prog)
+        """ Gets modules for this program, optionally attaching a user. Only open modules are included for non-admins. """
+        modules = list(self.getModules_cached(tl, old_prog))
+
+        if user and not user.isAdmin(self):
+            modules = [m for m in modules if m.is_valid()]
+
         if user:
             for module in modules:
                 module.user = user
@@ -1322,6 +1347,8 @@ class Program(models.Model, CustomFormsLinkModel):
         self._getColor = retVal
         return retVal
     getColor.depend_on_row('modules.ClassRegModuleInfo', lambda crmi: {'self': crmi.program})
+
+
 
     def visibleEnrollments(self):
         """
@@ -1664,31 +1691,16 @@ class RegistrationProfile(models.Model):
                                'student_info', 'teacher_info', 'guardian_info',
                                'educator_info').order_by('-last_ts', '-id')[:1])
         if len(regProfList) < 1:
-            regProf = RegistrationProfile.getLastProfile(user)
-            # get the old program, if any
-            prog = regProf.program
+            regProf = copy.copy(RegistrationProfile.getLastProfile(user))
             regProf.program = program
-            # if the user didn't have any profiles before (id = None), just return the brand new one unsaved
             if regProf.id is not None:
-                # if the latest profile is old, wipe the id,
-                # then it will save as a new object if submitted with the profile form
-                if (datetime.now() - regProf.last_ts).days >= 5:
-                    regProf.id = None
-                # if the latest profile is new-ish,
-                # assume the info is up-to-date and save it now
-                else:
-                    # but, if the profile was for a previous program, we should keep the old profile
-                    # and make a new one for this program by wiping the id, then saving
-                    if prog is not None:
-                        regProf.id = None
-                    # otherwise, it was a profile without a program,
-                    # and we can just associate it with this program now, so just save
-                    regProf.save()
+                regProf.id = None
         else:
             regProf = regProfList[0]
         return regProf
-    # Thanks to our attempts to be smart and steal profiles from other programs,
-    # the cache can't depend only on profiles with the same (user, program).
+    # We can fall back to the user's latest profile from another program when a
+    # program-specific profile does not exist, so cache invalidation must depend
+    # on any profile for the user (not just the exact (user, program) pair).
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)
@@ -2039,10 +2051,15 @@ class ScheduleMap:
     def __marinade__(self):
         import hashlib
         import pickle
-        return f'ScheduleMap_{hashlib.md5(pickle.dumps(self)).hexdigest()[:8]}'
+        return f'ScheduleMap_{hashlib.sha256(pickle.dumps(self)).hexdigest()[:8]}'
 
     def __str__(self):
         return f'{self.map}'
+
+# Log at most once per constraint instance (by DB pk or object id) to avoid
+# flooding logs when schedule evaluation retries handle_failure repeatedly.
+_schedule_constraint_on_failure_warned_keys = set()
+
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
@@ -2091,17 +2108,19 @@ class ScheduleConstraint(models.Model):
             return True
 
     def handle_failure(self):
-        #   Try the on_failure callback but be very lenient about it (fail silently)
-        try:
-            func_str = """def _f(schedule_map):
-{chr(10).join(f'    {l.rstrip()}' for l in self.on_failure.strip().split(chr(10)))}"""
-            exec(func_str)
-            result = _f(self.schedule_map)
-            return result
-        except Exception as inst:
-            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
-            pass
-        #   If we got nothing from the on_failure function, just provide Nones.
+        # on_failure previously executed arbitrary code via exec(); disabled for
+        # security. Kept as a DB field for backwards compatibility.
+        if not self.on_failure or not self.on_failure.strip():
+            return (None, None)
+        key = ('pk', self.pk) if self.pk is not None else ('id', id(self))
+        if key not in _schedule_constraint_on_failure_warned_keys:
+            _schedule_constraint_on_failure_warned_keys.add(key)
+            logger.warning(
+                "Execution of ScheduleConstraint.on_failure disabled for "
+                "security (constraint id=%s, program_id=%s).",
+                self.pk,
+                self.program_id,
+            )
         return (None, None)
 
 class ScheduleTestTimeblock(BooleanToken):
@@ -2188,6 +2207,8 @@ class VolunteerRequest(models.Model):
         app_label = 'program'
 
     def num_offers(self):
+        if self.pk is None:
+            return 0
         return self.volunteeroffer_set.count()
 
     def get_offers(self):
@@ -2287,7 +2308,7 @@ class PhaseZeroRecord(models.Model):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
-    program = models.ForeignKey(Program, blank=True, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
 
     def display_user(self):
@@ -2376,6 +2397,7 @@ def maybe_create_module_ext(handler, ext):
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 from esp.program.models.flags import *
+from esp.program.models.printable_job import PrintableJob
 
 def install():
     from esp.program.models.class_ import install as install_class
