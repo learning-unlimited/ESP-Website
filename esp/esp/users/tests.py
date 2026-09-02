@@ -467,6 +467,25 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super().test_run()
 
+class AjaxScheduleNoScriptTest(ProgramFrameworkTest):
+    """ The ajax_schedule view describes how to update the page with data;
+        it must never return JavaScript for the browser to execute.
+    """
+    def test_payload_is_data_only(self):
+        user = self.students[0]
+        self.assertTrue(self.client.login(username=user.username, password='password'))
+        response = self.client.get(f'/learn/{self.program.getUrlBase()}/ajax_schedule')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+
+        self.assertNotIn('script', data)
+        self.assertIn('student_schedule_html', data)
+        self.assertIsInstance(data['links'], list)
+        self.assertEqual([callback['name'] for callback in data['callbacks']],
+                         ['student_schedule'])
+        for link in data['links']:
+            self.assertEqual(sorted(link.keys()), ['id', 'url'])
+
 class AccountCreationTest(TestCase):
 
     def setUp(self):

@@ -3,6 +3,9 @@
 //  Current tools include:
 //  - Handle background submission of forms
 //  - Handle responses that rewrite DOM nodes by supplying a key of [NODENAME]_html in JSON
+//  - Handle responses that re-register forms and links, or invoke a callback the
+//    page has registered by name, by supplying "forms", "links" or "callbacks"
+//    keys in JSON.  Responses may not supply JavaScript to be executed.
 
 //  Define an array for registered forms if they do not exist
 if (!registered_forms)
@@ -16,6 +19,16 @@ if (!registered_fragments)
 if (!registered_links)
 {
     var registered_links = [];
+}
+if (!registered_handlers)
+{
+    var registered_handlers = {};
+}
+
+//  Register a callback that Ajax responses are allowed to invoke by name.
+var register_handler = function(name, callback)
+{
+    registered_handlers[name] = callback;
 }
 
 var reset_forms = function()
@@ -70,7 +83,8 @@ var apply_fragment_changes = function(data)
 {
     //  console.log("Applying fragment changes from data: " + data);
 
-    // Parse the keys
+    //  Rewrite DOM nodes first, so that anything registered below is applied to
+    //  the markup that came with this response rather than the markup it replaces.
     for (var key in data)
     {
         //  Check for FOO_html ending, which means "replace HTML content of DOM node FOO"
@@ -78,7 +92,7 @@ var apply_fragment_changes = function(data)
         if (re_match)
         {
             //  console.log("Found match: " + re_match[1]);
-	    var matchId = '#' + re_match[1];
+            var matchId = '#' + re_match[1];
             matching_node = $j(matchId);
             if (matching_node.length > 0)
             {
@@ -86,14 +100,49 @@ var apply_fragment_changes = function(data)
                 matching_node.html(data[key]);
             }
         }
-        
-        if (key == 'script')
+    }
+
+    //  Re-register forms and links found in the new markup.  These are bound by
+    //  the reset_forms() call in handle_success().
+    if (data['forms'])
+    {
+        for (var i = 0; i < data['forms'].length; i++)
         {
-            //  console.log("Evaluating: " + data[key]);
-            eval(data[key]);
+            register_form(data['forms'][i]);
         }
+    }
+    if (data['links'])
+    {
+        for (var i = 0; i < data['links'].length; i++)
+        {
+            register_link(data['links'][i]);
+        }
+    }
 
+    //  Run the page callbacks that the response asked for.
+    if (data['callbacks'])
+    {
+        for (var i = 0; i < data['callbacks'].length; i++)
+        {
+            var requested = data['callbacks'][i];
+            if (!Object.prototype.hasOwnProperty.call(registered_handlers, requested['name']))
+            {
+                if (window.console)
+                {
+                    console.error("Ajax response requested an unregistered handler: " + requested['name']);
+                }
+                continue;
+            }
+            registered_handlers[requested['name']].apply(null, requested['args'] || []);
+        }
+    }
 
+    if ('script' in data)
+    {
+        if (window.console)
+        {
+            console.error("Ignoring 'script' key in Ajax response; server-supplied JavaScript is no longer executed.");
+        }
     }
 }
 
@@ -171,17 +220,31 @@ function CallbackLink(id, url, content, post_form)
     }
 }
 
+//  Replace any existing registration with the same ID.
+var replace_registration = function(registrations, new_attrs)
+{
+    for (var i = 0; i < registrations.length; i++)
+    {
+        if (registrations[i].id === new_attrs.id)
+        {
+            registrations[i] = new_attrs;
+            return;
+        }
+    }
+    registrations.push(new_attrs);
+}
+
 var register_form = function(form_attrs)
 {
     var new_attrs = new CallbackForm(form_attrs.id, form_attrs.url);
-    registered_forms.push(new_attrs);
+    replace_registration(registered_forms, new_attrs);
     //  console.log('Registered Ajax form with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
 var register_link = function(link_attrs)
 {
     var new_attrs = new CallbackLink(link_attrs.id, link_attrs.url, link_attrs.content, link_attrs.post_form);
-    registered_links.push(new_attrs);
+    replace_registration(registered_links, new_attrs);
     //  console.log('Registered Ajax link with attributes: ' + JSON.stringify(new_attrs, null, '\t'));
 }
 
