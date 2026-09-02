@@ -66,9 +66,9 @@ def _media_cache_version(rel_path, tag_name):
     val = Tag.getTag(tag_name)
     if val:
         return val
-    full_path = Path(settings.MEDIA_ROOT) / rel_path
-    if full_path.exists():
-        return hex(int(full_path.stat().st_mtime))
+    full_path = str(Path(settings.MEDIA_ROOT) / rel_path)
+    if os.path.exists(full_path):
+        return hex(int(os.path.getmtime(full_path)))
     return ''
 
 
@@ -106,7 +106,7 @@ def _filter_active_tags(accessed_keys, get_all_fn):
     in the empty-tracking case.
     """
     if accessed_keys is not None and not accessed_keys:
-        # Tracking is active but the view consulted no tags — skip the DB
+        # Tracking is active but the view consulted no tags â€” skip the DB
         # query entirely; nothing will be shown.
         return []
     all_nondefault = get_all_fn()
