@@ -10,11 +10,11 @@
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
 
 {% if result == "success" %}
-<div class="alert alert-success">
+<div role="alert" class="alert alert-success">
   <b>Your payment was successful!</b>
 </div>
 {% elif result == "declined" %}
-<div class="alert alert-danger">
+<div role="alert" class="alert alert-danger">
   <b>Your card was declined.</b> Please try again.
 </div>
 {% endif %}
@@ -42,7 +42,7 @@
 <input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
 <input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
 <input type="hidden" name="billTo_country" value="US" />
-<div class="alert alert-warning">
+<div role="alert" class="alert alert-warning">
     <strong>Note:</strong> This payment will appear on your credit card statement as <strong>SPLASH LEARNING UNLIMT</strong>.
 </div>
 <center><input id="submit_form" class="btn btn-primary" type="submit" value="Continue to Payment"></center>

@@ -2,7 +2,12 @@ coverage:
   status:
     project:
       default:
+        # Overall coverage must stay at or above this level.
+        target: 75%
+        # Tolerance for run-to-run noise; a larger drop is a real regression.
         threshold: 0.1%
+    # Explicitly off: omitting this key would enable the patch status with a
+    # target of auto, rather than disabling it.
     patch: no
 
 comment: false

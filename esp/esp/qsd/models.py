@@ -37,11 +37,23 @@ import hashlib
 from django.db import models
 from django.urls import reverse
 
-from markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
+
+from esp.utils.templatetags.markup import markdown
+
+def qsd_cache_key(url):
+    """Build a cache key for QSD default content, hashing long URLs.
+
+    Threshold is 180 chars to leave room for Django cache key prefixes
+    within Memcached's 250-char key limit.
+    """
+    if len(url) < 180:
+        return 'qsd_default_content:%s' % url
+    return 'qsd_default_content:%s' % hashlib.md5(url.encode('utf-8')).hexdigest()
+
 
 class QSDManager(models.Manager):
 
@@ -92,7 +104,7 @@ class QSDManager(models.Manager):
 
 def qsd_edit_id(val):
     """ A short hex string summarizing the QSD's URL. """
-    return hashlib.sha1(val.encode("UTF-8")).hexdigest()[:8]
+    return hashlib.sha256(val.encode("UTF-8")).hexdigest()[:8]
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """

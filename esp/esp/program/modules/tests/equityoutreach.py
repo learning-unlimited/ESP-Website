@@ -1,17 +1,17 @@
 from __future__ import absolute_import
 
 from esp.program.models import FinancialAidRequest, ProgramModule, RegistrationProfile
-from esp.program.modules.handlers.regprofilemodule import EquityOutreachCohorts
+from esp.program.modules.handlers.studentregprofilemodule import EquityOutreachCohorts
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import StudentInfo
 
 
 class EquityOutreachTest(ProgramFrameworkTest):
-    """Equity cohort lists are exposed via RegProfileModule (no separate module)."""
+    """Equity cohort lists are exposed via StudentRegProfileModule."""
 
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler="RegProfileModule", module_type="learn"),
+            ProgramModule.objects.get(handler="StudentRegProfileModule"),
         ]
         super(EquityOutreachTest, self).setUp(modules=modules, num_students=3, num_teachers=1)
         self.admin = self.admins[0]
@@ -55,8 +55,8 @@ class EquityOutreachTest(ProgramFrameworkTest):
         _ = list(waitlisted_users)
 
     def test_equity_lists_in_program_lists(self):
-        """Equity cohorts are exposed as student lists via RegProfileModule (comm panel, user records)."""
-        pm = self.program.getModule("RegProfileModule")
+        """Equity cohorts are exposed as student lists via StudentRegProfileModule (comm panel, user records)."""
+        pm = self.program.getModule("StudentRegProfileModule")
         lists = pm.students(QObject=False)
         descs = pm.studentDesc()
 
@@ -65,4 +65,3 @@ class EquityOutreachTest(ProgramFrameworkTest):
             self.assertIn(list_name, lists)
             self.assertIn(list_name, descs)
             self.assertEqual(descs[list_name], EquityOutreachCohorts.cohort_label(key))
-
