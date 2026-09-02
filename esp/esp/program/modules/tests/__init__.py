@@ -103,3 +103,5 @@ from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
 from esp.program.modules.tests.surveymanagement import SurveyManagementTest
 from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleTest
 from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest
+
+from .test_donationmodule import *
