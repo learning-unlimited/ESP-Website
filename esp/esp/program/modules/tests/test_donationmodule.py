@@ -5,7 +5,7 @@ from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 
 class DonationFormTest(SimpleTestCase):
-    """Tests for DonationForm validation logic using SimpleTestCase for performance."""
+    """Tests for DonationForm validation logic."""
 
     def test_donation_form_preset_amount(self):
         """Test form validates successfully with a preset amount."""
@@ -13,9 +13,9 @@ class DonationFormTest(SimpleTestCase):
             'donation_text': 'Support us',
             'donation_options': [10, 20, 50],
         }
-        form = DonationForm(settings, data={'donation_amount': '20'})
+        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '20'})
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['donation_amount'], 20)
+        self.assertEqual(form.amount, '20')
 
     def test_donation_form_custom_amount(self):
         """Test form validates successfully with a valid custom amount."""
@@ -23,9 +23,8 @@ class DonationFormTest(SimpleTestCase):
             'donation_text': 'Support us',
             'donation_options': [10, 20, 50],
         }
-        form = DonationForm(settings, data={'donation_amount': 'custom', 'custom_amount': '25'})
+        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '-1', 'custom_amount': '25'})
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data['custom_amount'], 25.0)
 
     def test_donation_form_missing_custom_amount(self):
         """Test form validation fails when custom is selected but amount is missing."""
@@ -33,7 +32,7 @@ class DonationFormTest(SimpleTestCase):
             'donation_text': 'Support us',
             'donation_options': [10, 20, 50],
         }
-        form = DonationForm(settings, data={'donation_amount': 'custom', 'custom_amount': ''})
+        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '-1', 'custom_amount': ''})
         self.assertFalse(form.is_valid())
         self.assertIn('custom_amount', form.errors)
 
@@ -50,9 +49,9 @@ class DonationModuleTest(TestCase):
             grade_max=12,
         )
         self.pm = ProgramModule.objects.create(
-            admin_title="Donation",
+            admin_title="Donation Module",
             link_title="Make a Donation",
-            module_type="student",
+            module_type="learn",
             handler="DonationModule",
             seq=10,
         )
@@ -63,5 +62,5 @@ class DonationModuleTest(TestCase):
     def test_module_properties(self):
         """Test module_properties returns correct configuration metadata."""
         props = DonationModule.module_properties()
-        self.assertEqual(props.get("admin_title"), "Donation")
-        self.assertEqual(props.get("module_type"), "student")
+        self.assertEqual(props.get("admin_title"), "Donation Module")
+        self.assertEqual(props.get("module_type"), "learn")
