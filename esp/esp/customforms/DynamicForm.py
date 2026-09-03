@@ -201,8 +201,8 @@ class CustomFormHandler():
                             raise Exception(f'Could not find linked field: {model_field}')
 
                     # Enforce "Required" constraint server-side
-                    form_field.required = field_attrs.get('required', False)
                     form_field.__dict__.update(field_attrs)
+                    form_field.required = bool(field_attrs.get('required', False))
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
                         # Add a class 'required' to the widget
