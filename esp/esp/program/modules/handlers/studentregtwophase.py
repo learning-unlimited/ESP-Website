@@ -44,6 +44,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.loader import render_to_string
 
 from esp.cal.models import Event
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
@@ -183,6 +184,19 @@ class StudentRegTwoPhase(ProgramModuleObj):
         Builds context specific to the catalog. Used by all views which render
         the catalog. This is not a view in itself.
         """
+        # The catalog pages fetch their class data from the JSON Data module
+        # (via the /json/... endpoints). If that module isn't enabled for
+        # this program, those requests will silently fail (e.g. 404) and the
+        # page will just spin forever with no indication of what's wrong.
+        # Fail loudly here instead, so the misconfiguration is obvious.
+        if not prog.hasModule('JSONDataModule'):
+            raise ESPError(
+                "The Two-Phase Student Registration module requires the "
+                "'JSON Data Module' to also be enabled for this program, "
+                "but it isn't. Please add the JSON Data Module to this "
+                "program's modules (under Manage -> Configure Program "
+                "Modules) and try again.", log=False)
+
         context = {}
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes

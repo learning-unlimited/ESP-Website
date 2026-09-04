@@ -96,7 +96,7 @@ from esp.program.modules.tests.test_teachereventsmanage_module import (
     TeacherEventsManageModuleIsCompletedTest,
     TeacherEventsManageModuleViewTest,
 )
-from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest, StudentRegTwoPhaseMisconfiguredTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
