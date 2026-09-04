@@ -98,6 +98,51 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
     # ---------------------------------------------------------------
+    # Test: Other registration steps are reachable from the TwoPhase page
+    # ---------------------------------------------------------------
+    def test_main_page_shows_registration_checklist(self):
+        """The registration checklist should link the other required steps."""
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username)
+
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Steps for Registration')
+        self.assertContains(
+            response, '/learn/%s/profile' % self.program.getUrlBase())
+        self.assertContains(
+            response, '/learn/%s/finaid' % self.program.getUrlBase())
+
+    def test_main_page_lists_other_steps_without_checklist(self):
+        """With the checklist disabled, the page links the other steps itself."""
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.progress_mode = 0
+        scrmi.save()
+
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username)
+
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Steps for Registration')
+        self.assertContains(response, 'Step 0')
+        self.assertContains(
+            response, '/learn/%s/profile' % self.program.getUrlBase())
+        self.assertContains(
+            response, '/learn/%s/finaid' % self.program.getUrlBase())
+        # The lottery page itself is not repeated as one of the other steps.
+        self.assertNotContains(
+            response,
+            '<li><a href="/learn/%s/studentreg2phase">'
+            % self.program.getUrlBase())
+
+    # ---------------------------------------------------------------
     # Test: GET on confirm_registration redirects (must be POST)
     # ---------------------------------------------------------------
     def test_confirm_get_redirects(self):

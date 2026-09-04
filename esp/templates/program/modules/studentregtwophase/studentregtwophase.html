@@ -81,6 +81,24 @@ Welcome to the registration lottery for {{program.niceName}}. Please complete al
 
 <hr>
 
+{% if other_steps %}
+<h1>Step 0 &ndash; Other registration requirements</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step0" %}
+<p>
+Some parts of your registration, such as your profile and the financial aid
+form, are not handled on this page. Follow the links below to complete them.
+</p>
+{% end_inline_program_qsd_block %}
+<ul>
+{% for title, url in other_steps %}
+<li><a href="{{ url }}">{{ title }}</a></li>
+{% endfor %}
+</ul>
+
+<br>
+<hr>
+{% endif %}
+
 <h1>Step 1 &ndash; Star all classes you are interested in taking</h1>
 {% inline_program_qsd_block program "learn:studentregtwophase/step1" %}
 <p>

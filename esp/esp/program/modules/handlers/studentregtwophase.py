@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
 from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.loader import render_to_string
@@ -174,6 +175,21 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         context['timeslots'] = schedule
         context['is_confirmed'] = self.isCompleted()
+
+        # The registration checklist normally renders at the top of this page
+        # (module_base.html -> registration_progress). When a chapter turns it
+        # off, list the remaining steps here so that the profile, financial aid
+        # form, and other requirements stay reachable during the lottery.
+        try:
+            progress_mode = prog.studentclassregmoduleinfo.progress_mode
+        except ObjectDoesNotExist:
+            progress_mode = 0
+        if progress_mode == 0:
+            context['other_steps'] = [
+                (mod.get_link_title(), mod.get_full_path())
+                for mod in prog.getModules(request.user, 'learn')
+                if mod.isStep() and not mod.useTemplate()
+                and mod.get_full_path() != self.get_full_path()]
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
