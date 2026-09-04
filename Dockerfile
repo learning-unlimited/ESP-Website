@@ -1,9 +1,6 @@
 FROM ubuntu:24.04 AS builder
 
 # Build-time environment variables.
-# The venv at /opt/venv is the single place Python packages live; putting it
-# first on PATH makes `python`/`pip` resolve to it (Ubuntu ships no bare
-# `python` binary, only `python3`).
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
@@ -18,8 +15,6 @@ WORKDIR /app
 RUN printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
 
 # Install only build-time dependencies (compilers, -dev headers).
-# Ubuntu 24.04 ships Python 3.12 as its system Python, so python3.12 comes
-# from the distro rather than from a python:* base image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3.12 \
@@ -39,10 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js from nodesource, then LESS.
-# The setup script is downloaded before it is run rather than piped into bash:
-# in a pipeline a failed curl is masked by bash's exit status, so an
-# unreachable nodesource would silently fall back to the distro's nodejs
-# (which packages npm separately) and fail later with a confusing error.
+# The setup script is downloaded before it is run.
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
     && curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh \
     && bash /tmp/nodesource_setup.sh \
@@ -59,8 +51,6 @@ COPY esp/public/media/theme_editor/package.json \
 RUN cd /tmp/theme-npm && npm ci
 
 # Install Python dependencies into the venv.
-# Ubuntu marks its system Python as externally managed (PEP 668), so a venv
-# is required rather than a global pip install.
 # Docker layer caching speeds up rebuilds
 # --prefer-binary favors prebuilt wheels over slow source builds
 COPY esp/requirements.txt /tmp/requirements.txt
@@ -87,12 +77,9 @@ RUN printf '%s\n' \
     'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
 
 # Install runtime dependencies:
-#   - Slim runtime libraries (counterparts of builder's -dev packages). Ubuntu
-#     24.04 renamed several of these in the 64-bit time_t transition, hence the
-#     t64 suffixes.
+#   - Slim runtime libraries (counterparts of builder's -dev packages).
 #   - Runtime tools from packages_base.txt (filtering out build-essential, git,
-#     postgresql, memcached, python3-pip, and -dev packages). python3.12 is
-#     deliberately kept: it is the interpreter the copied venv runs on.
+#     postgresql, memcached, python3-pip, and -dev packages).
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \

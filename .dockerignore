@@ -73,10 +73,7 @@ logs
 # Docker files
 docker-compose.override.yml
 
-# Static/media (generated).
-# Exclude only paths with no git-tracked contents. The parent media directories
-# hold tracked source the app needs when the image runs without the dev bind
-# mount, so excluding them wholesale breaks theme compilation and asset lookup.
+# Static/media (generated). Exclude only paths with no git-tracked contents.
 esp/public/media/uploaded/*
 esp/public/media/images/theme
 esp/public/media/scripts/theme
@@ -85,8 +82,8 @@ static
 staticfiles
 
 # Node
-node_modules
-npm-debug.log
+**/node_modules
+**/npm-debug.log
 
 # Temporary
 tmp
