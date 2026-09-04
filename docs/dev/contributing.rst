@@ -16,6 +16,17 @@ Set up pre-commit hooks to automatically lint staged files before each commit: :
   pip install pre-commit
   pre-commit install
 
+Python files are linted with flake8 and JavaScript files with ESLint.  The
+JavaScript hook (and the ESLint CI job) needs the Node dependencies installed
+once: ::
+
+  npm ci
+
+ESLint only checks the files listed in ``eslint.config.mjs``; most of
+``esp/public/media/scripts`` is vendored third-party code.  When you modernize
+another file, add it to that list in the same pull request so it stays clean.
+Run the checks yourself with ``npm run lint``.
+
 Other git config you might find useful: ::
 
   git config --global push.default simple # makes git only push the current branch, which is useful for not accidentally messing things up

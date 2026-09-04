@@ -1,0 +1,23 @@
+{
+  "name": "esp-website",
+  "version": "1.0.0",
+  "description": "JavaScript tooling for the ESP-Website project",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/learning-unlimited/ESP-Website.git"
+  },
+  "bugs": {
+    "url": "https://github.com/learning-unlimited/ESP-Website/issues"
+  },
+  "homepage": "https://github.com/learning-unlimited/ESP-Website#readme",
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "globals": "^17.4.0"
+  }
+}

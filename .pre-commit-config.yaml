@@ -7,3 +7,10 @@ repos:
         language: python
         types: [python]
         additional_dependencies: [flake8]
+      #  Which files are actually linted is decided by eslint.config.mjs; files
+      #  it ignores are skipped rather than reported.
+      - id: eslint
+        name: eslint
+        entry: npx --no-install eslint --no-warn-ignored
+        language: system
+        types: [javascript]

@@ -1,3 +1,8 @@
+'use strict';
+
+//  Instantiated by templates/program/modules/ajaxschedulingmodule/ajax_scheduling.html
+/* exported Scheduler */
+
 /**
  * The object that initializes and renders all the pieces of the scheduler
  * Has Timeslots, Sections, MessagePanel, SectionInfoPanel, SectionCommentDialog,
@@ -27,16 +32,16 @@ function Scheduler(
      */
     this.init = function() {
         // Populate data with resources
-        $j.each(data.rooms, function(index, room) {
+        $j.each(data.rooms, (index, room) => {
             room.resources = [];
             room.resource_lines = [];
-            $j.each(room.associated_resources, function(index, resource) {
-                var resource_type = data.resource_types[resource.res_type_id];
+            $j.each(room.associated_resources, (index, resource) => {
+                const resource_type = data.resource_types[resource.res_type_id];
                 room.resources.push({
                     'resource_type': resource_type,
                     'value': resource.value,
                 });
-                var desc = resource_type.name;
+                let desc = resource_type.name;
                 if(resource.value) {
                     desc += ': ' + resource.value;
                 }
@@ -44,10 +49,10 @@ function Scheduler(
             });
         });
 
-        $j.each(data.sections, function(index, section) {
-            requests = section.resource_requests[section.id];
+        $j.each(data.sections, (index, section) => {
+            const requests = section.resource_requests[section.id];
             if(requests) {
-                $j.each(requests, function(index, resource_array) {
+                $j.each(requests, (index, resource_array) => {
                     resource_array[0] = data.resource_types[resource_array[0]];
                 });
             } else {
@@ -93,7 +98,7 @@ function Scheduler(
         this.sectionInfoPanel = new SectionInfoPanel(sectionInfoEl,
                                                      this.sections,
                                                      this.messagePanel,
-                                                     this.sectionCommentDialog)
+                                                     this.sectionCommentDialog);
 
         this.matrix = new Matrix(
             this.timeslots,
@@ -119,13 +124,13 @@ function Scheduler(
         );
 
         // Set up keyboard shortcuts
-        $j("body").on("keydown", function(evt) {
+        $j("body").on("keydown", (evt) => {
             // console.log(evt);
             if(evt.key === 'Delete') { // delete is pressed: unschedule the selected section
                 this.sections.unscheduleSection(this.sections.selectedSection);
             } else if(evt.key === 'Escape') { // escape is pressed: unselect the currently selected section and/or moderator
-                this.sections.unselectSection()
-                if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator()
+                this.sections.unselectSection();
+                if(has_moderator_module === "True") this.moderatorDirectory.unselectModerator();
             } else if(evt.key === 'F1') { // F1 is pressed: open the first tab (class directory)
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 0});
@@ -139,9 +144,9 @@ function Scheduler(
                 evt.preventDefault();
                 $j("#side-panel").tabs({active: 3});
             }
-        }.bind(this));
+        });
 
-        $j('body').on("keyup", function(evt) {
+        $j('body').on("keyup", (evt) => {
             if(evt.key === '/') { // '/' is pressed: open the class directory and focus on the search box
                 $j("#side-panel").tabs({active: 0});
                 $j("#class-search-text").trigger("focus");
@@ -149,25 +154,25 @@ function Scheduler(
         });
 
         // set up handler for selecting moderators
-        $j("body").on("click", "td.moderator-cell", function(evt, ui) {
-            var moderatorCell = $j(evt.currentTarget).data("moderatorCell");
+        $j("body").on("click", "td.moderator-cell", (evt) => {
+            const moderatorCell = $j(evt.currentTarget).data("moderatorCell");
             this.moderatorDirectory.selectModerator(moderatorCell.moderator);
-        }.bind(this));
+        });
 
         // prevent above handler if clicking a link within a moderator cell
-        $j("body").on("click", "td.moderator-cell > a", function(evt){
+        $j("body").on("click", "td.moderator-cell > a", (evt) => {
             evt.stopPropagation();
         });
 
         // set up handler for selecting moderators from section info panel
-        $j("body").on("click", "a.moderator-link", function(evt, ui) {
-            var modID = $j(evt.currentTarget).data("moderator");
+        $j("body").on("click", "a.moderator-link", (evt) => {
+            const modID = $j(evt.currentTarget).data("moderator");
             this.moderatorDirectory.selectModerator(this.moderatorDirectory.moderators[modID]);
-        }.bind(this));
+        });
 
         // set up handlers for selecting/scheduling classes and assigning/unassigning moderators
-        $j("body").on("click", "td.matrix-cell > a", function(evt, ui) {
-            var cell = $j(evt.currentTarget.parentElement).data("cell");
+        $j("body").on("click", "td.matrix-cell > a", (evt) => {
+            const cell = $j(evt.currentTarget.parentElement).data("cell");
             if((evt.ctrlKey || evt.metaKey) && this.sections.selectedSection){
                 // attempt to swap the previously selected section with the section in the newly clicked cell
                 this.sections.swapSections(this.sections.selectedSection, cell.section);
@@ -180,10 +185,10 @@ function Scheduler(
             } else {
                 this.sections.selectSection(cell.section);
             }
-        }.bind(this));
+        });
 
-        $j("body").on("click", "td.teacher-available-cell", function(evt, ui) {
-            var cell = $j(evt.currentTarget).data("cell");
+        $j("body").on("click", "td.teacher-available-cell", (evt) => {
+            const cell = $j(evt.currentTarget).data("cell");
             if(this.sections.selectedSection) {
                 if (this.sections.recurringSelectionMode) {
                     this.sections.toggleRecurringTimeslot(this.sections.selectedSection, cell.room_id, cell.timeslot_id);
@@ -192,26 +197,26 @@ function Scheduler(
                                                   cell.room_id, cell.timeslot_id);
                 }
             }
-        }.bind(this));
+        });
 
-        $j("body").on("click", "td.disabled-cell", function(evt, ui) {
+        $j("body").on("click", "td.disabled-cell", () => {
             this.sections.unselectSection();
-        }.bind(this));
+        });
 
         // set up handlers to schedule and unschedule ghost sections while hovering over empty cells
-        $j("body").on("mouseenter", "td.teacher-available-cell", function(evt, ui) {
+        $j("body").on("mouseenter", "td.teacher-available-cell", (evt) => {
             if(this.sections.selectedSection){
-                var cell = $j(evt.currentTarget).data("cell");
+                const cell = $j(evt.currentTarget).data("cell");
                 this.sections.scheduleAsGhost(cell.room_id, cell.timeslot_id);
             }
-        }.bind(this));
+        });
 
-        $j("body").on("mouseleave click", "td.teacher-available-cell", function(evt, ui) {
+        $j("body").on("mouseleave click", "td.teacher-available-cell", () => {
             this.sections.unscheduleAsGhost();
-        }.bind(this));
+        });
 
         // set up handler from print button
-        $j("body").on("click", "#print_button", function(evt, ui) {
+        $j("body").on("click", "#print_button", () => {
             printJS({
                 printable: "matrix-div",
                 type: 'html',
@@ -223,7 +228,7 @@ function Scheduler(
         });
 
         // set up handler for legend button
-        $j("body").on("click", "#legend_button", function(evt, ui) {
+        $j("body").on("click", "#legend_button", () => {
             $j("#legend").toggle();
             if ($j("#legend_button").html() == "Show Legend") {
                 $j("#legend_button").html("Hide Legend");
@@ -231,7 +236,7 @@ function Scheduler(
                 $j("#legend_button").html("Show Legend");
             }
         });
-        $j("body").on("click", "#legend", function(evt, ui) {
+        $j("body").on("click", "#legend", () => {
             $j("#legend").hide();
             $j("#legend_button").html("Show Legend");
         });
@@ -246,4 +251,4 @@ function Scheduler(
         this.matrix.render();
         this.changelogFetcher.pollForChanges(update_interval);
     };
-};
+}
