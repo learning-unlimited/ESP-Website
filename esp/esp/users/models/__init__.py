@@ -707,6 +707,13 @@ class BaseESPUser(object):
     getTypes = staticmethod(getTypes)
 
     @staticmethod
+    def awaiting_activation_Q():
+        """
+        Q object matching accounts that were registered but never activated.
+        """
+        return Q(is_active=False, pending_activation__isnull=False)
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
             raise ESPError("Invalid type to find all of.")
@@ -2255,7 +2262,7 @@ class PersistentQueryFilter(models.Model):
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
-    sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
+    sha1_hash    = models.CharField(max_length=256)            # A SHA-256 digest of the pickled query filter. Column name is historical.
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
@@ -2270,14 +2277,15 @@ class PersistentQueryFilter(models.Model):
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = filter_hash)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                        q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = filter_hash)
         foo.useful_name = description
         foo.save()
         return foo
@@ -2315,10 +2323,10 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
 
         self.q_filter = dumped_filter
-        self.sha1_hash = sha1_hash
+        self.sha1_hash = filter_hash
         self.useful_name = description
 
         if should_save:
@@ -2357,7 +2365,7 @@ class PersistentQueryFilter(models.Model):
         except Exception:
             qobject_string = b''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha256(qobject_string).hexdigest())
         except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
@@ -2525,6 +2533,24 @@ class Record(models.Model):
     def __str__(self):
         return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
 
+class PendingActivation(models.Model):
+    """
+    Marks an account as registered but never activated.
+
+    The presence of a row means "this account is waiting for its owner to
+    click the activation link in their registration email"; the row is
+    deleted the first time the account is successfully activated.
+    """
+    user = models.OneToOneField(ESPUser, related_name='pending_activation',
+                                on_delete=models.CASCADE)
+    created = models.DateTimeField(blank=True, default=datetime.now)
+
+    class Meta:
+        app_label = 'users'
+
+    def __str__(self):
+        return f"{self.user} is awaiting account activation"
+
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -2571,6 +2597,7 @@ class Permission(ExpirableModel):
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
@@ -3026,8 +3053,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 

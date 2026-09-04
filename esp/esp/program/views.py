@@ -75,7 +75,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -737,6 +737,8 @@ def activate_or_deactivate_user(request, activate):
             user = users[0]
             user.is_active = activate
             user.save()
+            if activate:
+                PendingActivation.objects.filter(user=user).delete()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
@@ -1270,6 +1272,16 @@ def statistics(request, program=None):
                 field_ids.append(field_name)
         return field_ids
 
+    def get_form_setup(field_ids):
+        """ Data telling ajax_tools.js how to re-attach behavior to a freshly
+            rendered statistics form.
+        """
+        return {
+            'forms': [{'id': 'statistics_form', 'url': '/manage/statistics/'}],
+            'callbacks': [{'name': 'setup_update', 'args': [field_id]}
+                          for field_id in field_ids],
+        }
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -1291,7 +1303,7 @@ def statistics(request, program=None):
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-            result['script'] = render_to_string('program/statistics/script.js', context)
+            result.update(get_form_setup(context['field_ids']))
             return HttpResponse(json.dumps(result), content_type='application/json')
 
         if form.is_valid():
@@ -1445,7 +1457,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1458,7 +1470,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1687,7 +1699,7 @@ def module_schedule_update_api(request, program_type, program_term):
 
         # Enforce hard constraints (same as admincore POST handler)
         handler = mod.module.handler
-        if handler == "RegProfileModule":
+        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
             mod.seq = 0
             mod.required = True
         elif "CreditCardModule_" in handler:
@@ -1850,7 +1862,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
                 handler = mod.module.handler
 
                 position_locked = (
-                    handler == 'RegProfileModule' or
+                    handler in ('StudentRegProfileModule', 'TeacherRegProfileModule') or
                     'CreditCardModule_' in handler or
                     handler == 'StudentRegConfirm'
                 )
