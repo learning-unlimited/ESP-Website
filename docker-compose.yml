@@ -44,8 +44,6 @@ services:
         condition: service_healthy
       memcached:
         condition: service_started
-    environment:
-      VIRTUAL_ENV: /usr
     restart: unless-stopped
     stdin_open: true
     tty: true

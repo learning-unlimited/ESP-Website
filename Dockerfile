@@ -1,9 +1,14 @@
-FROM python:3.12-slim-bullseye AS builder
+FROM ubuntu:24.04 AS builder
 
-# Build-time environment variables
+# Build-time environment variables.
+# The venv at /opt/venv is the single place Python packages live; putting it
+# first on PATH makes `python`/`pip` resolve to it (Ubuntu ships no bare
+# `python` binary, only `python3`).
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
 # Set the working directory
 WORKDIR /app
@@ -12,9 +17,14 @@ WORKDIR /app
 # (safe in a throwaway builder layer; not propagated to the runtime image)
 RUN printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
 
-# Install only build-time dependencies (compilers, -dev headers)
+# Install only build-time dependencies (compilers, -dev headers).
+# Ubuntu 24.04 ships Python 3.12 as its system Python, so python3.12 comes
+# from the distro rather than from a python:* base image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    python3.12 \
+    python3.12-dev \
+    python3.12-venv \
     libpq-dev \
     git \
     curl \
@@ -28,9 +38,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js from nodesource, then LESS
+# Install Node.js from nodesource, then LESS.
+# The setup script is downloaded before it is run rather than piped into bash:
+# in a pipeline a failed curl is masked by bash's exit status, so an
+# unreachable nodesource would silently fall back to the distro's nodejs
+# (which packages npm separately) and fail later with a confusing error.
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh \
+    && bash /tmp/nodesource_setup.sh \
+    && rm /tmp/nodesource_setup.sh \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --prefix /usr less@3.13.1
@@ -42,20 +58,24 @@ COPY esp/public/media/theme_editor/package.json \
      /tmp/theme-npm/
 RUN cd /tmp/theme-npm && npm ci
 
-# Install Python dependencies
+# Install Python dependencies into the venv.
+# Ubuntu marks its system Python as externally managed (PEP 668), so a venv
+# is required rather than a global pip install.
 # Docker layer caching speeds up rebuilds
 # --prefer-binary favors prebuilt wheels over slow source builds
 COPY esp/requirements.txt /tmp/requirements.txt
-RUN python -m pip install --upgrade pip setuptools wheel && \
+RUN python3.12 -m venv /opt/venv && \
+    python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 # Runtime stage - smaller final image
-FROM python:3.12-slim-bullseye AS runtime
+FROM ubuntu:24.04 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    VIRTUAL_ENV=/usr \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
@@ -67,20 +87,24 @@ RUN printf '%s\n' \
     'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
 
 # Install runtime dependencies:
-#   - Slim runtime libraries (counterparts of builder's -dev packages)
-#   - Runtime tools from packages_base.txt (filtering out python*, build-essential, git, postgres*, memcached, and -dev packages)
+#   - Slim runtime libraries (counterparts of builder's -dev packages). Ubuntu
+#     24.04 renamed several of these in the 64-bit time_t transition, hence the
+#     t64 suffixes.
+#   - Runtime tools from packages_base.txt (filtering out build-essential, git,
+#     postgresql, memcached, python3-pip, and -dev packages). python3.12 is
+#     deliberately kept: it is the interpreter the copied venv runs on.
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     postgresql-client \
-    libmemcached11 \
-    libcurl4 \
-    libssl1.1 \
-    libjpeg62-turbo \
+    libmemcached11t64 \
+    libcurl4t64 \
+    libssl3t64 \
+    libjpeg-turbo8 \
     libfreetype6 \
     zlib1g \
     ca-certificates \
-    $(grep -v -E '^(#|$|python|build-essential|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
+    $(grep -v -E '^(#|$|build-essential|git|postgresql|memcached|python3-pip)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js and LESS from builder
@@ -99,9 +123,8 @@ RUN sha256sum /tmp/theme-pkg-lock.json | cut -d' ' -f1 \
       > /opt/theme_node_modules_baked/.lock-hash && \
     rm /tmp/theme-pkg-lock.json
 
-# Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the Python venv from builder
+COPY --from=builder /opt/venv /opt/venv
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
