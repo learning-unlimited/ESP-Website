@@ -999,7 +999,8 @@ class Program(models.Model, CustomFormsLinkModel):
             return list(self.getTimeSlots(exclude_types=[]))
         else:
             return list(self.getTimeSlots())
-    getTimeSlotList.depend_on_model('cal.Event')
+    getTimeSlotList.get_or_create_token(('self',))
+    getTimeSlotList.depend_on_row('cal.Event', lambda e: {'self': e.program} if e.program_id else {})
 
     def total_duration(self):
         """ Returns the total length of the events in this program, as a timedelta object. """
@@ -1135,7 +1136,9 @@ class Program(models.Model, CustomFormsLinkModel):
             Q_filters = Q(program=self)
 
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types]).order_by('priority_default')
-    getResourceTypes.depend_on_model('resources.ResourceType')
+    getResourceTypes.get_or_create_token(('self',))
+    getResourceTypes.depend_on_row('resources.ResourceType',
+                                   lambda rt: {'self': rt.program} if rt.program_id else {})
     getResourceTypes.depend_on_model('tagdict.Tag')
 
     def getResources(self):
@@ -1275,8 +1278,10 @@ class Program(models.Model, CustomFormsLinkModel):
 
         modules.sort(key=lambda m: m.seq)
         return modules
+    getModules_cached.get_or_create_token(('self',))
     getModules_cached.depend_on_row('program.Program', lambda prog: {'self': prog})
     getModules_cached.depend_on_model('program.ProgramModule')
+    getModules_cached.depend_on_m2m('program.Program', 'program_modules', lambda program, module: {'self': program})
     getModules_cached.depend_on_row('modules.ProgramModuleObj', lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
@@ -1300,6 +1305,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def hasModule(self, name):
         """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
         return self.program_modules.filter(handler=name).exists()
+    hasModule.get_or_create_token(('self',))
     hasModule.depend_on_row('program.Program', lambda prog: {'self': prog})
     hasModule.depend_on_model('program.ProgramModule')
     hasModule.depend_on_row('modules.ProgramModuleObj', lambda module: {'self': module.program})
@@ -1422,6 +1428,10 @@ class Program(models.Model, CustomFormsLinkModel):
     #   Update cache whenever a class is approved, a student is marked as attending, a teacher or student changes their profile, or a volunteer offer is changed
     getShirtInfo.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     getShirtInfo.depend_on_row('users.Record', lambda record: {'self': record.program}, lambda record: record.event and record.event.name == 'attended')
+    getShirtInfo.depend_on_m2m('program.ClassSubject', 'teachers',
+                               lambda cls, teacher: {'self': cls.parent_program})
+    getShirtInfo.depend_on_row('program.ClassSection',
+                               lambda sec: {'self': sec.parent_class.parent_program})
     getShirtInfo.depend_on_model('users.TeacherInfo')
     getShirtInfo.depend_on_model('users.StudentInfo')
     getShirtInfo.depend_on_model('program.VolunteerOffer')
@@ -1472,7 +1482,7 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url=f'{program}/{instance}')
         return prog_inst
-    by_prog_inst.depend_on_row('program.Program', lambda prog: {'program': prog})
+    by_prog_inst.depend_on_row('program.Program', lambda prog: {})
     by_prog_inst = classmethod(by_prog_inst)
 
     def _sibling_discount_get(self):
@@ -1701,6 +1711,7 @@ class RegistrationProfile(models.Model):
     # We can fall back to the user's latest profile from another program when a
     # program-specific profile does not exist, so cache invalidation must depend
     # on any profile for the user (not just the exact (user, program) pair).
+    getLastForProgram.get_or_create_token(('user',))
     getLastForProgram.depend_on_row('program.RegistrationProfile', lambda rp: {'user': rp.user})
     getLastForProgram.depend_on_row('users.StudentInfo', lambda si: {'user': si.user})
     getLastForProgram = staticmethod(getLastForProgram)

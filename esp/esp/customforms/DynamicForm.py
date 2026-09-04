@@ -491,6 +491,7 @@ class FormHandler:
             else:
                 field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
+    _getFormMetadata.get_or_create_token(('form',))
     _getFormMetadata.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     _getFormMetadata.depend_on_row('customforms.Attribute', lambda attr: {'form': attr.field.form})
     _getFormMetadata.depend_on_row('customforms.Section', lambda section: {'form': section.page.form})
