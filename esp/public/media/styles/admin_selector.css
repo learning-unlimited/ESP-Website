@@ -1,0 +1,19 @@
+/* Scoped support for Django's admin FilteredSelectMultiple ("dual column")
+   widget outside of the admin site, used by the *_active_fields tag settings.
+   admin/css/widgets.css styles the widget but reads colour variables that
+   admin/css/base.css defines on :root; base.css would restyle the whole page,
+   so the handful of variables the selector rules need are defined here
+   instead, scoped to the widget itself. */
+.selector {
+    --primary: #79aec8;
+    --secondary: #417690;
+    --primary-fg: #fff;
+    --border-color: #ccc;
+    --darkened-bg: #f8f8f8;
+    --selected-bg: #e4e4e4;
+    --body-quiet-color: #666;
+    --breadcrumbs-fg: #c4dce8;
+    --header-link-color: var(--primary-fg);
+    --link-fg: #417893;
+    max-width: 800px;
+}

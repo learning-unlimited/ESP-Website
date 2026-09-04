@@ -49,6 +49,7 @@ from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import all_global_tags, tag_categories
+from esp.tagdict.active_fields import LEGACY_TAG_KEYS, active_fields_form_field, initial_choices, value_from_choices
 from esp.tagdict.models import Tag
 from collections import OrderedDict
 
@@ -141,6 +142,15 @@ $j(function() {
 ''' % (search_id, search_id, search_id, attrs['id'])
         return mark_safe(html)
 
+
+#   The form class whose optional fields each *_profile_active_fields tag controls
+_PROFILE_ACTIVE_FIELDS_FORMS = {
+    'teacher_profile_active_fields': 'TeacherProfileForm',
+    'student_profile_active_fields': 'StudentProfileForm',
+    'volunteer_profile_active_fields': 'VolunteerProfileForm',
+    'educator_profile_active_fields': 'EducatorProfileForm',
+    'guardian_profile_active_fields': 'GuardianProfileForm',
+}
 
 def make_id_tuple(object_list):
     return tuple([(o.id, str(o)) for o in object_list])
@@ -624,21 +634,11 @@ class TagSettingsForm(BetterForm):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 # Some field widgets need to be setup manually because we can't do it during compilation
-                if key == 'teacher_profile_hide_fields':
-                    from esp.users.forms.user_profile import TeacherProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in TeacherProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'student_profile_hide_fields':
-                    from esp.users.forms.user_profile import StudentProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in StudentProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'volunteer_profile_hide_fields':
-                    from esp.users.forms.user_profile import VolunteerProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in VolunteerProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'educator_profile_hide_fields':
-                    from esp.users.forms.user_profile import EducatorProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in EducatorProfileForm.declared_fields.items() if not field[1].required])
-                elif key == 'guardian_profile_hide_fields':
-                    from esp.users.forms.user_profile import GuardianProfileForm
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
+                if key in _PROFILE_ACTIVE_FIELDS_FORMS:
+                    # Imported here (rather than at module scope) to avoid import loops
+                    import esp.users.forms.user_profile as user_profile
+                    form_class = getattr(user_profile, _PROFILE_ACTIVE_FIELDS_FORMS[key])
+                    self.fields[key] = active_fields_form_field(form_class, 'fields')
                 elif field is not None:
                     self.fields[key] = field
                 elif tag_info.get('is_boolean', False):
@@ -649,7 +649,13 @@ class TagSettingsForm(BetterForm):
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key) if tag_info.get('is_boolean', False) else Tag.getTag(key)
-                if set_val is not None and set_val != self.fields[key].initial:
+                if key in LEGACY_TAG_KEYS:
+                    # Expand the sentinels/comma-separated value into a list of choices,
+                    # falling back to the deprecated *_hide_fields tag if it is still set
+                    self.fields[key].initial = initial_choices(
+                        set_val, self.fields[key].choices,
+                        legacy_value=Tag.getTag(LEGACY_TAG_KEYS[key]), tag_key=key)
+                elif set_val is not None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
@@ -660,7 +666,9 @@ class TagSettingsForm(BetterForm):
             tag_info = all_global_tags[key]
             if tag_info.get('is_setting', False):
                 set_val = self.cleaned_data[key]
-                if isinstance(set_val, list):
+                if key in LEGACY_TAG_KEYS:
+                    set_val = value_from_choices(set_val, self.fields[key].choices)
+                elif isinstance(set_val, list):
                     set_val = ",".join(set_val)
                 if not set_val in ("", "None", None, tag_info.get('default')):
                     # Set a [new] tag if a value was provided and the value is not the default
