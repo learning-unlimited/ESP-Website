@@ -39,7 +39,8 @@ import unicodedata
 from django.conf import settings
 from esp.middleware import ESPError
 from esp.users.models import StudentInfo, K12School, RecordType
-from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories, \
+                               program_name_validator, program_url_validator
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -236,6 +237,19 @@ class ProgramCreationForm(BetterModelForm):
                   }
             self.cleaned_data['new_url'] = new_url
             self.cleaned_data['new_name'] = new_name
+            # url and name aren't fields on this form, so their model validators
+            # don't run; validate the values they are built from instead.
+            for field_name in ('program_type', 'term_friendly'):
+                value = self.cleaned_data.get(field_name)
+                if value:
+                    try:
+                        program_name_validator(value)
+                    except forms.ValidationError as e:
+                        self.add_error(field_name, e.messages)
+            try:
+                program_url_validator(new_url)
+            except forms.ValidationError as e:
+                self.add_error('program_type', e.messages)
             # Check that there isn't another program with this URL or name
             if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])

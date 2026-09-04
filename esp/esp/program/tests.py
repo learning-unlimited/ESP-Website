@@ -1,4 +1,3 @@
-﻿from django.core.exceptions import ValidationError
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -46,6 +45,7 @@ from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Per
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -2743,24 +2743,50 @@ class ProgramModuleObjCreationTest(TestCase):
 
 
 class ProgramValidatorsTest(TestCase):
-    """Tests for Program model field validators."""
+    """Tests for Program name/url validation."""
 
     def test_valid_program_name_and_url(self):
-        program = Program(name="Splash 2026", url="splash-2026", grade_min=7, grade_max=12, program_size_max=100)
-        program.clean_fields(exclude=['director_email', 'anchor_class'])
-
-    def test_program_name_rejects_special_characters(self):
         field = Program._meta.get_field('name')
-        with self.assertRaises(ValidationError):
-            field.clean("Splash@2026<script>", None)
-
-    def test_program_url_rejects_uppercase_and_spaces(self):
+        for name in ["Splash 2026", "Splash! 2013", "Delve 2005 (Winter)"]:
+            field.clean(name, None)
         field = Program._meta.get_field('url')
-        with self.assertRaises(ValidationError):
-            field.clean("Splash 2026", None)
+        for url in ["Splash/2026_Spring", "TestProgram/2222_Summer", "Splash/2007_Fall_1"]:
+            field.clean(url, None)
 
-    def test_program_url_rejects_slashes_and_underscores(self):
+    def test_program_name_rejects_markup(self):
+        field = Program._meta.get_field('name')
+        for name in ["Splash <script>alert('XSS')</script>", "Splash>2026", "Splash\n2026"]:
+            with self.assertRaises(ValidationError):
+                field.clean(name, None)
+
+    def test_program_url_rejects_markup_and_bad_shape(self):
         field = Program._meta.get_field('url')
-        with self.assertRaises(ValidationError):
-            field.clean("splash/2026_fall", None)
+        # Missing or extra path segments, and characters that can't be routed.
+        for url in ["splash-2026", "Splash/2026/Spring", "Splash/<script>", "Splash/"]:
+            with self.assertRaises(ValidationError):
+                field.clean(url, None)
 
+
+class ProgramCreationFormValidationTest(TestCase):
+    """The url and name fields aren't on ProgramCreationForm, so the form has to
+    validate the values it builds them from."""
+
+    def form_errors(self, **overrides):
+        data = {'program_type': 'Splash', 'term': '2026_Spring', 'term_friendly': 'Spring 2026'}
+        data.update(overrides)
+        form = ProgramCreationForm(data)
+        form.is_valid()
+        return form.errors
+
+    def test_markup_in_term_friendly_is_rejected(self):
+        errors = self.form_errors(term_friendly="<script>alert('XSS')</script>")
+        self.assertIn('term_friendly', errors)
+
+    def test_markup_in_program_type_is_rejected(self):
+        errors = self.form_errors(program_type="Splash<script>")
+        self.assertIn('program_type', errors)
+
+    def test_valid_title_fields_produce_no_title_errors(self):
+        errors = self.form_errors()
+        for field_name in ('program_type', 'term', 'term_friendly'):
+            self.assertNotIn(field_name, errors)

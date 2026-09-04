@@ -308,6 +308,21 @@ class ProgramEmailField(models.EmailField):
         path = 'django.db.models.EmailField'
         return name, path, args, kwargs
 
+# Program.url is a two-segment path (e.g. 'Splash/2007_Fall'); the accepted
+# characters are those the program URL patterns in esp/urls.py can route.
+program_url_validator = validators.RegexValidator(
+    regex=r'\A[A-Za-z0-9_ -]+/[A-Za-z0-9_ -]+\Z',
+    message='Program URL must have the form ProgramType/Term (e.g. Splash/2007_Fall) '
+            'and may only contain letters, numbers, spaces, underscores, and hyphens.',
+)
+
+# Program names are free-form text, so only reject the characters that make
+# markup injection possible.
+program_name_validator = validators.RegexValidator(
+    regex=r'\A[^<>\x00-\x1f\x7f]+\Z',
+    message='Program name may not contain control characters or the characters "<" and ">".',
+)
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
@@ -317,23 +332,13 @@ class Program(models.Model, CustomFormsLinkModel):
     url = models.CharField(
         max_length=80,
         unique=True,
-        help_text="The URL fragment for this program.",
-        validators=[
-            validators.RegexValidator(
-                regex=r"^[a-z0-9-]+$",
-                message="Program URL may only contain lowercase alphanumeric characters and hyphens.",
-            )
-        ],
+        help_text='The URL fragment for this program, of the form ProgramType/Term (e.g. Splash/2007_Fall).',
+        validators=[program_url_validator],
     )
     name = models.CharField(
         max_length=80,
-        help_text="The full name of the program.",
-        validators=[
-            validators.RegexValidator(
-                regex=r"^[a-zA-Z0-9 -]+$",
-                message="Program name may only contain alphanumeric characters, spaces, and hyphens.",
-            )
-        ],
+        help_text='The full name of this program (e.g. Splash Fall 2007).',
+        validators=[program_name_validator],
     )
     grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
