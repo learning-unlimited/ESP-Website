@@ -34,11 +34,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js from nodesource, then LESS.
-# The setup script is downloaded before it is run.
+# The repo is added with a fingerprint-pinned key; no remote script runs.
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x -o /tmp/nodesource_setup.sh \
-    && bash /tmp/nodesource_setup.sh \
-    && rm /tmp/nodesource_setup.sh \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource.asc \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.asc \
+    && gpg --show-keys --with-colons /etc/apt/keyrings/nodesource.gpg \
+       | awk -F: '/^fpr:/{print $10; exit}' \
+       | grep -qx 6F71F525282841EEDAF851B42F59B5F99B1BE0B4 \
+    && rm /tmp/nodesource.asc \
+    && echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main' \
+       > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --prefix /usr less@3.13.1
