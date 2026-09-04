@@ -371,6 +371,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
                 else:
                     section = sections[0]
+                    if not (request.user.canEdit(section.parent_class) or request.user.canMod(section)):
+                        json_data['error'] = 'You do not have permission to modify attendance for this section.'
+                        return HttpResponse(json.dumps(json_data), content_type='text/json')
                     json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
