@@ -290,8 +290,35 @@ class ClassManager(Manager):
             c.parent_program = p # So that if we set attributes on one instance of the program, they show up for all instances.
 
         return classes
-    catalog_cached.depend_on_model('program.ClassSubject')
-    catalog_cached.depend_on_model('program.ClassSection')
+
+    #   Fall back to {} if there's an exception.
+    @staticmethod
+    def _catalog_key_set(program):
+        return {'program': program} if program is not None else {}
+
+    @staticmethod
+    def _catalog_key_set_for_subject(cls):
+        try:
+            return ClassManager._catalog_key_set(cls.parent_program)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _catalog_key_set_for_section(sec):
+        try:
+            return ClassManager._catalog_key_set(sec.parent_class.parent_program)
+        except Exception:
+            return {}
+
+    catalog_cached.get_or_create_token(('program',))
+    catalog_cached.depend_on_row('program.ClassSubject',
+                                 lambda cls: ClassManager._catalog_key_set_for_subject(cls))
+    catalog_cached.depend_on_row('program.ClassSection',
+                                 lambda sec: ClassManager._catalog_key_set_for_section(sec))
+    catalog_cached.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                 lambda sec, event: ClassManager._catalog_key_set_for_section(sec))
+    catalog_cached.depend_on_m2m('program.ClassSubject', 'teachers',
+                                 lambda subj, teacher: ClassManager._catalog_key_set_for_subject(subj))
     catalog_cached.depend_on_model('qsdmedia.Media')
     catalog_cached.depend_on_model('tagdict.Tag')
 
@@ -507,6 +534,8 @@ class ClassSection(models.Model):
     _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
     _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
     _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
+    _get_capacity.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges',
+                                lambda subj, csr: {})
 
 
     capacity = property(_get_capacity)
@@ -646,6 +675,7 @@ class ClassSection(models.Model):
             return False
         else:
             return True
+    sufficient_length.get_or_create_token(('self',))
     sufficient_length.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
 
 
@@ -1059,6 +1089,7 @@ class ClassSection(models.Model):
         if verbs == ['Enrolled']:
             return self.enrolled_students
         return self.students(verbs).count()
+    num_students.get_or_create_token(('self',))
     num_students.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.section})
 
     @cache_function
@@ -1332,6 +1363,7 @@ class ClassSection(models.Model):
                         in Event.collapse(events, tol=datetime.timedelta(minutes=15))]
 
         return txtTimes
+    friendly_times.get_or_create_token(('self',))
     friendly_times.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
 
     def friendly_times_with_date(self, raw=False):
@@ -1631,8 +1663,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             result = self.default_section()
 
         return result
+    get_section.get_or_create_token(('self',))
     get_section.depend_on_row('program.ClassSection', lambda cs: {'self': cs.parent_class})
-    get_section.depend_on_m2m('program.ClassSection', 'meeting_times', lambda cs, ev: {'self': cs})
+    get_section.depend_on_m2m('program.ClassSection', 'meeting_times',
+                              lambda cs, ev: {'self': cs.parent_class})
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
