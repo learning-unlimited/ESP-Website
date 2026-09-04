@@ -554,6 +554,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
+    getTaughtClassesFromProgram.get_or_create_token(('self',))
+    getTaughtClassesFromProgram.get_or_create_token(('program',))
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
@@ -564,7 +566,11 @@ class BaseESPUser(object):
             raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
             return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getModeratingSectionsFromProgram.get_or_create_token(('program',))
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                                   lambda sec, event: {'program': sec.parent_class.parent_program})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     def getModeratingTimesFromProgram(self, program, exclude = []):
@@ -595,6 +601,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('program',))
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
     getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
@@ -607,14 +615,26 @@ class BaseESPUser(object):
         if not include_cancelled:
             classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
-    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.get_or_create_token(('self',))
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
+    getFullClasses_pretty.get_or_create_token(('self',))
+    getFullClasses_pretty.get_or_create_token(('program',))
+    getFullClasses_pretty.depend_on_m2m('program.ClassSubject', 'teachers',
+                                        lambda cls, teacher: {'self': teacher})
+    getFullClasses_pretty.depend_on_row('program.ClassSubject',
+                                        lambda cls: {'program': cls.parent_program})
+    getFullClasses_pretty.depend_on_row('program.StudentRegistration',
+                                        lambda reg: {'program': reg.section.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('program.ClassSection',
+                                        lambda sec: {'program': sec.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('tagdict.Tag', lambda tag: {},
+                                        lambda tag: tag.key == 'nearly_full_threshold')
 
     def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
         if program is None:
@@ -632,6 +652,7 @@ class BaseESPUser(object):
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
+    getTaughtSectionsAll.get_or_create_token(('self',))
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
@@ -647,6 +668,7 @@ class BaseESPUser(object):
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.get_or_create_token(('self', 'program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
@@ -756,9 +778,11 @@ class BaseESPUser(object):
 
         return list(valid_events)
     getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.get_or_create_token(('program',))
+    getAvailableTimes.get_or_create_token(('self', 'program', 'ignore_classes',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
-                 {'self':self, 'program':program, 'ignore_classes':True})
+                 {'self':self, 'program':program, 'ignore_classes':False})
     getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
@@ -870,6 +894,7 @@ class BaseESPUser(object):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
+    getEnrolledSectionsFromProgram.get_or_create_token(('self',))
     getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     getEnrolledSectionsFromProgram.depend_on_cache('program.ClassSection.timeslot_ids', lambda self=wildcard, **kwargs: {})
 
@@ -891,7 +916,11 @@ class BaseESPUser(object):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
+    getFirstClassTime.get_or_create_token(('self',))
+    getFirstClassTime.get_or_create_token(('program',))
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                    lambda sec, event: {'program': sec.parent_class.parent_program})
 
     def can_skip_phase_zero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
@@ -944,6 +973,7 @@ class BaseESPUser(object):
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.get_or_create_token(('self',))
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
 
@@ -955,6 +985,7 @@ class BaseESPUser(object):
             return True
         else:
             return False
+    hasFinancialAid.get_or_create_token(('self',))
     hasFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
 
     def isOnsite(self, program=None):
