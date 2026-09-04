@@ -523,24 +523,52 @@ class IndividualAccountingController(ProgramAccountingController):
 
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
-        transfer_total = 0
+        parsed_items = []
         for item in transfer_list.split(';'):
             line_item_id, saved_amount = item.split(',')
-            transfer = Transfer.objects.get(
-                user=iac.user,
-                line_item__id=int(line_item_id),
-            )
+            parsed_items.append((int(line_item_id), saved_amount))
+
+        # A user may have several Transfers for the same Line Item Type (e.g. an
+        # optional item bought with quantity > 1), in which case the identifier
+        # lists that Line Item Type once per Transfer. Collect the candidates up
+        # front, oldest first, and hand out one per identifier entry. The payment
+        # created just above is excluded so that it can never pay for itself.
+        unpaid_transfers = {}
+        paid_line_item_ids = set()
+        candidates = Transfer.objects.filter(
+            user=iac.user,
+            line_item__id__in={line_item_id for line_item_id, _ in parsed_items},
+        ).exclude(id=payment.id).select_related('line_item').order_by('id')
+        for candidate in candidates:
+            if candidate.paid_in_id:
+                paid_line_item_ids.add(candidate.line_item_id)
+            else:
+                unpaid_transfers.setdefault(candidate.line_item_id, []).append(candidate)
+
+        transfer_total = Decimal('0')
+        for line_item_id, saved_amount in parsed_items:
+            available = unpaid_transfers.get(line_item_id, [])
+            if not available:
+                # Check for duplicate payment
+                if line_item_id in paid_line_item_ids:
+                    raise DuplicatePaymentError(
+                        f"Failed on processing line item type {line_item_id}: already paid")
+                raise ReconciliationError(
+                    f"Failed on processing line item type {line_item_id}: no transfer found")
+
+            # Prefer a Transfer whose amount matches the identifier, so that
+            # entries for the same item at different prices are paired up
+            # correctly. Otherwise take the oldest one and let the amount check
+            # below decide what to do about the discrepancy.
+            index = next((i for i, candidate in enumerate(available)
+                          if '%.2f' % candidate.amount == saved_amount), 0)
+            transfer = available.pop(index)
 
             # This case is rare, since it's unusual to change the program of a
             # Line Item Type after it's been created.
             if transfer.line_item.program != iac.program:
                 raise ReconciliationError(
                     f"Failed on processing Transfer {transfer.id}: program changed")
-
-            # Check for duplicate payment
-            if transfer.paid_in:
-                raise DuplicatePaymentError(
-                    f"Failed on processing Transfer {transfer.id}: already paid")
 
             # Check to see if the amount changed
             if '%.2f' % transfer.amount != saved_amount:
@@ -554,10 +582,13 @@ class IndividualAccountingController(ProgramAccountingController):
 
             # Mark as paid!
             transfer.paid_in = payment
-            transfer_total += transfer.amount
+            transfer_total += transfer.amount_dec
             transfer.save()
 
-        if transfer_total != amount_paid:
+        # Compare against the recorded payment rather than the raw argument so
+        # that the sum of the (exact) item amounts isn't tripped up by float
+        # rounding.
+        if transfer_total != payment.amount_dec:
             raise ReconciliationError(
                 "Failed to process payment. Item prices sum to $%.2f, but the user paid $%.2f" %
                 (transfer_total, amount_paid))

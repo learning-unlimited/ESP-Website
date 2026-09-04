@@ -231,6 +231,7 @@ Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
 
+from esp.accounting import DuplicatePaymentError, ReconciliationError
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
@@ -540,3 +541,130 @@ class IndividualAccountingControllerTest(TestCase):
         prefs = self.iac.get_preferences()
         self.assertEqual(len(prefs), 1)
         self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
+
+    def _add_optional_item(self, text='T-shirt', amount=Decimal('15.00'), max_quantity=5):
+        return LineItemType.objects.create(
+            text=text, amount_dec=amount, required=False,
+            max_quantity=max_quantity, program=self.program, for_payments=False,
+        )
+
+    def test_record_payment_from_identifier_multiple_transfers_same_line_item(self):
+        """An optional item bought more than once reconciles one Transfer per entry."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.assertEqual(
+            self.iac.get_transfers().filter(paid_in__isnull=False).count(), 3)
+
+    def test_record_payment_from_identifier_repeated_item_sums_exactly(self):
+        """Repeated amounts are summed as decimals, not accumulated floats."""
+        self._add_optional_item(amount=Decimal('16.67'))
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 3, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        self.assertEqual(amount_due, Decimal('100.01'))
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due)
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
+    def test_record_payment_from_identifier_matches_amounts_within_line_item(self):
+        """Entries for the same item at different prices pair up with the right Transfers."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([
+            ('T-shirt', 1, Decimal('15.00'), None),
+            ('T-shirt', 1, Decimal('25.00'), None),
+        ])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        paid = self.iac.get_transfers().filter(line_item=line_item)
+        self.assertEqual(paid.count(), 2)
+        self.assertEqual(paid.filter(paid_in__isnull=True).count(), 0)
+
+    def test_record_payment_from_identifier_duplicate_payment(self):
+        """Replaying an identifier still raises DuplicatePaymentError."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_requested())
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_partially_paid_item(self):
+        """Too few unpaid Transfers for an item is a duplicate payment, not a crash."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+
+        #   Pay off one of the two shirts out of band.
+        earlier_payment = self.iac.submit_payment(
+            Decimal('15.00'), link_transfers=False)
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.paid_in = earlier_payment
+        transfer.save()
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_missing_transfer(self):
+        """A Line Item Type with no matching Transfer raises ReconciliationError."""
+        self.iac.ensure_required_transfers()
+        missing_id = LineItemType.objects.order_by('-id').first().id + 1
+        identifier = f'{self.iac.get_id()}:{missing_id},50.00'
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('50.00'))
+
+    def test_record_payment_from_identifier_amount_changed(self):
+        """A price change while the user was paying is rejected unless trusted."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_amount_changed_trusted(self):
+        """With trusted=True the changed Transfer is adjusted back to the billed amount."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, Decimal('80.00'), trusted=True)
+
+        amounts = sorted(self.iac.get_transfers().filter(
+            line_item=line_item).values_list('amount_dec', flat=True))
+        self.assertEqual(amounts, [Decimal('15.00'), Decimal('15.00')])
