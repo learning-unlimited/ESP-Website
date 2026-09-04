@@ -1,3 +1,4 @@
+from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -65,7 +66,7 @@ def _media_cache_version(rel_path, tag_name):
     val = Tag.getTag(tag_name)
     if val:
         return val
-    full_path = os.path.join(settings.MEDIA_ROOT, rel_path)
+    full_path = str(Path(settings.MEDIA_ROOT) / rel_path)
     if os.path.exists(full_path):
         return hex(int(os.path.getmtime(full_path)))
     return ''
@@ -105,7 +106,7 @@ def _filter_active_tags(accessed_keys, get_all_fn):
     in the empty-tracking case.
     """
     if accessed_keys is not None and not accessed_keys:
-        # Tracking is active but the view consulted no tags — skip the DB
+        # Tracking is active but the view consulted no tags â€” skip the DB
         # query entirely; nothing will be shown.
         return []
     all_nondefault = get_all_fn()
@@ -299,7 +300,7 @@ def zip_download(files = None, zipname = 'files'):
     zf = zipfile.ZipFile(file_like, 'w')
     for file in files:
         if file:
-            zf.write(file, os.path.basename(os.path.normpath(file)))
+            zf.write(file, Path(file).name)
     zf.close()
     response = HttpResponse(file_like.getvalue(), content_type='application/zip')
     response['Content-Disposition']=f'attachment; filename={zipname}.zip'

@@ -1,3 +1,4 @@
+from pathlib import Path
 from django.conf import settings
 from django.core.management.base import BaseCommand
 
@@ -18,13 +19,13 @@ class Command(BaseCommand):
     the source tree.
     """
     def handle(self, *args, **options):
-        root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
+        root = Path(settings.BASE_DIR).absolute().parent
         for dirpath, dirnames, filenames in os.walk(root):
             for filename in filenames:
                 if filename.endswith('.pyc'):
-                    pyc_path = os.path.join(dirpath, filename)
-                    py_path = pyc_path[:-1]  # Remove trailing 'c' to get .py path
-                    if not os.path.isfile(py_path):
+                    pyc_path = Path(dirpath) / filename
+                    py_path = pyc_path.with_suffix('.py')  # Remove trailing 'c' to get .py path
+                    if not Path(py_path).is_file():
                         try:
                             os.remove(pyc_path)
                             logger.info("Removed orphaned .pyc: %s", pyc_path)
