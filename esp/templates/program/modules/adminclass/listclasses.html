@@ -33,14 +33,23 @@ json_data = {};
   function filterClassRows() {
     var $tbody = $j('#classes_anchor');
 
+    // While the initial AJAX fetch is still in progress, the only row
+    // present is the "Loading classes..." placeholder. Skip filtering so
+    // it stays visible instead of being hidden or replaced by a
+    // misleading "no results" message before real data arrives.
+    if ($j('#loading_row').length > 0) {
+      return;
+    }
+
     // fillClasses() rebuilds the tbody's contents on load, which can wipe
     // out our "no results" row, so re-create it here if it's missing.
+    // The table has 5 columns normally, 6 when TeacherModeratorModule is
+    // enabled, so compute the colspan instead of hard-coding it.
     var $noResultsRow = $j('#no_results_row');
     if ($noResultsRow.length === 0) {
-      $noResultsRow = $j(
-        '<tr id="no_results_row" style="display: none;">' +
-        '<td colspan="7"><em>No classes match your search.</em></td>' +
-        '</tr>'
+      var colspan = (has_moderator_module === "True") ? 6 : 5;
+      $noResultsRow = $j('<tr/>', { id: 'no_results_row', style: 'display: none;' }).append(
+        $j('<td/>', { colspan: colspan }).append($j('<em/>').text('No classes match your search.'))
       );
       $tbody.append($noResultsRow);
     }
@@ -49,7 +58,11 @@ json_data = {};
     var visibleCount = 0;
 
     $tbody.children('tr').not('#no_results_row').each(function() {
-      var rowText = $j(this).text().toLowerCase();
+      // Exclude the Management Options column (last cell) from the
+      // searchable text, since it only contains button labels
+      // (Delete/Edit/Manage/Status) that would otherwise match on
+      // common words and hide unrelated rows.
+      var rowText = $j(this).find('td').not(':last').text().toLowerCase();
       var matches = rowText.indexOf(filter) !== -1;
       $j(this).toggle(matches);
       if (matches) { visibleCount++; }
@@ -146,7 +159,7 @@ json_data = {};
       </tr>
     </thead>
     <tbody id="classes_anchor">
-      <tr>
+      <tr id="loading_row">
         <td colspan="7">Loading classes...</td>
       </tr>
     </tbody>
