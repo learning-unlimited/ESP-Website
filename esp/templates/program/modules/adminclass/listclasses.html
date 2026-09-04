@@ -29,6 +29,54 @@ json_data = {};
   // Start the AJAX request to get the class data and display it
   json_fetch(["class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
 
+  // Class list search filter
+  function filterClassRows() {
+    var $tbody = $j('#classes_anchor');
+
+    // fillClasses() rebuilds the tbody's contents on load, which can wipe
+    // out our "no results" row, so re-create it here if it's missing.
+    var $noResultsRow = $j('#no_results_row');
+    if ($noResultsRow.length === 0) {
+      $noResultsRow = $j(
+        '<tr id="no_results_row" style="display: none;">' +
+        '<td colspan="7"><em>No classes match your search.</em></td>' +
+        '</tr>'
+      );
+      $tbody.append($noResultsRow);
+    }
+
+    var filter = $j('#classSearch').val().trim().toLowerCase();
+    var visibleCount = 0;
+
+    $tbody.children('tr').not('#no_results_row').each(function() {
+      var rowText = $j(this).text().toLowerCase();
+      var matches = rowText.indexOf(filter) !== -1;
+      $j(this).toggle(matches);
+      if (matches) { visibleCount++; }
+    });
+
+    $noResultsRow.toggle(visibleCount === 0);
+  }
+
+  $j(document).ready(function() {
+    $j('#classSearch').on('input', filterClassRows);
+
+    // Re-apply filter when classes finish loading via AJAX (json_fetch
+    // replaces the tbody contents asynchronously after this script runs).
+    // Debounced so a batch of row insertions only triggers one filter pass.
+    if (window.MutationObserver) {
+      var filterDebounceTimer;
+      var debouncedFilter = function() {
+        clearTimeout(filterDebounceTimer);
+        filterDebounceTimer = setTimeout(filterClassRows, 50);
+      };
+      var classesObserver = new MutationObserver(debouncedFilter);
+      classesObserver.observe(document.getElementById('classes_anchor'), {
+        childList: true,
+        subtree: false
+      });
+    }
+  });
 /* ]]> */
 </script>
 
@@ -66,6 +114,13 @@ json_data = {};
           </li>
         </ul>
       </p>
+
+      <div class="dashboard_search">
+        <label for="classSearch">Search classes:</label>
+        <input type="search" id="classSearch" class="form-control"
+               placeholder="Search by title, teacher, code..."
+               aria-label="Search classes by title, teacher, or code" />
+      </div>
     </div>
 
     <div id="battlescreen">
