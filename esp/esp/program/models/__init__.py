@@ -863,24 +863,28 @@ class Program(models.Model, CustomFormsLinkModel):
             return status == 1
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
-    def checkedOutStudents(self, time_max = datetime.now()):
+    def checkedOutStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
     @cache_function
     def currentlyCheckedOutStudents(self):
-        return self.checkedOutStudents(time_max=datetime.now())
+        return self.checkedOutStudents()
     currentlyCheckedOutStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name in ['attended', "checked_out"])
 
     """ Returns a queryset of students that are checked in to the program at the specified time """
-    def checkedInStudents(self, time_max = datetime.now()):
+    def checkedInStudents(self, time_max = None):
+        if time_max is None:
+            time_max = timezone.now()
         return ESPUser.objects.filter(Q(record__event__name="attended", record__program=self)).exclude(id__in=self.checkedOutStudents(time_max)).distinct()
 
     """ Returns a queryset of students that are CURRENTLY checked in to the program at the specified time """
     @cache_function
     def currentlyCheckedInStudents(self):
-        return self.checkedInStudents(time_max=datetime.now())
+        return self.checkedInStudents()
     currentlyCheckedInStudents.depend_on_row('users.Record', lambda rec: {'self': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
 
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
@@ -891,7 +895,7 @@ class Program(models.Model, CustomFormsLinkModel):
     """
     def getClassrooms(self, timeslot=None):
         #   Returns the resources themselves.  See the function below for grouped-by-room.
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
 
         if timeslot is not None:
             return self.getResources().filter(event=timeslot, res_type=ResourceType.get_or_create('Classroom')).select_related()
@@ -1112,7 +1116,7 @@ class Program(models.Model, CustomFormsLinkModel):
     @cache_function
     def getResourceTypes(self, include_classroom=False, include_global=None, include_hidden=True):
         #   Show all resources pertaining to the program (except those of types that are excluded).
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
 
         if include_hidden:
             exclude_types = []
@@ -1139,7 +1143,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return Resource.objects.filter(event__program=self)
 
     def getFloatingResources(self, timeslot=None, queryset=False):
-        from esp.resources.models import ResourceType
+        from esp.resources.models import ResourceType # noqa: F811
         #   Don't include classrooms and teachers in the floating resources.
         exclude_types = [ResourceType.get_or_create('Classroom')]
 
@@ -1178,7 +1182,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo
+        from esp.program.modules.module_ext import ClassRegModuleInfo # noqa: F811
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
@@ -2203,6 +2207,8 @@ class VolunteerRequest(models.Model):
         app_label = 'program'
 
     def num_offers(self):
+        if self.pk is None:
+            return 0
         return self.volunteeroffer_set.count()
 
     def get_offers(self):
@@ -2302,7 +2308,7 @@ class PhaseZeroRecord(models.Model):
         return str(self.id)
 
     user = models.ManyToManyField(ESPUser)
-    program = models.ForeignKey(Program, blank=True, on_delete=models.CASCADE)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
     time = models.DateTimeField(auto_now_add=True)
 
     def display_user(self):

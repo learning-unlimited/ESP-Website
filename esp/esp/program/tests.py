@@ -44,7 +44,7 @@ from esp.resources.models import Resource, ResourceRequest, ResourceType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
-
+from django.core import mail
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -68,7 +68,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 from random import sample
-import hashlib
 import numpy
 import random
 import re
@@ -335,9 +334,6 @@ class ViewUserInfoTest(TestCase):
         self.fake_admin.delete()
 
 class ProfileTest(TestCase):
-
-    def setUp(self):
-        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
@@ -1859,7 +1855,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_notification_email_sent(self):
         """Creating a flag with notify_teacher_by_email=True sends personalized email to each teacher."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_notify_type,
             comment='Please fix ASAP', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1879,7 +1874,6 @@ class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     def test_no_notification_when_disabled(self):
         """Creating a flag with notify_teacher_by_email=False sends no email."""
         from esp.program.models import ClassFlag
-        from django.core import mail
         flag = ClassFlag.objects.create(
             subject=self.subject, flag_type=self.teacher_visible_type,
             comment='FYI', created_by=self.admin_user, modified_by=self.admin_user,
@@ -1971,25 +1965,22 @@ and repeat sending logic.
 """
 from unittest.mock import patch, MagicMock
 
-from django.contrib.auth.models import Group
-from django.core import mail
+
 
 from esp.cal.models import install as install_cal
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.models import Program
+
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser, Record, RecordType
+from esp.users.models import Record, RecordType
 
 
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
+
 
 
 class ConfirmationEmailControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         install_cal()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
@@ -2282,6 +2273,43 @@ class HeardAboutNormalizationTest(TestCase):
         self.assertEqual(self._normalize("...!!!"), "")
 
 
+class ClassSubjectCacheTest(ProgramFrameworkTest):
+    def test_get_teachers_cache_invalidation(self):
+        """
+        Regression test for Issue #3836:
+        Verify get_teachers() cache invalidates properly when a teacher's row is updated.
+        """
+        # Assign a teacher to a class
+        teacher = self.teachers[0]
+        test_class = self.program.classes()[0]
+        test_class.makeTeacher(teacher)
+
+        # 1. Call get_teachers() to populate the cache
+        teachers_before = test_class.get_teachers()
+        self.assertIn(teacher, teachers_before)
+
+        # Store original email
+        original_email = teacher.email
+
+        # 2. Update the teacher's email and save the user
+        new_email = "updated_email_xyz123@example.com"
+        teacher.email = new_email
+        teacher.save()
+
+        # 3. Verify subsequent get_teachers() call returns the updated email
+        #    without requiring a manual cache flush.
+        updated_teachers = test_class.get_teachers()
+
+        # Find the updated teacher object among the returned teachers
+        updated_teacher = None
+        for t in updated_teachers:
+            if t.id == teacher.id:
+                updated_teacher = t
+                break
+
+        self.assertIsNotNone(updated_teacher)
+        self.assertNotEqual(updated_teacher.email, original_email)
+        self.assertEqual(updated_teacher.email, new_email)
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
@@ -2428,3 +2456,134 @@ class SubmitTransactionRequiresPostTest(TestCase):
     def test_get_returns_405(self):
         response = self.client.get(reverse('manage_submit_transaction'))
         self.assertEqual(response.status_code, 405)
+
+
+class NewProgramModulePermissionsTest(TestCase):
+    """Tests that prepare_program sets initial start/end dates for permissions of enabled modules."""
+
+    def test_new_program_sets_module_permissions_and_dates(self):
+        from esp.program.models import Program, ProgramModule
+        from esp.program.setup import prepare_program, commit_program
+        from datetime import datetime
+
+        user_role_setup()
+
+        student_start = datetime(2026, 9, 1, 0, 0)
+        student_end = datetime(2026, 11, 1, 0, 0)
+        teacher_start = datetime(2026, 8, 1, 0, 0)
+        teacher_end = datetime(2026, 10, 1, 0, 0)
+
+        all_modules = list(ProgramModule.objects.all())
+
+        data = {
+            'student_reg_start': student_start,
+            'student_reg_end': student_end,
+            'teacher_reg_start': teacher_start,
+            'teacher_reg_end': teacher_end,
+            'program_modules': all_modules,
+        }
+
+        program = Program.objects.create(
+            name='Test Perm Program',
+            url='TestPerm/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+        program.program_modules.set(all_modules)
+
+        perms, modules = prepare_program(program, data)
+        commit_program(program, perms)
+
+        # Verify Student/Classes permission exists and matches student dates
+        student_cls_perm = Permission.objects.filter(program=program, permission_type='Student/Classes').first()
+        self.assertIsNotNone(student_cls_perm)
+        self.assertEqual(student_cls_perm.start_date, student_start)
+        self.assertEqual(student_cls_perm.end_date, student_end)
+
+        # Verify Teacher/Classes/All permission exists and matches teacher dates
+        teacher_cls_perm = Permission.objects.filter(program=program, permission_type='Teacher/Classes/All').first()
+        self.assertIsNotNone(teacher_cls_perm)
+        self.assertEqual(teacher_cls_perm.start_date, teacher_start)
+        self.assertEqual(teacher_cls_perm.end_date, teacher_end)
+
+        # Verify Volunteer/Signup permission exists and has start_date set
+        volunteer_perm = Permission.objects.filter(program=program, permission_type='Volunteer/Signup').first()
+        self.assertIsNotNone(volunteer_perm)
+        self.assertIsNotNone(volunteer_perm.start_date)
+
+        # Verify ProgramModuleObj instances created for program inherit dates
+        program.getModules()
+        student_cls_pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        from esp.program.modules.base import ProgramModuleObj
+        pmo = ProgramModuleObj.objects.get(program=program, module=student_cls_pm)
+        self.assertEqual(pmo.start_date, student_start)
+        self.assertEqual(pmo.end_date, student_end)
+
+
+
+class ProgramModuleObjCreationTest(TestCase):
+    """Tests that getFromProgModule() creates at most one row per (program, module)."""
+
+    def setUp(self):
+        self.module = ProgramModule.objects.get(handler='StudentClassRegModule')
+        self.program = Program.objects.create(
+            name='PMO Race Program',
+            url='PMORace/2026',
+            grade_min=7,
+            grade_max=12,
+        )
+
+    def test_competing_insert_is_reused(self):
+        """A row inserted between the existence check and our own insert is reused.
+
+        getFromProgModule() looks for an existing row and then inserts one if it
+        found none.  Two concurrent requests can both reach the insert, which the
+        unique_together constraint on (program, module) rejects; the loser has to
+        take the winner's row rather than raise IntegrityError.  _initial_defaults()
+        is only called on the insert path, so patching it is a stand-in for the
+        request that wins the race.
+        """
+        real_defaults = ProgramModuleObj._initial_defaults
+
+        def _defaults_then_competing_insert(prog, mod, old_prog=None):
+            defaults = real_defaults(prog, mod, old_prog)
+            ProgramModuleObj.objects.create(program=prog, module=mod, seq=99, required=False)
+            return defaults
+
+        with patch.object(ProgramModuleObj, '_initial_defaults',
+                          staticmethod(_defaults_then_competing_insert)):
+            moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module)
+
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+        #   The winner's row comes back, rather than a second row of our own.
+        self.assertEqual(moduleobj.seq, 99)
+
+    def test_repeated_calls_reuse_one_row(self):
+        first = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        second = ProgramModuleObj.getFromProgModule(self.program, self.module)
+        self.assertEqual(first.id, second.id)
+        self.assertEqual(ProgramModuleObj.objects.filter(program=self.program,
+                                                         module=self.module).count(), 1)
+
+    def test_new_row_copies_values_from_old_program(self):
+        old_program = Program.objects.create(
+            name='PMO Old Program',
+            url='PMOOld/2025',
+            grade_min=7,
+            grade_max=12,
+        )
+        start = datetime(2026, 3, 1, 0, 0)
+        end = datetime(2026, 4, 1, 0, 0)
+        ProgramModuleObj.objects.create(program=old_program, module=self.module, seq=42,
+                                        required=True, required_label='Sign up',
+                                        start_date=start, end_date=end)
+
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, self.module,
+                                                       old_prog=old_program)
+
+        self.assertEqual(moduleobj.seq, 42)
+        self.assertTrue(moduleobj.required)
+        self.assertEqual(moduleobj.required_label, 'Sign up')
+        self.assertEqual(moduleobj.start_date, start)
+        self.assertEqual(moduleobj.end_date, end)
