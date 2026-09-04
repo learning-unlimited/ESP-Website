@@ -859,6 +859,56 @@ class FormOwnershipAccessTest(TestCase):
         )
         self.assertEqual(response.status_code, 404)
 
+    def test_owner_can_get_metadata(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/metadata/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['title'], 'Ownership Test Form')
+
+    def test_nonowner_teacher_cannot_get_metadata(self):
+        """The form builder's 'create from existing form' dropdown only lists
+        forms you created, but the endpoint behind it used to serve any form
+        to any teacher who asked for it by id."""
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(
+            '/customforms/metadata/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_get_any_metadata(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(
+            '/customforms/metadata/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_metadata_nonexistent_form_does_not_500(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/metadata/',
+            {'form_id': 999999},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('message', response.json())
+
+    def test_metadata_missing_form_id_does_not_500(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/metadata/',
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('message', response.json())
+
 
 class CustomFormModelOrderingTest(TestCase):
     def test_page_section_field_default_order_is_seq(self):
