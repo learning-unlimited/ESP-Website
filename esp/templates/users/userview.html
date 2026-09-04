@@ -59,7 +59,7 @@
     {% endif %}
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
-        <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
+        <a class="sidelink" onclick="{% if user.is_active %}if(confirm('Warning: Deactivating this user will immediately remove their registrations, permissions, and volunteer assignments for any upcoming programs. This action cannot be easily undone. Are you sure you want to deactivate?')) {% endif %}$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
     </form>
     {% if program %}
         {% if "Student" in user.getUserTypes or profile.student_info %}
