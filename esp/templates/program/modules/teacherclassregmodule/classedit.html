@@ -89,6 +89,12 @@
     </div>
 {% endif %}
 
+{% if request.GET.draft_discarded %}
+    <div class="alert alert-info">
+        Your draft has been discarded.
+    </div>
+{% endif %}
+
 {% if manage %}
     <p>
     <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
@@ -203,10 +209,21 @@
                     <br /><br />
 
                     {% if show_draft_button %}
-                    <button type="submit" class="btn btn-info" name="save_action" value="draft">
+                    {# formnovalidate: a draft is allowed to be incomplete, so the
+                       browser must not block the save on empty required fields. #}
+                    <button type="submit" class="btn btn-info" name="save_action" value="draft" formnovalidate>
                         <span class="glyphicon glyphicon-save"></span>
                         Save as Draft
                     </button>
+
+                    {% if has_draft %}
+                    <button type="submit" class="btn btn-danger" name="save_action" value="discard_draft"
+                            formnovalidate
+                            onclick="return confirm('Discard this draft?  Everything you have saved in it will be deleted.');">
+                        <span class="glyphicon glyphicon-trash"></span>
+                        Discard Draft
+                    </button>
+                    {% endif %}
 
                     <br /><br />
                     {% endif %}

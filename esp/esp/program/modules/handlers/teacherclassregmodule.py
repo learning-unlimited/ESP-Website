@@ -127,7 +127,8 @@ class TeacherClassRegModule(ProgramModuleObj):
     def noclasses(self, user=None):
         """ Returns true of there are no classes in this program """
         user = self._resolve_user(user)
-        return not self.clslist(user).exists()
+        #   A draft has not been registered yet, so it does not count here.
+        return not self.clslist(user).exclude(status=ClassStatus.DRAFT).exists()
 
     def isCompleted(self, user=None):
         return not self.noclasses(user)
@@ -146,7 +147,8 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
-        classes_qs = self.program.classes().defer(*fields_to_defer)
+        #   Drafts have not been submitted, so no teacher list should count them.
+        classes_qs = self.program.classes().defer(*fields_to_defer).exclude(status=ClassStatus.DRAFT)
 
         Q_isteacher = Q(classsubject__in=classes_qs)
         Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__in=[ClassStatus.REJECTED, ClassStatus.CANCELLED])) & Q_isteacher
@@ -247,7 +249,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         return any(map(self.reg_is_open, list(self.reg_is_open_methods.keys())))
 
     def clslist(self, user):
-        return user.getTaughtClasses(program = self.program, include_rejected = True)
+        #   Teachers see their own drafts here so they can pick them back up.
+        return user.getTaughtClasses(program = self.program, include_rejected = True, include_drafts = True)
 
     @aux_call
     @needs_teacher
@@ -855,14 +858,29 @@ class TeacherClassRegModule(ProgramModuleObj):
             try:
                 save_action = request.POST.get('save_action', 'submit')
 
-                if save_action == 'draft':
-                    # Draft saves are only allowed in create flows or when
+                if save_action in ('draft', 'discard_draft'):
+                    # Draft actions are only allowed in create flows or when
                     # editing an existing draft.  Reject for non-draft edits.
                     if action not in ('create', 'createopenclass'):
                         if newclass is None or newclass.status != ClassStatus.DRAFT:
                             raise ESPError(
                                 "Draft saving is only available when creating a new class or editing a class in draft status.",
                                 log=False)
+
+                if save_action == 'discard_draft':
+                    if newclass is not None:
+                        draft = newclass
+                    else:
+                        draft = (ccc.get_draft_by_id(request.user, request.POST.get('class_id'))
+                                 or ccc.get_existing_draft(request.user, action))
+                    if draft is not None and draft.status == ClassStatus.DRAFT:
+                        draft.delete()
+                    if action in ('create', 'createopenclass'):
+                        # Send the teacher back to an empty form for this flow.
+                        return HttpResponseRedirect(request.path + '?draft_discarded=true')
+                    # The edit URL points at the class we just deleted.
+                    return self.goToCore(tl)
+                elif save_action == 'draft':
                     newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
                     # For drafts, return to the form with a success message.
                     # Use request.path (no query string) to avoid accumulating
@@ -872,18 +890,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     # If an existing draft is being submitted, validate and
                     # promote it via submit_draft to avoid orphaned drafts.
                     if newclass is None and action in ('create', 'createopenclass'):
-                        draft_qs = ClassSubject.objects.filter(
-                            parent_program=self.program,
-                            teachers=request.user,
-                            status=ClassStatus.DRAFT
-                        )
-                        open_cat = getattr(self.program, 'open_class_category', None)
-                        if open_cat is not None and open_cat.pk:
-                            if action == 'createopenclass':
-                                draft_qs = draft_qs.filter(category=open_cat)
-                            else:
-                                draft_qs = draft_qs.exclude(category=open_cat)
-                        newclass = draft_qs.first()
+                        # The form posts class_id only when it was populated from a
+                        # draft, so the class-copy flow still creates a new class.
+                        newclass = ccc.get_draft_by_id(request.user, request.POST.get('class_id'))
                     if newclass is not None and newclass.status == ClassStatus.DRAFT:
                         if action in ('create', 'edit'):
                             newclass = ccc.submit_draft(request.user, request.POST, newclass.id)
@@ -918,24 +927,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                 resource_formset = e.resource_formset
 
         else:
-            # Check for existing drafts for create actions.
-            # Distinguish open-class vs normal-class drafts so each
-            # form only loads its own draft.
+            # Resume an existing draft for create actions.
             if action in ['create', 'createopenclass'] and newclass is None:
-                draft_qs = ClassSubject.objects.filter(
-                    parent_program=self.program,
-                    teachers=request.user,
-                    status=ClassStatus.DRAFT
-                )
-                open_cat = getattr(self.program, 'open_class_category', None)
-                if open_cat is not None and open_cat.pk:
-                    if action == 'createopenclass':
-                        draft_qs = draft_qs.filter(category=open_cat)
-                    else:
-                        draft_qs = draft_qs.exclude(category=open_cat)
-                existing_draft = draft_qs.first()
-                if existing_draft:
-                    newclass = existing_draft
+                newclass = ClassCreationController(self.program).get_existing_draft(request.user, action)
 
             # With static resource requests, we need to display a form
             # each available type --- there's no way to add the types
@@ -1079,6 +1073,12 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['show_draft_button'] = (
             action in ('create', 'createopenclass')
             or (newclass is not None and newclass.status == ClassStatus.DRAFT)
+        )
+        # Only offer to discard once something has actually been saved.
+        context['has_draft'] = (
+            not populateonly
+            and newclass is not None
+            and newclass.status == ClassStatus.DRAFT
         )
         context['manage'] = False
         context['sectionNums'] = prog.countTimeSlots()

@@ -1,5 +1,5 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange, Event
+from esp.program.models import ClassSubject, ClassCategories, ClassSizeRange, Event
 from esp.program.class_status import ClassStatus
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm, TeacherOpenClassRegForm
@@ -9,7 +9,6 @@ from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
-from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from collections import OrderedDict
 from django.db import transaction
@@ -100,13 +99,58 @@ class ClassCreationController(object):
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
             reg_form.cleaned_data['grade_max'] = self.program.grade_max
 
-        self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
+        #   The draft's own status is negative, so getTaughtTime() ignores it and
+        #   the whole requested duration counts as new time for every teacher.
+        hours = reg_form._get_total_time_requested()
+        for teacher in cls.get_teachers():
+            self.require_teacher_has_time(teacher, user, hours)
 
-        self.make_class_happen(cls, user, reg_form, resource_formset)
-        self.force_availability(user)
+        #   An admin submitting someone else's draft must not be added as a
+        #   teacher, so treat that like an edit and promote the class explicitly.
+        submitter_teaches = cls.teachers.filter(id=user.id).exists()
+        if submitter_teaches:
+            self.make_class_happen(cls, user, reg_form, resource_formset)
+            self.force_availability(user)
+        else:
+            self.make_class_happen(cls, None, reg_form, resource_formset, editing=True)
+            cls.propose()
+
         self.send_class_mail_to_directors(cls)
 
         return cls
+
+    def get_draft_by_id(self, user, clsid):
+        """Return this user's draft with the given id for this program, or None."""
+        try:
+            clsid = int(clsid)
+        except (TypeError, ValueError):
+            return None
+        return ClassSubject.objects.filter(
+            id=clsid,
+            parent_program=self.program,
+            teachers=user,
+            status=ClassStatus.DRAFT
+        ).first()
+
+    def get_existing_draft(self, user, action):
+        """
+        Return this user's draft for the given create flow, or None.
+
+        Normal-class and open-class registration each get their own draft, so
+        the two forms never pick up each other's work.
+        """
+        draft_qs = ClassSubject.objects.filter(
+            parent_program=self.program,
+            teachers=user,
+            status=ClassStatus.DRAFT
+        )
+        open_cat = getattr(self.program, 'open_class_category', None)
+        if open_cat is not None and open_cat.pk:
+            if action in ('createopenclass', 'editopenclass'):
+                draft_qs = draft_qs.filter(category=open_cat)
+            else:
+                draft_qs = draft_qs.exclude(category=open_cat)
+        return draft_qs.first()
 
     @transaction.atomic
     def save_class_draft(self, user, reg_data, clsid=None, action='create'):
@@ -117,21 +161,11 @@ class ClassCreationController(object):
 
         # Create or get class
         if action in ['create', 'createopenclass']:
-            # Check if user already has a draft for this program.
-            # Distinguish between normal and open-class drafts so each
-            # flow only picks up its own draft.
-            draft_qs = ClassSubject.objects.filter(
-                parent_program=self.program,
-                teachers=user,
-                status=ClassStatus.DRAFT
-            )
+            #   Prefer the draft the form was populated from; fall back to any
+            #   draft for this flow so a teacher never accumulates duplicates.
+            existing_draft = (self.get_draft_by_id(user, reg_data.get('class_id'))
+                              or self.get_existing_draft(user, action))
             open_cat = getattr(self.program, 'open_class_category', None)
-            if open_cat is not None and open_cat.pk:
-                if action == 'createopenclass':
-                    draft_qs = draft_qs.filter(category=open_cat)
-                else:
-                    draft_qs = draft_qs.exclude(category=open_cat)
-            existing_draft = draft_qs.first()
 
             if existing_draft:
                 cls = existing_draft
@@ -367,7 +401,8 @@ class ClassCreationController(object):
                     meeting_time_ids = reg_data.getlist('meeting_times')
                 if meeting_time_ids:
                     cls.meeting_times.set(Event.objects.filter(id__in=meeting_time_ids))
-            except (Event.DoesNotExist, ValueError):
+            except (ValueError, TypeError):
+                # filter() never raises DoesNotExist; only bad IDs can fail here.
                 pass
 
         # Handle resource requests (basic version for drafts)

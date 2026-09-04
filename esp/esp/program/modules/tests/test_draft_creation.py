@@ -6,6 +6,7 @@ import datetime
 from django.test import Client
 
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models.class_ import ClassSubject
 from esp.program.class_status import ClassStatus
 from esp.resources.models import ResourceRequest, ResourceType
@@ -63,6 +64,10 @@ class DraftCreationTestMixin(object):
             defaults={'description': ''},
         )
         self.resource_types = [classroom_type, test_resource_type]
+
+    def _get_teacherclassreg_module(self):
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        return ProgramModuleObj.getFromProgModule(self.program, pm)
 
     def _make_draft_form_data(self, teacher):
         """Returns valid POST data for draft creation."""
@@ -671,4 +676,75 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
             sorted(draft.custom_form_data.get('std_equipment', [])),
             ['audio', 'video'],
             "All selected values from multi-select custom field should be saved",
+        )
+
+    def test_draft_does_not_complete_class_registration(self):
+        """A draft is not a submitted class, so it must not mark the module complete."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        # This teacher's framework-created class would mask the effect.
+        ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).delete()
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        moduleobj = self._get_teacherclassreg_module()
+        self.assertFalse(moduleobj.isCompleted(teacher),
+                         "A draft alone must not complete class registration")
+        self.assertIn(draft, moduleobj.clslist(teacher),
+                      "The teacher should still see their own draft")
+
+    def test_draft_excluded_from_taught_classes(self):
+        """Drafts stay out of taught-class queries unless explicitly requested."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        self.assertNotIn(draft, teacher.getTaughtClasses(self.program))
+        self.assertIn(draft, teacher.getTaughtClasses(self.program, include_drafts=True))
+        draft_sections = list(draft.sections.all())
+        self.assertTrue(draft_sections, "Draft should have at least one section")
+        for section in draft_sections:
+            self.assertNotIn(section, teacher.getTaughtSections(self.program))
+
+    def test_discard_draft_deletes_it(self):
+        """The discard button removes the draft and leaves an empty form behind."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        discard_data = self._make_draft_form_data(teacher)
+        discard_data['save_action'] = 'discard_draft'
+        discard_data['class_id'] = draft.id
+        response = self.client.post(self._makeaclass_url(), discard_data)
+
+        self.assertIn(response.status_code, [200, 302])
+        self.assertFalse(
+            ClassSubject.objects.filter(id=draft.id).exists(),
+            "Discarding should delete the draft"
         )
