@@ -64,6 +64,16 @@ class Media(models.Model):
     owner_id = models.PositiveIntegerField(blank=True, null=True)
     owner = GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
+    def clean(self):
+        super().clean()
+        if (self.owner_type_id is None) != (self.owner_id is None):
+            from django.core.exceptions import ValidationError
+            raise ValidationError("Both parts of the GenericForeignKey (owner_type and owner_id) must be either both null or both set.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
         import uuid
@@ -82,7 +92,7 @@ class Media(models.Model):
             allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
 
         if not self.file_extension.lower() in allowed_extensions:
-            raise ESPError("The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),), log=False)
+            raise ESPError(f"The file extension provided is not allowed. Allowed extensions: {', '.join(allowed_extensions)}.", log=False)
 
         self.mime_type = file.content_type
         self.size = file.size
@@ -98,6 +108,10 @@ class Media(models.Model):
 
     # returns a download path for this file
     def get_download_path(self):
+        # Media rows can exist transiently (e.g. in tests) without an uploaded file.
+        # Avoid blowing up templates or admin pages when that happens.
+        if not self.hashed_name or not self.file_name:
+            return ""
         return "/download/" + self.hashed_name + "/" + self.file_name
     download_path = property(get_download_path)
 
@@ -112,8 +126,14 @@ class Media(models.Model):
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
         import os
-        if os.path.isfile(self.get_uploaded_filename()):
-            os.remove(self.get_uploaded_filename())
+        # If no file is associated, FileField.url can raise ValueError.
+        try:
+            uploaded = self.get_uploaded_filename()
+        except Exception:
+            uploaded = None
+
+        if uploaded and os.path.isfile(uploaded):
+            os.remove(uploaded)
 
         super().delete(*args, **kwargs)
 
