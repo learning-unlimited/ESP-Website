@@ -3,7 +3,7 @@ Media setup instructions
 
 This directory contains all media files required for a generic ESP Web site.  Top level subdirectories of note include images, scripts, styles, and uploaded.
 
-The media directories 'images' and 'styles' should be created as symbolic links to the actual directories 'default_images' and 'default_styles'.  This is an artifact of a previous (Dropbox-based) scheme for file customization that is no longer being used.  The symbolic links will be removed in a future release.
+The media directories 'images' and 'styles' are regular, tracked directories in this repository.  The previous (Dropbox-based) symbolic link scheme for file customization is no longer used; files should now be customized directly in these directories or via the admin interface described below.
 
 The entire directory tree may be edited by administrators through the admin interface:
     /admin/filebrowser/browse/

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -45,7 +45,7 @@ from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.sanitize import strip_base64_images
 
 import re
@@ -55,6 +55,38 @@ _PROGRAM_URL_PATTERN = re.compile(
     r'(?:/learn|/teach|/volunteer)/([^/\s\'"<>]+/[^/\s\'"<>]+)',
     re.IGNORECASE
 )
+
+
+# Match src attributes that carry a root-relative (but not protocol-relative) path.
+# Handles: quoted (double or single), unquoted, case-insensitive name, whitespace around =.
+# Groups: (1) quote char, (2) quoted path, (3) unquoted path.
+# The negative lookbehind ensures we match an actual `src` attribute name, not
+# the `src` suffix inside another attribute such as `data-src` or `ng-src`.
+_RELATIVE_SRC_RE = re.compile(
+    r"(?<![\w-])src\s*=\s*"
+    r"(?:(['\"])(/(?!/)[^'\"]*)\1"   # quoted:   src="..." or src='...'
+    r"|(/(?!/)[^'\"\s>]*))",          # unquoted: src=/path (not src=//)
+    re.IGNORECASE
+)
+
+
+def _make_image_urls_absolute(body, request):
+    """Convert root-relative src URLs to absolute URLs for email delivery.
+
+    Email clients cannot resolve relative URLs, so images inserted via the
+    WYSIWYG editor (which stores paths like /media/uploaded/qsd_images/...)
+    must be made absolute before the body is rendered into an email.
+
+    Handles quoted (double or single), unquoted, case-insensitive attribute
+    names, and whitespace around the = sign. Protocol-relative URLs (//)
+    are left untouched.
+    """
+    def replace_src(m):
+        if m.group(3) is not None:
+            # Unquoted value — wrap in double quotes for safety
+            return 'src="{}"'.format(request.build_absolute_uri(m.group(3)))
+        return 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1))
+    return _RELATIVE_SRC_RE.sub(replace_src, body)
 
 
 def _program_urls_in_text(text, current_program_url):
@@ -100,14 +132,36 @@ class CommModule(ProgramModuleObj):
             id="manage_commpanel",
             url="/manage/%s/commpanel" % base,
             title="Email (Communications Panel)",
-            category="Coordinate",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
             keywords=["email", "communications", "commpanel", "messages"],
         )
 
     @staticmethod
+    def _q_has_grade_filter(q_obj):
+        """Recursively check whether a Q object contains a grade filter.
+
+        Grade filters (grade_min/grade_max) are translated into
+        ``student_info__graduation_year`` lookups in
+        ``UserSearchController.query_from_criteria``.  This method walks the
+        Q-object tree to detect such lookups.
+        """
+        from django.db.models.query import Q
+        if not isinstance(q_obj, Q):
+            return False
+        for child in q_obj.children:
+            if isinstance(child, Q):
+                if CommModule._q_has_grade_filter(child):
+                    return True
+            elif isinstance(child, tuple) and len(child) >= 1:
+                lookup = str(child[0])
+                if 'student_info__graduation_year' in lookup:
+                    return True
+        return False
+
+    @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):
-        from esp.users.models import ESPUser, PersistentQueryFilter
-        from esp.dbmail.models import MessageRequest
+        from esp.users.models import ESPUser, PersistentQueryFilter # noqa: F811
+        from esp.dbmail.models import MessageRequest # noqa: F811
         mailer_warnings = []
 
         # a. Warn if massive mailer (over 2000 recipients)
@@ -121,9 +175,7 @@ class CommModule(ProgramModuleObj):
 
         # b. Warn if no grade range filter is used
         filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        filter_name = getattr(filter_obj, 'useful_name', '') or ''
-
-        if filter_name and 'grade' not in filter_name.lower():
+        if filter_obj and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
             mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
@@ -147,7 +199,7 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter
+        from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -155,6 +207,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['subject'],
                                               request.POST['body']    ]
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
@@ -162,7 +215,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', '\.')), fromemail):
+            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)', fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -172,8 +225,7 @@ class CommModule(ProgramModuleObj):
             prs = PlainRedirect.objects.filter(original = "info")
             if not prs.exists():
                 redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
-            fromemail = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                        "info", settings.SITE_INFO[1])
+            fromemail = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
 
         # Set Reply-To address
         if request.POST.get('replyto', '').strip():
@@ -204,7 +256,7 @@ class CommModule(ProgramModuleObj):
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
         template = request.POST.get('template', 'default')
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
+        rendered_text = render_to_string(f'email/{template}_email.html',
                                         {'msgbody': body})
         # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
@@ -260,8 +312,8 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
-        from esp.dbmail.models import MessageRequest
-        from esp.users.models import PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest # noqa: F811
+        from esp.users.models import PersistentQueryFilter # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
@@ -270,6 +322,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['subject'],
                                     request.POST['body']    ]
         body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
@@ -280,7 +333,7 @@ class CommModule(ProgramModuleObj):
             current_program_url
         )
         if other_program_urls and not request.POST.get('confirm_send_with_other_program_links'):
-            rendered_text = render_to_string('email/{}_email.html'.format(template),
+            rendered_text = render_to_string(f'email/{template}_email.html',
                                              {'msgbody': body})
             listcount = request.POST.get('listcount', '')
             selected = request.POST.get('selected', '')
@@ -302,7 +355,7 @@ class CommModule(ProgramModuleObj):
             })
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        rendered_text = render_to_string('email/{}_email.html'.format(template),
+        rendered_text = render_to_string(f'email/{template}_email.html',
                                         {'msgbody': body})
 
         try:
@@ -352,8 +405,7 @@ class CommModule(ProgramModuleObj):
         context['sendto_fn_name'] = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         context['sendto_fn'] = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(context['sendto_fn_name'])
 
-        context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                              "info", settings.SITE_INFO[1])
+        context['default_from'] = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
         context['from'] = context['default_from']
 
         context['listcount'] = self.approx_num_of_recipients(filterObj, context['sendto_fn'])
@@ -364,7 +416,7 @@ class CommModule(ProgramModuleObj):
         prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
-           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
 
@@ -382,13 +434,17 @@ class CommModule(ProgramModuleObj):
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
             data = ListGenModule.processPost(request)
-            context['default_from'] = '%s <%s@%s>' % (Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME),
-                                                      "info", settings.SITE_INFO[1])
+            context['default_from'] = f'{Tag.getTag("full_group_name") or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"} <info@{settings.SITE_INFO[1]}>'
             ##  Handle normal list selecting submissions
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
                 selected = usc.selected_list_from_postdata(data)
-                filterObj = usc.filter_from_postdata(prog, data)
+                try:
+                    filterObj = usc.filter_from_postdata(prog, data)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    context.update(usc.prepare_context(prog, target_path=request.path))
+                    context['error'] = str(e)
+                    return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -426,7 +482,7 @@ class CommModule(ProgramModuleObj):
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog))
+        context.update(usc.prepare_context(prog, target_path=request.path))
 
         return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
@@ -456,6 +512,52 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'body': body,
                                                'public_view': public_view})
+
+    @aux_call
+    @needs_admin
+    def send_test_email(self, request, tl, one, two, module, extra, prog):
+        """Send a test email to the logged-in admin using the current compose form data."""
+        from django.http import JsonResponse
+        from esp.dbmail.models import send_mail
+
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+        body = request.POST.get('body', '')
+        body, _ = strip_base64_images(body)
+        body = _make_image_urls_absolute(body, request)
+        subject = request.POST.get('subject', '')
+        fromemail = request.POST.get('from', '')
+        replytoemail = request.POST.get('replyto', fromemail)
+        template = request.POST.get('template', 'default')
+
+        if '<html>' not in body:
+            body = '<html>' + body + '</html>'
+
+        rendered_text = render_to_string('email/{}_email.html'.format(template), {'msgbody': body})
+
+        contextdict = {
+            'user': ActionHandler(request.user, request.user),
+            'program': ActionHandler(self.program, request.user),
+            'request': ActionHandler(MessageRequest(), request.user),
+        }
+        rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
+
+        try:
+            send_mail(
+                subject='[TEST] ' + subject,
+                message=rendered_text,
+                from_email=fromemail,
+                recipient_list=[request.user.email],
+                fail_silently=False,
+                extra_headers={'Reply-To': replytoemail},
+                user=request.user,
+            )
+            return JsonResponse({'success': True, 'email': request.user.email})
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception('Failed to send test email')
+            return JsonResponse({'success': False, 'error': 'Failed to send test email. Please check the server logs.'}, status=500)
 
     def isStep(self):
         return False

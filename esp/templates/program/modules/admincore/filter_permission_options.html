@@ -1,0 +1,46 @@
+{% extends "main.html" %}
+
+{% block title %}Create Filter Permission{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+
+<h1>Create Filter Permission</h1>
+
+<h2>Step 2: Set permission details</h2>
+
+{% if num_users == 0 %}
+<div class="alert alert-warning">
+    <p>Your filter matches <strong>0 users</strong>. Please go back and adjust your selection before creating a permission.</p>
+    <p><a href="/manage/{{ program.getUrlBase }}/filter_permission" class="btn btn-default">Go back</a></p>
+</div>
+{% else %}
+<p>Your filter matches <strong>{{ num_users }}</strong> user{{ num_users|pluralize }}.</p>
+{% if filter_description %}
+<p><b>Selected list:</b> {{ filter_description }}</p>
+{% endif %}
+
+<form action="/manage/{{ program.getUrlBase }}/filter_permission_final?filterid={{ filterid }}" method="post">
+{% autoescape off %}
+<table cellspacing="0" cellpadding="3">
+{{ options_form }}
+<tr>
+    <td align="center" valign="center" colspan="2">
+        <input class="button" type="submit" value="Create Filter Permission" />
+        <a href="/manage/{{ program.getUrlBase }}/filter_permission" class="btn btn-default">Go back</a>
+    </td>
+</tr>
+</table>
+{% endautoescape %}
+</form>
+{% endif %}
+
+<p><a href="/manage/{{ program.getUrlBase }}/deadlines#new_filter_perm">&larr; Back to deadlines and permissions</a></p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
