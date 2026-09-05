@@ -68,6 +68,22 @@ class ListGenModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, 'error.html')
 
+    def test_select_list_old_invalid_filterid_errors_gracefully(self):
+        """
+        Test that selectList_old raises a user-friendly ESPError
+        when given an invalid/stale filter ID instead of crashing
+        with a raw PersistentQueryFilter.DoesNotExist traceback.
+        """
+        self.login_as('admin')
+        url = self.get_module_url('manage', 'selectList_old') + '?filterid=999999999'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertIn(
+            'invalid or expired',
+            response.content.decode('utf-8').lower()
+        )
+
     def test_user_attribute_getter_basic_fields(self):
         student = self.students[0]
         ua = UserAttributeGetter(student, self.program)
