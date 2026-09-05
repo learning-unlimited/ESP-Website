@@ -1,3 +1,4 @@
+from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -59,7 +60,7 @@ class ResizeImageField(forms.ImageField):
             from PIL import Image
             from io import BytesIO
 
-            filename_root, filename_ext = os.path.splitext(file.name)
+            p = Path(file.name); filename_root, filename_ext = p.stem, p.suffix
             filename = filename_root + filename_ext.lower()
 
             picturefile = BytesIO()
