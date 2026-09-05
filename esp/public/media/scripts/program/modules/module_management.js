@@ -22,6 +22,24 @@ $j(document).ready(function() {
     var timelineEnd = null;
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var nowInterval = null;
+    var isSyncingHorizontalScroll = false;
+
+    function getTimelineBodyRowsHeight() {
+        var wrapper = document.querySelector('.tl-wrapper');
+        if (!wrapper) return 0;
+
+        var nav = wrapper.querySelector('.tl-nav');
+        var legend = wrapper.querySelector('.tl-legend-bar');
+        var horizontalScrollbar = wrapper.querySelector('.tl-horizontal-scrollbar');
+        var available = wrapper.clientHeight;
+        var headerHeight = 36;
+        var footerHeight = horizontalScrollbar ? horizontalScrollbar.offsetHeight : 16;
+
+        if (nav) available -= nav.offsetHeight;
+        if (legend) available -= legend.offsetHeight;
+
+        return Math.max(0, available - headerHeight - footerHeight - 6);
+    }
 
     // Elements
     var $studentTab  = $j('#btnStudentTab');
@@ -122,6 +140,42 @@ $j(document).ready(function() {
         $j('#teacherCount').text(allModules.teach.length);
     }
 
+    function getAdaptiveRowHeight(moduleCount) {
+        var normalHeight = 56;
+        var compactHeight = 40;
+        var fitLimit = 12;
+        var bodyHeight = getTimelineBodyRowsHeight();
+
+        if (!bodyHeight) {
+            return normalHeight;
+        }
+
+        var targetHeight = Math.floor(bodyHeight / Math.max(1, Math.min(moduleCount, fitLimit)));
+        var rowHeight = Math.max(compactHeight, Math.min(normalHeight, targetHeight));
+
+        if (moduleCount > fitLimit) {
+            var compactTarget = Math.floor(bodyHeight / fitLimit);
+            rowHeight = Math.max(compactHeight, Math.min(normalHeight, compactTarget));
+        }
+
+        return rowHeight;
+    }
+
+    function applyAdaptiveTimelineSizing(type, moduleCount) {
+        var rowHeight = getAdaptiveRowHeight(moduleCount);
+        var $content = $j('#' + type + 'Content');
+        var $bodyRow = $content.find('.tl-body-row');
+
+        $content.css('--timeline-row-height', rowHeight + 'px');
+        $bodyRow.toggleClass('tl-body-scrollable', moduleCount > 12);
+        $bodyRow.toggleClass('tl-body-static', moduleCount <= 12);
+    }
+
+    function refreshAdaptiveSizing() {
+        applyAdaptiveTimelineSizing('student', allModules.learn.length);
+        applyAdaptiveTimelineSizing('teacher', allModules.teach.length);
+    }
+
     function computeTimelineDates() {
         var minDate = null;
         var maxDate = null;
@@ -189,7 +243,7 @@ $j(document).ready(function() {
         // Dynamically size the grid to ensure min-width makes sense
         // 900px was for 7 columns. If more, stretch proportionately.
         var minScrollWidth = numLabels * (900 / 7);
-        $j('.tl-header-scroll-content, .tl-grid-scroll-content, .tl-blocks, .tl-now-wrapper').css('min-width', minScrollWidth + 'px');
+        $j('.tl-header-scroll-content, .tl-grid-scroll-content, .tl-blocks, .tl-now-wrapper, .tl-horizontal-scrollbar-spacer').css('min-width', minScrollWidth + 'px');
         
         $j('.timeline-grid').css('background-size', pctPerLabel + '% 100%');
         
@@ -288,6 +342,8 @@ $j(document).ready(function() {
         var modules  = type === 'student' ? allModules.learn : allModules.teach;
         var $sidebar = $j('#' + type + 'Sidebar');
         var $grid    = $j('#' + type + 'Grid');
+
+        applyAdaptiveTimelineSizing(type, modules.length);
 
         $sidebar.empty();
         $grid.empty();
@@ -759,10 +815,43 @@ $j(document).ready(function() {
     updateLegend('student');
     loadModules();
 
+    var resizeAdaptiveSizingTimer = null;
+    $j(window).on('resize', function() {
+        clearTimeout(resizeAdaptiveSizingTimer);
+        resizeAdaptiveSizingTimer = setTimeout(function() {
+            refreshAdaptiveSizing();
+        }, 50);
+    });
+
+    function syncHorizontalScroll($content, scrollLeft, source) {
+        if (isSyncingHorizontalScroll) return;
+        isSyncingHorizontalScroll = true;
+
+        var $mainGrid = $content.find('.tl-main-grid');
+        var $header = $content.find('.tl-header-scroll-content');
+        var $scrollbar = $content.find('.tl-horizontal-scrollbar');
+
+        if (source !== 'main') {
+            $mainGrid.scrollLeft(scrollLeft);
+        }
+        if (source !== 'scrollbar') {
+            $scrollbar.scrollLeft(scrollLeft);
+        }
+
+        $header.css('transform', 'translateX(-' + scrollLeft + 'px)');
+
+        isSyncingHorizontalScroll = false;
+    }
+
     // Sync header scroll with grid scroll
     $j('.tl-main-grid').on('scroll', function() {
-        var scrollLeft = $j(this).scrollLeft();
-        $j(this).closest('.tl-content').find('.tl-header-scroll-content').css('transform', 'translateX(-' + scrollLeft + 'px)');
+        var $content = $j(this).closest('.tl-content');
+        syncHorizontalScroll($content, $j(this).scrollLeft(), 'main');
+    });
+
+    $j('.tl-horizontal-scrollbar').on('scroll', function() {
+        var $content = $j(this).closest('.tl-content');
+        syncHorizontalScroll($content, $j(this).scrollLeft(), 'scrollbar');
     });
 
     // Hover sync to show NOW badge when hovering over NOW line
@@ -781,6 +870,210 @@ $j(document).ready(function() {
             if ($addDrawer.hasClass('active')) {
                 closeAddDrawer();
             }
+            if ($j('#exportOverlay').hasClass('active')) {
+                closeExportModal();
+            }
+            if ($j('#importOverlay').hasClass('active')) {
+                closeImportModal();
+            }
         }
     });
+
+    // ──────────────────────────────────────────────────────────────
+    // Export Schedule Modal
+    // ──────────────────────────────────────────────────────────────
+    var currentExportData = null;
+
+    window.openExportModal = function() {
+        lastFocusBeforeModal = document.activeElement;
+        $j('#exportOverlay').addClass('active');
+        $j('#exportJsonText').val('Loading schedule template...');
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/export',
+            method: 'GET',
+            success: function(res) {
+                if (res.success) {
+                    currentExportData = res;
+                    $j('#exportJsonText').val(JSON.stringify(res.schedule, null, 2));
+                } else {
+                    $j('#exportJsonText').val('Error loading schedule export.');
+                    showToast('Failed to export schedule.', 'error');
+                }
+            },
+            error: function() {
+                $j('#exportJsonText').val('Network error while exporting schedule.');
+                showToast('Network error while exporting schedule.', 'error');
+            }
+        });
+        setTimeout(function() {
+            safeFocus($j('#exportJsonText'));
+        }, 100);
+    };
+
+    window.closeExportModal = function() {
+        $j('#exportOverlay').removeClass('active');
+        if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+        }
+    };
+
+    window.copyExportData = function() {
+        var text = $j('#exportJsonText').val();
+        if (!text) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showToast('Schedule JSON copied to clipboard!', 'success');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    };
+
+    function fallbackCopy(text) {
+        var $el = $j('#exportJsonText');
+        if ($el.length && $el.get(0).select) {
+            $el.get(0).select();
+            document.execCommand('copy');
+            showToast('Schedule JSON copied to clipboard!', 'success');
+        }
+    }
+
+    window.downloadExportData = function() {
+        var text = $j('#exportJsonText').val();
+        if (!text) return;
+        var blob = new Blob([text], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = (programUrlBase ? programUrlBase.replace('/', '_') : 'program') + '_module_schedule.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Schedule JSON downloaded.', 'success');
+    };
+
+    // ──────────────────────────────────────────────────────────────
+    // Import Schedule Modal
+    // ──────────────────────────────────────────────────────────────
+    window.openImportModal = function() {
+        lastFocusBeforeModal = document.activeElement;
+        $j('#importOverlay').addClass('active');
+        $j('#importJsonText').val('');
+        $j('#importFileInput').val('');
+        
+        var now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        var nowStr = now.toISOString().slice(0, 16);
+        $j('#importStartDate').val(nowStr);
+        $j('#importAnchorInfo').hide().text('');
+
+        setTimeout(function() {
+            safeFocus($j('#importStartDate'));
+        }, 100);
+    };
+
+    window.closeImportModal = function() {
+        $j('#importOverlay').removeClass('active');
+        if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+        }
+    };
+
+    function inspectAnchorDate(rawText) {
+        if (!rawText || !rawText.trim()) {
+            $j('#importAnchorInfo').hide().text('');
+            return;
+        }
+        try {
+            var parsed = JSON.parse(rawText);
+            var anchor = parsed.anchor_date || (parsed.schedule && parsed.schedule.anchor_date);
+            if (anchor) {
+                $j('#importAnchorInfo').text('Template original anchor date: ' + anchor).show();
+            } else {
+                $j('#importAnchorInfo').hide().text('');
+            }
+        } catch (e) {
+            $j('#importAnchorInfo').hide().text('');
+        }
+    }
+
+    $j('#importJsonText').on('input change', function() {
+        inspectAnchorDate($j(this).val());
+    });
+
+    window.handleImportFile = function(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var text = e.target.result;
+            $j('#importJsonText').val(text);
+            inspectAnchorDate(text);
+        };
+        reader.onerror = function() {
+            showToast('Error reading the selected file.', 'error');
+        };
+        reader.readAsText(file);
+    };
+
+    window.applyImportSchedule = function() {
+        var startDateStr = $j('#importStartDate').val();
+        if (!startDateStr) {
+            showToast('Please select a starting date & time.', 'error');
+            return;
+        }
+
+        var jsonRaw = $j('#importJsonText').val();
+        if (!jsonRaw || !jsonRaw.trim()) {
+            showToast('Please upload or paste a valid schedule JSON.', 'error');
+            return;
+        }
+
+        var scheduleData;
+        try {
+            scheduleData = JSON.parse(jsonRaw);
+        } catch (e) {
+            showToast('Invalid JSON syntax in schedule template.', 'error');
+            return;
+        }
+
+        var payload = {
+            target_start_date: startDateStr,
+            schedule: scheduleData
+        };
+
+        var $btn = $j('#btnApplyImport');
+        $btn.prop('disabled', true).text('Importing...');
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/import',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(res) {
+                $btn.prop('disabled', false).text('Apply Schedule');
+                if (res.success) {
+                    showToast('Imported schedule successfully (' + res.updated_count + ' modules updated).', 'success');
+                    closeImportModal();
+                    loadModules();
+                } else {
+                    showToast('Error: ' + (res.error || 'Failed to import schedule.'), 'error');
+                }
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).text('Apply Schedule');
+                var msg = 'Network error while importing schedule.';
+                try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+                showToast(msg, 'error');
+            }
+        });
+    };
 });
+
