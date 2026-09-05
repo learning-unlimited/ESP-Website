@@ -22,6 +22,24 @@ $j(document).ready(function() {
     var timelineEnd = null;
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     var nowInterval = null;
+    var isSyncingHorizontalScroll = false;
+
+    function getTimelineBodyRowsHeight() {
+        var wrapper = document.querySelector('.tl-wrapper');
+        if (!wrapper) return 0;
+
+        var nav = wrapper.querySelector('.tl-nav');
+        var legend = wrapper.querySelector('.tl-legend-bar');
+        var horizontalScrollbar = wrapper.querySelector('.tl-horizontal-scrollbar');
+        var available = wrapper.clientHeight;
+        var headerHeight = 36;
+        var footerHeight = horizontalScrollbar ? horizontalScrollbar.offsetHeight : 16;
+
+        if (nav) available -= nav.offsetHeight;
+        if (legend) available -= legend.offsetHeight;
+
+        return Math.max(0, available - headerHeight - footerHeight - 6);
+    }
 
     // Elements
     var $studentTab  = $j('#btnStudentTab');
@@ -122,6 +140,42 @@ $j(document).ready(function() {
         $j('#teacherCount').text(allModules.teach.length);
     }
 
+    function getAdaptiveRowHeight(moduleCount) {
+        var normalHeight = 56;
+        var compactHeight = 40;
+        var fitLimit = 12;
+        var bodyHeight = getTimelineBodyRowsHeight();
+
+        if (!bodyHeight) {
+            return normalHeight;
+        }
+
+        var targetHeight = Math.floor(bodyHeight / Math.max(1, Math.min(moduleCount, fitLimit)));
+        var rowHeight = Math.max(compactHeight, Math.min(normalHeight, targetHeight));
+
+        if (moduleCount > fitLimit) {
+            var compactTarget = Math.floor(bodyHeight / fitLimit);
+            rowHeight = Math.max(compactHeight, Math.min(normalHeight, compactTarget));
+        }
+
+        return rowHeight;
+    }
+
+    function applyAdaptiveTimelineSizing(type, moduleCount) {
+        var rowHeight = getAdaptiveRowHeight(moduleCount);
+        var $content = $j('#' + type + 'Content');
+        var $bodyRow = $content.find('.tl-body-row');
+
+        $content.css('--timeline-row-height', rowHeight + 'px');
+        $bodyRow.toggleClass('tl-body-scrollable', moduleCount > 12);
+        $bodyRow.toggleClass('tl-body-static', moduleCount <= 12);
+    }
+
+    function refreshAdaptiveSizing() {
+        applyAdaptiveTimelineSizing('student', allModules.learn.length);
+        applyAdaptiveTimelineSizing('teacher', allModules.teach.length);
+    }
+
     function computeTimelineDates() {
         var minDate = null;
         var maxDate = null;
@@ -189,7 +243,7 @@ $j(document).ready(function() {
         // Dynamically size the grid to ensure min-width makes sense
         // 900px was for 7 columns. If more, stretch proportionately.
         var minScrollWidth = numLabels * (900 / 7);
-        $j('.tl-header-scroll-content, .tl-grid-scroll-content, .tl-blocks, .tl-now-wrapper').css('min-width', minScrollWidth + 'px');
+        $j('.tl-header-scroll-content, .tl-grid-scroll-content, .tl-blocks, .tl-now-wrapper, .tl-horizontal-scrollbar-spacer').css('min-width', minScrollWidth + 'px');
         
         $j('.timeline-grid').css('background-size', pctPerLabel + '% 100%');
         
@@ -288,6 +342,8 @@ $j(document).ready(function() {
         var modules  = type === 'student' ? allModules.learn : allModules.teach;
         var $sidebar = $j('#' + type + 'Sidebar');
         var $grid    = $j('#' + type + 'Grid');
+
+        applyAdaptiveTimelineSizing(type, modules.length);
 
         $sidebar.empty();
         $grid.empty();
@@ -759,10 +815,43 @@ $j(document).ready(function() {
     updateLegend('student');
     loadModules();
 
+    var resizeAdaptiveSizingTimer = null;
+    $j(window).on('resize', function() {
+        clearTimeout(resizeAdaptiveSizingTimer);
+        resizeAdaptiveSizingTimer = setTimeout(function() {
+            refreshAdaptiveSizing();
+        }, 50);
+    });
+
+    function syncHorizontalScroll($content, scrollLeft, source) {
+        if (isSyncingHorizontalScroll) return;
+        isSyncingHorizontalScroll = true;
+
+        var $mainGrid = $content.find('.tl-main-grid');
+        var $header = $content.find('.tl-header-scroll-content');
+        var $scrollbar = $content.find('.tl-horizontal-scrollbar');
+
+        if (source !== 'main') {
+            $mainGrid.scrollLeft(scrollLeft);
+        }
+        if (source !== 'scrollbar') {
+            $scrollbar.scrollLeft(scrollLeft);
+        }
+
+        $header.css('transform', 'translateX(-' + scrollLeft + 'px)');
+
+        isSyncingHorizontalScroll = false;
+    }
+
     // Sync header scroll with grid scroll
     $j('.tl-main-grid').on('scroll', function() {
-        var scrollLeft = $j(this).scrollLeft();
-        $j(this).closest('.tl-content').find('.tl-header-scroll-content').css('transform', 'translateX(-' + scrollLeft + 'px)');
+        var $content = $j(this).closest('.tl-content');
+        syncHorizontalScroll($content, $j(this).scrollLeft(), 'main');
+    });
+
+    $j('.tl-horizontal-scrollbar').on('scroll', function() {
+        var $content = $j(this).closest('.tl-content');
+        syncHorizontalScroll($content, $j(this).scrollLeft(), 'scrollbar');
     });
 
     // Hover sync to show NOW badge when hovering over NOW line

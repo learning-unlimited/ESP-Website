@@ -1928,9 +1928,9 @@ def module_schedule_export_api(request, program_type, program_term):
         "success": True,
         "program_id": prog.id,
         "program_name": prog.name,
-        "anchor_date": anchor_dt.isoformat(),
         "schedule": {
             "version": "1.0",
+            "anchor_date": anchor_dt.isoformat(),
             "modules": module_templates
         }
     })
@@ -2027,9 +2027,21 @@ def module_schedule_import_api(request, program_type, program_term):
                         raise ValueError(f"Field 'required' must be a boolean value for module '{handler}'")
                     mod.required = item["required"]
                 if "required_label" in item and item["required_label"] is not None:
-                    mod.required_label = str(item["required_label"])
+                    label = item["required_label"]
+                    if not isinstance(label, str):
+                        raise ValueError(f"required_label must be a string for module '{handler}'")
+                    max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+                    if len(label) > max_len:
+                        raise ValueError(f"required_label must be {max_len} characters or fewer for module '{handler}'")
+                    mod.required_label = label
                 if "link_title" in item and item["link_title"] is not None:
-                    mod.link_title = str(item["link_title"])
+                    title = item["link_title"]
+                    if not isinstance(title, str):
+                        raise ValueError(f"link_title must be a string for module '{handler}'")
+                    max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+                    if len(title) > max_len:
+                        raise ValueError(f"link_title must be {max_len} characters or fewer for module '{handler}'")
+                    mod.link_title = title
 
                 if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
                     mod.seq = 0

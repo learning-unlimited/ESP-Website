@@ -11,14 +11,18 @@
     --brand-teacher-light: #f5f3ff;
     --brand-border: #e2e8f0;
     --sidebar-width: 256px;
+    --timeline-row-height: 56px;
+    --timeline-container-height: clamp(480px, 72vh, 780px);
+    --timeline-horizontal-scroll-height: 16px;
 }
 
 /* Base timeline flex layout */
 .tl-wrapper {
     display: flex;
     flex-direction: column;
-    height: 70vh;
-    min-height: 500px;
+    height: var(--timeline-container-height);
+    max-height: var(--timeline-container-height);
+    min-height: 480px;
     border: 1px solid var(--brand-border);
     border-radius: 8px;
     background-color: #fff;
@@ -156,6 +160,7 @@
     flex-direction: column;
     overflow: hidden;
     background-color: #fff;
+    min-height: 0;
 }
 
 .tl-header-row {
@@ -220,6 +225,8 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
+    height: 100%;
 }
 
 .tl-content.hidden {
@@ -229,9 +236,32 @@
 .tl-body-row {
     flex: 1;
     display: flex;
-    overflow-y: auto;
+    overflow-y: hidden;
     overflow-x: hidden;
     min-height: 0;
+}
+
+.tl-body-row.tl-body-scrollable {
+    overflow-y: auto;
+}
+
+.tl-body-row.tl-body-static {
+    overflow-y: hidden;
+}
+
+.tl-horizontal-scrollbar {
+    flex: 0 0 var(--timeline-horizontal-scroll-height);
+    height: var(--timeline-horizontal-scroll-height);
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-top: 1px solid #e2e8f0;
+    background-color: #fff;
+    scrollbar-gutter: stable;
+}
+
+.tl-horizontal-scrollbar-spacer {
+    height: 1px;
+    min-height: 1px;
 }
 
 .tl-sidebar {
@@ -248,10 +278,10 @@
 }
 
 .tl-row-label {
-    height: 60px;
-    min-height: 60px;
-    max-height: 60px;
-    flex: 0 0 60px;
+    height: var(--timeline-row-height);
+    min-height: var(--timeline-row-height);
+    max-height: var(--timeline-row-height);
+    flex: 0 0 var(--timeline-row-height);
     border-bottom: 1px solid #f1f5f9;
     display: flex;
     align-items: center;
@@ -276,10 +306,10 @@
 
 /* Drag and Drop states */
 .tl-drag-placeholder {
-    height: 60px;
-    min-height: 60px;
-    max-height: 60px;
-    flex: 0 0 60px;
+    height: var(--timeline-row-height);
+    min-height: var(--timeline-row-height);
+    max-height: var(--timeline-row-height);
+    flex: 0 0 var(--timeline-row-height);
     border: 2px dashed #93c5fd;
     background-color: #eff6ff;
     box-sizing: border-box;
@@ -349,6 +379,12 @@
     background-color: #fff;
     box-sizing: border-box;
     padding-bottom: 0px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.tl-main-grid::-webkit-scrollbar {
+    display: none;
 }
 
 .tl-grid-bg {
@@ -404,10 +440,10 @@
 }
 
 .tl-block-row {
-    height: 60px;
-    min-height: 60px;
-    max-height: 60px;
-    flex: 0 0 60px;
+    height: var(--timeline-row-height);
+    min-height: var(--timeline-row-height);
+    max-height: var(--timeline-row-height);
+    flex: 0 0 var(--timeline-row-height);
     border-bottom: 1px solid #f1f5f9;
     position: relative;
     display: flex;

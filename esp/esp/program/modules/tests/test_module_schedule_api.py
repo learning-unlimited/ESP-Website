@@ -369,8 +369,9 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
         data = json.loads(response.content)
         self.assertTrue(data["success"])
-        self.assertIn("anchor_date", data)
         self.assertIn("schedule", data)
+        self.assertNotIn("anchor_date", data)
+        self.assertIn("anchor_date", data["schedule"])
         modules = data["schedule"]["modules"]
         self.assertTrue(len(modules) > 0)
 
@@ -517,6 +518,58 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         data = json.loads(response.content)
         self.assertFalse(data["success"])
         self.assertIn("must be a boolean", data["error"])
+
+    def test_import_schedule_api_rejects_overlong_strings(self):
+        """Import rejects an overlong link_title before saving to the database."""
+        self.client.force_login(self.admin)
+        template_payload = {
+            "target_start_date": "2027-04-01T09:00:00",
+            "schedule": {
+                "version": "1.0",
+                "modules": [
+                    {
+                        "handler": self.pmo.module.handler,
+                        "seq": 15,
+                        "required": True,
+                        "link_title": "x" * 65,
+                        "start_offset_seconds": 0,
+                        "end_offset_seconds": 86400
+                    }
+                ]
+            }
+        }
+        url = reverse("module_schedule_import_api", kwargs=self.url_kwargs)
+        response = self.client.post(url, json.dumps(template_payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content)
+        self.assertFalse(data["success"])
+        self.assertIn("link_title must be 64 characters or fewer", data["error"])
+
+    def test_import_schedule_api_rejects_overlong_required_label(self):
+        """Import rejects an overlong required_label before saving to the database."""
+        self.client.force_login(self.admin)
+        template_payload = {
+            "target_start_date": "2027-04-01T09:00:00",
+            "schedule": {
+                "version": "1.0",
+                "modules": [
+                    {
+                        "handler": self.pmo.module.handler,
+                        "seq": 15,
+                        "required": True,
+                        "required_label": "y" * 81,
+                        "start_offset_seconds": 0,
+                        "end_offset_seconds": 86400
+                    }
+                ]
+            }
+        }
+        url = reverse("module_schedule_import_api", kwargs=self.url_kwargs)
+        response = self.client.post(url, json.dumps(template_payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content)
+        self.assertFalse(data["success"])
+        self.assertIn("required_label must be 80 characters or fewer", data["error"])
 
     def test_export_and_import_schedule_api_non_admin_forbidden(self):
         """Non-admin users receive 403 Forbidden for export and import endpoints."""
