@@ -26,16 +26,24 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # The suite is split across this many parallel shards by pytest-split.
+  # Three places must agree when changing it: this value, the length of the
+  # `shard` matrix below, and codecov.notify.after_n_builds in codecov.yml
+  # (Codecov holds the coverage status until every shard has uploaded).
+  TEST_SPLITS: 4
+
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python-version }})
+    name: Test (Python ${{ matrix.python-version }}, shard ${{ matrix.shard }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.12']
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:14
@@ -100,11 +108,30 @@ jobs:
         DATABASE_USER: testuser
         DATABASE_PASSWORD: testpassword
         DATABASE_NAME: test_django
+        # TEST_SPLITS comes from the workflow-level env above.
+        TEST_GROUP: ${{ matrix.shard }}
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
+      # Each shard uploads the partial report for the tests it ran; Codecov
+      # merges them into one project total.
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
       with:
         fail_ci_if_error: true
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  tests-complete:
+    # One stable status check to require in branch protection. The per-shard
+    # job names contain the shard number, so they change whenever the shard
+    # count does; this job's name does not.
+    name: Tests Complete
+    runs-on: ubuntu-24.04
+    needs: test
+    if: always()
+    steps:
+    - name: Check shard results
+      if: needs.test.result != 'success'
+      run: |
+        echo "Test shards did not all succeed (result: ${{ needs.test.result }})"
+        exit 1
