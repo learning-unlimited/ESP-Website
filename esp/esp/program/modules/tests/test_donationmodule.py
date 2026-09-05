@@ -3,8 +3,6 @@ from django.test import SimpleTestCase, TestCase
 from esp.program.modules.handlers.donationmodule import DonationModule, DonationForm
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.users.models import Record, RecordType
-from esp.accounting.models import LineItemType
 
 class DonationFormTest(SimpleTestCase):
     """Tests for DonationForm validation logic."""
@@ -69,13 +67,12 @@ class DonationModuleTest(TestCase):
 
     def test_apply_settings_defaults(self):
         """Test apply_settings sets up expected default configurations."""
-        settings = self.module.apply_settings({})
+        settings = self.module.apply_settings()
         self.assertIn('donation_text', settings)
         self.assertIn('donation_options', settings)
         self.assertIsInstance(settings['donation_options'], list)
 
     def test_line_item_type_resolution(self):
         """Test that line_item_type correctly resolves or creates accounting records."""
-        lit = DonationModule.line_item_type(self.prog)
-        # Verify line item type returns a valid accounting model instance or descriptor
+        lit = self.module.line_item_type()
         self.assertIsNotNone(lit)
