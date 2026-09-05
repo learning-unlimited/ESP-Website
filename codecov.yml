@@ -1,3 +1,12 @@
+codecov:
+  notify:
+    # tests.yml runs the suite as parallel shards, each uploading the partial
+    # report for the tests it ran. Without this, Codecov would evaluate the
+    # project status against whichever shard landed first -- a fraction of the
+    # lines -- and fail it. Keep in sync with TEST_SPLITS and the `shard`
+    # matrix in .github/workflows/tests.yml.
+    after_n_builds: 4
+
 coverage:
   status:
     project:

@@ -4,7 +4,14 @@ set -euf -o pipefail
 if [ "$CI_JOB" = "test" ]; then
     cd esp
     ./manage.py collectstatic --noinput -v 0
-    pytest -n auto --cov=. --cov-report=xml
+    # TEST_SPLITS/TEST_GROUP shard the suite across parallel CI jobs via
+    # pytest-split, which reads esp/.test_durations to balance them by time.
+    # Both are unset outside CI, where the whole suite runs in one pass.
+    if [ -n "${TEST_SPLITS:-}" ]; then
+        pytest -n auto --splits "$TEST_SPLITS" --group "$TEST_GROUP" --cov=. --cov-report=xml
+    else
+        pytest -n auto --cov=. --cov-report=xml
+    fi
 elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint
 else
