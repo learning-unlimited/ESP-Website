@@ -477,7 +477,13 @@ class ListGenModule(ProgramModuleObj):
             filterObj, found = get_user_list(request, self.program.getLists(True))
         else:
             filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            #   A stale or malformed filterid (e.g. from an old bookmark or
+            #   expired session) should surface a friendly error instead of
+            #   an unhandled 500 traceback.
+            try:
+                filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+                raise ESPError("Your recipient filter is invalid or expired. Please go back and rebuild your recipient list.", log=False)
             found     = True
         if not found:
             return filterObj
