@@ -1,3 +1,4 @@
+from pathlib import Path
 """
 Management command to import K12 schools from NCES (National Center for Education Statistics) data.
 
@@ -119,7 +120,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         csv_path = options['csv']
-        if not os.path.isfile(csv_path):
+        if not Path(csv_path).is_file():
             raise CommandError('File not found: %s' % csv_path)
 
         name_col = options['name_col']
