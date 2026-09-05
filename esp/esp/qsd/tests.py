@@ -43,6 +43,10 @@ from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
 from reversion import revisions as reversion
 from reversion.models import Version
+# QuasiStaticData is registered with reversion as a side effect of esp.qsd.admin
+# defining a VersionAdmin for it. Without this import, create_revision() records
+# nothing when these tests run without something else having loaded the admin.
+import esp.qsd.admin  # noqa: F401
 import json
 
 from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
