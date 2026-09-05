@@ -150,11 +150,11 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         }
         response = self.client.post(f'/manage/{self.program.getUrlBase()}/commfinal', post_data)
 
-        self.assertContains(response, 'Missing required POST fields')
-        self.assertContains(response, 'from')
-        self.assertContains(response, 'replyto')
-        self.assertContains(response, 'subject')
-        self.assertContains(response, 'body')
+        self.assertContains(response, 'Missing required POST fields', status_code=500)
+        self.assertContains(response, 'from', status_code=500)
+        self.assertContains(response, 'replyto', status_code=500)
+        self.assertContains(response, 'subject', status_code=500)
+        self.assertContains(response, 'body', status_code=500)
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
