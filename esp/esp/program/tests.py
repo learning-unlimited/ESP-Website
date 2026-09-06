@@ -931,10 +931,8 @@ class ProgramCapTest(ProgramFrameworkTest):
             self.assertTrue(self.program.user_can_join(user))
 
     def test_cap_without_classreg_module(self):
-        # The 'classreg' key comes from StudentClassRegModule, so a program
-        # without that module has no class registrations to count. The cap
-        # checks used to index it unconditionally and raise KeyError, which
-        # surfaced as a 500 on the student registration page.
+        # Without StudentClassRegModule there is no 'classreg' key, which the
+        # cap checks used to index unconditionally and 500 the reg page.
         classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
         self.assertTrue(classreg_modules)
         self.program.program_modules.remove(*classreg_modules)
@@ -945,7 +943,6 @@ class ProgramCapTest(ProgramFrameworkTest):
         self.assertEqual(self.program._students_in_program_in_grades([10]), 0)
         self.assertFalse(self.program._student_is_in_program(self.students[0]))
         for user in self.students:
-            # Nothing to count means nothing to cap against.
             self.assertTrue(self.program.user_can_join(user))
 
     def test_simple_cap(self):

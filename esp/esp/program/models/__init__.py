@@ -686,10 +686,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def _classreg_students(self):
         """Students registered for at least one class.
 
-        The 'classreg' key is contributed by StudentClassRegModule, so it is
-        absent for a program that does not use that module. Such a program has
-        no class registrations to count, so treat it as none rather than
-        raising KeyError out of the program cap checks below.
+        StudentClassRegModule contributes the 'classreg' key, so a program
+        without that module has none to count.
         """
         return self.students().get('classreg', ESPUser.objects.none())
 
