@@ -33,9 +33,9 @@
 <td colspan="2">
 <div class="errors">
 There
-{% if form.errors|length_is:1 %}is an error{% else %}
+{% if form.errors|length == 1 %}is an error{% else %}
 are errors{% endif %} in the below form. Please fix and resubmit.<br />
-Note: If you are experiencing difficulties, please <a href="/contact/contact/esp-web/"
+Note: If you are experiencing difficulties, please <a href="{% url 'contact' %}"
 title="Contact Form">contact us</a>.
 </div>
 </td>
@@ -56,7 +56,7 @@ title="Contact Form">contact us</a>.
 <p>
    Sorry, but the password reset link is invalid or has expired.
    This can happen if the link has already been used, or if it has expired.
-   Please <a href="/myesp/passwdrecover/">request a new password reset</a>.
+   Please <a href="{% url 'passwd_recover' %}">request a new password reset</a>.
 </p>
 {% endif %}
 

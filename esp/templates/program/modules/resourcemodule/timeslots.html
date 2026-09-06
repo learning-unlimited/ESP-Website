@@ -1,4 +1,4 @@
-{% ifequal open_section "timeslot" %}
+{% if open_section == "timeslot" %}
 <button class="dsphead active">
    <b>Step 1: Create Timeslots</b> (click to expand/contract)
 </button>
@@ -10,7 +10,7 @@
 </button>
 
 <div class="dspcont">
-{% endifequal %}
+{% endif %}
 
 <p>Timeslots represent each of the class periods for your program, at the finest scale if overlapping classes will be allowed (e.g., 1 hour).  Each resource is available for a particular range of times (resources will not become available until you select a set of times).  Please add all necessary timeslots below.</p>
 

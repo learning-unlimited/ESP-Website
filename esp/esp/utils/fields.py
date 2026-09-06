@@ -1,4 +1,4 @@
-""" Copied from: http://djangosnippets.org/snippets/1478/ """
+""" Copied from: https://djangosnippets.org/snippets/1478/ """
 
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder

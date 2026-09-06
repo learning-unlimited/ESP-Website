@@ -45,6 +45,12 @@
         <td>-${{ amount_paid|floatformat:2 }}</td>
     </tr>
     {% endif %}
+    {% if amount_refunded %}
+    <tr>
+        <td>Amount Refunded</td>
+        <td>${{ amount_refunded|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
     <tr>
         <td align="right"><b>Amount Due:</b></td>
         <td><span id="total_amount_display">${{ itemizedcosttotal|floatformat:2 }}</span></td>

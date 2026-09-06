@@ -123,7 +123,7 @@ class CustomFormHandler():
             # If any, insert the relevant field into the first section of the fist page
             if section[0]['section__seq'] == 0 and self.seq == 0:
                 if self.form.link_type != '-1':
-                    label = 'Please pick the %s you want to fill the form for' % self.form.link_type
+                    label = f'Please pick the {self.form.link_type} you want to fill the form for'
                     link_cls = cf_cache.only_fkey_models[self.form.link_type]
                     if self.form.link_id == -1:
                         # User needs to be shown a list of instances from which to select
@@ -134,11 +134,11 @@ class CustomFormHandler():
                         widget = forms.HiddenInput()
                     fld = forms.ModelChoiceField(queryset = queryset, label = label, initial = queryset[0],
                                                 widget = widget, required = True, empty_label = None)
-                    self.fields.append(['link_%s' % link_cls.__name__, fld ])
-                    curr_fieldset[1]['fields'].append('link_%s' % link_cls.__name__)
+                    self.fields.append([f'link_{link_cls.__name__}', fld ])
+                    curr_fieldset[1]['fields'].append(f'link_{link_cls.__name__}')
 
             for field in section:
-                field_name = 'question_%d' % field['id']
+                field_name = f'question_{field["id"]}'
                 field_attrs = {'label': mark_safe(field['label']), 'help_text': mark_safe(field['help_text']), 'required': field['required']}
 
                 # Setting the 'name' attribute for combo fields
@@ -198,7 +198,7 @@ class CustomFormHandler():
                             form_field = cf_cache.getCustomFieldInstance(model_field, field_name)
                             field_is_custom = True
                         else:
-                            raise Exception('Could not find linked field: %s' % model_field)
+                            raise Exception(f'Could not find linked field: {model_field}')
 
                     # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
                     form_field.__dict__.update(field_attrs)
@@ -207,6 +207,7 @@ class CustomFormHandler():
                         # Add a class 'required' to the widget
                         form_field.widget.attrs['class'] += 'required '
                         form_field.widget.is_required = True
+                        form_field.widget.attrs['aria-required'] = 'true'
 
                     if not field_is_custom:
                         # Add in other classes for validation
@@ -230,6 +231,7 @@ class CustomFormHandler():
                 # Setting classes required for front-end validation
                 if field['required']:
                     widget_attrs['class'] += ' required'
+                    widget_attrs['aria-required'] = 'true'
                 if 'min_value' in field_attrs:
                     widget_attrs['min'] = field_attrs['min_value']
                 if 'max_value' in field_attrs:
@@ -273,7 +275,7 @@ class CustomFormHandler():
             for field in section:
                 ftype = field['field_type']
                 if cf_cache.isLinkField(ftype):
-                    field_name = 'question_%d' % field['id']
+                    field_name = f'question_{field["id"]}'
                     initial[field_name] = {'model': cf_cache.modelForLinkField(ftype)}
                     """
                     if 'combo' in link_fields[ftype]:
@@ -292,7 +294,7 @@ class CustomFormHandler():
         """
         Returns the BetterForm class for the current page
         """
-        _form_name = "Page_%d_%d" % (self.form.id, self.seq)
+        _form_name = f"Page_{self.form.id}_{self.seq}"
 
         if not self.fields:
             self._getFields()
@@ -406,7 +408,7 @@ class ComboForm(SessionWizardView):
                     # show some error message
                     pass
             if v['instance'] is not None:
-                data['link_%s' % v['model'].__name__] = v['instance']
+                data[f'link_{v["model"].__name__}'] = v['instance']
 
         # Saving response
         initial_keys = list(data.keys())
@@ -421,7 +423,7 @@ class ComboForm(SessionWizardView):
         if not self.form.anonymous:
             dynModel.objects.filter(user=self.curr_request.user).delete()
         dynModel.objects.create(**data)
-        return HttpResponseRedirect(kwargs.get('redirect_url', '/customforms/success/%d/' % self.form.id))
+        return HttpResponseRedirect(kwargs.get('redirect_url', f'/customforms/success/{self.form.id}/'))
 
     def render_to_response(self, context):
         #   Override rendering function to use our context processors.
@@ -488,6 +490,7 @@ class FormHandler:
             else:
                 field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
+    _getFormMetadata.get_or_create_token(('form',))
     _getFormMetadata.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     _getFormMetadata.depend_on_row('customforms.Attribute', lambda attr: {'form': attr.field.form})
     _getFormMetadata.depend_on_row('customforms.Section', lambda section: {'form': section.page.form})
@@ -651,13 +654,13 @@ class FormHandler:
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type, 'fk'])
+            response_data['questions'].append([f"link_{only_fkey_model.__name__}_id", form.link_type, 'fk'])
         else:
             only_fkey_model = None
 
         for field in fields:
             # I'll do a lot of merging here later
-            qname = 'question_%d' % field['id']
+            qname = f'question_{field["id"]}'
             ftype = field['field_type']
             if cf_cache.isLinkField(ftype):
                 # Let's grab the model first
@@ -672,43 +675,59 @@ class FormHandler:
 
         users = ESPUser.objects.in_bulk([response['user_id'] for response in responses])
 
+        # Pre-fetch for only_fkey_model
+        fkey_instances = {}
+        if only_fkey_model is not None:
+            fkey_ids = [response["link_%s_id" % only_fkey_model.__name__] for response in responses if response.get("link_%s_id" % only_fkey_model.__name__)]
+            fkey_instances = only_fkey_model.objects.in_bulk(fkey_ids)
+
+        # Pre-fetch for add_fields
+        add_field_instances = {}
+        for qname, data in add_fields.items():
+            model = data[0]
+            model_name = model.__name__
+            if model_name not in add_field_instances:
+                link_ids = [response.get("link_%s_id" % model_name) for response in responses if response.get("link_%s_id" % model_name)]
+                add_field_instances[model_name] = model.objects.in_bulk(link_ids)
+
         # Now let's set up the responses
         for response in responses:
             link_instances_cache={}
 
             # Add in user if form is not anonymous
             if not form.anonymous and response['user_id']:
-                user = users[response['user_id']]
-                response['user_id'] = str(response['user_id'])
-                response['user_display'] = user.name()
-                response['user_email'] = user.email
-                response['username'] = user.username
+                user = users.get(response['user_id'])
+                if user:
+                    response['user_id'] = str(response['user_id'])
+                    response['user_display'] = user.name()
+                    response['user_email'] = user.email
+                    response['username'] = user.username
 
             # Add in links
             if only_fkey_model is not None:
-                if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
-                    inst = only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
-                else: inst = None
-                response["link_%s_id" % only_fkey_model.__name__] = str(inst)
+                fkey_id = response.get("link_%s_id" % only_fkey_model.__name__)
+                inst = fkey_instances.get(fkey_id)
+                response["link_%s_id" % only_fkey_model.__name__] = str(inst) if inst else "None"
 
             # Now, put in the additional fields in response
             for qname, data in add_fields.items():
-                if data[0].__name__ not in link_instances_cache:
-                    if data[0].objects.filter(pk=response["link_%s_id" % data[0].__name__]).exists():
-                        link_instances_cache[data[0].__name__] = data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
-                    else:
-                        link_instances_cache[data[0].__name__] = None
+                model = data[0]
+                model_name = model.__name__
 
-                if cf_cache.isCompoundLinkField(data[0], data[1]):
-                    if link_instances_cache[data[0].__name__] is None:
+                if model_name not in link_instances_cache:
+                    link_id = response.get("link_%s_id" % model_name)
+                    link_instances_cache[model_name] = add_field_instances.get(model_name, {}).get(link_id)
+
+                if cf_cache.isCompoundLinkField(model, data[1]):
+                    if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(model, data[1])]
                 else:
-                    if link_instances_cache[data[0].__name__] is None:
+                    if link_instances_cache[model_name] is None:
                         response[qname]=''
                     else:
-                        response[qname] = link_instances_cache[data[0].__name__].__dict__[data[1]]
+                        response[qname] = link_instances_cache[model_name].__dict__[data[1]]
 
         # Add responses to response_data
         response_data['answers'].extend(responses)
@@ -788,7 +807,7 @@ class FormHandler:
             try:
                 prog = Program.objects.get(id=self.form.link_id)
             except Program.DoesNotExist:
-                raise ESPError('No program with ID %i' % (self.form.link_id))
+                raise ESPError(f'No program with ID {self.form.link_id}')
             tags = Tag.objects.filter(content_type=ContentType.objects.get_for_model(Program), object_id=prog.id, value=self.form.id, key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
             if tags.count() == 1:
                 tag = tags[0]
@@ -802,11 +821,9 @@ class FormHandler:
                     tl = "teach"
                     module = "TeacherQuizModule"
             elif tags.count() > 1:
-                raise ESPError('Custom form #%i is linked to multiple registration modules for %s' % (self.form.id, prog.name))
+                raise ESPError(f'Custom form #{self.form.id} is linked to multiple registration modules for {prog.name}')
             else:
                 tl = ''
                 module = ''
             metadata.update({'link_tl': tl, 'link_module': module})
         return metadata
-
-

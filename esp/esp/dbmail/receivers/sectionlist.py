@@ -5,7 +5,7 @@ from esp.users.models import ESPUser
 from esp.dbmail.base import BaseHandler
 from esp.program.models import ClassSubject
 from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -28,7 +28,7 @@ class SectionList(BaseHandler):
         self.emailcode = section.emailcode()
 
         program = cls.parent_program
-        self.recipients = [ESPUser.email_sendto_address(program.director_email, '%s Directors' % (program.niceName()))]
+        self.recipients = [ESPUser.email_sendto_address(program.director_email, f'{program.niceName()} Directors')]
 
         user_type = user_type.strip().lower()
 
@@ -39,6 +39,9 @@ class SectionList(BaseHandler):
         if user_type in ('students', 'class'):
             self.recipients += [user.get_email_sendto_address()
                                 for user in section.students()     ]
+
+        # Remove duplicate email addresses while preserving order
+        self.recipients = list(dict.fromkeys(self.recipients))
 
         if len(self.recipients) > 0:
             self.send = True
@@ -55,7 +58,7 @@ class SectionList(BaseHandler):
         # Create a section list in Mailman,
         # then bounce this email off to it
 
-        list_name = "%s-%s" % (section.emailcode(), user_type)
+        list_name = f"{section.emailcode()}-{user_type}"
 
         create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
         load_list_settings(list_name, "lists/class_mailman.config")
@@ -66,8 +69,7 @@ class SectionList(BaseHandler):
             apply_list_settings(list_name, {
                 'moderator': [
                     settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
-                    '%s-teachers@%s' % (cls.emailcode(),
-                                        Site.objects.get_current().domain),
+                    f'{cls.emailcode()}-teachers@{Site.objects.get_current().domain}',
                     # In theory this is redundant, but it's included just in
                     # case.
                     cls.parent_program.director_email,
@@ -76,19 +78,19 @@ class SectionList(BaseHandler):
                     settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
                     cls.parent_program.director_email,
                 ],
-                'subject_prefix': "[%s]" % (cls.parent_program.niceName(),),
+                'subject_prefix': f"[{cls.parent_program.niceName()}]",
             })
             logger.info("Settings applied...")
-            send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
+            send_mail(f"[ESP] Activated class mailing list: {list_name}@{Site.objects.get_current().domain}",
                       render_to_string("mailman/new_list_intro_teachers.txt",
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }),
-                      settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
+                      settings.DEFAULT_EMAIL_ADDRESSES['default'], [f"{cls.emailcode()}-teachers@{Site.objects.get_current().domain}", ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
-            apply_list_settings(list_name, {'subject_prefix': "[%s]" % (cls.parent_program.niceName(),)})
+            apply_list_settings(list_name, {'acceptable_aliases': f"{cls.emailcode()}.*-(students|class)-.*@{Site.objects.get_current().domain}"})
+            apply_list_settings(list_name, {'subject_prefix': f"[{cls.parent_program.niceName()}]"})
 
         logger.info("Settings applied still...")
         add_list_member(list_name, cls.parent_program.director_email)
@@ -97,5 +99,5 @@ class SectionList(BaseHandler):
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
         logger.info("Members added")
 
-        self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
+        self.recipients = [f"{list_name}@{Site.objects.get_current().domain}"]
         self.send = True

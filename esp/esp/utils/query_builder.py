@@ -67,7 +67,7 @@ class QueryBuilder(object):
             else:
                 return self.base.filter(filter_q)
         else:
-            raise ESPError('Invalid filter %s' % value.get('filter'))
+            raise ESPError(f'Invalid filter {value.get("filter")}')
 
 
 class SearchFilter(object):
@@ -154,8 +154,7 @@ class SelectInput(object):
         if value in self.options:
             return Q(**{self.field_name: value})
         else:
-            raise ESPError('Invalid choice %s for input %s'
-                           % (value, self.field_name))
+            raise ESPError(f'Invalid choice {value} for input {self.field_name}')
 
 class SelectQInput(object):
     """An input represented by an HTML <select> with a fixed set of options. Each

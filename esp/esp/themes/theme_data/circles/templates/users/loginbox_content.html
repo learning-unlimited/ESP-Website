@@ -1,4 +1,4 @@
-<div id="loginbox">
+﻿<div id="loginbox">
 <table align="center" class="loginform" cellspacing="0" cellpadding="5">
 <tr><td>
 
@@ -36,44 +36,44 @@
 <hr>
 
 {% if login_result %}
-    <div><center><span style="color: #BCCAF5;">{{ login_result }}{% ifequal "Invalid username or password" login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endifequal %}</span></center><br /></div>
+    <div><center><span style="color: #BCCAF5;">{{ login_result }}{% if "Invalid username or password" == login_result %}<br /><a href="/myesp/login/">Try again here.</a>{% endif %}</span></center><br /></div>
 {% else %}
-    <div class="not_logged_in hidden">
+    <div class="not_logged_in">
         <div>Log in here.  If you don't know your username or password, try <a href="/myesp/passwdrecover/">our password reset page</a>.<br /><br /></div>
     </div>
 {% endif %}
 
-<div class="logged_in hidden">
+<div class="logged_in">
 <div id="divnav">
   <p align="center">
     {% include "users/loginbox_userinfo.html" %}
-    <div class="unmorph hidden">
-       <br /><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
+    <div class="unmorph">
+       <br /><a href="{% url 'myesp_switchback' %}">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
     </div>
-    <a href="/myesp/accountmanage/">Manage Account</a>
+    <a href="{% url 'myesp_accountmanage' %}">Manage Account</a>
     <br/>
-    <a href="/myesp/signout/">Logout</a>
+    <a href="{% url 'signout' %}">Logout</a>
     <br/>
     <a href="https://www.learningu.org/about/privacy/" target="_blank">Privacy Policy</a>
   </p>
 </div>
 </div>
 
-<div class="not_logged_in hidden">
+<div class="not_logged_in">
 <div id="divnav">
   <form name="loginform" id="loginform" method="post" action="/myesp/login/">
     <input type="hidden" name="next" value="{{ request.path }}" />
     <table border="0" cellpadding="0" cellspacing="0" summary=" ">
       <tr>
         <td><div class="divformcol1"><label for="user">User name:</label></div></td>
-        <td><div class="divformcol2"><input type="text" name="username" id="user" size="8" value="" maxlength="255" class="inputbox input-small" /></div></td>
+        <td><div class="divformcol2"><input type="text" name="username" required id="user" size="8" value="" maxlength="255" class="inputbox input-small" /></div></td>
 
         <td><div class="divformcol3"></div></td>
       </tr>
       <tr>
         <td><div class="divformcol1"><label for="pass">Password:</label></div></td>
-        <td><div class="divformcol2"><input type="password" name="password" id="pass" size="8" value="" maxlength="255" class="inputbox input-small" /></div></td>
-        <td style="vertical-align: top;"><div class="divformcol3"><button class="btn btn-inverse glyphicon glyphicon-log-in" id="gologin" type="submit" style="margin-left:5px;"></button></div></td>
+        <td><div class="divformcol2"><input type="password" name="password" required id="pass" size="8" value="" maxlength="255" class="inputbox input-small" /></div></td>
+        <td style="vertical-align: top;"><div class="divformcol3"><button class="btn btn-secondary" id="gologin" type="submit" style="margin-left:5px;"></button></div></td>
       </tr>
       <tr>
 
@@ -95,8 +95,8 @@
 
 {% comment %} === Admin Toolbar (includes user search) === {% endcomment %}
 {% load modules %}
-<link rel="stylesheet" type="text/css" href="/media/default_styles/admin_bar.css">
-<div id="adminbar" class="admin hidden" style="position: fixed !important">
+<link rel="stylesheet" type="text/css" href="/media/styles/admin_bar.css">
+<div id="adminbar" class="admin" style="position: fixed !important">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
 </div>

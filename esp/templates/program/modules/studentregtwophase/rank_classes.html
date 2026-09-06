@@ -3,7 +3,7 @@
 
 {% block xtrajs %}
 {{ block.super }}
-<script type="text/javascript" src="/media/scripts/select2-3.4.3/select2.js"></script>
+<script type="text/javascript" src="/media/scripts/select2-4.1.0/select2.min.js"></script>
 <script type="text/javascript">
   // Use phase2 rendering of the catalog template
   var catalog_type = "phase2";
@@ -14,7 +14,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/select2-3.4.3/select2.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/select2-4.1.0/select2.min.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog-phase2.css" />
 {% endblock %}
 
@@ -75,7 +75,7 @@ for every priority slot to ensure a full schedule.
   <label>Click the star to mark this class as interested.</label>
   <br />
   {% for pri, pri_display in priorities %}
-  <button data-bind="click: function(data) { $parent.prioritySelection[{{pri}}-1](data.id); $j('#pri-{{pri}}').trigger('change.select2'); }">Set as {{pri_display}}</button>
+  <button data-bind="click: function(data) { $parent.prioritySelection[{{pri}}-1](data.id); $j('#pri-{{pri}}').trigger('change'); }">Set as {{pri_display}}</button>
   {% endfor %}
 </div>
 {% endblock %}

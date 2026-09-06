@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 {% load users %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css"/>
 {% endblock %}
 
-{% block content %}
+{% block module_content %}
 
 <h1>{{ program.niceName }} application for {{ student.name }}</h1>
 
@@ -46,12 +46,12 @@ Please review the student's biographical information and responses to our questi
     </td>
 </tr>
 {% for response in student.app.responses.all %}
-{% ifequal class response.question.subject %}
+{% if class == response.question.subject %}
 <tr>
   <th><label>{{ response.question.question }}</label></th>
   <td>{{ response.response }}</td>
 </tr>
-{% endifequal %}
+{% endif %}
 {% endfor %}
 </table>
 <br />

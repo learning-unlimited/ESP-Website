@@ -54,7 +54,7 @@ class ArchiveFilter(object):
         self.options  = str(options)
 
     def __str__(self):
-        return '%s, %s' % (self.category, self.options)
+        return f'{self.category}, {self.options}'
 
 def compute_range(postvars, num_records):
     default_num_records = 10
@@ -207,14 +207,14 @@ def archive_classes(request, category, options, sortorder = None):
 
     return render_to_response('program/archives.html', request, context)
 
-def archive_teachers(request, category, options):
+def archive_teachers(request, category, options, sortorder=None):
     context = {'selection': 'Teachers'}
     context['category'] = category
     context['options'] = options
 
     return render_to_response('program/archives.html', request, context)
 
-def archive_programs(request, category, options):
+def archive_programs(request, category, options, sortorder=None):
     context = {'selection': 'Programs'}
     context['category'] = category
     context['options'] = options

@@ -54,11 +54,8 @@ class FormstackMedliabModule(ProgramModuleObj):
                 "choosable": 2,
                 }
 
-    def isCompleted(self):
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+    def isCompleted(self, user=None):
+        user = self._resolve_user(user)
         return Record.user_completed(
                 user=user,
                 event="med",

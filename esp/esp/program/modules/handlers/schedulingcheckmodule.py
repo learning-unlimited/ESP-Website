@@ -1,10 +1,12 @@
 from django.http import HttpResponse
-from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.resources.models import ResourceRequest
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
+from esp.resources.models import ResourceRequest, ResourceType
 from copy import deepcopy
 from esp.cal.models import *
 from datetime import date
+from collections import defaultdict
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
@@ -28,6 +30,19 @@ class SchedulingCheckModule(ProgramModuleObj):
             "seq": 10,
             "choosable": 1,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the scheduling diagnostics page in the admin dashboard search dropdown.
+        if view_name != "scheduling_checks":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Scheduling Diagnostics",
+            category=SEARCH_CATEGORY_CLASSES,
+            keywords=["scheduling", "diagnostics", "checks", "schedule", "conflicts"],
+        )
 
     @main_call
     @needs_admin
@@ -129,7 +144,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -144,7 +159,7 @@ class SchedulingCheckRunner:
 
     def run_diagnostics(self, diagnostics=None):
         if diagnostics is None:
-             diagnostics = self.all_diagnostics()
+            diagnostics = self.all_diagnostics()
         return [getattr(self, diag)() for diag in diagnostics]
 
     # Update this to add a scheduling check.
@@ -186,6 +201,7 @@ class SchedulingCheckRunner:
             diags.extend([
                 ('unavailable_moderators', self.p.getModeratorTitle().capitalize() + "s helping when they aren't available"),
                 ('mismatched_moderators', self.p.getModeratorTitle().capitalize() + 's with category mismatches'),
+                ('moderator_movement_dependency_loops', self.p.getModeratorTitle().capitalize() + ' movement dependency loops'),
             ])
         return diags
 
@@ -221,7 +237,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category='Lunch')
+            qs = qs.exclude(parent_class__category__is_lunch=True)
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -363,7 +379,7 @@ class SchedulingCheckRunner:
                     if open_class_cat.id not in [c.category.id for c in classes]:
                         #converts the list of class section objects to a single string
                         str1 = ', '
-                        classes = str1.join([unicode(c) for c in classes])
+                        classes = str1.join([str(c) for c in classes])
                         bads.append({
                             'Username': t,
                             'Teacher Name': t.name(),
@@ -388,8 +404,9 @@ class SchedulingCheckRunner:
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
         if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is not None and lunch_category.category in self.class_categories:
+            self.class_categories.remove(lunch_category.category)
 
         #generating a dictionary of class categories
         class_cat_d = {}
@@ -471,10 +488,10 @@ class SchedulingCheckRunner:
             teachers = s.parent_class.get_teachers()
             admin_teachers = [t for t in teachers if t.isAdministrator()]
             for a in admin_teachers:
-                 mt =  s.get_meeting_times()
-                 for t in mt:
-                      d[t][name_string].append(a.name())
-                      d[t][key_string].append(str(a))
+                mt =  s.get_meeting_times()
+                for t in mt:
+                    d[t][name_string].append(a.name())
+                    d[t][key_string].append(str(a))
         for k in d:
             d[k][num_string] = len(d[k][key_string])
         for l in d:
@@ -506,16 +523,16 @@ class SchedulingCheckRunner:
                     else:
                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
             for moderator in s.get_moderators():
-               mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
-               if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
-                   if mod_recs.count() == 0:
-                       mod_recs_text = "No selection"
-                   else:
-                       mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
-                   if not mod_recs_text:
-                       mod_recs_text.append("No Selection")
-                   mod_recs_list = ", ".join(mod_recs_text)
-                   l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
+                mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
+                if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
+                    if mod_recs.count() == 0:
+                        mod_recs_text = "No selection"
+                    else:
+                        mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
+                    if not mod_recs_text:
+                        mod_recs_text.append("No Selection")
+                    mod_recs_list = ", ".join(mod_recs_text)
+                    l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
         self.l_missing_resources = l_resources
         self.l_mod_missing = l_mod
@@ -705,3 +722,150 @@ class SchedulingCheckRunner:
                     if e not in available:
                         l.append({self.p.getModeratorTitle(): m, "Time": e, "Section": s})
         return self.formatter.format_table(l, {"headings": ["Section", self.p.getModeratorTitle(), "Time"]})
+
+    def _consecutive_timeslot_pairs(self):
+        pairs = []
+        timeslots = sorted(self.p.getTimeSlotList(), key=lambda ts: ts.start)
+
+        contiguous_tolerance = int(Tag.getProgramTag('timeblock_contiguous_tolerance', program=self.p) or 0)
+        for contiguous_group in Event.group_contiguous(timeslots, contiguous_tolerance):
+            contiguous_group = sorted(contiguous_group, key=lambda ts: ts.start)
+            for i in range(len(contiguous_group) - 1):
+                current_slot = contiguous_group[i]
+                next_slot = contiguous_group[i + 1]
+                if current_slot.start.date() == next_slot.start.date():
+                    pairs.append((current_slot, next_slot))
+        return pairs
+
+    def _moderator_room_assignments(self):
+        """Build moderator->room and room->moderators maps for each timeslot."""
+        by_moderator = defaultdict(dict)
+        by_room = defaultdict(lambda: defaultdict(set))
+        classroom_type = ResourceType.get_or_create('Classroom')
+
+        for section in self._all_class_sections():
+            meeting_times = set(section.get_meeting_times())
+            if not meeting_times:
+                continue
+
+            room_by_timeslot = {}
+            for assignment in section.resourceassignment_set.all():
+                resource = assignment.resource
+                if resource.event in meeting_times and resource.res_type_id == classroom_type.id:
+                    room_by_timeslot[resource.event] = resource.name
+
+            for timeslot, room_name in room_by_timeslot.items():
+                for moderator in section.get_moderators():
+                    by_moderator[timeslot][moderator] = room_name
+                    by_room[timeslot][room_name].add(moderator)
+
+        return by_moderator, by_room
+
+    def _dependency_severity(self, chain_length, has_loop):
+        if has_loop:
+            return 'High'
+        if chain_length >= 5:
+            return 'High'
+        if chain_length >= 3:
+            return 'Medium'
+        return 'Low'
+
+    def _trace_dependency_chains(self, start_moderator, first_dependency, dependency_graph):
+        """Trace all dependency branches from one starting dependency edge."""
+        stack = [(start_moderator, [start_moderator, first_dependency])]
+        chains = []
+
+        while stack:
+            _, chain = stack.pop()
+            current = chain[-1]
+            next_candidates = sorted(
+                dependency_graph.get(current, set()),
+                key=lambda user: user.username,
+            )
+
+            if not next_candidates:
+                chains.append((chain, False))
+                continue
+
+            for candidate in next_candidates:
+                if candidate == start_moderator:
+                    chains.append((chain + [start_moderator], True))
+                elif candidate not in chain:
+                    stack.append((start_moderator, chain + [candidate]))
+                else:
+                    # Internal cycle not returning to the start moderator.
+                    chains.append((chain + [candidate], False))
+
+        # Deduplicate equivalent chain signatures.
+        deduped = []
+        seen = set()
+        for chain, has_loop in chains:
+            signature = (tuple(user.username for user in chain), has_loop)
+            if signature in seen:
+                continue
+            seen.add(signature)
+            deduped.append((chain, has_loop))
+        return deduped
+
+    def moderator_movement_dependency_loops(self):
+        """
+        Moderators with room-switch dependencies across consecutive blocks.
+        A loop indicates a chain that returns to the starting moderator.
+        """
+        moderator_rooms, room_moderators = self._moderator_room_assignments()
+        output_rows = []
+
+        for current_slot, next_slot in self._consecutive_timeslot_pairs():
+            dependency_graph = defaultdict(set)
+            current_assignments = moderator_rooms.get(current_slot, {})
+            next_assignments = moderator_rooms.get(next_slot, {})
+
+            for moderator, current_room in current_assignments.items():
+                next_room = next_assignments.get(moderator)
+                if next_room is None or next_room == current_room:
+                    continue
+
+                replacements = room_moderators.get(next_slot, {}).get(current_room, set())
+                for replacement in replacements:
+                    if replacement == moderator:
+                        continue
+                    replacement_current_room = current_assignments.get(replacement)
+                    if replacement_current_room is None or replacement_current_room == current_room:
+                        continue
+                    dependency_graph[moderator].add(replacement)
+
+            for moderator in sorted(dependency_graph.keys(), key=lambda user: user.username):
+                for first_dependency in sorted(dependency_graph[moderator], key=lambda user: user.username):
+                    chains = self._trace_dependency_chains(moderator, first_dependency, dependency_graph)
+                    for chain, has_loop in chains:
+                        dependency_count = max(len(chain) - 1, 0)
+                        chain_str = ' -> '.join(user.username for user in chain)
+                        output_rows.append({
+                            "Current Block": current_slot,
+                            "Next Block": next_slot,
+                            self.p.getModeratorTitle().capitalize(): moderator,
+                            "Dependency Chain": chain_str,
+                            "Dependency Count": dependency_count,
+                            "Severity": self._dependency_severity(dependency_count, has_loop),
+                            "Loop": "Yes" if has_loop else "No",
+                        })
+
+        return self.formatter.format_table(
+            output_rows,
+            {
+                "headings": [
+                    "Current Block",
+                    "Next Block",
+                    self.p.getModeratorTitle().capitalize(),
+                    "Dependency Chain",
+                    "Dependency Count",
+                    "Severity",
+                    "Loop",
+                ]
+            },
+            help_text=(
+                "Tracks moderator room switches across consecutive blocks and reports "
+                "movement dependency chains. Rows marked Loop=Yes are hard loops that "
+                "return to the same moderator and typically require manual intervention."
+            ),
+        )

@@ -51,6 +51,9 @@ from django.http import HttpResponseRedirect
 from decimal import Decimal
 import json
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
@@ -102,7 +105,17 @@ class DonationModule(ProgramModuleObj):
             'donation_options': [10, 20, 50],
         }
 
-        tag_data = json.loads(Tag.getProgramTag('donation_settings', self.program))
+        raw = Tag.getProgramTag('donation_settings', self.program, default='{}')
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except (TypeError, ValueError):
+            logger.warning("Invalid donation_settings tag for program %s: %s", self.program, raw)
+            tag_data = {}
+
+        if not isinstance(tag_data, dict):
+            logger.warning("Non-dict donation_settings tag for program %s: %s", self.program, tag_data)
+            tag_data = {}
+
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
@@ -114,12 +127,9 @@ class DonationModule(ProgramModuleObj):
         (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
         return donate_type
 
-    def isCompleted(self):
+    def isCompleted(self, user=None):
         """Whether the user made a decision about donating to LU."""
-        if hasattr(self, 'user'):
-            user = self.user
-        else:
-            user = get_current_request().user
+        user = self._resolve_user(user)
         return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
 
     def students(self, QObject = False):

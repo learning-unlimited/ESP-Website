@@ -1,15 +1,15 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Student Application{% endblock %}
 {% block content_title %}Apply for {{program.niceName}}{% endblock %}
 
-{% block content %}
+{% block module_content %}
 <h1>{{ program.niceName }} Student Application</h1>
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:studentapp" %}
 
-{% if app_is_open %}
+{% if app_is_open and form %}
 <form method="post" action="{{form.info.url}}">
     <input type="hidden" name="form" value="{{form.id}}" />
     <input type="hidden" name="viewkey" value="{{form.info.viewkey}}" />

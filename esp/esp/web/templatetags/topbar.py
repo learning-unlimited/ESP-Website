@@ -33,7 +33,7 @@ def get_primary_nav(context):
     is_onsite = curuser.isOnsite()
 
     if is_onsite and is_admin:
-        cache_key = 'NAVBAR__%s' % urlencode(path)
+        cache_key = f'NAVBAR__{urlencode(path)}'
     else:
         cache_key = None
 

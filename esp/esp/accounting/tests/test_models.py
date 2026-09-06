@@ -16,19 +16,14 @@ from esp.accounting.models import (
     Transfer,
 )
 from esp.program.models import FinancialAidRequest, Program
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class LineItemTypeTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -100,7 +95,7 @@ class LineItemTypeTest(TestCase):
 class LineItemOptionsTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -139,7 +134,7 @@ class LineItemOptionsTest(TestCase):
 class AccountTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account = Account.objects.create(
             name='test-account',
@@ -184,7 +179,7 @@ class AccountTest(TestCase):
 class TransferTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account_src = Account.objects.create(
             name='source', description='Source', program=self.program,
@@ -235,34 +230,19 @@ Source: esp/esp/accounting/controllers.py
 Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
-from decimal import Decimal
-
-from django.contrib.auth.models import Group
 
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
     ProgramAccountingController,
 )
-from esp.accounting.models import (
-    Account,
-    LineItemType,
-    Transfer,
-)
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class GlobalAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
 
     def test_setup_accounts(self):
         gac = GlobalAccountingController()
@@ -283,7 +263,7 @@ class GlobalAccountingControllerTest(TestCase):
 class ProgramAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         gac = GlobalAccountingController()
         gac.setup_accounts()
@@ -357,11 +337,54 @@ class ProgramAccountingControllerTest(TestCase):
         count, total = self.pac.payments_summary()
         self.assertEqual(count, 0)
 
+    def test_clear_all_data(self):
+        """Regression test for Django 3.2+ distinct().delete() handling.
+
+        clear_all_data() exercises two pk__in subquery wrappers that are
+        required for delete() to work after distinct() in Django 3.2+:
+          - Transfer.objects.filter(pk__in=self.all_transfers()) wraps a
+            bare .distinct() queryset.
+          - LineItemType.objects.filter(pk__in=self.get_lineitemtypes())
+            wraps a .distinct('text') (DISTINCT ON) queryset.
+
+        Without the wrappers this raises
+        TypeError: Cannot call delete() after .distinct().
+        """
+        # Populate the program so all four delete paths in clear_all_data
+        # have rows to remove.
+        self.pac.setup_accounts()
+        self.pac.setup_lineitemtypes(50.0)
+        user = ESPUser.objects.create_user(username='cleardata', password='pwd')
+        iac = IndividualAccountingController(self.program, user)
+        iac.ensure_required_transfers()
+        iac.grant_full_financial_aid()
+
+        # Sanity-check that there is data to clear.
+        self.assertTrue(LineItemType.objects.filter(program=self.program).exists())
+        self.assertTrue(Account.objects.filter(program=self.program).exists())
+        self.assertTrue(Transfer.objects.filter(line_item__program=self.program).exists())
+        self.assertTrue(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+
+        # The function under test. Must not raise under Django 3.2+.
+        self.pac.clear_all_data()
+
+        # Accounts and grants are unconditionally cleared.
+        self.assertFalse(Account.objects.filter(program=self.program).exists())
+        self.assertFalse(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+        # All transfers cascade with the program accounts.
+        self.assertFalse(Transfer.objects.filter(line_item__program=self.program).exists())
+        # Non-finaid line items (the DISTINCT ON case) are deleted via pk__in.
+        # Finaid items intentionally remain -- they're excluded from
+        # get_lineitemtypes() via ProgramAccountingController.finaid_items.
+        self.assertFalse(
+            LineItemType.objects.filter(program=self.program, text='Program admission').exists()
+        )
+
 
 class IndividualAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
             username='teststu', password='password',
@@ -374,7 +397,7 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac = IndividualAccountingController(self.program, self.user)
 
     def test_get_id(self):
-        expected = '%d/%d' % (self.program.id, self.user.id)
+        expected = f'{self.program.id}/{self.user.id}'
         self.assertEqual(self.iac.get_id(), expected)
 
     def test_from_id(self):
@@ -440,3 +463,80 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac.set_finaid_params(20.0, 0)
         due = self.iac.amount_due()
         self.assertEqual(due, Decimal('30.00'))
+
+    def test_amount_refunded_zero(self):
+        """amount_refunded returns 0 when no refunds exist."""
+        self.assertEqual(self.iac.amount_refunded(), Decimal('0'))
+
+    def test_record_refund_creates_transfers(self):
+        """record_refund creates two transfers for payable and line item."""
+        self.iac.record_refund(Decimal('25.00'), 'ref_123')
+        refund_lit = self.pac.default_refund_lineitemtype()
+        transfers = Transfer.objects.filter(
+            user=self.user,
+            line_item=refund_lit,
+        )
+        self.assertEqual(transfers.count(), 2)
+
+    def test_record_refund_amount_refunded(self):
+        """amount_refunded returns correct amount after recording refund."""
+        self.iac.record_refund(Decimal('25.00'), 'ref_456')
+        self.assertEqual(self.iac.amount_refunded(), Decimal('25.00'))
+
+    def test_amount_due_increases_after_refund(self):
+        """amount_due increases after a refund is recorded."""
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.iac.record_refund(Decimal('20.00'), 'ref_789')
+        self.assertEqual(self.iac.amount_due(), Decimal('20.00'))
+
+    def test_classify_transfer_refund(self):
+        """classify_transfer correctly identifies refund transfers."""
+        self.iac.record_refund(Decimal('10.00'), 'ref_classify')
+        refund_lit = self.pac.default_refund_lineitemtype()
+        transfer = Transfer.objects.filter(
+            user=self.user,
+            line_item=refund_lit,
+        ).first()
+        self.assertEqual(self.iac.classify_transfer(transfer), 'Refund')
+
+    def test_link_paid_transfers_after_refund(self):
+        """submit_payment works correctly after a partial refund."""
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('20.00'), 'ref_link')
+        self.assertEqual(self.iac.amount_due(), Decimal('20.00'))
+        self.iac.submit_payment(Decimal('20.00'))
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
+    def test_user_accounting_includes_refunds(self):
+        """user_accounting results include refund transfers."""
+        from esp.accounting.views import user_accounting
+        self.iac.ensure_required_transfers()
+        self.iac.submit_payment(Decimal('50.00'))
+        self.iac.record_refund(Decimal('15.00'), 'ref_acct')
+        results = user_accounting(self.user, [self.program])
+        types = [t['type'] for t in results[0]['transfers']]
+        self.assertIn('Refund', types)
+        self.assertEqual(results[0]['refunded'], Decimal('15.00'))
+
+    def test_apply_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 1, Decimal('15.00')])
+
+    def test_set_preference(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 1)
+        transfers = self.iac.get_transfers()
+        self.assertTrue(transfers.filter(line_item__text='T-shirt').exists())
+
+    def test_get_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 2)
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])

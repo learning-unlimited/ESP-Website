@@ -34,7 +34,7 @@ can select from pre-defined themes (/themes/select), configure page contents
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
 `<../../themes.rst>`_ or
-`<http://wiki.learningu.org/Generic_Templates>`_.
+`<https://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -246,7 +246,7 @@ has been upgraded to the latest version, 2.3.1
 (`<https://pypi.python.org/pypi/Markdown/2.3.1>`_). This may have affected the
 visual appearance of your existing pages. Please double-check your web-content
 throughout the site to ensure that it appears correctly. The documentation for
-Markdown syntax is at `<http://daringfireball.net/projects/markdown/syntax>`_.
+Markdown syntax is at `<https://daringfireball.net/projects/markdown/syntax>`_.
 
 Teacher training creation and sign-up
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -418,7 +418,7 @@ templates were used, among other things.  You can enable or disable it via the
 debug_toolbar GET variable, for example http://localhost:8000/?debug_toolbar=f,
 or with the DEBUG_TOOLBAR setting in local_settings.py.  There are more
 configuration options defined in django_settings.py.  For more information see
-`<http://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
+`<https://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
 
 virtualenv (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
