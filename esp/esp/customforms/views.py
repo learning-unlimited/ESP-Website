@@ -450,15 +450,15 @@ def getRebuildData(request):
                 form = Form.objects.get(pk=form_id)
             except (KeyError, ValueError, Form.DoesNotExist):
                 # The form builder reads .message off the error response, so
-                # keep the body JSON rather than returning a bare 400.
-                return HttpResponse(json.dumps({'message': 'No such form.'}), status=400)
+                # this needs to be JSON rather than a bare 400.
+                return JsonResponse({'message': 'No such form.'}, status=400)
             if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
                 raise Http403('You do not have permission to view this form.')
             fh = FormHandler(form=form, request=request)
             try:
-                return HttpResponse(json.dumps(fh.rebuildData()))
+                return JsonResponse(fh.rebuildData())
             except Exception as err:
-                return HttpResponse(json.dumps({'message': str(err)}), status=400)
+                return JsonResponse({'message': str(err)}, status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)
