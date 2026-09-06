@@ -2352,6 +2352,20 @@ class StudentRegistration(ExpirableModel):
 
     class Meta:
         app_label = 'program'
+        constraints = [
+            #   Last line of defense against the enrollment races that row locks in
+            #   ClassSection.preregister_student() are meant to prevent.  Only rows
+            #   with no end_date are covered: expired rows are the soft-delete
+            #   history and a student may legitimately re-register after leaving.
+            #   Rows given an explicit future end_date (e.g. same-day attendance
+            #   marks) are also uncovered, since a partial index cannot depend on
+            #   the current time.
+            models.UniqueConstraint(
+                fields=['user', 'section', 'relationship'],
+                condition=Q(end_date__isnull=True),
+                name='unique_active_enrollment',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.user} {self.relationship} in {self.section}'

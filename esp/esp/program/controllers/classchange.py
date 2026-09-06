@@ -54,6 +54,7 @@ from esp.dbmail.models import send_mail
 from esp.utils.query_utils import nest_Q
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models.query import QuerySet
 from django.db.models import Q
 
@@ -672,6 +673,10 @@ class ClassChangeController(object):
 
         self.push_back_students()
 
+    #   Runs from a shell script rather than a request, so ATOMIC_REQUESTS does
+    #   not apply; the atomic block is what lets preregister_student() take its
+    #   row locks and keeps a partially saved set of changes from being committed.
+    @transaction.atomic
     def save_assignments(self):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """

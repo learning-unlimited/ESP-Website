@@ -1448,55 +1448,61 @@ class ClassSection(models.Model):
             else:
                 prereg_verb = 'Enrolled'
 
-        locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
+        #   Lock the section row so the capacity check and the registration it
+        #   authorizes cannot interleave with a concurrent attempt.  The lock is
+        #   held until the surrounding transaction commits, so the atomic block is
+        #   required for callers that run outside a request (shell scripts,
+        #   management commands), where ATOMIC_REQUESTS does not apply.
+        with transaction.atomic():
+            locked_section = ClassSection.objects.select_for_update().get(pk=self.pk)
 
-        if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
-            #    Then, create the registration for this class.
-            rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
-            if fast_force_create or not qs.exists():
-                sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
-                sr.save()
-                if fast_force_create:
-                    ## That's the bare minimum to reg someone; we're done!
-                    return True
-
-                webapp_verb = "Onsite/Webapp"
-                onsite_verb = 'OnSite/ChangedClasses'
-                request = get_current_request()
-                # If using the webapp to enroll in a class, annotate it as such
-                if webapp:
-                    rt, created = RegistrationType.objects.get_or_create(name=webapp_verb, category='student')
-                    sr = StudentRegistration(user=user, section=self, relationship=rt)
+            if overridefull or fast_force_create or not locked_section.isFull(webapp=webapp):
+                #    Then, create the registration for this class.
+                rt = RegistrationType.get_cached(name=prereg_verb, category='student')
+                qs = locked_section.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
+                if fast_force_create or not qs.exists():
+                    sr = StudentRegistration(user=user, section=locked_section, relationship=rt)
                     sr.save()
-                # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
-                elif request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
-                    rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
-                    sr = StudentRegistration(user=user, section=self, relationship=rt)
-                    sr.save()
+                    if fast_force_create:
+                        ## That's the bare minimum to reg someone; we're done!
+                        return True
 
+                    webapp_verb = "Onsite/Webapp"
+                    onsite_verb = 'OnSite/ChangedClasses'
+                    request = get_current_request()
+                    # If using the webapp to enroll in a class, annotate it as such
+                    if webapp:
+                        rt, created = RegistrationType.objects.get_or_create(name=webapp_verb, category='student')
+                        sr = StudentRegistration(user=user, section=self, relationship=rt)
+                        sr.save()
+                    # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
+                    elif request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
+                        rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
+                        sr = StudentRegistration(user=user, section=self, relationship=rt)
+                        sr.save()
+
+                else:
+                    pass
+
+                if self.parent_program.isUsingStudentApps():
+                    #   Clear completion bit on the student's application if the class has app questions.
+                    app = user.getApplication(self.parent_program, create=False)
+                    if app:
+                        app.set_questions()
+                        if app.questions.exists():
+                            app.done = False
+                            app.save()
+
+                #   Add the student to the class mailing lists, if they exist
+                list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
+                for list_name in list_names:
+                    add_list_member(list_name, user)
+                add_list_member(f"{self.parent_program.program_type}_{self.parent_program.program_instance}-students", user)
+
+                return True
             else:
-                pass
-
-            if self.parent_program.isUsingStudentApps():
-                #   Clear completion bit on the student's application if the class has app questions.
-                app = user.getApplication(self.parent_program, create=False)
-                if app:
-                    app.set_questions()
-                    if app.questions.exists():
-                        app.done = False
-                        app.save()
-
-            #   Add the student to the class mailing lists, if they exist
-            list_names = [f"{self.emailcode()}-students", f"{self.parent_class.emailcode()}-students"]
-            for list_name in list_names:
-                add_list_member(list_name, user)
-            add_list_member(f"{self.parent_program.program_type}_{self.parent_program.program_instance}-students", user)
-
-            return True
-        else:
-            #    Registration failed because the class is full.
-            return False
+                #    Registration failed because the class is full.
+                return False
 
     def prettyDuration(self):
         if self.duration is None:
