@@ -1,55 +1,79 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Registration{% endblock %}
+{% block title %}{{ program.niceName }} Registration{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/teacherregcore-mainpage.css" />
+{% endblock %}
 
 {% block content %}
-
-<h1>Teacher registration for {{program.niceName}}</h1>
-
 {% load render_qsd %}
-{% inline_program_qsd_block program "teach:teacherreg" %}
-<p>
-Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
-</p>
-{% end_inline_program_qsd_block %}
 
-{% if options.progress_mode == 1 %}
-    {% include "program/modules/checkboxes.html" %}
-{% endif %}
-{% if options.progress_mode == 2 %}
-    {% include "program/modules/progressbar.html" %}
-{% endif %}
-<br />
+<div class="teacher-reg-landing">
 
-{% if records %}
-{% render_inline_program_qsd program record_steps %}
-<div class="row">
-<div class="col-md-10 offset-md-1">
-<table class="table table-condensed" align="center" width="400">
-<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
-{% for record in records %}
-    <tr>
-        <td>{{ record.full_event }}</td>
-        <td>
-            {% if record.isCompleted %}
+  <header class="teacher-reg-hero">
+    <h1>Teacher registration for {{ program.niceName }}</h1>
+    {% inline_program_qsd_block program "teach:teacherreg" %}
+    <p>
+    Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
+    </p>
+    {% end_inline_program_qsd_block %}
+  </header>
+
+  {% if options.progress_mode == 1 or options.progress_mode == 2 %}
+  <section class="card teacher-reg-panel teacher-reg-checklist">
+    <div class="card-body">
+      {% if options.progress_mode == 1 %}
+        {% include "program/modules/checkboxes.html" %}
+      {% else %}
+        {% include "program/modules/progressbar.html" %}
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if records %}
+  <section class="card teacher-reg-panel">
+    <div class="card-body">
+      {% render_inline_program_qsd program record_steps %}
+      <h2>Other Registration Requirements</h2>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th scope="col">Requirement</th>
+            <th scope="col">Done?</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in records %}
+          <tr>
+            <td>{{ record.full_event }}</td>
+            <td>
+              {% if record.isCompleted %}
                 <i class="bi bi-check done-sign" aria-label="Done"></i>
-            {% else %}
+              {% else %}
                 <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
-            {% endif %}
-        </td>
-    </tr>
-{% endfor %}
-</table>
-</div>
-</div>
-{% endif %}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
 
-{% for module in modules %}
-{% if module.useTemplate or module.getTemplate %}
-    <a name="module-{{module.id}}"></a>
-    <br />
-    {% include module.getTemplate %}
-{% endif %}
-{% endfor %}
+  <section class="teacher-reg-modules">
+    {% for module in modules %}
+    {% if module.useTemplate or module.getTemplate %}
+    <div class="teacher-reg-module-block" id="module-{{ module.id }}">
+      {% include module.getTemplate %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </section>
+
+</div>
 
 {% endblock %}

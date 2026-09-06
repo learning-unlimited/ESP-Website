@@ -1,0 +1,74 @@
+/* Layout for the teacher registration landing page
+   (program/modules/teacherregcore/mainpage.html).
+   Colours come from the compiled Bootstrap theme so that custom themes
+   (including dark ones) are not overridden; only spacing and sizing live here. */
+
+.teacher-reg-landing {
+    margin: 0 auto;
+    max-width: 1000px;
+}
+
+.teacher-reg-hero {
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+}
+
+.teacher-reg-hero h1 {
+    line-height: 1.2;
+    margin: 0 0 0.5rem;
+}
+
+.teacher-reg-hero p:last-child {
+    margin-bottom: 0;
+}
+
+.teacher-reg-panel {
+    margin-bottom: 1.25rem;
+}
+
+.teacher-reg-panel h2 {
+    font-size: 1.35rem;
+    margin: 0 0 0.75rem;
+}
+
+.teacher-reg-panel .table {
+    margin-bottom: 0;
+}
+
+/* checkboxes.html is shared with student registration, where the step table is
+   centred inside a 10-column offset and capped at 400px.  Here the panel
+   already supplies the width, so let the table fill it. */
+.teacher-reg-checklist .row > [class*="col-"] {
+    flex: 0 0 100%;
+    margin-left: 0;
+    max-width: 100%;
+}
+
+.teacher-reg-checklist .table {
+    width: 100%;
+}
+
+.teacher-reg-module-block {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    /* Keep the module clear of the viewport edge when jumped to from the checklist. */
+    scroll-margin-top: 1rem;
+}
+
+.teacher-reg-module-block:first-child {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+@media (max-width: 767.98px) {
+    .teacher-reg-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .teacher-reg-panel > .card-body {
+        padding: 0.75rem;
+    }
+}
