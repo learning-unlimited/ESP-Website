@@ -337,6 +337,49 @@ class LinkFieldTest(TestCase):
         self.assertContains(response, 'existing@example.com')
 
 
+class AddLinkFieldColumnTest(TestCase):
+    """ Tests for adding a link field to a form that already has a response table. """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='addlink_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.form = Form.objects.create(
+            title='Late Link Field Form', created_by=self.admin,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        page = Page.objects.create(form=self.form, seq=0)
+        self.section = Section.objects.create(page=page, title='', description='', seq=0)
+        Field.objects.create(form=self.form, section=self.section, field_type='textField',
+                             seq=0, label='ShortText', help_text='', required=False)
+        DynamicModelHandler(self.form).createTable()
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def testAddedColumnMatchesDynamicModel(self):
+        """ The column added for a new link field has to carry the name the dynamic
+            model derives for its foreign key, or the response table becomes
+            unreadable afterwards. """
+
+        # onModify() snapshots the form's existing fields before creating the new ones
+        dmh = DynamicModelHandler(self.form)
+        dmh._getModelFieldList()
+
+        link_field = Field.objects.create(form=self.form, section=self.section,
+                                          field_type='ContactInfo_e_mail', seq=1,
+                                          label='Your email', help_text='', required=False)
+        dmh.addLinkFieldColumn(link_field)
+
+        model = DynamicModelHandler(self.form).createDynModel()
+        self.assertEqual(model._meta.get_field('link_ContactInfo').column, 'link_ContactInfo_id')
+        self.assertEqual(list(model.objects.all()), [])
+
+
 class LandingViewTest(TestCase):
     """Tests for the landing() view admin vs teacher form visibility."""
 

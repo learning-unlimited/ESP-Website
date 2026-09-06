@@ -275,7 +275,9 @@ class DynamicModelHandler:
                 # Add in the FK-column for this model
                 model = self.createDynModel()
                 new_field = self._getLinkModelField(link_model_cls)
-                new_field.column = f'link_{link_model_cls.__name__}'
+                # Derive the column from the field name so that it matches the one
+                # createTable() would have made: Django appends '_id' for a foreign key
+                new_field.set_attributes_from_name(f'link_{link_model_cls.__name__}')
                 schema_editor.add_field(model, new_field)
                 self.link_models_list.append(link_model_cls.__name__)
 
