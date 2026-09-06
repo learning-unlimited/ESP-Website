@@ -7,6 +7,21 @@ if [ "$CI_JOB" = "test" ]; then
     # TEST_SPLITS/TEST_GROUP shard the suite across parallel CI jobs via
     # pytest-split, which reads esp/.test_durations to balance them by time.
     # Both are unset outside CI, where the whole suite runs in one pass.
+    #
+    # Require them together. Setting only TEST_SPLITS would otherwise abort on
+    # `set -u` with a bare "TEST_GROUP: unbound variable", and setting only
+    # TEST_GROUP would silently run the entire suite instead of the requested
+    # shard -- which in a sharded workflow means every shard running everything.
+    if [ -n "${TEST_SPLITS:-}" ] && [ -z "${TEST_GROUP:-}" ]; then
+        echo "TEST_SPLITS is set to '$TEST_SPLITS' but TEST_GROUP is empty or unset." >&2
+        echo "Both are required to run one shard; see the shard matrix in .github/workflows/tests.yml." >&2
+        exit 1
+    fi
+    if [ -z "${TEST_SPLITS:-}" ] && [ -n "${TEST_GROUP:-}" ]; then
+        echo "TEST_GROUP is set to '$TEST_GROUP' but TEST_SPLITS is empty or unset." >&2
+        echo "Both are required to run one shard; see the shard matrix in .github/workflows/tests.yml." >&2
+        exit 1
+    fi
     if [ -n "${TEST_SPLITS:-}" ]; then
         pytest -n auto --splits "$TEST_SPLITS" --group "$TEST_GROUP" --cov=. --cov-report=xml
     else
