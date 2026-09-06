@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 import json
 
+from django.db import connection
+
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
@@ -378,6 +380,180 @@ class AddLinkFieldColumnTest(TestCase):
         model = DynamicModelHandler(self.form).createDynModel()
         self.assertEqual(model._meta.get_field('link_ContactInfo').column, 'link_ContactInfo_id')
         self.assertEqual(list(model.objects.all()), [])
+
+
+class ModifyLinkFieldTest(TestCase):
+    """ Tests for changing the link fields of a form that already has a response
+        table, which the form builder used to forbid outright. """
+
+    def setUp(self):
+        super().setUp()
+        self.admin, _ = ESPUser.objects.get_or_create(username='modlink_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='modlink_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+        super().tearDown()
+
+    def fieldSpec(self, field_type, label, seq, parent_id=-1):
+        return {'data': {'field_type': field_type, 'question_text': label, 'seq': seq,
+                         'required': False, 'parent_id': parent_id, 'attrs': {}, 'help_text': ''}}
+
+    def createForm(self, fields):
+        self.client.login(username=self.admin.username, password='password')
+        form_data = {
+            'title': 'Modify Link Form', 'desc': 'd', 'perms': '', 'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thanks!', 'anonymous': False,
+            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{
+                'data': {'help_text': '', 'question_text': '', 'seq': 0},
+                'fields': fields}]}],
+        }
+        response = self.client.post('/customforms/submit/', json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        return Form.objects.get(title='Modify Link Form')
+
+    def modifyForm(self, form, fields):
+        page = form.page_set.all()[0]
+        section = page.section_set.all()[0]
+        self.client.login(username=self.admin.username, password='password')
+        modify_data = {
+            'form_id': form.id, 'title': 'Modify Link Form', 'desc': 'd', 'perms': '',
+            'success_message': 'Thanks!', 'success_url': '/formsuccess.html',
+            'link_type': '-1', 'link_id': -1,
+            'pages': [{'parent_id': page.id, 'seq': 0, 'sections': [{
+                'data': {'help_text': '', 'question_text': '', 'seq': 0, 'parent_id': section.id},
+                'fields': fields}]}],
+        }
+        response = self.client.post('/customforms/modify/', json.dumps(modify_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+
+    def respond(self, form, answers):
+        self.client.login(username=self.student.username, password='password')
+        post_dict = {'combo_form-current_step': '0'}
+        post_dict.update(answers)
+        response = self.client.post(f'/customforms/view/{form.id}/', post_dict)
+        self.assertRedirects(response, f'/customforms/success/{form.id}/')
+        # Saving a response queues deferred foreign key trigger events, which block
+        # DDL on the response table for the rest of this test's single transaction.
+        # Every request commits in production, so fire them here to match.
+        connection.check_constraints()
+
+    def readResponses(self, form):
+        """ Reads the responses the way the admin UI does. Raises if the response
+            table no longer matches the columns the dynamic model expects. """
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('/customforms/getData/', {'form_id': form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content.decode('UTF-8'))['answers']
+
+    def testAddLinkFieldToExistingForm(self):
+        """ A link field added to a form that already has responses: the response
+            table stays readable and the new field persists to the linked model. """
+
+        form = self.createForm([self.fieldSpec('textField', 'Q1', 0)])
+        q1 = Field.objects.get(form=form, label='Q1')
+        self.respond(form, {f'question_{q1.id}': 'before'})
+
+        self.modifyForm(form, [self.fieldSpec('textField', 'Q1', 0, q1.id),
+                               self.fieldSpec('ContactInfo_e_mail', 'Email', 1)])
+
+        # The response that predates the new field is still readable
+        answers = self.readResponses(form)
+        self.assertEqual(len(answers), 1)
+        self.assertEqual(answers[0][f'question_{q1.id}'], 'before')
+
+        email = Field.objects.get(form=form, label='Email')
+        self.respond(form, {f'question_{q1.id}': 'after',
+                            f'question_{email.id}': 'linked@example.com'})
+
+        contact_info = ContactInfo.objects.get(user=self.student)
+        self.assertEqual(contact_info.e_mail, 'linked@example.com')
+        row = DynamicModelHandler(form).createDynModel().objects.get(user=self.student)
+        self.assertEqual(row.link_ContactInfo_id, contact_info.id)
+
+    def testSecondLinkFieldForSameModel(self):
+        """ A second field from an already-linked model reuses the one FK column. """
+
+        form = self.createForm([self.fieldSpec('ContactInfo_e_mail', 'Email', 0)])
+        email = Field.objects.get(form=form, label='Email')
+        self.respond(form, {f'question_{email.id}': 'a@example.com'})
+
+        self.modifyForm(form, [self.fieldSpec('ContactInfo_e_mail', 'Email', 0, email.id),
+                               self.fieldSpec('ContactInfo_phone_day', 'Phone', 1)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+
+    def testAddCompoundLinkField(self):
+        """ Compound link fields (name, address) span several model fields but still
+            need only the one FK column. """
+
+        form = self.createForm([self.fieldSpec('textField', 'Q1', 0)])
+        q1 = Field.objects.get(form=form, label='Q1')
+        self.respond(form, {f'question_{q1.id}': 'before'})
+
+        self.modifyForm(form, [self.fieldSpec('textField', 'Q1', 0, q1.id),
+                               self.fieldSpec('ContactInfo_name', 'Name', 1)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+
+    def testPlainFieldBecomesLinkField(self):
+        """ Retyping a plain field as a link field has to swap its column for the
+            linked model's foreign key. """
+
+        form = self.createForm([self.fieldSpec('textField', 'Q1', 0)])
+        q1 = Field.objects.get(form=form, label='Q1')
+        self.respond(form, {f'question_{q1.id}': 'before'})
+
+        self.modifyForm(form, [self.fieldSpec('ContactInfo_e_mail', 'Q1', 0, q1.id)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+        model = DynamicModelHandler(form).createDynModel()
+        self.assertIn('link_ContactInfo', [f.name for f in model._meta.fields])
+        self.assertNotIn(f'question_{q1.id}', [f.name for f in model._meta.fields])
+
+    def testLinkFieldBecomesPlainField(self):
+        """ ...and the other way round, dropping the foreign key. """
+
+        form = self.createForm([self.fieldSpec('ContactInfo_e_mail', 'Email', 0)])
+        email = Field.objects.get(form=form, label='Email')
+        self.respond(form, {f'question_{email.id}': 'a@example.com'})
+
+        self.modifyForm(form, [self.fieldSpec('textField', 'Email', 0, email.id)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+        model = DynamicModelHandler(form).createDynModel()
+        self.assertNotIn('link_ContactInfo', [f.name for f in model._meta.fields])
+        self.assertIn(f'question_{email.id}', [f.name for f in model._meta.fields])
+
+    def testDropOneOfTwoLinkFields(self):
+        """ Removing one link field keeps the FK column another one still needs. """
+
+        form = self.createForm([self.fieldSpec('ContactInfo_e_mail', 'Email', 0),
+                                self.fieldSpec('ContactInfo_phone_day', 'Phone', 1)])
+        email = Field.objects.get(form=form, label='Email')
+        phone = Field.objects.get(form=form, label='Phone')
+        self.respond(form, {f'question_{email.id}': 'a@example.com',
+                            f'question_{phone.id}': ''})
+
+        self.modifyForm(form, [self.fieldSpec('ContactInfo_e_mail', 'Email', 0, email.id)])
+
+        answers = self.readResponses(form)
+        self.assertEqual(len(answers), 1)
+        self.assertEqual(answers[0][f'question_{email.id}'], 'a@example.com')
 
 
 class LandingViewTest(TestCase):

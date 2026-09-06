@@ -243,6 +243,7 @@ def onModify(request):
                     dmh.change_only_fkey(form, form.link_type, metadata['link_type'], metadata['link_id'])
 
                 curr_keys = {'pages': [], 'sections': [], 'fields': []}
+                unlinked_fields = []      # Fields that stopped being link fields
                 old_pages = Page.objects.filter(form=form)
                 old_sections = Section.objects.filter(page__in=old_pages)
                 old_fields = Field.objects.filter(form=form)
@@ -261,16 +262,29 @@ def onModify(request):
                                                         seq=int(field['data']['seq']), label=field['data']['question_text'],
                                                         help_text=field['data']['help_text'], required=field['data']['required']
                                                         )
+                            is_link = cf_cache.isLinkField(curr_field.field_type)
+                            was_link = old_field is not None and cf_cache.isLinkField(old_field.field_type)
                             if field_created:
                                 # Check for link field
-                                if cf_cache.isLinkField(curr_field.field_type):
+                                if is_link:
                                     dmh.addLinkFieldColumn(curr_field)
                                 else: dmh.addField(curr_field)
-                            elif not cf_cache.isLinkField(curr_field.field_type):
+                            elif was_link != is_link:
+                                # The field switched between a linked model and a column
+                                # of its own, so one column has to go and the other appear
+                                if is_link:
+                                    dmh.removeField(old_field)
+                                    dmh.addLinkFieldColumn(curr_field)
+                                else:
+                                    dmh.addField(curr_field)
+                                    # The FK column may still be needed by another
+                                    # field, so it is dropped after the loop
+                                    unlinked_fields.append(old_field)
+                            elif not is_link:
                                 dmh.updateField(curr_field, old_field)
 
                             # Store a reference to the linked model so that we don't drop it from the table.
-                            if cf_cache.isLinkField(curr_field.field_type):
+                            if is_link:
                                 model_cls = cf_cache.modelForLinkField(curr_field.field_type)
                                 if model_cls.__name__ not in link_models_list: link_models_list.append(model_cls.__name__)
 
@@ -281,7 +295,7 @@ def onModify(request):
                             curr_keys['fields'].append(curr_field.id)
 
                 del_fields = old_fields.exclude(id__in=curr_keys['fields'])
-                for df in del_fields:
+                for df in list(del_fields) + unlinked_fields:
                     # Check for link fields
                     if cf_cache.isLinkField(df.field_type):
                         model_cls = cf_cache.modelForLinkField(df.field_type)
