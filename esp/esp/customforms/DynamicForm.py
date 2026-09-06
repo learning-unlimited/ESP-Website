@@ -24,6 +24,9 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+import os
+from django.conf import settings
+from django.utils.functional import cached_property
 
 class BaseCustomForm(BetterForm):
     """
@@ -311,17 +314,27 @@ class FormStorage(FileSystemStorage):
     """
     The Storage subclass used to temporarily store submitted files.
     """
-    pass
+
+    #   Keep the wizard's temporary uploads in their own directory, so that the
+    #   clean_customform_uploads sweep can't reach anything else under MEDIA_ROOT.
+    temp_subdir = 'customform_temp'
+
+    @cached_property
+    def base_location(self):
+        return os.path.join(settings.MEDIA_ROOT, self.temp_subdir)
 
 class ComboForm(SessionWizardView):
     """
     The WizardView subclass used to implement the FormWizard
     """
 
-    # TODO ->   The WizardView doesn't delete old files if the
-    #           form doesn't submit successfully. Need to figure
-    #           out how to perform this cleanup.
-    #           vdugar, 4/10/12
+    #   Temporary uploads are cleaned up by django-formtools itself: resetting
+    #   the wizard's storage queues its temp files for deletion, and the
+    #   storage is reset both on any GET (i.e. a restart) and once done()
+    #   returns. Files are deliberately kept across a validation failure so
+    #   that the user doesn't have to re-upload them. What that leaves behind
+    #   is the uploads of sessions the user never returns to; those are swept
+    #   by the clean_customform_uploads management command.
 
     template_name = 'customforms/form.html'
     curr_request = None

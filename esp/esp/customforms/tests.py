@@ -33,8 +33,18 @@ Learning Unlimited, Inc.
 """
 
 import json
+import os
+import tempfile
+import time
+from io import StringIO
+from unittest.mock import patch
+
+from django.core.files.base import ContentFile
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.management import call_command
 
 from esp.customforms.models import Form, Field, Page, Section
+from esp.customforms.DynamicForm import ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
 from esp.users.models import ESPUser, AnonymousESPUser
@@ -865,3 +875,118 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Page._meta.ordering, ['seq'])
         self.assertEqual(Section._meta.ordering, ['seq'])
         self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+class CustomFormFileCleanupTest(TestCase):
+    """ Tests for cleanup of the form wizard's temporary uploads. """
+
+    def setUp(self):
+        new_admin, created = ESPUser.objects.get_or_create(username='cleanup_admin')
+        new_admin.set_password('password')
+        new_admin.save()
+        new_admin.makeRole('Administrator')
+        self.admin = new_admin
+
+        new_student, created = ESPUser.objects.get_or_create(username='cleanup_student')
+        new_student.set_password('password')
+        new_student.save()
+        new_student.makeRole('Student')
+        self.student = new_student
+
+    def _save_temp_upload(self, storage, filename, hours_old):
+        """ Saves a temp upload and backdates its mtime by the given age. """
+        name = storage.save(filename, ContentFile(b'file_content'))
+        mtime = time.time() - hours_old * 3600
+        os.utime(storage.path(name), (mtime, mtime))
+        return name
+
+    def test_sweep_deletes_only_stale_uploads(self):
+        """ The sweep deletes uploads past the cutoff and leaves the rest. """
+        storage = ComboForm.file_storage
+        with tempfile.TemporaryDirectory() as tmp_dir, \
+                patch.object(storage, 'location', tmp_dir):
+            stale = self._save_temp_upload(storage, 'stale.txt', 72)
+            fresh = self._save_temp_upload(storage, 'fresh.txt', 1)
+
+            call_command('clean_customform_uploads', hours=48, stdout=StringIO())
+
+            self.assertFalse(storage.exists(stale))
+            self.assertTrue(storage.exists(fresh))
+
+    def test_sweep_dry_run_deletes_nothing(self):
+        """ --dry-run reports the stale uploads without deleting them. """
+        storage = ComboForm.file_storage
+        with tempfile.TemporaryDirectory() as tmp_dir, \
+                patch.object(storage, 'location', tmp_dir):
+            stale = self._save_temp_upload(storage, 'stale.txt', 72)
+
+            out = StringIO()
+            call_command('clean_customform_uploads', hours=48, dry_run=True, stdout=out)
+
+            self.assertTrue(storage.exists(stale))
+            self.assertIn(stale, out.getvalue())
+
+    def test_restarting_wizard_deletes_temp_upload(self):
+        """ Abandoning a partly filled multi-page form leaves no file behind. """
+        form_data = {
+            'title': 'File Upload Test Form',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Name', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {'charlimits': '0,100'}, 'help_text': ''}},
+                        {'data': {'field_type': 'file', 'question_text': 'Upload File', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            },
+            {
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Step 2 Name', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {'charlimits': '0,100'}, 'help_text': ''}},
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 1
+            }],
+            'link_type': '-1',
+            'desc': 'Test file upload'
+        }
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+        form = Form.objects.get(title='File Upload Test Form')
+        fields = form.field_set.all()
+        name_field_id = fields.get(label='Name').id
+        file_field_id = fields.get(label='Upload File').id
+
+        storage = ComboForm.file_storage
+        with tempfile.TemporaryDirectory() as tmp_dir, \
+                patch.object(storage, 'location', tmp_dir):
+            self.client.login(username=self.student.username, password='password')
+            response = self.client.get(f"/customforms/view/{form.id}/")
+            self.assertEqual(response.status_code, 200)
+
+            #   Complete the first page, so that the wizard stores the upload
+            response = self.client.post(f"/customforms/view/{form.id}/", {
+                'combo_form-current_step': '0',
+                f'question_{name_field_id}': 'Test User',
+                f'question_{file_field_id}': SimpleUploadedFile('test_file.txt', b'file_content', content_type='text/plain'),
+            })
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, 'Step 2 Name')
+            self.assertEqual(os.listdir(tmp_dir), ['test_file.txt'])
+
+            #   Abandon the form; a GET restarts the wizard from the first page
+            response = self.client.get(f"/customforms/view/{form.id}/")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(os.listdir(tmp_dir), [])
