@@ -37,7 +37,7 @@ import json
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
-from esp.users.models import ESPUser, AnonymousESPUser
+from esp.users.models import ContactInfo, ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -212,6 +212,129 @@ class CustomFormsTest(TestCase):
             if entry[0] in ['user_id', 'user_display', 'user_email', 'username']:
                 continue
             self.assertTrue(entry[0] in responses_corrected)
+
+
+class LinkFieldTest(TestCase):
+    """ Tests for form fields whose answers live on a separate linked model
+        (see CustomFormsLinkModel), rather than in the form's response table. """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='linkfields_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='linkfields_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def createLinkedForm(self):
+        """ Creates a form whose only questions are ContactInfo link fields.
+            Returns the form and a map of question label -> field id. """
+
+        form_data = {
+            'title': 'Linked Field Form',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Your email', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
+                        {'data': {'field_type': 'ContactInfo_phone_day', 'question_text': 'Your phone', 'seq': 1, 'required': False, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Link field test'
+        }
+
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post('/customforms/submit/', json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+        form = Form.objects.get(title='Linked Field Form')
+        field_id_map = {field.label: field.id for field in form.field_set.all()}
+        return (form, field_id_map)
+
+    def submitResponse(self, form, field_id_map, email, phone):
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get(f'/customforms/view/{form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+        post_dict = {
+            'combo_form-current_step': '0',
+            f'question_{field_id_map["Your email"]}': email,
+            f'question_{field_id_map["Your phone"]}': phone,
+        }
+        response = self.client.post(f'/customforms/view/{form.id}/', post_dict)
+        self.assertRedirects(response, f'/customforms/success/{form.id}/')
+
+    def responseRow(self, form):
+        model = DynamicModelHandler(form).createDynModel()
+        rows = model.objects.filter(user=self.student)
+        self.assertEqual(rows.count(), 1)
+        return rows[0]
+
+    def testCreatesLinkedInstance(self):
+        """ A user with no existing linked instance should get one created, and the
+            response row should hold a foreign key to it. """
+
+        (form, field_id_map) = self.createLinkedForm()
+        self.assertFalse(ContactInfo.objects.filter(user=self.student).exists())
+
+        self.submitResponse(form, field_id_map, 'student@example.com', '(201) 426-5797')
+
+        contact_infos = ContactInfo.objects.filter(user=self.student)
+        self.assertEqual(contact_infos.count(), 1)
+        contact_info = contact_infos[0]
+        self.assertEqual(contact_info.e_mail, 'student@example.com')
+        self.assertEqual(str(contact_info.phone_day), '(201) 426-5797')
+
+        self.assertEqual(self.responseRow(form).link_ContactInfo_id, contact_info.id)
+
+    def testUpdatesLinkedInstance(self):
+        """ A second response should update the existing linked instance in place
+            rather than creating another one. """
+
+        (form, field_id_map) = self.createLinkedForm()
+        self.submitResponse(form, field_id_map, 'student@example.com', '(201) 426-5797')
+        contact_info_id = ContactInfo.objects.get(user=self.student).id
+
+        self.submitResponse(form, field_id_map, 'changed@example.com', '(617) 253-4882')
+
+        contact_infos = ContactInfo.objects.filter(user=self.student)
+        self.assertEqual(contact_infos.count(), 1)
+        contact_info = contact_infos[0]
+        self.assertEqual(contact_info.id, contact_info_id)
+        self.assertEqual(contact_info.e_mail, 'changed@example.com')
+        self.assertEqual(str(contact_info.phone_day), '(617) 253-4882')
+
+        self.assertEqual(self.responseRow(form).link_ContactInfo_id, contact_info_id)
+
+    def testInitialDataFromLinkedInstance(self):
+        """ An existing linked instance should pre-populate the form, including
+            values that are only reachable through a model field descriptor. """
+
+        (form, field_id_map) = self.createLinkedForm()
+        ContactInfo.objects.create(user=self.student, e_mail='existing@example.com')
+
+        self.client.login(username=self.student.username, password='password')
+        response = self.client.get(f'/customforms/view/{form.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'existing@example.com')
 
 
 class LandingViewTest(TestCase):

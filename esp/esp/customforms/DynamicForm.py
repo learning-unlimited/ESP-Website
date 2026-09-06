@@ -20,10 +20,23 @@ from esp.program.models import Program
 
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.db import transaction
 from esp.middleware import ESPError
 
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
+
+def _get_model_field(model_meta, field_name):
+    """
+    Returns the named field of a model, or None if the model has no such field.
+    """
+    try:
+        return model_meta.get_field(field_name)
+    except FieldDoesNotExist:
+        return None
 
 class BaseCustomForm(BetterForm):
     """
@@ -396,19 +409,48 @@ class ComboForm(SessionWizardView):
         # Create/update instances corresponding to link fields
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
         for k, v in link_models_cache.items():
+            model_meta = v['model']._meta
+
+            # Many-to-many fields can only be assigned once the instance has a pk,
+            # so hold them back until it has been saved
+            field_data = {}
+            m2m_data = {}
+            for field_name, value in v['data'].items():
+                field = _get_model_field(model_meta, field_name)
+                if field is None:
+                    logger.warning("Ignoring submitted value for unknown field '%s' on linked model %s",
+                                   field_name, model_meta.label)
+                elif field.many_to_many:
+                    m2m_data[field_name] = value
+                else:
+                    field_data[field_name] = value
+
             if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
+                # Assign via setattr so that field descriptors run; values written
+                # straight into __dict__ never reach the database for related fields
+                for field_name, value in field_data.items():
+                    setattr(v['instance'], field_name, value)
                 v['instance'].save()
-                curr_instance = v['instance']
             else:
+                # Linked models are looked up by responding user (see cf_link_instance),
+                # so a new instance needs one; ContactInfo.user is not nullable
+                if ('user' not in field_data and self.curr_request.user.is_authenticated
+                        and _get_model_field(model_meta, 'user') is not None):
+                    field_data['user'] = self.curr_request.user
                 try:
-                    new_instance = v['model'].objects.create(**v['data'])
+                    # ATOMIC_REQUESTS is on, so a savepoint is needed to keep a failure
+                    # here from poisoning the transaction that saves the response
+                    with transaction.atomic():
+                        v['instance'] = v['model'].objects.create(**field_data)
                 except Exception:
-                    # show some error message
-                    pass
-            if v['instance'] is not None:
-                data[f'link_{v["model"].__name__}'] = v['instance']
+                    logger.exception("Could not create linked model %s for custom form %s",
+                                     model_meta.label, self.form.id)
+                    continue
+
+            for field_name, value in m2m_data.items():
+                getattr(v['instance'], field_name).set(value if value is not None else [])
+
+            data[f'link_{v["model"].__name__}'] = v['instance']
 
         # Saving response
         initial_keys = list(data.keys())
@@ -557,7 +599,9 @@ class FormHandler:
         for handler in self.handlers:
             initial = handler.getInitialLinkDataFields()
             if initial:
-                initial_data[handler.seq] = {}
+                # The wizard names its steps by string index, so this has to match
+                step = str(handler.seq)
+                initial_data[step] = {}
                 for k, v in initial.items():
                     if v['model'].__name__ not in link_models_cache:
                         # Get the corresponding instance, and get its values
@@ -568,15 +612,16 @@ class FormHandler:
                         else:
                             # Get the instance from the model method that should have been defined
                             link_models_cache[v['model'].__name__] = getattr(v['model'], 'cf_link_instance')(self.request)
-                        if link_models_cache[v['model'].__name__] is not None:
-                            link_models_cache[v['model'].__name__] = link_models_cache[v['model'].__name__].__dict__
-                    if link_models_cache[v['model'].__name__] is not None:
+                    instance = link_models_cache[v['model'].__name__]
+                    if instance is not None:
+                        # Read through getattr rather than __dict__, which holds raw
+                        # column values (e.g. 'user_id') and misses deferred fields
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            initial_data[step].update({ k:getattr(instance, v['model_field'], None) })
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[step].update({k:[getattr(instance, val, None) for val in v['model_field'] ]})
         return initial_data
 
     def get_initial_data(self, initial_data=None):
