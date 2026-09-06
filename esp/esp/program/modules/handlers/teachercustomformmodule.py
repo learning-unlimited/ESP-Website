@@ -38,6 +38,7 @@ from esp.users.models import ESPUser, Record, RecordType
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.linkfields import cf_cache
 from esp.tagdict.models import Tag
 
 from esp.middleware import ESPError
@@ -107,7 +108,8 @@ class TeacherCustomFormModule(ProgramModuleObj):
         prev_result_data = {}
         if prev_results.exists():
             form_wizard = FormHandler(form, request, request.user).get_wizard()
-            for step in range(len(form_wizard.form_list)):
+            #   Steps are keyed by their string index, not by position
+            for step in form_wizard.get_form_list():
                 field_dict = {}
                 plain_form = form_wizard.get_form(step)
                 #   Load previous results, with a hack for multiple choice questions.
@@ -115,11 +117,17 @@ class TeacherCustomFormModule(ProgramModuleObj):
                     #   Some fields aren't saved or don't have values (e.g., instruction fields)
                     if not hasattr(prev_results[0], field):
                         continue
+                    #   The field naming the form's linked object is set from the
+                    #   form's current link. A response saved while the form was
+                    #   linked elsewhere would carry a stale object that is not in
+                    #   the field's queryset, making the form impossible to submit.
+                    elif field.split('_')[-1] in cf_cache.only_fkey_models:
+                        continue
                     elif isinstance(plain_form.fields[field], forms.MultipleChoiceField):
                         field_dict[field] = getattr(prev_results[0], field).split(';')
                     else:
                         field_dict[field] = getattr(prev_results[0], field)
-                prev_result_data[str(step)] = field_dict
+                prev_result_data[step] = field_dict
         return prev_result_data
 
     @main_call

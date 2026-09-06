@@ -37,6 +37,9 @@ import json
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.views import hasPerm
+from esp.program.models import ProgramModule
+from esp.tagdict.models import Tag
+from esp.tests.factories import make_program
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -865,3 +868,179 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Page._meta.ordering, ['seq'])
         self.assertEqual(Section._meta.ordering, ['seq'])
         self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+class CustomFormLinkModuleTest(TestCase):
+    """ Tests for re-linking a custom form to a different program (issue #3868).
+
+        A form can be linked to a program either as a standalone form or as a
+        step of that program's registration, the latter being recorded by a Tag
+        on the program. Re-linking has to keep the two in sync, and must not
+        destroy the existing link when the request is rejected. """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='link_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        modules = ProgramModule.objects.filter(handler='StudentCustomFormModule')
+        self.prog_with_module = make_program(
+            program_type='LinkTestWith', instance_name='2222_Summer',
+            admin=self.admin, modules=modules)
+        self.prog_without_module = make_program(
+            program_type='LinkTestWithout', instance_name='2222_Summer',
+            admin=self.admin,
+            modules=ProgramModule.objects.filter(handler='StudentClassRegModule'))
+
+        self.client.login(username='link_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def _post_json(self, url, payload):
+        return self.client.post(url, json.dumps(payload),
+                                content_type='application/json',
+                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def _submit_payload(self, prog, **overrides):
+        payload = {
+            'title': 'Link Test Form',
+            'desc': 'Test',
+            'link_type': 'Program',
+            'link_id': str(prog.id),
+            'link_tl': 'learn',
+            'anonymous': False,
+            'perms': '',
+            'success_message': 'Thanks',
+            'success_url': '/',
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0, 'parent_id': -1},
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'ShortText',
+                                  'seq': 0, 'required': True, 'parent_id': -1,
+                                  'attrs': {'charlimits': '0,100'}, 'help_text': ''}},
+                    ],
+                }],
+            }],
+        }
+        payload.update(overrides)
+        return payload
+
+    def _make_form(self, **overrides):
+        """ Creates a form attached to prog_with_module's registration. """
+        payload = self._submit_payload(self.prog_with_module,
+                                       link_module='StudentCustomFormModule')
+        payload.update(overrides)
+        response = self._post_json('/customforms/submit/', payload)
+        self.assertEqual(response.status_code, 200)
+        return Form.objects.get(title=payload['title'])
+
+    def _modify_payload(self, form, prog, **overrides):
+        """ Mirrors what the form builder sends back for an unchanged form. """
+        payload = self._submit_payload(prog)
+        page = form.page_set.all()[0]
+        payload['form_id'] = form.id
+        payload['pages'][0]['parent_id'] = page.id
+        payload['pages'][0]['sections'][0]['data']['parent_id'] = page.section_set.all()[0].id
+        payload['pages'][0]['sections'][0]['fields'][0]['data']['parent_id'] = form.field_set.all()[0].id
+        payload.update(overrides)
+        return payload
+
+    def _module_tags(self, form):
+        return Tag.objects.filter(
+            value=str(form.id),
+            key__in=['learn_extraform_id', 'teach_extraform_id', 'quiz_form_id'])
+
+    def test_submit_without_link_module(self):
+        """ A form may be linked to a program without joining its registration. """
+        form = self._make_form(link_module='')
+        self.assertEqual(form.link_id, self.prog_with_module.id)
+        self.assertFalse(self._module_tags(form).exists())
+
+    def test_submit_with_null_link_module(self):
+        """ Older form builders sent a null link_module for an empty dropdown. """
+        form = self._make_form(link_module=None)
+        self.assertFalse(self._module_tags(form).exists())
+
+    def test_submit_with_module_the_program_lacks(self):
+        response = self._post_json('/customforms/submit/', self._submit_payload(
+            self.prog_without_module, link_module='StudentCustomFormModule'))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('does not have', json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Link Test Form').exists())
+
+    def test_submit_with_unknown_module(self):
+        response = self._post_json('/customforms/submit/', self._submit_payload(
+            self.prog_with_module, link_module='NotAModule'))
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Form.objects.filter(title='Link Test Form').exists())
+
+    def test_relink_to_program_without_module(self):
+        """ The case from issue #3868: the target program has no custom form
+            module, so the form builder sends no module to link to. """
+        form = self._make_form()
+        response = self._post_json(
+            '/customforms/modify/',
+            self._modify_payload(form, self.prog_without_module, link_module=''))
+        self.assertEqual(response.status_code, 200)
+        form.refresh_from_db()
+        self.assertEqual(form.link_id, self.prog_without_module.id)
+        self.assertFalse(self._module_tags(form).exists())
+
+    def test_relink_with_null_link_module(self):
+        form = self._make_form()
+        response = self._post_json(
+            '/customforms/modify/',
+            self._modify_payload(form, self.prog_without_module, link_module=None))
+        self.assertEqual(response.status_code, 200)
+        form.refresh_from_db()
+        self.assertEqual(form.link_id, self.prog_without_module.id)
+
+    def test_rejected_relink_leaves_the_form_alone(self):
+        """ Validation failures must not leave the form half re-linked. """
+        form = self._make_form()
+        for overrides in [
+            {'link_module': 'StudentCustomFormModule'},   # program lacks the module
+            {'link_module': 'NotAModule'},
+            {'link_module': 'StudentCustomFormModule', 'link_id': '999999'},
+        ]:
+            response = self._post_json(
+                '/customforms/modify/',
+                self._modify_payload(form, self.prog_without_module, **overrides))
+            self.assertEqual(response.status_code, 400, msg=str(overrides))
+            form.refresh_from_db()
+            self.assertEqual(form.link_id, self.prog_with_module.id, msg=str(overrides))
+            self.assertEqual(self._module_tags(form).count(), 1, msg=str(overrides))
+            self.assertEqual(self._module_tags(form)[0].key, 'learn_extraform_id')
+
+    def test_unlinked_form_is_still_editable(self):
+        """ The form builder needs empty (not missing) link_tl/link_module to
+            rebuild a form that is not part of any program's registration. """
+        form = self._make_form()
+        self._post_json(
+            '/customforms/modify/',
+            self._modify_payload(form, self.prog_without_module, link_module=''))
+
+        response = self.client.get('/customforms/metadata/', {'form_id': form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        metadata = json.loads(response.content)
+        self.assertEqual(metadata['link_type'], 'Program')
+        self.assertEqual(metadata['link_id'], self.prog_without_module.id)
+        self.assertEqual(metadata['link_tl'], '')
+        self.assertEqual(metadata['link_module'], '')
+
+    def test_non_ajax_and_wrong_method_do_not_error(self):
+        form = self._make_form()
+        for url, payload in [('/customforms/submit/', self._submit_payload(self.prog_with_module)),
+                             ('/customforms/modify/', self._modify_payload(form, self.prog_with_module))]:
+            response = self.client.post(url, json.dumps(payload),
+                                        content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+            response = self.client.get(url, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 405)

@@ -406,11 +406,17 @@ var onChangeLinksProgram=function(){
 
 var onChangeLinksTL=function(){
     var html_str='';
-    if(modules[$j('#links_id_tl').val()].length > 0){
-        $j.each(modules[$j('#links_id_tl').val()], function(id, tup){
+    var tl_modules=modules[$j('#links_id_tl').val()] || [];
+    if(tl_modules.length > 0){
+        // A form can be linked to a program without being served by one of its
+        // registration modules, so that has to be selectable
+        html_str+='<option value="">Not part of registration</option>';
+        $j.each(tl_modules, function(id, tup){
             html_str+='<option value="'+tup[0]+'">'+tup[1]+'</option>';
         });
         $j('#links_id_module').html(html_str);
+        // Keep attaching to the first module the default for a new form
+        $j('#links_id_module').val(tl_modules[0][0]);
         $j('#links_id_module_help_text').hide();
     } else {
         if($j('#links_id_tl').val() == 'learn'){
@@ -1621,7 +1627,8 @@ var submit=function() {
 		form['link_id']=$j('#links_id_pick').val();
         if($j("#links_id_main").val()=="Program"){
             form['link_tl'] = $j("#links_id_tl").val();
-            form['link_module'] = $j("#links_id_module").val();
+            // val() is null when the program has no modules to choose from
+            form['link_module'] = $j("#links_id_module").val() || '';
         }
 	} else {
         form['link_id']=-1;
@@ -1786,8 +1793,12 @@ var rebuild=function(metadata) {
 		$j('#links_id_specify').val('particular').trigger("change");
 		$j('#links_id_pick').val(metadata['link_id']).trigger("change");
         if(metadata['link_type'] == "Program"){
-            $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
-            $j('#links_id_module').val(metadata['link_module']);
+            // link_tl and link_module are empty for a form that is linked to a
+            // program but is not served by one of its registration modules
+            if(metadata['link_tl']){
+                $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
+            }
+            $j('#links_id_module').val(metadata['link_module'] || '');
         }
 	}
 	else $j('#links_id_specify').val('userdef');

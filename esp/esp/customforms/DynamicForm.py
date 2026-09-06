@@ -593,11 +593,20 @@ class FormHandler:
         return combined_initial_data
 
     def get_wizard(self, initial_data=None, wizard_view=ComboForm):
+        """
+        Returns a wizard instance that is not bound to a request, for code that
+        needs to inspect the form's steps rather than serve them.
+        get_initkwargs() is what normalizes form_list into the mapping (and
+        supplies the empty condition_dict) that WizardView.get_form() expects;
+        instantiating the view directly leaves both unusable.
+        """
         combined_initial_data = self.get_initial_data(initial_data)
-        return wizard_view( form_list = self._getFormList(),
-                            initial_dict = combined_initial_data,
-                            form_handler = self,
-                            form = self.form)
+        initkwargs = wizard_view.get_initkwargs(
+                            form_list = self._getFormList(),
+                            initial_dict = combined_initial_data)
+        return wizard_view(form_handler = self,
+                           form = self.form,
+                           **initkwargs)
 
     def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
