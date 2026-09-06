@@ -61,6 +61,9 @@ class QSDMediaTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+        #   Downloads set their own cache policy instead of the site-wide default
+        self.assertEqual(response['Cache-Control'], 'private, max-age=3600')
+
         #   Delete the QSD Media object
         media.delete()
 

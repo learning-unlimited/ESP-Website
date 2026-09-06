@@ -408,3 +408,38 @@ cache (``manage.py flushcache``) when rolling back.
 Finally, cached values are pickled, so a Python upgrade or a rename of a cached
 class can invalidate them. Both degrade to cache misses rather than errors, but
 flushing the cache is still the right move after either.
+
+HTTP cache headers
+------------------
+
+The caching described above happens on the server. Separately,
+``esp.middleware.cache_control.CacheControlMiddleware`` controls what browsers
+and proxies are allowed to cache: it applies ``settings.DEFAULT_CACHE_CONTROL``
+(``private, no-cache``) to every response that does not set ``Cache-Control``
+itself. Dynamic pages are therefore not stored by shared caches, and browsers
+revalidate them before reuse.
+
+The middleware never overwrites a header that is already set, so views that can
+safely be cached should say so explicitly::
+
+    from django.views.decorators.cache import cache_control
+
+    @cache_control(public=True, max_age=3600)
+    def catalog(request):
+        ...
+
+``@never_cache``, ``patch_cache_control()`` and assigning
+``response['Cache-Control']`` directly all take precedence the same way.
+
+A deployment can change the default, or turn it off, by overriding
+``DEFAULT_CACHE_CONTROL`` in ``local_settings.py``. The value is the keyword
+arguments to pass to Django's ``patch_cache_control()``::
+
+    DEFAULT_CACHE_CONTROL = {'no_store': True}  # stricter
+    DEFAULT_CACHE_CONTROL = {}                  # add no header at all
+
+One caveat for sites behind Varnish: its built-in VCL treats ``private`` as
+uncacheable, so pages that used to be cached under Varnish's default TTL simply
+because they carried no ``Cache-Control`` header will now go to the backend
+every time. Check this against your own VCL, and give the pages that are worth
+caching an explicit ``public`` policy.

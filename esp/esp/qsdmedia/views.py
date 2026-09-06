@@ -41,6 +41,7 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 from django.urls import reverse
+from django.views.decorators.cache import cache_control
 import fnmatch
 
 
@@ -95,6 +96,9 @@ def site_media(request):
     return render_to_response('qsdmedia/site_media.html', request, context)
 
 
+# Each upload gets a new hashed_name, so a download URL keeps serving the same
+# file; cache it rather than re-reading it on every page view.
+@cache_control(private=True, max_age=3600)
 def qsdmedia2(request, url, ignored_part=None):
     """ Download a media file """
 

@@ -205,6 +205,7 @@ FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
     (  50, 'django.middleware.security.SecurityMiddleware'),
+    (  60, 'esp.middleware.cache_control.CacheControlMiddleware'),
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
@@ -217,6 +218,11 @@ MIDDLEWARE_GLOBAL = [
     (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
+
+# patch_cache_control() keyword arguments that CacheControlMiddleware applies to
+# responses that don't set Cache-Control themselves.  Set to an empty dict in
+# local_settings.py to leave those responses without a Cache-Control header.
+DEFAULT_CACHE_CONTROL = {'private': True, 'no_cache': True}
 
 ROOT_URLCONF = 'esp.urls'
 

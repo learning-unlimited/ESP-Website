@@ -68,3 +68,12 @@ GOOGLE_MAPS_EMBED_KEY = ''
 
 # Set this if the site is NOT served over HTTPS at all
 # SECURE_SSL_REDIRECT = False
+
+################
+# HTTP caching #
+################
+# Keyword arguments passed to patch_cache_control() for responses that don't set
+# Cache-Control themselves.  Defaults to {'private': True, 'no_cache': True};
+# set it to {} to leave such responses without a Cache-Control header.  See
+# docs/dev/cache.rst.
+# DEFAULT_CACHE_CONTROL = {}
