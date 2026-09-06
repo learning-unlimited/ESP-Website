@@ -514,9 +514,6 @@ class StudentClassRegModule(ProgramModuleObj):
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = self.addclass_logic(request, tl, one, two, module, extra, prog)
                     if not success:
@@ -574,9 +571,6 @@ class StudentClassRegModule(ProgramModuleObj):
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = self.addclass_logic(request, tl, one, two, module, extra, prog)
                     if not success:
@@ -860,33 +854,31 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def clearslot_logic(request, tl, one, two, module, extra, prog):
-        """ Clear the specified timeslot from a student registration and return True if there are no errors """
+        """ Clear the specified timeslot from a student registration and return the IDs of the removed sections """
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
         if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out if constraints allow
+        #   Take the student out.  Removal is unconditional; schedule constraints
+        #   are only enforced when adding classes.
+        #   Collect the IDs up front: callers need a JSON-serializable list, and
+        #   the queryset stops matching once the registrations are expired.
+        oldclasses = list(oldclasses)
+        removed_ids = [sec.id for sec in oldclasses]
         for sec in oldclasses:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                return result
-            else:
-                sec.unpreregister_student(request.user, verbs)
-        #   Return the ID of classes that were removed.
-        return oldclasses.values_list('id', flat=True)
+            sec.unpreregister_student(request.user, verbs)
+        #   Return the IDs of the classes that were removed.
+        return removed_ids
 
     @aux_call
     @needs_student_in_grade
     @meets_any_deadline(['/Classes', '/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, str):
-            raise ESPError(result, log=False)
-        else:
-            return self.goToCore(tl)
+        self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        return self.goToCore(tl)
 
     @aux_call
     @needs_student_in_grade
@@ -935,11 +927,7 @@ class StudentClassRegModule(ProgramModuleObj):
             raise ESPError("No registrations found for this day.", log=False)
 
         for sec in sections:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                raise ESPError("Cannot remove class %s: %s" % (sec.emailcode(), result), log=False)
-            else:
-                sec.unpreregister_student(request.user, verbs)
+            sec.unpreregister_student(request.user, verbs)
 
         return self.goToCore(tl)
 

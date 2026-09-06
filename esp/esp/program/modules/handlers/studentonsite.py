@@ -175,9 +175,6 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
                     if not success:

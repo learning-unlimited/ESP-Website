@@ -32,7 +32,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import ClassSubject, Program
+from esp.program.models import (BooleanExpression, BooleanToken, ClassSubject, Program,
+                                ScheduleConstraint, ScheduleMap, ScheduleTestOccupied)
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
@@ -271,4 +272,39 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
         #   Clear other timeslot and check that the schedule is empty
         response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec2.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.expect_empty_schedule(response)
+
+    def test_ajax_clearslot_ignores_schedule_constraints(self):
+        """Removing a class is allowed even when it violates a schedule constraint.
+
+        Schedule constraints are only enforced when adding classes, so that the
+        fillslot/clearslot interface stays consistent with the onsite class
+        changes grid.
+        """
+        program = self.program
+
+        student = random.choice(self.students)
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
+        sec = random.choice(program.sections())
+        sec.preregister_student(student)
+        timeslot = sec.meeting_times.all()[0]
+
+        #   IF [always] THEN [the student has a class during this timeslot],
+        #   so dropping their only class there violates the constraint.
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        requirement = BooleanExpression.objects.create(label='have a class during this timeslot')
+        ScheduleTestOccupied.objects.create(exp=requirement, timeblock=timeslot, seq=0)
+        constraint = ScheduleConstraint.objects.create(program=program, condition=condition, requirement=requirement, on_failure='')
+
+        #   Guard against the constraint being vacuous: it has to hold now and
+        #   fail once the section is dropped.
+        schedule_map = ScheduleMap(student, program)
+        self.assertTrue(constraint.evaluate(schedule_map, recursive=False), 'Constraint should be satisfied while the student is enrolled')
+        schedule_map.remove_section(sec)
+        self.assertFalse(constraint.evaluate(schedule_map, recursive=False), 'Constraint should be violated once the section is dropped')
+
+        #   The class should still be removed, leaving an empty schedule.
+        response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{timeslot.id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
