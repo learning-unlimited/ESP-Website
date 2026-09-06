@@ -935,9 +935,9 @@ class ProgramCapTest(ProgramFrameworkTest):
         # without that module has no class registrations to count. The cap
         # checks used to index it unconditionally and raise KeyError, which
         # surfaced as a 500 on the student registration page.
-        self.program.program_modules.remove(
-            ProgramModule.objects.get(handler='StudentClassRegModule'))
-        self.program.program_size_max = 3
+        classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
+        self.assertTrue(classreg_modules)
+        self.program.program_modules.remove(*classreg_modules)
         self.program.save()
 
         self.assertNotIn('classreg', self.program.students())
