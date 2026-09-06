@@ -56,7 +56,9 @@ from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 
 @login_required
-def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
+def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = None):
+    if context is None:
+        context = {}
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
@@ -241,8 +243,10 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
-def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
+def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = None):
     """ Wrapper doing the necessary work for the survey output. """
+    if context is None:
+        context = {}
     from esp.program.models import ClassSubject, ClassSection
 
     def getByIdOrNone(model, key):
@@ -614,22 +618,28 @@ def teacher_survey_all(request):
     return render_to_response('survey/teacher_all_reviews.html', request, context)
 
 @login_required
-def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
+def survey_review(request, tl, program, instance, template = 'survey/review.html', context = None):
     """ A view of all the survey results pertaining to a particular user in the given program. """
+    if context is None:
+        context = {}
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'html', template, context)
 
 @login_required
-def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
+def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = None):
     """ A PDF view of the survey results with histograms. """
+    if context is None:
+        context = {}
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
 
 @login_required
-def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
+def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = None):
     """ View a single survey response. """
+    if context is None:
+        context = {}
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
@@ -641,9 +651,13 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
     survey_response = None
     ints = list(request.GET.items())
     if len(ints) == 1:
-        srs = SurveyResponse.objects.filter(id=ints[0][0])
-        if len(srs) == 1:
-            survey_response = srs[0]
+        try:
+            resp_id = int(ints[0][0])
+            srs = SurveyResponse.objects.filter(id=resp_id)
+            if len(srs) == 1:
+                survey_response = srs[0]
+        except (ValueError, TypeError):
+            pass
     if survey_response is None:
         raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
 

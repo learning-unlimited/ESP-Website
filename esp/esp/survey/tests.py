@@ -658,3 +658,33 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
                          "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
+
+
+class SurveyMutableDefaultTests(TestCase):
+    """Tests verifying survey view functions do not use mutable default arguments."""
+
+    def test_survey_view_default_context_is_not_shared(self):
+        import inspect
+        from esp.survey.views import (
+            display_survey,
+            survey_graphical,
+            survey_review,
+            survey_review_single,
+            survey_view,
+        )
+
+        views = [
+            survey_view,
+            display_survey,
+            survey_review,
+            survey_graphical,
+            survey_review_single,
+        ]
+        for view_func in views:
+            sig = inspect.signature(view_func)
+            self.assertIn('context', sig.parameters)
+            self.assertIsNone(
+                sig.parameters['context'].default,
+                f"{view_func.__name__} has mutable default for context parameter"
+            )
+
