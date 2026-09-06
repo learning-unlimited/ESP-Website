@@ -219,9 +219,11 @@ def disable_account(request):
 # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
 def unsubscribe(request, username, token, oneclick = False):
     """
-    User is immediately unsubscribed if they are logged in as username, or
-    if they came from an unexpired unsubscribe link. Otherwise, they are
-    redirected to the login page and unsubscribed as soon as they log in.
+    Deactivates the account named by the URL, but only for a request that is
+    authorized: a one-click request must carry an unexpired unsubscribe token,
+    and a request from the website must either carry that token or come from
+    the logged-in owner of the account.  Unauthorized visitors are sent to the
+    login page, from which they can unsubscribe once logged in.
     """
 
     # render our own error message if the username doesn't match
@@ -235,17 +237,30 @@ def unsubscribe(request, username, token, oneclick = False):
     else:
         raise ESPError("No user matching that unsubscribe request.")
 
-    # if POSTing, they clicked the confirm button
-    # if oneclick=True, then they came here from an email client
-    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+    # one-click requests arrive from an email provider on a CSRF-exempt
+    # endpoint, so the signed token is the only acceptable authorization;
+    # accepting a session here would let any website deactivate the account
+    # of a logged-in visitor
+    if oneclick:
+        if not user.check_token(token):
+            # log=False: anyone can POST to this endpoint, so a bad token is
+            # not something we want to email the admins about
+            raise ESPError("That unsubscribe link is invalid or has expired.", log=False)
         # "unsubscribe" them (deactivate their account)
         user.is_active = False
         user.save()
         return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
 
-    # otherwise show them a confirmation button
-    # if they are logged into the correct account or the token is valid
+    # otherwise, authorize before touching the account:
+    # they must be logged into the correct account or have a valid token
     if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
+        # if POSTing, they clicked the confirm button
+        if request.POST.get("List-Unsubscribe") == "One-Click":
+            user.is_active = False
+            user.save()
+            return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+
+        # otherwise show them a confirmation button
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
     # if they are logged into a different account
     # tell them to log out and try again

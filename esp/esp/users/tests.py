@@ -208,6 +208,101 @@ class ESPUserTest(TestCase):
         with self.assertRaises(TypeError):
             _ = user < "string"
 
+class UnsubscribeViewTest(TestCase):
+    """Unsubscribing must be authorized before the account is deactivated."""
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+        self.user = ESPUser.objects.create(username='unsubme', email='unsubme@example.com')
+        self.user.set_password('password')
+        self.user.save()
+        # the token is the part of the unsubscribe link after the username
+        self.token = [part for part in self.user.unsubscribe_link().split('/') if part][-1]
+        self.bad_token = 'not-a-real-token'
+
+    def oneclick_url(self, token):
+        return reverse('unsubscribe_oneclick', kwargs={'username': self.user.username, 'token': token})
+
+    def confirm_url(self, token):
+        return reverse('unsubscribe', kwargs={'username': self.user.username, 'token': token})
+
+    def assertStillActive(self):
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_oneclick_with_invalid_token_does_not_deactivate(self):
+        response = self.client.post(self.oneclick_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        # ESPError returns 500
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_ignores_the_session_of_a_logged_in_user(self):
+        # the one-click endpoint is CSRF-exempt, so a session must not
+        # authorize it: otherwise any website could deactivate the account
+        # of a visitor who is logged in here.
+        self.assertTrue(self.client.login(username='unsubme', password='password'))
+        response = self.client.post(self.oneclick_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_without_the_one_click_body_does_not_deactivate(self):
+        response = self.client.post(self.oneclick_url(self.token))
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_with_valid_token_deactivates(self):
+        response = self.client.post(self.oneclick_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        # the token stays valid for its lifetime, but a deactivated account
+        # can't be unsubscribed again
+        response = self.client.post(self.oneclick_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+
+    def test_confirm_post_with_invalid_token_does_not_deactivate(self):
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response['Location'])
+        self.assertStillActive()
+
+    def test_confirm_post_by_a_different_user_does_not_deactivate(self):
+        other = ESPUser.objects.create(username='someoneelse')
+        other.set_password('password')
+        other.save()
+        self.assertTrue(self.client.login(username='someoneelse', password='password'))
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_valid_token_shows_confirmation_page_without_deactivating(self):
+        response = self.client.get(self.confirm_url(self.token))
+        self.assertEqual(response.status_code, 200)
+        self.assertStillActive()
+
+    def test_confirm_post_with_valid_token_deactivates(self):
+        response = self.client.post(self.confirm_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_logged_in_user_can_confirm_without_a_token(self):
+        self.assertTrue(self.client.login(username='unsubme', password='password'))
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
 
