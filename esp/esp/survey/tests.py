@@ -10,6 +10,8 @@ import datetime
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.test import RequestFactory
 from unittest.mock import MagicMock, patch
 
 from esp.program.models import Program
@@ -23,6 +25,7 @@ from esp.survey.models import (
     Survey,
     SurveyResponse,
 )
+from esp.survey.views import survey_review
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 
@@ -658,3 +661,99 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
                          "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
+
+
+# ===== View Tests (regressions for #5991) =====
+
+class SurveyReviewSingleErrorHandlingTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `survey_review_single` used to pass an
+    unvalidated query-string key straight into `SurveyResponse.objects.filter
+    (id=...)`, raising an unhandled ValueError (-> 500 with no friendly
+    message) for a non-numeric key instead of falling through to the
+    existing "pick an individual response" ESPError message.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Review Single Survey', program=self.program, category='learn')
+        self.response = SurveyResponse.objects.create(survey=self.survey)
+
+        self.admin = self.admins[0]
+        self.review_single_url = '/manage/%s/surveys/review_single' % self.program.getUrlBase()
+
+    def test_non_numeric_key_shows_friendly_error(self):
+        """A non-numeric query-string key no longer raises an unhandled ValueError."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?not-a-number=' % self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+    def test_valid_response_id_still_works(self):
+        """A valid numeric response id still resolves to that response's page."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?%d=' % (self.review_single_url, self.response.id))
+        self.assertEqual(response.status_code, 200)
+
+    def test_missing_response_id_shows_friendly_error(self):
+        """No query string at all still hits the pre-existing friendly error path."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+
+class SurveyViewsContextIsolationTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `context = {}` as a default argument is a
+    single dict created once at function-definition time, so every call
+    that doesn't pass its own `context` used to mutate and reuse the exact
+    same shared dict across requests. This class asserts each call now gets
+    its own fresh dict.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        Survey.objects.get_or_create(
+            name='Context Isolation Survey', program=self.program, category='learn')
+
+        self.admin = self.admins[0]
+        self.factory = RequestFactory()
+
+    def _manage_request(self):
+        request = self.factory.get('/')
+        request.user = self.admin
+        request.session = {}
+        return request
+
+    @patch('esp.survey.views.render_to_response')
+    def test_context_dict_not_shared_across_calls(self, mock_render):
+        """Two calls to survey_review get two distinct context dict objects."""
+        mock_render.return_value = HttpResponse('')
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        first_context = mock_render.call_args[0][2]
+
+        # Simulate data one request left behind in its context dict.
+        first_context['leaked_from_first_request'] = True
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        second_context = mock_render.call_args[0][2]
+
+        self.assertIsNot(first_context, second_context)
+        self.assertNotIn('leaked_from_first_request', second_context)
