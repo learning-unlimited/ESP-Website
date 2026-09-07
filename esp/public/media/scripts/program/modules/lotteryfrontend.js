@@ -16,16 +16,16 @@ function lotteryErrorHandler() {
 }
 
 function startUpdatingLotteryProgress() {
-	lottery_progress_interval = setInterval(function() {
+	lottery_progress_interval = setInterval(function () {
 		var stats_div = $j('#lotteryStats');
 		var text = stats_div.text();
 		var dots = 0;
-		for(var i = 0; i < text.length; i++) {
-			if(text[i] == '.') {
+		for (var i = 0; i < text.length; i++) {
+			if (text[i] == '.') {
 				dots++;
 			}
 		}
-		if(dots < 5) {
+		if (dots < 5) {
 			stats_div.text(text + '.');
 		} else {
 			stats_div.text(text.replace(/\./g, '') + '..');
@@ -33,15 +33,15 @@ function startUpdatingLotteryProgress() {
 	}, 500);
 }
 
-$j(document).ready(function() {
-	$j('#lotteryForm').submit(function(e) {
+$j(document).ready(function () {
+	$j('#lotteryForm').submit(function (e) {
 		e.preventDefault();
 		var $inputs = $j('#lotteryForm :input');
-		var post_data = {'csrfmiddlewaretoken': csrf_token()};
+		var post_data = { 'csrfmiddlewaretoken': csrf_token() };
 
-		$inputs.each(function() {
-			if(this.name.indexOf('lottery_') == 0) {
-				if(this.type == 'checkbox') {
+		$inputs.each(function () {
+			if (this.name.indexOf('lottery_') == 0) {
+				if (this.type == 'checkbox') {
 					post_data[this.name] = this.checked ? 'True' : 'False';
 				} else {
 					post_data[this.name] = $j(this).val();
@@ -53,17 +53,15 @@ $j(document).ready(function() {
 			url: "/manage/" + program_url_base + "/lottery_execute",
 			type: "post",
 			data: post_data,
-			success: function(data) {
+			success: function (data) {
 				clearInterval(lottery_progress_interval);
 
 				data = data['response'][0];
 				var stats_div = $j('#lotteryStats');
-				if (data['error_msg'])
-				{
+				if (data['error_msg']) {
 					stats_div.html("A misconfiguration or unexpected situation prevented the lottery from running: " + data['error_msg']);
 				}
-				else
-				{
+				else {
 					lottery_data = data['lottery_data'];
 					stats_div.html('');
 					data['stats'].forEach(function (el) {
@@ -71,15 +69,15 @@ $j(document).ready(function() {
 						lines = el[1];
 						stats_div.append('<h2>' + label + '</h2>');
 						var bullets = $j('<ul>');
-						lines.forEach(function(line) {
+						lines.forEach(function (line) {
 							bullets.append('<li>' + line + '</li>');
 						});
 						stats_div.append(bullets);
 					});
 					data['charts'].forEach(function (el, index) {
-						canvas_id='chart'+index;
-						stats_div.append('<canvas id="'+canvas_id+'" height="300" width="500" style="height:300px; width:500px;"></canvas>');
-						new Chart(document.getElementById(canvas_id),el);
+						canvas_id = 'chart' + index;
+						stats_div.append('<canvas id="' + canvas_id + '" height="300" width="500" style="height:300px; width:500px;"></canvas>');
+						new Chart(document.getElementById(canvas_id), el);
 					});
 					$j('.lotterySave').prop('disabled', false);
 				}
@@ -93,14 +91,14 @@ $j(document).ready(function() {
 		$j('.lotterySave').prop('disabled', true);
 	});
 
-	$j('.lotterySave').click(function() {
-		var post_data = {'csrfmiddlewaretoken': csrf_token(), 'lottery_data': lottery_data};
+	$j('.lotterySave').click(function () {
+		var post_data = { 'csrfmiddlewaretoken': csrf_token(), 'lottery_data': lottery_data };
 
 		$j.ajax({
 			url: "/manage/" + program_url_base + "/lottery_save",
 			type: "post",
 			data: post_data,
-			success: function() {
+			success: function () {
 				clearInterval(lottery_progress_interval);
 				$j('#lotteryStats').html("The student schedules have been saved successfully!");
 			},
@@ -157,8 +155,8 @@ function formatILPTimestamp(iso) {
 		pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
 }
 
-var ILP_TERMINAL_STATUSES = {'done': true, 'interrupted': true, 'failed': true};
-var ILP_STATS_READY_STATUSES = {'done': true, 'interrupted': true};
+var ILP_TERMINAL_STATUSES = { 'done': true, 'interrupted': true, 'failed': true };
+var ILP_STATS_READY_STATUSES = { 'done': true, 'interrupted': true };
 
 function formatILPStatus(run) {
 	if (!run.submitted_at) { return run.status; }
@@ -174,14 +172,14 @@ function fetchILPRunStats(runId) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_stats",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': runId},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': runId },
+		success: function (data) {
 			var item = data['response'][0];
-			ilp_run_stats_cache[runId] = item.error_msg ? {error: item.error_msg} : {stats: item.stats, charts: item.charts};
+			ilp_run_stats_cache[runId] = item.error_msg ? { error: item.error_msg } : { stats: item.stats, charts: item.charts };
 			renderILPRuns(ilp_last_runs);
 		},
-		error: function() {
-			ilp_run_stats_cache[runId] = {error: 'Could not load stats.'};
+		error: function () {
+			ilp_run_stats_cache[runId] = { error: 'Could not load stats.' };
 			renderILPRuns(ilp_last_runs);
 		},
 		dataType: 'json'
@@ -193,7 +191,7 @@ function toggleILPRunExpand(runId) {
 		delete ilp_expanded_run_ids[runId];
 	} else {
 		ilp_expanded_run_ids[runId] = true;
-		var run = ilp_last_runs.filter(function(r) { return r.id === runId; })[0];
+		var run = ilp_last_runs.filter(function (r) { return r.id === runId; })[0];
 		if (run && ILP_STATS_READY_STATUSES[run.status] && !ilp_run_stats_cache[runId]) {
 			fetchILPRunStats(runId);
 		}
@@ -206,16 +204,16 @@ function toggleILPRunExpand(runId) {
 // pulling in an external plugin library.
 var ilpBarValueLabelPlugin = {
 	id: 'ilpBarValueLabel',
-	afterDatasetsDraw: function(chart) {
+	afterDatasetsDraw: function (chart) {
 		var ctx = chart.ctx;
 		ctx.save();
 		ctx.fillStyle = '#333';
 		ctx.font = '11px sans-serif';
 		ctx.textAlign = 'center';
 		ctx.textBaseline = 'bottom';
-		chart.data.datasets.forEach(function(dataset, datasetIndex) {
+		chart.data.datasets.forEach(function (dataset, datasetIndex) {
 			var meta = chart.getDatasetMeta(datasetIndex);
-			meta.data.forEach(function(bar, index) {
+			meta.data.forEach(function (bar, index) {
 				var value = dataset.data[index];
 				ctx.fillText(value, bar.x, bar.y - 4);
 			});
@@ -250,7 +248,7 @@ function computeILPGapThreshold(run) {
 function computeILPProgressChartPoints(run) {
 	var points = [];
 	var EPSILON = 1e-9; // prevent us from trying to plot a 0 on a log scale
-	(run.progress || []).forEach(function(entry) {
+	(run.progress || []).forEach(function (entry) {
 		var gap = entry.gap_abs;
 		if (gap === null || gap === undefined) {
 			if (entry.incumbent === null || entry.incumbent === undefined ||
@@ -264,16 +262,16 @@ function computeILPProgressChartPoints(run) {
 			return;
 		}
 		var y = Math.max(gap, EPSILON);
-		points.push({x: t, y: y});
+		points.push({ x: t, y: y });
 		var endT = entry.end_runtime;
 		if (endT !== null && endT !== undefined && endT > t) {
-			points.push({x: endT, y: y});
+			points.push({ x: endT, y: y });
 		}
 	});
 	if (points.length === 0) {
 		return null;
 	}
-	return {points: points, maxT: points[points.length - 1].x};
+	return { points: points, maxT: points[points.length - 1].x };
 }
 
 // Chart.js config for creation only -- later updates patch the existing
@@ -291,7 +289,7 @@ function buildILPProgressChartConfig(points, maxT, thresholdY) {
 	}];
 	if (thresholdY !== null) {
 		datasets.push({
-			data: [{x: 0, y: thresholdY}, {x: maxT, y: thresholdY}],
+			data: [{ x: 0, y: thresholdY }, { x: maxT, y: thresholdY }],
 			label: 'stop threshold',
 			borderColor: '#999',
 			borderDash: [5, 5],
@@ -301,18 +299,18 @@ function buildILPProgressChartConfig(points, maxT, thresholdY) {
 	}
 	return {
 		type: 'line',
-		data: {datasets: datasets},
+		data: { datasets: datasets },
 		options: {
 			responsive: false,
 			animation: false,
 			events: [],
 			plugins: {
-				legend: {display: thresholdY !== null},
-				title: {display: true, text: 'Optimality gap over time'},
+				legend: { display: thresholdY !== null },
+				title: { display: true, text: 'Optimality gap over time' },
 			},
 			scales: {
-				x: {type: 'linear', max: maxT, title: {display: true, text: 'runtime (s)'}},
-				y: {type: 'logarithmic', title: {display: true, text: 'gap'}},
+				x: { type: 'linear', max: maxT, title: { display: true, text: 'runtime (s)' } },
+				y: { type: 'logarithmic', title: { display: true, text: 'gap' } },
 			},
 		},
 	};
@@ -343,7 +341,7 @@ function updateILPProgressChart(state, run) {
 		var chart = state.progressChart;
 		chart.data.datasets[0].data = computed.points;
 		if (thresholdY !== null) {
-			var thresholdData = [{x: 0, y: thresholdY}, {x: computed.maxT, y: thresholdY}];
+			var thresholdData = [{ x: 0, y: thresholdY }, { x: computed.maxT, y: thresholdY }];
 			if (chart.data.datasets.length > 1) {
 				chart.data.datasets[1].data = thresholdData;
 			} else {
@@ -396,7 +394,7 @@ function buildILPRunDetailSkeleton(state, run) {
 	if (ilp_progress_values_open[run.id]) {
 		state.$progressDetails.prop('open', true);
 	}
-	state.$progressDetails.on('toggle', function() {
+	state.$progressDetails.on('toggle', function () {
 		ilp_progress_values_open[run.id] = this.open;
 	});
 	state.$progressDetails.append($j('<summary>').text('Progress values'));
@@ -412,18 +410,18 @@ function buildILPRunDetailSkeleton(state, run) {
 	if (ilp_settings_open[run.id]) {
 		$settingsDetails.prop('open', true);
 	}
-	$settingsDetails.on('toggle', function() {
+	$settingsDetails.on('toggle', function () {
 		ilp_settings_open[run.id] = this.open;
 	});
 	$settingsDetails.append($j('<summary>').text('Settings'));
 
 	state.$labelInput = $j('<input type="text" class="input-small ilp-label-input">').val(run.label || '');
-	state.$labelInput.on('blur', function() {
+	state.$labelInput.on('blur', function () {
 		var newLabel = state.$labelInput.val();
 		if (newLabel === state.lastKnownLabel) { return; }
 		relabelILPRun(run.id, newLabel);
 	});
-	state.$labelInput.on('keydown', function(e) {
+	state.$labelInput.on('keydown', function (e) {
 		if (e.which === 13) { state.$labelInput.blur(); }
 	});
 	var $labelP = $j('<p>').append($j('<label>').text('Label: '));
@@ -476,7 +474,7 @@ function updateILPRunDetail(state, run) {
 				state.$statsArea.empty();
 				// Plots shown by default; the text breakdown is behind its
 				// own further dropdown.
-				(cached.charts || []).forEach(function(el, index) {
+				(cached.charts || []).forEach(function (el, index) {
 					var canvas_id = 'ilpChart_' + run.id + '_' + index;
 					state.$statsArea.append('<canvas id="' + canvas_id + '" height="300" width="500" style="height:300px; width:500px;"></canvas>');
 					var config = $j.extend(true, {}, el);
@@ -488,15 +486,15 @@ function updateILPRunDetail(state, run) {
 				if (ilp_text_stats_open[run.id]) {
 					$statsDetails.prop('open', true);
 				}
-				$statsDetails.on('toggle', function() {
+				$statsDetails.on('toggle', function () {
 					ilp_text_stats_open[run.id] = this.open;
 				});
 				$statsDetails.append($j('<summary>').text('Text stats'));
-				(cached.stats || []).forEach(function(el) {
+				(cached.stats || []).forEach(function (el) {
 					var label = el[0], lines = el[1];
 					$statsDetails.append($j('<h4>').text(label));
 					var $ul = $j('<ul>');
-					lines.forEach(function(line) { $ul.append($j('<li>').text(line)); });
+					lines.forEach(function (line) { $ul.append($j('<li>').text(line)); });
 					$statsDetails.append($ul);
 				});
 				state.$statsArea.append($statsDetails);
@@ -519,7 +517,7 @@ function updateILPRunRow(state, run, hasAnyLabel) {
 	var expanded = !!ilp_expanded_run_ids[run.id];
 
 	var $expandCell = $j('<td style="cursor:pointer;">').text(expanded ? '▼' : '▶');
-	$expandCell.click(function() { toggleILPRunExpand(run.id); });
+	$expandCell.click(function () { toggleILPRunExpand(run.id); });
 	$row.append($expandCell);
 
 	$row.append($j('<td>').text(run.id));
@@ -532,21 +530,21 @@ function updateILPRunRow(state, run, hasAnyLabel) {
 	var $actions = $j('<td>');
 	if (!terminal) {
 		var $stopBtn = $j('<button type="button" class="btn btn-warning btn-small custom-action">Interrupt</button>');
-		$stopBtn.click(function() { stopILPRun(run.id); });
+		$stopBtn.click(function () { stopILPRun(run.id); });
 		$actions.append($stopBtn);
 	} else {
 		var $saveBtn = $j('<button type="button" class="btn btn-success btn-small custom-action">Save</button>');
 		if (!run.has_result) {
-			$saveBtn.prop('disabled', true).css({'opacity': '0.5', 'color': '#666'});
+			$saveBtn.prop('disabled', true).css({ 'opacity': '0.5', 'color': '#666' });
 		}
 		if (run.saved_at) {
 			$saveBtn.text('Saved');
 		}
-		$saveBtn.click(function() { saveILPRun(run.id); });
+		$saveBtn.click(function () { saveILPRun(run.id); });
 		$actions.append($saveBtn);
 
 		var $archiveBtn = $j('<button type="button" class="btn btn-small custom-action" style="margin-left:5px;">Archive</button>');
-		$archiveBtn.click(function() { archiveILPRun(run.id); });
+		$archiveBtn.click(function () { archiveILPRun(run.id); });
 		$actions.append($archiveBtn);
 	}
 	$row.append($actions);
@@ -563,7 +561,7 @@ function removeILPRunRow(runId) {
 function renderILPRuns(runs) {
 	ilp_last_runs = runs;
 
-	runs.forEach(function(run) {
+	runs.forEach(function (run) {
 		var prevStatus = ilp_last_status_by_run[run.id];
 		if (prevStatus !== undefined && prevStatus !== run.status && ILP_STATS_READY_STATUSES[run.status]) {
 			delete ilp_run_stats_cache[run.id];
@@ -575,7 +573,7 @@ function renderILPRuns(runs) {
 	});
 
 	var $tbody = $j('#ilpRunsBody');
-	var hasAnyLabel = runs.some(function(run) { return run.label; });
+	var hasAnyLabel = runs.some(function (run) { return run.label; });
 	$j('#ilpLabelHeader').toggle(hasAnyLabel);
 	var colspan = hasAnyLabel ? 6 : 5;
 
@@ -589,8 +587,8 @@ function renderILPRuns(runs) {
 
 	// Drop rows for runs no longer in the list (e.g. archived).
 	var incomingIds = {};
-	runs.forEach(function(run) { incomingIds[run.id] = true; });
-	Object.keys(ilp_row_state).forEach(function(idStr) {
+	runs.forEach(function (run) { incomingIds[run.id] = true; });
+	Object.keys(ilp_row_state).forEach(function (idStr) {
 		if (!incomingIds[idStr]) { removeILPRunRow(idStr); }
 	});
 
@@ -602,10 +600,10 @@ function renderILPRuns(runs) {
 	// (tbody: [B]), then prepend A on top of that (tbody: [A, B]) --
 	// reversed. This isn't a rare case: it's every page load, since every
 	// run is "new" to the client at once then.
-	runs.slice().reverse().forEach(function(run) {
+	runs.slice().reverse().forEach(function (run) {
 		var state = ilp_row_state[run.id];
 		if (!state) {
-			state = {$row: $j('<tr>'), $detailRow: null, $detailCell: null, built: false};
+			state = { $row: $j('<tr>'), $detailRow: null, $detailCell: null, built: false };
 			ilp_row_state[run.id] = state;
 			$tbody.prepend(state.$row);
 		}
@@ -635,8 +633,8 @@ function pollILPStatus() {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_status",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token()},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token() },
+		success: function (data) {
 			renderILPRuns(data['response'][0]['runs']);
 		},
 		dataType: 'json'
@@ -654,8 +652,8 @@ function relabelILPRun(run_id, label) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_relabel",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id, 'label': label},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id, 'label': label },
+		success: function (data) {
 			var item = data['response'][0];
 			if (item.error_msg) { alert(item.error_msg); }
 			pollILPStatus();
@@ -668,8 +666,8 @@ function stopILPRun(run_id) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_stop",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id },
+		success: function (data) {
 			var item = data['response'][0];
 			if (item.error_msg) { alert(item.error_msg); }
 			pollILPStatus();
@@ -685,8 +683,8 @@ function saveILPRun(run_id) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_save",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id },
+		success: function (data) {
 			var item = data['response'][0];
 			if (item.error_msg) { alert(item.error_msg); }
 			pollILPStatus();
@@ -699,8 +697,8 @@ function archiveILPRun(run_id) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_archive",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id },
+		success: function (data) {
 			var item = data['response'][0];
 			if (item.error_msg) { alert(item.error_msg); }
 			pollILPStatus();
@@ -713,8 +711,8 @@ function fetchILPArchivedRuns() {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_archived_status",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token()},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token() },
+		success: function (data) {
 			renderILPArchivedRuns(data['response'][0]['runs']);
 		},
 		dataType: 'json'
@@ -728,14 +726,14 @@ function renderILPArchivedRuns(runs) {
 		$tbody.append('<tr><td colspan="5">No archived runs.</td></tr>');
 		return;
 	}
-	runs.forEach(function(run) {
+	runs.forEach(function (run) {
 		var $row = $j('<tr>');
 		$row.append($j('<td>').text(run.id));
 		$row.append($j('<td>').text(run.label || ''));
 		$row.append($j('<td>').text(formatILPStatus(run)));
 		$row.append($j('<td>').text(formatILPTimestamp(run.submitted_at)));
 		var $unarchiveBtn = $j('<button type="button" class="btn btn-small custom-action">Unarchive</button>');
-		$unarchiveBtn.click(function() { unarchiveILPRun(run.id); });
+		$unarchiveBtn.click(function () { unarchiveILPRun(run.id); });
 		$row.append($j('<td>').append($unarchiveBtn));
 		$tbody.append($row);
 	});
@@ -745,8 +743,8 @@ function unarchiveILPRun(run_id) {
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_ilp_unarchive",
 		type: "post",
-		data: {'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id},
-		success: function(data) {
+		data: { 'csrfmiddlewaretoken': csrf_token(), 'run_id': run_id },
+		success: function (data) {
 			var item = data['response'][0];
 			if (item.error_msg) { alert(item.error_msg); }
 			fetchILPArchivedRuns();
@@ -756,18 +754,12 @@ function unarchiveILPRun(run_id) {
 	});
 }
 
-// ILP form validation, mirroring the parameter checks in
-// ILPLotteryAssignmentController (esp/program/controllers/lottery/ilp.py) so a
-// typo is caught here rather than after the server has loaded every
-// registration to build the model. Only checks that need nothing but the form
-// values live here; those needing program data (penalty keys vs.
-// num_timeslots, per-section capacities) are still left to the server.
+// Client-side ILP form validation
 
 function addILPError(errors, $field, msg) {
-	errors.push({$field: $field, msg: msg});
+	errors.push({ $field: $field, msg: msg });
 }
 
-// parseFloat('1.5nonsense') === 1.5, which is too forgiving for a form check.
 function ilpParseNumber(value) {
 	var trimmed = $j.trim(value || '');
 	return /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(trimmed) ? parseFloat(trimmed) : NaN;
@@ -790,21 +782,46 @@ function validateILPPenaltyPoints(points, errors, $field, label, rising) {
 	}
 }
 
-// {"0": 1000, "1": 100, "2": 20}: filled timeslots -> penalty points.
-function validateILPStudentPenalties($field, value, errors) {
+// Returns the first key listed more than once in the raw text of a flat JSON
+// object (JSON.parse keeps only the last silently), or null if there are none.
+function findDuplicateJSONKey(text) {
+	var pattern = /"((?:[^"\\]|\\.)*)"\s*:/g;
+	var seen = {};
+	var match;
+	while ((match = pattern.exec(text)) !== null) {
+		// Prefixed so keys like __proto__ land in the map as ordinary entries.
+		var key = 'k' + match[1];
+		if (Object.prototype.hasOwnProperty.call(seen, key)) { return match[1]; }
+		seen[key] = true;
+	}
+	return null;
+}
+
+// Checks the empty schedule penalties JSON, e.g. {"0": 1000, "1": 100, "2": 20}:
+// keys must be filled-timeslot counts running 0, 1, 2, ... with no repeats or
+// gaps, mapped to penalty points that are non-negative and never rise.
+function validateILPStudentPenalties($field, value, text, errors) {
 	if (value === null || typeof value !== 'object' || $j.isArray(value)) {
 		return addILPError(errors, $field, 'Empty schedule penalties must be a JSON object, e.g. {"0": 1000, "1": 100, "2": 20}.');
 	}
 	var keys = [];
+	var flat = true;
 	for (var key in value) {
-		if (Object.prototype.hasOwnProperty.call(value, key)) { keys.push($j.trim(key)); }
+		if (Object.prototype.hasOwnProperty.call(value, key)) {
+			keys.push($j.trim(key));
+			if (!isILPNumber(value[key])) { flat = false; }
+		}
+	}
+
+	if (flat) {
+		var duplicate = findDuplicateJSONKey(text);
+		if (duplicate !== null) {
+			return addILPError(errors, $field, 'Empty schedule penalties list the key "' + duplicate + '" more than once; each number of filled timeslots may only appear once.');
+		}
 	}
 	if (keys.length === 0) { return; }  // the server falls back to its default
-	keys.sort(function(a, b) { return a - b; });
+	keys.sort(function (a, b) { return a - b; });
 
-	// A key that isn't listed counts as a penalty of 0 on the server, so a gap
-	// (e.g. {"0": 1000, "2": 20}) trips its monotonicity check even though the
-	// listed values look fine. Require the keys to run 0, 1, 2, ... instead.
 	var points = [];
 	for (var i = 0; i < keys.length; i++) {
 		if (!/^\d+$/.test(keys[i]) || parseInt(keys[i], 10) !== i) {
@@ -815,8 +832,11 @@ function validateILPStudentPenalties($field, value, errors) {
 	validateILPPenaltyPoints(points, errors, $field, 'Empty schedule penalties', 'as more timeslots are filled');
 }
 
-// [[0, 1000], [0.3, 100], [0.5, 0], [1, 0]]: fraction of capacity -> penalty points.
-function validateILPSectionPoints($field, value, errors) {
+// Checks the empty section penalties JSON, e.g. [[0, 1000], [0.5, 0], [1, 0]]:
+// a list of [fraction of capacity, penalty points] pairs whose fractions must
+// strictly increase from 0 to 1, mapped to penalties that are non-negative and
+// never rise.
+function validateILPSectionPoints($field, value, text, errors) {
 	if (!$j.isArray(value) || value.length < 2) {
 		return addILPError(errors, $field, 'Empty section penalties must be a JSON list of at least two [fraction, penalty] pairs, e.g. [[0, 1000], [0.5, 0], [1, 0]].');
 	}
@@ -828,8 +848,6 @@ function validateILPSectionPoints($field, value, errors) {
 			return addILPError(errors, $field, 'Empty section penalty fractions must strictly increase.');
 		}
 	}
-	// A negative fraction can only appear before the required 0, so this
-	// covers ilp.py's non-negative check too.
 	if (value[0][0] !== 0 || value[value.length - 1][0] !== 1) {
 		return addILPError(errors, $field, 'Empty section penalties must start at fraction 0 and end at fraction 1.');
 	}
@@ -860,13 +878,13 @@ function showILPFormErrors(errors) {
 	if ($box[0] && $box[0].scrollIntoView) { $box[0].scrollIntoView(); }
 }
 
-$j(document).ready(function() {
+$j(document).ready(function () {
 	var $ilpForm = $j('#ilpSubmitForm');
 	if ($ilpForm.length === 0) {
 		return; // ILP lottery isn't available/configured on this server
 	}
 
-	$j('#ilpArchivedRunsDetails').on('toggle', function() {
+	$j('#ilpArchivedRunsDetails').on('toggle', function () {
 		if (this.open) {
 			fetchILPArchivedRuns();
 		}
@@ -879,7 +897,7 @@ $j(document).ready(function() {
 	$j('#ilpDeweightMethod').change(updateDeweightFactorVisibility);
 	updateDeweightFactorVisibility();
 
-	$ilpForm.submit(function(e) {
+	$ilpForm.submit(function (e) {
 		e.preventDefault();
 
 		var errors = [];
@@ -887,37 +905,59 @@ $j(document).ready(function() {
 		var deweightMethod = $j('#ilpDeweightMethod').val();
 		clearILPFormErrors();
 
-		// A blank optional field is simply left out of the payload; a blank
-		// required one is an error. solveKey marks the solver parameters.
-		var nonNegative = function(v) { return v >= 0; };
+		var nonNegative = function (v) { return v >= 0; };
 		var scalarFields = [
-			{sel: '.ilpRankWeightInput', required: true, ok: nonNegative, msg: 'Every rank weight must be a number that is at least 0.'},
-			{sel: '#ilpInterestWeight', required: true, ok: nonNegative, msg: 'The star weight must be a number that is at least 0.'},
-			{sel: '#ilpDeweightFactor', required: deweightMethod !== 'none', ok: function(v) { return v > 0 && v <= 1; }, msg: 'The deweight factor must be a number greater than 0 and at most 1.'},
-			{sel: '#ilpMipGap', solveKey: 'MIPGap', ok: isILPNumber, msg: 'The MIP gap must be a number.'},
-			{sel: '#ilpMipGapAbs', solveKey: 'MIPGapAbs', ok: isILPNumber, msg: 'The absolute MIP gap must be a number.'},
-			{sel: '#ilpTimeLimit', solveKey: 'TimeLimit', ok: function(v) { return v > 0; }, msg: 'The time limit must be a number greater than 0 (leave it blank for unlimited).'},
-			{sel: '#ilpThreads', solveKey: 'Threads', ok: function(v) { return v >= 0 && v === Math.floor(v); }, msg: 'The thread count must be a whole number that is at least 0 (leave it blank for the solver default).'},
+			{ sel: '.ilpRankWeightInput', required: true, ok: nonNegative, msg: 'Every rank weight must be a number that is at least 0.' },
+			{ sel: '#ilpInterestWeight', required: true, ok: nonNegative, msg: 'The star weight must be a number that is at least 0.' },
+			{ sel: '#ilpDeweightFactor', required: deweightMethod !== 'none', hidden: deweightMethod === 'none', ok: function (v) { return v > 0 && v <= 1; }, msg: 'The deweight factor must be a number greater than 0 and at most 1.' },
+			{ sel: '#ilpMipGap', solveKey: 'MIPGap', ok: nonNegative, msg: 'The MIP gap must be a number that is at least 0.' },
+			{ sel: '#ilpMipGapAbs', solveKey: 'MIPGapAbs', ok: nonNegative, msg: 'The absolute MIP gap must be a number that is at least 0.' },
+			{ sel: '#ilpTimeLimit', solveKey: 'TimeLimit', ok: function (v) { return v > 0; }, msg: 'The time limit must be a number greater than 0 (leave it blank for unlimited).' },
+			{ sel: '#ilpThreads', solveKey: 'Threads', ok: function (v) { return v >= 0 && v === Math.floor(v); }, msg: 'The thread count must be a whole number that is at least 0 (leave it blank for the solver default).' },
 		];
-		$j.each(scalarFields, function(_, field) {
-			$j(field.sel).each(function() {
+		$j.each(scalarFields, function (_, field) {
+			$j(field.sel).each(function () {
 				var $input = $j(this);
-				var num = ilpParseNumber($input.val());
-				if (isNaN(num)) {
+				var text = $j.trim($input.val() || '');
+				if (text === '') {
 					if (field.required) { addILPError(errors, $input, field.msg); }
-				} else if (!field.ok(num)) {
-					addILPError(errors, $input, field.msg);
+					return;
+				}
+				var num = ilpParseNumber(text);
+				if (isNaN(num) || !field.ok(num)) {
+					// Junk in a hidden field (the deweight factor, when
+					// deweighting is off) is dropped rather than reported, so
+					// the form never blocks on a box nobody can see or fix.
+					if (!field.hidden) { addILPError(errors, $input, field.msg); }
 				} else {
 					values[field.sel] = (values[field.sel] || []).concat(num);
 				}
 			});
 		});
 
+		// Checks that the weights never rise down the ladder from rank 1 (the
+		// highest priority) to the star, which sits below the lowest rank.
+		// Only runs when every weight box parsed, so ladder indexes still line
+		// up with their input fields.
+		var $rankInputs = $j('.ilpRankWeightInput');
+		var rankWeights = values['.ilpRankWeightInput'] || [];
+		var interestWeights = values['#ilpInterestWeight'] || [];
+		if (rankWeights.length === $rankInputs.length && interestWeights.length === 1) {
+			var ladder = rankWeights.concat(interestWeights);
+			for (var i = 1; i < ladder.length; i++) {
+				if (ladder[i] > ladder[i - 1]) {
+					var $offender = (i < rankWeights.length) ? $rankInputs.eq(i) : $j('#ilpInterestWeight');
+					addILPError(errors, $offender, 'Rank/star weights must never increase: each rank must be worth at most the rank above it, and the star weight at most the lowest rank weight.');
+					break;
+				}
+			}
+		}
+
 		var jsonValues = {};
 		$j.each([
 			['#ilpEmptyStudentSchedulePenalties', 'empty_student_schedule_penalties', validateILPStudentPenalties],
 			['#ilpEmptySectionPenaltyPoints', 'empty_section_penalty_points', validateILPSectionPoints],
-		], function(_, field) {
+		], function (_, field) {
 			var $jsonField = $j(field[0]);
 			var text = $j.trim($jsonField.val());
 			if (!text) { return; }
@@ -926,7 +966,7 @@ $j(document).ready(function() {
 			} catch (err) {
 				return addILPError(errors, $jsonField, 'Invalid JSON in ' + field[1] + ': ' + err.message);
 			}
-			field[2]($jsonField, jsonValues[field[1]], errors);
+			field[2]($jsonField, jsonValues[field[1]], text, errors);
 		});
 
 		if (errors.length > 0) {
@@ -946,11 +986,11 @@ $j(document).ready(function() {
 
 		// Seed is always random -- the server fills it in, no field here.
 		var solve = {};
-		$j.each(scalarFields, function(_, field) {
+		$j.each(scalarFields, function (_, field) {
 			if (field.solveKey && values[field.sel]) { solve[field.solveKey] = values[field.sel][0]; }
 		});
 
-		var payload = {objective: objective, solve: solve, label: $j('#ilpLabel').val()};
+		var payload = { objective: objective, solve: solve, label: $j('#ilpLabel').val() };
 		if ($j('#ilpSolverName').length > 0) {
 			payload.solver_name = $j('#ilpSolverName').val();
 		}
@@ -962,8 +1002,8 @@ $j(document).ready(function() {
 		$j.ajax({
 			url: "/manage/" + program_url_base + "/lottery_ilp_submit",
 			type: "post",
-			data: {'csrfmiddlewaretoken': csrf_token(), 'params': JSON.stringify(payload)},
-			success: function(data) {
+			data: { 'csrfmiddlewaretoken': csrf_token(), 'params': JSON.stringify(payload) },
+			success: function (data) {
 				var item = data['response'][0];
 				if (item.error_msg) {
 					alert(item.error_msg);
@@ -972,10 +1012,10 @@ $j(document).ready(function() {
 				}
 				pollILPStatus();
 			},
-			error: function() {
+			error: function () {
 				alert('Submitting the ILP lottery run failed. Contact your local webministry for help.');
 			},
-			complete: function() {
+			complete: function () {
 				$submitBtn.prop('disabled', false).text(originalBtnText);
 			},
 			dataType: 'json'
