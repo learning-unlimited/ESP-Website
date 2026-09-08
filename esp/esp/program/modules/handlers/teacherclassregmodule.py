@@ -61,6 +61,7 @@ import re
 import datetime
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
+    permission_types = ('Teacher/Classes/All',)
 
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
@@ -370,6 +371,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
                 else:
                     section = sections[0]
+                    if not (request.user.canEdit(section.parent_class) or request.user.canMod(section)):
+                        json_data['error'] = 'You do not have permission to modify attendance for this section.'
+                        return HttpResponse(json.dumps(json_data), content_type='text/json')
                     json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
@@ -492,7 +496,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,}
@@ -516,7 +520,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         target_class = classes[0]
         context_form = FileUploadForm()
@@ -1024,13 +1028,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherClassRegForm(self.crmi, initial=current_data)
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherOpenClassRegForm(self.crmi, initial=current_data)
 
                 #   Todo...
                 ds = newclass.default_section()

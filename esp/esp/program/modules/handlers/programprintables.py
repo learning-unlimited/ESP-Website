@@ -1318,7 +1318,6 @@ class ProgramPrintables(ProgramModuleObj):
                     job.status = 'COMPLETED'
                     job.save()
                 except Exception as e:
-                    import traceback
                     job = PrintableJob.objects.get(id=job_id)
                     job.status = 'FAILED'
                     job.error_message = traceback.format_exc()
@@ -1531,8 +1530,6 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def printable_job_status(self, request, tl, one, two, module, extra, prog):
         """ Displays the status of an asynchronous PrintableJob, and downloads it when completed """
-        import mimetypes
-        import os
         from wsgiref.util import FileWrapper
         from django.core.exceptions import ValidationError
         from django.http import HttpResponse, HttpResponseRedirect

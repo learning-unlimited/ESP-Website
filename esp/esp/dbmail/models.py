@@ -330,7 +330,7 @@ class MessageRequest(models.Model):
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
         except ImproperlyConfigured as e:
-            raise ESPError(True, f'Invalid sendto function "{sendto_fn_name}". '
+            raise ESPError(f'Invalid sendto function "{sendto_fn_name}". '
                 f'This might be a website bug. Please contact us at {settings.DEFAULT_EMAIL_ADDRESSES["support"]} '
                 f'and tell us how you got this error, and we will look into it. '
                 f'The error message is: "{e}".')

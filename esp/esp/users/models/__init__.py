@@ -554,6 +554,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
+    getTaughtClassesFromProgram.get_or_create_token(('self',))
+    getTaughtClassesFromProgram.get_or_create_token(('program',))
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
@@ -564,7 +566,11 @@ class BaseESPUser(object):
             raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
             return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getModeratingSectionsFromProgram.get_or_create_token(('program',))
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                                   lambda sec, event: {'program': sec.parent_class.parent_program})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     def getModeratingTimesFromProgram(self, program, exclude = []):
@@ -595,6 +601,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('program',))
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
     getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
@@ -607,14 +615,26 @@ class BaseESPUser(object):
         if not include_cancelled:
             classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
-    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.get_or_create_token(('self',))
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
+    getFullClasses_pretty.get_or_create_token(('self',))
+    getFullClasses_pretty.get_or_create_token(('program',))
+    getFullClasses_pretty.depend_on_m2m('program.ClassSubject', 'teachers',
+                                        lambda cls, teacher: {'self': teacher})
+    getFullClasses_pretty.depend_on_row('program.ClassSubject',
+                                        lambda cls: {'program': cls.parent_program})
+    getFullClasses_pretty.depend_on_row('program.StudentRegistration',
+                                        lambda reg: {'program': reg.section.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('program.ClassSection',
+                                        lambda sec: {'program': sec.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('tagdict.Tag', lambda tag: {},
+                                        lambda tag: tag.key == 'nearly_full_threshold')
 
     def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
         if program is None:
@@ -632,6 +652,7 @@ class BaseESPUser(object):
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
+    getTaughtSectionsAll.get_or_create_token(('self',))
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
@@ -647,6 +668,7 @@ class BaseESPUser(object):
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.get_or_create_token(('self', 'program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
@@ -707,6 +729,13 @@ class BaseESPUser(object):
     getTypes = staticmethod(getTypes)
 
     @staticmethod
+    def awaiting_activation_Q():
+        """
+        Q object matching accounts that were registered but never activated.
+        """
+        return Q(is_active=False, pending_activation__isnull=False)
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
             raise ESPError("Invalid type to find all of.")
@@ -749,9 +778,11 @@ class BaseESPUser(object):
 
         return list(valid_events)
     getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.get_or_create_token(('program',))
+    getAvailableTimes.get_or_create_token(('self', 'program', 'ignore_classes',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
-                 {'self':self, 'program':program, 'ignore_classes':True})
+                 {'self':self, 'program':program, 'ignore_classes':False})
     getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
@@ -863,6 +894,7 @@ class BaseESPUser(object):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
+    getEnrolledSectionsFromProgram.get_or_create_token(('self',))
     getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     getEnrolledSectionsFromProgram.depend_on_cache('program.ClassSection.timeslot_ids', lambda self=wildcard, **kwargs: {})
 
@@ -884,7 +916,11 @@ class BaseESPUser(object):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
+    getFirstClassTime.get_or_create_token(('self',))
+    getFirstClassTime.get_or_create_token(('program',))
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                    lambda sec, event: {'program': sec.parent_class.parent_program})
 
     def can_skip_phase_zero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
@@ -937,6 +973,7 @@ class BaseESPUser(object):
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.get_or_create_token(('self',))
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
 
@@ -948,6 +985,7 @@ class BaseESPUser(object):
             return True
         else:
             return False
+    hasFinancialAid.get_or_create_token(('self',))
     hasFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
 
     def isOnsite(self, program=None):
@@ -2255,7 +2293,7 @@ class PersistentQueryFilter(models.Model):
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
-    sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
+    sha1_hash    = models.CharField(max_length=256)            # A SHA-256 digest of the pickled query filter. Column name is historical.
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
@@ -2270,14 +2308,15 @@ class PersistentQueryFilter(models.Model):
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = filter_hash)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                        q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = filter_hash)
         foo.useful_name = description
         foo.save()
         return foo
@@ -2315,10 +2354,10 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
 
         self.q_filter = dumped_filter
-        self.sha1_hash = sha1_hash
+        self.sha1_hash = filter_hash
         self.useful_name = description
 
         if should_save:
@@ -2357,7 +2396,7 @@ class PersistentQueryFilter(models.Model):
         except Exception:
             qobject_string = b''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha256(qobject_string).hexdigest())
         except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
@@ -2525,6 +2564,24 @@ class Record(models.Model):
     def __str__(self):
         return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
 
+class PendingActivation(models.Model):
+    """
+    Marks an account as registered but never activated.
+
+    The presence of a row means "this account is waiting for its owner to
+    click the activation link in their registration email"; the row is
+    deleted the first time the account is successfully activated.
+    """
+    user = models.OneToOneField(ESPUser, related_name='pending_activation',
+                                on_delete=models.CASCADE)
+    created = models.DateTimeField(blank=True, default=datetime.now)
+
+    class Meta:
+        app_label = 'users'
+
+    def __str__(self):
+        return f"{self.user} is awaiting account activation"
+
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -2571,6 +2628,7 @@ class Permission(ExpirableModel):
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
@@ -3026,8 +3084,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 

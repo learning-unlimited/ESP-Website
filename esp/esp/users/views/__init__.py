@@ -6,7 +6,6 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
 from django.urls import reverse
-from django.utils.http import urlencode
 from django.views.decorators.csrf import csrf_exempt
 
 from esp.program.models import Program, RegistrationProfile
@@ -196,12 +195,14 @@ def disable_account(request):
 
     curUser = request.user
 
-    if 'enable' in request.GET:
-        curUser.is_active = True
-        curUser.save()
-    elif 'disable' in request.GET:
-        curUser.is_active = False
-        curUser.save()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'enable':
+            curUser.is_active = True
+            curUser.save()
+        elif action == 'disable':
+            curUser.is_active = False
+            curUser.save()
 
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
 

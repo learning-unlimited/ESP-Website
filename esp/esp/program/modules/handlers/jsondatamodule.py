@@ -50,7 +50,7 @@ from esp.cal.models import Event, EventType
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, RegistrationType, ClassCategories, StudentSubjectInterest, ClassFlagType, ClassFlag, ModeratorRecord, RegistrationProfile, TeacherBio, PhaseZeroRecord, FinancialAidRequest, VolunteerOffer
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student_in_grade, needs_admin, no_auth, aux_call
 from esp.resources.models import ResourceAssignment, ResourceRequest, ResourceType
 from esp.tagdict.models import Tag
@@ -196,8 +196,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             m['availability'] = avail_lookup.get(m['id'], [])
         return {'moderators': moderator_list}
     moderators.method.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
-    moderators.method.cached_function.depend_on_model(ModeratorRecord)
-    moderators.method.cached_function.depend_on_model(UserAvailability)
+    moderators.method.cached_function.depend_on_row(ModeratorRecord,
+                                                    lambda rec: {'prog': rec.program})
+    moderators.method.cached_function.depend_on_m2m(ModeratorRecord, 'class_categories',
+                                                    lambda rec, cat: {'prog': rec.program})
+    moderators.method.cached_function.depend_on_row(UserAvailability,
+        lambda ua: {'prog': ua.event.program} if ua.event.program_id else {})
 
     @aux_call
     @json_response()
@@ -282,7 +286,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             timeslots[i]['end'] = timeslots[i]['end'].timetuple()[:6]
 
         return {'timeslots': timeslots}
-    timeslots.cached_function.depend_on_model(Event)
+    timeslots.cached_function.depend_on_row(Event, lambda e: {'prog': e.program} if e.program_id else {})
     timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @aux_call
@@ -290,7 +294,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @no_auth
     @cached_module_view
     def lunch_timeslots(prog):
-        lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
+        lunch_timeslots = list(prog.lunch_timeslots().values('id'))
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
         return {'timeslots': lunch_timeslots}
@@ -361,10 +365,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'sections': sections, 'teachers': teachers}
+    sections.cached_function.get_or_create_token(('prog',))
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
-    sections.cached_function.depend_on_model(UserAvailability)
+    sections.cached_function.depend_on_row(UserAvailability,
+        lambda ua: {'prog': ua.event.program} if ua.event.program_id else {})
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from argcache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
@@ -441,8 +447,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'sections': sections, 'teachers': teachers}
     sections_admin.method.cached_function.depend_on_cache(sections.cached_function, lambda extra=wildcard, prog=wildcard, **kwargs: {'prog': prog, 'extra': extra})
-    sections_admin.method.cached_function.depend_on_model(ResourceRequest)
-    sections_admin.method.cached_function.depend_on_model(ClassFlag)
+    sections_admin.method.cached_function.get_or_create_token(('prog',))
+    sections_admin.method.cached_function.depend_on_row(ResourceRequest,
+        lambda rr: {'prog': rr.target.parent_class.parent_program} if rr.target_id
+              else {'prog': rr.target_subj.parent_program} if rr.target_subj_id else {})
+    sections_admin.method.cached_function.depend_on_row(ClassFlag,
+        lambda cf: {'prog': cf.subject.parent_program})
 
     @aux_call
     @json_response({
@@ -478,7 +488,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'timeslot_sections': section_ids,
                 'timeslot_subjects': subject_ids}
-    classes_timeslot.cached_function.depend_on_model(Event)
+    classes_timeslot.cached_function.get_or_create_token(('prog',))
+    classes_timeslot.cached_function.depend_on_row(Event, lambda e: {'prog': e.program} if e.program_id else {})
     classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
 
     @aux_call
@@ -562,6 +573,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             teacher['availability'] = avail_lookup.get(teacher['id'], [])
 
         return {'classes': classes, 'teachers': teachers, 'moderators': moderators}
+    class_subjects.cached_function.get_or_create_token(('prog',))
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_model('tagdict.Tag')
@@ -601,8 +613,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def lottery_preferences_legacy(self, request, prog):
         # DEPRECATED: see comments in lottery_preferences method
         sections = list(prog.sections().values('id'))
-        sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
-        sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
+        sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).values_list('section_id', flat=True).distinct()
+        sections_priority = StudentRegistration.valid_objects().filter(relationship__name__startswith='Priority', user=request.user, section__parent_class__parent_program=prog).values_list('section_id', flat=True).distinct()
         for item in sections:
             if item['id'] in sections_interested:
                 item['lottery_interested'] = True
@@ -659,13 +671,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             cls = matching_classes[0]
 
         section_info = []
+        priority_names = list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         for sec in cls.get_sections():
             section_info.append({
-                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_priority': sec.num_students(priority_names),
                 'num_students_interested': sec.num_students(['Interested']),
                 'num_students_enrolled': sec.num_students(['Enrolled']),
                 'time': ', '.join(sec.friendly_times()),
-                'room': ' and '.join(sec.prettyrooms()),
             })
 
         return_dict = {
@@ -681,13 +693,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
-            'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades",
         }
 
         return {return_key: [return_dict]}
-    class_info.cached_function.depend_on_model(ClassSubject)
-    class_info.cached_function.depend_on_model(ClassSection)
+    class_info.cached_function.get_or_create_token(('prog',))
+    class_info.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+    class_info.cached_function.depend_on_row(ClassSection,
+        lambda sec: {'prog': sec.parent_class.parent_program})
 
     @aux_call
     @no_auth
@@ -780,9 +793,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
         section_info = []
+        priority_names = list(RegistrationType.objects.filter(name__startswith='Priority').values_list('name', flat=True))
         for sec in cls.get_sections():
             section_info.append({
-                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_priority': sec.num_students(priority_names),
                 'num_students_interested': sec.num_students(['Interested']),
                 'num_students_enrolled': sec.num_students(['Enrolled']),
                 'time': ', '.join(sec.friendly_times()),
@@ -843,11 +857,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
-        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__category="Lunch", status=ClassStatus.ACCEPTED).distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__category='Lunch').distinct().count()))
-        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__category='Lunch').distinct().count()))
+        class_num_list.append(("Total # of Lunch Classes", classes.filter(category__is_lunch=True, status=ClassStatus.ACCEPTED).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", classes.filter(status=ClassStatus.UNREVIEWED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", classes.filter(status=ClassStatus.ACCEPTED, sections__status=ClassStatus.ACCEPTED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", classes.filter(status=ClassStatus.REJECTED).exclude(category__is_lunch=True).distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", classes.filter(status=ClassStatus.CANCELLED).exclude(category__is_lunch=True).distinct().count()))
         return class_num_list
     class_nums.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
@@ -878,6 +892,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return moderator_list
     mod_nums.depend_on_row(ModeratorRecord, lambda mr: {'prog': mr.program})
     mod_nums.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'prog': sec.parent_class.parent_program})
+    mod_nums.depend_on_m2m(ClassSection, 'meeting_times',
+                           lambda sec, event: {'prog': sec.parent_class.parent_program})
     mod_nums.depend_on_model(Tag)
     mod_nums = staticmethod(mod_nums)
 
@@ -1035,15 +1051,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        reg_classes = prog.classes().exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in reg_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         reg_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in reg_classes])
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in app_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         app_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in app_classes])
-        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__category='Lunch').values('duration', 'enrolled_students', 'id')
+        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__is_lunch=True).values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
         hour_num_list.append(("Total # of Class-Hours (registered)", round(reg_hours["class-hours"], 2)))
@@ -1089,11 +1105,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             def student_count(clslist):
-                lst = [0] + [x.num_students() for x in clslist if x.category.category != 'Lunch']
+                lst = [0] + [x.num_students() for x in clslist if not x.category.is_lunch]
                 return reduce(operator.add, lst)
 
             def student_max_count(clslist):
-                lst = [0] + [x.capacity for x in clslist if x.category.category != 'Lunch']
+                lst = [0] + [x.capacity for x in clslist if not x.category.is_lunch]
                 return reduce(operator.add, lst)
 
             curTimeslot['studentcount'] = {

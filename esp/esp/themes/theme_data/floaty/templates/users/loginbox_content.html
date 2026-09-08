@@ -1,7 +1,7 @@
-{# Floaty: compact login UI for the right-hand .box area (not navbar-nav) #}
+﻿{# Floaty: compact login UI for the right-hand .box area (not navbar-nav) #}
 <div id="loginbox">
 
-  <div class="logged_in hidden">
+  <div class="logged_in">
     <form class="navbar-form form-inline">
       <a href="/myesp/profile/" class="username">
         <i class="bi bi-person"></i> Hello, <span id="user_first_name"></span>!
@@ -21,14 +21,14 @@
         </ul>
       </span>
     </form>
-    <div class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle || '');</script></a></div>
+    <div class="unmorph"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle || '');</script></a></div>
   </div>
 
-  <div class="not_logged_in hidden">
+  <div class="not_logged_in">
     <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">
       <input type="hidden" name="next" value="{{ request.path }}" />
-      <input type="text" name="username" id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
-      <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
+      <input type="text" name="username" required id="user" size="8" value="" placeholder="Username" maxlength="255" class="inputbox" />
+      <input type="password" name="password" required id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
 
       <button class="btn" id="gologin" type="submit">Login</button>
       <span class="dropdown">
@@ -46,3 +46,19 @@
     </form>
   </div>
 </div>
+
+<script type="text/javascript">
+  /* Fill the greeting name during parsing (before first paint) to avoid a
+     flash of empty text. */
+  (function () {
+    try {
+      if (!window.esp_user) { return; }
+      var el = document.getElementById("user_first_name");
+      if (el) {
+        var n = ("" + (esp_user.cur_first_name || esp_user.cur_username || "Guest")).trim();
+        if (n && n !== "undefined") { el.textContent = n; }
+      }
+    } catch (e) {}
+  })();
+</script>
+

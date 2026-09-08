@@ -3,6 +3,25 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
+    <script type="text/javascript">
+      /* Set user-state classes on <html> before first paint so the login box
+         and admin UI render in their correct state without a JS visibility
+         flicker. */
+      (function () {
+        try {
+          function cookie(name) {
+            var parts = ("; " + document.cookie).split("; " + name + "=");
+            return parts.length === 2 ? parts.pop().split(";").shift() : "";
+          }
+          var cls = "";
+          if (cookie("cur_username") && decodeURIComponent(cookie("cur_username"))) { cls += " esp-auth"; }
+          var morphed = cookie("cur_retTitle") ? true : false;
+          if (cookie("cur_admin") === "1" || morphed) { cls += " esp-admin"; }
+          if (morphed) { cls += " esp-morph"; }
+          document.documentElement.className += cls;
+        } catch (e) {}
+      })();
+    </script>
     <title>{% block fulltitle %}{% endblock %}</title>
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />

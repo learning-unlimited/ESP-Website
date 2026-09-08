@@ -2,6 +2,9 @@
 
 {% block title %}Login!{% endblock %}
 
+{# This page shows its own login form, so suppress the sidebar/navbar one. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 <h1>Please log in</h1>
 
@@ -81,8 +84,8 @@ document.getElementById('id_username').focus();
 
 <br />
 <div role="alert" class="alert alert-info col-md-10">
-Don't already have an account? <a href="/myesp/register/">Click here to create one</a>. <br />
-Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
+Don't already have an account? <a href="{% url 'esp.users.views.user_registration_phase1' %}">Click here to create one</a>. <br />
+Forgot your password? <a href="{% url 'passwd_recover' %}" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
 </div>
 </div>
 

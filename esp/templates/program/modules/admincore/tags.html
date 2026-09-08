@@ -21,7 +21,7 @@
 <h1>{% if program %}Tag Settings for {{ program.niceName }} (ID: {{ program.id }}){% else %}Global Tag Settings{% endif %}</h1>
 
 {% if program %}
-<p>Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="/manage/tags/">the page here</a>.</p>
+<p>Welcome to the tag settings page for {{ program.niceName }}. This page lists miscellaneous settings that you may want to change to make the program run how you would like. The main program settings can be found on <a href="/manage/{{ program.getUrlBase }}/settings/">the page here</a>, and the global tag settings can be found on <a href="{% url 'manage_tags' %}">the page here</a>.</p>
 {% inline_program_qsd_block program "manage:tags" %}
 {% end_inline_program_qsd_block %}
 {% else %}

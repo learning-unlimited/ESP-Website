@@ -46,10 +46,14 @@ from django.db.models.query import Q
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import stripe
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class CreditCardModule_Stripe(ProgramModuleObj):
     doc = """Accept credit card payments via Stripe."""
@@ -92,7 +96,22 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
+
+        # Handle missing or invalid 'stripe_settings' JSON to prevent apply_settings() from crashing (see issue #5474).
+        raw = Tag.getProgramTag('stripe_settings', self.program)
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except (json.JSONDecodeError, TypeError):
+            if raw:
+                logger.warning(
+                    'Could not parse stripe_settings tag for program %s (id=%s). '
+                    'Falling back to empty settings.',
+                    self.program.url,
+                    self.program.id
+                )
+            tag_data = {}
+
+
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
@@ -319,14 +338,24 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_post = Decimal(request.POST['totalcost_cents'])
-            amount_cents_iac = Decimal(iac.amount_due()) * 100
-            if amount_cents_post != amount_cents_iac:
-                context['error_type'] = 'inconsistent_amount'
-                context['error_info'] = {
-                    'amount_cents_post': amount_cents_post,
-                    'amount_cents_iac':  amount_cents_iac,
-                }
+            try:
+                amount_cents_post = Decimal(request.POST.get('totalcost_cents', ''))
+            except (InvalidOperation, TypeError, ValueError):
+                context['error_type'] = 'missing_fields'
+                context['error_info'] = {'missing': 'totalcost_cents'}
+            else:
+                amount_cents_iac = Decimal(iac.amount_due()) * 100
+                if amount_cents_post != amount_cents_iac:
+                    context['error_type'] = 'inconsistent_amount'
+                    context['error_info'] = {
+                        'amount_cents_post': amount_cents_post,
+                        'amount_cents_iac':  amount_cents_iac,
+                    }
+
+        stripe_token = request.POST.get('stripeToken')
+        if 'error_type' not in context and not stripe_token:
+            context['error_type'] = 'missing_fields'
+            context['error_info'] = {'missing': 'stripeToken'}
 
         if 'error_type' not in context:
             try:
@@ -340,7 +369,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     # Thus, we will never be in a state where the card has been
                     # charged without a record being created on the site, nor
                     # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    totalcost_dollars = amount_cents_post / 100
 
                     #   Create a record of the transfer without the transaction ID.
                     transfer = iac.submit_payment(totalcost_dollars, 'TBD')
@@ -350,11 +379,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        source=request.POST['stripeToken'],
+                        source=stripe_token,
                         description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
                         statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
                         metadata={
-                            'ponumber': request.POST['ponumber'],
+                            'ponumber': request.POST.get('ponumber', ''),
                         },
                     )
 

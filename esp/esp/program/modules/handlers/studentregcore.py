@@ -82,6 +82,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.has_paid())
+    have_paid.get_or_create_token(('user',))
     have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
     have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
@@ -274,6 +275,19 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             sections = request.user.getSections()
             for sec in sections:
                 sec.unpreregister_student(request.user, verbs)
+
+        # Remove from the program *-students Mailman list only when the student
+        # has no remaining valid Enrolled registrations in this program (covers
+        # cancel_button_dereg=False, where sections are not dropped here).
+        from esp.program.models import StudentRegistration
+        from esp.mailman import remove_list_member
+
+        if not StudentRegistration.valid_objects(datetime.now()).filter(
+                user=request.user,
+                section__parent_class__parent_program=prog,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), request.user.email)
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:

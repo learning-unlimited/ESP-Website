@@ -9,7 +9,7 @@
 <div class="well" style="margin-left: 0px;">
     <center>
     
-    <form method="post" action="/themes/select/">
+    <form method="post" action="{% url 'themes_select' %}">
     <input name="action" type="hidden" value="select" />
     <h3>Select a theme:</h3>
     <select name="theme" id="id_theme">
@@ -26,10 +26,10 @@
 </div>
 
 <div align="center">
-    <a href="/themes/">
+    <a href="{% url 'themes_landing' %}">
         <button type="button" class="btn btn-lg btn-primary">Return to themes page</button>
     </a>
-    <a href="/">
+    <a href="{% url 'home' %}">
         <button type="button" class="btn btn-lg btn-default">Return to home page</button>
     </a>
     <br />

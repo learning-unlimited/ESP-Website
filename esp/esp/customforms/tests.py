@@ -858,3 +858,10 @@ class FormOwnershipAccessTest(TestCase):
             {'form_id': 999999, 'question_name': self.question_name},
         )
         self.assertEqual(response.status_code, 404)
+
+
+class CustomFormModelOrderingTest(TestCase):
+    def test_page_section_field_default_order_is_seq(self):
+        self.assertEqual(Page._meta.ordering, ['seq'])
+        self.assertEqual(Section._meta.ordering, ['seq'])
+        self.assertEqual(Field._meta.ordering, ['seq'])

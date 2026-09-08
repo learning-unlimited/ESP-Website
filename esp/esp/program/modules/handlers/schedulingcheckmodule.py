@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.resources.models import ResourceRequest, ResourceType
@@ -144,7 +144,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -159,7 +159,7 @@ class SchedulingCheckRunner:
 
     def run_diagnostics(self, diagnostics=None):
         if diagnostics is None:
-             diagnostics = self.all_diagnostics()
+            diagnostics = self.all_diagnostics()
         return [getattr(self, diag)() for diag in diagnostics]
 
     # Update this to add a scheduling check.
@@ -237,7 +237,7 @@ class SchedulingCheckRunner:
             #filter out unscheduled classes
             qs = qs.exclude(resourceassignment__isnull=True)
             #filter out lunch
-            qs = qs.exclude(parent_class__category__category='Lunch')
+            qs = qs.exclude(parent_class__category__is_lunch=True)
             qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
             qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers', 'moderators')
             if include_walkins:
@@ -404,8 +404,9 @@ class SchedulingCheckRunner:
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
         if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is not None and lunch_category.category in self.class_categories:
+            self.class_categories.remove(lunch_category.category)
 
         #generating a dictionary of class categories
         class_cat_d = {}
@@ -487,10 +488,10 @@ class SchedulingCheckRunner:
             teachers = s.parent_class.get_teachers()
             admin_teachers = [t for t in teachers if t.isAdministrator()]
             for a in admin_teachers:
-                 mt =  s.get_meeting_times()
-                 for t in mt:
-                      d[t][name_string].append(a.name())
-                      d[t][key_string].append(str(a))
+                mt =  s.get_meeting_times()
+                for t in mt:
+                    d[t][name_string].append(a.name())
+                    d[t][key_string].append(str(a))
         for k in d:
             d[k][num_string] = len(d[k][key_string])
         for l in d:
@@ -522,16 +523,16 @@ class SchedulingCheckRunner:
                     else:
                         l_resources.append({ "Section": s, "First Hour": first_hour, "Unfulfilled Request": u, "Classroom": classroom })
             for moderator in s.get_moderators():
-               mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
-               if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
-                   if mod_recs.count() == 0:
-                       mod_recs_text = "No selection"
-                   else:
-                       mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
-                   if not mod_recs_text:
-                       mod_recs_text.append("No Selection")
-                   mod_recs_list = ", ".join(mod_recs_text)
-                   l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
+                mod_recs = ModeratorRecord.objects.filter(program=s.parent_class.parent_program, user=moderator)
+                if mod_recs.count() == 0 or s.parent_class.category not in mod_recs[0].class_categories.all():
+                    if mod_recs.count() == 0:
+                        mod_recs_text = "No selection"
+                    else:
+                        mod_recs_text = [cat.category for cat in list(mod_recs[0].class_categories.all())]
+                    if not mod_recs_text:
+                        mod_recs_text.append("No Selection")
+                    mod_recs_list = ", ".join(mod_recs_text)
+                    l_mod.append({ "Section": s, "Section Time": first_hour, "Requested Category": mod_recs_list, self.p.getModeratorTitle(): moderator })
         self.l_wrong_classroom_type = l_classrooms
         self.l_missing_resources = l_resources
         self.l_mod_missing = l_mod

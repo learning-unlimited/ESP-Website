@@ -367,13 +367,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        data = list(prog.lunch_timeslots().values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
+    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
+                                              lambda e: {'prog': e.program} if e.program_id else {})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
+                                              lambda sec: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
+                                              lambda cls: {'prog': cls.parent_program})
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
