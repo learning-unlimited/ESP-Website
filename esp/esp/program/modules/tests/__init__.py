@@ -1,4 +1,4 @@
-﻿
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -103,3 +103,5 @@ from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
 from esp.program.modules.tests.surveymanagement import SurveyManagementTest
 from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleTest
 from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest
+
+from esp.program.modules.tests.test_donationmodule import DonationFormTest, DonationModuleTest
