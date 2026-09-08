@@ -877,6 +877,15 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Field._meta.ordering, ['seq'])
 
 
+def lock_timeout_ms():
+    """
+    Returns lock_timeout in milliseconds.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT setting FROM pg_settings WHERE name = 'lock_timeout'")
+        return int(cursor.fetchone()[0])
+
+
 class SchemaLockTimeoutTest(TestCase):
     """
     Tests for the lock_timeout safeguard around custom form schema changes.
@@ -884,20 +893,20 @@ class SchemaLockTimeoutTest(TestCase):
 
     def test_timeout_is_set_and_restored(self):
         """The timeout applies inside the block and is undone afterwards."""
-        before = self._show_lock_timeout()
+        before = lock_timeout_ms()
         with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
             with lock_timeout():
-                self.assertEqual(self._show_lock_timeout(), '1234ms')
-        self.assertEqual(self._show_lock_timeout(), before)
+                self.assertEqual(lock_timeout_ms(), 1234)
+        self.assertEqual(lock_timeout_ms(), before)
 
     def test_timeout_is_restored_when_the_block_fails(self):
         """A failed schema change must not leave lock_timeout set."""
-        before = self._show_lock_timeout()
+        before = lock_timeout_ms()
         with self.assertRaises(ValueError):
             with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
                 with lock_timeout():
                     raise ValueError('boom')
-        self.assertEqual(self._show_lock_timeout(), before)
+        self.assertEqual(lock_timeout_ms(), before)
 
     def test_lock_timeout_error_becomes_a_readable_error(self):
         """A lock timeout is reported to the user, not dumped as a 500."""
@@ -919,11 +928,6 @@ class SchemaLockTimeoutTest(TestCase):
         with schema_lock("Could not do the thing"):
             result = 'fine'
         self.assertEqual(result, 'fine')
-
-    def _show_lock_timeout(self):
-        with connection.cursor() as cursor:
-            cursor.execute("SHOW lock_timeout")
-            return cursor.fetchone()[0]
 
     def _operational_error(self, sqlstate):
         """
@@ -969,6 +973,7 @@ class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
 
     @override_settings(CUSTOMFORMS_LOCK_TIMEOUT='250ms')
     def test_schema_change_gives_up_when_the_table_is_locked(self):
+        before = lock_timeout_ms()
         blocker = psycopg2.connect(**connection.get_connection_params())
         try:
             with blocker.cursor() as cursor:
@@ -988,9 +993,7 @@ class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
 
         #   The connection must still be usable, and the timeout must not have
         #   leaked into it.
-        with connection.cursor() as cursor:
-            cursor.execute("SHOW lock_timeout")
-            self.assertEqual(cursor.fetchone()[0], '0')
+        self.assertEqual(lock_timeout_ms(), before)
 
 
 class FailedFormSaveRollbackTest(TestCase):
