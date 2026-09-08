@@ -457,6 +457,126 @@ class ScssPipelineTest(TestCase):
         self.assertIn('no SCSS sources', str(ctx.exception))
 
 
+class DropletsFooterStylingTest(TestCase):
+    """Footer background/text/link colors must be independently customizable
+    from the navbar's, defaulting to the previous (shared) appearance so
+    existing sites see no visual change. See issue #5028: the footer's <nav>
+    reuses the navbar's .bg-dark class, so without a footer-specific rule any
+    navbarInverseBackground change also (unintentionally) recolors the footer."""
+
+    def setUp(self):
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        self.tc = ThemeController()
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
+        if not self.tc.has_scss('droplets'):
+            self.skipTest('droplets theme has no SCSS sources')
+
+    def tearDown(self):
+        themes_settings.COMPILED_CSS_FILE = self._css_file
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
+
+    def test_footer_background_defaults_to_stock_navbar_inverse_background(self):
+        """Leaving both navbarInverseBackground and footerBackground untouched
+        must render the footer identically to the navbar (both at their
+        shared #111111 stock default) -- backward compatible with pre-#5028
+        behavior for a fresh, unmodified droplets site."""
+        self.tc.compile_css('droplets', {}, self.css_filename)
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('.navbar.bg-dark {\n  background-color: #111111 !important;\n}', css)
+        self.assertIn('.footer-container .navbar.bg-dark {\n  background-color: #111111 !important;\n}', css)
+
+    def test_footer_background_can_be_customized_independently(self):
+        """Setting footerBackground must recolor only the footer, leaving the
+        navbar's own background-color rule at its own (different) value."""
+        self.tc.compile_css(
+            'droplets',
+            {'navbarInverseBackground': '#00ff00', 'footerBackground': '#ff00ff'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('.footer-container .navbar.bg-dark {\n  background-color: #ff00ff !important;\n}', css)
+        self.assertIn('.navbar.bg-dark {\n  background-color: #00ff00 !important;\n}', css)
+
+    def test_footer_background_bootswatch_default_has_no_override_rule(self):
+        """Under an active Bootswatch theme, an untouched footerBackground must
+        not emit a footer-specific rule at all -- the footer should flow
+        through as pure Bootswatch, same as the navbar."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css('droplets', {}, self.css_filename, bootswatch_theme=bw_themes[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('.footer-container .navbar.bg-dark', css)
+
+    def test_footer_background_bootswatch_explicit_override(self):
+        """Under an active Bootswatch theme, explicitly setting footerBackground
+        must still emit a footer-only override rule."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'footerBackground': '#ff00ff'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('.footer-container .navbar.bg-dark {\n  background: #ff00ff !important;\n}', css)
+
+    def test_footer_text_and_link_colors_are_customizable(self):
+        """footerText/footerLinkColor must be substitutable independently of
+        the navbar's own text/link color variables, and must land on the
+        footer-scoped selectors specifically (not merely appear anywhere in
+        the compiled CSS)."""
+        self.tc.compile_css(
+            'droplets',
+            {'footerText': '#123456', 'footerLinkColor': '#654321'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#footer .qsd_header {\n  color: #123456;', css)
+        self.assertIn('#footer .navbar-nav a {\n  color: #654321;', css)
+        self.assertIn('#footer .qsd_view_visible {\n  border: none;\n  color: #654321;', css)
+
+    def test_footer_background_bootswatch_navbar_only_override_still_tracks(self):
+        """Under an active Bootswatch theme, overriding navbarInverseBackground
+        alone (footerBackground left untouched) must still recolor the footer:
+        with no footer-specific rule emitted, the footer's <nav> falls through
+        to the same .navbar.bg-dark rule the navbar override adds."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'navbarInverseBackground': '#123456'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('.footer-container .navbar.bg-dark', css)
+        self.assertIn('.navbar.bg-dark {\n  background: #123456 !important;\n}', css)
+
+    def test_footer_variables_are_literal_hex_for_editor_type_detection(self):
+        """Regression guard for the editor's type-sniffing heuristic
+        (views.py editor(), which classifies each 'advanced' variable's
+        <input> as color/length/text): it infers 'color' input type ONLY
+        from a raw SCSS value starting with '#' -- a variable reference
+        (e.g. '$navbarInverseBackground') or an rgba() default silently
+        falls through to a plain text field showing the raw SCSS source
+        text as the value, instead of a color picker.
+        footerBackground/footerText/footerLinkColor must therefore stay
+        declared as literal hex in variables.scss."""
+        variables = self.tc.find_theme_variables('droplets', theme_only=True, flat=True)
+        for varname in ('footerBackground', 'footerText', 'footerLinkColor'):
+            self.assertTrue(
+                variables[varname].startswith('#'),
+                f'{varname} = {variables[varname]!r} does not start with "#" -- '
+                'the theme editor will render it as a plain text field, not a color picker',
+            )
+
+
 class RecompileThemeCommandTest(TestCase):
     """recompile_theme management command must resolve names before retry."""
 
