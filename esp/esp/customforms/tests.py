@@ -890,17 +890,19 @@ class FormOwnershipAccessTest(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
-    def test_metadata_nonexistent_form_does_not_500(self):
+    def test_metadata_nonexistent_form_returns_404(self):
+        """Unknown id is a 404 like the other form_id endpoints, but with a
+        JSON body, since the form builder reads .message off the failure."""
         self.client.login(username='owner_teacher', password='password')
         response = self.client.get(
             '/customforms/metadata/',
             {'form_id': 999999},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
         self.assertIn('message', response.json())
 
-    def test_metadata_missing_form_id_does_not_500(self):
+    def test_metadata_missing_form_id_returns_400(self):
         self.client.login(username='owner_teacher', password='password')
         response = self.client.get(
             '/customforms/metadata/',

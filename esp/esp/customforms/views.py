@@ -1,5 +1,6 @@
 from copy import deepcopy
 import json
+import logging
 
 from django.db import transaction
 from django.shortcuts import redirect
@@ -21,6 +22,8 @@ from django.contrib.auth.decorators import user_passes_test, login_required
 from esp.users.models import ESPUser
 from esp.middleware import ESPError, Http403
 from esp.utils.web import render_to_response, zip_download, error404
+
+logger = logging.getLogger(__name__)
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -445,20 +448,26 @@ def getRebuildData(request):
     """
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
+            # The form builder reads .message off the error response, so these
+            # carry a JSON body rather than the HTML page error404() renders.
             try:
                 form_id = int(request.GET['form_id'])
+            except (KeyError, ValueError):
+                return JsonResponse({'message': 'Missing or invalid form id.'}, status=400)
+            try:
                 form = Form.objects.get(pk=form_id)
-            except (KeyError, ValueError, Form.DoesNotExist):
-                # The form builder reads .message off the error response, so
-                # this needs to be JSON rather than a bare 400.
-                return JsonResponse({'message': 'No such form.'}, status=400)
+            except Form.DoesNotExist:
+                return JsonResponse({'message': 'No such form.'}, status=404)
             if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
                 raise Http403('You do not have permission to view this form.')
             fh = FormHandler(form=form, request=request)
             try:
                 return JsonResponse(fh.rebuildData())
-            except Exception as err:
-                return JsonResponse({'message': str(err)}, status=400)
+            except Exception:
+                # Log the detail rather than returning it; the text can carry
+                # internals the requesting user has no business seeing.
+                logger.exception('Could not rebuild metadata for form %s', form_id)
+                return JsonResponse({'message': 'Could not load this form.'}, status=400)
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)
