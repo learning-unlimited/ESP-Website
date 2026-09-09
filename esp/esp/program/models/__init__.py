@@ -1509,7 +1509,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def base_cost(self):
         from esp.accounting.controllers import ProgramAccountingController
         pac = ProgramAccountingController(self)
-        return pac.default_admission_lineitemtype().amount_dec
+        line_item = pac.default_admission_lineitemtype()
+        return line_item.amount_dec if line_item else Decimal('0.00')
     base_cost = property(base_cost)
 
     @property
