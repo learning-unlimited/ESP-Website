@@ -58,7 +58,7 @@
 /* Fixed widths so every category's table lines up, rather than each one
    sizing its columns from its own contents. */
 .teacher-preview-classes {
-    margin: 0.25rem 0 0.75rem;
+    margin: 0;
     table-layout: fixed;
 }
 

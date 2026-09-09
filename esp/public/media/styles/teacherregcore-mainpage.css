@@ -101,12 +101,17 @@
     opacity: 0.75;
 }
 
-/* checkboxes.html is shared with student reg, where the step table is centred
-   at a fixed 400px; here it has to fit the narrow column instead. */
+.teacher-reg-checklist .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
 .teacher-reg-checklist .row > [class*="col-"] {
     flex: 0 0 100%;
     margin-left: 0;
     max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .teacher-reg-checklist .table {
