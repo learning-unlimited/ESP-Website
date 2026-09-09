@@ -1,11 +1,6 @@
 /* Layout for program/modules/teacherregcore/mainpage.html.  Only spacing and
    sizing here; colours come from the compiled theme so dark themes still work. */
 
-.teacher-reg-landing {
-    margin: 0 auto;
-    max-width: 1100px;
-}
-
 .teacher-reg-hero {
     border-bottom: 1px solid var(--bs-border-color, #dee2e6);
     margin-bottom: 1.5rem;
@@ -36,7 +31,7 @@
     }
 
     .teacher-reg-checklist-col {
-        flex: 0 0 18rem;
+        flex: 0 0 20rem;
         max-height: calc(100vh - var(--teacher-reg-sticky-top, 1rem)
                          - var(--teacher-reg-sticky-bottom, 1rem));
         overflow-y: auto;
@@ -62,6 +57,30 @@
 
 .teacher-reg-panel .table {
     margin-bottom: 0;
+}
+
+/* The requirements table shares the checklist card, so it gets a rule instead
+   of a second card border. */
+.teacher-reg-records {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+/* Keep both tables compact enough to fit without an inner scrollbar. */
+.teacher-reg-checklist .table td,
+.teacher-reg-checklist .table th {
+    padding: 0.3rem 0.4rem;
+}
+
+/* checkboxes.html appends "(not required)", a required_label, and "(below)" as
+   bare <i> elements inside the link cell, which wraps every long step onto
+   three lines.  Give them their own muted line; the done/not-done icons are
+   <i class="bi ..."> and so are excluded. */
+.teacher-reg-checklist .table td i:not([class]) {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.75;
 }
 
 /* checkboxes.html is shared with student reg, where the step table is centred

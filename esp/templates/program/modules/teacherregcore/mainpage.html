@@ -32,46 +32,44 @@
 
     {% if options.progress_mode == 1 or records %}
     <aside class="teacher-reg-checklist-col" aria-label="Registration checklist">
-
-      {% if options.progress_mode == 1 %}
       <section class="card teacher-reg-panel teacher-reg-checklist">
         <div class="card-body">
+
+          {% if options.progress_mode == 1 %}
           {% include "program/modules/checkboxes.html" %}
+          {% endif %}
+
+          {% if records %}
+          <div class="teacher-reg-records">
+            {% render_inline_program_qsd program record_steps %}
+            <h2>Other Registration Requirements</h2>
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th scope="col">Requirement</th>
+                  <th scope="col">Done?</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for record in records %}
+                <tr>
+                  <td>{{ record.full_event }}</td>
+                  <td>
+                    {% if record.isCompleted %}
+                      <i class="bi bi-check done-sign" aria-label="Done"></i>
+                    {% else %}
+                      <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+
         </div>
       </section>
-      {% endif %}
-
-      {% if records %}
-      <section class="card teacher-reg-panel">
-        <div class="card-body">
-          {% render_inline_program_qsd program record_steps %}
-          <h2>Other Registration Requirements</h2>
-          <table class="table table-sm">
-            <thead>
-              <tr>
-                <th scope="col">Requirement</th>
-                <th scope="col">Done?</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for record in records %}
-              <tr>
-                <td>{{ record.full_event }}</td>
-                <td>
-                  {% if record.isCompleted %}
-                    <i class="bi bi-check done-sign" aria-label="Done"></i>
-                  {% else %}
-                    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
-                  {% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </section>
-      {% endif %}
-
     </aside>
     {% endif %}
 
