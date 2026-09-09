@@ -67,10 +67,6 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         this.el.removeClass("available-cell occupied-cell selectable-cell locked-cell selected-section ghost-section");
         this.el[0].innerHTML = "";
 
-        // this.el.css("background-color", "");
-        // this.el.css("background", "");
-        // this.el.css("color", "");
-
         // 1. Keep selected highlight intact on click
         if (this.selected) {
             this.el.addClass("selected-section");
@@ -346,7 +342,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     this.tooltip = function(){
         var currentSection = this.section || this.ghostSection;
         
-        // 1. Guard check: Agar cell khali hai toh empty string return karein
+        // Guard check: Return empty string if the cell is empty
         if (!currentSection) return ""; 
 
         var tooltip_parts = {};
