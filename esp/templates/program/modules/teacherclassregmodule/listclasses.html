@@ -1,47 +1,11 @@
-<style>
-.ui-dialog-titlebar-close {
-    padding:0 !important;
-}
-
-.ui-dialog-titlebar-close:after {
-    content: '';
-    width: 18px;
-    height: 20px;
-    display: inline-block;
-    background-image: url(/media/styles/jquery-ui/images/ui-icons_444444_256x240.png);
-    background-position: -96px -128px;
-    background-repeat: no-repeat;
-}
-</style>
-
 {% block xtrajs %}
 <script type="text/javascript">
 $j(function() {
     $j(".cancel_confirm").on("change", function() {
-        $j(this).nextAll("input").prop("disabled", !$j(this).prop("checked"));
+        $j(this).closest("form").find("[type=submit]")
+            .prop("disabled", !$j(this).prop("checked"));
     });
 });
-
-function requestCancel(cls) {
-    $j('#request_' + cls).dialog({
-        height: "auto",
-        width: 500,
-        resizable: false,
-        modal: true,
-        autoOpen: true,
-        closeText: "Close",
-        closeOnEscape: true,
-        title: "Class Cancellation Request",
-        // Allows user to escape popup by clicking outside of it
-        open: function(event, ui) { 
-            $j('.ui-widget-overlay').bind('click', function()
-            { 
-                $j(this).siblings('.ui-dialog').find('.ui-dialog-content').dialog('close');
-            });
-        },
-    });
-}
-
 </script>
 {% endblock %}
 
@@ -70,18 +34,32 @@ If you have any questions regarding the program, <br /> please email the
 <div id="battlescreen">
 
 {% for cls in clslist %}
-<!--
-Popup div for class cancellation request
--->
-<div hidden id="request_{{ cls.id }}">
-  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
-    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
-    <input type="hidden" name="cls" value="{{ cls.id }}">
-    <label for="reason_{{ cls.id }}" class="ui-hidden-accessible">Reason for Cancellation:</label>
-    <textarea rows="4" style="width: 450px;" id="reason_{{ cls.id }}" name="reason" placeholder="Enter text here..." required></textarea><br>
-    <input type="checkbox" class="cancel_confirm" name="confirm" id="confirm_{{ cls.id }}" required> <label for="confirm_{{ cls.id }}">I confirm I would like this class to be cancelled.</label><br>
-    <input type="submit" value="Submit" disabled>
-  </form>
+{# Cancellation request modal, opened by the button in class_teacher_list_row.html #}
+<div class="modal fade" id="request_{{ cls.id }}" tabindex="-1"
+     aria-labelledby="request_title_{{ cls.id }}" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
+        <div class="modal-header">
+          <h5 class="modal-title" id="request_title_{{ cls.id }}">Cancellation Request for {{ cls|truncatewords:6 }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="cls" value="{{ cls.id }}">
+          <label for="reason_{{ cls.id }}" class="form-label">Reason for Cancellation:</label>
+          <textarea rows="4" class="form-control" id="reason_{{ cls.id }}" name="reason" placeholder="Enter text here..." required></textarea>
+          <div class="form-check mt-3">
+            <input type="checkbox" class="form-check-input cancel_confirm" name="confirm" id="confirm_{{ cls.id }}" required>
+            <label class="form-check-label" for="confirm_{{ cls.id }}">I confirm I would like this class to be cancelled.</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-danger" disabled>Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endfor %}
 
