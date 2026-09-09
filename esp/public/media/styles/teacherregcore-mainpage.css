@@ -1,0 +1,99 @@
+/* Layout for program/modules/teacherregcore/mainpage.html.  Only spacing and
+   sizing here; colours come from the compiled theme so dark themes still work. */
+
+.teacher-reg-landing {
+    margin: 0 auto;
+    max-width: 1100px;
+}
+
+.teacher-reg-hero {
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.teacher-reg-hero h1 {
+    line-height: 1.2;
+    margin: 0 0 0.5rem;
+    text-align: center;
+}
+
+.teacher-reg-hero p:last-child {
+    margin-bottom: 0;
+}
+
+.teacher-reg-progressbar {
+    margin-bottom: 1.5rem;
+}
+
+/* Steps checklist and other requirements sit in a narrow left column beside the
+   registration content; they stack on top below the lg breakpoint. */
+@media (min-width: 992px) {
+    .teacher-reg-columns {
+        align-items: flex-start;
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .teacher-reg-checklist-col {
+        flex: 0 0 18rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        position: sticky;
+        top: 1rem;
+    }
+
+    .teacher-reg-main-col {
+        flex: 1 1 auto;
+        /* Stops wide module tables from stretching the flex item. */
+        min-width: 0;
+    }
+}
+
+.teacher-reg-panel {
+    margin-bottom: 1.5rem;
+}
+
+.teacher-reg-panel h2 {
+    font-size: 1.15rem;
+    margin: 0 0 0.75rem;
+}
+
+.teacher-reg-panel .table {
+    margin-bottom: 0;
+}
+
+/* checkboxes.html is shared with student reg, where the step table is centred
+   at a fixed 400px; here it has to fit the narrow column instead. */
+.teacher-reg-checklist .row > [class*="col-"] {
+    flex: 0 0 100%;
+    margin-left: 0;
+    max-width: 100%;
+}
+
+.teacher-reg-checklist .table {
+    width: 100%;
+}
+
+.teacher-reg-module-block {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    scroll-margin-top: 1rem;
+}
+
+.teacher-reg-module-block:first-child {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+@media (max-width: 767.98px) {
+    .teacher-reg-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .teacher-reg-panel > .card-body {
+        padding: 0.75rem;
+    }
+}
