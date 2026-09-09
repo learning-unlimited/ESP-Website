@@ -37,7 +37,7 @@ class StripeTotalsTest(TestCase):
 
         # We need to explicitly set timestamp because auto_now will set it to now
         with patch('django.utils.timezone.now', return_value=datetime.datetime(2023, 1, 15, tzinfo=datetime.timezone.utc)):
-             self.transfer = Transfer.objects.create(
+            self.transfer = Transfer.objects.create(
                 amount_dec=Decimal('50.00'),
                 line_item=self.lit_payment,
                 destination=self.account,

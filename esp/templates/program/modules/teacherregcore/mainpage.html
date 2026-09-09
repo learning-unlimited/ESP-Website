@@ -25,8 +25,8 @@
     {% end_inline_program_qsd_block %}
   </section>
 
-  <div class="row-fluid teacher-reg-overview-row">
-    <div class="span12">
+  <div class="row teacher-reg-overview-row">
+    <div class="col-md-12">
       <section class="teacher-reg-checklist-panel">
         {% if options.progress_mode == 1 %}
         {% include "program/modules/checkboxes.html" %}
@@ -52,9 +52,9 @@
         <td>{{ record.full_event }}</td>
         <td>
           {% if record.isCompleted %}
-          <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+          <i class="bi bi-check done-sign" aria-label="Done"></i>
           {% else %}
-          <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+          <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
           {% endif %}
         </td>
       </tr>
