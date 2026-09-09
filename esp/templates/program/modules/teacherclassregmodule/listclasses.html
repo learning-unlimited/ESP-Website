@@ -113,20 +113,26 @@ Popup div for class cancellation request
   {% endfor %}
   {% if can_create %}
   <tr>
-  <td colspan="7" class="clsleft bordertop2 add-class-cell">
-    {% if can_create_class %}
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-      Add a new class for {{ program.niceName }}!
-    </a>
-    <br />
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-      Copy a registered class (including from a previous program) for {{ program.niceName }}!
-    </a>
-    {% endif %}
-    {% if can_create_open_class %}<br />
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
-      Add a new {{ open_class_category }} for {{ program.niceName }}!
-    </a> {% endif %}
+  <td colspan="7" class="bordertop2 create-class-cell">
+    <div class="create-class-actions">
+      {% if can_create_class %}
+      <a class="btn btn-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+        <span class="bi bi-plus-lg" aria-hidden="true"></span>
+        Add a new class
+      </a>
+      <a class="btn btn-outline-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+        <span class="bi bi-box-arrow-in-down" aria-hidden="true"></span>
+        Import a class
+        <small>Copy one of your registered classes, including from a past program</small>
+      </a>
+      {% endif %}
+      {% if can_create_open_class %}
+      <a class="btn btn-outline-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category }}!">
+        <span class="bi bi-plus-lg" aria-hidden="true"></span>
+        Add a new {{ open_class_category }}
+      </a>
+      {% endif %}
+    </div>
   </td>
   </tr>
   {% endif %}
