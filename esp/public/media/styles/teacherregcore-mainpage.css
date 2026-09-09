@@ -109,7 +109,7 @@
 }
 
 @media (max-width: 767.98px) {
-    .teacher-reg-hero h1 {
+    #main .teacher-reg-hero h1 {
         font-size: 1.75rem;
     }
 

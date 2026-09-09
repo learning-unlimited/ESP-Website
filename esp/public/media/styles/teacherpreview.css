@@ -5,8 +5,13 @@
     margin-bottom: 1.5rem;
 }
 
-.teacher-preview-panel .card-header h2 {
+.teacher-preview-panel .card-header h2,
+#main .teacher-preview-panel .card-header h2 {
+    color: inherit;
+    font-family: inherit;
     font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
     margin: 0;
 }
 

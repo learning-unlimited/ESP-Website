@@ -207,6 +207,8 @@ color: #006600;
     color: inherit;
     font-family: inherit;
     font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
     margin: 0;
 }
 
