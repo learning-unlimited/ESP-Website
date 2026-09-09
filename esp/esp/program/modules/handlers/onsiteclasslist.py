@@ -103,10 +103,10 @@ class OnSiteClassList(ProgramModuleObj):
         sections = list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """ARRAY(SELECT "cal_event"."id" FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id"))"""}).values('id', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status'))
         
         section_ids = [s['id'] for s in sections]
-        section_objs = ClassSection.objects.filter(id__in=section_ids).select_related('parent_class__parent_program')
+        section_objs = ClassSection.objects.filter(id__in=section_ids).select_related('parent_class__parent_program__studentclassregmoduleinfo')
         capacity_map = {sec.id: sec.capacity for sec in section_objs}
         for section in sections:
-            section['capacity'] = capacity_map.get(section['id'], 0)
+            section['capacity'] = capacity_map[section['id']]
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
             'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """array_to_string(ARRAY(SELECT auth_user.first_name || ' ' || auth_user.last_name FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id), ', ')""", 'class_size_max_optimal': """SELECT program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
