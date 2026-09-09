@@ -1,30 +1,25 @@
 {% if handouts or prog.documents.count > 0 %}
-<div id="catalog">
-  <table align="center" cellpadding="0" cellspacing="0" class="fullwidth">
-    <tr>
-        <th align="center"><h2>Handouts</h2></th>
-    </tr>
-    {% if prog.documents.count > 0 %}
-    <tr>
-        <th class="materials"><h3>Informational documents for {{ prog.program_type }}</h3></th>
-    </tr>
-    {% for doc in prog.getDocuments %}
-    <tr>
-        <td class="class_stuff"><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></td>
-    </tr>
-    {% endfor %}
-    {% endif %}
-    {% if handouts %}
-    <tr>
-        <th class="materials"><h3>Information specific to your classes</h3></th>
-    </tr>
-    {% for h in handouts %}
-    <tr>
-        <td class="class_stuff"><a href="/teach/{{ program.url }}/{{ h.url }}">{{ h.title }}</a></td>
-    </tr>
-    {% endfor %}
-    {% endif %}
-</table>
-</div>
-{% endif %}
+<section class="card teacher-preview-panel">
+  <div class="card-body">
+    <h2>Handouts</h2>
 
+    {% if prog.documents.count > 0 %}
+    <h3>Informational documents for {{ prog.program_type }}</h3>
+    <ul class="teacher-preview-handouts">
+      {% for doc in prog.getDocuments %}
+      <li><a href="{{ doc.download_path }}">{{ doc.friendly_name }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if handouts %}
+    <h3>Information specific to your classes</h3>
+    <ul class="teacher-preview-handouts">
+      {% for h in handouts %}
+      <li><a href="/teach/{{ program.url }}/{{ h.url }}">{{ h.title }}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</section>
+{% endif %}

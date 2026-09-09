@@ -1,0 +1,70 @@
+/* Layout for program/modules/teacherpreviewmodule/preview.html and its
+   handouts.html include.  Matches the cards on the teacher reg landing page. */
+
+.teacher-preview-panel {
+    margin-bottom: 1.5rem;
+}
+
+.teacher-preview-panel h2 {
+    font-size: 1.25rem;
+    margin: 0 0 0.75rem;
+}
+
+.teacher-preview-panel h3 {
+    font-size: 1.05rem;
+    margin: 1rem 0 0.5rem;
+}
+
+.teacher-preview-panel h3:first-of-type {
+    margin-top: 0;
+}
+
+.teacher-preview-category {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+/* The category is a heading for the table inside it, so it reads larger than
+   the class rows rather than smaller. */
+.teacher-preview-category > .class-toggle {
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 8px 6px;
+}
+
+.teacher-preview-category:first-of-type {
+    border-top: 0;
+}
+
+/* Fixed widths so every category's table lines up, rather than each one
+   sizing its columns from its own contents. */
+.teacher-preview-classes {
+    margin: 0.25rem 0 0.75rem;
+    table-layout: fixed;
+}
+
+.teacher-preview-classes th,
+.teacher-preview-classes td {
+    vertical-align: top;
+}
+
+.teacher-preview-classes col:nth-child(1) {
+    width: 22%;
+}
+
+.teacher-preview-classes col:nth-child(2) {
+    width: 14%;
+}
+
+.teacher-preview-classes col:nth-child(4) {
+    width: 9%;
+}
+
+.teacher-preview-empty {
+    margin-bottom: 0;
+    opacity: 0.75;
+}
+
+.teacher-preview-handouts {
+    margin-bottom: 0;
+    padding-left: 1.25rem;
+}

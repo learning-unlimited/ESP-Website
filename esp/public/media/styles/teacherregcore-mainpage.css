@@ -50,11 +50,6 @@
     margin-bottom: 1.5rem;
 }
 
-.teacher-reg-panel h2 {
-    font-size: 1.15rem;
-    margin: 0 0 0.75rem;
-}
-
 .teacher-reg-panel .table {
     margin-bottom: 0;
 }
@@ -71,6 +66,10 @@
 .teacher-reg-checklist .table td,
 .teacher-reg-checklist .table th {
     padding: 0.3rem 0.4rem;
+}
+
+.teacher-reg-checklist .table th {
+    font-size: 1.1rem;
 }
 
 /* checkboxes.html appends "(not required)", a required_label, and "(below)" as

@@ -5,7 +5,7 @@
 {% block cls_summary_row %}
 <tbody class="class-summary">
 <tr class="{% if not cls.isReviewed %}class-row-unreviewed {% endif %}{% if cls.isRejected or cls.isCancelled %}class-row-rejected{% endif %}">
-  <td class="clsleft classname bordertop2" colspan="7">
+  <td class="clsleft classname bordertop2" colspan="8">
     <button type="button" class="class-toggle" data-bs-toggle="collapse"
             data-bs-target="#class-details-{{ cls.id }}"
             aria-controls="class-details-{{ cls.id }}" aria-expanded="false">
@@ -68,7 +68,7 @@
         </div>
     </td>
     {% if cls.isAccepted %}
-    <td>
+    <td colspan="2">
         <div class="btn-group" id="student_links">
             <button class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
                 Student list options
@@ -102,7 +102,7 @@
         </div>
     </td>
     {% else %}
-    <td></td>
+    <td colspan="2"></td>
     {% endif %}
     {% endblock %}
 </tr>
@@ -112,7 +112,7 @@
   <td class="clsleft" colspan="6">
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
-  <td class="clsmiddle">
+  <td class="clsmiddle" colspan="2">
     {% if can_req_cancel %}
         <button type="button" class="btn btn-info" data-bs-toggle="modal"
                 data-bs-target="#request_{{ cls.id }}">Request Cancellation</button>
@@ -125,7 +125,7 @@
 {% if crmi.allow_coteach %}
 <tr>
   <td class="clsleft"><b>Coteachers (<a href="mailto:{{ cls.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
-  <td class="clsmiddle" colspan="5">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+  <td class="clsmiddle" colspan="7">{% for t in cls.teachers.all|remove_from_qs:user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
 </tr>
 {% endif %}
 

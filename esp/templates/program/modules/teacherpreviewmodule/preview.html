@@ -1,53 +1,53 @@
 
 <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
-<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/class-toggle.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/teacherpreview.css" type="text/css" />
 
 {% load class_render %}
 
 {% load render_qsd %}
 {% render_inline_program_qsd program "teach:teacherpreview" %}
 
-<div id="catalog">
-  <table align="center" cellpadding="0" cellspacing="0" class="fullwidth" style="text-align: center">
-    <tr>
-        <th align="center">
-             <h2>
-                {% if categories %}
-                    Classes Already Registered
-                {% else %}
-                    No classes have been registered yet.
-                {% endif %}
-             </h2>
-          
-        </th>
-    </tr>
+<section class="card teacher-preview-panel">
+  <div class="card-body">
+    <h2>Classes Already Registered</h2>
 
-    
+    {% if categories %}
     {% for cat in categories %}
-    <tr><td>
-        <button class="dsphead small">
-            <b>Category: {{ cat.category }}</b> (click to expand/contract)
-        </button>
-
-        <div class="dspcont">
-            <table cellpadding="2" cellspacing="0" width="100%">
-                <tr>
-                    <th class="materials">Class</th>
-                    <th class="materials">Teachers</th>
-                    <th class="materials">Description</th>
-                    <th class="materials">Grades</th>
-                </tr>
-                    {% for class in cat.classes %}
-                        {% render_class_preview class %}
-                    {% endfor %}
-            </table>
+    <div class="teacher-preview-category">
+      <button type="button" class="class-toggle" data-bs-toggle="collapse"
+              data-bs-target="#preview-category-{{ cat.id }}"
+              aria-controls="preview-category-{{ cat.id }}" aria-expanded="false">
+        <span class="class-toggle-title">{{ cat.category }}</span>
+        <span class="bi bi-plus-lg class-toggle-icon" aria-hidden="true"></span>
+        <span class="bi bi-dash-lg class-toggle-icon" aria-hidden="true"></span>
+      </button>
+      <div class="collapse" id="preview-category-{{ cat.id }}">
+        <div class="table-responsive">
+          <table class="table table-sm teacher-preview-classes">
+            <colgroup><col><col><col><col></colgroup>
+            <thead>
+              <tr>
+                <th scope="col">Class</th>
+                <th scope="col">Teachers</th>
+                <th scope="col">Description</th>
+                <th scope="col">Grades</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for class in cat.classes %}
+              {% render_class_preview class %}
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
-    </td></tr>
+      </div>
+    </div>
     {% endfor %}
-    
-</table>
-</div>
-
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+    {% else %}
+    <p class="teacher-preview-empty">No classes have been registered yet.</p>
+    {% endif %}
+  </div>
+</section>
 
 {% include "program/modules/teacherpreviewmodule/handouts.html" %}

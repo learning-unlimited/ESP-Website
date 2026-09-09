@@ -172,9 +172,67 @@ color: #006600;
     text-align: center;
 }
 
+.class-list-panel {
+    margin-bottom: 1.5rem;
+}
+
+#battlescreen .class-list-panel .class-list-table {
+    background-color: var(--bs-tertiary-bg, #fefef8);
+}
+
+#battlescreen .class-list-table tr {
+    border-bottom: 0;
+}
+
+/* Prevent the dropdown caret from shifting to a new line. */
+#battlescreen .dropdown-toggle {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+    white-space: normal;
+}
+
+#battlescreen .dropdown-toggle::after {
+    margin-left: 0;
+}
+
+/* Never let a button push past its column. */
+#battlescreen .btn-group,
+#battlescreen .btn {
+    max-width: 100%;
+}
+
+#battlescreen .class-list-panel h2 {
+    color: inherit;
+    font-family: inherit;
+    font-size: 1.25rem;
+    margin: 0 0 0.75rem;
+}
+
+/* Fixed layout so the columns do not resize as classes are expanded and
+   collapsed. */
 .class-list-table {
+    table-layout: fixed;
     width: 100%;
 }
+
+.class-list-classes col:nth-child(1) { width: 16%; }
+.class-list-classes col:nth-child(2) { width: 11%; }
+.class-list-classes col:nth-child(3) { width: 11%; }
+.class-list-classes col:nth-child(4) { width: 11%; }
+.class-list-classes col:nth-child(5) { width: 11%; }
+.class-list-classes col:nth-child(6) { width: 20%; }
+.class-list-classes col:nth-child(7) { width: 10%; }
+.class-list-classes col:nth-child(8) { width: 10%; }
+
+.class-list-sections col:nth-child(1) { width: 16%; }
+.class-list-sections col:nth-child(2) { width: 8%; }
+.class-list-sections col:nth-child(3) { width: 12%; }
+.class-list-sections col:nth-child(4) { width: 12%; }
+.class-list-sections col:nth-child(5) { width: 12%; }
+.class-list-sections col:nth-child(6) { width: 20%; }
+.class-list-sections col:nth-child(7) { width: 20%; }
 
 .copy-class-action {
     text-align: center;
@@ -217,49 +275,8 @@ color: #006600;
     margin-top: 0.45em;
 }
 
-/* Collapsed class summaries: only the title and status show until expanded. */
-.class-toggle {
-    align-items: center;
-    background: none;
-    border: 0;
-    color: inherit;
-    display: flex;
-    gap: 10px;
-    padding: 4px 6px;
-    text-align: left;
-    width: 100%;
-}
-
-.class-toggle:hover {
-    background: rgba(0, 0, 0, 0.04);
-}
-
-.class-toggle-title {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-
-.class-toggle-icon {
-    flex: 0 0 auto;
-}
-
-/* The copy-a-class page keeps other controls in the same cell. */
-.class-toggle-inline {
-    display: inline-flex;
-    width: auto;
-}
-
 #battlescreen tbody.collapsing {
     transition: none;
-}
-
-.class-toggle .bi-dash-lg,
-.class-toggle[aria-expanded="true"] .bi-plus-lg {
-    display: none;
-}
-
-.class-toggle[aria-expanded="true"] .bi-dash-lg {
-    display: inline-block;
 }
 
 #battlescreen .class-row-unreviewed {
