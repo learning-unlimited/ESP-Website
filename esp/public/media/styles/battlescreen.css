@@ -172,6 +172,104 @@ color: #006600;
     text-align: center;
 }
 
+.class-list-table {
+    width: 100%;
+}
+
+.copy-class-action {
+    text-align: center;
+    white-space: nowrap;
+}
+
+#battlescreen > table + table {
+    margin-top: 18px;
+}
+
+/* #battlescreen a:hover sets a background that outranks .dropdown-item:hover. */
+#battlescreen a.dropdown-item:hover {
+    background-color: var(--bs-dropdown-link-hover-bg, #e9ecef);
+}
+
+/* Bootstrap 5 has no submenus; reveal the nested student-list menus on hover,
+   and on keyboard focus via the parent button. */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu > .dropdown-menu {
+    left: 100%;
+    margin-left: 2px;
+    right: auto;
+    top: 0;
+}
+
+.dropdown-submenu:hover > .dropdown-menu,
+.dropdown-submenu:focus-within > .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item-parent::after {
+    border-bottom: 0.3em solid transparent;
+    border-left: 0.3em solid;
+    border-top: 0.3em solid transparent;
+    content: "";
+    float: right;
+    margin-top: 0.45em;
+}
+
+/* Collapsed class summaries: only the title and status show until expanded. */
+.class-toggle {
+    align-items: center;
+    background: none;
+    border: 0;
+    color: inherit;
+    display: flex;
+    gap: 10px;
+    padding: 4px 6px;
+    text-align: left;
+    width: 100%;
+}
+
+.class-toggle:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.class-toggle-title {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.class-toggle-icon {
+    flex: 0 0 auto;
+}
+
+/* The copy-a-class page keeps other controls in the same cell. */
+.class-toggle-inline {
+    display: inline-flex;
+    width: auto;
+}
+
+#battlescreen tbody.collapsing {
+    transition: none;
+}
+
+.class-toggle .bi-dash-lg,
+.class-toggle[aria-expanded="true"] .bi-plus-lg {
+    display: none;
+}
+
+.class-toggle[aria-expanded="true"] .bi-dash-lg {
+    display: inline-block;
+}
+
+#battlescreen .class-row-unreviewed {
+    color: gray;
+}
+
+#battlescreen .class-row-rejected {
+    color: red;
+}
+
 .create-class-cell {
     padding: 12px 8px;
 }

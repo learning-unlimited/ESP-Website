@@ -47,9 +47,6 @@ function requestCancel(cls) {
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 
-<br />
-<br />
-
 {% if not can_create %}
 <div class="info">
 <b>Note:</b> Class registration is closed. 
@@ -88,7 +85,7 @@ Popup div for class cancellation request
 </div>
 {% endfor %}
 
-<table cellpadding="4" cellspacing="0" align="center">
+<table cellpadding="4" cellspacing="0" class="class-list-table">
   <tr>
     <th colspan="7">
        Manage Your Classes
@@ -136,8 +133,11 @@ Popup div for class cancellation request
   </td>
   </tr>
   {% endif %}
-  {% if modlist %}
-  {% load section_render_row %}
+</table>
+
+{% if modlist %}
+{% load section_render_row %}
+<table cellpadding="4" cellspacing="0" class="class-list-table">
   <tr>
     <th colspan="7">
        Manage Your {{ program.getModeratorTitle }} Sections
@@ -146,6 +146,6 @@ Popup div for class cancellation request
   {% for sec in modlist %}
     {% render_section_moderator_list_row sec request.user %}
   {% endfor %}
-  {% endif %}
 </table>
+{% endif %}
 </div> <!-- div#battlescreen -->

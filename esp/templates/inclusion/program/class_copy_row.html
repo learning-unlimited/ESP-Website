@@ -1,29 +1,52 @@
 {% extends "inclusion/program/class_teacher_list_row.html" %}
 
-{% block cls_title %}
-    <td title="{{cls}}" colspan="5">
-        {{ cls.parent_program.niceName }} -- 
-        {{ cls|truncatewords:6 }}
-        <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
+{% block cls_summary_row %}
+<tbody class="class-summary">
+<tr>
+    <td title="{{cls}}" colspan="4">
+        <button type="button" class="class-toggle class-toggle-inline" data-bs-toggle="collapse"
+                data-bs-target="#class-details-{{ cls.id }}"
+                aria-controls="class-details-{{ cls.id }}" aria-expanded="false">
+            <span class="class-toggle-title">
+                {{ cls.parent_program.niceName }} --
+                {{ cls|truncatewords:6 }}
+            </span>
+            <span class="bi bi-plus-lg class-toggle-icon" aria-hidden="true"></span>
+            <span class="bi bi-dash-lg class-toggle-icon" aria-hidden="true"></span>
+        </button>
     </td>
-    <td>
-        <form action="{{ program.get_teach_url }}copyaclass" method="GET">
-            <input type="hidden" name="cls" value="{{ cls.id }}">
-            <input type="submit" class="btn btn-primary" value="Import">
-        </form>
+    <td class="copy-class-action">
+        <a class="btn btn-primary" title="Catalog Preview"
+           href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">
+            <span class="bi bi-book" aria-hidden="true"></span>
+            Catalog Preview
+        </a>
     </td>
-    <td>
+    <td class="copy-class-action">
         {% if cls.got_index_qsd %}
         <form action="/learn/{{cls.getUrlBase}}/index.html">
-            <input type="submit" class="btn btn-primary" value="Visit web page">
+            <button type="submit" class="btn btn-primary">
+                <span class="bi bi-globe" aria-hidden="true"></span>
+                Visit web page
+            </button>
         </form>
         {% endif %}
     </td>
+    <td class="copy-class-action">
+        <form action="{{ program.get_teach_url }}copyaclass" method="GET">
+            <input type="hidden" name="cls" value="{{ cls.id }}">
+            <button type="submit" class="btn btn-success">
+                <span class="bi bi-box-arrow-in-down" aria-hidden="true"></span>
+                Import
+            </button>
+        </form>
+    </td>
+</tr>
+</tbody>
 {% endblock %}
 
-{% block cls_row_1_buttons %}
-    <td colspan="2"></td>
-{% endblock %}
+{# A class being imported from another program has no relevant review status. #}
+{% block cls_status_row %}{% endblock %}
 
 {% block cls_row_2_buttons %}&nbsp;{% endblock %}
 
