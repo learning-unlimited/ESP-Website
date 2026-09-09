@@ -28,12 +28,27 @@
     border-top: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-/* The category is a heading for the table inside it, so it reads larger than
-   the class rows rather than smaller. */
+.teacher-preview-classes-panel .card-body {
+    padding: 0;
+}
+
+.teacher-preview-classes-panel .card-body > p {
+    margin: 0;
+    padding: 0.75rem 1rem;
+}
+
+.teacher-preview-classes > * > tr > :first-child {
+    padding-left: 1rem;
+}
+
+.teacher-preview-classes > * > tr > :last-child {
+    padding-right: 1rem;
+}
+
 .teacher-preview-category > .class-toggle {
     font-size: 1.1rem;
     font-weight: 600;
-    padding: 8px 6px;
+    padding: 8px 1rem;
 }
 
 .teacher-preview-category:first-of-type {

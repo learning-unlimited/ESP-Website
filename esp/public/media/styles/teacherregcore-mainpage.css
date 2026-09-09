@@ -50,6 +50,24 @@
     margin-bottom: 1.5rem;
 }
 
+.teacher-reg-checklist .card-body {
+    padding: 0;
+}
+
+.teacher-reg-checklist .table > * > tr > :first-child {
+    padding-left: 1rem;
+}
+
+.teacher-reg-checklist .table > * > tr > :last-child {
+    padding-right: 1rem;
+}
+
+.teacher-reg-checklist .qsd_header,
+.teacher-reg-checklist .qsd_view_visible {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
 .teacher-reg-panel .table {
     margin-bottom: 0;
 }
@@ -113,9 +131,6 @@
         font-size: 1.75rem;
     }
 
-    .teacher-reg-panel > .card-body {
-        padding: 0.75rem;
-    }
 }
 
 /* Calculate sticky offsets for the checklist if the page has a fixed navbar. */
