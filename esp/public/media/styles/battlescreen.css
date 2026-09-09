@@ -237,6 +237,15 @@ color: #006600;
 .class-list-classes col:nth-child(7) { width: 10%; }
 .class-list-classes col:nth-child(8) { width: 10%; }
 
+.class-list-copy col:nth-child(1) { width: 16%; }
+.class-list-copy col:nth-child(2) { width: 6%; }
+.class-list-copy col:nth-child(3) { width: 6%; }
+.class-list-copy col:nth-child(4) { width: 6%; }
+.class-list-copy col:nth-child(5) { width: 6%; }
+.class-list-copy col:nth-child(6) { width: 20%; }
+.class-list-copy col:nth-child(7) { width: 20%; }
+.class-list-copy col:nth-child(8) { width: 20%; }
+
 .class-list-sections col:nth-child(1) { width: 16%; }
 .class-list-sections col:nth-child(2) { width: 8%; }
 .class-list-sections col:nth-child(3) { width: 12%; }
