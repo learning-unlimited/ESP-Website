@@ -69,6 +69,7 @@
 }
 
 .teacher-reg-checklist .table th {
+    background-color: var(--bs-secondary-bg, #ecf0f1);
     font-size: 1.1rem;
 }
 

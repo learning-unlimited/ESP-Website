@@ -203,11 +203,11 @@ color: #006600;
     max-width: 100%;
 }
 
-#battlescreen .class-list-panel h2 {
+#battlescreen .class-list-panel .card-header h2 {
     color: inherit;
     font-family: inherit;
     font-size: 1.25rem;
-    margin: 0 0 0.75rem;
+    margin: 0;
 }
 
 /* Fixed layout so the columns do not resize as classes are expanded and

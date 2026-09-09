@@ -9,9 +9,10 @@
 {% render_inline_program_qsd program "teach:teacherpreview" %}
 
 <section class="card teacher-preview-panel">
-  <div class="card-body">
+  <div class="card-header text-bg-primary">
     <h2>Classes Already Registered</h2>
-
+  </div>
+  <div class="card-body">
     {% if categories %}
     {% for cat in categories %}
     <div class="teacher-preview-category">

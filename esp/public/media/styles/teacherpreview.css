@@ -5,9 +5,9 @@
     margin-bottom: 1.5rem;
 }
 
-.teacher-preview-panel h2 {
+.teacher-preview-panel .card-header h2 {
     font-size: 1.25rem;
-    margin: 0 0 0.75rem;
+    margin: 0;
 }
 
 .teacher-preview-panel h3 {
