@@ -37,8 +37,50 @@ jobs:
             --repo "${{ github.repository }}" \
             --add-label "needs-triage"
 
-      - name: Post triage notice
+      - name: Check if first-time contributor
+        id: first-time
         if: steps.check-perms.outputs.skip == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Query the number of issues created by the author in this repo
+          PREV_ISSUES=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $author: String!) {
+              repository(owner: $owner, name: $repo) {
+                issues(filterBy: {createdBy: $author}, first: 2) {
+                  totalCount
+                }
+              }
+            }' -F owner="${{ github.repository_owner }}" -F repo="${{ github.event.repository.name }}" -F author="${{ github.event.issue.user.login }}" --jq '.data.repository.issues.totalCount' 2>/dev/null || echo "2")
+          
+          # If totalCount is exactly 1 (the one they just opened), it is their first issue
+          if [ "$PREV_ISSUES" -eq 1 ]; then
+            echo "is_first=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_first=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Post unified triage notice (First-time)
+        if: steps.check-perms.outputs.skip == 'false' && steps.first-time.outputs.is_first == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" \
+            --repo "${{ github.repository }}" \
+            --body "👋 Thanks for opening your first issue here! We appreciate you taking the time to report this.
+
+          To keep the tracker focused, new issues are **locked for conversation** until a maintainer has reviewed them. This helps us avoid duplicates and ensure issues are actionable.
+
+          **What happens next:**
+          - A maintainer will review this issue shortly and may ask follow-up questions.
+          - If approved, the conversation will be unlocked and the \`needs-triage\` label removed.
+          - Please check the [existing issues](https://github.com/learning-unlimited/ESP-Website/issues) to see if this has been reported before.
+          - For setup help, see our [documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs).
+
+          Please don't worry — your issue hasn't been rejected, it's just waiting for review. 🙏"
+
+      - name: Post triage notice (Repeat contributor)
+        if: steps.check-perms.outputs.skip == 'false' && steps.first-time.outputs.is_first == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -54,6 +96,7 @@ jobs:
           - If this is a duplicate or out of scope, a maintainer will close it with an explanation.
 
           Please don't worry — your issue hasn't been rejected, it's just waiting for review. 🙏"
+
 
       - name: Lock conversation
         if: steps.check-perms.outputs.skip == 'false'

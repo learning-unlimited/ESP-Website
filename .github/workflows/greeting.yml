@@ -1,11 +1,8 @@
 name: Greetings
 on:
-  issues:
-    types: [opened]
   pull_request_target:
     types: [opened]
 permissions:
-  issues: write
   pull-requests: write
 jobs:
   greeting:
@@ -14,15 +11,6 @@ jobs:
       - uses: actions/first-interaction@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: |
-            👋 Thanks for opening your first issue here! We appreciate you taking the time to report this.
-
-            **What happens next:**
-            - A maintainer will review your issue and may ask follow-up questions
-            - Please check the [existing issues](https://github.com/learning-unlimited/ESP-Website/issues) to see if this has been reported before
-            - For setup help, see our [documentation](https://github.com/learning-unlimited/ESP-Website/tree/main/docs)
-
-            We're a volunteer-run project, so responses may take some time. Thank you for your patience! 🙏
           pr-message: |
             🎉 Thanks for your first pull request! We're excited to have you contribute to ESP-Website.
 
