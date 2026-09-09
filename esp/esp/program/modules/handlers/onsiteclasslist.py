@@ -101,7 +101,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         #   Fetch a reduced version of the catalog to save time
         sections = list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """ARRAY(SELECT "cal_event"."id" FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id"))"""}).values('id', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status'))
-        
+
         section_ids = [s['id'] for s in sections]
         section_objs = ClassSection.objects.filter(id__in=section_ids).select_related('parent_class__parent_program__studentclassregmoduleinfo')
         capacity_map = {sec.id: sec.capacity for sec in section_objs}
