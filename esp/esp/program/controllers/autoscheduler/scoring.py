@@ -105,7 +105,7 @@ class CompositeScorer(BaseScorer):
                 if weight is None or weight == 0:
                     continue
                 assert weight >= 0, "Scorer weights should be nonnegative"
-                logger.info("Using scorer {}".format(scorer))
+                logger.info(f"Using scorer {scorer}")
                 scorer_obj = available_scorers[scorer](schedule, **kwargs)
                 self.scorers_and_weights.append((scorer_obj, weight))
         self.compute_total_weight()
@@ -128,8 +128,7 @@ class CompositeScorer(BaseScorer):
         for scorer, weight in self.scorers_and_weights:
             score = scorer.score_schedule()
             if self.verbose:
-                logger.info("Scorer {} has score {}".format(
-                        scorer.__class__.__name__, score))
+                logger.info(f"Scorer {scorer.__class__.__name__} has score {score}")
             total_score += score * weight * scorer.scaling
         return total_score / self.total_weight
 

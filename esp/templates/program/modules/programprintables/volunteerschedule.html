@@ -1,4 +1,4 @@
-<html>
+<html lang="en">
 <head>
 <title>Volunteer Schedules</title>
 <style type="text/css" media="print,screen">
@@ -26,7 +26,7 @@ td.newday { border-width: 2px 1px 0 1px;}
 
 </head>
 <body>
-{% if scheditems|length_is:0 %}
+{% if scheditems|length == 0 %}
 <div class="title">It looks like you don't have any volunteer shifts scheduled yet.</div>
 {% endif %} 
 

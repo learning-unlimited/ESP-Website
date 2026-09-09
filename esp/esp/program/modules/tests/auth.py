@@ -35,8 +35,247 @@ Learning Unlimited, Inc.
 import ast
 from pathlib import Path
 import warnings
+from unittest.mock import MagicMock, patch
+from django.test import SimpleTestCase, TestCase
 
+from esp.program.modules.base import user_passes_test
 from esp.program.tests import ProgramFrameworkTest
+
+
+class UserPassesTestDecoratorTest(SimpleTestCase):
+    """Unit tests for the enhanced user_passes_test() decorator factory."""
+
+    def _make_view(self, **decorator_kwargs):
+        """Return a simple view wrapped with user_passes_test(**decorator_kwargs)."""
+        test_func = decorator_kwargs.pop('test_func', lambda mo, req: True)
+
+        @user_passes_test(test_func, **decorator_kwargs)
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        return view
+
+    def _make_request(self, authenticated=True):
+        request = MagicMock()
+        request.user.is_authenticated = authenticated
+        request.user.id = 1 if authenticated else None
+        return request
+
+    def test_sets_has_auth_check(self):
+        """Wrapped view must expose has_auth_check = True."""
+        view = self._make_view()
+        self.assertTrue(getattr(view, 'has_auth_check', False))
+
+    def test_sets_method_attribute(self):
+        """Wrapped view must expose .method pointing to the original function."""
+        def inner(moduleObj, request, tl):
+            return 'inner'
+
+        wrapped = user_passes_test(lambda mo, req: True)(inner)
+        self.assertIs(wrapped.method, inner)
+
+    def test_sets_call_tl(self):
+        """call_tl kwarg must be surfaced on the wrapper function."""
+        view = self._make_view(call_tl='learn')
+        self.assertEqual(view.call_tl, 'learn')
+
+    def test_no_call_tl_by_default(self):
+        """call_tl must not be set when not provided."""
+        view = self._make_view()
+        self.assertFalse(hasattr(view, 'call_tl'))
+
+    def test_passes_when_test_returns_true(self):
+        """View is called normally when test_func returns True."""
+        moduleObj = MagicMock()
+        request = self._make_request()
+        view = self._make_view(test_func=lambda mo, req: True)
+        result = view(moduleObj, request, 'learn')
+        self.assertEqual(result, 'ok')
+
+    def test_require_login_redirects_unauthenticated(self):
+        """require_login=True (default) must redirect anonymous users."""
+        moduleObj = MagicMock()
+        request = self._make_request(authenticated=False)
+        request.user.is_authenticated = False
+        request.user.id = None
+        view = self._make_view(test_func=lambda mo, req: True, require_login=True)
+        with patch('esp.program.modules.base._login_redirect') as mock_redirect:
+            mock_redirect.return_value = 'redirect'
+            result = view(moduleObj, request, 'learn')
+        mock_redirect.assert_called_once_with(request)
+        self.assertEqual(result, 'redirect')
+
+    def test_require_login_false_skips_redirect(self):
+        """require_login=False must skip the login check entirely."""
+        moduleObj = MagicMock()
+        request = self._make_request(authenticated=False)
+        request.user.is_authenticated = False
+        request.user.id = None
+        view = self._make_view(test_func=lambda mo, req: True, require_login=False)
+        with patch('esp.program.modules.base._login_redirect') as mock_redirect:
+            result = view(moduleObj, request, 'learn')
+        mock_redirect.assert_not_called()
+        self.assertEqual(result, 'ok')
+
+    def test_custom_error_template_on_failure(self):
+        """error_template must be rendered instead of render_deadline_for_tl."""
+        moduleObj = MagicMock()
+        request = self._make_request()
+        view = self._make_view(
+            test_func=lambda mo, req: False,
+            error_template='errors/program/notateacher.html',
+        )
+        with patch('esp.program.modules.base.render_to_response') as mock_render:
+            mock_render.return_value = 'error_page'
+            result = view(moduleObj, request, 'teach')
+        mock_render.assert_called_once()
+        call_args = mock_render.call_args
+        self.assertEqual(call_args[0][0], 'errors/program/notateacher.html')
+        self.assertEqual(result, 'error_page')
+
+    def test_fallback_to_render_deadline_when_no_error_template(self):
+        """Without error_template, render_deadline_for_tl must be used."""
+        moduleObj = MagicMock()
+        request = self._make_request()
+        view = self._make_view(
+            test_func=lambda mo, req: False,
+            error_message='the deadline Foo was',
+        )
+        with patch('esp.program.modules.base.render_deadline_for_tl') as mock_dl:
+            mock_dl.return_value = 'deadline_page'
+            result = view(moduleObj, request, 'learn')
+        mock_dl.assert_called_once()
+        context = mock_dl.call_args[0][2]
+        self.assertEqual(context['extension'], 'the deadline Foo was')
+        self.assertEqual(result, 'deadline_page')
+
+    def test_error_context_var(self):
+        """error_context_var must control the template variable name."""
+        moduleObj = MagicMock()
+        request = self._make_request()
+        view = self._make_view(
+            test_func=lambda mo, req: False,
+            error_message='some message',
+            error_context_var='my_var',
+        )
+        with patch('esp.program.modules.base.render_deadline_for_tl') as mock_dl:
+            mock_dl.return_value = 'page'
+            view(moduleObj, request, 'learn')
+        context = mock_dl.call_args[0][2]
+        self.assertIn('my_var', context)
+        self.assertEqual(context['my_var'], 'some message')
+        self.assertNotIn('extension', context)
+
+    def test_extra_context_func_on_failure(self):
+        """extra_context_func must contribute its dict to the error context."""
+        moduleObj = MagicMock()
+        request = self._make_request()
+        extra = lambda mo, req: {'yog': 2025, 'program': 'Splash'}
+        view = self._make_view(
+            test_func=lambda mo, req: False,
+            error_template='errors/program/wronggrade.html',
+            extra_context_func=extra,
+        )
+        with patch('esp.program.modules.base.render_to_response') as mock_render:
+            mock_render.return_value = 'page'
+            view(moduleObj, request, 'learn')
+        context = mock_render.call_args[0][2]
+        self.assertEqual(context['yog'], 2025)
+        self.assertEqual(context['program'], 'Splash')
+
+
+class NeedsStudentInGradeCompositionTest(SimpleTestCase):
+    """Test needs_student_in_grade composes needs_student + meets_grade correctly."""
+
+    def _make_request(self, authenticated=True, is_student=True, is_admin=False):
+        request = MagicMock()
+        request.user.is_authenticated = authenticated
+        request.user.id = 1 if authenticated else None
+        request.user.isStudent.return_value = is_student
+        request.user.isAdmin.return_value = is_admin
+        return request
+
+    def test_unauthenticated_redirects(self):
+        """Anonymous user should be redirected to login."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        request = self._make_request(authenticated=False)
+        request.user.is_authenticated = False
+        request.user.id = None
+        with patch('esp.program.modules.base._login_redirect') as mock_redirect:
+            mock_redirect.return_value = 'redirect'
+            result = view(moduleObj, request, 'learn')
+        mock_redirect.assert_called_once_with(request)
+        self.assertEqual(result, 'redirect')
+
+    def test_non_student_gets_notastudent(self):
+        """Non-student user should see notastudent.html, not wronggrade.html."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        request = self._make_request(is_student=False, is_admin=False)
+        with patch('esp.program.modules.base.render_to_response') as mock_render:
+            mock_render.return_value = 'error_page'
+            result = view(moduleObj, request, 'learn')
+        self.assertEqual(mock_render.call_args[0][0], 'errors/program/notastudent.html')
+
+    def test_student_wrong_grade_gets_wronggrade(self):
+        """Student outside grade range should see wronggrade.html."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        moduleObj.program.grade_min = 9
+        moduleObj.program.grade_max = 12
+        request = self._make_request(is_student=True)
+        request.user.getGrade.return_value = 7
+        with patch('esp.program.modules.base.Permission') as MockPerm:
+            MockPerm.user_has_perm.return_value = False
+            with patch('esp.program.modules.base.render_to_response') as mock_render:
+                mock_render.return_value = 'error_page'
+                result = view(moduleObj, request, 'learn')
+        self.assertEqual(mock_render.call_args[0][0], 'errors/program/wronggrade.html')
+
+    def test_student_valid_grade_passes(self):
+        """Student within grade range should reach the view."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        @needs_student_in_grade
+        def view(moduleObj, request, tl, *args, **kwargs):
+            return 'ok'
+
+        moduleObj = MagicMock()
+        moduleObj.program.grade_min = 9
+        moduleObj.program.grade_max = 12
+        request = self._make_request(is_student=True)
+        request.user.getGrade.return_value = 10
+        with patch('esp.program.modules.base.Permission') as MockPerm:
+            MockPerm.user_has_perm.return_value = False
+            result = view(moduleObj, request, 'learn')
+        self.assertEqual(result, 'ok')
+
+    def test_method_attribute_points_to_original(self):
+        """needs_student_in_grade must set .method to the original view."""
+        from esp.program.modules.base import needs_student_in_grade
+
+        def my_view(moduleObj, request, tl):
+            return 'ok'
+
+        wrapped = needs_student_in_grade(my_view)
+        self.assertIs(wrapped.method, my_view)
+
 
 class ProgramModuleAuthTest(ProgramFrameworkTest):
     """Validate that all program modules have some property."""
@@ -69,10 +308,7 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
             for view_name in view_names:
                 view = getattr(module, view_name)
                 self.assertTrue(getattr(view, 'has_auth_check', None), \
-                    'Module "{}" is missing an auth check for view "{}"'.format(
-                        module,
-                        view_name
-                    ))
+                    f'Module "{module}" is missing an auth check for view "{view_name}"')
 
     def testViewDecoratorOrder(self):
         """Check that module view decorators are ordered as expected.
@@ -142,88 +378,55 @@ class ProgramModuleAuthTest(ProgramFrameworkTest):
                         if name in self.CACHE_DECORATORS
                     ]
 
-                    method_name = '{}.{}'.format(class_node.name, func_node.name)
-                    decorator_list = ', '.join('@{}'.format(name) for name in decorator_names if name)
+                    method_name = f'{class_node.name}.{func_node.name}'
+                    decorator_list = ', '.join(f'@{name}' for name in decorator_names if name)
 
                     if call_pos != 0:
                         failures.append(
-                            '{}:{} {} should have @main_call/@aux_call as the outermost decorator. '
-                            'Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} should have @main_call/@aux_call as the outermost decorator. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and grade_positions and min(auth_positions) > min(grade_positions):
                         failures.append(
-                            '{}:{} {} has @meets_grade outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_grade outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and deadline_positions and min(auth_positions) > min(deadline_positions):
                         failures.append(
-                            '{}:{} {} has deadline decorators outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has deadline decorators outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if grade_positions and deadline_positions and min(grade_positions) > min(deadline_positions):
                         failures.append(
-                            '{}:{} {} has deadline decorators outside @meets_grade. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has deadline decorators outside @meets_grade. '
+                            f'Found: {decorator_list}'
                         )
 
                     if auth_positions and cap_positions and min(auth_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside auth decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside auth decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if grade_positions and cap_positions and min(grade_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside @meets_grade. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside @meets_grade. '
+                            f'Found: {decorator_list}'
                         )
 
                     if deadline_positions and cap_positions and min(deadline_positions) > min(cap_positions):
                         failures.append(
-                            '{}:{} {} has @meets_cap outside deadline decorators. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has @meets_cap outside deadline decorators. '
+                            f'Found: {decorator_list}'
                         )
 
                     if no_auth_positions and cache_positions and min(no_auth_positions) > min(cache_positions):
                         failures.append(
-                            '{}:{} {} has cache decorators outside @no_auth. Found: {}'.format(
-                                handler_file.as_posix(),
-                                func_node.lineno,
-                                method_name,
-                                decorator_list,
-                            )
+                            f'{handler_file.as_posix()}:{func_node.lineno} {method_name} has cache decorators outside @no_auth. '
+                            f'Found: {decorator_list}'
                         )
 
         self.assertEqual([], failures, '\n'.join(failures))

@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
@@ -51,6 +52,19 @@ class FinAidApproveModule(ProgramModuleObj):
             "seq": 26,
             "choosable": 0,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "finaidapprove":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_finaidapprove",
+            url="/manage/%s/finaidapprove" % base,
+            title="Financial Aid Requests",
+            category=SEARCH_CATEGORY_FINANCIAL,
+            keywords=["financial aid", "finaid", "requests", "approve", "scholarship"],
+        )
 
     def isStep(self):
         return False
