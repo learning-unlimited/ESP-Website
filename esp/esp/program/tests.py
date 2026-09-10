@@ -49,13 +49,28 @@ from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Per
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 
+from django.conf import settings
 from django.contrib.auth.models import Group
-from django.test import LiveServerTestCase
+from django.core.cache import cache
+from django.db import connection, transaction
+from django.db.utils import IntegrityError
+from django.test import LiveServerTestCase, TransactionTestCase, override_settings
+from django.utils import timezone
+from unittest import mock
 from django.test.client import Client
 from django import forms
 
 from esp.program.controllers.classreg import get_custom_fields
-from esp.program.controllers.lottery import LotteryAssignmentController
+from esp.program.controllers.lottery.base import LotteryException
+from esp.program.controllers.lottery import ilp as ilp_lottery
+from esp.program.controllers.lottery.base import BaseLotteryAssignmentController
+from esp.program.controllers.lottery.ilp import ILPLotteryAssignmentController
+from esp.program.controllers.lottery.legacy import LegacyLotteryAssignmentController
+from esp.program.controllers.lottery.refresh import (
+    TERMINAL_STATUSES, refresh_run_from_service, resolve_solver_client, resolve_solver_client_by_name,
+)
+from esp.program.controllers.lottery.remote import RemoteSolverClient, RemoteSolverError
+from esp.program.models import LotteryInputSnapshot, LotteryRun
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.modules.base import ProgramModuleObj
@@ -65,9 +80,15 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 import hashlib
+import json
 import numpy
 import random
 import re
+import requests
+import socket
+import tempfile
+import threading
+import time
 import unicodedata
 
 class ViewUserInfoTest(TestCase):
@@ -1263,8 +1284,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
 
     def testLottery(self):
-        # Run the lottery!
-        lotteryController = LotteryAssignmentController(self.program)
+        # Run the (legacy) lottery!
+        lotteryController = LegacyLotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
@@ -1294,8 +1315,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         """ Verify that the values returned by compute_stats() are correct
             after running the lottery.  """
 
-        #   Run the lottery!
-        lotteryController = LotteryAssignmentController(self.program)
+        #   Run the (legacy) lottery!
+        lotteryController = LegacyLotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
@@ -1340,8 +1361,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.assertTrue(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
         lunch_sec = lunch_sec[0]
 
-        # Run the lottery!
-        lotteryController = LotteryAssignmentController(self.program)
+        # Run the (legacy) lottery!
+        lotteryController = LegacyLotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
@@ -1361,8 +1382,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.assertTrue(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
 
-        # Run the lottery!
-        lotteryController = LotteryAssignmentController(self.program)
+        # Run the (legacy) lottery!
+        lotteryController = LegacyLotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
         lotteryController.save_assignments()
 
@@ -1397,6 +1418,919 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         scrmi.save()
 
         self.testLottery()
+
+class ILPLotteryAssignmentControllerTest(ProgramFrameworkTest):
+    """Covers the parts of ILPLotteryAssignmentController that don't need
+    a Gurobi license: __init__'s option validation, and _setup_pref_weight()
+    (pure numpy, never touches self.model). Building/solving an actual model
+    needs gurobipy installed *and* a license -- gurobipy is optional and not
+    always available, so skip the whole class if it isn't importable."""
+
+    def setUp(self):
+        random.seed()
+
+        # Create a program, students, classes, teachers, etc.
+        super(ILPLotteryAssignmentControllerTest, self).setUp(num_students=20, room_capacity=3)
+        self.program.getModules()
+        while True:
+            self.schedule_randomly()
+            self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program).distinct()
+            if len(self.timeslots) >= 3:
+                break
+
+        self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 1
+        scrmi.save()
+
+        es = Event.objects.filter(program=self.program)
+        for student in self.students:
+            startGrade = int(random.random() * 6) + 7
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
+
+            for e in es:
+                if random.random() < 0.5:
+                    sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    if len(sections) == 0: continue
+                    pri = random.choice(sections)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+            for sec in self.program.sections():
+                if random.random() < 0.25:
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+            if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
+                pri = random.choice(self.program.sections())
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+
+        self.program.program_size_max = 0
+        self.program.save()
+
+        # effective_priority_limit is 1 here (priority_limit=1, no grade-range
+        # exceptions configured), so rank_weights needs exactly one entry.
+        self.rank_weights = [3.0]
+
+    def test_rejects_fill_low_priorities(self):
+        self.assertRaises(LotteryException, ILPLotteryAssignmentController, self.program, fill_low_priorities=True)
+
+    def test_rejects_use_student_apps(self):
+        self.assertRaises(LotteryException, ILPLotteryAssignmentController, self.program, use_student_apps=True)
+
+    def test_ignores_program_size_max(self):
+        # Unlike fill_low_priorities/use_student_apps/max_sections/
+        # max_timeslots, program_size_max is not rejected -- ILP silently
+        # doesn't enforce it (matching the base class's existing silent
+        # treatment of the program_size_by_grade Tag), and the UI carries a
+        # persistent warning about that instead of blocking submission.
+        self.program.program_size_max = 10
+        self.program.save()
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights, deweight_factor=0.8,
+        )
+        self.assertEqual(controller.program_size_max, 10)
+
+    def test_rejects_max_sections(self):
+        self.assertRaises(LotteryException, ILPLotteryAssignmentController, self.program, max_sections=2)
+
+    def test_rejects_max_timeslots(self):
+        self.assertRaises(LotteryException, ILPLotteryAssignmentController, self.program, max_timeslots=2)
+
+    def test_rejects_use_grade_range_exceptions_flag(self):
+        self.program.studentclassregmoduleinfo.use_grade_range_exceptions = True
+        self.program.studentclassregmoduleinfo.save()
+        self.assertRaises(
+            LotteryException, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights
+        )
+
+    def test_rejects_stray_grade_range_exception_registrations(self):
+        # Even with the flag off, leftover GradeRangeException rows (e.g.
+        # from a program that previously had the flag on) should still block
+        # ILP -- matches the DB check done during this effort, where flag
+        # and rows were found out of sync on several old programs.
+        self.assertFalse(self.program.useGradeRangeExceptions())
+        gre_rt, _ = RegistrationType.objects.get_or_create(name='GradeRangeException')
+        student = self.students[0]
+        section = self.program.sections()[0]
+        StudentRegistration.objects.get_or_create(user=student, section=section, relationship=gre_rt)
+        self.assertRaises(
+            LotteryException, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights
+        )
+
+    def test_rejects_default_rank_weights_for_non_three_level_program(self):
+        # effective_priority_limit is 1 here, not 3, so there's no sane default.
+        self.assertRaises(LotteryException, ILPLotteryAssignmentController, self.program)
+
+    def test_rejects_mismatched_rank_weights_length(self):
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=[1.0, 2.0])
+
+    def test_rejects_negative_rank_weights(self):
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=[-1.0])
+
+    def test_rejects_negative_interest_weight(self):
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights, interest_weight=-0.5)
+
+    def test_rejects_both_deweight_flags(self):
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights, deweight_by_section=True, deweight_by_timeslot=True)
+
+    def test_rejects_deweight_factor_out_of_range(self):
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights, deweight_factor=1.5)
+        self.assertRaises(ValueError, ILPLotteryAssignmentController, self.program, rank_weights=self.rank_weights, deweight_factor=0)
+
+    def test_requires_deweight_factor_when_deweighting(self):
+        # deweight_by_timeslot defaults True, so omitting/blanking
+        # deweight_factor (as the UI does by sending null for a blank field)
+        # must error rather than silently default -- no default is safe
+        # since it silently changes optimization results.
+        self.assertRaises(
+            ValueError, ILPLotteryAssignmentController, self.program,
+            rank_weights=self.rank_weights, deweight_factor=None,
+        )
+
+    def test_deweight_factor_not_required_when_deweighting_off(self):
+        # With deweighting off entirely, deweight_factor is unused, so a
+        # missing value must not error.
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights,
+            deweight_by_timeslot=False, deweight_by_section=False, deweight_factor=None,
+        )
+        self.assertIsNone(controller.deweight_factor)
+
+    def test_pref_weight_matches_priority_and_interest(self):
+        interest_weight = 0.5
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights, interest_weight=interest_weight, check_grade=False,
+            deweight_factor=0.8,
+        )
+        controller._setup_pref_weight()
+
+        expected = numpy.maximum(
+            controller.priority[1] * self.rank_weights[0],
+            controller.interest * interest_weight,
+        )
+        self.assertTrue(numpy.array_equal(controller.pref_weight, expected))
+
+        # every nonzero (student, section) pair got a variable slot, and only those
+        expected_pairs = set(zip(*numpy.nonzero(expected)))
+        actual_pairs = set(zip(controller.pref_student_idxs.tolist(), controller.pref_section_idxs.tolist()))
+        self.assertEqual(expected_pairs, actual_pairs)
+
+    def test_pref_weight_respects_grade_filter(self):
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights, check_grade=True, deweight_factor=0.8,
+        )
+        controller._setup_pref_weight()
+
+        grade_ok = (
+            (controller.student_grades[:, None] >= controller.section_grade_min[None, :]) &
+            (controller.student_grades[:, None] <= controller.section_grade_max[None, :])
+        )
+        expected = numpy.maximum(
+            controller.priority[1] * self.rank_weights[0],
+            controller.interest * 0.5,
+        ) * grade_ok
+        self.assertTrue(numpy.array_equal(controller.pref_weight, expected))
+
+    def test_compute_assignments_produces_valid_schedule(self):
+        # Needs an actual usable Gurobi license, not just gurobipy installed
+        # -- skip (not fail) when unavailable, e.g. in CI.
+        try:
+            ilp_lottery.gp.Model().dispose()
+        except ilp_lottery.gp.GurobiError as e:
+            self.skipTest("no usable Gurobi license: %s" % e)
+
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights, deweight_factor=0.8,
+        )
+        controller.compute_assignments()
+        controller.save_assignments()
+
+        # Every assignment corresponds to a preference the student actually expressed.
+        assigned_si, assigned_sj = numpy.nonzero(controller.student_sections)
+        for si, sj in zip(assigned_si, assigned_sj):
+            self.assertGreater(controller.pref_weight[si, sj], 0)
+
+        # No section is over capacity.
+        self.assertTrue(numpy.all(numpy.sum(controller.student_sections, axis=0) <= controller.section_capacities))
+
+        # Saved to the DB as real "Enrolled" StudentRegistrations.
+        enrolled_count = StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program, relationship__name='Enrolled',
+        ).count()
+        self.assertEqual(enrolled_count, int(numpy.sum(controller.student_sections)))
+
+        # Shared stats code (inherited from Base) works unmodified on Gurobi's result.
+        stats = controller.compute_stats(display=False)
+        self.assertEqual(stats['num_registrations'], numpy.sum(controller.student_sections))
+
+    def test_remote_solver_roundtrip(self):
+        """build_model() -> write .mps.gz -> submit to the locally-running
+        lottery-solver-service -> poll -> fetch solution ->
+        apply_remote_solution() -> save_assignments(), i.e. everything
+        compute_assignments() does in-process, but via the real HTTP API a
+        production deployment would use. Needs both a usable Gurobi license
+        (model construction happens locally either way) and
+        LOTTERY_SOLVERS['local'] actually reachable -- skip rather than fail
+        when either is unavailable."""
+
+        try:
+            ilp_lottery.gp.Model().dispose()
+        except ilp_lottery.gp.GurobiError as e:
+            self.skipTest("no usable Gurobi license: %s" % e)
+
+        solver_config = settings.LOTTERY_SOLVERS.get('local')
+        if not solver_config:
+            self.skipTest("LOTTERY_SOLVERS['local'] is not configured")
+        try:
+            requests.get(solver_config['url'] + '/healthz', timeout=(1, 2)).raise_for_status()
+        except requests.RequestException as e:
+            self.skipTest("lottery-solver-service not reachable at %s: %s" % (solver_config['url'], e))
+
+        controller = ILPLotteryAssignmentController(
+            self.program, rank_weights=self.rank_weights, deweight_factor=0.8,
+        )
+        controller.build_model()
+
+        # Model.write() replaces the file at this path rather than writing
+        # in place (looks like write-to-temp + atomic rename internally), so
+        # an already-open file object here would just keep reading the old,
+        # now-unlinked empty inode -- write the path, then open it fresh.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = "%s/model.mps.gz" % tmp_dir
+            controller.model.write(tmp_path)
+            with open(tmp_path, "rb") as f:
+                model_bytes = f.read()
+        controller.model.dispose()
+
+        # Goes through resolve_solver_client_by_name(), not
+        # RemoteSolverClient(**solver_config) directly -- the LOTTERY_SOLVERS
+        # dict format (e.g. "noverify") is only meaningful once translated by
+        # that function; splatting the raw config would break the moment its
+        # keys stop lining up 1:1 with RemoteSolverClient's constructor.
+        client = resolve_solver_client_by_name('local')
+        job_id = client.submit(model_bytes, {})["job_id"]
+
+        status = None
+        deadline = time.time() + 30
+        while time.time() < deadline:
+            status_body = client.status(job_id)
+            status = status_body["status"]
+            if status in ("done", "failed", "interrupted"):
+                break
+            time.sleep(0.3)
+        self.assertEqual(status, "done", status_body)
+
+        solution = client.solution(job_id)
+        self.assertIsNotNone(solution)
+        client.delete(job_id)
+
+        controller.apply_remote_solution(solution)
+        controller.save_assignments()
+
+        # Same checks as test_compute_assignments_produces_valid_schedule --
+        # the remote round trip should produce an identical kind of result.
+        assigned_si, assigned_sj = numpy.nonzero(controller.student_sections)
+        for si, sj in zip(assigned_si, assigned_sj):
+            self.assertGreater(controller.pref_weight[si, sj], 0)
+        self.assertTrue(numpy.all(numpy.sum(controller.student_sections, axis=0) <= controller.section_capacities))
+        enrolled_count = StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program, relationship__name='Enrolled',
+        ).count()
+        self.assertEqual(enrolled_count, int(numpy.sum(controller.student_sections)))
+
+class LotterySnapshotTest(ProgramFrameworkTest):
+    """Covers BaseLotteryAssignmentController's frozen-snapshot machinery
+    (snapshot_data/input_hash/encode+decode/from_snapshot/save_from_pairs)
+    and the LotteryRun/LotteryInputSnapshot persistence models. None
+    of this needs gurobipy or a license -- it's all Base-level and only
+    reads the arrays initialize() already populates, so it uses the Legacy
+    controller (any BaseLotteryAssignmentController subclass would do)."""
+
+    def setUp(self):
+        random.seed()
+        super(LotterySnapshotTest, self).setUp(num_students=15, room_capacity=3)
+        self.program.getModules()
+        while True:
+            self.schedule_randomly()
+            self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program).distinct()
+            if len(self.timeslots) >= 3:
+                break
+
+        self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 1
+        scrmi.save()
+
+        es = Event.objects.filter(program=self.program)
+        for student in self.students:
+            # initialize() queries RegistrationProfile.graduation_year for
+            # every student and indexes the (possibly empty) result as a 2D
+            # array -- an empty query without any profiles at all comes back
+            # 1D and blows up that indexing, so every student needs one.
+            startGrade = int(random.random() * 6) + 7
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
+
+            for e in es:
+                if random.random() < 0.5:
+                    sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    if len(sections) == 0: continue
+                    pri = random.choice(sections)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+            for sec in self.program.sections():
+                if random.random() < 0.25:
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+            if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
+                pri = random.choice(self.program.sections())
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+
+    def _enrolled_pairs(self, controller):
+        return [
+            (int(controller.student_ids[si]), int(controller.section_ids[sj]))
+            for si, sj in zip(*numpy.nonzero(controller.student_sections))
+        ]
+
+    def test_input_hash_is_deterministic(self):
+        c1 = LegacyLotteryAssignmentController(self.program)
+        c2 = LegacyLotteryAssignmentController(self.program)
+        self.assertEqual(c1.input_hash(), c2.input_hash())
+
+    def test_input_hash_changes_with_data(self):
+        hash_before = LegacyLotteryAssignmentController(self.program).input_hash()
+
+        student = self.students[0]
+        section = self.program.sections()[0]
+        StudentRegistration.objects.get_or_create(user=student, section=section, relationship=self.priority_rt)
+
+        hash_after = LegacyLotteryAssignmentController(self.program).input_hash()
+        self.assertNotEqual(hash_before, hash_after)
+
+    def test_snapshot_blob_round_trips(self):
+        controller = LegacyLotteryAssignmentController(self.program)
+        blob = controller.encode_snapshot_blob()
+        decoded = BaseLotteryAssignmentController.decode_snapshot_blob(blob)
+        self.assertEqual(decoded, controller.snapshot_data())
+
+    def test_from_snapshot_matches_live_stats_with_zero_queries(self):
+        live_controller = LegacyLotteryAssignmentController(self.program)
+        live_controller.compute_assignments()
+        live_stats = live_controller.compute_stats(display=False)
+
+        snapshot_data = live_controller.snapshot_data()
+        enrolled_pairs = self._enrolled_pairs(live_controller)
+
+        with self.assertNumQueries(0):
+            frozen_controller = BaseLotteryAssignmentController.from_snapshot(self.program, snapshot_data, enrolled_pairs)
+            frozen_stats = frozen_controller.compute_stats(display=False)
+
+        self.assertEqual(frozen_stats['num_registrations'], live_stats['num_registrations'])
+        self.assertEqual(sorted(frozen_stats['section_filledness']), sorted(live_stats['section_filledness']))
+        self.assertAlmostEqual(frozen_stats['overall_interest_ratio'], live_stats['overall_interest_ratio'])
+
+    def test_from_snapshot_is_frozen_to_a_later_capacity_change(self):
+        live_controller = LegacyLotteryAssignmentController(self.program)
+        live_controller.compute_assignments()
+        snapshot_data = live_controller.snapshot_data()
+        enrolled_pairs = self._enrolled_pairs(live_controller)
+
+        frozen_before = BaseLotteryAssignmentController.from_snapshot(self.program, snapshot_data, enrolled_pairs)
+        stats_before = frozen_before.compute_stats(display=False)
+
+        section = self.program.sections()[0]
+        section.parent_class.class_size_max = (section.parent_class.class_size_max or 10) + 50
+        section.parent_class.save()
+
+        # Same snapshot_data -- re-deriving frozen stats from it must be
+        # unaffected by the DB change just made.
+        frozen_after = BaseLotteryAssignmentController.from_snapshot(self.program, snapshot_data, enrolled_pairs)
+        stats_after = frozen_after.compute_stats(display=False)
+        self.assertEqual(stats_before['total_spaces'], stats_after['total_spaces'])
+
+    def test_save_from_pairs_creates_enrolled_registrations(self):
+        sections = list(self.program.sections())[:2]
+        pairs = [(self.students[0].id, sections[0].id), (self.students[1].id, sections[1].id)]
+
+        BaseLotteryAssignmentController.save_from_pairs(self.program, pairs, try_mailman=False)
+
+        enrolled = StudentRegistration.objects.filter(
+            section__parent_class__parent_program=self.program, relationship__name='Enrolled',
+        )
+        self.assertEqual(enrolled.count(), 2)
+        self.assertEqual({(sr.user_id, sr.section_id) for sr in enrolled}, set(pairs))
+
+    def test_save_from_pairs_clears_previous_enrollments(self):
+        sections = list(self.program.sections())[:2]
+        BaseLotteryAssignmentController.save_from_pairs(
+            self.program, [(self.students[0].id, sections[0].id)], try_mailman=False,
+        )
+        BaseLotteryAssignmentController.save_from_pairs(
+            self.program, [(self.students[1].id, sections[1].id)], try_mailman=False,
+        )
+
+        # Last-save-wins: the first save's registration should have been
+        # expired (end_date set), not left dangling as still-valid.
+        valid_enrolled = StudentRegistration.objects.filter(
+            StudentRegistration.is_valid_qobject(),
+            section__parent_class__parent_program=self.program, relationship__name='Enrolled',
+        )
+        self.assertEqual(
+            {(sr.user_id, sr.section_id) for sr in valid_enrolled},
+            {(self.students[1].id, sections[1].id)},
+        )
+
+    def test_persistence_models_round_trip(self):
+        controller = LegacyLotteryAssignmentController(self.program)
+        snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program,
+            input_hash=controller.input_hash(),
+            data=controller.encode_snapshot_blob(),
+        )
+        run = LotteryRun.objects.create(
+            program=self.program,
+            snapshot=snapshot,
+            solver_name='local',
+            status='done',
+            enrolled_pairs=[],
+        )
+        self.assertEqual(run.snapshot.input_hash, controller.input_hash())
+        self.assertEqual(list(snapshot.runs.all()), [run])
+
+        # Dedup is enforced at the DB level: two rows can't share input_hash.
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                LotteryInputSnapshot.objects.create(
+                    program=self.program, input_hash=controller.input_hash(), data=b'',
+                )
+
+class LotteryRefreshTest(ProgramFrameworkTest):
+    """Covers the guarded-refresh logic (esp.program.controllers.lottery.refresh)
+    with a mocked RemoteSolverClient -- no gurobipy/license/solver service
+    needed, since this is pure Django-DB + HTTP-client-shape logic."""
+
+    SOLVERS = {'test': {'url': 'http://solver.invalid', 'token': 'tok'}}
+
+    def setUp(self):
+        super(LotteryRefreshTest, self).setUp()
+        self.snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program, input_hash='0' * 64, data=b'placeholder',
+        )
+        self.run = LotteryRun.objects.create(
+            program=self.program, snapshot=self.snapshot, solver_name='test',
+            solver_job_id='job-1', status='running',
+        )
+
+    def test_terminal_run_is_noop(self):
+        self.run.status = 'done'
+        self.run.save()
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        MockClient.assert_not_called()
+
+    def test_fresh_run_is_noop(self):
+        self.run.last_polled_at = timezone.now()
+        self.run.save()
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        MockClient.assert_not_called()
+
+    def test_refresh_updates_status_and_progress(self):
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            instance = MockClient.return_value
+            instance.status.return_value = {'status': 'running', 'progress': [{'incumbent': 1}]}
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        self.run.refresh_from_db()
+        self.assertEqual(self.run.status, 'running')
+        self.assertEqual(self.run.progress_series, [{'incumbent': 1}])
+        self.assertIsNotNone(self.run.last_polled_at)
+        instance.solution.assert_not_called()
+
+    def test_refresh_captures_solution_on_terminal(self):
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            instance = MockClient.return_value
+            instance.status.return_value = {'status': 'done', 'progress': []}
+            instance.solution.return_value = {'stud_sec_assignment_1_2': 1.0, 'stud_sec_assignment_3_4': 0.0}
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        self.run.refresh_from_db()
+        self.assertEqual(self.run.status, 'done')
+        self.assertEqual(self.run.enrolled_pairs, [[1, 2]])
+        self.assertIsNotNone(self.run.finished_at)
+
+    def test_refresh_captures_empty_solution_on_terminal(self):
+        # The solver only reports nonzero-valued variables, so a real
+        # "nobody got assigned anywhere" result comes back as {} -- must
+        # still be captured as enrolled_pairs=[] (a real, terminal result),
+        # not left as None (which would look like "no result yet").
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            instance = MockClient.return_value
+            instance.status.return_value = {'status': 'done', 'progress': []}
+            instance.solution.return_value = {}
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        self.run.refresh_from_db()
+        self.assertEqual(self.run.status, 'done')
+        self.assertIsNotNone(self.run.enrolled_pairs)
+        self.assertEqual(self.run.enrolled_pairs, [])
+
+    def test_unreachable_service_sets_error_without_crashing(self):
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            instance = MockClient.return_value
+            instance.status.side_effect = RemoteSolverError('boom')
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                refresh_run_from_service(self.run)
+        self.run.refresh_from_db()
+        self.assertIn('solver unreachable', self.run.error)
+        self.assertEqual(self.run.status, 'running')
+
+    def test_unconfigured_solver_sets_error(self):
+        with override_settings(LOTTERY_SOLVERS={}):
+            refresh_run_from_service(self.run)
+        self.run.refresh_from_db()
+        self.assertIn('not configured', self.run.error)
+
+
+class LotteryGuardedRefreshConcurrencyTest(TransactionTestCase):
+    """Covers the guarded-refresh advisory-lock dedup under REAL concurrent
+    DB connections -- two threads, each getting its own separate Postgres
+    connection (as in production: two web workers, or a poller racing a
+    page load), racing to refresh the same LotteryRun. This was a known gap:
+    LotteryRefreshTest (above) only proves the state-machine logic via
+    mocking a single-threaded call; it never exercises whether
+    pg_try_advisory_xact_lock actually serializes concurrent refreshers.
+
+    Needs TransactionTestCase, not the usual (CacheFlushTestCase-based)
+    TestCase: TestCase wraps each test in a transaction on ONE connection
+    and rolls it back, so a second thread's own separate connection would
+    never see setUp()'s data. TransactionTestCase actually commits (and
+    truncates after the test), which real cross-connection visibility
+    requires.
+
+    Can't multiply-inherit CacheFlushTestCase(TestCase) here (conflicting
+    _fixture_setup/_fixture_teardown MRO between TestCase and
+    TransactionTestCase), so the cache is flushed by hand in setUp instead
+    -- same reasoning as CacheFlushTestCase: argcache's memcached-backed
+    @cache_function results aren't rolled back/truncated by either test
+    class, and a truncate-and-recreate can reuse a Postgres id a stale
+    cache entry still points at."""
+
+    SOLVERS = {'test': {'url': 'http://solver.invalid', 'token': 'tok'}}
+
+    def setUp(self):
+        if hasattr(cache, "flush_all"):
+            cache.flush_all()
+        # ProgramFrameworkTest.setUp() doesn't call super().setUp() or rely
+        # on any TestCase-specific machinery, so it's safe to reuse unbound
+        # here even though self isn't a ProgramFrameworkTest instance --
+        # avoids reimplementing its heavy Program/timeslot/section fixture.
+        ProgramFrameworkTest.setUp(self)
+        self.snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program, input_hash='1' * 64, data=b'placeholder',
+        )
+        self.run = LotteryRun.objects.create(
+            program=self.program, snapshot=self.snapshot, solver_name='test',
+            solver_job_id='job-concurrent', status='running',
+        )
+
+    def test_only_one_thread_hits_the_service(self):
+        call_count = {'n': 0}
+        call_count_lock = threading.Lock()
+        barrier = threading.Barrier(2)
+        errors = []
+
+        class SlowClient(object):
+            def status(self, job_id):
+                with call_count_lock:
+                    call_count['n'] += 1
+                # Held while this thread's transaction (and thus its
+                # advisory lock) is still open -- gives the other thread's
+                # (non-blocking) lock attempt a wide window to prove it
+                # backs off instead of also hitting the service.
+                time.sleep(0.5)
+                return {'status': 'running', 'progress': []}
+
+        def worker():
+            try:
+                barrier.wait(timeout=5)
+                refresh_run_from_service(LotteryRun.objects.get(pk=self.run.pk))
+            except Exception as e:
+                errors.append(e)
+            finally:
+                connection.close()
+
+        with mock.patch(
+            'esp.program.controllers.lottery.refresh.resolve_solver_client',
+            return_value=SlowClient(),
+        ), override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+            threads = [threading.Thread(target=worker) for _ in range(2)]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=10)
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            call_count['n'], 1,
+            "both threads called the solver service -- the advisory lock "
+            "did not dedupe concurrent refreshers",
+        )
+        self.run.refresh_from_db()
+        self.assertEqual(self.run.status, 'running')
+        self.assertIsNotNone(self.run.last_polled_at)
+
+
+class RemoteSolverClientTimeoutTest(TestCase):
+    """Covers the previously-untested gap that RemoteSolverClient's mandatory
+    (connect, read) timeouts actually bound a real hang, not just that the
+    timeout tuple is constructed correctly (verified by code reading only,
+    per the original plan). Uses a raw TCP listener that accepts the
+    connection (so connect_timeout is never in play) but never writes a
+    response, exercising the read timeout specifically -- the one the
+    refresh.py docstring calls out as "reintroduces hangs" if ever dropped."""
+
+    def test_read_timeout_bounds_a_real_hang(self):
+        server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_sock.bind(('127.0.0.1', 0))
+        server_sock.listen(1)
+        port = server_sock.getsockname()[1]
+        HANG_SECONDS = 5
+
+        def accept_and_hang():
+            conn, _addr = server_sock.accept()
+            try:
+                conn.recv(65536)  # read (and discard) the request
+                time.sleep(HANG_SECONDS)  # then just never respond
+            except OSError:
+                pass  # socket closed out from under us once the test finishes
+            finally:
+                conn.close()
+
+        server_thread = threading.Thread(target=accept_and_hang, daemon=True)
+        server_thread.start()
+
+        client = RemoteSolverClient(
+            url='http://127.0.0.1:%d' % port, token='tok',
+            connect_timeout=1, read_timeout=1,
+        )
+        start = time.monotonic()
+        with self.assertRaises(RemoteSolverError):
+            client.status('job-1')
+        elapsed = time.monotonic() - start
+
+        server_sock.close()
+        # Bounded by the 1s read timeout, not the server's 5s hang -- some
+        # slack for scheduling jitter, but nowhere near HANG_SECONDS.
+        self.assertLess(elapsed, HANG_SECONDS - 1)
+
+
+class LotteryILPViewsTest(ProgramFrameworkTest):
+    """Covers the lottery_ilp_* views end-to-end via the Django test
+    Client. Only test_submit_creates_run_and_snapshot needs a real Gurobi
+    license (build_model() actually runs) -- everything else works against
+    a LotteryRun created directly, with the solver service call
+    mocked, so no license/solver service is needed for those."""
+
+    SOLVERS = {'test': {'url': 'http://solver.invalid', 'token': 'tok'}}
+
+    def setUp(self):
+        random.seed()
+        super(LotteryILPViewsTest, self).setUp(num_students=15, room_capacity=3)
+        self.program.getModules()
+        while True:
+            self.schedule_randomly()
+            self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program).distinct()
+            if len(self.timeslots) >= 3:
+                break
+
+        self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 1
+        scrmi.save()
+        self.program.program_size_max = 0
+        self.program.save()
+
+        es = Event.objects.filter(program=self.program)
+        for student in self.students:
+            startGrade = int(random.random() * 6) + 7
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade, ESPUser.program_schoolyear(self.program)))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
+            for e in es:
+                if random.random() < 0.5:
+                    sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    if len(sections) == 0: continue
+                    pri = random.choice(sections)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+            for sec in self.program.sections():
+                if random.random() < 0.25:
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+            if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
+                pri = random.choice(self.program.sections())
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        self.url_base = self.program.getUrlBase()
+
+    def _post(self, call_name, data=None):
+        return self.client.post('/manage/%s/%s' % (self.url_base, call_name), data=data or {})
+
+    def _response_item(self, resp):
+        return json.loads(resp.content)['response'][0]
+
+    def test_lottery_page_renders(self):
+        with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+            resp = self.client.get('/manage/%s/lottery' % self.url_base)
+        self.assertEqual(resp.status_code, 200)
+        content = resp.content.decode('utf-8')
+        self.assertIn('Legacy Lottery', content)
+        self.assertIn('ILP (Gurobi) Lottery', content)
+        self.assertIn('lottery-mode-box active', content)
+        # check_grade is a checkbox now (not a free-text True/False field),
+        # and defaults to unchecked for both algorithms.
+        self.assertIn('name="lottery_check_grade"', content)
+        self.assertNotIn('name="lottery_check_grade" checked', content)
+        self.assertIn('id="ilpCheckGrade"', content)
+        self.assertNotIn('id="ilpCheckGrade" checked', content)
+
+    def test_submit_rejects_when_no_solvers_configured(self):
+        with override_settings(LOTTERY_SOLVERS={}):
+            resp = self._post('lottery_ilp_submit', {'params': '{}'})
+        self.assertIn('error_msg', self._response_item(resp))
+
+    def test_submit_creates_run_and_snapshot(self):
+        try:
+            ilp_lottery.gp.Model().dispose()
+        except ilp_lottery.gp.GurobiError as e:
+            self.skipTest("no usable Gurobi license: %s" % e)
+
+        params = json.dumps({'objective': {'rank_weights': [3.0], 'deweight_factor': 0.8}, 'label': 'test run'})
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            MockClient.return_value.submit.return_value = {'job_id': 'job-abc', 'status': 'queued'}
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                resp = self._post('lottery_ilp_submit', {'params': params})
+
+        body = self._response_item(resp)
+        self.assertNotIn('error_msg', body)
+        run = LotteryRun.objects.get(id=body['run']['id'])
+        self.assertEqual(run.solver_job_id, 'job-abc')
+        self.assertEqual(run.status, 'queued')
+        self.assertEqual(run.label, 'test run')
+        self.assertEqual(run.snapshot.program, self.program)
+        # random Seed was filled in even though we didn't send one
+        self.assertIn('Seed', run.params['solve'])
+
+    def test_status_view_refreshes_runs(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='1' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='running',
+        )
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            MockClient.return_value.status.return_value = {'status': 'done', 'progress': []}
+            MockClient.return_value.solution.return_value = {}
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                resp = self._post('lottery_ilp_status')
+
+        runs = self._response_item(resp)['runs']
+        self.assertEqual(len(runs), 1)
+        self.assertEqual(runs[0]['id'], run.id)
+        self.assertEqual(runs[0]['status'], 'done')
+
+    def test_stop_view(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='2' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='running',
+        )
+        with mock.patch('esp.program.controllers.lottery.refresh.RemoteSolverClient') as MockClient:
+            with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+                resp = self._post('lottery_ilp_stop', {'run_id': run.id})
+        MockClient.return_value.stop.assert_called_once_with('job-1')
+        self.assertNotIn('error_msg', self._response_item(resp))
+
+    def test_save_view(self):
+        legacy_controller = LegacyLotteryAssignmentController(self.program)
+        snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program, input_hash=legacy_controller.input_hash(),
+            data=legacy_controller.encode_snapshot_blob(),
+        )
+        section = self.program.sections()[0]
+        student = self.students[0]
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1',
+            status='done', enrolled_pairs=[[student.id, section.id]],
+        )
+
+        resp = self._post('lottery_ilp_save', {'run_id': run.id})
+        self.assertNotIn('error_msg', self._response_item(resp))
+
+        run.refresh_from_db()
+        self.assertIsNotNone(run.saved_at)
+        self.assertEqual(run.saved_by, self.admins[0])
+        self.assertTrue(StudentRegistration.objects.filter(
+            user=student, section=section, relationship__name='Enrolled',
+        ).exists())
+
+    def test_save_view_rejects_run_with_no_result(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='3' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='running',
+        )
+        resp = self._post('lottery_ilp_save', {'run_id': run.id})
+        self.assertIn('error_msg', self._response_item(resp))
+
+    def test_stats_view(self):
+        legacy_controller = LegacyLotteryAssignmentController(self.program)
+        snapshot = LotteryInputSnapshot.objects.create(
+            program=self.program, input_hash=legacy_controller.input_hash(),
+            data=legacy_controller.encode_snapshot_blob(),
+        )
+        section = self.program.sections()[0]
+        student = self.students[0]
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1',
+            status='done', enrolled_pairs=[[student.id, section.id]],
+        )
+
+        resp = self._post('lottery_ilp_stats', {'run_id': run.id})
+        body = self._response_item(resp)
+        self.assertNotIn('error_msg', body)
+        self.assertTrue(len(body['stats']) > 0)
+        self.assertTrue(len(body['charts']) > 0)
+
+    def test_stats_view_rejects_run_with_no_result(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='5' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='running',
+        )
+        resp = self._post('lottery_ilp_stats', {'run_id': run.id})
+        self.assertIn('error_msg', self._response_item(resp))
+
+    def test_archive_view(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='4' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='done',
+        )
+        resp = self._post('lottery_ilp_archive', {'run_id': run.id})
+        self.assertNotIn('error_msg', self._response_item(resp))
+        run.refresh_from_db()
+        self.assertTrue(run.archived)
+
+    def test_relabel_view(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='6' * 64, data=b'x')
+        run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1',
+            status='running', label='original',
+        )
+
+        # Editable while still running, not just before/after -- relabeling
+        # doesn't touch anything the solver cares about, just the DB row.
+        resp = self._post('lottery_ilp_relabel', {'run_id': run.id, 'label': 'renamed'})
+        self.assertNotIn('error_msg', self._response_item(resp))
+        run.refresh_from_db()
+        self.assertEqual(run.label, 'renamed')
+
+        # Blank clears the label (stored as None, not '').
+        resp = self._post('lottery_ilp_relabel', {'run_id': run.id, 'label': ''})
+        self.assertNotIn('error_msg', self._response_item(resp))
+        run.refresh_from_db()
+        self.assertIsNone(run.label)
+
+    def test_archived_status_and_unarchive_views(self):
+        snapshot = LotteryInputSnapshot.objects.create(program=self.program, input_hash='7' * 64, data=b'x')
+        active_run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-1', status='done',
+        )
+        archived_run = LotteryRun.objects.create(
+            program=self.program, snapshot=snapshot, solver_name='test', solver_job_id='job-2',
+            status='done', archived=True,
+        )
+
+        # Archived list only shows archived runs -- the mirror image of the
+        # main lottery_ilp_status view, which filters archived=False.
+        resp = self._post('lottery_ilp_archived_status')
+        runs = self._response_item(resp)['runs']
+        self.assertEqual([r['id'] for r in runs], [archived_run.id])
+
+        resp = self._post('lottery_ilp_unarchive', {'run_id': archived_run.id})
+        self.assertNotIn('error_msg', self._response_item(resp))
+        archived_run.refresh_from_db()
+        self.assertFalse(archived_run.archived)
+
+        # Now shows up in the live list instead of the archived one.
+        resp = self._post('lottery_ilp_status')
+        self.assertEqual(
+            sorted(r['id'] for r in self._response_item(resp)['runs']),
+            sorted([active_run.id, archived_run.id]),
+        )
+        resp = self._post('lottery_ilp_archived_status')
+        self.assertEqual(self._response_item(resp)['runs'], [])
 
 class BulkCreateAccountTest(ProgramFrameworkTest):
     def setUp(self):

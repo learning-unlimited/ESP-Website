@@ -56,7 +56,13 @@ class StudentRegTwoPhase(ProgramModuleObj):
     doc = """Allows students to set preferences for the class lottery."""
 
     def students(self, QObject = False):
-        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(
+            StudentRegistration.is_valid_qobject() & (
+                Q(relationship__name__startswith='Priority/') |
+                Q(relationship__name__in=['Interested', 'GradeRangeException'])
+            ),
+            'studentregistration',
+        )
         q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
         if QObject:
             return {'twophase_star_students': q_ssi,
