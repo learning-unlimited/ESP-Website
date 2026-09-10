@@ -10,6 +10,7 @@ from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 
 
@@ -81,7 +82,11 @@ class BigBoardModule(ProgramModuleObj):
             ("enrolled in classes", [(1, time) for time in self.times_enrolled(prog)], True),
         ]
 
-        timess_data, start = self.make_graph_data(timess, 4, 0, 5)
+        timess_data, start = self.make_graph_data(
+            timess,
+            int(Tag.getProgramTag('bigboard_graph_drop_beg', prog)),
+            int(Tag.getProgramTag('bigboard_graph_drop_end', prog)),
+            int(Tag.getProgramTag('bigboard_graph_min_points', prog)))
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
