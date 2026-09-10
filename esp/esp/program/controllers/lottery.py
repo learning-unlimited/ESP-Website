@@ -55,6 +55,7 @@ from django.db import transaction
 from django.db.models import Min
 import os
 import operator
+import itertools
 import zlib
 import base64
 from io import BytesIO
@@ -301,9 +302,9 @@ class LotteryAssignmentController(object):
         if self.options['use_student_apps']:
             for i in range(1, self.effective_priority_limit+1):
                 for (student_id, section_id) in priority_regs[i]:
-                    self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
-            for (student_id, section_id) in interest_regs_sr + interest_regs_ssi:
-                self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, self.parent_classes[self.section_indices[section_id]])
+                    self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, int(self.parent_classes[self.section_indices[section_id]]))
+            for (student_id, section_id) in itertools.chain(interest_regs_sr, interest_regs_ssi):
+                self.ranks[self.student_indices[student_id], self.section_indices[section_id]] = ESPUser.getRankInClass(student_id, int(self.parent_classes[self.section_indices[section_id]]))
 
 
         #   Populate section schedule
