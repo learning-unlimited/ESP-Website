@@ -7,6 +7,11 @@ Administrators can navigate to the refunds page (linked under "Quick Links" in t
 
 When a refund is submitted, it is processed synchronously via Stripe, and the results (success or failure) are shown on a confirmation screen. In either case, the CFO is sent an email indicating the status of the refund.
 
+Bug Fixes
+=========
+
+- The program creation form's director email validation now accepts ``learningu.org`` addresses at any subdomain depth. It previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected by the browser.
+
 Developer Notes
 ===============
 
