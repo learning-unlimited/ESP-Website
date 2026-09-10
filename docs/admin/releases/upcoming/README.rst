@@ -10,7 +10,7 @@ When a refund is submitted, it is processed synchronously via Stripe, and the re
 Bug Fixes
 =========
 
-- The program creation form's director email validation now accepts ``learningu.org`` addresses at any subdomain depth. It previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected by the browser.
+- Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 
 Developer Notes
 ===============
