@@ -276,3 +276,99 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
+
+    def test_catalog_invalid_sort_and_grades_do_not_crash(self):
+        """
+        Verify that catalog() falls back gracefully when provided with
+        unrecognized sort keys or non-integer grade bounds (#6017).
+        """
+        self._login_admin()
+        req = self.factory.get(
+            f'/manage/{self.program.getUrlBase()}/catalog',
+            {
+                'first_sort': 'invalid_sort_key',
+                'second_sort': 'non_existent_key',
+                'third_sort': 'bad_key',
+                'grade_min': 'invalid',
+                'grade_max': 'xyz',
+            }
+        )
+        req.user = self.admins[0]
+        req.session = self.client.session
+        response = self.moduleobj.catalog(req, None, None, None, self.moduleobj, None, self.program)
+        self.assertEqual(response.status_code, 200)
+
+    def test_coursecatalog_invalid_grades_do_not_crash(self):
+        """
+        Verify that coursecatalog() ignores non-integer mingrade and maxgrade
+        parameters without raising ValueError (#6017).
+        """
+        self._login_admin()
+        req = self.factory.get(
+            f'/learn/{self.program.getUrlBase()}/catalog/tex',
+            {
+                'mingrade': 'not_an_int',
+                'maxgrade': 'bad_grade',
+                'sort_name_list': 'timeblock',
+            }
+        )
+        req.user = self.admins[0]
+        req.session = self.client.session
+        response = self.moduleobj.coursecatalog(req, None, None, None, self.moduleobj, 'tex', self.program)
+        self.assertEqual(response.status_code, 200)
+
+    def test_classesbyfoo_trailing_commas_and_invalid_grades(self):
+        """
+        Verify that classesbyFOO() handles trailing commas in clsids and
+        non-integer grade bounds gracefully without crashing (#6017).
+        """
+        self._login_admin()
+        req = self.factory.get(
+            f'/manage/{self.program.getUrlBase()}/classesbyFOO',
+            {
+                'clsids': '1,2,',
+                'grade_min': 'invalid',
+                'grade_max': 'xyz',
+            }
+        )
+        req.user = self.admins[0]
+        req.session = self.client.session
+        response = self.moduleobj.classesbyFOO(req, None, None, None, self.moduleobj, None, self.program)
+        self.assertEqual(response.status_code, 200)
+
+    def test_sectionsbyfoo_trailing_commas_and_invalid_grades(self):
+        """
+        Verify that sectionsbyFOO() handles trailing commas in secids/clsids
+        and non-integer grade bounds gracefully without crashing (#6017).
+        """
+        self._login_admin()
+        req = self.factory.get(
+            f'/manage/{self.program.getUrlBase()}/sectionsbyFOO',
+            {
+                'secids': '1,2,',
+                'clsids': '3,4,',
+                'grade_min': 'invalid',
+                'grade_max': 'xyz',
+            }
+        )
+        req.user = self.admins[0]
+        req.session = self.client.session
+        response = self.moduleobj.sectionsbyFOO(req, None, None, None, self.moduleobj, None, self.program)
+        self.assertEqual(response.status_code, 200)
+
+    def test_classflagdetails_trailing_commas_in_clsids(self):
+        """
+        Verify that classflagdetails() handles trailing commas in clsids
+        gracefully without raising ValueError (#6017).
+        """
+        self._login_admin()
+        req = self.factory.get(
+            f'/manage/{self.program.getUrlBase()}/classflagdetails',
+            {
+                'clsids': '1,2,',
+            }
+        )
+        req.user = self.admins[0]
+        req.session = self.client.session
+        response = self.moduleobj.classflagdetails(req, None, None, None, self.moduleobj, None, self.program)
+        self.assertEqual(response.status_code, 200)

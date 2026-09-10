@@ -201,30 +201,39 @@ class ProgramPrintables(ProgramModuleObj):
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
-        if request.GET.get('first_sort', ''):
-            sort_list.append( cmp_fn[request.GET['first_sort']] )
-            sort_name_list.append( request.GET['first_sort'] )
+        first_sort = request.GET.get('first_sort', '')
+        if first_sort in cmp_fn:
+            sort_list.append( cmp_fn[first_sort] )
+            sort_name_list.append( first_sort )
         else:
             sort_list.append( cmp_fn["category"] )
 
-        if request.GET.get('second_sort', ''):
-            sort_list.append( cmp_fn[request.GET['second_sort']] )
-            sort_name_list.append( request.GET['second_sort'] )
+        second_sort = request.GET.get('second_sort', '')
+        if second_sort in cmp_fn:
+            sort_list.append( cmp_fn[second_sort] )
+            sort_name_list.append( second_sort )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
-        if request.GET.get('third_sort', ''):
-            sort_list.append( cmp_fn[request.GET['third_sort']] )
-            sort_name_list.append( request.GET['third_sort'] )
+        third_sort = request.GET.get('third_sort', '')
+        if third_sort in cmp_fn:
+            sort_list.append( cmp_fn[third_sort] )
+            sort_name_list.append( third_sort )
         else:
             sort_list.append( cmp_fn["title"] )
 
         if 'categories' in request.GET:
             categories = request.GET.getlist('categories')
         if 'grade_min' in request.GET:
-            grade_min = int(request.GET['grade_min'])
+            try:
+                grade_min = int(request.GET['grade_min'])
+            except ValueError:
+                pass
         if 'grade_max' in request.GET:
-            grade_max = int(request.GET['grade_max'])
+            try:
+                grade_max = int(request.GET['grade_max'])
+            except ValueError:
+                pass
 
         classes = ClassSubject.objects.filter(parent_program = self.program, status__gt=0)
         classes = classes.filter(grade_min__lte=grade_max)
@@ -299,12 +308,18 @@ class ProgramPrintables(ProgramModuleObj):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if 'mingrade' in request.GET:
-            mingrade=int(request.GET['mingrade'])
-            classes = classes.filter(grade_max__gte=mingrade)
+            try:
+                mingrade = int(request.GET['mingrade'])
+                classes = classes.filter(grade_max__gte=mingrade)
+            except ValueError:
+                pass
 
         if 'maxgrade' in request.GET:
-            maxgrade=int(request.GET['maxgrade'])
-            classes = classes.filter(grade_min__lte=maxgrade)
+            try:
+                maxgrade = int(request.GET['maxgrade'])
+                classes = classes.filter(grade_min__lte=maxgrade)
+            except ValueError:
+                pass
 
         if 'open' in request.GET:
             classes = [cls for cls in classes if not cls.isFull()]
@@ -410,8 +425,11 @@ class ProgramPrintables(ProgramModuleObj):
         comments = 'comments' in request.GET
         classes = ClassSubject.objects.filter(parent_program = prog)
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
-            classes = [cls for cls in classes if cls.id in clsids]
+            try:
+                clsids = [int(clsid.strip()) for clsid in request.GET['clsids'].split(",") if clsid.strip()]
+                classes = [cls for cls in classes if cls.id in clsids]
+            except ValueError:
+                pass
         if 'accepted' in request.GET:
             classes = [cls for cls in classes if cls.status > 0]
         elif 'cancelled' in request.GET:
@@ -453,14 +471,23 @@ class ProgramPrintables(ProgramModuleObj):
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
-            classes = [cls for cls in classes if cls.id in clsids]
+            try:
+                clsids = [int(clsid.strip()) for clsid in request.GET['clsids'].split(",") if clsid.strip()]
+                classes = [cls for cls in classes if cls.id in clsids]
+            except ValueError:
+                pass
 
         if 'grade_min' in request.GET:
-            classes = [cls for cls in classes if cls.grade_max >= int(request.GET['grade_min'])]
+            try:
+                classes = [cls for cls in classes if cls.grade_max >= int(request.GET['grade_min'])]
+            except ValueError:
+                pass
 
         if 'grade_max' in request.GET:
-            classes = [cls for cls in classes if cls.grade_min <= int(request.GET['grade_max'])]
+            try:
+                classes = [cls for cls in classes if cls.grade_min <= int(request.GET['grade_max'])]
+            except ValueError:
+                pass
 
         if 'accepted' in request.GET:
             classes = [cls for cls in classes if cls.status > 0]
@@ -501,18 +528,30 @@ class ProgramPrintables(ProgramModuleObj):
         sections = self.program.sections()
 
         if 'secids' in request.GET:
-            secids = [int(secid) for secid in request.GET['secids'].split(",")]
-            sections = [sec for sec in sections if sec.id in secids]
+            try:
+                secids = [int(secid.strip()) for secid in request.GET['secids'].split(",") if secid.strip()]
+                sections = [sec for sec in sections if sec.id in secids]
+            except ValueError:
+                pass
 
         if 'clsids' in request.GET:
-            clsids = [int(clsid) for clsid in request.GET['clsids'].split(",")]
-            sections = [sec for sec in sections if sec.parent_class.id in clsids]
+            try:
+                clsids = [int(clsid.strip()) for clsid in request.GET['clsids'].split(",") if clsid.strip()]
+                sections = [sec for sec in sections if sec.parent_class.id in clsids]
+            except ValueError:
+                pass
 
         if 'grade_min' in request.GET:
-            sections = [sec for sec in sections if sec.parent_class.grade_max >= int(request.GET['grade_min'])]
+            try:
+                sections = [sec for sec in sections if sec.parent_class.grade_max >= int(request.GET['grade_min'])]
+            except ValueError:
+                pass
 
         if 'grade_max' in request.GET:
-            sections = [sec for sec in sections if sec.parent_class.grade_min <= int(request.GET['grade_max'])]
+            try:
+                sections = [sec for sec in sections if sec.parent_class.grade_min <= int(request.GET['grade_max'])]
+            except ValueError:
+                pass
 
         if 'accepted' in request.GET:
             sections = [sec for sec in sections if sec.status > 0]
