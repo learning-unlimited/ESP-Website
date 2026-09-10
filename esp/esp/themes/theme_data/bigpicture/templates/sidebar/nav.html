@@ -4,7 +4,7 @@
     <li class="dropdown-header">
         {# links on headers are optional #}
         {% if section.header_link %}
-        <a href="{{section.header_link}}">
+        <a class="text-decoration-none d-block p-3" href="{{section.header_link}}">
         {% endif %}
             {{section.header}}
         {% if section.header_link %}
@@ -16,7 +16,7 @@
     {% for item in section.links %}
     {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
     <li>
-        <a href="{{item.link}}">
+        <a  class="text-decoration-none d-block p-3" href="{{item.link}}">
             {% if item.icon %}
             <i class="bi bi-{{item.icon}}"></i>
             {% endif %}
@@ -41,7 +41,7 @@
             <li class="dropdown-header">
                 {# links on headers are optional #}
                 {% if section.header_link %}
-                <a href="{{section.header_link}}">
+                <a class="text-decoration-none d-block p-3" href="{{section.header_link}}">
                 {% endif %}
                     {{section.header}}
                 {% if section.header_link %}
@@ -53,7 +53,7 @@
             {% for item in section.links %}
             {# TODO(benkraft): allow adding classes to items so we can do logged-in only #}
             <li>
-                <a href="{{item.link}}">
+                <a  class="text-decoration-none d-block p-3" href="{{item.link}}">
                     {% if item.icon %}
                     <i class="bi bi-{{item.icon}}"></i>
                     {% endif %}
