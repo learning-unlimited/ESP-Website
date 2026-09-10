@@ -3,11 +3,12 @@ import subprocess
 
 from django.db.models.aggregates import Min
 from django.db.models.query import Q
-from django.db.models import Count, Sum
+from django.db.models import Count, Prefetch, Sum
 
 from argcache import cache_function_for
-from esp.program.models import ClassSubject, ModeratorRecord
+from esp.program.models import ClassSection, ClassSubject, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
@@ -41,6 +42,19 @@ class TeacherBigBoardModule(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the teacher registration big board in the admin dashboard search dropdown.
+        if view_name != "teacherbigboard":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Teacher Registration Big Board",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["big board", "teacher", "registration", "stats", "statistics", "live", "teacher big board"],
+        )
 
     @main_call
     @needs_admin
@@ -147,7 +161,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
         # Querying for SRs and then extracting the users saves us joining the
         # users table.
         return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
-            ).exclude(category__category__iexact="Lunch"
+            ).exclude(category__is_lunch=True
             ).exclude(teachers=None
             ).values_list('teachers', flat = True).distinct().count()
     num_teachers_teaching = staticmethod(num_teachers_teaching)
@@ -166,7 +180,7 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def num_active_users(self, prog, minutes=10):
         recent = datetime.datetime.now() - datetime.timedelta(0, minutes * 60)
         return ClassSubject.objects.filter(parent_program=prog, timestamp__gt=recent
-        ).exclude(category__category__iexact="Lunch"
+        ).exclude(category__is_lunch=True
         ).exclude(teachers=None
         ).values_list('teachers').distinct().count()
 
@@ -181,20 +195,20 @@ class TeacherBigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def num_class_reg(prog, approved = False, scheduled = False, teachers = None):
         return ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
-        ).exclude(category__category__iexact="Lunch").distinct().count()
+        ).exclude(category__is_lunch=True).distinct().count()
     num_class_reg = staticmethod(num_class_reg)
 
     @cache_function_for(105)
     def reg_classes(self, prog, approved = False, scheduled = False):
         class_times = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
-        ).exclude(category__category__iexact="Lunch"
+        ).exclude(category__is_lunch=True
         ).distinct().values_list('timestamp', flat=True)
         return sorted(class_times)
 
     @cache_function_for(105)
     def teach_times(self, prog, approved = False, scheduled = False):
         teacher_times = dict(ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled)
-        ).exclude(category__category__iexact="Lunch"
+        ).exclude(category__is_lunch=True
         ).exclude(teachers=None
         ).distinct().values_list('teachers').annotate(Min('timestamp')))
         return sorted(teacher_times.values())
@@ -203,14 +217,20 @@ class TeacherBigBoardModule(ProgramModuleObj):
     def get_hours(prog, approved = False, scheduled = False, teachers = None):
         classes = ClassSubject.objects.filter(get_filter(prog, approved = approved, scheduled = scheduled, teachers = teachers)
         ).annotate(num_sections=Count('sections')).filter(num_sections__gt=0
-        ).exclude(category__category__iexact="Lunch")
+        ).exclude(category__is_lunch=True
+        ).prefetch_related(
+            Prefetch('sections',
+                     queryset=ClassSection.objects.order_by('id')
+                         .prefetch_related('meeting_times'),
+                     to_attr='prefetched_sections'),
+        )
         for cls in classes:
             cls.section_sum = 0
-            for sec in cls.get_sections():
-                if approved and not sec.isAccepted():
-                    pass
-                if scheduled and sec.meeting_times.count() == 0:
-                    pass
+            for sec in cls.prefetched_sections:
+                if approved and sec.status <= 0:
+                    continue
+                if scheduled and len(sec.meeting_times.all()) == 0:
+                    continue
                 cls.section_sum += sec.duration
         hours = [[cls.timestamp, cls.class_size_max, cls.section_sum] for cls in classes]
         # use mindate if a class is missing a timestamp so we can still calculate static stats

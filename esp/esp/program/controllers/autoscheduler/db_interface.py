@@ -43,9 +43,7 @@ def load_schedule_from_db(
     timeslots = sorted(
         batch_convert_events(program.getTimeSlots(), program))
 
-    lunch_events = Event.objects.filter(
-            meeting_times__parent_class__category__category="Lunch",
-            meeting_times__parent_class__parent_program=program)
+    lunch_events = program.lunch_timeslots()
 
     lunch_timeslots = [(e.start, e.end) for e in lunch_events]
 
@@ -88,7 +86,7 @@ def load_sections_and_teachers_and_classrooms(
 
     if exclude_lunch:
         sections = sections.exclude(
-                parent_class__category__category="Lunch")
+                parent_class__category__is_lunch=True)
     if exclude_walkins and schedule.program.open_class_registration:
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)
@@ -275,8 +273,7 @@ def check_can_schedule_sections(section_infos, schedule):
     for section, section_obj, possible_conflicts, meeting_times, room_objs \
             in section_infos:
         if section.id in locked_sections:
-            raise SchedulingError("Section {} is locked!".format(
-                section_obj.emailcode()))
+            raise SchedulingError(f"Section {section_obj.emailcode()} is locked!")
         if section.is_scheduled():
             start_time = section.assigned_roomslots[0].timeslot.start
             end_time = section.assigned_roomslots[-1].timeslot.end
@@ -287,10 +284,8 @@ def check_can_schedule_sections(section_infos, schedule):
                         if not (other_time.start >= end_time
                                 or other_time.end <= start_time):
                             raise SchedulingError(
-                                "Teacher {} of section {} is already teaching "
-                                "section {}".format(
-                                    teacher_id, section_obj.emailcode(),
-                                    other_section.emailcode()))
+                                f"Teacher {teacher_id} of section {section_obj.emailcode()} is already teaching "
+                                f"section {other_section.emailcode()}")
 
             # Make sure the room is available
             for room_obj in room_objs:
@@ -300,10 +295,8 @@ def check_can_schedule_sections(section_infos, schedule):
                         other_section = occupier.target
                         if other_section.id != section.id:
                             raise SchedulingError(
-                                "Destination room {} of section {} was "
-                                "already occupied by section {}".format(
-                                    room_obj.name, section_obj.emailcode(),
-                                    other_section.emailcode()))
+                                f"Destination room {room_obj.name} of section {section_obj.emailcode()} was "
+                                f"already occupied by section {other_section.emailcode()}")
 
 
 @util.timed_func("db_interface_ensure_section_not_moved")
@@ -315,14 +308,14 @@ def ensure_section_not_moved(section, as_section):
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
         raise SchedulingError(
-                "Section {} was moved.".format(section.emailcode()))
+                f"Section {section.emailcode()} was moved.")
 
 
 @util.timed_func("db_interface_unschedule_section")
 def unschedule_section(
         section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
-    logger.info("Unscheduling {}".format(section.emailcode()))
+    logger.info(f"Unscheduling {section.emailcode()}")
     section.clear_meeting_times()
     section.clearRooms()
     if unscheduled_sections_log is not None:
@@ -369,8 +362,7 @@ def convert_classection_obj(
     of timeslots for availabilities. """
     if not section_satisfies_constraints(
             section, rooms_by_section, meeting_times_by_section):
-        logger.info("Warning: Autoscheduler can't handle section {}"
-                    .format(section.emailcode()))
+        logger.info(f"Warning: Autoscheduler can't handle section {section.emailcode()}")
         return None
 
     teachers = teachers_by_section[section.id]
@@ -397,8 +389,8 @@ def convert_classection_obj(
     assert (scheduling_hash_of(
             section, rooms_by_section, meeting_times_by_section) ==
             as_section.initial_state), (
-        "AS_ClassSection state doesn't match ClassSection state "
-        "for section {}".format(section.emailcode()))
+        f"AS_ClassSection state doesn't match ClassSection state "
+        f"for section {section.emailcode()}")
 
     return as_section
 
@@ -499,8 +491,7 @@ def load_constraints(program, constraints_overrides=None):
         tag_overrides = json.loads(tag_value)
     except ValueError as e:
         raise SchedulingError(
-                "Constraints Tag is malformatted with error {}: {}" .format(
-                    e, tag_value))
+                f"Constraints Tag is malformatted with error {e}: {tag_value}")
 
     return util.override(
         [config.DEFAULT_CONSTRAINTS_ENABLED,
@@ -520,8 +511,7 @@ def load_scorers(program, scorer_overrides=None):
     try:
         tag_overrides = json.loads(tag_value)
     except ValueError as e:
-        raise SchedulingError("Scoring Tag is malformatted with error {}: {}"
-                              .format(e, tag_value))
+        raise SchedulingError(f"Scoring Tag is malformatted with error {e}: {tag_value}")
 
     return util.override(
         [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides])
@@ -544,8 +534,7 @@ def load_resource_constraints(
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
-            "Resource constraints Tag is malformatted with error {}: {}"
-            .format(e, tag_value))
+            f"Resource constraints Tag is malformatted with error {e}: {tag_value}")
     specs = [config.DEFAULT_RESOURCE_CONSTRAINTS,
              tag_overrides,
              specification_overrides]
@@ -578,8 +567,7 @@ def load_resource_scoring(
                 if "_comment" not in k}
     except ValueError as e:
         raise SchedulingError(
-            "Resource scoring Tag is malformatted with error {}: {}"
-            .format(e, tag_value))
+            f"Resource scoring Tag is malformatted with error {e}: {tag_value}")
 
     specs = [config.DEFAULT_RESOURCE_SCORING,
              tag_overrides,
@@ -676,8 +664,8 @@ def convert_classroom_resources(
             for target in assignments:
                 if target in known_sections:
                     raise SchedulingError(
-                        "Room {} is double-booked and has known section " +
-                        "num {}".format(classroom.name, target))
+                        f"Room {classroom.name} is double-booked and has known section " +
+                        f"num {target}")
         elif len(assignments) == 1:
             target = assignments[0]
             if target not in known_sections:

@@ -11,6 +11,7 @@
             <li>
               <label{% if option.attrs.id %} for="{{ option.attrs.id }}"{% endif %}>
                 {% include option.template_name with widget=option %}{{ option.label }}
+              </label>
             </li>
             {% else %}
             <li>

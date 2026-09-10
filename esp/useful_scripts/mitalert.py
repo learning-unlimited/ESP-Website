@@ -9,7 +9,7 @@ import re
 import sys
 from io import open
 
-prog = Program.objects.get(url=input("Program URL (e.g. Spark/2014): "))
+prog = choose_program()
 rawfile = open(os.path.expanduser(input("Output CSV: ")), "wb")
 csvfile = csv.writer(rawfile, dialect="excel")
 

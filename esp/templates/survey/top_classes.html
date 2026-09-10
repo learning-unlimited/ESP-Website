@@ -35,11 +35,11 @@
 
 <div class="top-classes-filters">
     {# ---- Filter Panel ---- #}
-    <div class="filter-panel panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title"><span class="glyphicon glyphicon-filter"></span> Filter Results</h3>
+    <div class="filter-panel card">
+        <div class="card-header">
+            <h3 class="mb-0"><span class="bi bi-funnel"></span> Filter Results</h3>
         </div>
-        <div class="panel-body">
+        <div class="card-body">
             <form action="" method="get" class="form-inline">
                 {% if not is_favorite_class %}
                 <div class="form-group">
@@ -52,18 +52,18 @@
                     <input type="text" class="form-control input-sm" size="4" name="num_cut" id="num_cut" value="{{ num_cut }}" />
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm" style="margin-left:12px;">
-                    <span class="glyphicon glyphicon-search"></span> Filter
+                    <span class="bi bi-search"></span> Filter
                 </button>
             </form>
         </div>
     </div>
 
     {# ---- Category Panel ---- #}
-    <div class="filter-panel panel panel-default">
-        <div class="panel-heading">
-            <h3 class="panel-title"><span class="glyphicon glyphicon-th-list"></span> Show Categories</h3>
+    <div class="filter-panel card">
+        <div class="card-header">
+            <h3 class="mb-0"><span class="bi bi-list-columns"></span> Show Categories</h3>
         </div>
-        <div class="panel-body">
+        <div class="card-body">
             <div class="category-grid">
                 {% for cat in categories %}
                 <div class="checkbox">
@@ -126,7 +126,7 @@
 {% else %}
 
 <div class="top-classes-empty">
-    <span class="glyphicon glyphicon-info-sign"></span>
+    <span class="bi bi-info-circle"></span>
     <p>There are no responses for this survey yet.</p>
     <p><small>Once students submit survey responses, top-rated classes will appear here.</small></p>
 </div>
@@ -135,7 +135,7 @@
 
 <p>
     <a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/main">Return to the main program management page</a>
-    <a class="btn btn-default" href="/manage/{{ program.getUrlBase }}/surveys" style="margin-left: 8px;">Return to survey management</a>
+    <a class="btn btn-secondary" href="/manage/{{ program.getUrlBase }}/surveys" style="margin-left: 8px;">Return to survey management</a>
 </p>
 
 {% endblock %}

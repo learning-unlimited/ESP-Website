@@ -33,10 +33,20 @@ Learning Unlimited, Inc.
 """
 
 import json
+import time
+from unittest.mock import patch
 
-from esp.customforms.models import Form, Field
-from esp.customforms.DynamicModel import DynamicModelHandler
+import psycopg2
+from django.db import connection, transaction
+from django.db.utils import OperationalError
+from django.test import TransactionTestCase, override_settings
+
+from esp.customforms.models import Form, Field, Page, Section
+from esp.customforms.DynamicModel import (
+    DynamicModelHandler, PG_LOCK_NOT_AVAILABLE, lock_timeout, schema_lock)
 from esp.customforms.views import hasPerm
+from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.users.models import ESPUser, AnonymousESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -174,9 +184,9 @@ class CustomFormsTest(TestCase):
         response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Incorrect answer')
-        responses_corrected = responses_initial
-        responses_corrected[f'question_{field_id_map["ShortText"]}'] = 'Smart'
-        responses_initial[f'question_{field_id_map["Choose an option"]}'] = 'B'
+        responses_corrected = responses_initial.copy()
+        responses_corrected['question_%d' % field_id_map['ShortText']] = 'Smart'
+        responses_corrected['question_%d' % field_id_map['Choose an option']] = 'B'
         post_dict.update(responses_corrected)
         response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
         self.assertRedirects(response, f"/customforms/success/{form.id}/")
@@ -203,7 +213,9 @@ class CustomFormsTest(TestCase):
         indiv_response = response_data['answers'][0]
         self.assertEqual(int(indiv_response['user_id']), self.student.id)
         for field_spec in indiv_response:
-            self.assertEqual(self.map_form_value(responses_corrected[key]), indiv_response[key])
+            if field_spec in ['user_id', 'user_display', 'user_email', 'username', 'id']:
+                continue
+            self.assertEqual(self.map_form_value(responses_corrected[field_spec]), indiv_response[field_spec])
         self.assertTrue('questions' in response_data)
         self.assertEqual(len(response_data['questions']), len(responses_initial) + 4)   #   provided fields plus user_id, user_display, user_email, username
         for entry in response_data['questions']:
@@ -380,44 +392,54 @@ class ViewResponseTest(TestCase):
         self.student.save()
         self.student.makeRole('Student')
 
-        self.form = Form.objects.create(
-            title='Test Form', created_by=self.admin,
+        self.admin_form = Form.objects.create(
+            title='Admin Form', created_by=self.admin,
             link_type='-1', link_id=-1,
             success_message='OK', success_url='/'
         )
-        # Create dynamic model table so view doesn't crash on query
-        dmh = DynamicModelHandler(self.form)
-        dmh.createTable()
+        self.teacher_form = Form.objects.create(
+            title='Teacher Form', created_by=self.teacher,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        # Create dynamic model tables so views don't crash on query
+        DynamicModelHandler(self.admin_form).createTable()
+        DynamicModelHandler(self.teacher_form).createTable()
 
     def tearDown(self):
         for form in Form.objects.all():
-            dmh = DynamicModelHandler(form)
-            dmh.purgeDynModel()
+            DynamicModelHandler(form).purgeDynModel()
 
     def test_admin_can_view_responses(self):
-        """Admin should be able to view responses page."""
+        """Admin should be able to view any form's responses page."""
         self.client.login(username='resp_admin', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
         self.assertEqual(response.status_code, 200)
 
-    def test_teacher_can_view_responses(self):
-        """Teacher should be able to view responses page."""
+    def test_teacher_can_view_own_form_responses(self):
+        """Teacher should be able to view responses for their own form."""
         self.client.login(username='resp_teacher', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.teacher_form.id)
         self.assertEqual(response.status_code, 200)
+
+    def test_teacher_cannot_view_others_form_responses(self):
+        """Teacher should be blocked from viewing another user's form responses."""
+        self.client.login(username='resp_teacher', password='password')
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
+        self.assertEqual(response.status_code, 403)
 
     def test_student_cannot_access(self):
         """Student should not be able to view responses."""
         self.client.login(username='resp_student', password='password')
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
         # Should redirect to home page, which is '/'
         self.assertRedirects(response, '/')
 
     def test_unauthenticated_redirected(self):
         """Unauthenticated user should be redirected to login (by decorator)."""
         self.client.logout()
-        response = self.client.get('/customforms/responses/%d/' % self.form.id)
-        self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.form.id)
+        response = self.client.get('/customforms/responses/%d/' % self.admin_form.id)
+        self.assertRedirects(response, '/accounts/login/?next=/customforms/responses/%d/' % self.admin_form.id)
 
 
 class FormBuilderViewTest(TestCase):
@@ -482,3 +504,547 @@ class FormBuilderViewTest(TestCase):
         self.client.login(username='builder_student', password='password')
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
+
+class EmptyFormTitleValidationTest(TestCase):
+    """Tests for validating that form title cannot be empty."""
+
+    def setUp(self):
+        """Create a test admin account."""
+        self.admin, _ = ESPUser.objects.get_or_create(username='validation_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_create_form_with_empty_title(self):
+        """Test that creating a form with an empty title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with empty title
+        form_data = {
+            'title': '',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+        # Verify no form was created
+        self.assertEqual(Form.objects.filter(title='').count(), 0)
+
+    def test_create_form_with_whitespace_only_title(self):
+        """Test that creating a form with whitespace-only title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with whitespace-only title
+        form_data = {
+            'title': '   ',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+    def test_create_form_with_missing_or_null_title(self):
+        """Test that missing/null title values are rejected with a clear validation error."""
+        self.client.login(username=self.admin.username, password='password')
+
+        base_form_data = {
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        form_data_missing = dict(base_form_data)
+        response_missing = self.client.post("/customforms/submit/", json.dumps(form_data_missing), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_missing.status_code, 400)
+        response_missing_data = json.loads(response_missing.content.decode('UTF-8'))
+        self.assertIn('message', response_missing_data)
+        self.assertIn('required', response_missing_data['message'].lower())
+
+        form_data_null = dict(base_form_data)
+        form_data_null['title'] = None
+        response_null = self.client.post("/customforms/submit/", json.dumps(form_data_null), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response_null.status_code, 400)
+        response_null_data = json.loads(response_null.content.decode('UTF-8'))
+        self.assertIn('message', response_null_data)
+        self.assertIn('required', response_null_data['message'].lower())
+
+    def test_modify_form_with_empty_title(self):
+        """Test that modifying a form to have an empty title is rejected."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # First create a valid form
+        existing_form = Form.objects.create(
+            title='Valid Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+        # Try to modify it with an empty title
+        modify_data = {
+            'form_id': existing_form.id,
+            'title': '',
+            'desc': 'Modified description',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        response_data = json.loads(response.content.decode('UTF-8'))
+        self.assertIn('message', response_data)
+        self.assertIn('required', response_data['message'].lower())
+
+        # Verify the form title wasn't changed
+        existing_form.refresh_from_db()
+        self.assertEqual(existing_form.title, 'Valid Form')
+
+    def test_create_form_with_valid_title(self):
+        """Test that creating a form with a valid title succeeds."""
+        self.client.login(username=self.admin.username, password='password')
+
+        # Form data with valid title
+        form_data = {
+            'title': 'Valid Form Title',
+            'perms': '',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'sections': [{
+                    'fields': [
+                        {'data': {'field_type': 'textField', 'question_text': 'Test', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}}
+                    ],
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0}
+                }],
+                'seq': 0
+            }],
+            'link_type': '-1',
+            'desc': 'Test'
+        }
+
+        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(response.content, encoding='UTF-8'), "OK")
+
+        # Verify form was created with correct title
+        forms = Form.objects.filter(title='Valid Form Title')
+        self.assertTrue(forms.exists())
+        self.assertEqual(forms.count(), 1)
+
+    def test_modify_form_truncates_and_strips_title(self):
+        """Test that modifying a form normalizes title by trimming and truncating to max length."""
+        self.client.login(username=self.admin.username, password='password')
+
+        existing_form = Form.objects.create(
+            title='Valid Form', description='Test', created_by=self.admin,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+
+        max_len = Form._meta.get_field('title').max_length
+        long_title = '  ' + ('A' * (max_len + 10)) + '  '
+
+        modify_data = {
+            'form_id': existing_form.id,
+            'title': long_title,
+            'desc': 'Modified description',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(str(response.content, encoding='UTF-8'), 'OK')
+
+        existing_form.refresh_from_db()
+        self.assertEqual(existing_form.title, 'A' * max_len)
+
+
+class FormOwnershipAccessTest(TestCase):
+    """Tests that only the form creator, admins, or morphed users can access form response data."""
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='owner_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.teacher_owner, _ = ESPUser.objects.get_or_create(username='owner_teacher')
+        self.teacher_owner.set_password('password')
+        self.teacher_owner.save()
+        self.teacher_owner.makeRole('Teacher')
+
+        self.teacher_other, _ = ESPUser.objects.get_or_create(username='other_teacher')
+        self.teacher_other.set_password('password')
+        self.teacher_other.save()
+        self.teacher_other.makeRole('Teacher')
+
+        self.form = Form.objects.create(
+            title='Ownership Test Form', description='Test',
+            created_by=self.teacher_owner,
+            link_type='-1', link_id=-1, anonymous=False, perms='',
+            success_message='OK', success_url='/'
+        )
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section 1', seq=1)
+        self.field = Field.objects.create(
+            form=self.form, section=section,
+            field_type='textField', seq=0, label='Q1', required=False
+        )
+        self.question_name = f'question_{self.field.id}'
+        dmh = DynamicModelHandler(self.form)
+        dmh.createTable()
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            dmh = DynamicModelHandler(form)
+            dmh.purgeDynModel()
+
+    def test_owner_can_view_responses(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_view_responses(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_view_any_responses(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(f'/customforms/responses/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_viewresponse_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get('/customforms/responses/999999/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_get_excel(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_get_excel(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_get_any_excel(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_exceldata_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get('/customforms/exceldata/999999/')
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_get_data(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_nonowner_teacher_cannot_get_data(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_get_any_data(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': self.form.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_getdata_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/getData/',
+            {'form_id': 999999},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_nonowner_teacher_cannot_bulk_download(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': self.form.id, 'question_name': self.question_name},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_bulk_download_any(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': self.form.id, 'question_name': self.question_name},
+        )
+        # No responses exist so the zip will be empty, but access should be granted
+        self.assertEqual(response.status_code, 200)
+
+    def test_bulkdownload_nonexistent_form_returns_404(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self.client.get(
+            '/customforms/bulkdownloadfiles/',
+            {'form_id': 999999, 'question_name': self.question_name},
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+class CustomFormModelOrderingTest(TestCase):
+    def test_page_section_field_default_order_is_seq(self):
+        self.assertEqual(Page._meta.ordering, ['seq'])
+        self.assertEqual(Section._meta.ordering, ['seq'])
+        self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+def lock_timeout_ms():
+    """
+    Returns lock_timeout in milliseconds.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT setting FROM pg_settings WHERE name = 'lock_timeout'")
+        return int(cursor.fetchone()[0])
+
+
+class SchemaLockTimeoutTest(TestCase):
+    """
+    Tests for the lock_timeout safeguard around custom form schema changes.
+    """
+
+    def test_timeout_is_set_and_restored(self):
+        """The timeout applies inside the block and is undone afterwards."""
+        before = lock_timeout_ms()
+        with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+            with lock_timeout():
+                self.assertEqual(lock_timeout_ms(), 1234)
+        self.assertEqual(lock_timeout_ms(), before)
+
+    def test_timeout_is_restored_when_the_block_fails(self):
+        """A failed schema change must not leave lock_timeout set."""
+        before = lock_timeout_ms()
+        with self.assertRaises(ValueError):
+            with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+                with lock_timeout():
+                    raise ValueError('boom')
+        self.assertEqual(lock_timeout_ms(), before)
+
+    def test_lock_timeout_error_becomes_a_readable_error(self):
+        """A lock timeout is reported to the user, not dumped as a 500."""
+        with self.assertRaises(ESPError_NoLog) as caught:
+            with schema_lock("Could not do the thing"):
+                raise self._operational_error(PG_LOCK_NOT_AVAILABLE)
+        self.assertIn('Could not do the thing', str(caught.exception))
+
+    def test_other_database_errors_are_not_swallowed(self):
+        """Only lock timeouts get translated; anything else propagates as-is."""
+        original = self._operational_error('08006')    # connection failure
+        with self.assertRaises(OperationalError) as caught:
+            with schema_lock("Could not do the thing"):
+                raise original
+        self.assertIs(caught.exception, original)
+
+    def test_success_is_not_disturbed(self):
+        """The wrapper is transparent when nothing goes wrong."""
+        with schema_lock("Could not do the thing"):
+            result = 'fine'
+        self.assertEqual(result, 'fine')
+
+    def _operational_error(self, sqlstate):
+        """
+        Returns a genuine OperationalError carrying the given SQLSTATE
+        """
+        try:
+            #   The savepoint keeps the failure from poisoning the test's
+            #   transaction.
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "DO $$ BEGIN RAISE EXCEPTION 'database error'"
+                        f" USING ERRCODE = '{sqlstate}'; END $$")
+        except OperationalError as error:
+            return error
+        self.fail(f'PostgreSQL did not raise an error for SQLSTATE {sqlstate}')
+
+
+class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
+    """
+    End-to-end check that a schema change gives up instead of hanging when
+    another connection is holding the lock it needs.
+    """
+
+    def setUp(self):
+        self.user, _ = ESPUser.objects.get_or_create(username='lock_admin')
+        self.form = Form.objects.create(
+            title='Lock Form', created_by=self.user,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        self.dmh = DynamicModelHandler(self.form)
+        self.dmh.createTable()
+        #   Registered as soon as the table exists: this test case commits, so
+        #   a response table left behind by a failure here would break the
+        #   flush at the end of every later test in this database.
+        self.addCleanup(self.dmh.deleteTable)
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section 1', seq=1)
+        self.field = Field.objects.create(
+            form=self.form, section=section, field_type='textField', seq=1,
+            label='Question', required=False)
+
+    @override_settings(CUSTOMFORMS_LOCK_TIMEOUT='250ms')
+    def test_schema_change_gives_up_when_the_table_is_locked(self):
+        before = lock_timeout_ms()
+        blocker = psycopg2.connect(**connection.get_connection_params())
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute(
+                    f'LOCK TABLE "customforms"."customforms_response_{self.form.id}"'
+                    ' IN ACCESS EXCLUSIVE MODE')
+
+                started = time.time()
+                with self.assertRaises(ESPError_NoLog):
+                    self.dmh.addField(self.field)
+                #   The point of the exercise: we gave up quickly rather than
+                #   blocking until the other transaction ended.
+                self.assertLess(time.time() - started, 30)
+        finally:
+            blocker.rollback()
+            blocker.close()
+
+        #   The connection must still be usable, and the timeout must not have
+        #   leaked into it.
+        self.assertEqual(lock_timeout_ms(), before)
+
+
+class FailedFormSaveRollbackTest(TestCase):
+    """
+    A custom form save that fails partway through must not leave half of the
+    form behind.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='rollback_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='rollback_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_form_metadata_is_not_committed_when_the_table_cannot_be_made(self):
+        form_data = {
+            'title': 'Rollback Form',
+            'perms': '',
+            'link_id': -1,
+            'link_type': '-1',
+            'desc': 'Test',
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0},
+                    'fields': [{'data': {
+                        'field_type': 'textField', 'question_text': 'Q',
+                        'seq': 0, 'required': True, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+
+        failure = ESPError('could not get a lock', log=False)
+        with patch.object(DynamicModelHandler, 'createTable', side_effect=failure):
+            response = self.client.post(
+                "/customforms/submit/", json.dumps(form_data),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('could not get a lock',
+                      json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Rollback Form').exists())
+        self.assertFalse(Field.objects.filter(label='Q').exists())

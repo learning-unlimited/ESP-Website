@@ -4,8 +4,8 @@
 
 {% block content %}
 
-<div class="alert alert-info">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div role="alert" class="alert alert-info">
+  <span class="bi bi-info-circle" aria-hidden="true"></span>
   {% if undo %}
   <b>Unexpired {{ ids|length }} student registrations.</b>
   {% else %}

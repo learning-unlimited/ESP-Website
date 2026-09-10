@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from esp.program.models import ProgramModule, RegistrationProfile, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -13,7 +11,7 @@ class AdminTestingModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         kwargs.update({'num_students': 5, 'num_timeslots': 2, 'timeslot_length': 50,
                        'timeslot_gap': 10})
-        super(AdminTestingModuleTest, self).setUp(*args, **kwargs)
+        super().setUp(*args, **kwargs)
 
         pm = ProgramModule.objects.get(handler='AdminTestingModule')
         self.module = ProgramModuleObj.getFromProgModule(self.program, pm)

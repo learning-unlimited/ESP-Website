@@ -11,11 +11,10 @@ def disable_csrf_cookie_update(fn):
     csrf middleware from doing either.
     """
     @wraps(fn)
-    def wrapped(request, *args, **kwargs):
-        response = fn(request, *args, **kwargs)
+    def wrapped(*args, **kwargs):
+        response = fn(*args, **kwargs)
         response.csrf_processing_done = True
         response.no_set_cookies = True
         return response
     return wrapped
-
 

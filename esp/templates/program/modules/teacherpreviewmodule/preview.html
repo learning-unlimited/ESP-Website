@@ -10,7 +10,16 @@
 <div id="catalog">
   <table align="center" cellpadding="0" cellspacing="0" class="fullwidth" style="text-align: center">
     <tr>
-        <th align="center"><h2>Classes Already Registered</h2></th>
+        <th align="center">
+             <h2>
+                {% if categories %}
+                    Classes Already Registered
+                {% else %}
+                    No classes have been registered yet.
+                {% endif %}
+             </h2>
+          
+        </th>
     </tr>
 
     

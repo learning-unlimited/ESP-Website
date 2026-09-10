@@ -50,6 +50,7 @@ import datetime
 
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
+    permission_types = ('Student/PhaseZero',)
 
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
@@ -184,7 +185,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         if not old_group.user.exists():
                             old_group.delete()
                 else:
-                    join_error = 'Error - This group already contains the maximum number of students (%s).' % (num_allowed_users)
+                    join_error = f'Error - This group already contains the maximum number of students ({num_allowed_users}).'
 
         context['join_error'] = join_error
         if join_error and not in_lottery:
@@ -233,8 +234,8 @@ class StudentRegPhaseZero(ProgramModuleObj):
         return JsonResponse(obj_list, safe=False)
 
     def send_confirmation_email(self, student, note=None):
-        email_title = 'Student Lottery Confirmation for %s: %s' % (self.program.niceName(), student.name())
-        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_title = f'Student Lottery Confirmation for {self.program.niceName()}: {student.name()}'
+        email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
         email_context = {'student': student,
                          'program': self.program,
                          'curtime': datetime.datetime.now(),
