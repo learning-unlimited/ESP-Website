@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.program.modules         import module_ext
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
@@ -71,7 +71,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
             title="Scheduling",
-            category="Logistics",
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
@@ -213,6 +213,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """ This call exists for debugging and testing purposes.  It's not a disaster if it's
         called in production, but it is annoying.
         Clears the change log for this program. """
+
+        if request.method != 'POST':
+            return HttpResponse('Method not allowed. Use POST.', status=405)
 
         self.get_change_log(prog).entries.all().delete()
         context = {}
@@ -364,13 +367,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        data = list(prog.lunch_timeslots().values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
+    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
+                                              lambda e: {'prog': e.program} if e.program_id else {})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
+                                              lambda sec: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
+                                              lambda cls: {'prog': cls.parent_program})
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 

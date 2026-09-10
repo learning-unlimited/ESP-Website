@@ -92,7 +92,10 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
 
     def _get_or_create_category(self, name):
-        category, _ = ClassCategories.objects.get_or_create(category=name)
+        category, _ = ClassCategories.objects.get_or_create(
+            category=name,
+            is_lunch=(name.lower() == 'lunch'),
+        )
         return category
 
     def _create_special_class(self, category_name):

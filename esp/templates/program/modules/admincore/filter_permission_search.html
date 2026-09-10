@@ -1,0 +1,23 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Create Filter Permission{% endblock %}
+
+{% block content %}
+
+<h1>Create Filter Permission</h1>
+
+<p>Grant a permission to a dynamic group of users by defining who should receive it. For example, you can give early registration access to all 7th graders, or extend a deadline for students in a particular school.</p>
+
+<h2>Step 1: Select users</h2>
+
+<p>Use the form below to choose which users this permission should apply to. You can start from a program list (such as enrolled students) and narrow it down with filters like grade, school, or registration status.</p>
+
+{% with include_common="True" %}
+{% include "users/usersearch/list_selector.html" %}
+{% endwith %}
+
+<p><a href="/manage/{{ program.getUrlBase }}/deadlines#new_filter_perm">&larr; Back to deadlines and permissions</a></p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

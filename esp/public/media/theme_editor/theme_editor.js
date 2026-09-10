@@ -1,6 +1,5 @@
 function showColor() {
     $j('.color').each(function(i){
-        var default_color = $j(this).data("default");
         $j(this).spectrum({
             type: "color",
             showInput: true,
@@ -10,9 +9,12 @@ function showColor() {
             palette: [palette_list],
             showPaletteOnly: true
         });
-        // Create the "Reset Color" button
+        // Create the "Reset Color" button.  Read data-default dynamically at
+        // click time so the button reflects any Bootswatch-theme dropdown changes
+        // that updated data-default after the picker was initialised.
         var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').on('click', function() {
-            $j(this).siblings("input").spectrum("set", default_color); // Reset color to default
+            var $inp = $j(this).siblings("input");
+            $inp.spectrum("set", $inp.data("default")); // Reset color to current default
         });
         // Create the "Remove" button
         var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').on('click', function() {

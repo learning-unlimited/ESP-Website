@@ -17,7 +17,7 @@ Thank you for teaching for {{ one }}. Please fill out/update the form below.
 
 {% if form.has_errors %}
 <div role="alert" class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    <span class="bi bi-info-circle" aria-hidden="true"></span>
         Please fix the error{{ form.error_dict|pluralize }} in the form.
 </div>
 {% endif %}
@@ -200,12 +200,12 @@ Message for Director
 <center>
 
 {% if module.meets_deadline %}
-<button type="submit" class="btn btn-primary btn-large">
+<button type="submit" class="btn btn-primary btn-lg">
 {% if class.id %}
-<span class="glyphicon glyphicon-floppy-saved"></span>
+<span class="bi bi-save"></span>
 Save course!
 {% else %}
-<span class="glyphicon glyphicon-education"></span>
+<span class="bi bi-mortarboard"></span>
 Teach for {{one}}!
 {% endif %}
 </button>

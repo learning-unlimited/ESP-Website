@@ -310,13 +310,13 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                                   "teacher 'sections' should be a list")
 
     def testClassSubjectsCatalogMode(self):
-        """Catalog mode includes extra fields: class_info, prereqs, difficulty."""
+        """Catalog mode includes extra fields: class_info, prereqs, difficulty, difficulty_description."""
         url = '/json/%s/class_subjects/catalog' % self.program.getUrlBase()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         json_classes = response.json()
         for cls_data in json_classes['classes']:
-            for field in ('class_info', 'prereqs', 'difficulty'):
+            for field in ('class_info', 'prereqs', 'difficulty', 'difficulty_description'):
                 self.assertIn(field, cls_data,
                               "catalog mode class entry missing field '%s'" % field)
 
@@ -334,3 +334,39 @@ class JSONDataModuleTest(ProgramFrameworkTest):
             self.assertLessEqual(cls_data['grade_max'], prog_max,
                                  "grade_max above program maximum for class id=%s" % cid)
 
+
+    def testClassInfoExcludesRoomAndLocation(self):
+        """class_info endpoint must NOT expose per-section room or top-level location."""
+        cls = self.program.classes().first()
+        url = '/json/%s/class_info?class_id=%d' % (self.program.getUrlBase(), cls.id)
+
+        # Test as a student (no admin privileges)
+        self.client.login(username=self.students[0].username, password='password')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        cls_data = data['classes'][0]
+        self.assertNotIn('location', cls_data,
+                         "class_info must not expose top-level 'location' to students")
+        for sec in cls_data.get('sections', []):
+            self.assertNotIn('room', sec,
+                             "class_info must not expose per-section 'room' to students")
+
+    def testClassAdminInfoIncludesRoomAndLocation(self):
+        """class_admin_info endpoint must still expose room and location to admins."""
+        cls = self.program.classes().first()
+        url = '/json/%s/class_admin_info?class_id=%d' % (self.program.getUrlBase(), cls.id)
+
+        # Test as an admin
+        self.client.login(username=self.admins[0].username, password='password')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        cls_data = data['classes'][0]
+        self.assertIn('location', cls_data,
+                      "class_admin_info must include top-level 'location' for admins")
+        for sec in cls_data.get('sections', []):
+            self.assertIn('room', sec,
+                          "class_admin_info must include per-section 'room' for admins")

@@ -32,21 +32,25 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import FinancialAidRequest, SplashInfo
-from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
+from esp.accounting.models import FinancialAidGrant, LineItemType, LineItemOptions, Transfer
+from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.tagdict.models import Tag
+from esp.program.controllers.studentclassregmodule import RegistrationTypeController
 from esp.users.models import ESPUser
 
 from decimal import Decimal
+import json
 import random
 import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        from esp.program.modules.base import ProgramModule
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update( {
@@ -481,6 +485,99 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
 
+        #   Check that selecting multiple options for a multi-select extra item works (including custom amount)
+        lit4 = LineItemType.objects.create(
+            program=self.program,
+            text='Workshops',
+            required=False,
+            max_quantity=1,
+            amount_dec=Decimal('0.00'),
+            selection_type='multiple',
+            for_finaid=True,
+        )
+        opt_a = LineItemOptions.objects.create(lineitem_type=lit4, description='AI', amount_dec=Decimal('12.00'), is_custom=False)
+        opt_b = LineItemOptions.objects.create(lineitem_type=lit4, description='Robotics', amount_dec=Decimal('8.00'), is_custom=False)
+        opt_c = LineItemOptions.objects.create(lineitem_type=lit4, description='Other', amount_dec=None, is_custom=True)
+
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%s-options' % lit4.id: [str(opt_a.id), str(opt_c.id)],
+            'multi%s-custom_amount_%s' % (lit4.id, opt_c.id): '5.50',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Ensure that two Transfers exist for the multi-select item (one per selected option)
+        workshop_transfers = Transfer.objects.filter(user=student, line_item=lit4).order_by('id')
+        self.assertEqual(workshop_transfers.count(), 2)
+        self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
+
+        #   Check that the saved selections are restored when the form is reloaded,
+        #   including the amount that was entered for the custom option
+        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        forms_by_lineitem = {f['LineItem'].id: f['form'] for f in response.context['forms']}
+        workshops_form = forms_by_lineitem[lit4.id]
+        self.assertEqual(set(workshops_form.initial['options']), {opt_a.id, opt_c.id})
+        self.assertEqual(workshops_form.initial['custom_amount_%d' % opt_c.id], Decimal('5.50'))
+
+        #   Every checkbox needs the data- attributes that extracosts.js reads to keep
+        #   the displayed total in sync, and only custom options get an amount input
+        option_rows = {str(checkbox.data['value']): (checkbox, amount_field)
+                       for checkbox, amount_field in workshops_form.option_rows()}
+        self.assertEqual(set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)})
+        self.assertIsNone(option_rows[str(opt_a.id)][1])
+        self.assertIsNotNone(option_rows[str(opt_c.id)][1])
+        self.assertIn('data-cost="12.00"', str(option_rows[str(opt_a.id)][0]))
+        self.assertIn('data-for_finaid="true"', str(option_rows[str(opt_b.id)][0]))
+        self.assertIn('data-is_custom="true"', str(option_rows[str(opt_c.id)][0]))
+
+        #   The same data- attributes are needed by the single-select radio buttons
+        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]['option']))
+
+        #   Check that selecting a custom option without entering an amount is an
+        #   error, and does not discard the options that were already saved
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%d-options' % lit4.id: [str(opt_b.id), str(opt_c.id)],
+            'multi%d-custom_amount_%d' % (lit4.id, opt_c.id): '',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['error_custom'])
+        self.assertEqual(set(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         {opt_a.id, opt_c.id})
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Check that changing the selection replaces the previous options
+        post_data['multi%d-options' % lit4.id] = [str(opt_b.id)]
+        del post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         [opt_b.id])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 8)
+
+        #   Check that clearing the selection removes all of the options
+        del post_data['multi%d-options' % lit4.id]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Transfer.objects.filter(user=student, line_item=lit4).exists())
+        self.assertEqual(iac.amount_due(), program_cost + 7)
+
+        #   Restore the multi-select options for the financial aid checks below
+        post_data['multi%d-options' % lit4.id] = [str(opt_a.id), str(opt_c.id)]
+        post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)] = '5.50'
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)
@@ -507,7 +604,373 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+    def test_catalog_deadline(self):
+        """Test that catalog respects Student/Catalog deadline."""
+        from datetime import timedelta
+        from django.utils import timezone
 
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline configured - catalog should work
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Active deadline - catalog should work
+        perm = Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1)
+        )
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+
+        # Expired deadline - should show error
+        perm.end_date = timezone.now() - timedelta(hours=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # Future deadline (configured but not yet started) - should also be closed
+        perm.start_date = timezone.now() + timedelta(hours=1)
+        perm.end_date = timezone.now() + timedelta(days=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_deadline_admin_bypass(self):
+        """Admins can see the catalog while it is closed; students cannot."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+
+        # A student still gets the deadline page
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # An admin gets the real catalog, marked no-store so that a shared cache
+        # cannot keep it and hand it to students afterwards
+        admin = random.choice(self.admins)
+        self.assertTrue(self.client.login(username=admin.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.expect_template(response, 'program/modules/studentclassregmodule/catalog.html')
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_catalog_deadline_is_configurable(self):
+        """Admins must be able to create the Student/Catalog deadline."""
+        from esp.program.modules.handlers.admincore import NewDeadlineForm
+
+        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn('Student/Catalog', Permission.deadline_types)
+
+        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+        Permission(permission_type='Student/Catalog', program=self.program,
+                   user=None).full_clean()
+
+    def test_catalog_json_open(self):
+        """catalog_json returns 200 with JSON when catalog is open."""
+        import json
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline at all — should be open
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+        # Active deadline — should still be open
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+    def test_catalog_json_closed(self):
+        """catalog_json returns 403 with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # Expired deadline — catalog should be closed
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_pdf_closed(self):
+        """catalog_pdf returns deadline page with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_pdf' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
+    """
+    Tests for Issue #227: registration type visibility filtering on the student
+    registration page, introduced in PR #207 to resolve Issue #35.
+
+    The 'display_registration_names' Tag controls which RegistrationTypes are
+    shown on the student main registration page.  These tests exercise
+    RegistrationTypeController.getVisibleRegistrationTypeNames() directly and
+    through the live HTTP response to /learn/<prog>/studentreg.
+    """
+
+    def setUp(self):
+        modules = [
+            ProgramModule.objects.get(handler='TeacherClassRegModule'),
+            ProgramModule.objects.get(handler='StudentClassRegModule'),
+            ProgramModule.objects.get(handler='StudentRegCore'),
+        ]
+        super().setUp(modules=modules)
+        self.schedule_randomly()
+        self.add_student_profiles()
+
+        # Disable the required-modules gate so the studentreg page renders directly
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
+        # Ensure the registration types we test with exist
+        RegistrationType.objects.get_or_create(name='Enrolled')
+        self.rt_waitlisted, _ = RegistrationType.objects.get_or_create(name='Waitlisted')
+        self.rt_priority, _   = RegistrationType.objects.get_or_create(name='Priority')
+
+        # Pick the first student and give them registrations under all three types
+        self.student = self.students[0]
+        self.student.set_password('password')
+        self.student.save()
+
+        section = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
+        for rt_name in ('Enrolled', 'Waitlisted', 'Priority'):
+            rt = RegistrationType.objects.get(name=rt_name)
+            StudentRegistration.objects.get_or_create(
+                user=self.student, section=section, relationship=rt
+            )
+
+        # Start each test with a clean slate — no display_registration_names tag
+        Tag.objects.filter(key='display_registration_names').delete()
+
+    # ------------------------------------------------------------------
+    # Helper
+    # ------------------------------------------------------------------
+
+    def _set_tag(self, names):
+        """Create/update a program-scoped display_registration_names tag."""
+        Tag.setTag(
+            key='display_registration_names',
+            target=self.program,
+            value=json.dumps(names),
+        )
+
+    def _student_login(self):
+        self.assertTrue(
+            self.client.login(username=self.student.username, password='password'),
+            'Could not log in as test student',
+        )
+
+    def _get_studentreg(self):
+        return self.client.get('/learn/' + self.program.url + '/studentreg')
+
+    # ------------------------------------------------------------------
+    # Test A: Default behaviour — no tag set
+    # ------------------------------------------------------------------
+
+    def test_default_no_tag(self):
+        """
+        When no display_registration_names tag exists the controller returns
+        only the default ['Enrolled'] list, and the student reg page does not
+        surface any non-default registration type names.
+        """
+        # Controller returns the hardcoded default
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible)
+        self.assertNotIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        # HTTP response agrees
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test B: Tag restricts which types are visible
+    # ------------------------------------------------------------------
+
+    def test_tag_restricts_visible_types(self):
+        """
+        When the tag lists only 'Waitlisted', the controller returns
+        ['Waitlisted', 'Enrolled'] (tag value merged with the mandatory
+        default).  The student reg page shows 'Waitlisted' but not 'Priority'.
+        """
+        self._set_tag(['Waitlisted'])
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertIn('Enrolled', visible,
+                      'Enrolled must always be present regardless of tag')
+        self.assertIn('Waitlisted', visible)
+        self.assertNotIn('Priority', visible)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+    # ------------------------------------------------------------------
+    # Test C: Changing the tag dynamically updates what the page shows
+    # ------------------------------------------------------------------
+
+    def test_tag_change_reflects_on_page(self):
+        """
+        Updating the tag value is immediately reflected on the next GET of
+        the student reg page without any restart or cache invalidation step.
+        """
+        self._student_login()
+
+        # First configuration: only Waitlisted (+ Enrolled)
+        self._set_tag(['Waitlisted'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Waitlisted')
+        self.assertNotContains(response, 'Priority')
+
+        # Second configuration: only Priority (+ Enrolled)
+        Tag.objects.filter(key='display_registration_names').delete()
+        self._set_tag(['Priority'])
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Priority')
+        self.assertNotContains(response, 'Waitlisted')
+
+    # ------------------------------------------------------------------
+    # Test D: 'All' sentinel returns every RegistrationType
+    # ------------------------------------------------------------------
+
+    def test_all_sentinel_shows_every_type(self):
+        """
+        When the tag contains the special value 'All', every RegistrationType
+        name in the database is returned.  Passing for_VRT_form=True additionally
+        appends the literal string 'All' to the result (used by the admin form).
+        """
+        self._set_tag(['All'])
+
+        # Normal (student-facing) call: every RT name, but NOT the literal 'All'
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        all_names = list(
+            RegistrationType.objects.values_list('name', flat=True)
+                                    .distinct().order_by('name')
+        )
+        for name in all_names:
+            self.assertIn(name, visible,
+                         'Expected %r in visible types when tag is "All"' % name)
+        self.assertNotIn('All', visible,
+                         'Literal "All" must not appear in the student-facing list')
+
+        # Admin VRT form call: 'All' appended so the form can re-select it
+        visible_vrt = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program, for_VRT_form=True
+        )
+        self.assertIn('All', visible_vrt)
+
+    # ------------------------------------------------------------------
+    # Test E: Empty or invalid tag falls back safely
+    # ------------------------------------------------------------------
+
+    def test_empty_tag_falls_back_to_default(self):
+        """
+        A tag that exists but carries an empty string value is treated as
+        absent: the controller returns the default ['Enrolled'] list and
+        the student reg page renders without error.
+        """
+        # Manually insert a tag with an empty value (bypasses Tag.setTag validation)
+        Tag.objects.get_or_create(key='display_registration_names', value='')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        # Empty string is falsy -> falls back to default_names
+        self.assertEqual(list(visible), RegistrationTypeController.default_names)
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_malformed_tag_falls_back_to_default(self):
+        """
+        A malformed JSON tag value should be ignored safely: the controller
+        falls back to default_names and the student reg page still renders.
+        """
+        Tag.objects.get_or_create(key='display_registration_names', value='not_valid_json')
+
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+        self._student_login()
+        response = self._get_studentreg()
+        self.assertEqual(response.status_code, 200)
+
+    def test_none_program_returns_default(self):
+        """
+        Passing prog=None (or any non-Program value) to the controller is
+        safe: it returns the default set without touching the database.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(None)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+    def test_invalid_program_id_returns_default(self):
+        """
+        Passing a numeric program id that does not exist in the database
+        returns the default set without raising an exception.
+        """
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(999999999)
+        self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
 class UserviewGradeUpdateTest(ProgramFrameworkTest):
     """
     Tests for the grade-update functionality introduced in PR #208 (commit
@@ -751,4 +1214,3 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             'change_grade_form', response.context,
             "'change_grade_form' was not found in the userview template context.",
         )
-

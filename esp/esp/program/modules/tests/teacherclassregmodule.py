@@ -45,7 +45,7 @@ from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject, RegistrationType
+from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
 from esp.resources.models import ResourceType, ResourceRequest
@@ -164,6 +164,22 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertTrue(self.cls in self.teacher.getTaughtClasses())
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
         self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
+
+    def test_coteachers_post_data_is_not_trusted(self):
+        # Login the teacher
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+
+        # Forge POST data pretending this teacher is already in the coteacher list.
+        # This should be ignored, and the add should still succeed.
+        response = self.apply_coteacher_op({
+            'op': 'add',
+            'clsid': self.cls.id,
+            'teacher_selected': self.free_teacher1.id,
+            'coteachers': str(self.free_teacher1.id),
+        })
+
+        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
 
     def add_resource_request(self, sec, res_type, val):
         rr = ResourceRequest()
@@ -305,6 +321,85 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.client.login(username=self.teacher.username, password='password')
         url = '%steacherlookup' % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
+
+    def test_makeaclass_no_durations_shows_warning(self):
+        """Assert that duration warning banner is shown when no timeslots/durations exist."""
+        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
+        # Delete class timeslots configured in setUp
+        Event.objects.filter(program=self.program, event_type__description='Class Time Block').delete()
+        self.assertEqual(len(self.program.countTimeSlots()), 0)
+        url = '%smakeaclass' % self.program.get_teach_url()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'no valid class meeting timeslots or durations are available')
+    @transaction.atomic
+    def test_ajaxstudentattendance_rejects_unrelated_teacher(self):
+        """A teacher with no relationship to a section must not be able to
+        mutate its attendance/enrollment via ajaxstudentattendance.
+
+        Regression test for missing object-level authorization: the view is
+        guarded by @needs_teacher (a global role check), but unlike its sibling
+        views (section_attendance, section_students, class_students) it never
+        verifies canEdit()/canMod() on the target section.
+        """
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        victim_section = victim_cls.get_sections()[0]
+        student = self.students[0]
+
+        # Precondition: attacker genuinely lacks rights to the section
+        self.assertNotIn(attacker, victim_cls.get_teachers())
+        self.assertFalse(attacker.canEdit(victim_section.parent_class),
+                         "Test setup invalid: attacker can edit victim class")
+        self.assertFalse(attacker.canMod(victim_section),
+                         "Test setup invalid: attacker can moderate victim section")
+
+        attended = RegistrationType.objects.get_or_create(
+            name='Attended', category='student')[0]
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=victim_section, relationship=attended
+            ).exists())
+
+        # Exploit: POST as attacker against the victim's secid
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'),
+            "Couldn't log in as attacker %s" % attacker.username)
+
+        url = '%sajaxstudentattendance' % self.program.get_teach_url()
+        response = self.client.post(url, {
+            'student': student.username,
+            'secid': victim_section.id,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+
+        # Desired (post-fix) behaviour: mutation refused, student NOT attended
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=victim_section, relationship=attended
+            ).exists(),
+            "SECURITY: unrelated teacher was able to mark a student as "
+            "attending a section they do not teach (secid=%s). Response: %r"
+            % (victim_section.id, payload))
+
+    @transaction.atomic
+    def test_section_students_rejects_unrelated_teacher(self):
+        """Control: the sibling view section_students DOES enforce the check,
+        confirming the expected authorization model for this module."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        victim_section = victim_cls.get_sections()[0]
+
+        self.assertFalse(attacker.canEdit(victim_section.parent_class))
+        self.assertFalse(attacker.canMod(victim_section))
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%ssection_students' % self.program.get_teach_url()
+        response = self.client.post(url, {'secid': victim_section.id})
+        self.assertContains(response, 'do not have privileges to edit', status_code=200)
 
 
 class TeacherScheduleDeadlineTest(ProgramFrameworkTest):

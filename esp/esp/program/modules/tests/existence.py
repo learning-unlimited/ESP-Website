@@ -65,9 +65,14 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         modules_found = []
 
         #   Find normal links
+        #   Match modules by their href (unique per module via get_full_path()),
+        #   not their link title: two modules can share a title (e.g. the
+        #   Cybersource and Stripe credit card modules both use "Credit Card
+        #   Payment"), which would otherwise credit both as observed whenever
+        #   either one renders.
         pat1 = r'<a href="(?P<linkurl>[a-zA-Z0-9_/]+)" title="(?P<linktitle>.*?)" class="vModuleLink" >(.*?)</a>'
         re_links_normal = re.findall(pat1, page_content, re.DOTALL)
-        link_titles = [x[1] for x in re_links_normal]
+        link_urls = [x[0] for x in re_links_normal]
 
         #   Find inline template links
         pat2 = r'<a href="#module-(?P<moduleid>[0-9]+)" title="(?P<linktitle>.*?)">(.*?)</a>'
@@ -75,7 +80,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         inline_ids = [int(x[0]) for x in re_links_inline]
 
         for mod in prog_modules:
-            if (mod.get_link_title() in link_titles) or (mod.id in inline_ids):
+            if (mod.get_full_path() in link_urls) or (mod.id in inline_ids):
                 modules_found.append(mod)
 
         return modules_found
@@ -103,7 +108,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
                 missing_mods.append(target_modules[i])
         for i in range(len(actual_modules)):
             if actual_module_ids[i] not in target_module_ids:
-                missing_mods.append(actual_modules[i])
+                extra_mods.append(actual_modules[i])
 
         #   Report any inconsistencies we detected.
         self.assertTrue(len(missing_mods) == 0, 'Missing modules: %s' % [x.__class__.__name__ for x in missing_mods])
