@@ -86,10 +86,13 @@ class AdminReviewApps(ProgramModuleObj):
             except StudentApplication.DoesNotExist:
                 student.app = None
 
+            #   Reviews of this class, plus any program-wide (e.g. director)
+            #   reviews, which aren't tied to a class.
             if student.app:
-                reviews = student.app.reviews.all()
+                student.app_reviews = student.app.reviews.filter(
+                    Q(class_subject=cls) | Q(class_subject__isnull=True))
             else:
-                reviews = []
+                student.app_reviews = []
 
             if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
                 student.status = 'Accepted'
