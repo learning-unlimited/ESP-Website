@@ -65,10 +65,12 @@ Teachers: {{cls.emailcode}}-teachers@{{ EMAIL_HOST_SENDER }}<br />
 Students: {{cls.emailcode}}-students@{{ EMAIL_HOST_SENDER }}
   </td>
 </tr>
+{% if can_view_schedule %}
 <tr>
   <th>Time Blocks (if assigned): </th>
   <td>{{ cls.prettyblocks|join:"<br />" }}</td>
 </tr>
+{% endif %}
 <tr>
   <th>Directors' Emails (if available)</th>
   <td>{{ module.program.director_email }}</td>

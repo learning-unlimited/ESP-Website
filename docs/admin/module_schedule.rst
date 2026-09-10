@@ -101,6 +101,11 @@ By default, ``prepare_program()`` generates base role permissions for students a
 * ``Student/Profile``: Starts on ``student_reg_start``.
 * ``Teacher/All``: Dated with ``teacher_reg_start`` and ``teacher_reg_end``.
 * ``Teacher/Classes/View``, ``Teacher/MainPage``, ``Teacher/Profile``: Start on ``teacher_reg_start``.
+* ``Teacher/Classes/Schedule``: Starts on ``teacher_reg_start`` and never ends. Controls whether teachers and
+  moderators see the room and time assigned to their sections on the teacher class registration page. Close it
+  while scheduling is in progress to hide assignments that are not final yet, then re-open it once the schedule
+  is settled. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply it, so those must not be open at the
+  same time for the deadline to take effect.
 
 Module-Associated Permission Generation
 ---------------------------------------

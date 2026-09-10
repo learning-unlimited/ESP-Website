@@ -37,9 +37,6 @@ import random
 
 from django.contrib.auth.models import Group
 from django.db import transaction
-from django.test import RequestFactory
-
-from esp.middleware import threadlocalrequest
 
 from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
@@ -403,64 +400,103 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
 
 class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
-    """Tests for Teacher/Classes/Schedule permission gating room/time visibility."""
+    """Tests for the Teacher/Classes/Schedule deadline."""
+
+    #   Permissions that grant Teacher/Classes/Schedule, directly or by
+    #   implication.  Deleting exactly these closes the schedule deadline while
+    #   leaving the rest of teacher reg reachable.
+    SCHEDULE_PERMS = ['Teacher/All', 'Teacher/Classes/All',
+                      'Teacher/Classes/Schedule']
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
 
+        self.teacher = self.teachers[0]
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
-        self.moduleobj.user = self.teachers[0]
+        self.moduleobj.user = self.teacher
 
-        # prepare() calls get_current_request().user for clslist/modlist.
-        # Set up a deterministic fake request so those calls don't raise
-        # AttributeError when there is no real HTTP request in flight.
-        factory = RequestFactory()
-        self._fake_request = factory.get('/')
-        self._fake_request.user = self.teachers[0]
-        threadlocalrequest._threading_local.request = self._fake_request
+        #   Give the sections real room/time assignments, so the templates have
+        #   something to hide.
+        self.schedule_randomly()
 
-    def tearDown(self, *args, **kwargs):
-        if hasattr(threadlocalrequest._threading_local, 'request'):
-            del threadlocalrequest._threading_local.request
-        super().tearDown(*args, **kwargs)
-
-    def _remove_all_teacher_perms(self):
+    def close_schedule_deadline(self):
+        """Remove every permission that would grant Teacher/Classes/Schedule."""
         Permission.objects.filter(
-            permission_type__startswith='Teacher',
+            permission_type__in=self.SCHEDULE_PERMS,
             program=self.program,
         ).delete()
 
     @transaction.atomic
-    def test_can_view_schedule_true_by_default(self):
-        """prepare() sets can_view_schedule=True when Teacher/All is active (implies Schedule)."""
-        context = self.moduleobj.prepare({})
-        self.assertTrue(context['can_view_schedule'])
+    def test_schedule_permission_seeded_for_new_program(self):
+        """New programs get the deadline default-open, so it is discoverable."""
+        perm = Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role__name='Teacher',
+        ).first()
+        self.assertIsNotNone(
+            perm, "prepare_program() should seed Teacher/Classes/Schedule")
+        self.assertIsNone(perm.end_date,
+                          "The seeded schedule deadline should not expire")
 
     @transaction.atomic
-    def test_can_view_schedule_true_with_specific_permission(self):
-        """prepare() sets can_view_schedule=True when only Teacher/Classes/Schedule is active."""
-        self._remove_all_teacher_perms()
+    def test_can_view_schedule_by_implication(self):
+        """Teacher/All implies Teacher/Classes/Schedule."""
+        Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+        ).delete()
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_can_view_schedule_with_specific_permission(self):
+        """Teacher/Classes/Schedule on its own is enough."""
+        self.close_schedule_deadline()
         Permission.objects.create(
             permission_type='Teacher/Classes/Schedule',
             program=self.program,
             role=Group.objects.get(name='Teacher'),
         )
-        context = self.moduleobj.prepare({})
-        self.assertTrue(context['can_view_schedule'])
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
 
     @transaction.atomic
-    def test_can_view_schedule_false_without_permission(self):
-        """prepare() sets can_view_schedule=False when no Teacher/Classes/Schedule permission exists."""
-        self._remove_all_teacher_perms()
-        context = self.moduleobj.prepare({})
-        self.assertFalse(context['can_view_schedule'])
+    def test_cannot_view_schedule_when_deadline_closed(self):
+        self.close_schedule_deadline()
+        self.assertFalse(self.moduleobj.prepare({})['can_view_schedule'])
 
     @transaction.atomic
     def test_admin_always_sees_schedule(self):
-        """Admins bypass the deadline check and always see the schedule."""
-        self._remove_all_teacher_perms()
+        """Admins bypass the deadline check."""
+        self.close_schedule_deadline()
         self.moduleobj.user = self.admins[0]
-        threadlocalrequest._threading_local.request.user = self.admins[0]
-        context = self.moduleobj.prepare({})
-        self.assertTrue(context['can_view_schedule'])
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_teacherreg_shows_schedule_when_open(self):
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Room:', status_code=200)
+        self.assertNotContains(response, 'Schedule not yet available.')
+
+    @transaction.atomic
+    def test_teacherreg_hides_schedule_when_closed(self):
+        self.close_schedule_deadline()
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Schedule not yet available.', status_code=200)
+        self.assertNotContains(response, 'Room:')
+
+    @transaction.atomic
+    def test_class_status_hides_time_blocks_when_closed(self):
+        cls = self.teacher.getTaughtClasses(self.program)[0]
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        url = '%sclass_status/%d' % (self.program.get_teach_url(), cls.id)
+
+        self.assertContains(self.client.get(url), 'Time Blocks', status_code=200)
+
+        self.close_schedule_deadline()
+        self.assertNotContains(self.client.get(url), 'Time Blocks', status_code=200)

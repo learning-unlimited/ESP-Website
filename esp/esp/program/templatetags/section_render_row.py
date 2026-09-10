@@ -9,8 +9,11 @@ from esp.tagdict.models import Tag
 register = template.Library()
 
 @cache_inclusion_tag(register, 'inclusion/program/section_moderator_list_row.html')
-def render_section_moderator_list_row(sec, can_view_schedule, user=None):
-    """Render a section for the moderator list of classes in teacherreg."""
+def render_section_moderator_list_row(sec, user=None, can_view_schedule=True):
+    """Render a section for the moderator list of classes in teacherreg.
+
+    can_view_schedule: whether moderators can view the schedule (see the Teacher/Classes/Schedule deadline).
+    """
     prog = sec.parent_class.parent_program
     return {'sec': sec,
             'program': prog,

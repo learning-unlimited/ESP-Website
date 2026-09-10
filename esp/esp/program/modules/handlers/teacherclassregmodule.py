@@ -54,7 +54,6 @@ from django.http                 import HttpResponse, HttpResponseRedirect, Json
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
@@ -107,6 +106,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """
+        user = self._resolve_user(None)
 
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.any_reg_is_open()
@@ -117,8 +117,8 @@ class TeacherClassRegModule(ProgramModuleObj):
         context['survey_results'] = (self.program.getSurveys().filter(category = "learn", questions__per_class=True).exists() and
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
-        context['clslist'] = self.clslist(get_current_request().user)
-        context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
+        context['clslist'] = self.clslist(user)
+        context['modlist'] = user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
@@ -500,7 +500,8 @@ class TeacherClassRegModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        context = {'cls': cls, 'module': self,}
+        context = {'cls': cls, 'module': self,
+                   'can_view_schedule': self.deadline_met('/Classes/Schedule')}
 
         return render_to_response(self.baseDir()+'class_status.html', request, context)
 
