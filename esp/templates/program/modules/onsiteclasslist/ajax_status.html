@@ -6,6 +6,7 @@
 <script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
+<script src="/media/theme_editor/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js?v=5.3.3"></script>
 <script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
     $j(document).ready(function() {
@@ -28,6 +29,8 @@
     }
 </style>
 <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/bs5-compat.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
 
@@ -128,18 +131,33 @@
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
 
 <a name="settings" />
-<div id="dialog-confirm" title="Register Account?" class="d-none">
-  <div id="not-registered-msg">
-  <p>
-    This student is not registered with {{ program.name }}. 
-    </p>
-    <p>
-        Please verify that the student is wearing their {{ program.name }}-issued nametag or has otherwise completed all steps (including any forms and/or payment) necessary to participate in the program.
-    </p>
-  </div>
-  <div id="noinfo-msg" style="display:none;">
-  Sorry, but this student needs to supply more information. Please register this student
-  using the New Student Registration form.
+<div class="modal fade" id="dialog-confirm" tabindex="-1" data-bs-backdrop="static"
+     aria-labelledby="dialog-confirm-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dialog-confirm-title">Register Account?</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="not-registered-msg">
+        <p>
+          This student is not registered with {{ program.name }}.
+          </p>
+          <p>
+              Please verify that the student is wearing their {{ program.name }}-issued nametag or has otherwise completed all steps (including any forms and/or payment) necessary to participate in the program.
+          </p>
+        </div>
+        <div id="noinfo-msg" style="display:none;">
+        Sorry, but this student needs to supply more information. Please register this student
+        using the New Student Registration form.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="dialog-confirm-button-cancel" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="dialog-confirm-button-register">Register Account</button>
+      </div>
+    </div>
   </div>
 </div>
 </body>
