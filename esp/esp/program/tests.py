@@ -1764,12 +1764,17 @@ class LotterySnapshotTest(ProgramFrameworkTest):
         self.assertEqual(c1.input_hash(), c2.input_hash())
 
     def test_input_hash_changes_with_data(self):
-        hash_before = LegacyLotteryAssignmentController(self.program).input_hash()
-
         student = self.students[0]
         section = self.program.sections()[0]
-        StudentRegistration.objects.get_or_create(user=student, section=section, relationship=self.priority_rt)
+        # setUp's randomly-generated registrations can, by chance, already
+        # include this exact one -- clear it first so the create() below is
+        # guaranteed to actually change the input data.
+        StudentRegistration.objects.filter(
+            user=student, section=section, relationship=self.priority_rt,
+        ).delete()
 
+        hash_before = LegacyLotteryAssignmentController(self.program).input_hash()
+        StudentRegistration.objects.create(user=student, section=section, relationship=self.priority_rt)
         hash_after = LegacyLotteryAssignmentController(self.program).input_hash()
         self.assertNotEqual(hash_before, hash_after)
 
@@ -2159,7 +2164,11 @@ class LotteryILPViewsTest(ProgramFrameworkTest):
         return json.loads(resp.content)['response'][0]
 
     def test_lottery_page_renders(self):
-        with override_settings(LOTTERY_SOLVERS=self.SOLVERS):
+        # Only exercises page rendering, not an actual solve -- force
+        # ilp_available regardless of whether gurobipy happens to be
+        # installed in this environment (e.g. it isn't on CI).
+        with mock.patch.object(ilp_lottery, 'gp', mock.MagicMock()), \
+                override_settings(LOTTERY_SOLVERS=self.SOLVERS):
             resp = self.client.get('/manage/%s/lottery' % self.url_base)
         self.assertEqual(resp.status_code, 200)
         content = resp.content.decode('utf-8')
