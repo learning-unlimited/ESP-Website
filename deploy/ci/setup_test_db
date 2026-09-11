@@ -1,22 +1,13 @@
 #!/bin/bash
 set -euf -o pipefail
 
-# Seed the per-worker test databases from a schema dump.
-#
-# Left alone, each xdist worker creates its own test database and runs every
-# migration into it, which costs about 70s per worker. Restoring a dump into
-# them instead costs about 1s each, and pytest's --reuse-db (set in
-# pytest.ini) then makes Django reuse them rather than rebuilding.
-#
-# That reuse still runs migrate in keepdb mode, which takes about 3s and
-# applies anything the dump predates. A dump that has fallen behind the
-# migrations therefore costs a little time, never correctness.
+# Seed the per-worker test databases from a schema dump to save time.
+# Any new migrations are applied separately by each worker.
 
 CACHE_DIR="${TEST_DB_CACHE_DIR:-$HOME/testdb-cache}"
 DUMP="$CACHE_DIR/testdb.dump"
 
-# Seeding is an optimisation, so a missing client is not worth failing over:
-# without it Django builds the test databases itself, slower but identical.
+# If a tool is missing, have Django build the test databases itself.
 for tool in pg_dump pg_restore createdb dropdb; do
     if ! command -v "$tool" > /dev/null 2>&1; then
         echo ">>> $tool not found; skipping the seed step."
@@ -36,8 +27,7 @@ BASE_DB="test_${DATABASE_NAME:-test_django}"
 mkdir -p "$CACHE_DIR"
 
 if [ ! -f "$DUMP" ]; then
-    # Cache miss. Run the migrations once here rather than once per worker;
-    # even this path beats letting every worker migrate for itself.
+    # Cache miss. Run the migrations once here.
     echo ">>> No cached dump. Building one (runs all migrations once)..."
     BUILD_DB="${BASE_DB}_dumpsrc"
     dropdb --if-exists "$BUILD_DB"
@@ -50,8 +40,7 @@ else
     echo ">>> Reusing cached dump ($(du -h "$DUMP" | cut -f1))."
 fi
 
-# pytest runs under -n auto, so xdist makes one database per core, suffixed
-# _gw0 .. _gwN-1. The unsuffixed name is seeded too, for a non-xdist run.
+# makes one database per core, suffixed _gw0 .. _gwN-1.
 WORKERS="$(nproc)"
 for db in "$BASE_DB" $(seq -f "${BASE_DB}_gw%g" 0 $((WORKERS - 1))); do
     dropdb --if-exists "$db"
