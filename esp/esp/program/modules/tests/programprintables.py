@@ -229,54 +229,6 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
         form = AllClassesSelectionForm(self.program, params)
         self.assertTrue(form.is_valid())
 
-
-class TestAllClassesFieldConverter(ProgramFrameworkTest):
-
-    def setUp(self, *args, **kwargs):
-        super().setUp(*args, **kwargs)
-        self.class_subjects = ClassSubject.objects.all()
-        self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
-        self.converter = AllClassesFieldConverter(self.program)
-
-    def test_fieldvalue_fakefield(self):
-        """
-        An invalid field should raise a ValueError
-        """
-        class_subject = self.class_subjects[0]
-        self.assertRaises(ValueError, self.converter.fieldvalue, *[class_subject, 'fake_field'])
-
-    def test_class_subject_fields_accepted(self):
-        """
-        Verifies that the fields on a class subject instance are formatted
-        by the converter.
-        """
-        class_subject = self.class_subjects[0]
-        for fieldname in self.class_subject_fieldnames:
-            self.assertEqual(self.converter.fieldvalue(class_subject, fieldname), \
-                             getattr(class_subject, fieldname))
-
-    def test_class_subject_teachers_format(self):
-        class_subject = self.class_subjects[0]
-
-        teacher_names = [t.name() for t in class_subject.get_teachers()]
-        formatted_teachers = [t.strip() for t in self.converter. \
-                              fieldvalue(class_subject, 'teachers').split(',')]
-        self.assertEqual(set(formatted_teachers), set(teacher_names))
-
-    def test_class_times_format(self):
-        class_subject = self.class_subjects[0]
-        formatted_times = self.converter.fieldvalue(class_subject, 'times')
-
-        for t in class_subject.friendly_times():
-            self.assertIn(t, formatted_times)
-
-    def test_class_rooms_format(self):
-        class_subject = self.class_subjects[0]
-        formatted_rooms = self.converter.fieldvalue(class_subject, 'rooms')
-
-        for t in class_subject.prettyrooms():
-            self.assertIn(t, formatted_rooms)
-
     def test_catalog_invalid_sort_and_grades_do_not_crash(self):
         """
         Verify that catalog() falls back gracefully when provided with
@@ -372,3 +324,51 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         req.session = self.client.session
         response = self.moduleobj.classflagdetails(req, None, None, None, self.moduleobj, None, self.program)
         self.assertEqual(response.status_code, 200)
+
+
+class TestAllClassesFieldConverter(ProgramFrameworkTest):
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+        self.class_subjects = ClassSubject.objects.all()
+        self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
+        self.converter = AllClassesFieldConverter(self.program)
+
+    def test_fieldvalue_fakefield(self):
+        """
+        An invalid field should raise a ValueError
+        """
+        class_subject = self.class_subjects[0]
+        self.assertRaises(ValueError, self.converter.fieldvalue, *[class_subject, 'fake_field'])
+
+    def test_class_subject_fields_accepted(self):
+        """
+        Verifies that the fields on a class subject instance are formatted
+        by the converter.
+        """
+        class_subject = self.class_subjects[0]
+        for fieldname in self.class_subject_fieldnames:
+            self.assertEqual(self.converter.fieldvalue(class_subject, fieldname), \
+                             getattr(class_subject, fieldname))
+
+    def test_class_subject_teachers_format(self):
+        class_subject = self.class_subjects[0]
+
+        teacher_names = [t.name() for t in class_subject.get_teachers()]
+        formatted_teachers = [t.strip() for t in self.converter. \
+                              fieldvalue(class_subject, 'teachers').split(',')]
+        self.assertEqual(set(formatted_teachers), set(teacher_names))
+
+    def test_class_times_format(self):
+        class_subject = self.class_subjects[0]
+        formatted_times = self.converter.fieldvalue(class_subject, 'times')
+
+        for t in class_subject.friendly_times():
+            self.assertIn(t, formatted_times)
+
+    def test_class_rooms_format(self):
+        class_subject = self.class_subjects[0]
+        formatted_rooms = self.converter.fieldvalue(class_subject, 'rooms')
+
+        for t in class_subject.prettyrooms():
+            self.assertIn(t, formatted_rooms)

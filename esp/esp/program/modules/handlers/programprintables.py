@@ -202,21 +202,21 @@ class ProgramPrintables(ProgramModuleObj):
         categories = category_options
 
         first_sort = request.GET.get('first_sort', '')
-        if first_sort in cmp_fn:
+        if first_sort and first_sort in cmp_fn:
             sort_list.append( cmp_fn[first_sort] )
             sort_name_list.append( first_sort )
         else:
             sort_list.append( cmp_fn["category"] )
 
         second_sort = request.GET.get('second_sort', '')
-        if second_sort in cmp_fn:
+        if second_sort and second_sort in cmp_fn:
             sort_list.append( cmp_fn[second_sort] )
             sort_name_list.append( second_sort )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
         third_sort = request.GET.get('third_sort', '')
-        if third_sort in cmp_fn:
+        if third_sort and third_sort in cmp_fn:
             sort_list.append( cmp_fn[third_sort] )
             sort_name_list.append( third_sort )
         else:
