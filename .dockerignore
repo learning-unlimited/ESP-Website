@@ -73,16 +73,17 @@ logs
 # Docker files
 docker-compose.override.yml
 
-# Static/media (generated)
-public/media/uploaded
-esp/public/media/images
-esp/public/media/styles
+# Static/media (generated). Exclude only paths with no git-tracked contents.
+esp/public/media/uploaded/*
+esp/public/media/images/theme
+esp/public/media/scripts/theme
+esp/public/media/styles/theme_compiled_test*.css
 static
 staticfiles
 
 # Node
-node_modules
-npm-debug.log
+**/node_modules
+**/npm-debug.log
 
 # Temporary
 tmp

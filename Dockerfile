@@ -1,9 +1,11 @@
-FROM python:3.12-slim-bullseye AS builder
+FROM ubuntu:24.04 AS builder
 
-# Build-time environment variables
+# Build-time environment variables.
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
 # Set the working directory
 WORKDIR /app
@@ -12,9 +14,12 @@ WORKDIR /app
 # (safe in a throwaway builder layer; not propagated to the runtime image)
 RUN printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
 
-# Install only build-time dependencies (compilers, -dev headers)
+# Install only build-time dependencies (compilers, -dev headers).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    python3.12 \
+    python3.12-dev \
+    python3.12-venv \
     libpq-dev \
     git \
     curl \
@@ -28,9 +33,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libfreetype6-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Node.js from nodesource, then LESS
+# Install Node.js from nodesource, then LESS.
+# The repo is added with a fingerprint-pinned key; no remote script runs.
 RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource.asc \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.asc \
+    && gpg --show-keys --with-colons /etc/apt/keyrings/nodesource.gpg \
+       | awk -F: '/^fpr:/{print $10; exit}' \
+       | grep -qx 6F71F525282841EEDAF851B42F59B5F99B1BE0B4 \
+    && rm /tmp/nodesource.asc \
+    && echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main' \
+       > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g --prefix /usr less@3.13.1
@@ -42,20 +57,22 @@ COPY esp/public/media/theme_editor/package.json \
      /tmp/theme-npm/
 RUN cd /tmp/theme-npm && npm ci
 
-# Install Python dependencies
+# Install Python dependencies into the venv.
 # Docker layer caching speeds up rebuilds
 # --prefer-binary favors prebuilt wheels over slow source builds
 COPY esp/requirements.txt /tmp/requirements.txt
-RUN python -m pip install --upgrade pip setuptools wheel && \
+RUN python3.12 -m venv /opt/venv && \
+    python -m pip install --upgrade pip setuptools wheel && \
     python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
 
 # Runtime stage - smaller final image
-FROM python:3.12-slim-bullseye AS runtime
+FROM ubuntu:24.04 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    VIRTUAL_ENV=/usr \
-    DEBIAN_FRONTEND=noninteractive
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
@@ -67,20 +84,21 @@ RUN printf '%s\n' \
     'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
 
 # Install runtime dependencies:
-#   - Slim runtime libraries (counterparts of builder's -dev packages)
-#   - Runtime tools from packages_base.txt (filtering out python*, build-essential, git, postgres*, memcached, and -dev packages)
+#   - Slim runtime libraries (counterparts of builder's -dev packages).
+#   - Runtime tools from packages_base.txt (filtering out build-essential, git,
+#     postgresql, memcached, python3-pip, and -dev packages).
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     postgresql-client \
-    libmemcached11 \
-    libcurl4 \
-    libssl1.1 \
-    libjpeg62-turbo \
+    libmemcached11t64 \
+    libcurl4t64 \
+    libssl3t64 \
+    libjpeg-turbo8 \
     libfreetype6 \
     zlib1g \
     ca-certificates \
-    $(grep -v -E '^(#|$|python|build-essential|git|postgres|memcached)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
+    $(grep -v -E '^(#|$|build-essential|git|postgresql|memcached|python3-pip)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Node.js and LESS from builder
@@ -99,9 +117,8 @@ RUN sha256sum /tmp/theme-pkg-lock.json | cut -d' ' -f1 \
       > /opt/theme_node_modules_baked/.lock-hash && \
     rm /tmp/theme-pkg-lock.json
 
-# Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
+# Copy the Python venv from builder
+COPY --from=builder /opt/venv /opt/venv
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
