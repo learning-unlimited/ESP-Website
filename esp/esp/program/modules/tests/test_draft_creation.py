@@ -353,7 +353,7 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200,
                          "Expected 200 when accessing makeaclass with existing draft")
 
-        self.assertContains(response, 'Save as a Draft')
+        self.assertContains(response, 'Save Draft')
         self.assertContains(response, 'Discard Draft')
         # custom-action opts out of the site-wide submit handler in
         # elements/html; formnovalidate then suppresses native validation.
