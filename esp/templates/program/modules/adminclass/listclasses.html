@@ -13,15 +13,6 @@ json_data = {};
 /* <![CDATA[ */
   var has_moderator_module = "{{ program|hasModule:"TeacherModeratorModule" }}";
   var moderator_title = "{{ program.getModeratorTitle }}";
-  
-  // Create the class description popup for the Status button
-  saving_popup = $j('<div></div>').attr('id', "saving_popup")
-    .dialog({
-      autoOpen: false,
-      minWidth: 250,
-      minHeight: 100,
-      modal: true
-    });
 
   // Set up sorting control
   $j(document).ready(setup_sort_control);
@@ -38,6 +29,20 @@ json_data = {};
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 
 <hr />
+
+{# Shown by adminclass.js while a class status change is saving #}
+<div class="modal fade" id="saving_popup" tabindex="-1" data-bs-backdrop="static"
+     aria-labelledby="saving_popup_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="saving_popup_title">Saving</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">Saving the class status...</div>
+    </div>
+  </div>
+</div>
 
 <div class="module_group" id="listclasses">
   <div class="module_group_header">
