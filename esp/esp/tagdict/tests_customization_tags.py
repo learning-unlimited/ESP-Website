@@ -5,7 +5,8 @@ Each tag's default must reproduce the old hard-coded behavior, so the
 """
 from datetime import datetime, timedelta
 
-from django.core.cache import cache
+from django.template import Context, Template
+from django.template.loader import get_template
 from django.test import TestCase
 
 from esp.cal.models import Event, EventType
@@ -19,10 +20,9 @@ from esp.users.models import ESPUser
 
 class CustomizationTagsTestCase(TestCase):
     def setUp(self):
-        # Tag reads are memoized in memcached, which is not rolled back with
-        # the test transaction, so clear it between tests.
-        if hasattr(cache, 'flush_all'):
-            cache.flush_all()
+        # Tag reads are memoized outside the test transaction, so they are not
+        # rolled back between tests; dump the cache as the other tag tests do.
+        Tag._getTag.delete_all()
 
         self.program = Program.objects.create(name='Test Program', grade_min=7, grade_max=12)
         event_type, _ = EventType.objects.get_or_create(description='Volunteer')
@@ -69,6 +69,23 @@ class CustomizationTagsTestCase(TestCase):
         # The confirm tag supplies text only; the default red styling is kept
         self.assertIn('I am available', fields['confirm'].help_text)
         self.assertIn('color: red', fields['confirm'].help_text)
+
+    def test_signup_page_shows_the_configured_requests_help_text(self):
+        """The tag is only useful if the page renders the field's help text.
+
+        Asserting on the template source as well guards against the text being
+        hard-coded again, which would silently make the tag do nothing.
+        """
+        snippet = '{{ form.requests.help_text }}'
+        source = get_template(
+            'program/modules/volunteersignup/signup.html').template.source
+        self.assertIn('form.requests.help_text', source)
+
+        Tag.setTag('volunteer_help_text_requests', target=self.program,
+                   value='Pick the shifts that suit you')
+        rendered = Template(snippet).render(
+            Context({'form': VolunteerOfferForm(program=self.program)}))
+        self.assertEqual(rendered.strip(), 'Pick the shifts that suit you')
 
     def test_volunteer_confirm_text_is_escaped(self):
         Tag.setTag('volunteer_help_text_confirm', target=self.program,

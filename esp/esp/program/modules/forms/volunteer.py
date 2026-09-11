@@ -102,7 +102,7 @@ class VolunteerOfferForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
 
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Please sign up to volunteer for specific timeslots by selecting them below. Hovering over a timeslot will display details for that timeslot.', widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
 
