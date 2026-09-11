@@ -684,11 +684,7 @@ class Program(models.Model, CustomFormsLinkModel):
     # and for the grade-based version every registration profile for the
     # program, so they're probably not worth caching.
     def _classreg_students(self):
-        """Students registered for at least one class.
-
-        StudentClassRegModule contributes the 'classreg' key, so a program
-        without that module has none to count.
-        """
+        """Students registered for at least one class."""
         return self.students().get('classreg', ESPUser.objects.none())
 
     def _students_in_program_in_grades(self, grades):
