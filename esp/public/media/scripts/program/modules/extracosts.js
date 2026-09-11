@@ -22,9 +22,43 @@ $j(function () {
   // anytime anything in the form is changed, update the costs
   $j("input[name*='-cost']").on("change", updateTotalCost);
   $j("input[name*='-count']").on("change", updateTotalCost);
-  $j("input[name*='-option']").on("change", updateTotalCost);
+  $j("input[name*='-option']").on("change", function () {
+    updateCustomAmountEnabled();
+    updateTotalCost();
+  });
+  $j("input.option-custom-amount").on("input change", updateTotalCost);
   $j("input[name*='-siblingdiscount']").on("change", updateTotalCost);
+  // a custom amount is only editable while its option is selected
+  updateCustomAmountEnabled();
 });
+
+/*
+ * Enable the custom-amount input of each multi-select option only while that
+ * option's checkbox is checked, so that students can't type an amount for
+ * something they haven't selected. Disabled inputs are not submitted, which
+ * also keeps stale amounts out of the POST data.
+ **/
+function updateCustomAmountEnabled() {
+  $j("input.option-custom-amount").each(function () {
+    var checkbox = $j(
+      "input[name*='-options'][value='" + $j(this).data("option-id") + "']",
+    );
+    // leave single-select custom amounts (which have no checkbox) alone
+    if (checkbox.length) $j(this).prop("disabled", !checkbox.prop("checked"));
+  });
+}
+
+/*
+ * Return the custom amount entered for the given option ID, or null if that
+ * option is not rendered with a dedicated custom-amount input.
+ **/
+function getCustomAmount(option_id) {
+  var input = $j(
+    "input.option-custom-amount[data-option-id='" + option_id + "']",
+  );
+  if (!input.length) return null;
+  return parseFloat(input.val()) || 0;
+}
 
 function updateTotalCost() {
   var cost = 0;
@@ -45,7 +79,10 @@ function updateTotalCost() {
     "input[name*='-option']:checked, input[name*='-siblingdiscount']:checked",
   ).each(function () {
     if ($j(this).data("is_custom")) {
-      cost = parseFloat($j(this).parent().next().val()) || 0;
+      cost = getCustomAmount($j(this).val());
+      // fall back to the single-select layout, where the custom amount input
+      // is the sibling of the radio button's label
+      if (cost === null) cost = parseFloat($j(this).parent().next().val()) || 0;
       total_extras += cost;
       if ($j(this).data("for_finaid")) finaid_covered += cost;
     } else {
