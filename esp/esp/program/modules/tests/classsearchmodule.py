@@ -154,16 +154,14 @@ class ClassSearchModuleTest(ProgramFrameworkTest):
     def test_advanced_search_stays_available(self):
         """The advanced query builder must never be hidden with no way back.
 
-        Its Bootstrap 5 collapse needs `show` to start open and
-        `data-bs-toggle` for the toggle to do anything at all.
+        It starts collapsed, so its Bootstrap 5 toggle needs data-bs-toggle
+        and a target to be expandable at all.
         """
         self.client.login(username='admin', password='password')
-        r = self.client.get('/manage/' + self.program.url + '/classsearch/')
-        self.assertContains(r, 'data-bs-toggle="collapse"')
-        self.assertContains(r, 'class="collapse show"')
-
-        # After a simple search it starts collapsed, but stays expandable.
-        r = self.client.get('/manage/' + self.program.url + '/classsearch/',
-                            {'s_title': 'Test class 3'})
-        self.assertContains(r, 'data-bs-toggle="collapse"')
-        self.assertContains(r, "sections scheduled")
+        for params in ({}, {'s_title': 'Test class 3'}):
+            r = self.client.get(
+                '/manage/' + self.program.url + '/classsearch/', params)
+            self.assertContains(r, 'data-bs-toggle="collapse"')
+            self.assertContains(r, 'data-bs-target="#advancedSearch"')
+            self.assertContains(r, 'id="advancedSearch"')
+            self.assertContains(r, "sections scheduled")
