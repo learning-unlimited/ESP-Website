@@ -60,6 +60,14 @@ class UpdateScheduleJsonTests(SimpleTestCase):
             resp = self._call({"user": "1", "sections": "5"})
         self._assert_invalid_sections(resp)
 
+    def test_malformed_sections_json_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "not-json{{{"})
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in payload.get('messages', [])))
+
 
 class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
     """update_schedule_json must cast section IDs to ints, drop invalid
@@ -112,6 +120,49 @@ class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
         self.assertEqual(resp.status_code, 400)
         data = json.loads(resp.content.decode())
         self.assertTrue(any('too many sections' in msg for msg in data['messages']))
+
+    def test_float_and_bool_entries_are_rejected(self):
+        #   int(1.0) == 1 and int(True) == 1, so strict validation must
+        #   reject floats (even 1.0) and bools instead of coercing them.
+        resp = self._call(json.dumps([1.0, True, False, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertEqual(sum('ignored invalid section ID' in msg for msg in data['messages']), 3)
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_mixed_list_with_non_integer_sanitized(self):
+        #   Regression for Copilot review: list containing non-integers
+        #   like ["abc", 12] must sanitize, not 500 or wipe.
+        resp = self._call(json.dumps(['abc', self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+
+    def test_all_floats_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps([1.0, 2.5]))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_malformed_json_returns_400_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': 'not-json{{{',
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        resp = fn(module, request, None, None, None, None, None, self.program)
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in data['messages']))
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
 
 
 class PrintScheduleStatusTests(SimpleTestCase):

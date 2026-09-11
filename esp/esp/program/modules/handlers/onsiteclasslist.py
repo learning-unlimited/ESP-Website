@@ -66,13 +66,38 @@ MAX_SCHEDULE_SECTIONS = 200
 def sanitize_section_ids(section_ids, messages):
     """ Cast requested section IDs to ints, dropping invalid entries and
         duplicates (preserving order). Warnings for dropped entries are
-        appended to messages. """
+        appended to messages.
+
+        Strict: bools and floats (even 1.0) are rejected, since int(True)
+        == 1 and int(1.0) == 1 would silently accept non-integer IDs.
+        Strings are accepted only if they are decimal integer literals.
+    """
     sanitized = []
     for section_id in section_ids:
-        try:
-            sanitized.append(int(section_id))
-        except (TypeError, ValueError):
+        #   bool is a subclass of int: reject explicitly.
+        if isinstance(section_id, bool):
             messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+            continue
+        if isinstance(section_id, int):
+            sanitized.append(section_id)
+            continue
+        if isinstance(section_id, str):
+            stripped = section_id.strip()
+            #   Allow optional leading +/- then digits only (no '.', 'e', etc).
+            unsigned = stripped.lstrip('+-')
+            if unsigned.isdigit() and unsigned:
+                try:
+                    sanitized.append(int(stripped))
+                    continue
+                except ValueError:
+                    pass
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+            continue
+        #   floats (including 1.0), None, lists, dicts, etc. are invalid.
+        try:
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+        except Exception:
+            messages.append('Warning: ignored invalid section ID')
     return list(dict.fromkeys(sanitized))
 
 
@@ -273,12 +298,18 @@ class OnSiteClassList(ProgramModuleObj):
             resp.status_code = 400
             json.dump({"messages": ["User not found"], "sections": []}, resp)
             return resp
-        try:
-            desired_sections = json.loads(request.GET['sections'])
-        except (KeyError, ValueError, TypeError):
-            result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
+        if 'sections' not in request.GET:
+            #   No schedule change requested (e.g. check_in-only call).
             desired_sections = None
         else:
+            try:
+                desired_sections = json.loads(request.GET['sections'])
+            except (ValueError, TypeError):
+                #   Malformed JSON: refuse without side effects (no check_in).
+                resp.status_code = 400
+                result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
+                json.dump(result, resp)
+                return resp
             if not isinstance(desired_sections, list):
                 resp.status_code = 400
                 result['messages'].append('Error: sections must be a JSON list of section IDs')
