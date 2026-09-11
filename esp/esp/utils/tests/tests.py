@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Test cases for Django-ESP utilities
 """
@@ -10,6 +9,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+from pathlib import Path
 import subprocess
 import sys
 import types

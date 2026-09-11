@@ -19,7 +19,7 @@ class Command(BaseCommand):
     the source tree.
     """
     def handle(self, *args, **options):
-        root = Path(settings.BASE_DIR).absolute().parent
+        root = Path(settings.BASE_DIR).resolve().parent
         for dirpath, dirnames, filenames in os.walk(root):
             for filename in filenames:
                 if filename.endswith('.pyc'):
