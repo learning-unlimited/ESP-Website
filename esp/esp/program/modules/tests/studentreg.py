@@ -33,7 +33,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
-from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.accounting.models import FinancialAidGrant, LineItemType, LineItemOptions, Transfer
+from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -484,6 +485,99 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
         self.assertEqual(iac.amount_due(), program_cost + 7)
 
+        #   Check that selecting multiple options for a multi-select extra item works (including custom amount)
+        lit4 = LineItemType.objects.create(
+            program=self.program,
+            text='Workshops',
+            required=False,
+            max_quantity=1,
+            amount_dec=Decimal('0.00'),
+            selection_type='multiple',
+            for_finaid=True,
+        )
+        opt_a = LineItemOptions.objects.create(lineitem_type=lit4, description='AI', amount_dec=Decimal('12.00'), is_custom=False)
+        opt_b = LineItemOptions.objects.create(lineitem_type=lit4, description='Robotics', amount_dec=Decimal('8.00'), is_custom=False)
+        opt_c = LineItemOptions.objects.create(lineitem_type=lit4, description='Other', amount_dec=None, is_custom=True)
+
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%s-options' % lit4.id: [str(opt_a.id), str(opt_c.id)],
+            'multi%s-custom_amount_%s' % (lit4.id, opt_c.id): '5.50',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Ensure that two Transfers exist for the multi-select item (one per selected option)
+        workshop_transfers = Transfer.objects.filter(user=student, line_item=lit4).order_by('id')
+        self.assertEqual(workshop_transfers.count(), 2)
+        self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
+
+        #   Check that the saved selections are restored when the form is reloaded,
+        #   including the amount that was entered for the custom option
+        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        forms_by_lineitem = {f['LineItem'].id: f['form'] for f in response.context['forms']}
+        workshops_form = forms_by_lineitem[lit4.id]
+        self.assertEqual(set(workshops_form.initial['options']), {opt_a.id, opt_c.id})
+        self.assertEqual(workshops_form.initial['custom_amount_%d' % opt_c.id], Decimal('5.50'))
+
+        #   Every checkbox needs the data- attributes that extracosts.js reads to keep
+        #   the displayed total in sync, and only custom options get an amount input
+        option_rows = {str(checkbox.data['value']): (checkbox, amount_field)
+                       for checkbox, amount_field in workshops_form.option_rows()}
+        self.assertEqual(set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)})
+        self.assertIsNone(option_rows[str(opt_a.id)][1])
+        self.assertIsNotNone(option_rows[str(opt_c.id)][1])
+        self.assertIn('data-cost="12.00"', str(option_rows[str(opt_a.id)][0]))
+        self.assertIn('data-for_finaid="true"', str(option_rows[str(opt_b.id)][0]))
+        self.assertIn('data-is_custom="true"', str(option_rows[str(opt_c.id)][0]))
+
+        #   The same data- attributes are needed by the single-select radio buttons
+        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]['option']))
+
+        #   Check that selecting a custom option without entering an amount is an
+        #   error, and does not discard the options that were already saved
+        post_data = {
+            '%d-count' % lit2.id: '0',
+            'multi%d-option' % lit3.id: str(lio[0]),
+            'multi%d-options' % lit4.id: [str(opt_b.id), str(opt_c.id)],
+            'multi%d-custom_amount_%d' % (lit4.id, opt_c.id): '',
+            '%d-siblingdiscount' % sd_lit.id: 'False',
+        }
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['error_custom'])
+        self.assertEqual(set(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         {opt_a.id, opt_c.id})
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
+        #   Check that changing the selection replaces the previous options
+        post_data['multi%d-options' % lit4.id] = [str(opt_b.id)]
+        del post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(list(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
+                         [opt_b.id])
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 8)
+
+        #   Check that clearing the selection removes all of the options
+        del post_data['multi%d-options' % lit4.id]
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Transfer.objects.filter(user=student, line_item=lit4).exists())
+        self.assertEqual(iac.amount_due(), program_cost + 7)
+
+        #   Restore the multi-select options for the financial aid checks below
+        post_data['multi%d-options' % lit4.id] = [str(opt_a.id), str(opt_c.id)]
+        post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)] = '5.50'
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
+
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)
@@ -510,6 +604,152 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+    def test_catalog_deadline(self):
+        """Test that catalog respects Student/Catalog deadline."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline configured - catalog should work
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+        # Active deadline - catalog should work
+        perm = Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1)
+        )
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+
+        # Expired deadline - should show error
+        perm.end_date = timezone.now() - timedelta(hours=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # Future deadline (configured but not yet started) - should also be closed
+        perm.start_date = timezone.now() + timedelta(hours=1)
+        perm.end_date = timezone.now() + timedelta(days=1)
+        perm.save()
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_deadline_admin_bypass(self):
+        """Admins can see the catalog while it is closed; students cannot."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+
+        # A student still gets the deadline page
+        student = random.choice(self.students)
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        # An admin gets the real catalog, marked no-store so that a shared cache
+        # cannot keep it and hand it to students afterwards
+        admin = random.choice(self.admins)
+        self.assertTrue(self.client.login(username=admin.username, password='password'))
+        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.expect_template(response, 'program/modules/studentclassregmodule/catalog.html')
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertIsInstance(json.loads(response.content), list)
+
+    def test_catalog_deadline_is_configurable(self):
+        """Admins must be able to create the Student/Catalog deadline."""
+        from esp.program.modules.handlers.admincore import NewDeadlineForm
+
+        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn('Student/Catalog', Permission.deadline_types)
+
+        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+        Permission(permission_type='Student/Catalog', program=self.program,
+                   user=None).full_clean()
+
+    def test_catalog_json_open(self):
+        """catalog_json returns 200 with JSON when catalog is open."""
+        import json
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # No deadline at all — should be open
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+        # Active deadline — should still be open
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=1),
+            end_date=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIsInstance(data, list)
+
+    def test_catalog_json_closed(self):
+        """catalog_json returns 403 with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        # Expired deadline — catalog should be closed
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response['Cache-Control'], 'no-store')
+
+    def test_catalog_pdf_closed(self):
+        """catalog_pdf returns deadline page with no-store cache header when catalog is closed."""
+        from datetime import timedelta
+        from django.utils import timezone
+
+        program = self.program
+        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+
+        Permission.objects.create(
+            permission_type='Student/Catalog', program=program, user=None,
+            start_date=timezone.now() - timedelta(days=2),
+            end_date=timezone.now() - timedelta(hours=1),
+        )
+        response = self.client.get('/learn/%s/catalog_pdf' % program.getUrlBase())
+        self.assertIn('deadline', response.content.decode('utf-8').lower())
+        self.assertEqual(response['Cache-Control'], 'no-store')
 
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """

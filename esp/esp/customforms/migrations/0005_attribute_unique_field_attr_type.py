@@ -11,13 +11,14 @@ def dedupe_attributes(apps, schema_editor):
             duplicate_ids.append(attr.id)
         else:
             seen.add(key)
-    Attribute.objects.filter(id__in=duplicate_ids).delete()
+    if duplicate_ids:
+        Attribute.objects.filter(id__in=duplicate_ids).delete()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customforms', '0003_auto_20260306_0336'),
+        ('customforms', '0004_alter_field_options_alter_page_options_and_more'),
     ]
 
     operations = [
