@@ -137,6 +137,28 @@ class CommModule(ProgramModuleObj):
         )
 
     @staticmethod
+    def _q_has_grade_filter(q_obj):
+        """Recursively check whether a Q object contains a grade filter.
+
+        Grade filters (grade_min/grade_max) are translated into
+        ``student_info__graduation_year`` lookups in
+        ``UserSearchController.query_from_criteria``.  This method walks the
+        Q-object tree to detect such lookups.
+        """
+        from django.db.models.query import Q
+        if not isinstance(q_obj, Q):
+            return False
+        for child in q_obj.children:
+            if isinstance(child, Q):
+                if CommModule._q_has_grade_filter(child):
+                    return True
+            elif isinstance(child, tuple) and len(child) >= 1:
+                lookup = str(child[0])
+                if 'student_info__graduation_year' in lookup:
+                    return True
+        return False
+
+    @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):
         from esp.users.models import ESPUser, PersistentQueryFilter # noqa: F811
         from esp.dbmail.models import MessageRequest # noqa: F811
@@ -160,10 +182,8 @@ class CommModule(ProgramModuleObj):
             )
             filter_obj = None
 
-        if filter_obj is not None:
-            filter_name = getattr(filter_obj, 'useful_name', '') or ''
-            if filter_name and 'grade' not in filter_name.lower():
-                mailer_warnings.append("Warning: You haven't selected a grade range filter.")
+        if filter_obj is not None and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
+            mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
         guardian_or_emergency_sentto_values = set()
@@ -211,7 +231,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)', fromemail):
+            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)', fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
