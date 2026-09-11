@@ -122,9 +122,7 @@ jobs:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   tests-complete:
-    # One stable status check to require in branch protection. The per-shard
-    # job names contain the shard number, so they change whenever the shard
-    # count does; this job's name does not.
+    # One stable status check to require in branch protection.
     name: Tests Complete
     runs-on: ubuntu-24.04
     needs: test
