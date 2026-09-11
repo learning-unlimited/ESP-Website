@@ -36,6 +36,15 @@
     {% comment %} Broke these fields into a separate template fragment so they can be reproduced elsewhere without code duplication.{% endcomment %}
     {% include "program/modules/adminclass/manageclass_class_info.html" %}
     <tr>
+        <th class="smaller">Section Status: </th>
+        <td>
+            {% for sec in sections %}
+                Section {{ sec.index }}: <strong>{{ sec.status_str|capfirst }}</strong>{% if sec.isCancelled and sec.cancellation_reason %} (<em>Reason: {{ sec.cancellation_reason }}</em>){% endif %}
+                <br />
+            {% endfor %}
+        </td>
+    </tr>
+    <tr>
         <th class="smaller">Number of Students: </th>
         <td>
             {% for sec in sections %}
@@ -210,7 +219,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 <tr>
     <th>Resources requested:</th>
     <td>
-        {% if form.sec.getResourceRequests|length_is:0 %}
+        {% if form.sec.getResourceRequests|length == 0 %}
             None requested
         {% else %}
         {% for rr in form.sec.getResourceRequests %}

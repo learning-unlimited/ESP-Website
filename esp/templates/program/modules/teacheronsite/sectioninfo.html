@@ -19,7 +19,7 @@
                     </td>
                 </tr>
                     <td>Time:</td>
-                    <td>{% if section.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
+                    <td>{% if section.friendly_times|length == 0 %}Unassigned{% else %}{% for f in section.friendly_times_with_date %}{{ f }}{% endfor %}{% endif %}</td>
                 </tr>
                 {% if user not in section.parent_class.get_teachers or section.parent_class.get_teachers.count > 1 %}
                 <tr>
@@ -77,15 +77,15 @@
     <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none;"></td></tr></table>
   </div>
 </center>
-<div class="navbar bottom">
-  <table>
-    <tr>
-      <td class="selected"><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">list</i>
-        <br>Section Info{% if sections.count != 1 %}s{% endif %}</td>
-      <td><a class="no-dec" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" style="display:block;"><i class="material-icons md-5">assignment</i>
-        <br>Section Roster{% if sections.count != 1 %}s{% endif %}</td>
-    </tr>
-  </table>
-</div>
+<nav class="navbar bottom" aria-label="Section pages">
+  <a class="navbar-item selected" href="/teach/{{one}}/{{two}}/onsitedetails/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}" aria-current="page">
+    <i class="material-icons md-5" aria-hidden="true">list</i>
+    <span>Section Info{% if sections.count != 1 %}s{% endif %}</span>
+  </a>
+  <a class="navbar-item" href="/teach/{{one}}/{{two}}/onsiteroster/{% if sections.count == 1 %}{{ sections.0.id }}{% endif %}">
+    <i class="material-icons md-5" aria-hidden="true">assignment</i>
+    <span>Section Roster{% if sections.count != 1 %}s{% endif %}</span>
+  </a>
+</nav>
 
 {% endblock %}

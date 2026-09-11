@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
 import re
 
-get_id_re = re.compile('.*\((\d+)\)$')
+get_id_re = re.compile(r'.*\((\d+)\)$')
 
 class AjaxForeignKeyFieldBase:
 
@@ -112,7 +112,7 @@ $j(function () {
   <img src="/static/admin/img/search.svg" border="0" width="16" height="16" alt="Lookup" /></a>
    &nbsp;<strong>%(old_init_val)s</strong>
 </div>
-<input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="span6" />
+<input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="col-md-6" />
 <input type="hidden" id="id_%(fn)s_data" name="%(fn)s" />
 """ % dict(fn=fn, data=addslashes(data or ''), old_init_val=old_init_val)
 
@@ -170,13 +170,14 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
         # To add a similar class for required forms (rather than form errors),
         # see https://docs.djangoproject.com/en/1.8/ref/forms/api/#styling-required-or-erroneous-form-rows
 
-        # This is necessary to work around a bug in Django 1.8:
-        # AjaxForeignKey sets this as form_class, and since it's
-        # a ForeignKey subclass, some Django code
-        # inserts limit_choices_to into the kwargs, causing
-        # IntegerField to error when its __init__ is called
-        if 'limit_choices_to' in kwargs:
-            del kwargs['limit_choices_to']
+        # AjaxForeignKey sets this as form_class, and since it's a ForeignKey
+        # subclass, Django's ForeignKey.formfield() inserts extra kwargs that
+        # IntegerField.__init__ doesn't accept:
+        # - limit_choices_to: inserted by Django 1.8+ ForeignKey.formfield()
+        # - blank: inserted by Django 3.2+ ForeignKey.formfield()
+        # - queryset / to_field_name: inserted by Django's ForeignKey.formfield()
+        for _kw in ('limit_choices_to', 'blank', 'queryset', 'to_field_name'):
+            kwargs.pop(_kw, None)
 
         super().__init__(*args, **kwargs)
 

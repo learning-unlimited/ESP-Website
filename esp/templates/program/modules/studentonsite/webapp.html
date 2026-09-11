@@ -1,9 +1,9 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link href="https://fonts.googleapis.com/css?family=Josefin+Sans" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/webapp.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/webapp.css" />
     <title>
         {% block title %}Student Webapp for {{program.niceName}}{% endblock %}
     </title>
@@ -12,24 +12,28 @@
 </head>
 
 <body>
-<div class="navbar">
-  <table>
-    <tr>
-      <td{% if webapp_page == "schedule" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/studentonsite/" style="display:block;"><i class="material-icons md-5">event_note</i>
-        <br>Schedule</td>
-      {% if map_tab %}
-      <td{% if webapp_page == "map" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitemap" style="display:block;"><i class="material-icons md-5">map</i>
-        <br>Map</a></td>
-      {% endif %}
-      <td{% if webapp_page == "catalog" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitecatalog" style="display:block;"><i class="material-icons md-5">event</i>
-        <br>Catalog</td>
-      {% if survey_status != "none" %}
-      <td{% if webapp_page == "survey" %} class="selected"{% endif %}><a class="no-dec" href="/learn/{{one}}/{{two}}/onsitesurvey" style="display:block;"><i class="material-icons md-5">question_answer</i>
-        <br>Survey</td>
-      {% endif %}
-    </tr>
-  </table>
-</div>
+<nav class="navbar" aria-label="Student webapp">
+  <a class="navbar-item{% if webapp_page == 'schedule' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/studentonsite/"{% if webapp_page == 'schedule' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">event_note</i>
+    <span>Schedule</span>
+  </a>
+  {% if map_tab %}
+  <a class="navbar-item{% if webapp_page == 'map' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitemap"{% if webapp_page == 'map' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">map</i>
+    <span>Map</span>
+  </a>
+  {% endif %}
+  <a class="navbar-item{% if webapp_page == 'catalog' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitecatalog"{% if webapp_page == 'catalog' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">event</i>
+    <span>Catalog</span>
+  </a>
+  {% if survey_status != "none" %}
+  <a class="navbar-item{% if webapp_page == 'survey' %} selected{% endif %}" href="/learn/{{one}}/{{two}}/onsitesurvey"{% if webapp_page == 'survey' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">question_answer</i>
+    <span>Survey</span>
+  </a>
+  {% endif %}
+</nav>
 {% block body %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,42 @@
+/* HEADER FIX */
+#header {
+  display: block !important;
+}
+
+#header h1 {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Breadcrumb fix */
+.breadcrumbs {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Page title */
+#content h1 {
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+/* Success message */
+.messagelist li {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Links */
+.messagelist a {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Delete page */
+#content {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

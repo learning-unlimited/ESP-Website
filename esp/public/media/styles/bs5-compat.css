@@ -1,0 +1,58 @@
+/* Compatibility shims for Bootstrap classes removed in Bootstrap 5.
+ *
+ * Many templates still use .form-inline (removed in BS5) and .navbar-form
+ * (removed in BS4).  These rules restore the Bootstrap 4 inline-form layout
+ * so those forms keep rendering horizontally until each template is migrated
+ * to BS5 flex utilities, at which point this file can be deleted.
+ */
+.form-inline,
+.navbar-form {
+    display: flex;
+    flex-flow: row wrap;
+    align-items: center;
+}
+.form-inline .form-control,
+.navbar-form .form-control {
+    display: inline-block;
+    width: auto;
+    vertical-align: middle;
+}
+.form-inline label,
+.navbar-form label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0;
+}
+.form-inline .form-check,
+.navbar-form .form-check {
+    width: auto;
+}
+
+/* Bootswatch Sketchy (and similar themes) sets [type="checkbox"] { width:0;
+ * height:0 } and draws the control via absolutely-positioned ::before/::after
+ * pseudo-elements (width: 15px).  Because the element is 0×0, adjacent inline
+ * text starts at the same x-position and the pseudo-element overlaps it.
+ *
+ * input[type="checkbox"] has specificity (0,1,1) which beats Sketchy's
+ * [type="checkbox"] at (0,1,0), so our properties win.  min-width/min-height
+ * also override a zero width/height at the layout stage regardless.
+ * display: inline-block ensures min-width is respected after appearance:none
+ * strips the replaced-element behaviour.
+ *
+ * For .form-check-input (Bootstrap): float:left overrides display to block
+ * (spec §9.7) so inline-block has no effect there, and Bootstrap's own
+ * width/height:1em is not reduced by min-width:1em. No breakage. */
+input[type="checkbox"],
+input[type="radio"] {
+    display: inline-block;
+    min-width: 1em;
+    min-height: 1em;
+    vertical-align: middle;
+}
+
+/* Tighten Bootstrap's default 0.25em top margin for .form-check-input so that
+ * Bootswatch themes with $form-check-input-width > 1em (e.g. Sketchy at 1.25em)
+ * still sit centred on the label's first line of text. */
+.form-check-input {
+    margin-top: 0.125em;
+}

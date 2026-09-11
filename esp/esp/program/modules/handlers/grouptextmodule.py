@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, ContactInfo
 from esp.users.controllers.usersearch import UserSearchController
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 from django.conf import settings
 
@@ -63,6 +64,20 @@ class GroupTextModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the group text panel in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (grouptextfinal) return None.
+        if view_name != "grouptextpanel":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Group Text Panel",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["text", "sms", "message", "group", "twilio", "communication"],
+        )
+
     @staticmethod
     def is_configured():
         """ Check if Twilio configuration settings are set.
@@ -87,7 +102,11 @@ class GroupTextModule(ProgramModuleObj):
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        filter_id = request.GET.get('filterid')
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=filter_id)
+        except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError()('The requested query filter is invalid or no longer exists.')
         message = request.POST['message']
         override = False
         if 'text-override' in request.POST:
@@ -109,14 +128,19 @@ class GroupTextModule(ProgramModuleObj):
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
-            filterObj = UserSearchController().filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'search.html', request, context)
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
             context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @staticmethod
@@ -138,7 +162,7 @@ class GroupTextModule(ProgramModuleObj):
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
 
         if not account_sid or not auth_token or not ourNumbers:
-          raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
+            raise ESPError()("You must configure the Twilio account settings before attempting to send texts using this module")
 
         # cycle through our phone numbers to reduce sending time
         numberIndex = 0
@@ -148,12 +172,8 @@ class GroupTextModule(ProgramModuleObj):
 
         for user in users:
 
-            contactInfo = None
-            try:
-                #   Only get contact info for the actual user (not guardians or emergency contacts)
-                contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).distinct('user')[0]
-            except ContactInfo.DoesNotExist:
-                pass
+            #   Only get contact info for the actual user (not guardians or emergency contacts)
+            contactInfo = ContactInfo.objects.filter(user=user, as_user__isnull=False).order_by('-id').first()
             if not contactInfo:
                 send_log.append("Could not find contact info for "+str(user))
                 continue
