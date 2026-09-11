@@ -51,11 +51,13 @@ from esp.tagdict.models import Tag
 
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import connection, transaction
 from django.db.utils import IntegrityError
 from django.test import LiveServerTestCase, TransactionTestCase, override_settings
 from django.utils import timezone
+import unittest
 from unittest import mock
 from django.test.client import Client
 from django import forms
@@ -1419,6 +1421,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         self.testLottery()
 
+@unittest.skipIf(ilp_lottery.gp is None, "gurobipy is not installed")
 class ILPLotteryAssignmentControllerTest(ProgramFrameworkTest):
     """Covers the parts of ILPLotteryAssignmentController that don't need
     a Gurobi license: __init__'s option validation, and _setup_pref_weight()
@@ -1594,7 +1597,8 @@ class ILPLotteryAssignmentControllerTest(ProgramFrameworkTest):
 
     def test_compute_assignments_produces_valid_schedule(self):
         # Needs an actual usable Gurobi license, not just gurobipy installed
-        # -- skip (not fail) when unavailable, e.g. in CI.
+        # (that's covered by the class-level skip) -- skip (not fail) when
+        # unavailable, e.g. in CI.
         try:
             ilp_lottery.gp.Model().dispose()
         except ilp_lottery.gp.GurobiError as e:
@@ -1998,6 +2002,15 @@ class LotteryGuardedRefreshConcurrencyTest(TransactionTestCase):
             solver_job_id='job-concurrent', status='running',
         )
 
+    def tearDown(self):
+        # The worker threads below open their own raw DB connections and do
+        # ORM queries outside Django's normal test-transaction wrapping,
+        # which can leave Django's process-wide ContentType cache holding
+        # objects whose pks get wiped by the flush() this TransactionTestCase
+        # runs after every test -- causing a later test's create_permissions
+        # to FK-violate against a content_type_id that no longer exists.
+        ContentType.objects.clear_cache()
+
     def test_only_one_thread_hits_the_service(self):
         call_count = {'n': 0}
         call_count_lock = threading.Lock()
@@ -2165,6 +2178,7 @@ class LotteryILPViewsTest(ProgramFrameworkTest):
             resp = self._post('lottery_ilp_submit', {'params': '{}'})
         self.assertIn('error_msg', self._response_item(resp))
 
+    @unittest.skipIf(ilp_lottery.gp is None, "gurobipy is not installed")
     def test_submit_creates_run_and_snapshot(self):
         try:
             ilp_lottery.gp.Model().dispose()

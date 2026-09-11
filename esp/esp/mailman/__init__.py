@@ -55,7 +55,7 @@ def apply_raw_list_settings(list, data):
     Apply the settings in 'data' to the specified list.
     This is functionally equivalent to writing 'data' to a file and calling "load_list_settings()" on that file.
     """
-    with NamedTemporaryFile() as f:
+    with NamedTemporaryFile(mode="w") as f:
         f.write(data)
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
@@ -70,7 +70,7 @@ def apply_list_settings(list, data):
     Values should be either strings, or objects that, when converted to a string via repr(), represent valid Python expressions in the configuration file.
     """
 
-    with NamedTemporaryFile() as f:
+    with NamedTemporaryFile(mode="w") as f:
         f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in six.iteritems(data) ) )
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])

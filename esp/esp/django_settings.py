@@ -434,3 +434,4 @@ SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error']
 #   Remote Gurobi solver service(s) for the ILP lottery
 LOTTERY_SOLVERS = {} # {solver_name: {"url": ..., "token": ...}, ...}
 LOTTERY_DEFAULT_SOLVER = None # should be set to the name of a solver
+
