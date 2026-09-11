@@ -20,6 +20,11 @@ defaults to the existing behavior, so nothing changes unless it is set.
 - ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the text of the volunteer form's confirmation checkbox. The value is treated as plain text and the default red styling is kept.
 - ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control how many data points are trimmed from each end of the big board's registration graph series, and how many points a series needs before it is plotted. These were previously hard-coded as 4, 0, and 5 respectively.
 
+Bug Fixes
+=========
+
+- Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
+
 Developer Notes
 ===============
 
