@@ -38,9 +38,11 @@
 </tr>
 <tr>
  <th><label>Reviewing Status:</label><br />
-  <small>(Not reviewed, Accepted, or Rejected)</small>
+  <small>(Draft, Not reviewed, Accepted, or Rejected)</small>
 </th>
- <td>{% if class.isReviewed %}{% if class.isAccepted %}
+ <td>{% if class.isDraft %}
+   <span class="status notreviewed">Draft &ndash; not yet submitted</span>
+   {% elif class.isReviewed %}{% if class.isAccepted %}
    <span class"status accepted">Accepted!</span>
    {% else %}
    <span class="status rejected">Rejected</span>
