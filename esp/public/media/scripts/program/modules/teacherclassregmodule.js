@@ -1,5 +1,19 @@
+// Draft saves and discards are not class submissions, so they skip the
+// grade-range confirmation. Set by those buttons, consumed on the next submit.
+var skip_grade_range_check = false;
+
+function skip_grade_range()
+{
+    skip_grade_range_check = true;
+}
+
 function check_grade_range(form)
 {
+    if (skip_grade_range_check)
+    {
+        skip_grade_range_check = false;
+        return true;
+    }
     console.log("Checking!");
     var grade_max = $j(form).find('#id_grade_max').val();
     var grade_min = $j(form).find('#id_grade_min').val();

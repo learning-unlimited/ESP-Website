@@ -6,6 +6,7 @@ import datetime
 from django.test import Client
 
 from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models.class_ import ClassSubject
 from esp.program.class_status import ClassStatus
 from esp.resources.models import ResourceRequest, ResourceType
@@ -63,6 +64,10 @@ class DraftCreationTestMixin(object):
             defaults={'description': ''},
         )
         self.resource_types = [classroom_type, test_resource_type]
+
+    def _get_teacherclassreg_module(self):
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        return ProgramModuleObj.getFromProgModule(self.program, pm)
 
     def _make_draft_form_data(self, teacher):
         """Returns valid POST data for draft creation."""
@@ -328,8 +333,8 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         self.assertEqual(draft_class.class_info, 'A draft description of this class.')
         self.assertEqual(draft_class.hardness_rating, '***')
 
-    def test_javascript_draft_button_initially_disabled(self):
-        """The Save as Draft button should be initially disabled when form loads with draft data."""
+    def test_draft_buttons_rendered_and_clickable(self):
+        """Both draft buttons render, are never disabled, and skip browser validation."""
         teacher = self.teachers[0]
         self.assertTrue(
             self.client.login(username=teacher.username, password='password'),
@@ -348,14 +353,12 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200,
                          "Expected 200 when accessing makeaclass with existing draft")
 
-        # Check that response contains JavaScript functionality
-        self.assertContains(response, 'Save as Draft')
-        self.assertContains(response, 'updateDraftButtonState')
-        self.assertContains(response, 'hasFormChanged')
-        self.assertContains(response, 'initialFormSnapshot')
-
-        # The button should be disabled initially (form hasn't changed yet)
-        self.assertContains(response, 'draftButton.disabled = !hasFormChanged()')
+        self.assertContains(response, 'Save as a Draft')
+        self.assertContains(response, 'Discard Draft')
+        # custom-action opts out of the site-wide submit handler in
+        # elements/html; formnovalidate then suppresses native validation.
+        self.assertContains(response, 'custom-action')
+        self.assertContains(response, 'value="draft" formnovalidate>')
 
     def test_draft_with_resource_requests(self):
         """Draft saving should handle resource requests properly."""
@@ -672,3 +675,101 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
             ['audio', 'video'],
             "All selected values from multi-select custom field should be saved",
         )
+
+    def test_draft_does_not_complete_class_registration(self):
+        """A draft is not a submitted class, so it must not mark the module complete."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        # This teacher's framework-created class would mask the effect.
+        ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).delete()
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        moduleobj = self._get_teacherclassreg_module()
+        self.assertFalse(moduleobj.isCompleted(teacher),
+                         "A draft alone must not complete class registration")
+        self.assertIn(draft, moduleobj.clslist(teacher),
+                      "The teacher should still see their own draft")
+
+    def test_draft_excluded_from_taught_classes(self):
+        """Drafts stay out of taught-class queries unless explicitly requested."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        self.assertNotIn(draft, teacher.getTaughtClasses(self.program))
+        self.assertIn(draft, teacher.getTaughtClasses(self.program, include_drafts=True))
+        draft_sections = list(draft.sections.all())
+        self.assertTrue(draft_sections, "Draft should have at least one section")
+        for section in draft_sections:
+            self.assertNotIn(section, teacher.getTaughtSections(self.program))
+
+    def test_discard_draft_deletes_it(self):
+        """The discard button removes the draft and leaves an empty form behind."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        discard_data = self._make_draft_form_data(teacher)
+        discard_data['save_action'] = 'discard_draft'
+        discard_data['class_id'] = draft.id
+        response = self.client.post(self._makeaclass_url(), discard_data)
+
+        self.assertIn(response.status_code, [200, 302])
+        self.assertFalse(
+            ClassSubject.objects.filter(id=draft.id).exists(),
+            "Discarding should delete the draft"
+        )
+
+    def test_draft_status_is_not_reported_as_reviewed(self):
+        """A draft is neither reviewed nor rejected, so status templates say "Draft"."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        self.assertTrue(draft.isDraft())
+        self.assertFalse(draft.isReviewed(),
+                         "A draft has not been submitted, so it cannot have been reviewed")
+        self.assertFalse(draft.isAccepted())
+        self.assertFalse(draft.isRejected())
+        self.assertFalse(draft.isCancelled())
+        self.assertEqual(draft.status_str(), 'draft')
+
+        for section in draft.sections.all():
+            self.assertTrue(section.isDraft())
+            self.assertFalse(section.isReviewed())
+            self.assertFalse(section.isRejected())

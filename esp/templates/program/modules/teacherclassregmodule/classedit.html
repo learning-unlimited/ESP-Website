@@ -17,66 +17,6 @@
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
     <script type="text/javascript" src="/media/scripts/program/modules/flag-edit.js"></script>
 
-    {% if show_draft_button %}
-    <script type="text/javascript">
-    // Form change detection for draft button enable/disable
-    document.addEventListener('DOMContentLoaded', function() {
-        var draftButton = document.querySelector('button[name="save_action"][value="draft"]');
-        if (!draftButton) return;
-
-        // Snapshot initial form state by manually serializing all inputs (not FormData).
-        // This correctly handles radio groups and multi-select checkboxes.
-        var form = document.getElementById('clsform');
-        var initialFormSnapshot = '';
-        function serializeForm() {
-            if (!form) return '';
-            var parts = [];
-            var inputs = form.querySelectorAll('input, select, textarea');
-            for (var i = 0; i < inputs.length; i++) {
-                var el = inputs[i];
-                if (!el.name || el.name === 'csrfmiddlewaretoken') continue;
-                if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) continue;
-                parts.push(encodeURIComponent(el.name) + '=' + encodeURIComponent(el.value));
-            }
-            return parts.sort().join('&');
-        }
-        initialFormSnapshot = serializeForm();
-
-        // Function to check if form has changed
-        function hasFormChanged() {
-            return serializeForm() !== initialFormSnapshot;
-        }
-
-        // Function to update draft button state
-        function updateDraftButtonState() {
-            if (draftButton) {
-                draftButton.disabled = !hasFormChanged();
-            }
-        }
-
-        // Debounce expensive form serialization during rapid typing.
-        var updateDraftButtonStateTimer = null;
-        function scheduleDraftButtonUpdate() {
-            if (updateDraftButtonStateTimer !== null) {
-                clearTimeout(updateDraftButtonStateTimer);
-            }
-            updateDraftButtonStateTimer = setTimeout(function() {
-                updateDraftButtonState();
-                updateDraftButtonStateTimer = null;
-            }, 150);
-        }
-
-        // Monitor form changes
-        if (form) {
-            form.addEventListener('input', scheduleDraftButtonUpdate);
-            form.addEventListener('change', scheduleDraftButtonUpdate);
-        }
-
-        // Initial state
-        updateDraftButtonState();
-    });
-    </script>
-    {% endif %}
 {% endblock %}
 
 {% block module_content %}
@@ -86,6 +26,16 @@
 {% if request.GET.draft_saved %}
     <div class="alert alert-success">
         <strong>Success!</strong> Your draft has been saved. You can continue editing and submit when ready.
+    </div>
+{% elif has_draft %}
+    <div class="alert alert-info">
+        Now editing your saved draft. You can continue editing and submit when ready, or discard the draft.
+    </div>
+{% endif %}
+
+{% if request.GET.draft_discarded %}
+    <div class="alert alert-info">
+        Your draft has been discarded.
     </div>
 {% endif %}
 
@@ -98,9 +48,9 @@
     {% if addoredit == 'Edit' %}
         {% load modules %}
         <center>
-        <a class="btn" title="Modify Coteachers" href="/teach/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">Modify Coteachers</a>
+        <a class="btn btn-primary btn-lg" title="Modify Coteachers" href="/teach/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">Modify Coteachers</a>
         {% if program|hasModule:"TeacherPreviewModule" %}
-        <a class="btn" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
+        <a class="btn btn-primary btn-lg" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
         {% endif %}
         <br /><br />
         </center>
@@ -121,7 +71,7 @@
 {% endif %}
 
 <div id="program_form">
-<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline"{% if grade_range_popup %} onsubmit="return check_grade_range(this);"{% endif %}">
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline"{% if grade_range_popup %} onsubmit="return check_grade_range(this);"{% endif %}>
 
 {% if form.errors %}
 <p align="center">
@@ -203,32 +153,37 @@
                 <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
             {% else %}
                 {% if module.deadline_met %}
-                    <button type="submit" class="btn btn-success btn-lg" name="save_action" value="submit">
+                    <button type="submit" class="btn btn-primary btn-lg" name="save_action" value="submit">
                     {% if class.id and not show_draft_button %}
                         <span class="bi bi-save"></span>
                         Save course!
-                    {% elif class.id %}
-                        Submit
                     {% else %}
                         <span class="bi bi-mortarboard"></span>
                         Teach for {{one}}!
                     {% endif %}
                     </button>
-
-                    <br /><br />
-
                     {% if show_draft_button %}
-                    <button type="submit" class="btn btn-info" name="save_action" value="draft">
-                        <span class="bi bi-save"></span>
-                        Save as Draft
-                    </button>
-
-                    <br /><br />
+                        <button type="submit" class="btn btn-info btn-lg custom-action" name="save_action" value="draft" formnovalidate
+                                onclick="skip_grade_range();">
+                            <span class="bi bi-save"></span>
+                            Save {% if not has_draft %}as a {% endif %}Draft
+                        </button>
+                        {% if has_draft %}
+                            <button type="submit" class="btn btn-danger btn-lg custom-action" name="save_action" value="discard_draft" formnovalidate
+                                    onclick="if (!confirm('Discard this draft?  Everything you have saved in it will be deleted.')) { return false; } skip_grade_range(); return true;">
+                                <span class="bi bi-trash"></span>
+                                Discard Draft
+                            </button>
+                        {% endif %}
+                        <br /><br />
                     {% endif %}
-
                 {% endif %}
             {% endif %}
-            <input class="btn btn-secondary" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            {% if manage %}
+                <input class="btn btn-secondary" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
+            {% else %}
+                <a class="btn btn-secondary" href="{{ program.get_teach_url }}teacherreg">{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}</a>
+            {% endif %}
             <br /><br />
         </td>
     </tr>
