@@ -28,7 +28,26 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from decimal import Decimal
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
+from esp.utils.web import render_to_response
+from esp.dbmail.models import send_mail
+from esp.users.models import ESPUser
+from esp.tagdict.models import Tag
+from esp.accounting.models import LineItemType
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.middleware import ESPError
+from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.modules.handlers.donationmodule import DonationModule
+
+from django.conf import settings
+from django.db import transaction
+from django.db.models.query import Q
+from django.contrib.sites.models import Site
+from django.template.loader import render_to_string
+
+from decimal import Decimal, InvalidOperation
+import stripe
 import json
 import re
 import logging
@@ -547,6 +566,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                 iac.amount_due()
             ) * 100
 
+
             if amount_cents_post != amount_cents_iac:
                 context["error_type"] = "inconsistent_amount"
                 context["error_info"] = {
@@ -554,14 +574,42 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     "amount_cents_iac": amount_cents_iac,
                 }
 
+        if 'error_type' not in context:
+            #   Check the amount in the POST against the amount in our records.
+            #   If they don't match, raise an error.
+            try:
+                amount_cents_post = Decimal(request.POST.get('totalcost_cents', ''))
+            except (InvalidOperation, TypeError, ValueError):
+                context['error_type'] = 'missing_fields'
+                context['error_info'] = {'missing': 'totalcost_cents'}
+            else:
+                amount_cents_iac = Decimal(iac.amount_due()) * 100
+                if amount_cents_post != amount_cents_iac:
+                    context['error_type'] = 'inconsistent_amount'
+                    context['error_info'] = {
+                        'amount_cents_post': amount_cents_post,
+                        'amount_cents_iac':  amount_cents_iac,
+                    }
+
+        stripe_token = request.POST.get('stripeToken')
+        if 'error_type' not in context and not stripe_token:
+            context['error_type'] = 'missing_fields'
+            context['error_info'] = {'missing': 'stripeToken'}
+
+
         if "error_type" not in context:
             try:
                 with transaction.atomic():
-                    # Save a record of the charge if we can uniquely
-                    # identify the user/program.
-                    totalcost_dollars = (
-                        Decimal(request.POST["totalcost_cents"]) / 100
-                    )
+                    # Save a record of the charge if we can uniquely identify the user/program.
+                    # If this causes an error, the user will get a 500 error
+                    # page, and the card will NOT be charged.
+                    # If an exception is later raised by
+                    # stripe.Charge.create(), then the transaction will be
+                    # rolled back.
+                    # Thus, we will never be in a state where the card has been
+                    # charged without a record being created on the site, nor
+                    # vice-versa.
+                    totalcost_dollars = amount_cents_post / 100
 
                     transfer = iac.submit_payment(
                         totalcost_dollars,
@@ -572,6 +620,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=int(amount_cents_post),
                         currency="usd",
+
                         source=request.POST["stripeToken"],
                         description=(
                             f"Payment for {group_name} "
@@ -581,6 +630,13 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         statement_descriptor=group_name[:22],
                         metadata={
                             "ponumber": request.POST["ponumber"],
+
+                        source=stripe_token,
+                        description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
+                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        metadata={
+                            'ponumber': request.POST.get('ponumber', ''),
+
                         },
                     )
 
@@ -630,4 +686,4 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = "modules"
+        app_label = "modules";
