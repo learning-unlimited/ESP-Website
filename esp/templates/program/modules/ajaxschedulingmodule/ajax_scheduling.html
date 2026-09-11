@@ -17,12 +17,15 @@
 <link id='sch_css' href='/media/styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link href="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/bs5-compat.css" />
 <link rel="stylesheet" type="text/css" href="/media/scripts/ajaxschedulingmodule/lib/fixed_table_rc.css" />
 
 <!-- 3rd party -->
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/{{ settings.JQUERY_VERSION }}/jquery.min.js" integrity="{{ settings.JQUERY_HASH }}" crossorigin="anonymous"></script>
 <script src="https://code.jquery.com/jquery-migrate-3.3.2.{% if not settings.DEBUG %}min.{% endif %}js"></script>
 <script type="text/javascript" src="https://ajax.aspnetcdn.com/ajax/jquery.ui/{{ settings.JQUERY_UI_VERSION }}/jquery-ui.js"></script>
+<script src="/media/theme_editor/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js?v=5.3.3"></script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript' src='/media/scripts/common.js'></script>
 <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
@@ -301,15 +304,30 @@
   </tr>
 </table>
 
-<div id="commentDialog">
-  <form>
-    <fieldset>
-      <label for="commentDialog-comment">Comment</label>
-      <input type="text" id="commentDialog-comment" class="ui-widget-content ui-corner-all" />
-      <input type="checkbox" id="commentDialog-lock" class="ui-widget-content ui-corner-all" />
-      <label for="commentDialog-lock">Lock</label>
-    </fieldset>
-  </form>
+<div class="modal fade" id="commentDialog" tabindex="-1"
+     aria-labelledby="commentDialog-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form>
+        <div class="modal-header">
+          <h5 class="modal-title" id="commentDialog-title">Set Comment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="commentDialog-comment" class="form-label">Comment</label>
+          <input type="text" id="commentDialog-comment" class="form-control" />
+          <div class="form-check mt-3">
+            <input type="checkbox" id="commentDialog-lock" class="form-check-input" />
+            <label for="commentDialog-lock" class="form-check-label">Lock</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="commentDialog-save">Set Comment</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div id="legend">
