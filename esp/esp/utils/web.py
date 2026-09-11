@@ -106,7 +106,7 @@ def _filter_active_tags(accessed_keys, get_all_fn):
     in the empty-tracking case.
     """
     if accessed_keys is not None and not accessed_keys:
-        # Tracking is active but the view consulted no tags â€” skip the DB
+        # Tracking is active but the view consulted no tags — skip the DB
         # query entirely; nothing will be shown.
         return []
     all_nondefault = get_all_fn()
