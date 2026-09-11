@@ -14,20 +14,12 @@
 </style>
 {% if not request.user.onsite_local %}
 <script type="text/javascript">
+//  Keep this in sync with setup_remove_confirmation() in
+//  /media/scripts/program/modules/student_schedule.js, which does the same
+//  thing for the AJAX-rendered copy of this schedule.
 $j(function() {
-    // Create two dialog boxes with two different warning messages,
-    // one that appears when you try to remove an enrolled class,
-    // and another that appears when you try removing a non-enrolled class.
-    // autoOpen: false makes it so that the dialog boxes don't appear on page load.
-    $j( "div.remove-confirm" ).dialog({
-        resizable: false,
-        modal: true,
-        autoOpen: false,
-        closeOnEscape: false
-    });
-
     // When clicking any remove link, handle the event here rather than immediately removing the class.
-    // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
+    // Display a warning modal, and give the user an option to confirm the removal or cancel it.
     $j("a.remove").click( function(eventObject) {
 
         // The hyperlink click is always cancelled at first.
@@ -37,30 +29,54 @@ $j(function() {
         var $a_remove_tag = $j(this);
         var cls_code = $j(this).attr("data-sec-code");
         var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
-        $j( "#"+remove_type+"-remove-confirm" ).dialog( "option", "title", "Remove class "+cls_code+"?" ).dialog( "option", "buttons", {
-            "Remove class": function() {
-                $j( this ).dialog( "close" );
-                window.location.replace($a_remove_tag.attr("href"));
-            },
-            "Cancel": function() {
-                $j( this ).dialog( "close" );
-            }
-        }).dialog( "open" );
+        var $modal = $j( "#"+remove_type+"-remove-confirm" );
+        $modal.find(".modal-title").text("Remove class "+cls_code+"?");
+        $modal.find(".remove-confirm-action").off("click").on("click", function() {
+            bootstrap.Modal.getOrCreateInstance($modal[0]).hide();
+            window.location.replace($a_remove_tag.attr("href"));
+        });
+        bootstrap.Modal.getOrCreateInstance($modal[0]).show();
     });
 });
 </script>
 {% endif %}
-<div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
-    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+<div class="modal fade remove-confirm" id="enrolled-remove-confirm" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
         This class will be permanently deleted from your schedule.
         If the class fills with new students, you will be unable to add it back to your schedule.
         Are you sure?
-    </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger remove-confirm-action">Remove class</button>
+      </div>
+    </div>
+  </div>
 </div>
-<div id="applied-remove-confirm" class="remove-confirm" style="display:none;">
-    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+<div class="modal fade remove-confirm" id="applied-remove-confirm" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
         Are you sure you want to remove this class?
-    </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger remove-confirm-action">Remove class</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <p>
