@@ -81,9 +81,7 @@ jobs:
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
-        # pg_dump/pg_restore/createdb for the test-database seeding step. The
-        # postgresql server package stays filtered out; this job uses a service
-        # container for that.
+        # pg_dump/pg_restore/createdb for the test-database seeding step
         PKGS="$PKGS postgresql-client"
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
@@ -102,27 +100,16 @@ jobs:
     - name: Get PostgreSQL major version
       id: pgver
       # Keys the dump cache below, so upgrading the postgres service image
-      # cannot restore a dump taken against a different major version. Read
-      # from the running service rather than the image tag, so there is no
-      # second place to keep in sync. A failed probe yields 'unknown', which
-      # still forms a valid key and only costs a rebuild.
+      # cannot restore a dump taken against a different major version.
       run: |
         major=$(PGPASSWORD=testpassword psql -h localhost -U testuser -d test_django \
                 -tAc "SELECT current_setting('server_version_num')::int / 10000" 2>/dev/null || echo unknown)
         echo "major=${major:-unknown}" >> $GITHUB_OUTPUT
-    # Exact key only, deliberately: with restore-keys an older dump would be
-    # restored and then saved back under the new key, so it would never catch
-    # up with the migrations. A miss just rebuilds it, which is still cheaper
-    # than every worker migrating for itself.
-    #
-    # On a miss each shard rebuilds independently rather than a prerequisite
-    # job building once: the shards rebuild in parallel, so a miss costs about
-    # 70s of wall clock, whereas a prerequisite job would serialize its own
-    # checkout and dependency install ahead of every run, hit or miss.
     - name: Cache test database dump
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
       with:
         path: ~/testdb-cache
+        # Keyed on the runner, Postgres version, and all migration files.
         key: ${{ runner.os }}-testdb-pg${{ steps.pgver.outputs.major }}-${{ hashFiles('esp/**/migrations/*.py') }}
     - name: Prepare for Test
       env:
