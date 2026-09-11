@@ -30,7 +30,7 @@ h1 {
   font-size: 18pt;
   color: #00003C;
   font-family: georgia;
-  font-style: bold;
+  font-weight: bold;
 }
 
 body {
@@ -59,7 +59,7 @@ body {
 }
 
 #topleft {
-  //    background: #141414;
+  /*    background: #141414; */
   background: #00003C;
   width: 200px;
   height: 180px;
@@ -163,7 +163,7 @@ a.navbutton:hover {
   width: 200px;
   height: 30px;
   vertical-align: middle;
-  //    border-bottom: 1px dashed #497CCA;
+  /*    border-bottom: 1px dashed #497CCA; */
 }
 
 
@@ -183,7 +183,7 @@ a.navbutton:hover {
 #navbar p {
   color: #FFFFFF;
   margin: 0pt;
-//  margin-bottom: pt;
+/*  margin-bottom: pt; */
 }
 
 #navbar a:link {

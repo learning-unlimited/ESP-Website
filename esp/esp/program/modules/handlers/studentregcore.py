@@ -82,6 +82,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.has_paid())
+    have_paid.get_or_create_token(('user',))
     have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
     have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})

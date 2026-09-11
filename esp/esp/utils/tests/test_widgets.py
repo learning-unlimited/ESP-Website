@@ -4,7 +4,7 @@ from django.test import SimpleTestCase
 from esp.utils.widgets import (
     ClassAttrMergingSelect, NullCheckboxSelect, DummyWidget,
     BlankSelectWidget, NullRadioSelect, ContactFieldsWidget,
-    DateTimeWidget, SplitDateWidget, NavStructureWidget
+    DateTimeWidget, DateWidget, SplitDateWidget, NavStructureWidget
 )
 
 class UtilsWidgetsTests(SimpleTestCase):
@@ -74,6 +74,17 @@ class UtilsWidgetsTests(SimpleTestCase):
         data = {'event_date': '2026-03-27 09:00:00'}
         value = widget.value_from_datadict(data, {}, 'event_date')
         self.assertIsNotNone(value)
+
+    def test_date_widget_parsing(self):
+        """Test that DateWidget parses date-only strings (Django 5 dropped
+        date-only formats from DATETIME_INPUT_FORMATS)."""
+        widget = DateWidget()
+        value = widget.value_from_datadict({'d': '03/27/2026'}, {}, 'd')
+        self.assertEqual(value, datetime.date(2026, 3, 27))
+        value = widget.value_from_datadict({'d': '2026-03-27'}, {}, 'd')
+        self.assertEqual(value, datetime.date(2026, 3, 27))
+        self.assertIsNone(widget.value_from_datadict({'d': 'not a date'}, {}, 'd'))
+        self.assertIsNone(widget.value_from_datadict({}, {}, 'd'))
 
     def test_split_date_logic(self):
         """Test breaking a date into [Month, Day, Year]."""
