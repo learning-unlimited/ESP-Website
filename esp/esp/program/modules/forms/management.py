@@ -57,8 +57,8 @@ class ClassManageForm(ManagementForm):
                 self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             else:
                 self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
-            if self.cls.isDraft():
-                self.fields['status'].choices.insert(0, (ClassStatus.DRAFT, 'Draft'))
+            if not self.cls.isDraft():
+                self.fields['status'].choices.remove((ClassStatus.DRAFT, 'Draft'))
             self.fields['status'].widget.attrs['data-cls-status'] = self.cls.status
         else:
             super().__init__(*args, **kwargs)
@@ -133,8 +133,8 @@ class SectionManageForm(ManagementForm):
                 self.fields['status'].choices.remove((ClassStatus.REJECTED, 'Rejected'))
             else:
                 self.fields['status'].choices.remove((ClassStatus.CANCELLED, 'Cancelled'))
-            if self.sec.isDraft():
-                self.fields['status'].choices.insert(0, (ClassStatus.DRAFT, 'Draft'))
+            if not self.sec.isDraft():
+                self.fields['status'].choices.remove((ClassStatus.DRAFT, 'Draft'))
             self.fields['status'].widget.attrs['data-sec-status'] = self.sec.status
             self.fields['status'].widget.attrs['data-cls-status'] = self.sec.parent_class.status
         else:
