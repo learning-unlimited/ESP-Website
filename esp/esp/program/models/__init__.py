@@ -314,8 +314,27 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80, unique=True)
-    name = models.CharField(max_length=80)
+    url = models.CharField(
+        max_length=80,
+        unique=True,
+        help_text="The URL fragment for this program.",
+        validators=[
+            validators.RegexValidator(
+                regex=r"^[a-z0-9-]+$",
+                message="Program URL may only contain lowercase alphanumeric characters and hyphens.",
+            )
+        ],
+    )
+    name = models.CharField(
+        max_length=80,
+        help_text="The full name of the program.",
+        validators=[
+            validators.RegexValidator(
+                regex=r"^[a-zA-Z0-9 -]+$",
+                message="Program name may only contain alphanumeric characters, spaces, and hyphens.",
+            )
+        ],
+    )
     grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
