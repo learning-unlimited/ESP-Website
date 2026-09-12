@@ -199,3 +199,39 @@ class FloatingResourceAvailabilityTest(TestCase):
         # Assign to different section in timeslot2 — should raise
         with self.assertRaises(ESPError_Log):
             self.res_ts2.assign_to_section(other_section)
+    def test_is_unique_survives_resave(self):
+        """is_unique must not be flipped by an unrelated later save (issue #5976)."""
+        rt = ResourceType.get_or_create('Projector')
+        r = Resource.objects.create(
+            name='proj-resave', res_type=rt, event=self.timeslot1)
+        # Standalone resource: gets its own group and is marked unique.
+        self.assertTrue(r.is_unique)
+        group_id = r.res_group_id
+
+        # An unrelated edit must not change is_unique or the group.
+        r.name = 'proj-resave-renamed'
+        r.save()
+        self.assertTrue(r.is_unique,
+                        "is_unique was cleared by an unrelated re-save")
+        self.assertEqual(r.res_group_id, group_id)
+
+        # Confirm it persisted, not just the in-memory object.
+        self.assertTrue(Resource.objects.get(pk=r.pk).is_unique)
+
+    def test_is_unique_false_for_resource_in_existing_group(self):
+        """A resource attached to an existing group stays non-unique across saves."""
+        classroom_type = ResourceType.get_or_create('Classroom')
+        room = Resource.objects.create(
+            name='Room Z', res_type=classroom_type, event=self.timeslot1)
+        self.assertTrue(room.is_unique)
+
+        furn_type = ResourceType.get_or_create('Whiteboard')
+        furn = Resource(name='wb-z', res_type=furn_type, event=self.timeslot1)
+        furn.res_group = room.res_group
+        furn.save()
+        self.assertFalse(furn.is_unique)
+
+        # A later save must not spuriously flip it.
+        furn.name = 'wb-z-renamed'
+        furn.save()
+        self.assertFalse(furn.is_unique)
