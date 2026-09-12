@@ -136,7 +136,7 @@
 {% else %}
     <table align="center">
     <tr>
-        <th colspan="2" align="center">{% if class.isCancelled %}Class {{ class.emailcode }} is already cancelled.{% else %}Class {{ class.emailcode }} has no scheduled sections and can not be cancelled. You can delete sections or reject the entire class below.{% endif %}</th>
+        <th colspan="2" align="center">{% if class.isDraft %}Class {{ class.emailcode }} is still a draft that the teacher has not submitted, so there is nothing to cancel or review yet.{% elif class.isCancelled %}Class {{ class.emailcode }} is already cancelled.{% else %}Class {{ class.emailcode }} has no scheduled sections and can not be cancelled. You can delete sections or reject the entire class below.{% endif %}</th>
     </tr>
     </table>
 {% endif %}

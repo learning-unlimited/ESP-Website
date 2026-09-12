@@ -73,7 +73,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.DRAFT, 'Draft'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':

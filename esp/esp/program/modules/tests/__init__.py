@@ -105,3 +105,4 @@ from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleT
 from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest
 
 from esp.program.modules.tests.test_donationmodule import DonationFormTest, DonationModuleTest
+from esp.program.modules.tests.test_draft_creation import MakeAClassDraftTest
