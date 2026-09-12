@@ -43,6 +43,7 @@ from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
 from reversion import revisions as reversion
 from reversion.models import Version
+import esp.qsd.admin  # noqa: F401
 import json
 
 from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
