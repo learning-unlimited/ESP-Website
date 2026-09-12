@@ -72,12 +72,9 @@ class Field(models.Model):
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
-        if Attribute.objects.filter(field=self, attr_type=atype).exists():
-            attr = Attribute.objects.get(field=self, attr_type=atype)
-            attr.value = value
-            attr.save()
-        else:
-            attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
+        attr, _created = Attribute.objects.update_or_create(
+            field=self, attr_type=atype, defaults={'value': value}
+        )
         return attr
 
     def clean_attributes(self, keep):
@@ -88,6 +85,11 @@ class Attribute(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE)
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['field', 'attr_type'], name='unique_field_attr_type'),
+        ]
 
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
