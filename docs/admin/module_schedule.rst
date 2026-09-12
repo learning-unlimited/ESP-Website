@@ -222,14 +222,17 @@ The module management interface interacts with the backend via REST/AJAX endpoin
 * ``GET /manage/<program_type>/<program_term>/module_schedule/``: Returns JSON payload of program module objects grouped by ``module_type``.
 * ``POST /manage/<program_type>/<program_term>/module_schedule/update/``: Updates ``start_date``, ``end_date``, ``seq``, and other editable fields for a module object.
 * ``POST /manage/<program_type>/<program_term>/module_schedule/reorder/``: Bulk updates ``seq`` for multiple module objects.
+* ``GET /manage/<program_type>/<program_term>/module_schedule/export/``: Exports the program's module schedule as a relative JSON template using relative time offsets in seconds.
+* ``POST /manage/<program_type>/<program_term>/module_schedule/import/``: Imports a relative module schedule template into the program, shifting module dates relative to a user-provided target start timestamp.
 * ``GET /manage/<program_type>/<program_term>/module_schedule/conflicts/``: Returns scheduling conflicts and overlapping time windows as JSON.
 * ``GET /manage/<program_type>/<program_term>/module_schedule/preview/?at=<timestamp>``: Previews modules active at a given time.
 
 Testing Guidelines & Verification
 =================================
-Unit tests for the module schedule endpoints and conflict detection reside in ``esp/esp/program/modules/tests/``:
+Unit tests for the module schedule endpoints, export/import APIs, and conflict detection reside in ``esp/esp/program/modules/tests/``:
 
-* ``test_module_schedule_api.py``: Validates auth, listing modules, updating dates/metadata, and preview behavior.
+* ``test_module_schedule_api.py``: Validates auth, listing modules, updating dates/metadata, export/import APIs, and preview behavior.
+
 * ``test_module_schedule_conflicts_api.py``: Validates conflict detection based on ``conflicts_with`` and time-window overlap.
 * **Auth Group Setup**: Fresh test databases must invoke ``user_role_setup()`` to seed role groups before committing program permissions.
 
