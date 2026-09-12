@@ -386,6 +386,14 @@ class OnSiteClassList(ProgramModuleObj):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
 
     @aux_call
+    @needs_onsite
+    def classlist_fragment(self, request, tl, one, two, module, extra, prog):
+        """ Returns just the scrolling class-list fragment (no page chrome), for
+            AJAX refreshing of the classList scroller mid-scroll without a full
+            page reload.  See issue #116. """
+        return self.classList_base(request, tl, one, two, module, extra, prog, template_name='allclass_fragment.html')
+
+    @aux_call
     @needs_student_in_grade
     def classlist_public(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, options={}, template_name='allclass_fragment.html')
