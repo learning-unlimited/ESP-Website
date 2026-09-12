@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 # Write student emergency contact information (name, email address and, if
 # known, cell number) to a CSV file.
 
@@ -10,7 +11,7 @@ import sys
 from io import open
 
 prog = choose_program()
-rawfile = open(os.path.expanduser(input("Output CSV: ")), "wb")
+rawfile = open(Path(input("Output CSV: ")).expanduser(), "wb")
 csvfile = csv.writer(rawfile, dialect="excel")
 
 students = prog.students()["enrolled"]
