@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from unittest.mock import patch
 
 from django.db.models import Q
-
+from esp.middleware import ESPError, ESPError_Log
 from esp.program.models import ClassSection
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -137,3 +137,30 @@ class BatchClassRegModuleTest(ProgramFrameworkTest):
             )
         self.assertEqual(result['fail_count'], 1)
         self.assertEqual(result['results'][0]['status'], 'full')
+
+    def test_batchclassregfinal_invalid_filterid(self):
+        """Passing an invalid or missing filterid to batchclassregfinal raises ESPError cleanly."""
+        section = ClassSection.objects.filter(
+            parent_class__parent_program=self.program,
+            status__gte=10
+        ).first()
+        if section is None:
+            self.skipTest("No accepted sections in test program")
+        self.client.login(username='admin', password='password')
+
+        errorMessage = 'Selected filter is invalid or no longer available.'
+        
+        # Test with a non-existing integer filter ID (tests the ObjectDoesNotExist branch)
+        url = '/manage/' + self.program.url + '/batchclassregfinal?filterid=999999'
+        with self.assertRaisesMessage(ESPError_Log, errorMessage):
+            self.client.post(url, {'section_id': section.id})
+            
+        # Test with a filter ID that is not a number (tests the ValueError branch)
+        url_bad_type = '/manage/' + self.program.url + '/batchclassregfinal?filterid=abc'
+        with self.assertRaisesMessage(ESPError_Log, errorMessage):
+            self.client.post(url_bad_type, {'section_id': section.id})
+            
+        # Test missing filter ID entirely (tests the early request validation)
+        url_missing = '/manage/' + self.program.url + '/batchclassregfinal'
+        with self.assertRaisesMessage(ESPError_Log, 'Filter and/or section has not been properly set'):
+            self.client.post(url_missing, {'section_id': section.id})
