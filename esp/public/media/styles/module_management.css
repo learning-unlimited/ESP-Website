@@ -933,3 +933,96 @@
 .theme-teacher .tl-toggle:focus-visible {
     outline-color: #7c3aed;
 }
+
+/* ────────────────────────────────────────────────────────────── */
+/* Preview Section (time picker + buttons in legend bar)          */
+/* ────────────────────────────────────────────────────────────── */
+
+.tl-preview-section {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    background-color: #f8fafc;
+    padding: 4px 14px;
+    border-radius: 9999px;
+    border: 1px solid #f1f5f9;
+}
+
+.tl-preview-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+}
+
+.tl-preview-input {
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background-color: #fff;
+    color: #334155;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    max-width: 180px;
+    font-family: inherit;
+    line-height: 1.4;
+    box-sizing: border-box;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.tl-preview-input:focus {
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
+}
+
+/* Preview buttons styled as compact pills matching the legend aesthetic */
+.tl-btn-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    background-color: #fff;
+    border-color: #e2e8f0;
+    color: var(--brand-student);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.tl-btn-preview:hover {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+}
+
+.tl-btn-preview:active {
+    background-color: #dbeafe;
+}
+
+/* Teacher preview button variant */
+.tl-btn-preview-teacher {
+    color: var(--brand-teacher);
+}
+
+.tl-btn-preview-teacher:hover {
+    background-color: #f5f3ff;
+    border-color: #ddd6fe;
+    color: #7c3aed;
+}
+
+.tl-btn-preview-teacher:active {
+    background-color: #ede9fe;
+}

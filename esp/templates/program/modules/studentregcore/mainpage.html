@@ -50,6 +50,14 @@
 {% block content %}
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
+{% if is_preview %}
+<div class="alert alert-info" style="background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;">
+    <span class="bi bi-eye" aria-hidden="true"></span>
+    <strong>Preview Mode</strong> &mdash; You are viewing student registration as it would appear at
+    <strong>{{ simulate_time }}</strong>.  Only modules whose Active Window includes this time are shown.
+    No data will be saved.
+</div>
+{% endif %}
 {% if not request.user.onsite_local %}
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 {% if program.isFull %}{% if program.program_allow_waitlist %}

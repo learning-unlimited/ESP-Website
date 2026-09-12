@@ -6,6 +6,15 @@
 
 <h1>Teacher registration for {{program.niceName}}</h1>
 
+{% if is_preview %}
+<div class="alert alert-info" style="background-color: #f5f3ff; border: 1px solid #ddd6fe; color: #5b21b6;">
+    <span class="bi bi-eye" aria-hidden="true"></span>
+    <strong>Preview Mode</strong> &mdash; You are viewing teacher registration as it would appear at
+    <strong>{{ simulate_time }}</strong>.  Only modules whose Active Window includes this time are shown.
+    No data will be saved.
+</div>
+{% endif %}
+
 {% load render_qsd %}
 {% inline_program_qsd_block program "teach:teacherreg" %}
 <p>

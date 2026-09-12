@@ -318,6 +318,48 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             records.sort(key=lambda rec: not rec['isCompleted'])
         return records
 
+    @staticmethod
+    def _resolve_simulate_time(request, prog):
+        """
+        Extract and parse the ``simulate_time`` query parameter from the request.
+
+        Returns a ``datetime.datetime`` (naive, in the current timezone) or ``None``
+        if the parameter is absent or the user is not an administrator.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        from django.utils.dateparse import parse_datetime
+        from django.utils import timezone
+
+        # First check GET parameter (takes precedence)
+        dt_str = request.GET.get('simulate_time')
+        logger.debug("_resolve_simulate_time: GET simulate_time=%s, user=%s, isAdmin=%s, prog=%s",
+                     dt_str, request.user, request.user.isAdministrator(prog) if hasattr(request.user, 'isAdministrator') else 'N/A', prog)
+        if dt_str and request.user.isAdministrator(prog):
+            dt = parse_datetime(dt_str)
+            logger.debug("_resolve_simulate_time: parsed dt=%s", dt)
+            if dt is not None:
+                # Store in session for subsequent requests in this flow
+                request.session['simulate_time'] = dt_str
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                logger.debug("_resolve_simulate_time: returning dt=%s from GET", dt)
+                return dt
+
+        # Fall back to session value if present
+        dt_str = request.session.get('simulate_time')
+        logger.debug("_resolve_simulate_time: session simulate_time=%s", dt_str)
+        if dt_str and request.user.isAdministrator(prog):
+            dt = parse_datetime(dt_str)
+            if dt is not None:
+                if timezone.is_aware(dt):
+                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                logger.debug("_resolve_simulate_time: returning dt=%s from session", dt)
+                return dt
+
+        logger.debug("_resolve_simulate_time: returning None")
+        return None
+
     @main_call
     @needs_student_in_grade
     @meets_deadline('/MainPage')
@@ -327,7 +369,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         self.request = request
 
         context = {}
-        modules = prog.getModules(request.user, 'learn')
+
+        # --- Simulated-time preview support ---
+        simulate_dt = self._resolve_simulate_time(request, prog)
+        # --------------------------------------
+
+        modules = prog.getModules(request.user, 'learn', when=simulate_dt)
         context['completedAll'] = True
         for module in modules:
             # If completed all required modules so far...
@@ -352,6 +399,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['have_paid'] = self.have_paid(request.user)
         context['extra_steps'] = "learn:extra_steps"
         context['printers'] = self.printer_names()
+        context['is_preview'] = simulate_dt is not None
+        context['simulate_time'] = simulate_dt.isoformat() if simulate_dt else None
 
         # Pass flag to frontend to hide the cancel button if a real CC payment exists
         iac = IndividualAccountingController(prog, request.user)

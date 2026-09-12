@@ -35,6 +35,8 @@ from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_cal
 from esp.program.models import FinancialAidRequest, RegistrationProfile, StudentRegistration
 from esp.users.models   import ESPUser
 from django.db.models.query import Q
+from esp.middleware.threadlocalrequest import get_current_request
+from django.http import HttpResponseRedirect
 
 
 class _EquityOutreachCohorts(object):
@@ -252,11 +254,24 @@ class StudentRegProfileModule(ProgramModuleObj):
 
         response = profile_editor(request, prog, False, role)
         if response == True:
-            return self.goToCore(tl)
+            # Preserve simulate_time query parameter across redirect
+            simulate_time = request.GET.get('simulate_time')
+            core_url = self.getCoreURL(tl)
+            if simulate_time:
+                separator = '&' if '?' in core_url else '?'
+                core_url = '%s%ssimulate_time=%s' % (core_url, separator, simulate_time)
+            return HttpResponseRedirect(core_url)
         return response
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
+        # Bypass profile completion check during admin preview
+        req = get_current_request()
+        if req and req.GET.get('simulate_time') and user.isAdministrator(self.program):
+            return True
+        # Also check session-based simulate_time for preview persistence
+        if req and getattr(req, 'session', None) and req.session.get('simulate_time') and user.isAdministrator(self.program):
+            return True
         regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
         return regProf.id is not None
 

@@ -783,4 +783,32 @@ $j(document).ready(function() {
             }
         }
     });
+
+    // ──────────────────────────────────────────────────────────────
+    // Preview Registration Buttons
+    // ──────────────────────────────────────────────────────────────
+    function openPreviewRegistration(type) {
+        var time = $j('#previewTime').val();
+        if (!time) {
+            showToast('Please select a date/time first.', 'error');
+            return;
+        }
+        // datetime-local gives YYYY-MM-DDTHH:MM; append seconds
+        var isoTime = time + ':00';
+        var path;
+        if (type === 'learn') {
+            path = '/learn/' + programUrlBase + '/studentreg';
+        } else {
+            path = '/teach/' + programUrlBase + '/teacherreg';
+        }
+        window.open(path + '?simulate_time=' + encodeURIComponent(isoTime), '_blank');
+    }
+
+    $j('#previewStudentBtn').on('click', function() {
+        openPreviewRegistration('learn');
+    });
+
+    $j('#previewTeacherBtn').on('click', function() {
+        openPreviewRegistration('teach');
+    });
 });
