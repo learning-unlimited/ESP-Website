@@ -105,9 +105,15 @@ function check_state() {
     if ($j("#id_address_country").val() == "US") {
       $j("#id_address_country").val("");
     }
+    $j("#id_address_zip").addClass("hidden").prop("disabled", true).val("");
+    $j("#id_address_postcode").removeClass("hidden").prop("disabled", false);
+    $j("#postal_label_text").text("postcode");
   } else {
     $j("#id_address_country").addClass("hidden");
     $j("#id_address_country").val("US");
+    $j("#id_address_zip").removeClass("hidden").prop("disabled", false);
+    $j("#id_address_postcode").addClass("hidden").prop("disabled", true).val("");
+    $j("#postal_label_text").text("zip");
   }
 }
 function check_emerg_state() {
@@ -116,9 +122,15 @@ function check_emerg_state() {
     if ($j("#id_emerg_address_country").val() == "US") {
       $j("#id_emerg_address_country").val("");
     }
+    $j("#id_emerg_address_zip").addClass("hidden").prop("disabled", true).val("");
+    $j("#id_emerg_address_postcode").removeClass("hidden").prop("disabled", false);
+    $j("#emerg_postal_label_text").text("postcode");
   } else {
     $j("#id_emerg_address_country").addClass("hidden");
     $j("#id_emerg_address_country").val("US");
+    $j("#id_emerg_address_zip").removeClass("hidden").prop("disabled", false);
+    $j("#id_emerg_address_postcode").addClass("hidden").prop("disabled", true).val("");
+    $j("#emerg_postal_label_text").text("zip");
   }
 }
 $j(document).ready(function() {
