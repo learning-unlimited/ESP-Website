@@ -81,6 +81,8 @@ jobs:
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        # pg_dump/pg_restore/createdb for the test-database seeding step
+        PKGS="$PKGS postgresql-client"
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
       uses: Eeems-Org/apt-cache-action@v1
@@ -95,11 +97,31 @@ jobs:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/install
+    - name: Get PostgreSQL major version
+      id: pgver
+      # Keys the dump cache below, so upgrading the postgres service image
+      # cannot restore a dump taken against a different major version.
+      run: |
+        major=$(PGPASSWORD=testpassword psql -h localhost -U testuser -d test_django \
+                -tAc "SELECT current_setting('server_version_num')::int / 10000" 2>/dev/null || echo unknown)
+        echo "major=${major:-unknown}" >> $GITHUB_OUTPUT
+    - name: Cache test database dump
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+      with:
+        path: ~/testdb-cache
+        # Keyed on the runner, Postgres version, and all migration files.
+        key: ${{ runner.os }}-testdb-pg${{ steps.pgver.outputs.major }}-${{ hashFiles('esp/**/migrations/*.py') }}
     - name: Prepare for Test
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/before_script
+    - name: Seed Test Databases
+      env:
+        DATABASE_USER: testuser
+        DATABASE_PASSWORD: testpassword
+        DATABASE_NAME: test_django
+      run: deploy/ci/setup_test_db
     - name: Run Tests
       env:
         CI_JOB: test
