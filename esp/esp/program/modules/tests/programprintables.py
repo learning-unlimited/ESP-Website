@@ -276,3 +276,55 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)
+
+
+class ProgramPrintablesOnsiteUseridTest(ProgramFrameworkTest):
+    def setUp(self, *args, **kwargs):
+        kwargs.update({'num_students': 3,})
+        super().setUp(*args, **kwargs)
+        self.add_student_profiles()
+
+    def _login_admin(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+
+    def testOnsiteStudentSchedulesInvalidUserid(self):
+        self._login_admin()
+        url_base = self.program.getUrlBase()
+        student = self.students[0]
+
+        # Valid userid
+        response = self.client.get(f'/onsite/{url_base}/studentschedules?userid={student.id}')
+        self.assertEqual(response.status_code, 200)
+
+        # Missing userid
+        response = self.client.get(f'/onsite/{url_base}/studentschedules')
+        self.assertEqual(response.status_code, 404)
+
+        # Non-numeric userid
+        response = self.client.get(f'/onsite/{url_base}/studentschedules?userid=invalid')
+        self.assertEqual(response.status_code, 404)
+
+        # Non-existent userid
+        response = self.client.get(f'/onsite/{url_base}/studentschedules?userid=9999999')
+        self.assertEqual(response.status_code, 404)
+
+    def testOnsiteStudentFinancialSpreadsheetInvalidUserid(self):
+        self._login_admin()
+        url_base = self.program.getUrlBase()
+        student = self.students[0]
+
+        # Valid userid
+        response = self.client.get(f'/onsite/{url_base}/student_financial_spreadsheet?userid={student.id}')
+        self.assertEqual(response.status_code, 200)
+
+        # Missing userid
+        response = self.client.get(f'/onsite/{url_base}/student_financial_spreadsheet')
+        self.assertEqual(response.status_code, 404)
+
+        # Non-numeric userid
+        response = self.client.get(f'/onsite/{url_base}/student_financial_spreadsheet?userid=invalid')
+        self.assertEqual(response.status_code, 404)
+
+        # Non-existent userid
+        response = self.client.get(f'/onsite/{url_base}/student_financial_spreadsheet?userid=9999999')
+        self.assertEqual(response.status_code, 404)

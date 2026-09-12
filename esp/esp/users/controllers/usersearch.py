@@ -194,6 +194,21 @@ class UserSearchController(object):
                     Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
                     self.updated = True
 
+            if criteria.get('school_status', '').strip() and program:
+                from esp.users.models import StudentInfo
+                enrolled_school_ids = set(
+                    StudentRegistration.is_valid_objects()
+                    .filter(section__parent_class__parent_program=program, relationship__name='Enrolled')
+                    .values_list('user__registrationprofile__student_info__k12school_id', flat=True)
+                    .distinct()
+                )
+                enrolled_school_ids.discard(None)
+                if criteria['school_status'] == 'with_students':
+                    Q_include &= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__k12school_id__in=enrolled_school_ids))
+                elif criteria['school_status'] == 'without_students':
+                    Q_exclude |= (Q(registrationprofile__student_info__k12school_id__in=enrolled_school_ids) | Q(educatorinfo__k12school_id__in=enrolled_school_ids))
+                self.updated = True
+
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = list(range(1920, 2120))
             if criteria.get('gradyear_min', '').strip():
@@ -273,7 +288,19 @@ class UserSearchController(object):
 
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
-            if data['recipient_type'] not in ESPUser.getTypes():
+            if data['recipient_type'] == 'School':
+                # School contact recipients are not ESPUser types; the base_list
+                # name carries the school_status filter ('all_schools',
+                # 'schools_with_students', 'schools_without_students').
+                recipient_type = 'any'
+                q_program = Q()
+                # Propagate the chosen school_status into criteria so that
+                # query_from_criteria can apply the correct K12School filter.
+                if data['base_list'] == 'schools_with_students':
+                    data = dict(data, school_status='with_students')
+                elif data['base_list'] == 'schools_without_students':
+                    data = dict(data, school_status='without_students')
+            elif data['recipient_type'] not in ESPUser.getTypes():
                 recipient_type = 'any'
                 q_program = Q()
             else:
@@ -413,6 +440,16 @@ class UserSearchController(object):
 
         #   Add in mailing list accounts
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
+
+        #   Add in school contacts
+        #   These lists apply to K12School contact users.
+        #   school_status filtering (with/without enrolled students) is applied
+        #   separately in query_from_criteria via the 'school_status' criteria key.
+        category_lists['School'] = [
+            {'name': 'all_schools', 'list': Q(k12school_contact__isnull=False), 'description': 'All school contact emails in the database', 'preferred': True, 'all_flag': True},
+            {'name': 'schools_with_students', 'list': Q(k12school_contact__isnull=False), 'description': 'Schools with students enrolled in this program', 'preferred': True},
+            {'name': 'schools_without_students', 'list': Q(k12school_contact__isnull=False), 'description': 'Schools without students enrolled in this program', 'preferred': True},
+        ]
 
         context['lists'] = category_lists
         context['all_list_names'] = []
