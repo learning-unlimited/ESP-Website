@@ -31,7 +31,9 @@ json_data = {};
 <hr />
 
 {# Shown by adminclass.js while a class status change is saving #}
-<div class="modal fade" id="saving_popup" tabindex="-1" data-bs-backdrop="static"
+{# No .fade: the AJAX often finishes before a fade-in would, and Bootstrap #}
+{# ignores hide() while a transition is still running, leaving this stuck open. #}
+<div class="modal" id="saving_popup" tabindex="-1" data-bs-backdrop="static"
      aria-labelledby="saving_popup_title" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
