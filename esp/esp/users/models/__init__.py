@@ -1345,7 +1345,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.get_teachers()).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
