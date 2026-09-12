@@ -7,28 +7,35 @@ import phonenumber_field.modelfields
 import phonenumbers
 from django.conf import settings
 
+
 def convert_phone_numbers(apps, schema_editor):
-    VolunteerOffer = apps.get_model('program', 'VolunteerOffer')
+    VolunteerOffer = apps.get_model("program", "VolunteerOffer")
     for volunteer_offer in VolunteerOffer.objects.all():
         if volunteer_offer.phone:
             try:
-                parsed = phonenumbers.parse(volunteer_offer.phone, settings.PHONENUMBER_DEFAULT_REGION)
-                volunteer_offer.phone = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                parsed = phonenumbers.parse(
+                    volunteer_offer.phone, settings.PHONENUMBER_DEFAULT_REGION
+                )
+                volunteer_offer.phone = phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                )
             except phonenumbers.NumberParseException:
                 pass
             volunteer_offer.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('program', '0028_auto_20240509_2341'),
+        ("program", "0028_auto_20240509_2341"),
     ]
 
     operations = [
         migrations.RunPython(convert_phone_numbers, migrations.RunPython.noop),
         migrations.AlterField(
-            model_name='volunteeroffer',
-            name='phone',
-            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, region=None),
+            model_name="volunteeroffer",
+            name="phone",
+            field=phonenumber_field.modelfields.PhoneNumberField(
+                blank=True, max_length=128, null=True, region=None
+            ),
         ),
     ]

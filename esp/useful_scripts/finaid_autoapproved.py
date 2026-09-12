@@ -22,7 +22,7 @@ print("Auto-Approved Requests")
 for req in reqs:
     if not req.approved:
         continue
-    date = min(x['timestamp'].date() for x in req.financialaidgrant_set.values())
+    date = min(x["timestamp"].date() for x in req.financialaidgrant_set.values())
     lst = tagged_reqs.get(date, [])
     lst.append(req)
     tagged_reqs[date] = lst

@@ -6,15 +6,25 @@ import re
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('application', '0008_auto_20210526_1921'),
+        ("application", "0008_auto_20210526_1921"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='formstackappsettings',
-            name='coreclass_fields',
-            field=models.CharField(blank=True, help_text='A list of field ids separated by commas.', max_length=80, validators=[django.core.validators.RegexValidator(re.compile('^\\d+(?:,\\d+)*\\Z'), code='invalid', message='Enter only digits separated by commas.')]),
+            model_name="formstackappsettings",
+            name="coreclass_fields",
+            field=models.CharField(
+                blank=True,
+                help_text="A list of field ids separated by commas.",
+                max_length=80,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        re.compile("^\\d+(?:,\\d+)*\\Z"),
+                        code="invalid",
+                        message="Enter only digits separated by commas.",
+                    )
+                ],
+            ),
         ),
     ]

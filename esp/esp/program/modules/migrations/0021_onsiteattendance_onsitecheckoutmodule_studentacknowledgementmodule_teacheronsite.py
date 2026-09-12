@@ -5,46 +5,41 @@ import esp.program.modules.base
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0020_auto_20200503_1046'),
+        ("modules", "0020_auto_20200503_1046"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='OnSiteAttendance',
-            fields=[
-            ],
+            name="OnSiteAttendance",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnSiteCheckoutModule',
-            fields=[
-            ],
+            name="OnSiteCheckoutModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentAcknowledgementModule',
-            fields=[
-            ],
+            name="StudentAcknowledgementModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherOnsite',
-            fields=[
-            ],
+            name="TeacherOnsite",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
     ]

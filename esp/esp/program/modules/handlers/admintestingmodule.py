@@ -12,10 +12,10 @@ from esp.utils.web import render_to_response
 
 logger = logging.getLogger(__name__)
 
-_TEST_ROLES = ('Student', 'Teacher')
+_TEST_ROLES = ("Student", "Teacher")
 _TAG_KEYS = {
-    'Student': 'test_student_id',
-    'Teacher': 'test_teacher_id',
+    "Student": "test_student_id",
+    "Teacher": "test_teacher_id",
 }
 
 
@@ -27,11 +27,11 @@ class AdminTestingModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-            'admin_title': 'Admin Testing Mode',
-            'link_title': 'Testing Mode',
-            'module_type': 'manage',
-            'seq': 35,
-            'choosable': 1,
+            "admin_title": "Admin Testing Mode",
+            "link_title": "Testing Mode",
+            "module_type": "manage",
+            "seq": 35,
+            "choosable": 1,
         }
 
     @classmethod
@@ -67,13 +67,13 @@ class AdminTestingModule(ProgramModuleObj):
             except ESPUser.DoesNotExist:
                 pass  # stale tag — fall through and recreate
 
-        username = 'test_%s_%d' % (role.lower(), self.program.id)
+        username = "test_%s_%d" % (role.lower(), self.program.id)
         user, created = ESPUser.objects.get_or_create(
             username=username,
             defaults={
-                'first_name': 'Test',
-                'last_name': role,
-                'email': '',
+                "first_name": "Test",
+                "last_name": role,
+                "email": "",
             },
         )
         if created:
@@ -82,8 +82,12 @@ class AdminTestingModule(ProgramModuleObj):
         # Always ensure the correct role group is set (idempotent).
         user.makeRole(role)
         Tag.setTag(key, target=self.program, value=str(user.pk))
-        logger.info('Provisioned test %s account (pk=%d) for program %s',
-                    role, user.pk, self.program)
+        logger.info(
+            "Provisioned test %s account (pk=%d) for program %s",
+            role,
+            user.pk,
+            self.program,
+        )
         return user
 
     def _wipe_test_data(self, user):
@@ -94,8 +98,9 @@ class AdminTestingModule(ProgramModuleObj):
         """
         ctrl = DataCleanupController(self.program, user)
         ctrl.execute()
-        logger.info('Wiped test data for user pk=%d in program %s',
-                    user.pk, self.program)
+        logger.info(
+            "Wiped test data for user pk=%d in program %s", user.pk, self.program
+        )
 
     # ------------------------------------------------------------------
     # Views
@@ -117,11 +122,11 @@ class AdminTestingModule(ProgramModuleObj):
                 accounts[role] = None
 
         context = {
-            'module': self,
-            'accounts': accounts,
-            'reset': extra == 'reset_done',
+            "module": self,
+            "accounts": accounts,
+            "reset": extra == "reset_done",
         }
-        return render_to_response(self.baseDir() + 'options.html', request, context)
+        return render_to_response(self.baseDir() + "options.html", request, context)
 
     @aux_call
     @needs_admin
@@ -139,7 +144,7 @@ class AdminTestingModule(ProgramModuleObj):
         """
         from django.contrib.auth import login, logout
 
-        role_map = {'student': 'Student', 'teacher': 'Teacher'}
+        role_map = {"student": "Student", "teacher": "Teacher"}
         role = role_map.get(extra)
         if role is None:
             raise ESPError('Unknown testing role "%s".' % extra, log=False)
@@ -152,20 +157,25 @@ class AdminTestingModule(ProgramModuleObj):
         # This avoids setting user_morph, so needs_admin will NOT
         # grant admin privileges to the test session.
         logout(request)
-        test_user.backend = 'esp.utils.auth_backend.ESPAuthBackend'
+        test_user.backend = "esp.utils.auth_backend.ESPAuthBackend"
         login(request, test_user)
 
         # Store enough info to restore the admin session later.
-        request.session['testing_mode'] = {
-            'admin_user_id': admin_user_id,
-            'program_url': prog.getUrlBase(),
-            'role': role,
+        request.session["testing_mode"] = {
+            "admin_user_id": admin_user_id,
+            "program_url": prog.getUrlBase(),
+            "role": role,
         }
 
-        logger.info('Admin "%s" started testing as %s (pk=%d) for program %s',
-                    admin_name, role, test_user.pk, prog)
-        response = HttpResponseRedirect('/')
-        response.set_cookie('esp_testing_role', role, path='/')
+        logger.info(
+            'Admin "%s" started testing as %s (pk=%d) for program %s',
+            admin_name,
+            role,
+            test_user.pk,
+            prog,
+        )
+        response = HttpResponseRedirect("/")
+        response.set_cookie("esp_testing_role", role, path="/")
         return response
 
     @aux_call
@@ -176,8 +186,8 @@ class AdminTestingModule(ProgramModuleObj):
         Only accepts POST to guard against accidental resets from link
         pre-fetching.  Redirects back to the landing page on completion.
         """
-        if request.method != 'POST':
-            return HttpResponseRedirect('/manage/%s/admin_testing/' % prog.getUrlBase())
+        if request.method != "POST":
+            return HttpResponseRedirect("/manage/%s/admin_testing/" % prog.getUrlBase())
 
         for role in _TEST_ROLES:
             uid = Tag.getTag(_TAG_KEYS[role], target=prog)
@@ -188,9 +198,9 @@ class AdminTestingModule(ProgramModuleObj):
                 except ESPUser.DoesNotExist:
                     pass
 
-        logger.info('Admin reset testing data for program %s', prog)
+        logger.info("Admin reset testing data for program %s", prog)
         return HttpResponseRedirect(
-            '/manage/%s/admin_testing/reset_done' % prog.getUrlBase()
+            "/manage/%s/admin_testing/reset_done" % prog.getUrlBase()
         )
 
     def isStep(self):
@@ -198,4 +208,4 @@ class AdminTestingModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

@@ -6,7 +6,8 @@ from esp.utils.web import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
 
-__all__ = ['initial_passwd_request', 'password_reset_confirm', 'password_reset_done']
+__all__ = ["initial_passwd_request", "password_reset_confirm", "password_reset_done"]
+
 
 @anonymous_only()
 def initial_passwd_request(request, success=None):
@@ -21,32 +22,27 @@ def initial_passwd_request(request, success=None):
     """
 
     if success:
-        return render_to_response('users/recovery_request_success.html',
-                                  request, {})
+        return render_to_response("users/recovery_request_success.html", request, {})
 
-
-    if request.method == 'POST':
+    if request.method == "POST":
         form = PasswordResetForm(request.POST)
 
         if form.is_valid():
-
-            username = form.cleaned_data['username']
-            if username != '':
-                users = ESPUser.objects.filter(username = username)
+            username = form.cleaned_data["username"]
+            if username != "":
+                users = ESPUser.objects.filter(username=username)
             else:
-                users = ESPUser.objects.filter(email__iexact = form.cleaned_data['email'])
+                users = ESPUser.objects.filter(email__iexact=form.cleaned_data["email"])
 
             for user in users:
                 user.recoverPassword()
 
-            return HttpResponseRedirect(f'/{request.path.strip("/")}/success/')
-
+            return HttpResponseRedirect(f"/{request.path.strip('/')}/success/")
 
     else:
         form = PasswordResetForm()
 
-    return render_to_response('users/recovery_request.html', request,
-                              {'form':form})
+    return render_to_response("users/recovery_request.html", request, {"form": form})
 
 
 class ESPPasswordResetConfirmView(PasswordResetConfirmView):
@@ -60,8 +56,9 @@ class ESPPasswordResetConfirmView(PasswordResetConfirmView):
     stored in the database, so a database leak cannot expose valid
     reset tokens.
     """
-    template_name = 'users/recovery_email.html'
-    success_url = '/myesp/resetpassword/done/'
+
+    template_name = "users/recovery_email.html"
+    success_url = "/myesp/resetpassword/done/"
 
     def form_valid(self, form):
         user = form.save()
@@ -72,8 +69,7 @@ class ESPPasswordResetConfirmView(PasswordResetConfirmView):
             PendingActivation.objects.filter(user=user).delete()
         # Auto-login the user after successful password reset
         auth_user = authenticate(
-            username=user.username,
-            password=form.cleaned_data['new_password1']
+            username=user.username, password=form.cleaned_data["new_password1"]
         )
         if auth_user is not None:
             login(self.request, auth_user)
@@ -85,4 +81,4 @@ password_reset_confirm = ESPPasswordResetConfirmView.as_view()
 
 def password_reset_done(request):
     """Show the password reset complete page."""
-    return render_to_response('users/recovery_finished.html', request, {})
+    return render_to_response("users/recovery_finished.html", request, {})

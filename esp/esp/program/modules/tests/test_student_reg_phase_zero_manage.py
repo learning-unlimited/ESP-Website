@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -43,13 +43,15 @@ from esp.users.models import Permission
 
 class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        kwargs.update({
-            'num_students': 20,
-        })
+        kwargs.update(
+            {
+                "num_students": 20,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         # Get the module
-        pm = ProgramModule.objects.get(handler='StudentRegPhaseZeroManage')
+        pm = ProgramModule.objects.get(handler="StudentRegPhaseZeroManage")
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
 
         # Set up student profiles with grades
@@ -60,14 +62,24 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         for i, student in enumerate(self.students):
             grade = 7 + (i % 6)  # grades 7 to 12
             yog = schoolyear + 12 - grade
-            student_info, created = StudentInfo.objects.get_or_create(user=student, defaults={'graduation_year': yog})
+            student_info, created = StudentInfo.objects.get_or_create(
+                user=student, defaults={"graduation_year": yog}
+            )
             student_info.graduation_year = yog
             student_info.save()
-            RegistrationProfile.objects.get_or_create(user=student, program=self.program, defaults={'student_info': student_info})
+            RegistrationProfile.objects.get_or_create(
+                user=student,
+                program=self.program,
+                defaults={"student_info": student_info},
+            )
 
     def test_default_lottery_success(self):
         # Set grade caps
-        Tag.setTag('program_size_by_grade', target=self.program, value='{"7-8": 2, "9-10": 2, "11-12": 2}')
+        Tag.setTag(
+            "program_size_by_grade",
+            target=self.program,
+            value='{"7-8": 2, "9-10": 2, "11-12": 2}',
+        )
 
         # Create PhaseZeroRecord for some students
         for i in range(10):
@@ -76,12 +88,16 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
             rec.user.add(self.students[i])
 
         # Run lottery in default mode
-        post = {'mode': 'default', 'perms': 'on'}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "default", "perms": "on"}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
         # Check success
-        self.assertEqual(len(messages['error']), 0)
-        self.assertIn("The student lottery has been run successfully", messages['success'])
+        self.assertEqual(len(messages["error"]), 0)
+        self.assertIn(
+            "The student lottery has been run successfully", messages["success"]
+        )
 
         # Check group created
         winners_group = Group.objects.get(name=str(self.program) + " Winner")
@@ -89,11 +105,11 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
 
         # Check permissions
         perms = Permission.objects.filter(role=winners_group, program=self.program)
-        self.assertTrue(perms.filter(permission_type='OverridePhaseZero').exists())
-        self.assertTrue(perms.filter(permission_type='Student/All').exists())
+        self.assertTrue(perms.filter(permission_type="OverridePhaseZero").exists())
+        self.assertTrue(perms.filter(permission_type="Student/All").exists())
 
         # Check tag
-        self.assertTrue(Tag.getBooleanTag('student_lottery_run', self.program))
+        self.assertTrue(Tag.getBooleanTag("student_lottery_run", self.program))
 
     def test_default_lottery_missing_grade_caps(self):
         # No grade caps set
@@ -102,11 +118,13 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         rec.save()
         rec.user.add(self.students[0])
 
-        post = {'mode': 'default'}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "default"}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertIn("program_size_by_grade", messages['error'][0])
-        self.assertIn("is not set", messages['error'][0])
+        self.assertIn("program_size_by_grade", messages["error"][0])
+        self.assertIn("is not set", messages["error"][0])
 
     def test_manual_lottery_valid_usernames(self):
         # Create PhaseZeroRecord
@@ -114,39 +132,53 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         rec.save()
         rec.user.add(self.students[0])
 
-        post = {'mode': 'manual', 'usernames': self.students[0].username, 'perms': 'on'}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "manual", "usernames": self.students[0].username, "perms": "on"}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertEqual(len(messages['error']), 0)
-        self.assertIn("The student lottery has been run successfully", messages['success'])
+        self.assertEqual(len(messages["error"]), 0)
+        self.assertIn(
+            "The student lottery has been run successfully", messages["success"]
+        )
 
         # Check group
         winners_group = Group.objects.get(name=str(self.program) + " Winner")
         self.assertIn(self.students[0], winners_group.user_set.all())
 
     def test_manual_lottery_invalid_username(self):
-        post = {'mode': 'manual', 'usernames': 'invaliduser'}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "manual", "usernames": "invaliduser"}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertIn("Could not find a user with username invaliduser", messages['error'][0])
+        self.assertIn(
+            "Could not find a user with username invaliduser", messages["error"][0]
+        )
 
     def test_manual_lottery_non_student(self):
         # Make a teacher
         teacher = self.teachers[0]
-        post = {'mode': 'manual', 'usernames': teacher.username}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "manual", "usernames": teacher.username}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertIn(teacher.username + " is not a student", messages['error'][0])
+        self.assertIn(teacher.username + " is not a student", messages["error"][0])
 
     def test_manual_lottery_not_in_lottery(self):
         student = self.students[0]
-        post = {'mode': 'manual', 'usernames': student.username}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "manual", "usernames": student.username}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertIn(student.username + " is not in the lottery", messages['error'][0])
+        self.assertIn(student.username + " is not in the lottery", messages["error"][0])
 
     def test_unsupported_mode(self):
-        post = {'mode': 'invalid'}
-        messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
+        post = {"mode": "invalid"}
+        messages = self.moduleobj.lottery(
+            self.program, str(self.program) + " Winner", post
+        )
 
-        self.assertIn("Lottery mode invalid is not supported", messages['error'][0])
+        self.assertIn("Lottery mode invalid is not supported", messages["error"][0])

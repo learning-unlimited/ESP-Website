@@ -31,6 +31,7 @@ from esp.tests.util import CacheFlushTestCase
 # GetCustomFieldsTest
 # ---------------------------------------------------------------------------
 
+
 class GetCustomFieldsTest(CacheFlushTestCase):
     """
     Tests for get_custom_fields().
@@ -46,13 +47,13 @@ class GetCustomFieldsTest(CacheFlushTestCase):
 
     def test_nonexistent_form_class_raises(self):
         """A tag pointing to a non-existent form class raises AttributeError."""
-        Tag.setTag('teacherreg_custom_forms', value='["NonExistentFormClass123"]')
+        Tag.setTag("teacherreg_custom_forms", value='["NonExistentFormClass123"]')
         with self.assertRaises(AttributeError):
             get_custom_fields()
 
     def test_empty_tag_returns_empty_dict(self):
         """An empty JSON list tag returns an empty dict."""
-        Tag.setTag('teacherreg_custom_forms', value='[]')
+        Tag.setTag("teacherreg_custom_forms", value="[]")
         result = get_custom_fields()
         self.assertEqual(result, {})
 
@@ -61,15 +62,16 @@ class GetCustomFieldsTest(CacheFlushTestCase):
 # Shared base for controller tests
 # ---------------------------------------------------------------------------
 
+
 class ClassregControllerTestBase(ProgramFrameworkTest):
     """Shared setUp for controller unit tests."""
 
     def setUp(self, *args, **kwargs):
-        kwargs.setdefault('num_teachers', 3)
-        kwargs.setdefault('classes_per_teacher', 1)
-        kwargs.setdefault('num_students', 2)
-        kwargs.setdefault('num_timeslots', 3)
-        kwargs.setdefault('timeslot_length', 50)
+        kwargs.setdefault("num_teachers", 3)
+        kwargs.setdefault("classes_per_teacher", 1)
+        kwargs.setdefault("num_students", 2)
+        kwargs.setdefault("num_timeslots", 3)
+        kwargs.setdefault("timeslot_length", 50)
         super().setUp(*args, **kwargs)
         self.add_user_profiles()
         self.controller = ClassCreationController(self.program)
@@ -78,19 +80,19 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
         """Return a MagicMock that looks like a validated TeacherClassRegForm."""
         category = self.program.class_categories.first()
         data = {
-            'title':                 'Test Controller Class',
-            'category':              category.id,
-            'class_info':            'Unit test class.',
-            'grade_min':             7,
-            'grade_max':             12,
-            'class_size_max':        20,
-            'duration':              Decimal('0.833'),
-            'num_sections':          1,
-            'prereqs':               '',
-            'allow_lateness':        False,
-            'message_for_directors': '',
-            'session_count':         1,
-            'hardness_rating':       '**',
+            "title": "Test Controller Class",
+            "category": category.id,
+            "class_info": "Unit test class.",
+            "grade_min": 7,
+            "grade_max": 12,
+            "class_size_max": 20,
+            "duration": Decimal("0.833"),
+            "num_sections": 1,
+            "prereqs": "",
+            "allow_lateness": False,
+            "message_for_directors": "",
+            "session_count": 1,
+            "hardness_rating": "**",
         }
         if extra_fields:
             data.update(extra_fields)
@@ -104,16 +106,16 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
         cls = make_class(
             program=self.program,
             teacher=teacher,
-            title='Controller Test Class for %s' % teacher.username,
+            title="Controller Test Class for %s" % teacher.username,
             class_size_max=20,
-            duration=Decimal('0.833'),
+            duration=Decimal("0.833"),
             sections=num_sections,
             accept=False,
         )
         # make_class() sets duration on sections but not on ClassSubject.duration.
         # update_class_sections() reads cls.duration when creating sections.
         if not cls.duration:
-            cls.duration = Decimal('0.833')
+            cls.duration = Decimal("0.833")
             cls.save()
         return cls
 
@@ -122,34 +124,35 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
 # SetClassDataTest
 # ---------------------------------------------------------------------------
 
+
 class SetClassDataTest(ClassregControllerTestBase):
     """Tests for ClassCreationController.set_class_data()."""
 
     def test_standard_field_routes_to_cls_dict(self):
         """Standard fields like class_info are written directly to cls."""
         cls = self._make_saved_class()
-        form = self._make_mock_form({'class_info': 'Updated description.'})
+        form = self._make_mock_form({"class_info": "Updated description."})
 
         self.controller.set_class_data(cls, form)
         cls.refresh_from_db()
 
-        self.assertEqual(cls.class_info, 'Updated description.')
+        self.assertEqual(cls.class_info, "Updated description.")
 
     def test_title_set_explicitly(self):
         """title is set via cls.title, not routed through the generic loop."""
         cls = self._make_saved_class()
-        form = self._make_mock_form({'title': 'Explicitly Set Title'})
+        form = self._make_mock_form({"title": "Explicitly Set Title"})
 
         self.controller.set_class_data(cls, form)
         cls.refresh_from_db()
 
-        self.assertEqual(cls.title, 'Explicitly Set Title')
+        self.assertEqual(cls.title, "Explicitly Set Title")
 
     def test_category_set_from_id(self):
         """category is retrieved by ID and assigned to cls.category."""
         cls = self._make_saved_class()
         category = self.program.class_categories.first()
-        form = self._make_mock_form({'category': category.id})
+        form = self._make_mock_form({"category": category.id})
 
         self.controller.set_class_data(cls, form)
         cls.refresh_from_db()
@@ -165,27 +168,29 @@ class SetClassDataTest(ClassregControllerTestBase):
         them leak into cls.__dict__ as ordinary class attributes.
         """
         cls = self._make_saved_class()
-        form = self._make_mock_form({
-            'section_something': 'should_be_excluded',
-            'section_other':     'also_excluded',
-        })
+        form = self._make_mock_form(
+            {
+                "section_something": "should_be_excluded",
+                "section_other": "also_excluded",
+            }
+        )
 
         self.controller.set_class_data(cls, form)
 
-        self.assertNotIn('section_something', cls.__dict__)
-        self.assertNotIn('section_other', cls.__dict__)
+        self.assertNotIn("section_something", cls.__dict__)
+        self.assertNotIn("section_other", cls.__dict__)
 
     def test_custom_field_routes_to_custom_form_data(self):
         """Fields in get_custom_fields() go to cls.custom_form_data, not cls.__dict__."""
         cls = self._make_saved_class()
-        custom_key = 'cf_test_field'
-        custom_value = 'custom_value_123'
+        custom_key = "cf_test_field"
+        custom_value = "custom_value_123"
         form = self._make_mock_form({custom_key: custom_value})
 
         mock_field = MagicMock()
         with patch(
-            'esp.program.controllers.classreg.get_custom_fields',
-            return_value={custom_key: mock_field}
+            "esp.program.controllers.classreg.get_custom_fields",
+            return_value={custom_key: mock_field},
         ):
             self.controller.set_class_data(cls, form)
 
@@ -198,8 +203,7 @@ class SetClassDataTest(ClassregControllerTestBase):
         form = self._make_mock_form()
 
         with patch(
-            'esp.program.controllers.classreg.get_custom_fields',
-            return_value={}
+            "esp.program.controllers.classreg.get_custom_fields", return_value={}
         ):
             self.controller.set_class_data(cls, form)
 
@@ -209,22 +213,24 @@ class SetClassDataTest(ClassregControllerTestBase):
         """The explicit exclusion list (resources, viable_times, etc.) must not
         be written to cls.__dict__ via the generic loop."""
         cls = self._make_saved_class()
-        form = self._make_mock_form({
-            'resources':                   'should_not_appear',
-            'viable_times':                'should_not_appear',
-            'optimal_class_size_range':    '',
-            'allowable_class_size_ranges': [],
-        })
+        form = self._make_mock_form(
+            {
+                "resources": "should_not_appear",
+                "viable_times": "should_not_appear",
+                "optimal_class_size_range": "",
+                "allowable_class_size_ranges": [],
+            }
+        )
 
         self.controller.set_class_data(cls, form)
 
-        self.assertNotIn('resources', cls.__dict__)
-        self.assertNotIn('viable_times', cls.__dict__)
+        self.assertNotIn("resources", cls.__dict__)
+        self.assertNotIn("viable_times", cls.__dict__)
 
     def test_duration_converted_to_decimal(self):
         """After set_class_data(), cls.duration is a Decimal."""
         cls = self._make_saved_class()
-        form = self._make_mock_form({'duration': 0.833})
+        form = self._make_mock_form({"duration": 0.833})
 
         self.controller.set_class_data(cls, form)
 
@@ -234,6 +240,7 @@ class SetClassDataTest(ClassregControllerTestBase):
 # ---------------------------------------------------------------------------
 # TeacherTimeTest
 # ---------------------------------------------------------------------------
+
 
 class TeacherTimeTest(ClassregControllerTestBase):
     """Tests for teacher_has_time() and require_teacher_has_time()."""
@@ -254,9 +261,7 @@ class TeacherTimeTest(ClassregControllerTestBase):
         try:
             self.controller.require_teacher_has_time(teacher, teacher, 0.5)
         except ESPError_NoLog:
-            self.fail(
-                "require_teacher_has_time() raised ESPError_NoLog unexpectedly"
-            )
+            self.fail("require_teacher_has_time() raised ESPError_NoLog unexpectedly")
 
     def test_require_teacher_has_time_raises_when_over_capacity(self):
         """ESPError_NoLog is raised when the teacher cannot fit the requested hours."""
@@ -269,7 +274,7 @@ class TeacherTimeTest(ClassregControllerTestBase):
         teacher = self.teachers[0]
         with self.assertRaises(ESPError_NoLog) as ctx:
             self.controller.require_teacher_has_time(teacher, teacher, 100.0)
-        self.assertIn('you', str(ctx.exception).lower())
+        self.assertIn("you", str(ctx.exception).lower())
 
     def test_require_teacher_has_time_other_message(self):
         """When user != current_user, the error message contains the teacher's name."""
@@ -283,6 +288,7 @@ class TeacherTimeTest(ClassregControllerTestBase):
 # ---------------------------------------------------------------------------
 # UpdateClassSectionsTest
 # ---------------------------------------------------------------------------
+
 
 class UpdateClassSectionsTest(ClassregControllerTestBase):
     """Tests for ClassCreationController.update_class_sections()."""
@@ -306,22 +312,22 @@ class UpdateClassSectionsTest(ClassregControllerTestBase):
     def test_all_sections_get_cls_duration(self):
         """After update, every section has duration == cls.duration."""
         cls = self._make_saved_class(num_sections=0)
-        cls.duration = Decimal('1.5')
+        cls.duration = Decimal("1.5")
         cls.save()
 
         self.controller.update_class_sections(cls, 3)
 
         for section in cls.sections.all():
-            self.assertEqual(section.duration, Decimal('1.5'))
+            self.assertEqual(section.duration, Decimal("1.5"))
 
     def test_no_op_when_section_count_unchanged(self):
         """If 2 sections exist and 2 are requested, no sections are added or removed."""
         cls = self._make_saved_class(num_sections=2)
-        original_ids = set(cls.sections.values_list('id', flat=True))
+        original_ids = set(cls.sections.values_list("id", flat=True))
 
         self.controller.update_class_sections(cls, 2)
 
-        self.assertEqual(original_ids, set(cls.sections.values_list('id', flat=True)))
+        self.assertEqual(original_ids, set(cls.sections.values_list("id", flat=True)))
 
     def test_reduce_to_zero_deletes_all_sections(self):
         """Requesting 0 sections deletes all existing sections."""

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,6 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 import pickle
 import re
@@ -48,7 +48,7 @@ from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
 from esp.users.models import PersistentQueryFilter, ESPUser
-from django.template import Template #, VariableNode, TextNode
+from django.template import Template  # , VariableNode, TextNode
 
 import esp.dbmail.sendto_fns
 
@@ -62,34 +62,56 @@ from django.core.mail.message import sanitize_address
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.validators import validate_email
 
+
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
-              return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
-              *args, **kwargs):
+def send_mail(
+    subject,
+    message,
+    from_email,
+    recipient_list,
+    fail_silently=False,
+    bcc=None,
+    return_path=settings.DEFAULT_EMAIL_ADDRESSES["bounces"],
+    extra_headers={},
+    user=None,
+    *args,
+    **kwargs,
+):
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
-    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), from_email):
-        raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
-                       "end in @" + settings.SITE_INFO[1] + " (your website), " +
-                       "@learningu.org, or a valid subdomain of learningu.org " +
-                       "(i.e., @subdomain.learningu.org).")
+    if not re.match(
+        r"(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)".format(
+            settings.SITE_INFO[1].replace(".", r"\.")
+        ),
+        from_email,
+    ):
+        raise ESPError(
+            "Invalid 'From' email address ("
+            + from_email
+            + "). The 'From' email address must "
+            + "end in @"
+            + settings.SITE_INFO[1]
+            + " (your website), "
+            + "@learningu.org, or a valid subdomain of learningu.org "
+            + "(i.e., @subdomain.learningu.org)."
+        )
 
-    if 'Reply-To' in extra_headers:
-        extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
+    if "Reply-To" in extra_headers:
+        extra_headers["Reply-To"] = extra_headers["Reply-To"].strip()
     if isinstance(recipient_list, str):
-        new_list = [ recipient_list ]
+        new_list = [recipient_list]
     else:
-        new_list = [ x for x in recipient_list ]
+        new_list = [x for x in recipient_list]
     if user is not None:
-        extra_headers['List-Unsubscribe-Post'] = "List-Unsubscribe=One-Click"
-        extra_headers['List-Unsubscribe'] = f'<{user.unsubscribe_oneclick()}>'
+        extra_headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+        extra_headers["List-Unsubscribe"] = f"<{user.unsubscribe_oneclick()}>"
 
     # remove duplicate email addresses (sendgrid doesn't like them)
     recipients = []
-    pat = '<(.+)>'
+    pat = "<(.+)>"
     emails = {re.search(pat, x).group(1) if re.search(pat, x) else x for x in new_list}
     for x in new_list:
         if x in emails and not re.search(pat, x):
@@ -101,7 +123,11 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
                 recipients.append(x)
                 emails.remove(tmp)
 
-    from django.core.mail import EmailMessage, EmailMultiAlternatives #send_mail as django_send_mail
+    from django.core.mail import (
+        EmailMessage,
+        EmailMultiAlternatives,
+    )  # send_mail as django_send_mail
+
     logger.info("Sent mail to %s", recipients)
 
     #   Get whatever type of email connection Django provides.
@@ -112,18 +138,35 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     #   Match the opening <html> tag whether or not it carries attributes (e.g.
     #   <html lang="en">), so attribute-bearing templates are still recognized
     #   as HTML and sent with a stripped plaintext part plus an HTML alternative.
-    if re.search(r'<html[\s>]', message, re.IGNORECASE):
+    if re.search(r"<html[\s>]", message, re.IGNORECASE):
         # Generate a plaintext version of the email
         # Remove html tags and continuous whitespaces
-        text_only = re.sub('[ \t]+', ' ', strip_tags(message))
+        text_only = re.sub("[ \t]+", " ", strip_tags(message))
         # Strip single spaces in the beginning of each line
-        message_text = text_only.replace('\n ', '\n').strip()
-        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        message_text = text_only.replace("\n ", "\n").strip()
+        msg = EmailMultiAlternatives(
+            subject,
+            message_text,
+            from_email,
+            recipients,
+            bcc=bcc,
+            connection=connection,
+            headers=extra_headers,
+        )
         msg.attach_alternative(message, "text/html")
     else:
-        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        msg = EmailMessage(
+            subject,
+            message,
+            from_email,
+            recipients,
+            bcc=bcc,
+            connection=connection,
+            headers=extra_headers,
+        )
 
     msg.send()
+
 
 def expire_unsent_emails(orm=None):
     """
@@ -138,22 +181,24 @@ def expire_unsent_emails(orm=None):
     TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
     MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
 
+
 class ActionHandler(object):
-    """ This class passes variable keys in such a way that django templates can use them."""
+    """This class passes variable keys in such a way that django templates can use them."""
+
     def __init__(self, obj, user):
-        self._obj  = obj
+        self._obj = obj
         self._user = user
 
     def __getattribute__(self, key):
 
         # get the object, can't use self.obj since we're doing fun stuff
-        if key == '_obj' or key == '_user':
+        if key == "_obj" or key == "_user":
             # use the parent's __getattribute__
             return super().__getattribute__(key)
 
         obj = self._obj
 
-        if not hasattr(obj, 'get_msg_vars'):
+        if not hasattr(obj, "get_msg_vars"):
             return getattr(obj, key)
 
         return obj.get_msg_vars(self._user, key)
@@ -165,68 +210,96 @@ _MESSAGE_CREATED_AT_HELP_TEXT = """
     (because of previous bugs and failures), out-of-date messages from
     being sent.
 """
-_MESSAGE_CREATED_AT_HELP_TEXT = re.sub(r'\s+', ' ', _MESSAGE_CREATED_AT_HELP_TEXT.strip())
+_MESSAGE_CREATED_AT_HELP_TEXT = re.sub(
+    r"\s+", " ", _MESSAGE_CREATED_AT_HELP_TEXT.strip()
+)
+
 
 class MessageRequest(models.Model):
-    """ An initial request to broadcast an email message """
+    """An initial request to broadcast an email message"""
 
     # Each MessageRequest can specify a sendto function, which specifies, for
     # each recipient in the recipients query, which set of associated email
     # addresses should receive the message.  The sendto functions are defined
     # in esp.dbmail.sendto_fns, and their names are choices for the
     # MessageRequest.sendto_fn_name field.
-    SEND_TO_GUARDIAN = 'send_to_guardian'
-    SEND_TO_EMERGENCY = 'send_to_emergency'
-    SEND_TO_SELF_AND_GUARDIAN = 'send_to_self_and_guardian'
-    SEND_TO_SELF_AND_EMERGENCY = 'send_to_self_and_emergency'
-    SEND_TO_GUARDIAN_AND_EMERGENCY = 'send_to_guardian_and_emergency'
-    SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY = 'send_to_self_and_guardian_and_emergency'
+    SEND_TO_GUARDIAN = "send_to_guardian"
+    SEND_TO_EMERGENCY = "send_to_emergency"
+    SEND_TO_SELF_AND_GUARDIAN = "send_to_self_and_guardian"
+    SEND_TO_SELF_AND_EMERGENCY = "send_to_self_and_emergency"
+    SEND_TO_GUARDIAN_AND_EMERGENCY = "send_to_guardian_and_emergency"
+    SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY = "send_to_self_and_guardian_and_emergency"
 
     # The empty string is the default value of the MessageRequest.sendto_fn_name
     # field and means 'send_to_self', the legacy functionality of sending only
     # to the ESPUser's email as given in the email field.
-    SEND_TO_SELF = ''
-    SEND_TO_SELF_REAL = 'send_to_self'
+    SEND_TO_SELF = ""
+    SEND_TO_SELF_REAL = "send_to_self"
 
     SENDTO_FN_CHOICES = (
-        (SEND_TO_SELF, 'send to user'),
-        (SEND_TO_GUARDIAN, 'send to guardian'),
-        (SEND_TO_EMERGENCY, 'send to emergency contact'),
-        (SEND_TO_SELF_AND_GUARDIAN, 'send to user and guardian'),
-        (SEND_TO_SELF_AND_EMERGENCY, 'send to user and emergency contact'),
-        (SEND_TO_GUARDIAN_AND_EMERGENCY, 'send to guardian and emergency contact'),
-        (SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY, 'send to user and guardian and emergency contact'),
+        (SEND_TO_SELF, "send to user"),
+        (SEND_TO_GUARDIAN, "send to guardian"),
+        (SEND_TO_EMERGENCY, "send to emergency contact"),
+        (SEND_TO_SELF_AND_GUARDIAN, "send to user and guardian"),
+        (SEND_TO_SELF_AND_EMERGENCY, "send to user and emergency contact"),
+        (SEND_TO_GUARDIAN_AND_EMERGENCY, "send to guardian and emergency contact"),
+        (
+            SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY,
+            "send to user and guardian and emergency contact",
+        ),
     )
 
     id = models.AutoField(primary_key=True)
     subject = models.TextField(null=True, blank=True)
     msgtext = models.TextField(blank=True, null=True)
     special_headers = models.TextField(blank=True, null=True)
-    recipients = models.ForeignKey(PersistentQueryFilter, on_delete=models.CASCADE) # We will get the user from a query filter
-    sendto_fn_name = models.CharField("sendto function", max_length=128,
-                    choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
-                    blank=True,
-                    help_text="The function that specifies, for each recipient " +
-                    "of the message, which set of associated email addresses " +
-                    "should receive the message.")
-    sender = models.TextField(blank=True, null=True) # Email sender; should be a valid SMTP sender string
-    creator = AjaxForeignKey(ESPUser, on_delete=models.CASCADE) # the person who sent this message
+    recipients = models.ForeignKey(
+        PersistentQueryFilter, on_delete=models.CASCADE
+    )  # We will get the user from a query filter
+    sendto_fn_name = models.CharField(
+        "sendto function",
+        max_length=128,
+        choices=SENDTO_FN_CHOICES,
+        default=SEND_TO_SELF,
+        blank=True,
+        help_text="The function that specifies, for each recipient "
+        + "of the message, which set of associated email addresses "
+        + "should receive the message.",
+    )
+    sender = models.TextField(
+        blank=True, null=True
+    )  # Email sender; should be a valid SMTP sender string
+    creator = AjaxForeignKey(
+        ESPUser, on_delete=models.CASCADE
+    )  # the person who sent this message
 
     # Use `default` instead of `auto_now_add`, so that the migration creating
     # this field can set times in the past.
     created_at = models.DateTimeField(
-        default=datetime.now, null=False, blank=False, editable=False,
-        auto_now_add=False, help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
+        default=datetime.now,
+        null=False,
+        blank=False,
+        editable=False,
+        auto_now_add=False,
+        help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
     )
 
-    processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
-    processed_by = models.DateTimeField(null=True, blank=True, default=None, db_index=True) # When should this be processed by?
-    priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
+    processed = models.BooleanField(
+        default=False, db_index=True
+    )  # Have we made EmailRequest objects from this MessageRequest yet?
+    processed_by = models.DateTimeField(
+        null=True, blank=True, default=None, db_index=True
+    )  # When should this be processed by?
+    priority_level = models.IntegerField(
+        null=True, blank=True
+    )  # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 
-    public = models.BooleanField(default=False) # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
+    public = models.BooleanField(
+        default=False
+    )  # Should the subject and msgtext of this request be publicly viewable at /email/<id>?
 
     def public_url(self):
-        return f'{Site.objects.get_current().domain}/email/{self.id or "{ID will be here}"}'
+        return f"{Site.objects.get_current().domain}/email/{self.id or '{ID will be here}'}"
 
     def __str__(self):
         return str(self.subject)
@@ -245,14 +318,16 @@ class MessageRequest(models.Model):
     special_headers_dict = property(special_headers_dict_get, special_headers_dict_set)
 
     @staticmethod
-    def createRequest(var_dict = None, *args, **kwargs):
-        """ To create a new MessageRequest, you should provide a dictionary of
-            the variables you want substituted, if you want any. """
+    def createRequest(var_dict=None, *args, **kwargs):
+        """To create a new MessageRequest, you should provide a dictionary of
+        the variables you want substituted, if you want any."""
         new_request = MessageRequest(*args, **kwargs)
 
         if var_dict is not None:
             new_request.save()
-            MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
+            MessageVars.createMessageVars(
+                new_request, var_dict
+            )  # create the message Variables
         return new_request
 
     @classmethod
@@ -268,17 +343,20 @@ class MessageRequest(models.Model):
         """
         if orm_class is None:
             orm_class = cls
-        return orm_class.objects.filter(Q(processed_by__isnull=True) | Q(processed_by__lt=datetime.now()), processed=False).update(processed=True)
+        return orm_class.objects.filter(
+            Q(processed_by__isnull=True) | Q(processed_by__lt=datetime.now()),
+            processed=False,
+        ).update(processed=True)
 
     def parseSmartText(self, text, user):
-        """ Takes a text and user, and, within the confines of this message, will make it better. """
+        """Takes a text and user, and, within the confines of this message, will make it better."""
 
         # prepare variables
         text = str(text)
 
         context = MessageVars.getContext(self, user)
 
-        newtext = ''
+        newtext = ""
         template = Template(text)
 
         return template.render(context)
@@ -302,14 +380,20 @@ class MessageRequest(models.Model):
         ImproperlyConfigured exception if that is not the case.
         """
         if not cls.is_sendto_fn_name_choice(sendto_fn_name):
-            raise ImproperlyConfigured(f'"{sendto_fn_name}" is not one of the available sendto function choices')
+            raise ImproperlyConfigured(
+                f'"{sendto_fn_name}" is not one of the available sendto function choices'
+            )
         if sendto_fn_name == cls.SEND_TO_SELF:
             sendto_fn_name = cls.SEND_TO_SELF_REAL
         if not hasattr(esp.dbmail.sendto_fns, sendto_fn_name):
-            raise ImproperlyConfigured(f'"esp.dbmail.sendto_fns" does not define "{sendto_fn_name}"')
+            raise ImproperlyConfigured(
+                f'"esp.dbmail.sendto_fns" does not define "{sendto_fn_name}"'
+            )
         sendto_fn_callable = getattr(esp.dbmail.sendto_fns, sendto_fn_name)
         if not callable(sendto_fn_callable):
-            raise ImproperlyConfigured(f'"esp.dbmail.sendto_fns" does not define a "{sendto_fn_name}" callable sendto function')
+            raise ImproperlyConfigured(
+                f'"esp.dbmail.sendto_fns" does not define a "{sendto_fn_name}" callable sendto function'
+            )
         return sendto_fn_callable
 
     def get_sendto_fn(self):
@@ -330,10 +414,12 @@ class MessageRequest(models.Model):
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
         except ImproperlyConfigured as e:
-            raise ESPError(f'Invalid sendto function "{sendto_fn_name}". '
-                f'This might be a website bug. Please contact us at {settings.DEFAULT_EMAIL_ADDRESSES["support"]} '
-                f'and tell us how you got this error, and we will look into it. '
-                f'The error message is: "{e}".')
+            raise ESPError(
+                f'Invalid sendto function "{sendto_fn_name}". '
+                f"This might be a website bug. Please contact us at {settings.DEFAULT_EMAIL_ADDRESSES['support']} "
+                f"and tell us how you got this error, and we will look into it. "
+                f'The error message is: "{e}".'
+            )
 
     # Processing a MessageRequest needs to be atomic, so that if the DB falls
     # over halfway through the processing, we don't end up with half of the
@@ -359,7 +445,7 @@ class MessageRequest(models.Model):
             if self.creator is not None:
                 send_from = self.creator.get_email_sendto_address()
             else:
-                send_from = 'ESP Web Site <esp@mit.edu>'
+                send_from = "ESP Web Site <esp@mit.edu>"
 
         users = self.recipients.getList(ESPUser).distinct()
 
@@ -374,17 +460,17 @@ class MessageRequest(models.Model):
             # For each user, create an EmailRequest and a TextOfEmail
             # for each address given by the output of the sendto function.
             for address_pair in sendto_fn(user):
-                newemailrequest = {'target': user, 'msgreq': self}
+                newemailrequest = {"target": user, "msgreq": self}
                 send_to = ESPUser.email_sendto_address(*address_pair)
                 newtxt = {
-                    'messagerequest': self,
-                    'user': user,
-                    'send_to': send_to,
-                    'send_from': send_from,
-                    'subject': subject,
-                    'msgtext': msgtext,
-                    'created_at': self.created_at,
-                    'sent': None,
+                    "messagerequest": self,
+                    "user": user,
+                    "send_to": send_to,
+                    "send_from": send_from,
+                    "subject": subject,
+                    "msgtext": msgtext,
+                    "created_at": self.created_at,
+                    "sent": None,
                 }
 
                 # Use get_or_create so that, if this send_to address is
@@ -398,7 +484,7 @@ class MessageRequest(models.Model):
                 # Disabled in hopes that it will make postgres less sad.
                 # TODO(benkraft): Figure out a more permanent solution.
                 newtxt = TextOfEmail.objects.create(**newtxt)
-                newemailrequest['textofemail'] = newtxt
+                newemailrequest["textofemail"] = newtxt
                 EmailRequest.objects.create(**newemailrequest)
 
         # Mark ourselves processed.  We don't have to worry about the DB
@@ -407,31 +493,46 @@ class MessageRequest(models.Model):
         self.processed = True
         self.save()
 
-        logger.info('Prepared emails to send for message request %d: %s', self.id, self.subject)
+        logger.info(
+            "Prepared emails to send for message request %d: %s", self.id, self.subject
+        )
+
 
 class TextOfEmail(models.Model):
-    """ Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text. """
+    """Contains the processed form of an EmailRequest, ready to be sent.  SmartText becomes plain text."""
+
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
-    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.CASCADE) # blank=True because there isn't an easy way to backfill this
-    send_to = models.CharField(max_length=1024)  # Valid email address, "Name" <foo@bar.com>
-    send_from = models.CharField(max_length=1024) # Valid email address
-    subject = models.TextField() # Email subject; plain text
-    msgtext = models.TextField() # Message body; plain text
+    user = AjaxForeignKey(
+        ESPUser, blank=True, null=True, on_delete=models.CASCADE
+    )  # blank=True because there isn't an easy way to backfill this
+    send_to = models.CharField(
+        max_length=1024
+    )  # Valid email address, "Name" <foo@bar.com>
+    send_from = models.CharField(max_length=1024)  # Valid email address
+    subject = models.TextField()  # Email subject; plain text
+    msgtext = models.TextField()  # Message body; plain text
 
     # Don't use `default` or `auto_now_add`. When a
     # :class:`TextOfEmail` is created from a :class:`MessageRequest`, the
     # `created_at` value should be copied over at creation time.
     created_at = models.DateTimeField(
-        null=False, blank=False, editable=False, auto_now_add=False,
+        null=False,
+        blank=False,
+        editable=False,
+        auto_now_add=False,
         help_text=_MESSAGE_CREATED_AT_HELP_TEXT,
     )
 
     sent = models.DateTimeField(blank=True, null=True)
-    sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
-    tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
+    sent_by = models.DateTimeField(
+        null=True, default=None, db_index=True
+    )  # When it should be sent by.
+    tries = models.IntegerField(
+        default=0
+    )  # Number of times we attempted to send this message and failed
 
     def __str__(self):
-        return str(self.subject) + ' <' + (self.send_to) + '>'
+        return str(self.subject) + " <" + (self.send_to) + ">"
 
     def send(self):
         """Take the email data in this TextOfEmail and send it.
@@ -455,13 +556,15 @@ class TextOfEmail(models.Model):
         now = datetime.now()
 
         try:
-            send_mail(self.subject,
-                      self.msgtext,
-                      self.send_from,
-                      self.send_to,
-                      False,
-                      extra_headers=extra_headers,
-                      user = self.user)
+            send_mail(
+                self.subject,
+                self.msgtext,
+                self.send_from,
+                self.send_to,
+                False,
+                extra_headers=extra_headers,
+                user=self.user,
+            )
         except Exception as e:
             self.tries += 1
             self.save()
@@ -474,7 +577,7 @@ class TextOfEmail(models.Model):
             self.save()
 
     def fill_msgtext(self):
-        """ Repopulate the msgtext based on the messagerequest """
+        """Repopulate the msgtext based on the messagerequest"""
         msg_req = self.messagerequest
         msgtext = msg_req.parseSmartText(msg_req.msgtext, self.user)
         self.msgtext = msgtext
@@ -499,21 +602,29 @@ class TextOfEmail(models.Model):
         if orm_class is None:
             orm_class = cls
         now = datetime.now()
-        return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
+        return orm_class.objects.filter(
+            Q(sent_by__isnull=True) | Q(sent_by__lt=now),
+            sent__isnull=True,
+            tries__gte=min_tries,
+        ).update(sent=now)
 
     class Meta:
-        verbose_name_plural = 'Email texts'
+        verbose_name_plural = "Email texts"
+
 
 class MessageVars(models.Model):
-    """ A storage of message variables for a specific message. """
+    """A storage of message variables for a specific message."""
+
     messagerequest = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
-    pickled_provider = models.BinaryField() # Object which must have obj.get_message_var(key)
-    provider_name    = models.CharField(max_length=128)
+    pickled_provider = (
+        models.BinaryField()
+    )  # Object which must have obj.get_message_var(key)
+    provider_name = models.CharField(max_length=128)
 
     @staticmethod
     def createVar(msgrequest, name, obj):
-        """ This is used to create a variable container for a message."""
-        newMessageVar = MessageVars(messagerequest = msgrequest, provider_name = name)
+        """This is used to create a variable container for a message."""
+        newMessageVar = MessageVars(messagerequest=msgrequest, provider_name=name)
         newMessageVar.pickled_provider = pickle.dumps(obj)
         newMessageVar.save()
         return newMessageVar
@@ -524,42 +635,48 @@ class MessageVars(models.Model):
         return {self.provider_name: actionhandler}
 
     def getVar(self, key, user):
-        """ Get a variable from this object. """
+        """Get a variable from this object."""
         try:
             provider = pickle.loads(self.pickled_provider)
         except Exception:
-            raise ESPError('Could not load variable provider object!')
+            raise ESPError("Could not load variable provider object!")
 
-        if hasattr(provider, 'get_msg_vars'):
+        if hasattr(provider, "get_msg_vars"):
             return str(provider.get_msg_vars(user, key))
         else:
             return None
 
     @staticmethod
     def getContext(msgrequest, user):
-        """ Get a context-like dictionary for template rendering. """
-        from django.template import Context  ## aseering 8-13-2010 -- Yes, this is supposed to be 'Context', not 'RequestContext'.
+        """Get a context-like dictionary for template rendering."""
+        from django.template import (
+            Context,
+        )  ## aseering 8-13-2010 -- Yes, this is supposed to be 'Context', not 'RequestContext'.
+
         context = {}
         msgvars = msgrequest.messagevars_set.all()
         for msgvar in msgvars:
             context.update(msgvar.getDict(user))
-        context['request'] = ActionHandler(msgrequest, user) # add the request so the public url is accessible
-        context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER # add the host address
+        context["request"] = ActionHandler(
+            msgrequest, user
+        )  # add the request so the public url is accessible
+        context["EMAIL_HOST_SENDER"] = (
+            settings.EMAIL_HOST_SENDER
+        )  # add the host address
         return Context(context)
 
     @staticmethod
     def createMessageVars(msgrequest, var_dict):
-        """ Takes a var_dict, which should be of the form:
-            {'FirstHalf': obj, ... }
-            Where a variable like {{Program.schedule}} should have:
-            {'Program':   programObj ...} and programObj needs to have
-            get_msg_vars(userObj, 'schedule') to work
+        """Takes a var_dict, which should be of the form:
+        {'FirstHalf': obj, ... }
+        Where a variable like {{Program.schedule}} should have:
+        {'Program':   programObj ...} and programObj needs to have
+        get_msg_vars(userObj, 'schedule') to work
         """
         # for each module in the dictionary, create a corresponding
         # MessageVar object
         for key, obj in var_dict.items():
             MessageVars.createVar(msgrequest, key, obj)
-
 
         return True
 
@@ -567,27 +684,36 @@ class MessageVars(models.Model):
         return f"Message Variables for {self.messagerequest}"
 
     class Meta:
-        verbose_name_plural = 'Message variables'
+        verbose_name_plural = "Message variables"
+
 
 class EmailRequest(models.Model):
-    """ Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
+    """Each email is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to."""
+
     target = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     msgreq = models.ForeignKey(MessageRequest, on_delete=models.CASCADE)
-    textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True, on_delete=models.CASCADE)
+    textofemail = AjaxForeignKey(
+        TextOfEmail, blank=True, null=True, on_delete=models.CASCADE
+    )
 
     def __str__(self):
-        return str(self.msgreq.subject) + ' <' + str(self.target.username) + '>'
+        return str(self.msgreq.subject) + " <" + str(self.target.username) + ">"
+
 
 class EmailList(models.Model):
     """
     A list that gets handled when an email comes in to @esp.mit.edu.
     """
 
-    regex = models.CharField(verbose_name='Regular Expression',
-            max_length=512, help_text="(e.g. '^(.*)$' matches everything)")
+    regex = models.CharField(
+        verbose_name="Regular Expression",
+        max_length=512,
+        help_text="(e.g. '^(.*)$' matches everything)",
+    )
 
-    seq   = models.PositiveIntegerField(blank=True, verbose_name = 'Sequence',
-                                        help_text="Smaller is earlier.")
+    seq = models.PositiveIntegerField(
+        blank=True, verbose_name="Sequence", help_text="Smaller is earlier."
+    )
 
     handler = models.CharField(max_length=128)
 
@@ -595,19 +721,27 @@ class EmailList(models.Model):
 
     admin_hold = models.BooleanField(default=False)
 
-    cc_all     = models.BooleanField(help_text="If true, the CC field will list everyone. Otherwise each email will be sent individually.", default=False)
+    cc_all = models.BooleanField(
+        help_text="If true, the CC field will list everyone. Otherwise each email will be sent individually.",
+        default=False,
+    )
 
-    from_email = models.CharField(help_text="If specified, the FROM header will be overwritten with this email.", blank=True, null=True, max_length=512)
+    from_email = models.CharField(
+        help_text="If specified, the FROM header will be overwritten with this email.",
+        blank=True,
+        null=True,
+        max_length=512,
+    )
 
     description = models.TextField(blank=True, null=True)
 
     class Meta:
-        ordering=('seq',)
+        ordering = ("seq",)
 
     def save(self, *args, **kwargs):
         if self.seq is None:
             try:
-                self.seq = EmailList.objects.order_by('-seq')[0].seq + 5
+                self.seq = EmailList.objects.order_by("-seq")[0].seq + 5
             except EmailList.DoesNotExist:
                 self.seq = 0
             except IndexError:
@@ -616,25 +750,32 @@ class EmailList(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f'{self.description} ({self.regex})'
+        return f"{self.description} ({self.regex})"
+
 
 class PlainRedirect(models.Model):
     """
     A simple catch-all for mail redirection.
     """
 
-    original = models.CharField(max_length=512, help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).')
+    original = models.CharField(
+        max_length=512,
+        help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).',
+    )
 
-    destination = models.CharField(max_length=512, help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)')
+    destination = models.CharField(
+        max_length=512,
+        help_text="A comma-separated list of one or more real email address(es) that will receive the redirected email(s)",
+    )
 
     def clean(self):
         super().clean()
 
         invalid_emails = []
-        for item in self.destination.split(','):
+        for item in self.destination.split(","):
             email = item.strip()
             if not email:
-                invalid_emails.append('<empty>')
+                invalid_emails.append("<empty>")
                 continue
 
             try:
@@ -643,20 +784,23 @@ class PlainRedirect(models.Model):
                 invalid_emails.append(email)
 
         if invalid_emails:
-            raise ValidationError({
-                'destination': 'Invalid email address(es): %s' % ', '.join(invalid_emails)
-            })
+            raise ValidationError(
+                {
+                    "destination": "Invalid email address(es): %s"
+                    % ", ".join(invalid_emails)
+                }
+            )
 
     def __str__(self):
-        return f'{self.original} --> {self.destination}'
+        return f"{self.original} --> {self.destination}"
 
     class Meta:
-        ordering=('original',)
+        ordering = ("original",)
 
 
 # Adapted from https://www.djangosnippets.org/snippets/735/
 class CustomSMTPBackend(SMTPEmailBackend):
-    """ Simple override of Django's default backend to allow a Return-Path to be specified """
+    """Simple override of Django's default backend to allow a Return-Path to be specified"""
 
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
@@ -667,16 +811,20 @@ class CustomSMTPBackend(SMTPEmailBackend):
         if not email_message.recipients():
             return False
         from_email = sanitize_address(email_message.from_email, email_message.encoding)
-        recipients = [sanitize_address(addr, email_message.encoding)
-                      for addr in email_message.recipients()]
+        recipients = [
+            sanitize_address(addr, email_message.encoding)
+            for addr in email_message.recipients()
+        ]
         try:
             if self.return_path:
                 return_path = self.return_path
             else:
                 return_path = email_message.from_email
-            self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
-                    recipients,
-                    email_message.message().as_string())
+            self.connection.sendmail(
+                sanitize_address(return_path, email_message.encoding),
+                recipients,
+                email_message.message().as_string(),
+            )
         except Exception:
             if not self.fail_silently:
                 raise

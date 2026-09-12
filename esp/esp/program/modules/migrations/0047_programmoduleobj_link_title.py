@@ -4,15 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0046_auto_20260106_2204'),
+        ("modules", "0046_auto_20260106_2204"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='programmoduleobj',
-            name='link_title',
-            field=models.CharField(blank=True, default='', help_text="Override the default link title for this program. Leave blank to use the module's default.", max_length=64),
+            model_name="programmoduleobj",
+            name="link_title",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="Override the default link title for this program. Leave blank to use the module's default.",
+                max_length=64,
+            ),
         ),
     ]

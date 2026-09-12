@@ -7,5 +7,5 @@ from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegMo
 # also need these also autocreate them -- there's little harm in doing so.
 # Ideally, we might even assert that only those modules access the settings,
 # but doing that in practice might be hard.
-maybe_create_module_ext('StudentClassRegModule', StudentClassRegModuleInfo)
-maybe_create_module_ext('TeacherClassRegModule', ClassRegModuleInfo)
+maybe_create_module_ext("StudentClassRegModule", StudentClassRegModuleInfo)
+maybe_create_module_ext("TeacherClassRegModule", ClassRegModuleInfo)

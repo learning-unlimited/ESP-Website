@@ -27,6 +27,7 @@ from esp.web.forms.fileupload_form import (
 # LowercaseExtensionStorage
 # ---------------------------------------------------------------------------
 
+
 class LowercaseExtensionStorageNormalizeTest(TestCase):
     """Tests for LowercaseExtensionStorage._normalize_filename()"""
 
@@ -84,21 +85,27 @@ class LowercaseExtensionStorageSaveTest(TestCase):
 
     def test_save_lowercases_extension(self):
         content = SimpleUploadedFile("test.JPG", b"fake-image-data")
-        with patch.object(FileSystemStorage, "save", return_value="test.jpg") as mock_save:
+        with patch.object(
+            FileSystemStorage, "save", return_value="test.jpg"
+        ) as mock_save:
             self.storage.save("test.JPG", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[0], "test.jpg")
 
     def test_save_passes_content_unchanged(self):
         content = SimpleUploadedFile("photo.PNG", b"fake-png-data")
-        with patch.object(FileSystemStorage, "save", return_value="photo.png") as mock_save:
+        with patch.object(
+            FileSystemStorage, "save", return_value="photo.png"
+        ) as mock_save:
             self.storage.save("photo.PNG", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[1], content)
 
     def test_save_no_extension_passes_name_unchanged(self):
         content = SimpleUploadedFile("README", b"data")
-        with patch.object(FileSystemStorage, "save", return_value="README") as mock_save:
+        with patch.object(
+            FileSystemStorage, "save", return_value="README"
+        ) as mock_save:
             self.storage.save("README", content)
             call_args = mock_save.call_args[0]
             self.assertEqual(call_args[0], "README")
@@ -107,6 +114,7 @@ class LowercaseExtensionStorageSaveTest(TestCase):
 # ---------------------------------------------------------------------------
 # ResizeImageField — __init__
 # ---------------------------------------------------------------------------
+
 
 class ResizeImageFieldInitTest(TestCase):
     """Tests for ResizeImageField.__init__()"""
@@ -129,21 +137,22 @@ class ResizeImageFieldInitTest(TestCase):
 # ResizeImageField — clean() branches (100 % coverage for forms/__init__.py)
 # ---------------------------------------------------------------------------
 
+
 class ResizeImageFieldCleanTest(TestCase):
     """Tests for ResizeImageField.clean() — every branch exercised."""
 
     def _mock_pil_image(self):
         """PIL Image mock that writes fake bytes to the buffer on save()."""
         img = MagicMock()
-        img.format = 'JPEG'
-        img.save.side_effect = lambda buf, fmt: buf.write(b'\xff\xd8\xff')
+        img.format = "JPEG"
+        img.save.side_effect = lambda buf, fmt: buf.write(b"\xff\xd8\xff")
         return img
 
     def test_returns_file_unchanged_when_size_is_none(self):
         """size=None skips the resize block entirely — file returned as-is."""
         fake = SimpleUploadedFile("shot.jpg", b"data")
         field = ResizeImageField(size=None, required=False)
-        with patch.object(forms.FileField, 'clean', return_value=fake):
+        with patch.object(forms.FileField, "clean", return_value=fake):
             result = field.clean(fake, initial=None)
         self.assertIs(result, fake)
 
@@ -152,12 +161,14 @@ class ResizeImageFieldCleanTest(TestCase):
         fake = SimpleUploadedFile("shot.JPG", b"data")
         field = ResizeImageField(size=(100, 100), required=False)
         mock_img = self._mock_pil_image()
-        with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', return_value=mock_img), \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+        with (
+            patch.object(forms.FileField, "clean", return_value=fake),
+            patch("PIL.Image.open", return_value=mock_img),
+            patch("PIL.Image.ANTIALIAS", new=1, create=True),
+        ):
             result = field.clean(fake, initial=None)
         self.assertIsInstance(result, SimpleUploadedFile)
-        self.assertTrue(result.name.endswith('.jpg'))   # extension lowercased
+        self.assertTrue(result.name.endswith(".jpg"))  # extension lowercased
 
     def test_resize_via_temporary_file_path(self):
         """File has .temporary_file_path — path string passed to Image.open."""
@@ -166,37 +177,42 @@ class ResizeImageFieldCleanTest(TestCase):
         fake.temporary_file_path.return_value = "/tmp/upload.JPG"
         field = ResizeImageField(size=(100, 100), required=False)
         mock_img = self._mock_pil_image()
-        with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', return_value=mock_img) as mock_open, \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+        with (
+            patch.object(forms.FileField, "clean", return_value=fake),
+            patch("PIL.Image.open", return_value=mock_img) as mock_open,
+            patch("PIL.Image.ANTIALIAS", new=1, create=True),
+        ):
             field.clean(fake, initial=None)
         mock_open.assert_called_once_with("/tmp/upload.JPG")
 
     def test_unreadable_file_raises_validation_error(self):
         """Neither .read nor .temporary_file_path — raises ValidationError."""
-        fake = MagicMock(spec=['name'])   # only .name — no read or temp_file_path
+        fake = MagicMock(spec=["name"])  # only .name — no read or temp_file_path
         fake.name = "mystery.jpg"
         field = ResizeImageField(size=(100, 100), required=False)
-        with patch.object(forms.FileField, 'clean', return_value=fake):
+        with patch.object(forms.FileField, "clean", return_value=fake):
             with self.assertRaises(forms.ValidationError) as ctx:
                 field.clean(fake, initial=None)
-        self.assertIn('Image unreadable', str(ctx.exception))
+        self.assertIn("Image unreadable", str(ctx.exception))
 
     def test_ioerror_in_pil_raises_validation_error(self):
         """IOError during Image.open — raises ValidationError('Image resize failed.')."""
         fake = SimpleUploadedFile("shot.jpg", b"data")
         field = ResizeImageField(size=(100, 100), required=False)
-        with patch.object(forms.FileField, 'clean', return_value=fake), \
-             patch('PIL.Image.open', side_effect=IOError("corrupt")), \
-             patch('PIL.Image.ANTIALIAS', new=1, create=True):
+        with (
+            patch.object(forms.FileField, "clean", return_value=fake),
+            patch("PIL.Image.open", side_effect=IOError("corrupt")),
+            patch("PIL.Image.ANTIALIAS", new=1, create=True),
+        ):
             with self.assertRaises(forms.ValidationError) as ctx:
                 field.clean(fake, initial=None)
-        self.assertIn('Image resize failed', str(ctx.exception))
+        self.assertIn("Image resize failed", str(ctx.exception))
 
 
 # ---------------------------------------------------------------------------
 # BioEditForm
 # ---------------------------------------------------------------------------
+
 
 class BioEditFormTest(TestCase):
     """Tests for BioEditForm"""
@@ -207,45 +223,48 @@ class BioEditFormTest(TestCase):
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_with_slugbio_and_bio(self):
-        form = BioEditForm(data={
-            'slugbio': 'Math enthusiast',
-            'bio': 'I love teaching algebra.',
-            'hidden': False,
-        })
+        form = BioEditForm(
+            data={
+                "slugbio": "Math enthusiast",
+                "bio": "I love teaching algebra.",
+                "hidden": False,
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_slugbio_max_length_enforced(self):
-        form = BioEditForm(data={'slugbio': 'x' * 51})  # max_length=50
+        form = BioEditForm(data={"slugbio": "x" * 51})  # max_length=50
         self.assertFalse(form.is_valid())
-        self.assertIn('slugbio', form.errors)
+        self.assertIn("slugbio", form.errors)
 
     def test_slugbio_at_max_length_valid(self):
-        form = BioEditForm(data={'slugbio': 'x' * 50})
+        form = BioEditForm(data={"slugbio": "x" * 50})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_hidden_field_false(self):
-        form = BioEditForm(data={'hidden': False})
+        form = BioEditForm(data={"hidden": False})
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertFalse(form.cleaned_data['hidden'])
+        self.assertFalse(form.cleaned_data["hidden"])
 
     def test_hidden_field_true(self):
-        form = BioEditForm(data={'hidden': True})
+        form = BioEditForm(data={"hidden": True})
         self.assertTrue(form.is_valid(), form.errors)
-        self.assertTrue(form.cleaned_data['hidden'])
+        self.assertTrue(form.cleaned_data["hidden"])
 
     def test_picture_not_required(self):
         # No picture submitted — should still be valid
-        form = BioEditForm(data={'bio': 'Some bio text'}, files={})
+        form = BioEditForm(data={"bio": "Some bio text"}, files={})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_bio_field_not_required(self):
-        form = BioEditForm(data={'bio': ''})
+        form = BioEditForm(data={"bio": ""})
         self.assertTrue(form.is_valid(), form.errors)
 
 
 # ---------------------------------------------------------------------------
 # FileUploadForm
 # ---------------------------------------------------------------------------
+
 
 class FileUploadFormTest(TestCase):
     """Tests for FileUploadForm"""
@@ -255,37 +274,38 @@ class FileUploadFormTest(TestCase):
 
     def test_valid_submission(self):
         form = FileUploadForm(
-            data={'title': 'My Document'},
-            files={'uploadedfile': self._make_file()},
+            data={"title": "My Document"},
+            files={"uploadedfile": self._make_file()},
         )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_missing_title_invalid(self):
         form = FileUploadForm(
             data={},
-            files={'uploadedfile': self._make_file()},
+            files={"uploadedfile": self._make_file()},
         )
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn("title", form.errors)
 
     def test_missing_file_invalid(self):
         form = FileUploadForm(
-            data={'title': 'My Document'},
+            data={"title": "My Document"},
             files={},
         )
         self.assertFalse(form.is_valid())
-        self.assertIn('uploadedfile', form.errors)
+        self.assertIn("uploadedfile", form.errors)
 
     def test_both_missing_invalid(self):
         form = FileUploadForm(data={}, files={})
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
-        self.assertIn('uploadedfile', form.errors)
+        self.assertIn("title", form.errors)
+        self.assertIn("uploadedfile", form.errors)
 
 
 # ---------------------------------------------------------------------------
 # FileUploadForm_Admin
 # ---------------------------------------------------------------------------
+
 
 class FileUploadFormAdminTest(TestCase):
     """Tests for FileUploadForm_Admin"""
@@ -295,61 +315,62 @@ class FileUploadFormAdminTest(TestCase):
 
     def test_set_choices_updates_field(self):
         form = FileUploadForm_Admin(
-            data={'title': 'T', 'target_obj': 'a'},
-            files={'uploadedfile': self._make_file()},
+            data={"title": "T", "target_obj": "a"},
+            files={"uploadedfile": self._make_file()},
         )
-        choices = [('a', 'Option A'), ('b', 'Option B')]
+        choices = [("a", "Option A"), ("b", "Option B")]
         form.set_choices(choices)
         self.assertEqual(
-            list(form.fields['target_obj'].choices),
+            list(form.fields["target_obj"].choices),
             choices,
         )
 
     def test_valid_after_set_choices(self):
-        choices = [('a', 'Option A'), ('b', 'Option B')]
+        choices = [("a", "Option A"), ("b", "Option B")]
         form = FileUploadForm_Admin(
-            data={'title': 'Doc', 'target_obj': 'a'},
-            files={'uploadedfile': self._make_file()},
+            data={"title": "Doc", "target_obj": "a"},
+            files={"uploadedfile": self._make_file()},
         )
         form.set_choices(choices)
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_missing_title_invalid(self):
         form = FileUploadForm_Admin(
-            data={'target_obj': 'a'},
-            files={'uploadedfile': self._make_file()},
+            data={"target_obj": "a"},
+            files={"uploadedfile": self._make_file()},
         )
-        form.set_choices([('a', 'A')])
+        form.set_choices([("a", "A")])
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn("title", form.errors)
 
     def test_missing_file_invalid(self):
         form = FileUploadForm_Admin(
-            data={'title': 'Doc', 'target_obj': 'a'},
+            data={"title": "Doc", "target_obj": "a"},
             files={},
         )
-        form.set_choices([('a', 'A')])
+        form.set_choices([("a", "A")])
         self.assertFalse(form.is_valid())
-        self.assertIn('uploadedfile', form.errors)
+        self.assertIn("uploadedfile", form.errors)
 
 
 # ---------------------------------------------------------------------------
 # FileRenameForm
 # ---------------------------------------------------------------------------
 
+
 class FileRenameFormTest(TestCase):
     """Tests for FileRenameForm"""
 
     def test_valid_with_title(self):
-        form = FileRenameForm(data={'title': 'new_name'})
+        form = FileRenameForm(data={"title": "new_name"})
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_missing_title_invalid(self):
         form = FileRenameForm(data={})
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn("title", form.errors)
 
     def test_empty_title_invalid(self):
-        form = FileRenameForm(data={'title': ''})
+        form = FileRenameForm(data={"title": ""})
         self.assertFalse(form.is_valid())
-        self.assertIn('title', form.errors)
+        self.assertIn("title", form.errors)

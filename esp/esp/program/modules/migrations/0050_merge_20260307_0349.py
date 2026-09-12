@@ -4,11 +4,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0049_remove_adminmorph'),
-        ('modules', '0048_auto_20260302_0348'),
+        ("modules", "0049_remove_adminmorph"),
+        ("modules", "0048_auto_20260302_0348"),
     ]
 
-    operations = [
-    ]
+    operations = []

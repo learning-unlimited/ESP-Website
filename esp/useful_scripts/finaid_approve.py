@@ -20,7 +20,7 @@ if len(sys.argv) < 2:
 
 # if you call the script with multiple arguments you probably just forgot to
 # quote it
-PROGRAM = ' '.join(sys.argv[1:])
+PROGRAM = " ".join(sys.argv[1:])
 
 # ITERATE & APPROVE REQUESTS
 reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
@@ -35,8 +35,10 @@ if len(reqs) == 0:
 print("New Approvals:")
 approved_any = False
 
+
 def is_blank(x):
-    return x is None or re.match(r'^(\s)*$', x)
+    return x is None or re.match(r"^(\s)*$", x)
+
 
 for req in reqs:
     if is_blank(req.household_income) and is_blank(req.extra_explaination):
@@ -47,7 +49,7 @@ for req in reqs:
 
     print(req.user.email)
     try:
-        f = FinancialAidGrant(request = req, percent = 100)
+        f = FinancialAidGrant(request=req, percent=100)
         f.save()
         req.done = True
         req.save()
@@ -56,4 +58,4 @@ for req in reqs:
     approved_any = True
 
 if not approved_any:
-    print("None") # no new (valid) requests to approve
+    print("None")  # no new (valid) requests to approve

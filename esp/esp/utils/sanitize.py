@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # matching.  This avoids the nested-quantifier backtracking that CodeQL flags
 # when a single regex contains multiple [^>]* or [^)]* groups.
 
-_IMG_TAG_RE = re.compile(r'<img\b', re.IGNORECASE)
+_IMG_TAG_RE = re.compile(r"<img\b", re.IGNORECASE)
 
 _CSS_DATA_URI_PREFIX_RE = re.compile(
     r'url\(\s*["\']?data:image/',
@@ -45,16 +45,16 @@ def _strip_base64_img_tags(html):
         start = m.start()
         if start < last:
             continue
-        close = html.find('>', m.end())
+        close = html.find(">", m.end())
         if close == -1:
             continue
-        tag = html[start:close + 1]
+        tag = html[start : close + 1]
         if _DATA_SRC_RE.search(tag):
             parts.append(html[last:start])
             last = close + 1
             count += 1
     parts.append(html[last:])
-    return ''.join(parts), count
+    return "".join(parts), count
 
 
 def _strip_css_data_uris(html):
@@ -66,15 +66,15 @@ def _strip_css_data_uris(html):
         start = m.start()
         if start < last:
             continue
-        close = html.find(')', m.end())
+        close = html.find(")", m.end())
         if close == -1:
             continue
         parts.append(html[last:start])
-        parts.append('url()')
+        parts.append("url()")
         last = close + 1
         count += 1
     parts.append(html[last:])
-    return ''.join(parts), count
+    return "".join(parts), count
 
 
 def strip_base64_images(html):
@@ -91,7 +91,7 @@ def strip_base64_images(html):
         Tuple of ``(sanitized_html, count_removed)`` where *count_removed*
         is the total number of base64 occurrences that were stripped.
     """
-    if not html or 'data:' not in html:
+    if not html or "data:" not in html:
         return html, 0
 
     result, img_count = _strip_base64_img_tags(html)
@@ -113,7 +113,7 @@ def sanitize_html_comments(value):
     result = []
     i = 0
     while i < len(value):
-        start = value.find('<!--', i)
+        start = value.find("<!--", i)
         if start == -1:
             result.append(value[i:])
             break
@@ -122,8 +122,8 @@ def sanitize_html_comments(value):
         depth = 1
         pos = start + 4
         while depth > 0 and pos < len(value):
-            next_open = value.find('<!--', pos)
-            next_close = value.find('-->', pos)
+            next_open = value.find("<!--", pos)
+            next_close = value.find("-->", pos)
 
             if next_close == -1:
                 pos = len(value)
@@ -137,14 +137,14 @@ def sanitize_html_comments(value):
                 pos = next_close + 3
 
         raw_comment = value[start:pos]
-        terminated = raw_comment.endswith('-->')
+        terminated = raw_comment.endswith("-->")
         inner = raw_comment[4:-3] if terminated else raw_comment[4:]
-        inner_clean = inner.replace('<!--', '').replace('-->', '')
+        inner_clean = inner.replace("<!--", "").replace("-->", "")
         if terminated:
             # Well-formed comment: keep it, just strip any nested markers inside
-            result.append('<!--' + inner_clean + '-->')
+            result.append("<!--" + inner_clean + "-->")
         else:
             # Unterminated: drop the dangling '<!--'
             result.append(inner_clean)
         i = pos
-    return ''.join(result)
+    return "".join(result)

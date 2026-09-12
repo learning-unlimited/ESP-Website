@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2026 by the individual contributors
@@ -53,10 +53,10 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
-        kwargs.update({'num_teachers': 2})
+        kwargs.update({"num_teachers": 2})
         super().setUp(*args, **kwargs)
 
-        m = ProgramModule.objects.get(handler='TeacherBioModule', module_type='teach')
+        m = ProgramModule.objects.get(handler="TeacherBioModule", module_type="teach")
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
     # ------------------------------------------------------------------
@@ -73,6 +73,7 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
     def test_no_bio_is_incomplete(self):
         from esp.program.models import TeacherBio
+
         teacher = self.teachers[0]
         self._set_user(teacher)
 
@@ -81,7 +82,7 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
 
         self.assertFalse(
             self.moduleobj.isCompleted(),
-            "isCompleted() must be False when no TeacherBio record exists."
+            "isCompleted() must be False when no TeacherBio record exists.",
         )
 
     # ------------------------------------------------------------------
@@ -90,18 +91,23 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
     def test_bio_without_slugbio_is_complete(self):
         from esp.program.models import TeacherBio
+
         teacher = self.teachers[0]
         self._set_user(teacher)
 
         TeacherBio.objects.filter(user=teacher, program=self.program).delete()
-        bio = TeacherBio(user=teacher, program=self.program,
-                         bio="I love teaching physics.", slugbio="")
+        bio = TeacherBio(
+            user=teacher,
+            program=self.program,
+            bio="I love teaching physics.",
+            slugbio="",
+        )
         bio.save()
 
         self.assertTrue(
             self.moduleobj.isCompleted(),
             "isCompleted() must be True when bio text is present even if slugbio is empty "
-            "(regression for issue #2467)."
+            "(regression for issue #2467).",
         )
 
     # ------------------------------------------------------------------
@@ -109,17 +115,22 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
     def test_bio_with_slugbio_is_complete(self):
         from esp.program.models import TeacherBio
+
         teacher = self.teachers[1]
         self._set_user(teacher)
 
         TeacherBio.objects.filter(user=teacher, program=self.program).delete()
-        bio = TeacherBio(user=teacher, program=self.program,
-                         bio="I love teaching chemistry.", slugbio="Chem teacher")
+        bio = TeacherBio(
+            user=teacher,
+            program=self.program,
+            bio="I love teaching chemistry.",
+            slugbio="Chem teacher",
+        )
         bio.save()
 
         self.assertTrue(
             self.moduleobj.isCompleted(),
-            "isCompleted() must be True when both bio and slugbio are non-empty."
+            "isCompleted() must be True when both bio and slugbio are non-empty.",
         )
 
     # ------------------------------------------------------------------
@@ -128,15 +139,17 @@ class TeacherBioModuleTest(ProgramFrameworkTest):
     # ------------------------------------------------------------------
     def test_empty_bio_text_is_incomplete(self):
         from esp.program.models import TeacherBio
+
         teacher = self.teachers[0]
         self._set_user(teacher)
 
         TeacherBio.objects.filter(user=teacher, program=self.program).delete()
-        bio = TeacherBio(user=teacher, program=self.program,
-                         bio="", slugbio="Some tagline")
+        bio = TeacherBio(
+            user=teacher, program=self.program, bio="", slugbio="Some tagline"
+        )
         bio.save()
 
         self.assertFalse(
             self.moduleobj.isCompleted(),
-            "isCompleted() must be False when bio text is empty, even if the record has an id."
+            "isCompleted() must be False when bio text is empty, even if the record has an id.",
         )

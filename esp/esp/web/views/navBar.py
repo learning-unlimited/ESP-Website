@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,20 +34,21 @@ Learning Unlimited, Inc.
 
 from esp.web.models import NavBarCategory
 
+
 def makeNavBar(section=None, category=None, path=None):
     if not category:
         category = NavBarCategory.from_request(section, path)
 
-    navbars = list(category.get_navbars().order_by('sort_rank'))
-    navbar_context = [{'entry': x} for x in navbars]
+    navbars = list(category.get_navbars().order_by("sort_rank"))
+    navbar_context = [{"entry": x} for x in navbars]
     if navbars:
         next_sort_rank = navbars[-1].sort_rank + 10
     else:
         next_sort_rank = 0
-    context = { 'entries': navbar_context,
-                'section': section,
-                'category': category,
-                'next_sort_rank': next_sort_rank }
+    context = {
+        "entries": navbar_context,
+        "section": section,
+        "category": category,
+        "next_sort_rank": next_sort_rank,
+    }
     return context
-
-

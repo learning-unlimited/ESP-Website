@@ -1,10 +1,12 @@
-""" Some assistance for the property based display system.
-This will get more exciting when I figure out some more stuf. """
+"""Some assistance for the property based display system.
+This will get more exciting when I figure out some more stuf."""
+
 
 class FlatListItem:
     def __init__(self, k, v):
         self.key = k
         self.value = v
+
 
 class PropertyDict(dict):
     def merge(self, other_dict):
@@ -29,5 +31,3 @@ class PropertyDict(dict):
             new_item = FlatListItem(key, self[key])
             result.append(new_item)
         return result
-
-

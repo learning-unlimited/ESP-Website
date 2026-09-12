@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -46,10 +45,11 @@ import hashlib
 import errno
 from os.path import join
 
-DEFAULT_ORIGIN = 'esp.utils.template cached loader'
+DEFAULT_ORIGIN = "esp.utils.template cached loader"
 
-INVALID_CONTENTS = b''
+INVALID_CONTENTS = b""
 INVALID_HASH = hashlib.sha256(INVALID_CONTENTS).hexdigest()
+
 
 class Loader(base.Loader):
     def __init__(self, engine, *args, **kwargs):
@@ -63,19 +63,21 @@ class Loader(base.Loader):
         contain bound methods.  So, we keep the hash of the template contents in memcached
         and the Template object itself in a local dictionary.
     """
+
     @cache_function
     def get_template_hash(template_name):
         contents = Loader.get_override_contents(template_name)
         return hashlib.sha256(contents.encode("UTF-8")).hexdigest()
-    get_template_hash.depend_on_model('utils.TemplateOverride')
+
+    get_template_hash.depend_on_model("utils.TemplateOverride")
     get_template_hash = staticmethod(get_template_hash)
 
     @staticmethod
     def get_override_contents(template_name):
         qs = TemplateOverride.objects.filter(name=template_name)
         if qs.exists():
-            return qs.order_by('-version').values_list('content', flat=True)[0]
-        return ''
+            return qs.order_by("-version").values_list("content", flat=True)[0]
+        return ""
 
     def get_contents(self, origin):
         # hack for the debug toolbar
@@ -85,26 +87,30 @@ class Loader(base.Loader):
             template_name = origin.name
         hash_val = Loader.get_template_hash(template_name)
         if hash_val == INVALID_HASH:
-            raise TemplateDoesNotExist('Template override not found')
+            raise TemplateDoesNotExist("Template override not found")
         if hash_val not in self.cache:
-            template = Template(Loader.get_override_contents(template_name), None, template_name)
+            template = Template(
+                Loader.get_override_contents(template_name), None, template_name
+            )
             self.cache[hash_val] = Loader.get_override_contents(template_name)
         return self.cache[hash_val]
 
     def get_template_sources(self, template_name):
         origin = Origin(
-                name="(template override)",
-                template_name=template_name,
-                loader=self,
-            )
+            name="(template override)",
+            template_name=template_name,
+            loader=self,
+        )
         return [origin]
+
 
 class ThemeLoader(base.Loader):
     # modified from https://github.com/learning-unlimited/django-admin-tools/blob/master/admin_tools/template_loaders.py
     def get_template_sources(self, template_name):
         from esp.themes.controllers import ThemeController
+
         tc = ThemeController()
-        template_dir = join(tc.base_dir(tc.get_current_theme()), 'templates')
+        template_dir = join(tc.base_dir(tc.get_current_theme()), "templates")
         try:
             origin = Origin(
                 name=join(template_dir, template_name),

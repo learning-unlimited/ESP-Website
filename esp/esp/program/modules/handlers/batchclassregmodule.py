@@ -1,9 +1,9 @@
-
 from __future__ import absolute_import
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2024 by the individual contributors
@@ -34,7 +34,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_REGISTRATION,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, PersistentQueryFilter
@@ -46,6 +49,7 @@ from django.db import transaction
 from django.db.models import Prefetch
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,7 +85,7 @@ class BatchClassRegModule(ProgramModuleObj):
     def batchclassreg(self, request, tl, one, two, module, extra, prog):
         usc = UserSearchController()
         context = {}
-        context['program'] = prog
+        context["program"] = prog
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
@@ -89,62 +93,66 @@ class BatchClassRegModule(ProgramModuleObj):
                 filterObj = usc.filter_from_postdata(prog, data)
             except (ESPError_Log, ESPError_NoLog) as e:
                 context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+                context["error"] = str(e)
+                return render_to_response(
+                    self.baseDir() + "search.html", request, context
+                )
 
-            context['filterid'] = filterObj.id
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            context['sections_by_subject'] = self.get_sections_for_program(prog)
+            context["filterid"] = filterObj.id
+            context["num_users"] = (
+                ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            )
+            context["sections_by_subject"] = self.get_sections_for_program(prog)
 
-            return render_to_response(self.baseDir()+'options.html', request, context)
+            return render_to_response(self.baseDir() + "options.html", request, context)
 
         context.update(usc.prepare_context(prog, target_path=request.path))
-        return render_to_response(self.baseDir()+'search.html', request, context)
+        return render_to_response(self.baseDir() + "search.html", request, context)
 
     @aux_call
     @needs_admin
     def batchclassregfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('Filter and/or section has not been properly set')
+        if request.method != "POST" or "filterid" not in request.GET:
+            raise ESPError()("Filter and/or section has not been properly set")
 
-        section_id = request.POST.get('section_id', '')
+        section_id = request.POST.get("section_id", "")
         if not section_id:
-            raise ESPError()('No class section was selected')
+            raise ESPError()("No class section was selected")
 
         try:
             section = ClassSection.objects.get(
-                id=int(section_id),
-                parent_class__parent_program=prog
+                id=int(section_id), parent_class__parent_program=prog
             )
         except (ClassSection.DoesNotExist, ValueError):
-            raise ESPError()('Invalid class section selected')
+            raise ESPError()("Invalid class section selected")
 
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
-        override_full = 'override_full' in request.POST
+        filterObj = PersistentQueryFilter.objects.get(id=request.GET["filterid"])
+        override_full = "override_full" in request.POST
 
         result = self.batch_register(filterObj, section, override_full)
 
         context = {
-            'section': section,
-            'program': prog,
-            'results': result['results'],
-            'success_count': result['success_count'],
-            'fail_count': result['fail_count'],
-            'skip_count': result['skip_count'],
-            'total': result['total'],
+            "section": section,
+            "program": prog,
+            "results": result["results"],
+            "success_count": result["success_count"],
+            "fail_count": result["fail_count"],
+            "skip_count": result["skip_count"],
+            "total": result["total"],
         }
-        return render_to_response(self.baseDir()+'finished.html', request, context)
+        return render_to_response(self.baseDir() + "finished.html", request, context)
 
     @staticmethod
     def get_sections_for_program(prog):
         accepted_sections = ClassSection.objects.filter(
             status__gte=ClassStatus.ACCEPTED
-        ).order_by('id')
-        subjects = ClassSubject.objects.filter(
-            parent_program=prog,
-            status__gte=ClassStatus.ACCEPTED
-        ).order_by('category__symbol', 'id').prefetch_related(
-            Prefetch('sections', queryset=accepted_sections)
+        ).order_by("id")
+        subjects = (
+            ClassSubject.objects.filter(
+                parent_program=prog, status__gte=ClassStatus.ACCEPTED
+            )
+            .order_by("category__symbol", "id")
+            .prefetch_related(Prefetch("sections", queryset=accepted_sections))
         )
 
         result = []
@@ -157,24 +165,28 @@ class BatchClassRegModule(ProgramModuleObj):
                 except Exception:
                     cap = section.max_class_capacity or 0
                     is_full = section.num_students() >= cap if cap else False
-                section_list.append({
-                    'section': section,
-                    'id': section.id,
-                    'emailcode': section.emailcode(),
-                    'title': section.title(),
-                    'friendly_times': ', '.join(section.friendly_times()),
-                    'num_students': section.num_students(),
-                    'capacity': cap,
-                    'is_full': is_full,
-                    'rooms': ', '.join(section.prettyrooms()),
-                })
+                section_list.append(
+                    {
+                        "section": section,
+                        "id": section.id,
+                        "emailcode": section.emailcode(),
+                        "title": section.title(),
+                        "friendly_times": ", ".join(section.friendly_times()),
+                        "num_students": section.num_students(),
+                        "capacity": cap,
+                        "is_full": is_full,
+                        "rooms": ", ".join(section.prettyrooms()),
+                    }
+                )
             if section_list:
-                result.append({
-                    'subject': subject,
-                    'emailcode': subject.emailcode(),
-                    'title': subject.title,
-                    'sections': section_list,
-                })
+                result.append(
+                    {
+                        "subject": subject,
+                        "emailcode": subject.emailcode(),
+                        "title": subject.title,
+                        "sections": section_list,
+                    }
+                )
         return result
 
     @staticmethod
@@ -198,13 +210,13 @@ class BatchClassRegModule(ProgramModuleObj):
         results = []
 
         # Hoist out of loop — same for every user
-        section_times = set(section.meeting_times.values_list('id', flat=True))
+        section_times = set(section.meeting_times.values_list("id", flat=True))
 
         # Process in chunks to avoid WSGI timeout rolling back everything.
         # Each chunk commits independently so partial progress is preserved.
         CHUNK_SIZE = 50
         for chunk_start in range(0, len(user_list), CHUNK_SIZE):
-            chunk = user_list[chunk_start:chunk_start + CHUNK_SIZE]
+            chunk = user_list[chunk_start : chunk_start + CHUNK_SIZE]
             with transaction.atomic():
                 for user in chunk:
                     already_enrolled = user.getEnrolledSections(program=program)
@@ -212,33 +224,41 @@ class BatchClassRegModule(ProgramModuleObj):
                         s.id == section.id for s in already_enrolled
                     )
                     if already_in_section:
-                        results.append({
-                            'status': 'skip',
-                            'name': user.name(),
-                            'user_id': user.id,
-                            'detail': 'Already registered in this section',
-                        })
+                        results.append(
+                            {
+                                "status": "skip",
+                                "name": user.name(),
+                                "user_id": user.id,
+                                "detail": "Already registered in this section",
+                            }
+                        )
                         skip_count += 1
                         continue
 
                     conflict_sections = []
                     for enrolled_sec in already_enrolled:
                         enrolled_times = set(
-                            getattr(enrolled_sec, '_timeslot_ids', enrolled_sec.timeslot_ids())
+                            getattr(
+                                enrolled_sec,
+                                "_timeslot_ids",
+                                enrolled_sec.timeslot_ids(),
+                            )
                         )
                         if section_times & enrolled_times:
                             conflict_sections.append(enrolled_sec)
 
                     if conflict_sections:
-                        conflict_names = ', '.join(
+                        conflict_names = ", ".join(
                             s.emailcode() for s in conflict_sections
                         )
-                        results.append({
-                            'status': 'conflict',
-                            'name': user.name(),
-                            'user_id': user.id,
-                            'detail': 'Time conflict with %s' % conflict_names,
-                        })
+                        results.append(
+                            {
+                                "status": "conflict",
+                                "name": user.name(),
+                                "user_id": user.id,
+                                "detail": "Time conflict with %s" % conflict_names,
+                            }
+                        )
                         fail_count += 1
                         continue
 
@@ -246,35 +266,43 @@ class BatchClassRegModule(ProgramModuleObj):
                         user, overridefull=override_full
                     )
                     if reg_result:
-                        results.append({
-                            'status': 'ok',
-                            'name': user.name(),
-                            'user_id': user.id,
-                            'detail': 'Successfully registered',
-                        })
+                        results.append(
+                            {
+                                "status": "ok",
+                                "name": user.name(),
+                                "user_id": user.id,
+                                "detail": "Successfully registered",
+                            }
+                        )
                         success_count += 1
                     else:
-                        results.append({
-                            'status': 'full',
-                            'name': user.name(),
-                            'user_id': user.id,
-                            'detail': 'Section is full',
-                        })
+                        results.append(
+                            {
+                                "status": "full",
+                                "name": user.name(),
+                                "user_id": user.id,
+                                "detail": "Section is full",
+                            }
+                        )
                         fail_count += 1
 
         logger.info(
             "Batch class registration: %d users -> section %s (ID %d): "
             "%d ok, %d fail, %d skip",
-            len(user_list), section.emailcode(), section.id,
-            success_count, fail_count, skip_count
+            len(user_list),
+            section.emailcode(),
+            section.id,
+            success_count,
+            fail_count,
+            skip_count,
         )
 
         return {
-            'total': len(user_list),
-            'success_count': success_count,
-            'fail_count': fail_count,
-            'skip_count': skip_count,
-            'results': results,
+            "total": len(user_list),
+            "success_count": success_count,
+            "fail_count": fail_count,
+            "skip_count": skip_count,
+            "results": results,
         }
 
     def isStep(self):
@@ -282,4 +310,4 @@ class BatchClassRegModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

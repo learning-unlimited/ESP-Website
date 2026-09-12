@@ -57,24 +57,21 @@ class MuxTlTest(TestCase):
     """Tests for mux_tl filter — swaps the top-level segment of a URL."""
 
     def test_learn_swapped(self):
-        self.assertEqual(mux_tl("/learn/foo/bar/index.html", "teach"),
-                         "/teach/foo/bar/index.html")
+        self.assertEqual(
+            mux_tl("/learn/foo/bar/index.html", "teach"), "/teach/foo/bar/index.html"
+        )
 
     def test_teach_swapped(self):
-        self.assertEqual(mux_tl("/teach/foo/bar", "learn"),
-                         "/learn/foo/bar")
+        self.assertEqual(mux_tl("/teach/foo/bar", "learn"), "/learn/foo/bar")
 
     def test_manage_swapped(self):
-        self.assertEqual(mux_tl("/manage/prog/inst", "onsite"),
-                         "/onsite/prog/inst")
+        self.assertEqual(mux_tl("/manage/prog/inst", "onsite"), "/onsite/prog/inst")
 
     def test_onsite_swapped(self):
-        self.assertEqual(mux_tl("/onsite/prog/inst", "manage"),
-                         "/manage/prog/inst")
+        self.assertEqual(mux_tl("/onsite/prog/inst", "manage"), "/manage/prog/inst")
 
     def test_volunteer_swapped(self):
-        self.assertEqual(mux_tl("/volunteer/prog/inst", "learn"),
-                         "/learn/prog/inst")
+        self.assertEqual(mux_tl("/volunteer/prog/inst", "learn"), "/learn/prog/inst")
 
     def test_non_tl_url_returned_unchanged(self):
         self.assertEqual(mux_tl("/contact/us", "teach"), "/contact/us")
@@ -215,11 +212,13 @@ class GetFieldFilterTest(TestCase):
     def test_returns_attribute(self):
         class Obj:
             name = "ESP"
+
         self.assertEqual(get_field(Obj(), "name"), "ESP")
 
     def test_returns_attribute_value(self):
         class Obj:
             value = 42
+
         self.assertEqual(get_field(Obj(), "value"), 42)
 
 

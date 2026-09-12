@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -36,17 +35,23 @@ Learning Unlimited, Inc.
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+
 class FileUploadForm(forms.Form):
-    title = forms.CharField(widget = forms.TextInput({'size': 50}))
-    uploadedfile = forms.FileField(label = 'Upload File')
+    title = forms.CharField(widget=forms.TextInput({"size": 50}))
+    uploadedfile = forms.FileField(label="Upload File")
+
 
 class FileUploadForm_Admin(forms.Form):
-    title = forms.CharField(widget = forms.TextInput({'size': 50}))
+    title = forms.CharField(widget=forms.TextInput({"size": 50}))
     target_obj = forms.ChoiceField()
-    uploadedfile = forms.FileField(label = 'Upload File')
+    uploadedfile = forms.FileField(label="Upload File")
 
     def set_choices(self, new_choices):
-        self.fields['target_obj'] = forms.ChoiceField(choices = new_choices)
+        self.fields["target_obj"] = forms.ChoiceField(choices=new_choices)
+
 
 class FileRenameForm(forms.Form):
-    title = forms.CharField(widget = forms.TextInput({'size': 15, 'style': 'vertical-align: baseline'}), label = 'Rename')
+    title = forms.CharField(
+        widget=forms.TextInput({"size": 15, "style": "vertical-align: baseline"}),
+        label="Rename",
+    )

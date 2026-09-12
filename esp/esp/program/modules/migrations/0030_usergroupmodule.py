@@ -5,20 +5,18 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0029_auto_20210616_0945'),
+        ("modules", "0029_auto_20210616_0945"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserGroupModule',
-            fields=[
-            ],
+            name="UserGroupModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

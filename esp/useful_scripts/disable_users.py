@@ -3,10 +3,12 @@
 
 from script_setup import *
 
+
 def yn(prompt):
-    print(prompt, end=' ')
+    print(prompt, end=" ")
     r = input()
-    return r.strip().lower() == 'y'
+    return r.strip().lower() == "y"
+
 
 def deactivate(email):
     users = ESPUser.objects.filter(email__iexact=email)
@@ -23,11 +25,15 @@ def deactivate(email):
 
     for user in users:
         if not user.is_active:
-            print("%s (%s) <%s> is already deactivated" % (user.name(), user.username, user.email))
+            print(
+                "%s (%s) <%s> is already deactivated"
+                % (user.name(), user.username, user.email)
+            )
             continue
         user.is_active = False
         user.save()
         print("%s (%s) <%s> deactivated!" % (user.name(), user.username, user.email))
+
 
 def main():
     print("Enter a list of email addresses, one per line.")
@@ -42,5 +48,6 @@ def main():
         deactivate(e)
     print("Done!")
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

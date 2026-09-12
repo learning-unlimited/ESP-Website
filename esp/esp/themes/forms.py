@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -40,27 +40,31 @@ from django import forms
 
 import json
 
+
 class ThemeConfigurationForm(forms.Form):
     theme = forms.CharField(widget=forms.HiddenInput)
-    just_selected = forms.BooleanField(widget=forms.HiddenInput, initial=False, required=False)
-
+    just_selected = forms.BooleanField(
+        widget=forms.HiddenInput, initial=False, required=False
+    )
 
     def __init__(self, *args, **kwargs):
         super(ThemeConfigurationForm, self).__init__(*args, **kwargs)
 
         # Move toolbar_links to the end of the form
-        toolbar_links = self.fields.pop('toolbar_links')
-        self.fields['toolbar_links'] = toolbar_links
+        toolbar_links = self.fields.pop("toolbar_links")
+        self.fields["toolbar_links"] = toolbar_links
 
         # Make toolbar_links tolerant of invalid/missing JSON, given required=False
-        widget = self.fields['toolbar_links'].widget
+        widget = self.fields["toolbar_links"].widget
         original_vfd = widget.value_from_datadict
+
         def safe_value_from_datadict(data, files, name, _orig=original_vfd):
             try:
                 return _orig(data, files, name)
             except (TypeError, ValueError, KeyError):
                 # On invalid or missing input, treat as empty list
                 return []
+
         widget.value_from_datadict = safe_value_from_datadict
 
     def prepare_for_serialization(self, data):
@@ -76,14 +80,14 @@ class ThemeConfigurationForm(forms.Form):
 
     @classmethod
     def load_from_tag(cls, theme_name=None, just_selected=False):
-        data = json.loads(Tag.getTag('theme_template_control'))
+        data = json.loads(Tag.getTag("theme_template_control"))
         if theme_name is None:
             tc = ThemeController()
             theme_name = tc.get_current_theme()
-        data['theme'] = theme_name
+        data["theme"] = theme_name
         form_temp = cls(initial=data)
         data = form_temp.recover_from_serialization(data)
-        data['just_selected'] = just_selected
+        data["just_selected"] = just_selected
         form = cls(initial=data)
         return form
 
@@ -98,6 +102,6 @@ class ThemeConfigurationForm(forms.Form):
     toolbar_links = forms.Field(
         required=False,
         widget=ContactFieldsWidget,
-        label='Extra admin toolbar links (use absolute or relative URLs)',
-        initial=[]
+        label="Extra admin toolbar links (use absolute or relative URLs)",
+        initial=[],
     )

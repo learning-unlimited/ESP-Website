@@ -5,50 +5,69 @@ import phonenumber_field.modelfields
 import phonenumbers
 from django.conf import settings
 
+
 def convert_phone_numbers(apps, schema_editor):
-    ContactInfo = apps.get_model('users', 'ContactInfo')
+    ContactInfo = apps.get_model("users", "ContactInfo")
     for contact_info in ContactInfo.objects.all():
         if contact_info.phone_cell:
             try:
-                parsed = phonenumbers.parse(contact_info.phone_cell, settings.PHONENUMBER_DEFAULT_REGION)
-                contact_info.phone_cell = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                parsed = phonenumbers.parse(
+                    contact_info.phone_cell, settings.PHONENUMBER_DEFAULT_REGION
+                )
+                contact_info.phone_cell = phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                )
             except phonenumbers.NumberParseException:
                 pass
         if contact_info.phone_day:
             try:
-                parsed = phonenumbers.parse(contact_info.phone_day, settings.PHONENUMBER_DEFAULT_REGION)
-                contact_info.phone_day = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                parsed = phonenumbers.parse(
+                    contact_info.phone_day, settings.PHONENUMBER_DEFAULT_REGION
+                )
+                contact_info.phone_day = phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                )
             except phonenumbers.NumberParseException:
                 pass
         if contact_info.phone_even:
             try:
-                parsed = phonenumbers.parse(contact_info.phone_even, settings.PHONENUMBER_DEFAULT_REGION)
-                contact_info.phone_even = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+                parsed = phonenumbers.parse(
+                    contact_info.phone_even, settings.PHONENUMBER_DEFAULT_REGION
+                )
+                contact_info.phone_even = phonenumbers.format_number(
+                    parsed, phonenumbers.PhoneNumberFormat.E164
+                )
             except phonenumbers.NumberParseException:
                 pass
         contact_info.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('users', '0038_auto_20240509_2341'),
+        ("users", "0038_auto_20240509_2341"),
     ]
 
     operations = [
         migrations.RunPython(convert_phone_numbers, migrations.RunPython.noop),
         migrations.AlterField(
-            model_name='contactinfo',
-            name='phone_cell',
-            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, verbose_name='Cell phone'),
+            model_name="contactinfo",
+            name="phone_cell",
+            field=phonenumber_field.modelfields.PhoneNumberField(
+                blank=True, max_length=128, null=True, verbose_name="Cell phone"
+            ),
         ),
         migrations.AlterField(
-            model_name='contactinfo',
-            name='phone_day',
-            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, verbose_name='Home phone'),
+            model_name="contactinfo",
+            name="phone_day",
+            field=phonenumber_field.modelfields.PhoneNumberField(
+                blank=True, max_length=128, null=True, verbose_name="Home phone"
+            ),
         ),
         migrations.AlterField(
-            model_name='contactinfo',
-            name='phone_even',
-            field=phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, verbose_name='Alternate phone'),
+            model_name="contactinfo",
+            name="phone_even",
+            field=phonenumber_field.modelfields.PhoneNumberField(
+                blank=True, max_length=128, null=True, verbose_name="Alternate phone"
+            ),
         ),
     ]

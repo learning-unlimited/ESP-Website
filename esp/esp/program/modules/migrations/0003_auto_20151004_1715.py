@@ -6,585 +6,526 @@ import esp.program.modules.base
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0001_initial'),
-        ('modules', '0002_auto_20151004_1715'),
-        ('users', '0001_initial'),
+        ("program", "0001_initial"),
+        ("modules", "0002_auto_20151004_1715"),
+        ("users", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ajaxchangelogentry',
-            name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, to='users.ESPUser', null=True, on_delete=models.CASCADE),
+            model_name="ajaxchangelogentry",
+            name="user",
+            field=esp.db.fields.AjaxForeignKey(
+                blank=True, to="users.ESPUser", null=True, on_delete=models.CASCADE
+            ),
         ),
         migrations.AddField(
-            model_name='ajaxchangelog',
-            name='entries',
-            field=models.ManyToManyField(to='modules.AJAXChangeLogEntry'),
+            model_name="ajaxchangelog",
+            name="entries",
+            field=models.ManyToManyField(to="modules.AJAXChangeLogEntry"),
         ),
         migrations.AddField(
-            model_name='ajaxchangelog',
-            name='program',
-            field=esp.db.fields.AjaxForeignKey(to='program.Program', on_delete=models.CASCADE),
+            model_name="ajaxchangelog",
+            name="program",
+            field=esp.db.fields.AjaxForeignKey(
+                to="program.Program", on_delete=models.CASCADE
+            ),
         ),
         migrations.CreateModel(
-            name='AdminClass',
-            fields=[
-            ],
+            name="AdminClass",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AdminCore',
-            fields=[
-            ],
+            name="AdminCore",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
         migrations.CreateModel(
-            name='AdminMaterials',
-            fields=[
-            ],
+            name="AdminMaterials",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AdminMorph',
-            fields=[
-            ],
+            name="AdminMorph",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AdminReviewApps',
-            fields=[
-            ],
+            name="AdminReviewApps",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AdminVitals',
-            fields=[
-            ],
+            name="AdminVitals",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AdmissionsDashboard',
-            fields=[
-            ],
+            name="AdmissionsDashboard",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AJAXSchedulingModule',
-            fields=[
-            ],
+            name="AJAXSchedulingModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AvailabilityModule',
-            fields=[
-            ],
+            name="AvailabilityModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='BigBoardModule',
-            fields=[
-            ],
+            name="BigBoardModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CheckListModule',
-            fields=[
-            ],
+            name="CheckListModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='ClassChangeRequestModule',
-            fields=[
-            ],
+            name="ClassChangeRequestModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='ClassFlagModule',
-            fields=[
-            ],
+            name="ClassFlagModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='ClassSearchModule',
-            fields=[
-            ],
+            name="ClassSearchModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CommModule',
-            fields=[
-            ],
+            name="CommModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CreditCardModule_Cybersource',
-            fields=[
-            ],
+            name="CreditCardModule_Cybersource",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CreditCardModule_Stripe',
-            fields=[
-            ],
+            name="CreditCardModule_Stripe",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CreditCardViewer_Cybersource',
-            fields=[
-            ],
+            name="CreditCardViewer_Cybersource",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='CustomFormModule',
-            fields=[
-            ],
+            name="CustomFormModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='DonationModule',
-            fields=[
-            ],
+            name="DonationModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='FinancialAidAppModule',
-            fields=[
-            ],
+            name="FinancialAidAppModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='FormstackAppModule',
-            fields=[
-            ],
+            name="FormstackAppModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='FormstackMedliabModule',
-            fields=[
-            ],
+            name="FormstackMedliabModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='GroupTextModule',
-            fields=[
-            ],
+            name="GroupTextModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='JSONDataModule',
-            fields=[
-            ],
+            name="JSONDataModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
         migrations.CreateModel(
-            name='ListGenModule',
-            fields=[
-            ],
+            name="ListGenModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='LotteryStudentRegModule',
-            fields=[
-            ],
+            name="LotteryStudentRegModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='MailingLabels',
-            fields=[
-            ],
+            name="MailingLabels",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='NameTagModule',
-            fields=[
-            ],
+            name="NameTagModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnSiteCheckinModule',
-            fields=[
-            ],
+            name="OnSiteCheckinModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnSiteClassList',
-            fields=[
-            ],
+            name="OnSiteClassList",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnsiteClassSchedule',
-            fields=[
-            ],
+            name="OnsiteClassSchedule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnsiteCore',
-            fields=[
-            ],
+            name="OnsiteCore",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
         migrations.CreateModel(
-            name='OnsitePaidItemsModule',
-            fields=[
-            ],
+            name="OnsitePaidItemsModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnsitePrintSchedules',
-            fields=[
-            ],
+            name="OnsitePrintSchedules",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='OnSiteRegister',
-            fields=[
-            ],
+            name="OnSiteRegister",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='ProgramPrintables',
-            fields=[
-            ],
+            name="ProgramPrintables",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='RegProfileModule',
-            fields=[
-            ],
+            name="RegProfileModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='ResourceModule',
-            fields=[
-            ],
+            name="ResourceModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='SchedulingCheckModule',
-            fields=[
-            ],
+            name="SchedulingCheckModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='SplashInfoModule',
-            fields=[
-            ],
+            name="SplashInfoModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentClassRegModule',
-            fields=[
-            ],
+            name="StudentClassRegModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentExtraCosts',
-            fields=[
-            ],
+            name="StudentExtraCosts",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentJunctionAppModule',
-            fields=[
-            ],
+            name="StudentJunctionAppModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentLunchSelection',
-            fields=[
-            ],
+            name="StudentLunchSelection",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentRegConfirm',
-            fields=[
-            ],
+            name="StudentRegConfirm",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentRegCore',
-            fields=[
-            ],
+            name="StudentRegCore",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
         migrations.CreateModel(
-            name='StudentRegTwoPhase',
-            fields=[
-            ],
+            name="StudentRegTwoPhase",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='SurveyManagement',
-            fields=[
-            ],
+            name="SurveyManagement",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='SurveyModule',
-            fields=[
-            ],
+            name="SurveyModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherAcknowledgementModule',
-            fields=[
-            ],
+            name="TeacherAcknowledgementModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherBioModule',
-            fields=[
-            ],
+            name="TeacherBioModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherCheckinModule',
-            fields=[
-            ],
+            name="TeacherCheckinModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherClassRegModule',
-            fields=[
-            ],
+            name="TeacherClassRegModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherEventsModule',
-            fields=[
-            ],
+            name="TeacherEventsModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherPreviewModule',
-            fields=[
-            ],
+            name="TeacherPreviewModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherQuizModule',
-            fields=[
-            ],
+            name="TeacherQuizModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherRegCore',
-            fields=[
-            ],
+            name="TeacherRegCore",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
         migrations.CreateModel(
-            name='TeacherReviewApps',
-            fields=[
-            ],
+            name="TeacherReviewApps",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TextMessageModule',
-            fields=[
-            ],
+            name="TextMessageModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='VolunteerManage',
-            fields=[
-            ],
+            name="VolunteerManage",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='VolunteerSignup',
-            fields=[
-            ],
+            name="VolunteerSignup",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
     ]

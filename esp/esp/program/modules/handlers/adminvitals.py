@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -34,8 +33,10 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj
 
+
 class KeyDoesNotExist(Exception):
     pass
+
 
 class AdminVitals(ProgramModuleObj):
     doc = """This allows you to view the major numbers for your program on the dashboard."""
@@ -49,7 +50,7 @@ class AdminVitals(ProgramModuleObj):
             "inline_template": "vitals.html",
             "seq": -2,
             "choosable": 1,
-            }
+        }
 
     def prepare(self, context=None):
         return context
@@ -59,4 +60,4 @@ class AdminVitals(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

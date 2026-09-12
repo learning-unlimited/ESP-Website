@@ -4,22 +4,24 @@
 from django.db import migrations
 from bleach import clean
 
+
 def clean_qsds(apps, schema_editor):
-    QuasiStaticData = apps.get_model('qsd', 'QuasiStaticData')
+    QuasiStaticData = apps.get_model("qsd", "QuasiStaticData")
     # get only qsds associated with teacher-made class web pages
     qsds = QuasiStaticData.objects.filter(url__regex=r"learn/.+/.+/Classes/\w+\d+/")
     for qsd in qsds:
-        qsd.content = clean(qsd.content, strip = True)
+        qsd.content = clean(qsd.content, strip=True)
         qsd.save()
+
 
 def reverse_func(apps, schema_editor):
     # not sure how to undo stripping the HTML tags, so just skip this
     return
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('qsd', '0003_auto_20151108_1613'),
+        ("qsd", "0003_auto_20151108_1613"),
     ]
 
     operations = [

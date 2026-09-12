@@ -1,5 +1,5 @@
-
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
@@ -7,6 +7,7 @@ from django.db.utils import DatabaseError, ProgrammingError
 from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from esp.program.models import Program
+
 
 class Form(models.Model):
     title = models.CharField(max_length=40, blank=False)
@@ -21,27 +22,29 @@ class Form(models.Model):
     success_url = models.CharField(max_length=200, blank=True)
 
     def __str__(self):
-        return f'{self.title} (created by {self.created_by.username})'
+        return f"{self.title} (created by {self.created_by.username})"
 
     def clean(self):
         """Validate that title is not empty or whitespace-only."""
         if not self.title or not self.title.strip():
-            raise ValidationError('Form Name/Title is required and cannot be empty.')
+            raise ValidationError("Form Name/Title is required and cannot be empty.")
 
     def save(self, *args, **kwargs):
         """Run clean() before saving to enforce validation at all code paths."""
         self.clean()
         super().save(*args, **kwargs)
 
+
 class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
 
     class Meta:
-        ordering = ['seq']
+        ordering = ["seq"]
 
     def __str__(self):
-        return f'Page {self.seq} of {self.form.title}'
+        return f"Page {self.seq} of {self.form.title}"
+
 
 class Section(models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE)
@@ -50,10 +53,11 @@ class Section(models.Model):
     seq = models.IntegerField()
 
     class Meta:
-        ordering = ['seq']
+        ordering = ["seq"]
 
     def __str__(self):
-        return f'Sec. {self.seq}: {self.title}'
+        return f"Sec. {self.seq}: {self.title}"
+
 
 class Field(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
@@ -65,13 +69,14 @@ class Field(models.Model):
     required = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['seq']
+        ordering = ["seq"]
 
     def __str__(self):
-        return f'{self.label}'
+        return f"{self.label}"
 
     def set_attribute(self, atype, value):
         from esp.customforms.models import Attribute
+
         if Attribute.objects.filter(field=self, attr_type=atype).exists():
             attr = Attribute.objects.get(field=self, attr_type=atype)
             attr.value = value
@@ -82,23 +87,28 @@ class Field(models.Model):
 
     def clean_attributes(self, keep):
         from esp.customforms.models import Attribute
+
         Attribute.objects.filter(field=self).exclude(attr_type__in=keep).delete()
+
 
 class Attribute(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE)
     attr_type = models.CharField(max_length=80)
     value = models.TextField()
 
+
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *
+
 
 def install():
     logger.info("Creating customforms schema...")
     cursor = connection.cursor()
     create_schema(cursor)
 
+
 def create_schema(db):
-    """ Create customforms schema.
+    """Create customforms schema.
 
     :param db:
         The database backend you want to use (e.g. Django cursor object, or south.db.db).

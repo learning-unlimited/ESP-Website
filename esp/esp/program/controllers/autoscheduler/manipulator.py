@@ -3,8 +3,7 @@
 import logging
 
 from esp.program.controllers.autoscheduler.scoring import CompositeScorer
-from esp.program.controllers.autoscheduler.constraints import \
-    CompositeConstraint
+from esp.program.controllers.autoscheduler.constraints import CompositeConstraint
 from esp.program.controllers.autoscheduler import util
 
 logger = logging.getLogger(__name__)
@@ -14,16 +13,26 @@ class ScheduleManipulator:
     """Class which stores a schedule and contains functions for modifying it
     subject to a particular set of constraints. Can optionally hold a scorer to
     keep updated."""
-    def __init__(self, schedule, constraint_names=None, constraint_kwargs={},
-                 scorer_names_and_weights={}, scorer_kwargs={}):
+
+    def __init__(
+        self,
+        schedule,
+        constraint_names=None,
+        constraint_kwargs={},
+        scorer_names_and_weights={},
+        scorer_kwargs={},
+    ):
         """Initializes with the given schedule, and uses given constraint names
         and scorer names and weights (if provided)."""
         self.schedule = schedule
-        self.constraints = CompositeConstraint(
-                constraint_names, **constraint_kwargs) \
-            if constraint_names is not None else schedule.constraints
+        self.constraints = (
+            CompositeConstraint(constraint_names, **constraint_kwargs)
+            if constraint_names is not None
+            else schedule.constraints
+        )
         self.scorer = CompositeScorer(
-                scorer_names_and_weights, schedule, **scorer_kwargs)
+            scorer_names_and_weights, schedule, **scorer_kwargs
+        )
 
         # History of actions taken. Also contains enough additional information
         # for actions to be undone. Each record is a dict containing an
@@ -44,18 +53,22 @@ class ScheduleManipulator:
                 return False
 
             if self.constraints.check_schedule_section(
-                    section, start_roomslot, self.schedule):
+                section, start_roomslot, self.schedule
+            ):
                 return False
 
-        self.history.append({
-            "action": "schedule",
-            "section": section,
-            "start_roomslot": start_roomslot,
-        })
+        self.history.append(
+            {
+                "action": "schedule",
+                "section": section,
+                "start_roomslot": start_roomslot,
+            }
+        )
 
         self.scorer.update_schedule_section(section, start_roomslot)
         roomslots_to_use = start_roomslot.room.get_roomslots_by_duration(
-                start_roomslot, section.duration)
+            start_roomslot, section.duration
+        )
         section.assign_roomslots(roomslots_to_use)
         return True
 
@@ -69,19 +82,23 @@ class ScheduleManipulator:
                 return False
 
             if self.constraints.check_move_section(
-                    section, start_roomslot, self.schedule):
+                section, start_roomslot, self.schedule
+            ):
                 return False
 
-        self.history.append({
-            "action": "move",
-            "section": section,
-            "start_roomslot": start_roomslot,
-            "prev_start_roomslot": section.assigned_roomslots[0],
-        })
+        self.history.append(
+            {
+                "action": "move",
+                "section": section,
+                "start_roomslot": start_roomslot,
+                "prev_start_roomslot": section.assigned_roomslots[0],
+            }
+        )
         self.scorer.update_move_section(section, start_roomslot)
         section.clear_roomslots()
         roomslots_to_use = start_roomslot.room.get_roomslots_by_duration(
-                start_roomslot, section.duration)
+            start_roomslot, section.duration
+        )
         section.assign_roomslots(roomslots_to_use)
         return True
 
@@ -93,15 +110,16 @@ class ScheduleManipulator:
             if not section.is_scheduled():
                 return False
 
-            if self.constraints.check_unschedule_section(
-                    section, self.schedule):
+            if self.constraints.check_unschedule_section(section, self.schedule):
                 return False
 
-        self.history.append({
-            "action": "unschedule",
-            "section": section,
-            "prev_start_roomslot": section.assigned_roomslots[0],
-        })
+        self.history.append(
+            {
+                "action": "unschedule",
+                "section": section,
+                "prev_start_roomslot": section.assigned_roomslots[0],
+            }
+        )
         self.scorer.update_unschedule_section(section)
         section.clear_roomslots()
         return True
@@ -117,16 +135,19 @@ class ScheduleManipulator:
             if section1.duration != section2.duration:
                 return False
 
-            if self.constraints.check_swap_sections(
-                    section1, section2, self.schedule):
+            if self.constraints.check_swap_sections(section1, section2, self.schedule):
                 return False
 
-        self.history.append({
-            "action": "swap",
-            "sections": (section1, section2),
-            "original_roomslots": (section1.assigned_roomslots[0],
-                                   section2.assigned_roomslots[0]),
-        })
+        self.history.append(
+            {
+                "action": "swap",
+                "sections": (section1, section2),
+                "original_roomslots": (
+                    section1.assigned_roomslots[0],
+                    section2.assigned_roomslots[0],
+                ),
+            }
+        )
         self.scorer.update_swap_sections(section1, section2)
         roomslots1 = section1.assigned_roomslots
         roomslots2 = section2.assigned_roomslots
@@ -136,33 +157,31 @@ class ScheduleManipulator:
 
     @util.timed_func("ScheduleManipulator_undo")
     def undo(self):
-        """Undoes the last action. Returns True if there was anything to undo.
-        """
+        """Undoes the last action. Returns True if there was anything to undo."""
         if len(self.history) == 0:
             # Nothing to undo.
             return False
         else:
             last_action = self.history.pop()
             if last_action["action"] == "schedule":
-                success = self.unschedule_section(
-                        last_action["section"], force=True)
+                success = self.unschedule_section(last_action["section"], force=True)
                 assert success, "Undo failed"
             elif last_action["action"] == "move":
                 success = self.move_section(
-                        last_action["section"],
-                        last_action["prev_start_roomslot"],
-                        force=True)
+                    last_action["section"],
+                    last_action["prev_start_roomslot"],
+                    force=True,
+                )
                 assert success, "Undo failed"
             elif last_action["action"] == "unschedule":
                 success = self.schedule_section(
-                        last_action["section"],
-                        last_action["prev_start_roomslot"],
-                        force=True)
+                    last_action["section"],
+                    last_action["prev_start_roomslot"],
+                    force=True,
+                )
                 assert success, "Undo failed"
             elif last_action["action"] == "swap":
-                success = self.swap_sections(
-                        *last_action["sections"],
-                        force=True)
+                success = self.swap_sections(*last_action["sections"], force=True)
                 assert success, "Undo failed"
             else:
                 assert False, "Undo history had invalid action"
@@ -175,11 +194,9 @@ class ScheduleManipulator:
         """Performs the given action, as specified in the same way as
         history (though possibly without extraneous undo-ing information)."""
         if action["action"] == "schedule":
-            return self.schedule_section(
-                    action["section"], action["start_roomslot"])
+            return self.schedule_section(action["section"], action["start_roomslot"])
         elif action["action"] == "move":
-            return self.move_section(action["section"],
-                                     action["start_roomslot"])
+            return self.move_section(action["section"], action["start_roomslot"])
         elif action["action"] == "unschedule":
             return self.unschedule_section(action["section"])
         elif action["action"] == "swap":
@@ -194,21 +211,33 @@ class ScheduleManipulator:
         if "start_roomslot" in action:
             roomslot = action["start_roomslot"]
             jsonified_dict["start_roomslot"] = [
-                [util.datetimedump(roomslot.timeslot.start),
-                 util.datetimedump(roomslot.timeslot.end)],
-                roomslot.room.name]
+                [
+                    util.datetimedump(roomslot.timeslot.start),
+                    util.datetimedump(roomslot.timeslot.end),
+                ],
+                roomslot.room.name,
+            ]
         if "prev_start_roomslot" in action:
             roomslot = action["prev_start_roomslot"]
             jsonified_dict["prev_start_roomslot"] = [
-                [util.datetimedump(roomslot.timeslot.start),
-                 util.datetimedump(roomslot.timeslot.end)],
-                roomslot.room.name]
+                [
+                    util.datetimedump(roomslot.timeslot.start),
+                    util.datetimedump(roomslot.timeslot.end),
+                ],
+                roomslot.room.name,
+            ]
         if "sections" in action:
             jsonified_dict["sections"] = [s.id for s in action["sections"]]
-            jsonified_dict["original_roomslots"] = [[
-                [util.datetimedump(r.timeslot.start),
-                 util.datetimedump(r.timeslot.end)],
-                r.room.name] for r in action["original_roomslots"]]
+            jsonified_dict["original_roomslots"] = [
+                [
+                    [
+                        util.datetimedump(r.timeslot.start),
+                        util.datetimedump(r.timeslot.end),
+                    ],
+                    r.room.name,
+                ]
+                for r in action["original_roomslots"]
+            ]
 
         return jsonified_dict
 
@@ -216,8 +245,7 @@ class ScheduleManipulator:
         """Turns a json-like action into an action."""
         action = {"action": jsonified_dict["action"]}
         if "section" in jsonified_dict:
-            action["section"] = self.schedule.class_sections[
-                    jsonified_dict["section"]]
+            action["section"] = self.schedule.class_sections[jsonified_dict["section"]]
         if "start_roomslot" in jsonified_dict:
             (start, end), room_name = jsonified_dict["start_roomslot"]
             times = (util.datetimeloads(start), util.datetimeloads(end))
@@ -230,12 +258,12 @@ class ScheduleManipulator:
             action["prev_start_roomslot"] = room.availability_dict[times]
         if "sections" in jsonified_dict:
             action["sections"] = [
-                self.schedule.class_sections[s_id] for s_id in
-                jsonified_dict["sections"]]
+                self.schedule.class_sections[s_id]
+                for s_id in jsonified_dict["sections"]
+            ]
         if "original_roomslots" in jsonified_dict:
             roomslots = []
-            for (start, end), room_name in \
-                    jsonified_dict["original_roomslots"]:
+            for (start, end), room_name in jsonified_dict["original_roomslots"]:
                 times = (util.datetimeloads(start), util.datetimeloads(end))
                 room = self.schedule.classrooms[room_name]
                 roomslots.append(room.availability_dict[times])

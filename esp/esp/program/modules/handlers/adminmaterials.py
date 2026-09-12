@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,6 +36,7 @@ from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_S
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject
 
+
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes
     on one page. You can also upload documents particular to the program,
@@ -51,7 +51,7 @@ class AdminMaterials(ProgramModuleObj):
             "module_type": "manage",
             "seq": -9999,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -71,32 +71,33 @@ class AdminMaterials(ProgramModuleObj):
     def get_materials(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm_Admin, FileRenameForm
         from esp.qsdmedia.models import Media
+
         context_form = FileUploadForm_Admin()
         context_rename_form = FileRenameForm()
-        new_choices = [(a.id, a.emailcode() + ': ' + str(a)) for a in prog.classes()]
-        new_choices.append((0, 'Document pertains to program'))
+        new_choices = [(a.id, a.emailcode() + ": " + str(a)) for a in prog.classes()]
+        new_choices.append((0, "Document pertains to program"))
         new_choices.reverse()
         context_form.set_choices(new_choices)
 
-        if request.method == 'POST':
-            if request.POST['command'] == 'delete':
-                docid = request.POST['docid']
-                media = Media.objects.get(id = docid)
+        if request.method == "POST":
+            if request.POST["command"] == "delete":
+                docid = request.POST["docid"]
+                media = Media.objects.get(id=docid)
                 media.delete()
-            elif request.POST['command'] == 'add':
+            elif request.POST["command"] == "add":
                 form = FileUploadForm_Admin(request.POST, request.FILES)
                 form.set_choices(new_choices)
 
                 if form.is_valid():
-                    media = Media(friendly_name=form.cleaned_data['title'])
+                    media = Media(friendly_name=form.cleaned_data["title"])
 
-                    ufile = form.cleaned_data['uploadedfile']
+                    ufile = form.cleaned_data["uploadedfile"]
 
-                    #	Append the class code on the filename if necessary
-                    target_id = int(form.cleaned_data['target_obj'])
+                    # 	Append the class code on the filename if necessary
+                    target_id = int(form.cleaned_data["target_obj"])
                     if target_id > 0:
                         cls = ClassSubject.objects.get(id=target_id)
-                        desired_filename = cls.emailcode() + '_' + ufile.name
+                        desired_filename = cls.emailcode() + "_" + ufile.name
                         media.owner = cls
                     else:
                         desired_filename = ufile.name
@@ -104,29 +105,36 @@ class AdminMaterials(ProgramModuleObj):
 
                     media.handle_file(ufile, desired_filename)
 
-                    media.format = ''
+                    media.format = ""
                     media.save()
                 else:
                     context_form = form
-            elif request.POST['command'] == 'rename':
+            elif request.POST["command"] == "rename":
                 form = FileRenameForm(request.POST, request.FILES)
                 if form.is_valid():
-                    docid = request.POST['docid']
-                    media = Media.objects.get(id = docid)
-                    media.rename(form.cleaned_data['title'])
+                    docid = request.POST["docid"]
+                    media = Media.objects.get(id=docid)
+                    media.rename(form.cleaned_data["title"])
                     media.save()
                 else:
                     context_rename_form = form
 
-        context = {'prog': self.program, 'module': self, 'uploadform': context_form, 'renameform': context_rename_form}
+        context = {
+            "prog": self.program,
+            "module": self,
+            "uploadform": context_form,
+            "renameform": context_rename_form,
+        }
 
-        classes = ClassSubject.objects.filter(parent_program = prog)
+        classes = ClassSubject.objects.filter(parent_program=prog)
 
-        return render_to_response(self.baseDir()+'listmaterials.html', request, context)
+        return render_to_response(
+            self.baseDir() + "listmaterials.html", request, context
+        )
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

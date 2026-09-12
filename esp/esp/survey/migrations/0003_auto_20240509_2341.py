@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('survey', '0002_auto_20200301_1048'),
+        ("survey", "0002_auto_20200301_1048"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='survey',
-            name='category',
-            field=models.CharField(choices=[('learn', 'learn'), ('teach', 'teach')], max_length=10),
+            model_name="survey",
+            name="category",
+            field=models.CharField(
+                choices=[("learn", "learn"), ("teach", "teach")], max_length=10
+            ),
         ),
     ]

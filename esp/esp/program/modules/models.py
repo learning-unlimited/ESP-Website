@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -34,10 +33,12 @@ Learning Unlimited, Inc.
 """
 
 import logging
+
 logger = logging.getLogger(__name__)
 
-from esp.program.modules.handlers import * # Needed for app loading, don't delete
+from esp.program.modules.handlers import *  # Needed for app loading, don't delete
 from django.db.models import Q
+
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
     """
@@ -55,12 +56,15 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
 
     #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
-    global_defaults = {'seq': 0, 'required': False}
+    global_defaults = {"seq": 0, "required": False}
     for datum in update_data:
         #   Remove non-model-field keys before any DB operations
-        datum.pop('main_call', None)
-        datum.pop('aux_calls', None)
-        query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
+        datum.pop("main_call", None)
+        datum.pop("aux_calls", None)
+        query_kwargs = {
+            "handler": datum["handler"],
+            "module_type": datum["module_type"],
+        }
         qs = model.objects.filter(**query_kwargs)
         if qs.exists():
             mods.append((datum, (qs[0], False)))
@@ -68,12 +72,12 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
             #   Ensure that all of the required fields are present when calling get_or_create
             new_obj_defaults = global_defaults.copy()
             new_obj_defaults.update(datum)
-            query_kwargs['defaults'] = new_obj_defaults
+            query_kwargs["defaults"] = new_obj_defaults
 
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
-        for (datum, (mod, created)) in mods:
+        for datum, (mod, created) in mods:
             if not created:
                 mod.__dict__.update(datum)
                 mod.save()
@@ -81,33 +85,40 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     if deleteExtra:
         ids = []
 
-        for (datum, (mod, created)) in mods:
+        for datum, (mod, created) in mods:
             ids.append(mod.id)
 
         model.objects.exclude(id__in=ids).delete()
 
-    for (datum, (mod, created)) in mods:
+    for datum, (mod, created) in mods:
         #   If the module exists but the provided data adds fields that
         #   are null or blank, go ahead and add them.
         #   This simplifies data migrations where the default module properties
         #   are changed.
         for key in datum:
-            if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
-                if datum[key] is not None and datum[key] != '':
+            if (
+                (key not in mod.__dict__)
+                or (mod.__dict__[key] is None)
+                or (mod.__dict__[key] == "")
+            ):
+                if datum[key] is not None and datum[key] != "":
                     mod.__dict__[key] = datum[key]
 
         mod.save()
 
+
 def install(model=None):
-    """ Install the initial ProgramModule table data for all currently-existing modules """
+    """Install the initial ProgramModule table data for all currently-existing modules"""
     logger.info("Installing esp.program.modules initial data...")
     from esp.program.modules import handlers
-    modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
+
+    modules = [x for x in handlers.__dict__.values() if hasattr(x, "module_properties")]
 
     table_data = []
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
     updateModules(table_data, overwriteExisting=True, deleteExtra=True, model=model)
+
 
 from esp.program.modules.module_ext import *

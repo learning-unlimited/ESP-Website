@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -47,7 +46,9 @@ from esp.program.templatetags.class_render import render_class_row
 from esp.program.templatetags.class_render_row import render_class_copy_row
 from esp.program.templatetags.class_render_row import render_class_teacher_list_row
 
-from esp.program.templatetags.section_render_row import render_section_moderator_list_row
+from esp.program.templatetags.section_render_row import (
+    render_section_moderator_list_row,
+)
 
 from esp.qsd.templatetags.render_qsd import render_qsd
 from esp.qsd.templatetags.render_qsd import render_inline_qsd
@@ -60,5 +61,3 @@ from esp.survey.templatetags.survey import render_responses_for_section_pdf
 from esp.web.templatetags.navbar import navbar_gen
 
 from esp.web.templatetags.topbar import get_primary_nav
-
-

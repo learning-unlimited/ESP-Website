@@ -5,20 +5,18 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0038_delete_splashinfomodule'),
+        ("modules", "0038_delete_splashinfomodule"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='StudentCertModule',
-            fields=[
-            ],
+            name="StudentCertModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

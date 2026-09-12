@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -32,13 +32,27 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.models import FinancialAidRequest, SplashInfo, RegistrationType, StudentRegistration, ProgramModule
-from esp.accounting.models import FinancialAidGrant, LineItemType, LineItemOptions, Transfer
+from esp.program.models import (
+    FinancialAidRequest,
+    SplashInfo,
+    RegistrationType,
+    StudentRegistration,
+    ProgramModule,
+)
+from esp.accounting.models import (
+    FinancialAidGrant,
+    LineItemType,
+    LineItemOptions,
+    Transfer,
+)
 from esp.users.models import Permission
 
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.controllers import (
+    ProgramAccountingController,
+    IndividualAccountingController,
+)
 from esp.tagdict.models import Tag
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController
 from esp.users.models import ESPUser
@@ -48,16 +62,24 @@ import json
 import random
 import re
 
+
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule
 
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update( {
-            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
-            'num_rooms': 6, 'sibling_discount': 20,
-            } )
+        kwargs.update(
+            {
+                "num_timeslots": 3,
+                "timeslot_length": 50,
+                "timeslot_gap": 10,
+                "num_teachers": 6,
+                "classes_per_teacher": 1,
+                "sections_per_class": 2,
+                "num_rooms": 6,
+                "sibling_discount": 20,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
@@ -70,7 +92,7 @@ class StudentRegTest(ProgramFrameworkTest):
             pmo.save()
 
         # Get and remember the instance of StudentClassRegModule
-        pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        pm = ProgramModule.objects.get(handler="StudentClassRegModule")
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.moduleobj.user = self.students[0]
 
@@ -78,21 +100,27 @@ class StudentRegTest(ProgramFrameworkTest):
         return [x.name for x in response.templates]
 
     def expect_template(self, response, template):
-        self.assertTrue(template in self.get_template_names(response), f'Wrong template for profile: got {self.get_template_names(response)}, expected {template}')
+        self.assertTrue(
+            template in self.get_template_names(response),
+            f"Wrong template for profile: got {self.get_template_names(response)}, expected {template}",
+        )
 
     def test_confirm(self):
         program = self.program
 
         #   Pick a student and log in
         student = random.choice(self.students)
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
 
         #   Sign up for a class directly
         sec = random.choice(program.sections())
         sec.preregister_student(student)
 
         #   Get the receipt and check that the class appears on it with title and time
-        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/confirmreg" % self.program.getUrlBase())
         self.assertContains(response, sec.title(), status_code=200)
         for ts in sec.meeting_times.all():
             self.assertContains(response, ts.short_description, status_code=200)
@@ -100,33 +128,54 @@ class StudentRegTest(ProgramFrameworkTest):
     def test_catalog(self):
 
         def verify_catalog_correctness():
-            response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+            response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
             for cls in self.program.classes():
                 #   Find the portion of the catalog corresponding to this class
-                pattern = r"""<div id="class_%d" class=".*?show_class" data-difficulty=".*" data-duration=".+" data-is-closed=".+">.*?</div>\s*?</div>\s*?</div>""" % cls.id
-                cls_fragment = re.search(pattern, response.content.decode('UTF-8'), re.DOTALL).group(0)
+                pattern = (
+                    r"""<div id="class_%d" class=".*?show_class" data-difficulty=".*" data-duration=".+" data-is-closed=".+">.*?</div>\s*?</div>\s*?</div>"""
+                    % cls.id
+                )
+                cls_fragment = re.search(
+                    pattern, response.content.decode("UTF-8"), re.DOTALL
+                ).group(0)
 
                 pat2 = r"""<div.*?class="class_title">(?P<title>.*?)</div>.*?<div class="class_content">(?P<description>.*?)</div>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</div>"""
                 cls_info = re.search(pat2, cls_fragment, re.DOTALL).groupdict(0)
 
                 #   Check title
-                title = cls_info['title'].strip()
-                expected_title = f'{cls.emailcode()}: {cls.title}'
-                self.assertTrue(title == expected_title, f'Incorrect class title in catalog: got "{title}", expected "{expected_title}"')
+                title = cls_info["title"].strip()
+                expected_title = f"{cls.emailcode()}: {cls.title}"
+                self.assertTrue(
+                    title == expected_title,
+                    f'Incorrect class title in catalog: got "{title}", expected "{expected_title}"',
+                )
 
                 #   Check description
-                description = cls_info['description'].replace('<br />', '').strip()
-                self.assertTrue(description == cls.class_info.strip(), f'Incorrect class description in catalog: got "{description}", expected "{cls.class_info.strip()}"')
+                description = cls_info["description"].replace("<br />", "").strip()
+                self.assertTrue(
+                    description == cls.class_info.strip(),
+                    f'Incorrect class description in catalog: got "{description}", expected "{cls.class_info.strip()}"',
+                )
 
                 #   Check enrollments
-                enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
-                class_sections = cls.sections.order_by('id')
-                self.assertTrue(len(enrollments) == len(list(class_sections)),
-                                f'Recovered {len(enrollments)} enrollments from catalog but expecting {len(list(class_sections))}. Listed below\n\tRecovered: {enrollments}\n\tExpecting: {list(class_sections)}')
+                enrollments = [
+                    x.replace("<br />", "").strip()
+                    for x in cls_info["enrollment"].split("Section")[1:]
+                ]
+                class_sections = cls.sections.order_by("id")
+                self.assertTrue(
+                    len(enrollments) == len(list(class_sections)),
+                    f"Recovered {len(enrollments)} enrollments from catalog but expecting {len(list(class_sections))}. Listed below\n\tRecovered: {enrollments}\n\tExpecting: {list(class_sections)}",
+                )
                 for sec in class_sections:
                     i = sec.index() - 1
-                    expected_str = f'{sec.index()}: {sec.num_students()} (max {sec.capacity})'
-                    self.assertTrue(enrollments[i] == expected_str, f'Incorrect enrollment for {sec.emailcode()} in catalog: got "{enrollments[i]}", expected "{expected_str}"')
+                    expected_str = (
+                        f"{sec.index()}: {sec.num_students()} (max {sec.capacity})"
+                    )
+                    self.assertTrue(
+                        enrollments[i] == expected_str,
+                        f'Incorrect enrollment for {sec.emailcode()} in catalog: got "{enrollments[i]}", expected "{expected_str}"',
+                    )
 
         program = self.program
 
@@ -135,13 +184,13 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Change a class title and check
         cls = random.choice(program.classes())
-        cls.title = 'New %s' % cls.title
+        cls.title = "New %s" % cls.title
         cls.save()
         verify_catalog_correctness()
 
         #   Change a class description and check
         cls2 = random.choice(program.classes())
-        cls2.class_info = 'New %s' % cls2.class_info
+        cls2.class_info = "New %s" % cls2.class_info
         cls2.save()
         verify_catalog_correctness()
 
@@ -156,7 +205,7 @@ class StudentRegTest(ProgramFrameworkTest):
         from esp.program.models import ClassSubject
 
         # Enable separate catalog pages
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
         # Get a category ID from existing classes
         classes = ClassSubject.objects.catalog(self.program)
@@ -166,23 +215,27 @@ class StudentRegTest(ProgramFrameworkTest):
         cat_name = cat.category
 
         # Test main catalog page (should only show categories, no classes)
-        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Jump to Categories')
-        self.assertContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        self.assertContains(response, "Jump to Categories")
+        self.assertContains(
+            response, "/learn/%s/catalog/%s" % (self.program.getUrlBase(), cat_id)
+        )
 
         # Test specific category page
-        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        response = self.client.get(
+            "/learn/%s/catalog/%s" % (self.program.getUrlBase(), cat_id)
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Back to Category List')
+        self.assertContains(response, "Back to Category List")
         self.assertContains(response, cat_name)
 
         # Disable the tag and ensure original behavior
-        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
-        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
-        self.assertContains(response, 'Jump to Categories')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="False")
+        response = self.client.get("/learn/%s/catalog" % self.program.getUrlBase())
+        self.assertContains(response, "Jump to Categories")
         # Anchor links instead of URL links
-        self.assertContains(response, '#cat%s' % cat_id)
+        self.assertContains(response, "#cat%s" % cat_id)
 
     def test_separate_catalog_main_page_no_class_content(self):
         """When separate_catalog_pages is enabled, the main catalog page should
@@ -190,26 +243,30 @@ class StudentRegTest(ProgramFrameworkTest):
         from esp.tagdict.models import Tag
         from esp.program.models import ClassSubject
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
         classes = ClassSubject.objects.catalog(self.program)
         self.assertTrue(len(classes) > 0)
 
-        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
 
-        content = response.content.decode('UTF-8')
+        content = response.content.decode("UTF-8")
         # Individual class divs should NOT appear on the main page
         for cls in classes:
-            self.assertNotIn('class_%d' % cls.id, content,
-                "Class %s should not appear on the main catalog page when separate_catalog_pages is enabled" % cls.emailcode())
+            self.assertNotIn(
+                "class_%d" % cls.id,
+                content,
+                "Class %s should not appear on the main catalog page when separate_catalog_pages is enabled"
+                % cls.emailcode(),
+            )
 
     def test_separate_catalog_category_shows_only_matching_classes(self):
         """A category page should only show classes belonging to that category."""
         from esp.tagdict.models import Tag
         from esp.program.models import ClassSubject
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
         classes = ClassSubject.objects.catalog(self.program)
         self.assertTrue(len(classes) > 0)
@@ -221,64 +278,84 @@ class StudentRegTest(ProgramFrameworkTest):
 
         # Only test if we have at least one category with classes
         for cat_id, class_ids in cat_classes.items():
-            response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+            response = self.client.get(
+                "/learn/%s/catalog/%s" % (self.program.getUrlBase(), cat_id)
+            )
             self.assertEqual(response.status_code, 200)
-            content = response.content.decode('UTF-8')
+            content = response.content.decode("UTF-8")
 
             # Classes in this category should be present
             for cid in class_ids:
-                self.assertIn('class_%d' % cid, content,
-                    "Class id=%d should appear on category %d page" % (cid, cat_id))
+                self.assertIn(
+                    "class_%d" % cid,
+                    content,
+                    "Class id=%d should appear on category %d page" % (cid, cat_id),
+                )
 
             # Classes from OTHER categories should NOT be present
             for other_cat_id, other_ids in cat_classes.items():
                 if other_cat_id == cat_id:
                     continue
                 for cid in other_ids:
-                    self.assertNotIn('class_%d' % cid, content,
-                        "Class id=%d (category %d) should not appear on category %d page" % (cid, other_cat_id, cat_id))
+                    self.assertNotIn(
+                        "class_%d" % cid,
+                        content,
+                        "Class id=%d (category %d) should not appear on category %d page"
+                        % (cid, other_cat_id, cat_id),
+                    )
 
     def test_separate_catalog_invalid_category_id(self):
         """A non-numeric extra parameter should yield an empty class list (no crash)."""
         from esp.tagdict.models import Tag
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
-        response = self.client.get('/learn/%s/catalog/not-a-number' % self.program.getUrlBase())
+        response = self.client.get(
+            "/learn/%s/catalog/not-a-number" % self.program.getUrlBase()
+        )
         self.assertEqual(response.status_code, 200)
         # Should still render the page without error
-        content = response.content.decode('UTF-8')
-        self.assertNotIn('class_', content,
-            "No classes should appear for an invalid category id")
+        content = response.content.decode("UTF-8")
+        self.assertNotIn(
+            "class_", content, "No classes should appear for an invalid category id"
+        )
 
     def test_separate_catalog_nonexistent_category_id(self):
         """A numeric category id that doesn't match any category should show no classes."""
         from esp.tagdict.models import Tag
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
-        response = self.client.get('/learn/%s/catalog/999999' % self.program.getUrlBase())
+        response = self.client.get(
+            "/learn/%s/catalog/999999" % self.program.getUrlBase()
+        )
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode('UTF-8')
-        self.assertNotIn('class_', content,
-            "No classes should appear for a non-existent category id")
+        content = response.content.decode("UTF-8")
+        self.assertNotIn(
+            "class_", content, "No classes should appear for a non-existent category id"
+        )
 
     def test_separate_catalog_back_link(self):
         """The category page should contain a link back to the main catalog."""
         from esp.tagdict.models import Tag
         from esp.program.models import ClassSubject
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
         classes = ClassSubject.objects.catalog(self.program)
         self.assertTrue(len(classes) > 0)
         cat_id = classes[0].category_id
 
-        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        response = self.client.get(
+            "/learn/%s/catalog/%s" % (self.program.getUrlBase(), cat_id)
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, '/learn/%s/catalog' % self.program.getUrlBase(),
-            msg_prefix="Category page should contain a back-link to the main catalog")
-        self.assertContains(response, 'Back to Category List')
+        self.assertContains(
+            response,
+            "/learn/%s/catalog" % self.program.getUrlBase(),
+            msg_prefix="Category page should contain a back-link to the main catalog",
+        )
+        self.assertContains(response, "Back to Category List")
 
     def test_separate_catalog_disabled_shows_all_classes(self):
         """When the tag is disabled (or absent), the catalog should render all classes
@@ -287,27 +364,35 @@ class StudentRegTest(ProgramFrameworkTest):
         from esp.program.models import ClassSubject
 
         # Ensure the tag is explicitly disabled
-        Tag.setTag('separate_catalog_pages', target=self.program, value='False')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="False")
 
         classes = ClassSubject.objects.catalog(self.program)
         self.assertTrue(len(classes) > 0)
 
-        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode('UTF-8')
+        content = response.content.decode("UTF-8")
 
         # All classes should appear on the single catalog page
         for cls in classes:
-            self.assertIn('class_%d' % cls.id, content,
-                "Class %s should appear on the catalog when separate_catalog_pages is disabled" % cls.emailcode())
+            self.assertIn(
+                "class_%d" % cls.id,
+                content,
+                "Class %s should appear on the catalog when separate_catalog_pages is disabled"
+                % cls.emailcode(),
+            )
 
         # Category links should be anchors, not separate-page URLs
         seen_categories = set()
         for cls in classes:
             if cls.category_id not in seen_categories:
                 seen_categories.add(cls.category_id)
-                self.assertContains(response, '#cat%s' % cls.category_id)
-                self.assertNotContains(response, '/learn/%s/catalog/%s' % (self.program.getUrlBase(), cls.category_id))
+                self.assertContains(response, "#cat%s" % cls.category_id)
+                self.assertNotContains(
+                    response,
+                    "/learn/%s/catalog/%s"
+                    % (self.program.getUrlBase(), cls.category_id),
+                )
 
     def test_separate_catalog_context_variables(self):
         """Verify that the template context contains the expected variables
@@ -315,53 +400,72 @@ class StudentRegTest(ProgramFrameworkTest):
         from esp.tagdict.models import Tag
         from esp.program.models import ClassSubject
 
-        Tag.setTag('separate_catalog_pages', target=self.program, value='True')
+        Tag.setTag("separate_catalog_pages", target=self.program, value="True")
 
         classes = ClassSubject.objects.catalog(self.program)
         self.assertTrue(len(classes) > 0)
         cat_id = classes[0].category_id
 
         # Main catalog page: separate_catalog=True, selected_category=None
-        response = self.client.get('/learn/%s/catalog' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['separate_catalog'],
-            "Context should have separate_catalog=True")
-        self.assertIsNone(response.context['selected_category'],
-            "Context should have selected_category=None on main page")
-        self.assertIn('categories', response.context)
-        self.assertTrue(len(response.context['categories']) > 0,
-            "Context should contain at least one category")
+        self.assertTrue(
+            response.context["separate_catalog"],
+            "Context should have separate_catalog=True",
+        )
+        self.assertIsNone(
+            response.context["selected_category"],
+            "Context should have selected_category=None on main page",
+        )
+        self.assertIn("categories", response.context)
+        self.assertTrue(
+            len(response.context["categories"]) > 0,
+            "Context should contain at least one category",
+        )
 
         # Category-specific page: separate_catalog=True, selected_category set
-        response = self.client.get('/learn/%s/catalog/%s' % (self.program.getUrlBase(), cat_id))
+        response = self.client.get(
+            "/learn/%s/catalog/%s" % (self.program.getUrlBase(), cat_id)
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['separate_catalog'])
-        self.assertIsNotNone(response.context['selected_category'],
-            "Context should have selected_category set on a category page")
-        self.assertEqual(response.context['selected_category']['id'], cat_id)
+        self.assertTrue(response.context["separate_catalog"])
+        self.assertIsNotNone(
+            response.context["selected_category"],
+            "Context should have selected_category set on a category page",
+        )
+        self.assertEqual(response.context["selected_category"]["id"], cat_id)
 
     def test_profile(self):
 
         #   Login as a student and ensure we can submit the profile
         student = random.choice(self.students)
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        self.expect_template(response, 'users/profile.html')
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
+        response = self.client.get("/learn/%s/profile" % self.program.getUrlBase())
+        self.expect_template(response, "users/profile.html")
 
         #   Login as a teacher and ensure we get the right message
         teacher = random.choice(self.teachers)
-        self.assertTrue( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
-        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        self.expect_template(response, 'errors/program/notastudent.html')
+        self.assertTrue(
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as student %s" % teacher.username,
+        )
+        response = self.client.get("/learn/%s/profile" % self.program.getUrlBase())
+        self.expect_template(response, "errors/program/notastudent.html")
 
         #   Login as an admin and ensure we get the right message
         admin = random.choice(self.admins)
-        self.assertTrue( self.client.login( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
-        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        self.expect_template(response, 'users/profile.html')
+        self.assertTrue(
+            self.client.login(username=admin.username, password="password"),
+            "Couldn't log in as student %s" % admin.username,
+        )
+        response = self.client.get("/learn/%s/profile" % self.program.getUrlBase())
+        self.expect_template(response, "users/profile.html")
 
     def test_finaid(self):
-        """ Verify that financial aid behaves as specified. """
+        """Verify that financial aid behaves as specified."""
 
         program_cost = 25.0
 
@@ -381,21 +485,26 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertEqual(iac.amount_due(), program_cost)
 
         #   Apply for financial aid
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
         response = self.client.get(
-                    '/learn/%s/finaid' % self.program.url,
-                    **{'wsgi.url_scheme': 'https'})
+            "/learn/%s/finaid" % self.program.url, **{"wsgi.url_scheme": "https"}
+        )
         self.assertEqual(response.status_code, 200)
 
         form_settings = {
-            'reduced_lunch': '',
-            'household_income': '12345',
-            'extra_explaination': 'No',
-            'student_prepare': '',
+            "reduced_lunch": "",
+            "household_income": "12345",
+            "extra_explaination": "No",
+            "student_prepare": "",
         }
-        response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
+        response = self.client.post(
+            "/learn/%s/finaid" % self.program.getUrlBase(), form_settings
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
 
         #   Check that the student still owes the cost of the program
         self.assertEqual(iac.amount_due(), program_cost)
@@ -404,12 +513,14 @@ class StudentRegTest(ProgramFrameworkTest):
         request = FinancialAidRequest.objects.get(user=student, program=self.program)
 
         #   - 100 percent
-        (fg, created) = FinancialAidGrant.objects.get_or_create(request=request, percent=100)
+        (fg, created) = FinancialAidGrant.objects.get_or_create(
+            request=request, percent=100
+        )
         self.assertEqual(iac.amount_due(), 0.0)
 
         #   - absolute discount amount
         fg.percent = None
-        fg.amount_max_dec = Decimal('15.0')
+        fg.amount_max_dec = Decimal("15.0")
         fg.save()
         self.assertEqual(iac.amount_due(), program_cost - 15.0)
 
@@ -425,18 +536,20 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Check that the 'free/reduced lunch' option on the finaid results in zero amount due
         form_settings = {
-            'reduced_lunch': 'checked',
-            'household_income': '12345',
-            'extra_explaination': 'No',
-            'student_prepare': '',
+            "reduced_lunch": "checked",
+            "household_income": "12345",
+            "extra_explaination": "No",
+            "student_prepare": "",
         }
-        response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
+        response = self.client.post(
+            "/learn/%s/finaid" % self.program.getUrlBase(), form_settings
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), 0)
 
     def test_extracosts(self):
-        """ Verify that the "Student Extra Costs" module behaves as specified. """
+        """Verify that the "Student Extra Costs" module behaves as specified."""
 
         program_cost = 25.0
 
@@ -444,92 +557,150 @@ class StudentRegTest(ProgramFrameworkTest):
         pac = ProgramAccountingController(self.program)
         pac.clear_all_data()
         pac.setup_accounts()
-        pac.setup_lineitemtypes(program_cost, [('Item1', 10, 1), ('Item2', 5, 10)], [('Food', [('Small', 3), ('Large', 7)])])
-        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=True) # Food should be covered by financial aid
-        sd_lit = pac.default_siblingdiscount_lineitemtype() # Get the sibling discount line item type
+        pac.setup_lineitemtypes(
+            program_cost,
+            [("Item1", 10, 1), ("Item2", 5, 10)],
+            [("Food", [("Small", 3), ("Large", 7)])],
+        )
+        LineItemType.objects.filter(text="Food", program=self.program).update(
+            for_finaid=True
+        )  # Food should be covered by financial aid
+        sd_lit = (
+            pac.default_siblingdiscount_lineitemtype()
+        )  # Get the sibling discount line item type
 
         #   Choose a random student and check that the extracosts page loads
         student = random.choice(self.students)
         iac = IndividualAccountingController(self.program, student)
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
+        response = self.client.get("/learn/%s/extracosts" % self.program.url)
         self.assertEqual(response.status_code, 200)
 
         #   Check that they are being charged the program admission fee
         self.assertEqual(iac.amount_due(), program_cost)
 
         #   Check that selecting one of the "buy-one" extra items works
-        lit1 = LineItemType.objects.get(program=self.program, text='Item1')
-        lit2 = LineItemType.objects.get(program=self.program, text='Item2')
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit1.id: 'checked', '%d-count' % lit2.id: '0', '%d-siblingdiscount' % sd_lit.id: 'False'})
+        lit1 = LineItemType.objects.get(program=self.program, text="Item1")
+        lit2 = LineItemType.objects.get(program=self.program, text="Item2")
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {
+                "%d-cost" % lit1.id: "checked",
+                "%d-count" % lit2.id: "0",
+                "%d-siblingdiscount" % sd_lit.id: "False",
+            },
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost + 10)
 
         #   Check that selecting one or more than one of the "buy many" extra items works
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '1', '%d-siblingdiscount' % sd_lit.id: 'False'})
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {"%d-count" % lit2.id: "1", "%d-siblingdiscount" % sd_lit.id: "False"},
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost + 5)
 
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '3', '%d-siblingdiscount' % sd_lit.id: 'False'})
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {"%d-count" % lit2.id: "3", "%d-siblingdiscount" % sd_lit.id: "False"},
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost + 15)
 
         #   Check that selecting an option for a "multiple choice" extra item works
-        lit3 = LineItemType.objects.get(program=self.program, text='Food')
-        lio = [x for x in lit3.options if x[2] == 'Large'][0]
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', 'multi%d-option' % lit3.id: str(lio[0]), '%d-siblingdiscount' % sd_lit.id: 'False'})
+        lit3 = LineItemType.objects.get(program=self.program, text="Food")
+        lio = [x for x in lit3.options if x[2] == "Large"][0]
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {
+                "%d-count" % lit2.id: "0",
+                "multi%d-option" % lit3.id: str(lio[0]),
+                "%d-siblingdiscount" % sd_lit.id: "False",
+            },
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost + 7)
 
         #   Check that selecting multiple options for a multi-select extra item works (including custom amount)
         lit4 = LineItemType.objects.create(
             program=self.program,
-            text='Workshops',
+            text="Workshops",
             required=False,
             max_quantity=1,
-            amount_dec=Decimal('0.00'),
-            selection_type='multiple',
+            amount_dec=Decimal("0.00"),
+            selection_type="multiple",
             for_finaid=True,
         )
-        opt_a = LineItemOptions.objects.create(lineitem_type=lit4, description='AI', amount_dec=Decimal('12.00'), is_custom=False)
-        opt_b = LineItemOptions.objects.create(lineitem_type=lit4, description='Robotics', amount_dec=Decimal('8.00'), is_custom=False)
-        opt_c = LineItemOptions.objects.create(lineitem_type=lit4, description='Other', amount_dec=None, is_custom=True)
+        opt_a = LineItemOptions.objects.create(
+            lineitem_type=lit4,
+            description="AI",
+            amount_dec=Decimal("12.00"),
+            is_custom=False,
+        )
+        opt_b = LineItemOptions.objects.create(
+            lineitem_type=lit4,
+            description="Robotics",
+            amount_dec=Decimal("8.00"),
+            is_custom=False,
+        )
+        opt_c = LineItemOptions.objects.create(
+            lineitem_type=lit4, description="Other", amount_dec=None, is_custom=True
+        )
 
         post_data = {
-            '%d-count' % lit2.id: '0',
-            'multi%d-option' % lit3.id: str(lio[0]),
-            'multi%s-options' % lit4.id: [str(opt_a.id), str(opt_c.id)],
-            'multi%s-custom_amount_%s' % (lit4.id, opt_c.id): '5.50',
-            '%d-siblingdiscount' % sd_lit.id: 'False',
+            "%d-count" % lit2.id: "0",
+            "multi%d-option" % lit3.id: str(lio[0]),
+            "multi%s-options" % lit4.id: [str(opt_a.id), str(opt_c.id)],
+            "multi%s-custom_amount_%s" % (lit4.id, opt_c.id): "5.50",
+            "%d-siblingdiscount" % sd_lit.id: "False",
         }
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(), post_data
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
 
         #   Ensure that two Transfers exist for the multi-select item (one per selected option)
-        workshop_transfers = Transfer.objects.filter(user=student, line_item=lit4).order_by('id')
+        workshop_transfers = Transfer.objects.filter(
+            user=student, line_item=lit4
+        ).order_by("id")
         self.assertEqual(workshop_transfers.count(), 2)
-        self.assertEqual(set(workshop_transfers.values_list('option_id', flat=True)), {opt_a.id, opt_c.id})
+        self.assertEqual(
+            set(workshop_transfers.values_list("option_id", flat=True)),
+            {opt_a.id, opt_c.id},
+        )
 
         #   Check that the saved selections are restored when the form is reloaded,
         #   including the amount that was entered for the custom option
-        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        response = self.client.get("/learn/%s/extracosts" % self.program.url)
         self.assertEqual(response.status_code, 200)
-        forms_by_lineitem = {f['LineItem'].id: f['form'] for f in response.context['forms']}
+        forms_by_lineitem = {
+            f["LineItem"].id: f["form"] for f in response.context["forms"]
+        }
         workshops_form = forms_by_lineitem[lit4.id]
-        self.assertEqual(set(workshops_form.initial['options']), {opt_a.id, opt_c.id})
-        self.assertEqual(workshops_form.initial['custom_amount_%d' % opt_c.id], Decimal('5.50'))
+        self.assertEqual(set(workshops_form.initial["options"]), {opt_a.id, opt_c.id})
+        self.assertEqual(
+            workshops_form.initial["custom_amount_%d" % opt_c.id], Decimal("5.50")
+        )
 
         #   Every checkbox needs the data- attributes that extracosts.js reads to keep
         #   the displayed total in sync, and only custom options get an amount input
-        option_rows = {str(checkbox.data['value']): (checkbox, amount_field)
-                       for checkbox, amount_field in workshops_form.option_rows()}
-        self.assertEqual(set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)})
+        option_rows = {
+            str(checkbox.data["value"]): (checkbox, amount_field)
+            for checkbox, amount_field in workshops_form.option_rows()
+        }
+        self.assertEqual(
+            set(option_rows), {str(opt_a.id), str(opt_b.id), str(opt_c.id)}
+        )
         self.assertIsNone(option_rows[str(opt_a.id)][1])
         self.assertIsNotNone(option_rows[str(opt_c.id)][1])
         self.assertIn('data-cost="12.00"', str(option_rows[str(opt_a.id)][0]))
@@ -537,72 +708,105 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertIn('data-is_custom="true"', str(option_rows[str(opt_c.id)][0]))
 
         #   The same data- attributes are needed by the single-select radio buttons
-        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]['option']))
+        self.assertIn('data-cost="7.00"', str(forms_by_lineitem[lit3.id]["option"]))
 
         #   Check that selecting a custom option without entering an amount is an
         #   error, and does not discard the options that were already saved
         post_data = {
-            '%d-count' % lit2.id: '0',
-            'multi%d-option' % lit3.id: str(lio[0]),
-            'multi%d-options' % lit4.id: [str(opt_b.id), str(opt_c.id)],
-            'multi%d-custom_amount_%d' % (lit4.id, opt_c.id): '',
-            '%d-siblingdiscount' % sd_lit.id: 'False',
+            "%d-count" % lit2.id: "0",
+            "multi%d-option" % lit3.id: str(lio[0]),
+            "multi%d-options" % lit4.id: [str(opt_b.id), str(opt_c.id)],
+            "multi%d-custom_amount_%d" % (lit4.id, opt_c.id): "",
+            "%d-siblingdiscount" % sd_lit.id: "False",
         }
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(), post_data
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.context['error_custom'])
-        self.assertEqual(set(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
-                         {opt_a.id, opt_c.id})
+        self.assertTrue(response.context["error_custom"])
+        self.assertEqual(
+            set(
+                Transfer.objects.filter(user=student, line_item=lit4).values_list(
+                    "option_id", flat=True
+                )
+            ),
+            {opt_a.id, opt_c.id},
+        )
         self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
 
         #   Check that changing the selection replaces the previous options
-        post_data['multi%d-options' % lit4.id] = [str(opt_b.id)]
-        del post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)]
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        post_data["multi%d-options" % lit4.id] = [str(opt_b.id)]
+        del post_data["multi%d-custom_amount_%d" % (lit4.id, opt_c.id)]
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(), post_data
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(list(Transfer.objects.filter(user=student, line_item=lit4).values_list('option_id', flat=True)),
-                         [opt_b.id])
+        self.assertEqual(
+            list(
+                Transfer.objects.filter(user=student, line_item=lit4).values_list(
+                    "option_id", flat=True
+                )
+            ),
+            [opt_b.id],
+        )
         self.assertEqual(iac.amount_due(), program_cost + 7 + 8)
 
         #   Check that clearing the selection removes all of the options
-        del post_data['multi%d-options' % lit4.id]
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        del post_data["multi%d-options" % lit4.id]
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(), post_data
+        )
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Transfer.objects.filter(user=student, line_item=lit4).exists())
         self.assertEqual(iac.amount_due(), program_cost + 7)
 
         #   Restore the multi-select options for the financial aid checks below
-        post_data['multi%d-options' % lit4.id] = [str(opt_a.id), str(opt_c.id)]
-        post_data['multi%d-custom_amount_%d' % (lit4.id, opt_c.id)] = '5.50'
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), post_data)
+        post_data["multi%d-options" % lit4.id] = [str(opt_a.id), str(opt_c.id)]
+        post_data["multi%d-custom_amount_%d" % (lit4.id, opt_c.id)] = "5.50"
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(), post_data
+        )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(iac.amount_due(), program_cost + 7 + 12 + 5.5)
 
         #   Check that financial aid applies to the "full" cost including the extra items
         #   (e.g. we are not forcing financial aid students to pay for food)
         request = FinancialAidRequest.objects.create(user=student, program=self.program)
-        (fg, created) = FinancialAidGrant.objects.get_or_create(request=request, percent=100)
+        (fg, created) = FinancialAidGrant.objects.get_or_create(
+            request=request, percent=100
+        )
         self.assertEqual(iac.amount_due(), 0)
 
         #   Check that financial aid only covers items marked as "for_finaid"
-        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=False)
+        LineItemType.objects.filter(text="Food", program=self.program).update(
+            for_finaid=False
+        )
         self.assertEqual(iac.amount_due(), 7)
 
         fg.delete()
 
         #   Check that removing items on the form removes their cost for the student
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-count' % lit2.id: '0', '%d-siblingdiscount' % sd_lit.id: 'False'})
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {"%d-count" % lit2.id: "0", "%d-siblingdiscount" % sd_lit.id: "False"},
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost)
 
         #   Check that the sibling discount works
-        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-siblingdiscount' % sd_lit.id: 'True', '%d-siblingname' % sd_lit.id: 'Test Name'})
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {
+                "%d-siblingdiscount" % sd_lit.id: "True",
+                "%d-siblingname" % sd_lit.id: "Test Name",
+            },
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertIn("/learn/%s/studentreg" % self.program.url, response["Location"])
         self.assertEqual(iac.amount_due(), program_cost - 20)
         spi = SplashInfo.getForUser(student, self.program)
-        self.assertEqual(spi.siblingname, 'Test Name')
+        self.assertEqual(spi.siblingname, "Test Name")
 
     def test_catalog_deadline(self):
         """Test that catalog respects Student/Catalog deadline."""
@@ -610,36 +814,40 @@ class StudentRegTest(ProgramFrameworkTest):
         from django.utils import timezone
 
         program = self.program
-        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.filter(
+            permission_type="Student/Catalog", program=program
+        ).delete()
 
         # No deadline configured - catalog should work
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
 
         # Active deadline - catalog should work
         perm = Permission.objects.create(
-            permission_type='Student/Catalog', program=program, user=None,
+            permission_type="Student/Catalog",
+            program=program,
+            user=None,
             start_date=timezone.now() - timedelta(days=1),
-            end_date=timezone.now() + timedelta(days=1)
+            end_date=timezone.now() + timedelta(days=1),
         )
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+        self.assertEqual(response["Cache-Control"], "public, max-age=120")
 
         # Expired deadline - should show error
         perm.end_date = timezone.now() - timedelta(hours=1)
         perm.save()
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
-        self.assertIn('deadline', response.content.decode('utf-8').lower())
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
+        self.assertIn("deadline", response.content.decode("utf-8").lower())
+        self.assertEqual(response["Cache-Control"], "no-store")
 
         # Future deadline (configured but not yet started) - should also be closed
         perm.start_date = timezone.now() + timedelta(hours=1)
         perm.end_date = timezone.now() + timedelta(days=1)
         perm.save()
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
-        self.assertIn('deadline', response.content.decode('utf-8').lower())
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
+        self.assertIn("deadline", response.content.decode("utf-8").lower())
+        self.assertEqual(response["Cache-Control"], "no-store")
 
     def test_catalog_deadline_admin_bypass(self):
         """Admins can see the catalog while it is closed; students cannot."""
@@ -647,46 +855,55 @@ class StudentRegTest(ProgramFrameworkTest):
         from django.utils import timezone
 
         program = self.program
-        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.filter(
+            permission_type="Student/Catalog", program=program
+        ).delete()
         Permission.objects.create(
-            permission_type='Student/Catalog', program=program, user=None,
+            permission_type="Student/Catalog",
+            program=program,
+            user=None,
             start_date=timezone.now() - timedelta(days=2),
             end_date=timezone.now() - timedelta(hours=1),
         )
 
         # A student still gets the deadline page
         student = random.choice(self.students)
-        self.assertTrue(self.client.login(username=student.username, password='password'))
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
-        self.assertIn('deadline', response.content.decode('utf-8').lower())
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertTrue(
+            self.client.login(username=student.username, password="password")
+        )
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
+        self.assertIn("deadline", response.content.decode("utf-8").lower())
+        self.assertEqual(response["Cache-Control"], "no-store")
 
         # An admin gets the real catalog, marked no-store so that a shared cache
         # cannot keep it and hand it to students afterwards
         admin = random.choice(self.admins)
-        self.assertTrue(self.client.login(username=admin.username, password='password'))
-        response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+        self.assertTrue(self.client.login(username=admin.username, password="password"))
+        response = self.client.get("/learn/%s/catalog" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.expect_template(response, 'program/modules/studentclassregmodule/catalog.html')
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.expect_template(
+            response, "program/modules/studentclassregmodule/catalog.html"
+        )
+        self.assertEqual(response["Cache-Control"], "no-store")
 
-        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog_json" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertEqual(response["Cache-Control"], "no-store")
         self.assertIsInstance(json.loads(response.content), list)
 
     def test_catalog_deadline_is_configurable(self):
         """Admins must be able to create the Student/Catalog deadline."""
         from esp.program.modules.handlers.admincore import NewDeadlineForm
 
-        self.assertIn('Student/Catalog', Permission.PERMISSION_CHOICES_FLAT)
-        self.assertIn('Student/Catalog', Permission.deadline_types)
+        self.assertIn("Student/Catalog", Permission.PERMISSION_CHOICES_FLAT)
+        self.assertIn("Student/Catalog", Permission.deadline_types)
 
-        form = NewDeadlineForm({'deadline_type': 'Student/Catalog', 'role': 'Student'})
+        form = NewDeadlineForm({"deadline_type": "Student/Catalog", "role": "Student"})
         self.assertTrue(form.is_valid(), form.errors)
 
-        Permission(permission_type='Student/Catalog', program=self.program,
-                   user=None).full_clean()
+        Permission(
+            permission_type="Student/Catalog", program=self.program, user=None
+        ).full_clean()
 
     def test_catalog_json_open(self):
         """catalog_json returns 200 with JSON when catalog is open."""
@@ -695,23 +912,27 @@ class StudentRegTest(ProgramFrameworkTest):
         from django.utils import timezone
 
         program = self.program
-        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.filter(
+            permission_type="Student/Catalog", program=program
+        ).delete()
 
         # No deadline at all — should be open
-        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog_json" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/json')
-        self.assertEqual(response['Cache-Control'], 'public, max-age=120')
+        self.assertEqual(response["Content-Type"], "application/json")
+        self.assertEqual(response["Cache-Control"], "public, max-age=120")
         data = json.loads(response.content)
         self.assertIsInstance(data, list)
 
         # Active deadline — should still be open
         Permission.objects.create(
-            permission_type='Student/Catalog', program=program, user=None,
+            permission_type="Student/Catalog",
+            program=program,
+            user=None,
             start_date=timezone.now() - timedelta(days=1),
             end_date=timezone.now() + timedelta(days=1),
         )
-        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog_json" % program.getUrlBase())
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
         self.assertIsInstance(data, list)
@@ -722,17 +943,21 @@ class StudentRegTest(ProgramFrameworkTest):
         from django.utils import timezone
 
         program = self.program
-        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.filter(
+            permission_type="Student/Catalog", program=program
+        ).delete()
 
         # Expired deadline — catalog should be closed
         Permission.objects.create(
-            permission_type='Student/Catalog', program=program, user=None,
+            permission_type="Student/Catalog",
+            program=program,
+            user=None,
             start_date=timezone.now() - timedelta(days=2),
             end_date=timezone.now() - timedelta(hours=1),
         )
-        response = self.client.get('/learn/%s/catalog_json' % program.getUrlBase())
+        response = self.client.get("/learn/%s/catalog_json" % program.getUrlBase())
         self.assertEqual(response.status_code, 403)
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        self.assertEqual(response["Cache-Control"], "no-store")
 
     def test_catalog_pdf_closed(self):
         """catalog_pdf returns deadline page with no-store cache header when catalog is closed."""
@@ -740,16 +965,21 @@ class StudentRegTest(ProgramFrameworkTest):
         from django.utils import timezone
 
         program = self.program
-        Permission.objects.filter(permission_type='Student/Catalog', program=program).delete()
+        Permission.objects.filter(
+            permission_type="Student/Catalog", program=program
+        ).delete()
 
         Permission.objects.create(
-            permission_type='Student/Catalog', program=program, user=None,
+            permission_type="Student/Catalog",
+            program=program,
+            user=None,
             start_date=timezone.now() - timedelta(days=2),
             end_date=timezone.now() - timedelta(hours=1),
         )
-        response = self.client.get('/learn/%s/catalog_pdf' % program.getUrlBase())
-        self.assertIn('deadline', response.content.decode('utf-8').lower())
-        self.assertEqual(response['Cache-Control'], 'no-store')
+        response = self.client.get("/learn/%s/catalog_pdf" % program.getUrlBase())
+        self.assertIn("deadline", response.content.decode("utf-8").lower())
+        self.assertEqual(response["Cache-Control"], "no-store")
+
 
 class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     """
@@ -764,9 +994,9 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
 
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler='TeacherClassRegModule'),
-            ProgramModule.objects.get(handler='StudentClassRegModule'),
-            ProgramModule.objects.get(handler='StudentRegCore'),
+            ProgramModule.objects.get(handler="TeacherClassRegModule"),
+            ProgramModule.objects.get(handler="StudentClassRegModule"),
+            ProgramModule.objects.get(handler="StudentRegCore"),
         ]
         super().setUp(modules=modules)
         self.schedule_randomly()
@@ -778,24 +1008,26 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         scrmi.save()
 
         # Ensure the registration types we test with exist
-        RegistrationType.objects.get_or_create(name='Enrolled')
-        self.rt_waitlisted, _ = RegistrationType.objects.get_or_create(name='Waitlisted')
-        self.rt_priority, _   = RegistrationType.objects.get_or_create(name='Priority')
+        RegistrationType.objects.get_or_create(name="Enrolled")
+        self.rt_waitlisted, _ = RegistrationType.objects.get_or_create(
+            name="Waitlisted"
+        )
+        self.rt_priority, _ = RegistrationType.objects.get_or_create(name="Priority")
 
         # Pick the first student and give them registrations under all three types
         self.student = self.students[0]
-        self.student.set_password('password')
+        self.student.set_password("password")
         self.student.save()
 
         section = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
-        for rt_name in ('Enrolled', 'Waitlisted', 'Priority'):
+        for rt_name in ("Enrolled", "Waitlisted", "Priority"):
             rt = RegistrationType.objects.get(name=rt_name)
             StudentRegistration.objects.get_or_create(
                 user=self.student, section=section, relationship=rt
             )
 
         # Start each test with a clean slate — no display_registration_names tag
-        Tag.objects.filter(key='display_registration_names').delete()
+        Tag.objects.filter(key="display_registration_names").delete()
 
     # ------------------------------------------------------------------
     # Helper
@@ -804,19 +1036,19 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
     def _set_tag(self, names):
         """Create/update a program-scoped display_registration_names tag."""
         Tag.setTag(
-            key='display_registration_names',
+            key="display_registration_names",
             target=self.program,
             value=json.dumps(names),
         )
 
     def _student_login(self):
         self.assertTrue(
-            self.client.login(username=self.student.username, password='password'),
-            'Could not log in as test student',
+            self.client.login(username=self.student.username, password="password"),
+            "Could not log in as test student",
         )
 
     def _get_studentreg(self):
-        return self.client.get('/learn/' + self.program.url + '/studentreg')
+        return self.client.get("/learn/" + self.program.url + "/studentreg")
 
     # ------------------------------------------------------------------
     # Test A: Default behaviour — no tag set
@@ -829,17 +1061,19 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         surface any non-default registration type names.
         """
         # Controller returns the hardcoded default
-        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
-        self.assertIn('Enrolled', visible)
-        self.assertNotIn('Waitlisted', visible)
-        self.assertNotIn('Priority', visible)
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program
+        )
+        self.assertIn("Enrolled", visible)
+        self.assertNotIn("Waitlisted", visible)
+        self.assertNotIn("Priority", visible)
 
         # HTTP response agrees
         self._student_login()
         response = self._get_studentreg()
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'Waitlisted')
-        self.assertNotContains(response, 'Priority')
+        self.assertNotContains(response, "Waitlisted")
+        self.assertNotContains(response, "Priority")
 
     # ------------------------------------------------------------------
     # Test B: Tag restricts which types are visible
@@ -851,19 +1085,22 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         ['Waitlisted', 'Enrolled'] (tag value merged with the mandatory
         default).  The student reg page shows 'Waitlisted' but not 'Priority'.
         """
-        self._set_tag(['Waitlisted'])
+        self._set_tag(["Waitlisted"])
 
-        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
-        self.assertIn('Enrolled', visible,
-                      'Enrolled must always be present regardless of tag')
-        self.assertIn('Waitlisted', visible)
-        self.assertNotIn('Priority', visible)
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program
+        )
+        self.assertIn(
+            "Enrolled", visible, "Enrolled must always be present regardless of tag"
+        )
+        self.assertIn("Waitlisted", visible)
+        self.assertNotIn("Priority", visible)
 
         self._student_login()
         response = self._get_studentreg()
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Waitlisted')
-        self.assertNotContains(response, 'Priority')
+        self.assertContains(response, "Waitlisted")
+        self.assertNotContains(response, "Priority")
 
     # ------------------------------------------------------------------
     # Test C: Changing the tag dynamically updates what the page shows
@@ -877,19 +1114,19 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         self._student_login()
 
         # First configuration: only Waitlisted (+ Enrolled)
-        self._set_tag(['Waitlisted'])
+        self._set_tag(["Waitlisted"])
         response = self._get_studentreg()
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Waitlisted')
-        self.assertNotContains(response, 'Priority')
+        self.assertContains(response, "Waitlisted")
+        self.assertNotContains(response, "Priority")
 
         # Second configuration: only Priority (+ Enrolled)
-        Tag.objects.filter(key='display_registration_names').delete()
-        self._set_tag(['Priority'])
+        Tag.objects.filter(key="display_registration_names").delete()
+        self._set_tag(["Priority"])
         response = self._get_studentreg()
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Priority')
-        self.assertNotContains(response, 'Waitlisted')
+        self.assertContains(response, "Priority")
+        self.assertNotContains(response, "Waitlisted")
 
     # ------------------------------------------------------------------
     # Test D: 'All' sentinel returns every RegistrationType
@@ -901,25 +1138,30 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         name in the database is returned.  Passing for_VRT_form=True additionally
         appends the literal string 'All' to the result (used by the admin form).
         """
-        self._set_tag(['All'])
+        self._set_tag(["All"])
 
         # Normal (student-facing) call: every RT name, but NOT the literal 'All'
-        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program
+        )
         all_names = list(
-            RegistrationType.objects.values_list('name', flat=True)
-                                    .distinct().order_by('name')
+            RegistrationType.objects.values_list("name", flat=True)
+            .distinct()
+            .order_by("name")
         )
         for name in all_names:
-            self.assertIn(name, visible,
-                         'Expected %r in visible types when tag is "All"' % name)
-        self.assertNotIn('All', visible,
-                         'Literal "All" must not appear in the student-facing list')
+            self.assertIn(
+                name, visible, 'Expected %r in visible types when tag is "All"' % name
+            )
+        self.assertNotIn(
+            "All", visible, 'Literal "All" must not appear in the student-facing list'
+        )
 
         # Admin VRT form call: 'All' appended so the form can re-select it
         visible_vrt = RegistrationTypeController.getVisibleRegistrationTypeNames(
             self.program, for_VRT_form=True
         )
-        self.assertIn('All', visible_vrt)
+        self.assertIn("All", visible_vrt)
 
     # ------------------------------------------------------------------
     # Test E: Empty or invalid tag falls back safely
@@ -932,9 +1174,11 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         the student reg page renders without error.
         """
         # Manually insert a tag with an empty value (bypasses Tag.setTag validation)
-        Tag.objects.get_or_create(key='display_registration_names', value='')
+        Tag.objects.get_or_create(key="display_registration_names", value="")
 
-        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program
+        )
         # Empty string is falsy -> falls back to default_names
         self.assertEqual(list(visible), RegistrationTypeController.default_names)
 
@@ -947,9 +1191,13 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         A malformed JSON tag value should be ignored safely: the controller
         falls back to default_names and the student reg page still renders.
         """
-        Tag.objects.get_or_create(key='display_registration_names', value='not_valid_json')
+        Tag.objects.get_or_create(
+            key="display_registration_names", value="not_valid_json"
+        )
 
-        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(self.program)
+        visible = RegistrationTypeController.getVisibleRegistrationTypeNames(
+            self.program
+        )
         self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
 
         self._student_login()
@@ -971,6 +1219,8 @@ class RegistrationTypeVisibilityTest(ProgramFrameworkTest):
         """
         visible = RegistrationTypeController.getVisibleRegistrationTypeNames(999999999)
         self.assertEqual(set(visible), set(RegistrationTypeController.default_names))
+
+
 class UserviewGradeUpdateTest(ProgramFrameworkTest):
     """
     Tests for the grade-update functionality introduced in PR #208 (commit
@@ -983,18 +1233,24 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
         # Minimal program scaffold; we only need students, teachers, and admins.
-        kwargs.update({
-            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
-            'num_rooms': 1,
-        })
+        kwargs.update(
+            {
+                "num_timeslots": 1,
+                "timeslot_length": 50,
+                "timeslot_gap": 10,
+                "num_teachers": 1,
+                "classes_per_teacher": 1,
+                "sections_per_class": 1,
+                "num_rooms": 1,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         # Build StudentInfo / RegistrationProfile rows for every student.
         self.add_student_profiles()
 
         self.student = self.students[0]
-        self.admin   = self.admins[0]
+        self.admin = self.admins[0]
 
         # Record the initial graduation year so each test can assert "unchanged".
         self.initial_grad_year = (
@@ -1011,7 +1267,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             new_yog = ESPUser.YOGFromGrade(new_grade)
         self.new_grad_year = new_yog
 
-        self.userview_base = '/manage/userview'
+        self.userview_base = "/manage/userview"
 
     # ------------------------------------------------------------------
     # Test 1: Admin can update a student's grade
@@ -1020,17 +1276,21 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
     def test_admin_can_update_grade(self):
         """A logged-in admin should be able to change a student's graduation
         year via the graduation_year GET parameter."""
-        self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': self.new_grad_year,
-        })
+        self.client.login(username=self.admin.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": self.new_grad_year,
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
         # Re-fetch from DB to confirm persistence.
         updated_info = self.student.getLastProfile().student_info
         self.assertEqual(
-            updated_info.graduation_year, self.new_grad_year,
+            updated_info.graduation_year,
+            self.new_grad_year,
             "Admin update failed: expected grad year %s, got %s"
             % (self.new_grad_year, updated_info.graduation_year),
         )
@@ -1042,20 +1302,25 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
     def test_student_cannot_update_own_grade(self):
         """A student is not an administrator, so the view should return 403
         and leave the graduation year unchanged."""
-        self.client.login(username=self.student.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': self.new_grad_year,
-        })
+        self.client.login(username=self.student.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": self.new_grad_year,
+            },
+        )
         self.assertEqual(
-            response.status_code, 403,
+            response.status_code,
+            403,
             "Expected 403 for non-admin access, got %s" % response.status_code,
         )
 
         # Grade must not have changed.
         info = self.student.getLastProfile().student_info
         self.assertEqual(
-            info.graduation_year, self.initial_grad_year,
+            info.graduation_year,
+            self.initial_grad_year,
             "Graduation year was incorrectly modified by the student themselves.",
         )
 
@@ -1067,19 +1332,24 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A teacher (non-admin) should receive 403 and leave the grade
         unchanged."""
         teacher = self.teachers[0]
-        self.client.login(username=teacher.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': self.new_grad_year,
-        })
+        self.client.login(username=teacher.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": self.new_grad_year,
+            },
+        )
         self.assertEqual(
-            response.status_code, 403,
+            response.status_code,
+            403,
             "Expected 403 for teacher access, got %s" % response.status_code,
         )
 
         info = self.student.getLastProfile().student_info
         self.assertEqual(
-            info.graduation_year, self.initial_grad_year,
+            info.graduation_year,
+            self.initial_grad_year,
             "Graduation year was incorrectly modified by a non-admin teacher.",
         )
 
@@ -1092,19 +1362,24 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the graduation year must remain untouched."""
         # Ensure no session cookie is active.
         self.client.logout()
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': self.new_grad_year,
-        })
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": self.new_grad_year,
+            },
+        )
         self.assertEqual(
-            response.status_code, 302,
+            response.status_code,
+            302,
             "Expected 302 redirect for unauthenticated access, got %s"
             % response.status_code,
         )
 
         info = self.student.getLastProfile().student_info
         self.assertEqual(
-            info.graduation_year, self.initial_grad_year,
+            info.graduation_year,
+            self.initial_grad_year,
             "Graduation year was incorrectly modified by an unauthenticated user.",
         )
 
@@ -1117,20 +1392,25 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """Passing a non-integer graduation_year should be silently ignored:
         the view returns 200 without crashing, and the graduation year in the
         DB remains unchanged."""
-        self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': 'not_a_number',
-        })
+        self.client.login(username=self.admin.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": "not_a_number",
+            },
+        )
         self.assertEqual(
-            response.status_code, 200,
+            response.status_code,
+            200,
             "Expected 200 for invalid graduation_year input, got %s"
             % response.status_code,
         )
 
         info = self.student.getLastProfile().student_info
         self.assertEqual(
-            info.graduation_year, self.initial_grad_year,
+            info.graduation_year,
+            self.initial_grad_year,
             "Graduation year was incorrectly modified on invalid input.",
         )
 
@@ -1145,35 +1425,43 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.student_info = None
         profile.save()
 
-        self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': self.new_grad_year,
-        })
+        self.client.login(username=self.admin.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": self.new_grad_year,
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
         updated_info = self.student.getLastProfile().student_info
         self.assertIsNotNone(updated_info)
         self.assertEqual(
-            updated_info.graduation_year, self.new_grad_year,
+            updated_info.graduation_year,
+            self.new_grad_year,
             "Expected StudentInfo to be recreated and graduation year updated.",
         )
 
     def test_out_of_range_graduation_year_does_not_change_grade(self):
         """Passing a graduation year outside configured grade options should be
         ignored safely, leaving the existing graduation year unchanged."""
-        self.client.login(username=self.admin.username, password='password')
+        self.client.login(username=self.admin.username, password="password")
 
-        for invalid_year in ('-100', '999999'):
-            response = self.client.get(self.userview_base, data={
-                'username': self.student.username,
-                'graduation_year': invalid_year,
-            })
+        for invalid_year in ("-100", "999999"):
+            response = self.client.get(
+                self.userview_base,
+                data={
+                    "username": self.student.username,
+                    "graduation_year": invalid_year,
+                },
+            )
             self.assertEqual(response.status_code, 200)
 
             info = self.student.getLastProfile().student_info
             self.assertEqual(
-                info.graduation_year, self.initial_grad_year,
+                info.graduation_year,
+                self.initial_grad_year,
                 "Graduation year changed unexpectedly for invalid input %s"
                 % invalid_year,
             )
@@ -1184,11 +1472,14 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.student_info = None
         profile.save()
 
-        self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-            'graduation_year': 'not_a_number',
-        })
+        self.client.login(username=self.admin.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+                "graduation_year": "not_a_number",
+            },
+        )
         self.assertEqual(response.status_code, 200)
 
         profile.refresh_from_db()
@@ -1205,12 +1496,16 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A GET to userview without a graduation_year param should still
         include 'change_grade_form' in the template context so the UI can
         render the grade-change widget."""
-        self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
-            'username': self.student.username,
-        })
+        self.client.login(username=self.admin.username, password="password")
+        response = self.client.get(
+            self.userview_base,
+            data={
+                "username": self.student.username,
+            },
+        )
         self.assertEqual(response.status_code, 200)
         self.assertIn(
-            'change_grade_form', response.context,
+            "change_grade_form",
+            response.context,
             "'change_grade_form' was not found in the userview template context.",
         )

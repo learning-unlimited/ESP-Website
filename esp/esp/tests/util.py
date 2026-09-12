@@ -8,8 +8,10 @@ import random
 
 from esp.middleware.threadlocalrequest import set_current_request, clear_current_request
 
+
 class CacheFlushTestCase(TestCase):
-    """ Flush the cache at the start and end of this test case """
+    """Flush the cache at the start and end of this test case"""
+
     def setUp(self):
         super().setUp()
         self._flush_cache()
@@ -19,7 +21,7 @@ class CacheFlushTestCase(TestCase):
         # Individual tests may call set_current_request() again with a more
         # specific request (e.g. an authenticated one) if needed.
         factory = RequestFactory()
-        request = factory.get('/')
+        request = factory.get("/")
         request.user = AnonymousUser()
         request.session = self.client.session
         set_current_request(request)
@@ -35,7 +37,7 @@ class CacheFlushTestCase(TestCase):
 
     @classmethod
     def _flush_cache_class(cls):
-        """ Don't do any actual fancy deletions; just change the cache prefix """
+        """Don't do any actual fancy deletions; just change the cache prefix"""
         if hasattr(cache, "flush_all"):
             cache.flush_all()
         else:
@@ -48,8 +50,12 @@ class CacheFlushTestCase(TestCase):
                 pass
 
             from esp import settings
-            settings.CACHE_PREFIX = ''.join( random.sample( string.ascii_letters + string.digits, 16 ) )
+
+            settings.CACHE_PREFIX = "".join(
+                random.sample(string.ascii_letters + string.digits, 16)
+            )
             from django.conf import settings as django_settings
+
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
 
     @classmethod
@@ -61,7 +67,11 @@ class CacheFlushTestCase(TestCase):
         self._flush_cache()
         super()._fixture_teardown()
 
-def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
+
+def user_role_setup(
+    names=["Student", "Teacher", "Educator", "Guardian", "Volunteer", "Administrator"],
+):
     from django.contrib.auth.models import Group
+
     for x in names:
         Group.objects.get_or_create(name=x)

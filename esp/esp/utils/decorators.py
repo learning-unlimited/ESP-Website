@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -42,10 +42,11 @@ from inspect import signature
 from functools import wraps
 import json
 
+
 class OptionalDecorator(object):
-    """ A simple decorator to turn a function into a no-op.  If the argument evaluates
-        to true, it's transparent.  Otherwise it generates a decorator that causes
-        the function to always return False. """
+    """A simple decorator to turn a function into a no-op.  If the argument evaluates
+    to true, it's transparent.  Otherwise it generates a decorator that causes
+    the function to always return False."""
 
     def __init__(self, value, *args, **kwargs):
         self.value = value
@@ -55,19 +56,21 @@ class OptionalDecorator(object):
         def _do_nothing(*args, **kwargs):
             return False
 
-        if hasattr(self, 'value') and self.value:
+        if hasattr(self, "value") and self.value:
             return func
         else:
             return _do_nothing
+
 
 enable_with_setting = OptionalDecorator
 
 _FIELD_MAP_UNSET = object()
 
+
 def json_response(field_map=_FIELD_MAP_UNSET):
-    """ Converts a serializable data structure into the appropriate HTTP response.
-        Allows changing the field names using field_map, which might be complicated
-        if related lookups were used.
+    """Converts a serializable data structure into the appropriate HTTP response.
+    Allows changing the field names using field_map, which might be complicated
+    if related lookups were used.
     """
 
     if field_map is _FIELD_MAP_UNSET:
@@ -78,7 +81,7 @@ def json_response(field_map=_FIELD_MAP_UNSET):
     def map_fields(item):
         if isinstance(item, Model):
             item = item.__dict__
-        assert(isinstance(item, dict))
+        assert isinstance(item, dict)
         result = {}
         for key in item:
             if key in field_map:
@@ -93,10 +96,11 @@ def json_response(field_map=_FIELD_MAP_UNSET):
             result = func(module_obj, request, *args, **kwargs)
             if isinstance(result, HttpResponse):
                 return result
-            elif 'json_debug' in request.GET:
+            elif "json_debug" in request.GET:
                 data = json.dumps(result, sort_keys=True, indent=4)
-                return render_to_response('utils/jsondebug.html',
-                                          request, {'data': data})
+                return render_to_response(
+                    "utils/jsondebug.html", request, {"data": data}
+                )
             else:
                 if field_map is None:
                     new_result = result
@@ -107,7 +111,7 @@ def json_response(field_map=_FIELD_MAP_UNSET):
                         for item in result[key]:
                             new_list.append(map_fields(item))
                         new_result[key] = new_list
-                resp = HttpResponse(content_type='application/json')
+                resp = HttpResponse(content_type="application/json")
                 json.dump(new_result, resp)
                 return resp
 
@@ -115,9 +119,10 @@ def json_response(field_map=_FIELD_MAP_UNSET):
 
     return dec
 
+
 class CachedModuleViewDecorator(object):
-    """ Employs some of the techniques used by the cached inclusion tag to
-        make caching a simple program module view easier. """
+    """Employs some of the techniques used by the cached inclusion tag to
+    make caching a simple program module view easier."""
 
     def __init__(self, func):
         parent_obj = self
@@ -131,17 +136,28 @@ class CachedModuleViewDecorator(object):
                 for p in signature(func).parameters.values()
                 if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
             ]
-            self.cached_function = cache_function(func, containing_class=containing_class)
+            self.cached_function = cache_function(
+                func, containing_class=containing_class
+            )
 
             def actual_func(self, request, tl, one, two, module, extra, prog):
                 #   Construct argument list
-                param_name_list = ['self', 'request', 'tl', 'one', 'two', 'module', 'extra', 'prog']
+                param_name_list = [
+                    "self",
+                    "request",
+                    "tl",
+                    "one",
+                    "two",
+                    "module",
+                    "extra",
+                    "prog",
+                ]
                 param_list = [self, request, tl, one, two, module, extra, prog]
                 args_for_func = []
                 for i in range(len(param_list)):
                     if param_name_list[i] in parent_obj.params:
                         args_for_func.append(param_list[i])
-                cache_only = 'cache_only' in request.GET
+                cache_only = "cache_only" in request.GET
                 return parent_obj.cached_function(*args_for_func, cache_only=cache_only)
 
             return actual_func
@@ -153,5 +169,6 @@ class CachedModuleViewDecorator(object):
 
     def __getattr__(self, attr):
         return getattr(self.inner_func, attr)
+
 
 cached_module_view = CachedModuleViewDecorator

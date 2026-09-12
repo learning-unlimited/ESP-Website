@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -40,13 +39,13 @@ from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
 from esp.program.modules.forms.rapidcheckin import RapidCheckinStudentWidget
-from esp.users.models    import ESPUser, Record, RecordType
-from esp.program.models  import RegistrationProfile, StudentRegistration
-from django.db.models    import Max, Min
+from esp.users.models import ESPUser, Record, RecordType
+from esp.program.models import RegistrationProfile, StudentRegistration
+from django.db.models import Max, Min
 from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
-from esp.users.views    import search_for_user
+from esp.users.views import search_for_user
 
 import json
 
@@ -62,7 +61,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 1,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -80,40 +79,42 @@ class OnSiteCheckinModule(ProgramModuleObj):
         )
 
     def updatePaid(self, paid=True):
-        IndividualAccountingController.updatePaid(self.program, self.student, paid, in_full=True)
+        IndividualAccountingController.updatePaid(
+            self.program, self.student, paid, in_full=True
+        )
 
     @transaction.atomic
     def create_record(self, event):
         created = False
-        if event=="attended":
+        if event == "attended":
             if not self.program.isCheckedIn(self.student):
                 rt = RecordType.objects.get(name="attended")
                 rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
                 created = True
         else:
-            if event=="paid":
+            if event == "paid":
                 self.updatePaid(True)
             rt = RecordType.objects.get(name=event)
-            recs, created = Record.objects.get_or_create(user=self.student,
-                                                         event=rt,
-                                                         program=self.program)
+            recs, created = Record.objects.get_or_create(
+                user=self.student, event=rt, program=self.program
+            )
         return created
 
     @transaction.atomic
     def delete_record(self, event):
-        if event=="attended":
+        if event == "attended":
             if self.program.isCheckedIn(self.student):
                 rt = RecordType.objects.get(name="checked_out")
                 rec = Record(user=self.student, event=rt, program=self.program)
                 rec.save()
-        elif event=="paid":
+        elif event == "paid":
             self.updatePaid(False)
         else:
             rt = RecordType.objects.get(name=event)
-            recs, created = Record.objects.get_or_create(user=self.student,
-                                                         event=rt,
-                                                         program=self.program)
+            recs, created = Record.objects.get_or_create(
+                user=self.student, event=rt, program=self.program
+            )
             recs.delete()
         return True
 
@@ -134,15 +135,23 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "liab", self.program)
 
     def timeCheckedIn(self):
-        u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("time")
+        u = Record.objects.filter(
+            event__name="attended", program=self.program, user=self.student
+        ).order_by("time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def lastCheckedIn(self):
-        u = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time")
+        u = Record.objects.filter(
+            event__name="attended", program=self.program, user=self.student
+        ).order_by("-time")
         return str(u[0].time.strftime("%H:%M %m/%d/%y"))
 
     def checkinPairs(self):
-        recs = Record.objects.filter(program = self.program, user = self.student, event__name__in=["attended", "checked_out"]).order_by('time')
+        recs = Record.objects.filter(
+            program=self.program,
+            user=self.student,
+            event__name__in=["attended", "checked_out"],
+        ).order_by("time")
         pairs = []
         checked_in = False
         ind = 0
@@ -161,28 +170,33 @@ class OnSiteCheckinModule(ProgramModuleObj):
     def ajax_status(self, request, tl, one, two, module, extra, prog, context=None):
         if context is None:
             context = {}
-        students = list(ESPUser.objects.filter(prog.students(QObjects=True)['attended']).distinct().order_by('id'))
+        students = list(
+            ESPUser.objects.filter(prog.students(QObjects=True)["attended"])
+            .distinct()
+            .order_by("id")
+        )
         student_ids = [s.id for s in students]
 
         #   Populate some stats
-        if 'snippets' in request.GET:
-            snippet_list = request.GET['snippets'].split(',')
+        if "snippets" in request.GET:
+            snippet_list = request.GET["snippets"].split(",")
         else:
-            snippet_list = ['grades']
+            snippet_list = ["grades"]
 
-        if 'grades' in snippet_list:
+        if "grades" in snippet_list:
             #   Bulk-fetch graduation years to avoid per-student getGrade() queries.
             schoolyear = ESPUser.program_schoolyear(prog)
             #   Get the latest RegistrationProfile per student for this program.
             yog_qs = (
-                RegistrationProfile.objects
-                .filter(user_id__in=student_ids, program=prog)
+                RegistrationProfile.objects.filter(
+                    user_id__in=student_ids, program=prog
+                )
                 .exclude(student_info__isnull=True)
                 .exclude(student_info__graduation_year__isnull=True)
-                .values('user_id')
-                .annotate(yog=Max('student_info__graduation_year'))
+                .values("user_id")
+                .annotate(yog=Max("student_info__graduation_year"))
             )
-            yog_lookup = {row['user_id']: row['yog'] for row in yog_qs}
+            yog_lookup = {row["user_id"]: row["yog"] for row in yog_qs}
             grade_levels = {}
             for uid in student_ids:
                 yog = yog_lookup.get(uid)
@@ -190,125 +204,149 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 if grade not in grade_levels:
                     grade_levels[grade] = 0
                 grade_levels[grade] += 1
-            context['grade_levels'] = [{'grade': key, 'num_students': grade_levels[key]} for key in grade_levels]
+            context["grade_levels"] = [
+                {"grade": key, "num_students": grade_levels[key]}
+                for key in grade_levels
+            ]
         else:
-            context['grade_levels'] = None
+            context["grade_levels"] = None
 
-        if 'times' in snippet_list:
+        if "times" in snippet_list:
             #   Bulk-fetch first class time to avoid per-student getFirstClassTime() queries.
             first_times_qs = (
-                StudentRegistration.objects
-                .filter(
+                StudentRegistration.objects.filter(
                     user_id__in=student_ids,
                     section__parent_class__parent_program=prog,
-                    relationship__name='Enrolled',
+                    relationship__name="Enrolled",
                 )
                 .filter(StudentRegistration.is_valid_qobject())
-                .values('user_id')
-                .annotate(first_start=Min('section__meeting_times__start'))
+                .values("user_id")
+                .annotate(first_start=Min("section__meeting_times__start"))
             )
-            first_time_lookup = {row['user_id']: row['first_start'] for row in first_times_qs}
+            first_time_lookup = {
+                row["user_id"]: row["first_start"] for row in first_times_qs
+            }
             start_times = {}
             for uid in student_ids:
                 start_time = first_time_lookup.get(uid)
                 if start_time not in start_times:
                     start_times[start_time] = 0
                 start_times[start_time] += 1
-            context['start_times'] = [{'time': key, 'num_students': start_times[key]} for key in start_times]
+            context["start_times"] = [
+                {"time": key, "num_students": start_times[key]} for key in start_times
+            ]
         else:
-            context['start_times'] = None
+            context["start_times"] = None
 
-        if 'students' in snippet_list:
-            context['students'] = students
+        if "students" in snippet_list:
+            context["students"] = students
         else:
-            context['students'] = None
+            context["students"] = None
 
-        context['module'] = self
+        context["module"] = self
 
-        json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
+        json_data = {
+            "checkin_status_html": render_to_string(
+                self.baseDir() + "checkinstatus.html", context
+            )
+        }
         return HttpResponse(json.dumps(json_data))
-
 
     @main_call
     @needs_onsite
     def rapidcheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
-        if request.method == 'POST':
+        if request.method == "POST":
             #   Handle submission of student
             form = StudentSearchForm(request.POST)
             if form.is_valid():
-                student = form.cleaned_data['target_user']
+                student = form.cleaned_data["target_user"]
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
-                if student.isStudent() and student not in self.program.teachers()['class_approved']:
+                if (
+                    student.isStudent()
+                    and student not in self.program.teachers()["class_approved"]
+                ):
                     if not prog.isCheckedIn(student):
                         rt = RecordType.objects.get(name="attended")
                         rec = Record(user=student, event=rt, program=prog)
                         rec.save()
-                    context['message'] = f'{student.first_name} {student.last_name} marked as attended.'
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return self.ajax_status(request, tl, one, two, module, extra, prog, context)
+                    context["message"] = (
+                        f"{student.first_name} {student.last_name} marked as attended."
+                    )
+                    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                        return self.ajax_status(
+                            request, tl, one, two, module, extra, prog, context
+                        )
                 else:
-                    context['message'] = f'{student.first_name} {student.last_name} is not a student and has not been checked in'
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return self.ajax_status(request, tl, one, two, module, extra, prog, context)
-                form = StudentSearchForm(initial={'target_user': student.id})
+                    context["message"] = (
+                        f"{student.first_name} {student.last_name} is not a student and has not been checked in"
+                    )
+                    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                        return self.ajax_status(
+                            request, tl, one, two, module, extra, prog, context
+                        )
+                form = StudentSearchForm(initial={"target_user": student.id})
         else:
             form = StudentSearchForm()
 
         # Use widget that does not inject autocomplete script; template sets up filter-aware autocomplete
-        form.fields['target_user'].widget = RapidCheckinStudentWidget()
-        context['module'] = self
-        context['form'] = form
-        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
+        form.fields["target_user"].widget = RapidCheckinStudentWidget()
+        context["module"] = self
+        context["form"] = form
+        return render_to_response(self.baseDir() + "ajaxcheckin.html", request, context)
 
     @aux_call
     @needs_onsite
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
-        if request.method == 'POST':
-            results = {'not_found': [],
-                       'existing': [],
-                       'new': [],
-                       'not_student': [],
-                       'paid': {'new': [], 'existing': []},
-                       'liab': {'new': [], 'existing': []},
-                       'med': {'new': [], 'existing': []}}
+        if request.method == "POST":
+            results = {
+                "not_found": [],
+                "existing": [],
+                "new": [],
+                "not_student": [],
+                "paid": {"new": [], "existing": []},
+                "liab": {"new": [], "existing": []},
+                "med": {"new": [], "existing": []},
+            }
             form = OnsiteBarcodeCheckinForm(request.POST)
             if form.is_valid():
-                codes=form.cleaned_data['uids'].split()
+                codes = form.cleaned_data["uids"].split()
                 for code in codes:
                     try:
                         student = ESPUser.objects.get(id=code)
                     except (ValueError, ESPUser.DoesNotExist):
-                        results['not_found'].append(code)
+                        results["not_found"].append(code)
                         continue
 
                     if student.isStudent():
                         self.student = student
                         with transaction.atomic():
-                            for key in ['attended', 'paid', 'liab', 'med']:
+                            for key in ["attended", "paid", "liab", "med"]:
                                 if form.cleaned_data[key]:
                                     if key == "attended":
                                         if prog.isCheckedIn(student):
-                                            results['existing'].append(code)
+                                            results["existing"].append(code)
                                         else:
                                             self.create_record(key)
-                                            results['new'].append(code)
+                                            results["new"].append(code)
                                     else:
                                         created = self.create_record(key)
                                         if created:
-                                            results[key]['new'].append(code)
+                                            results[key]["new"].append(code)
                                         else:
-                                            results[key]['existing'].append(code)
+                                            results[key]["existing"].append(code)
                     else:
-                        results['not_student'].append(code)
+                        results["not_student"].append(code)
         else:
             results = {}
-            form=OnsiteBarcodeCheckinForm()
-        context['module'] = self
-        context['form'] = form
-        context['results'] = results
-        return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
+            form = OnsiteBarcodeCheckinForm()
+        context["module"] = self
+        context["form"] = form
+        context["results"] = results
+        return render_to_response(
+            self.baseDir() + "barcodecheckin.html", request, context
+        )
 
     @aux_call
     @needs_onsite
@@ -323,76 +361,111 @@ class OnSiteCheckinModule(ProgramModuleObj):
           'liab':          Whether to set a 'liab' record.
         """
         json_data = {}
-        if request.method == 'POST' and 'code' in request.POST:
-            code = request.POST['code']
+        if request.method == "POST" and "code" in request.POST:
+            code = request.POST["code"]
             try:
                 student = ESPUser.objects.get(id=code)
             except ValueError:
-                json_data['message'] = '%s is not a valid user ID (must be numeric)!' % code
-                return HttpResponse(json.dumps(json_data), content_type='text/json')
+                json_data["message"] = (
+                    "%s is not a valid user ID (must be numeric)!" % code
+                )
+                return HttpResponse(json.dumps(json_data), content_type="text/json")
             except ESPUser.DoesNotExist:
-                json_data['message'] = '%s is not a user!' % code
+                json_data["message"] = "%s is not a user!" % code
             else:
                 info_string = student.name() + " (" + str(code) + ")"
                 if student.isStudent():
                     self.student = student
                     messages = []
                     with transaction.atomic():
-                        for key in ['attended', 'paid', 'liab', 'med']:
+                        for key in ["attended", "paid", "liab", "med"]:
                             if request.POST.get(key) == "true":
                                 if key == "attended":
                                     if prog.isCheckedIn(student):
-                                        messages.append('%s is already checked in!' % info_string)
+                                        messages.append(
+                                            "%s is already checked in!" % info_string
+                                        )
                                     else:
                                         self.create_record(key)
-                                        messages.append('%s is now checked in!' % info_string)
+                                        messages.append(
+                                            "%s is now checked in!" % info_string
+                                        )
                                 else:
                                     self.create_record(key)
-                                    messages.append(f'{key} record set for {info_string}')
-                    json_data['message'] = "\n".join(messages)
+                                    messages.append(
+                                        f"{key} record set for {info_string}"
+                                    )
+                    json_data["message"] = "\n".join(messages)
                 else:
-                    json_data['message'] = '%s is not a student!' % info_string
-        return HttpResponse(json.dumps(json_data), content_type='text/json')
+                    json_data["message"] = "%s is not a student!" % info_string
+        return HttpResponse(json.dumps(json_data), content_type="text/json")
 
     @aux_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST' and 'userid' in request.POST:
+        if request.method == "POST" and "userid" in request.POST:
             error = False
             message = None
-            user = ESPUser.objects.filter(id = request.POST['userid']).first()
+            user = ESPUser.objects.filter(id=request.POST["userid"]).first()
             if user:
                 self.student = user
                 with transaction.atomic():
-                    for key in ['attended', 'paid', 'liab', 'med']:
+                    for key in ["attended", "paid", "liab", "med"]:
                         if key in request.POST:
                             self.create_record(key)
                         else:
                             self.delete_record(key)
                     if "undocheckin" in request.POST:
-                        record = Record.objects.filter(event__name="attended", program=self.program, user=self.student).order_by("-time").first()
+                        record = (
+                            Record.objects.filter(
+                                event__name="attended",
+                                program=self.program,
+                                user=self.student,
+                            )
+                            .order_by("-time")
+                            .first()
+                        )
                         if record:
                             record.delete()
                     if "undocheckout" in request.POST:
-                        record = Record.objects.filter(event__name="checked_out", program=self.program, user=self.student).order_by("-time").first()
+                        record = (
+                            Record.objects.filter(
+                                event__name="checked_out",
+                                program=self.program,
+                                user=self.student,
+                            )
+                            .order_by("-time")
+                            .first()
+                        )
                         if record:
                             record.delete()
                 message = "Check-in updated for " + user.username
             else:
                 error = True
 
-            context = {'error': error, 'message': message, 'module': self.module.link_title}
-            return render_to_response('users/usersearch.html', request, context)
+            context = {
+                "error": error,
+                "message": message,
+                "module": self.module.link_title,
+            }
+            return render_to_response("users/usersearch.html", request, context)
 
         else:
-            user, found = search_for_user(request, self.program.students_union(), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+            user, found = search_for_user(
+                request,
+                self.program.students_union(),
+                add_to_context={"tl": "onsite", "module": self.module.link_title},
+            )
             if not found:
                 return user
 
             self.student = user
-            return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
-
+            return render_to_response(
+                self.baseDir() + "checkin.html",
+                request,
+                {"module": self, "program": prog},
+            )
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

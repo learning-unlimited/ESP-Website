@@ -49,26 +49,39 @@ else:
 #   pycurl code thanks to [bit.ly/StT2y8]
 ids = set()
 
+
 class Response(object):
-    """ utility class to collect the response """
+    """utility class to collect the response"""
+
     def __init__(self):
         self.chunks = []
+
     def callback(self, chunk):
         self.chunks.append(chunk)
+
     def content(self):
-        return ''.join(self.chunks)
+        return "".join(self.chunks)
+
 
 n = 1
 limit = 1
 #  num pages, will be update later with the real value as reported by Formstack
 
 while n <= limit:
-    url = API_BASE + "form/" + form_id + "/submission" + \
-          "?page=" + str(n) + \
-          "&per_page=100" + \
-          "&sort=ASC" + \
-          "&oauth_token=" + oauth_token + \
-          "&encryption_password=" + encryption_password
+    url = (
+        API_BASE
+        + "form/"
+        + form_id
+        + "/submission"
+        + "?page="
+        + str(n)
+        + "&per_page=100"
+        + "&sort=ASC"
+        + "&oauth_token="
+        + oauth_token
+        + "&encryption_password="
+        + encryption_password
+    )
 
     res = Response()
     curl = pycurl.Curl()
@@ -87,11 +100,11 @@ while n <= limit:
 
     form_data = json.loads(result)
 
-    for submission in form_data['submissions']:
-        ids.add(submission['id'])
+    for submission in form_data["submissions"]:
+        ids.add(submission["id"])
 
     if n == 1:
-        limit = form_data['pages']
+        limit = form_data["pages"]
         #  true number of pages of data
 
         print("")
@@ -104,7 +117,7 @@ while n <= limit:
 
 # Create Download Helper
 #  divide up into batches of BATCH_SIZE, prepare POST requests
-f = open('formstack_download.html', 'w')
+f = open("formstack_download.html", "w")
 
 batch = 1
 while len(ids) > 0:

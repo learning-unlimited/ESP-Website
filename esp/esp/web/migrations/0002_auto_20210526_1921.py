@@ -5,18 +5,17 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('web', '0001_initial'),
+        ("web", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='navbarcategory',
-            options={'verbose_name_plural': 'Nav bar categories'},
+            name="navbarcategory",
+            options={"verbose_name_plural": "Nav bar categories"},
         ),
         migrations.AlterModelOptions(
-            name='navbarentry',
-            options={'verbose_name_plural': 'Nav bar entries'},
+            name="navbarentry",
+            options={"verbose_name_plural": "Nav bar entries"},
         ),
     ]

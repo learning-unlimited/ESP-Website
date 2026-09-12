@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,13 +31,19 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    main_call,
+)
 from esp.utils.web import render_to_response
-from esp.users.models    import ESPUser
-from django.db.models.query       import Q
+from esp.users.models import ESPUser
+from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import StudentRegistration
 from esp.utils.query_utils import nest_Q
+
 
 class StudentJunctionAppModule(ProgramModuleObj):
     doc = """Allows students to submit applications for a program."""
@@ -52,39 +57,48 @@ class StudentJunctionAppModule(ProgramModuleObj):
             "seq": 10000,
             "required": True,
             "choosable": 2,
-            }
+        }
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         if not self.program.isUsingStudentApps():
             return {}
-        Q_students = Q(studentapplication__program = self.program)
+        Q_students = Q(studentapplication__program=self.program)
 
-        Q_students_complete = Q(studentapplication__done = True)
+        Q_students_complete = Q(studentapplication__done=True)
 
-        Q_accepted = (
-            Q(studentregistration__relationship__name='Accepted',
-              studentregistration__section__parent_class__parent_program=self.program)
-            & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        )
+        Q_accepted = Q(
+            studentregistration__relationship__name="Accepted",
+            studentregistration__section__parent_class__parent_program=self.program,
+        ) & nest_Q(StudentRegistration.is_valid_qobject(), "studentregistration")
 
         if QObject:
-            return {'studentapps_complete': Q_students & Q_students_complete,
-                    'studentapps':          Q_students,
-                    'app_accepted_to_one_program': Q_accepted}
+            return {
+                "studentapps_complete": Q_students & Q_students_complete,
+                "studentapps": Q_students,
+                "app_accepted_to_one_program": Q_accepted,
+            }
         else:
-            return {'studentapps_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
-                    'studentapps':          ESPUser.objects.filter(Q_students),
-                    'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
+            return {
+                "studentapps_complete": ESPUser.objects.filter(
+                    Q_students & Q_students_complete
+                ),
+                "studentapps": ESPUser.objects.filter(Q_students),
+                "app_accepted_to_one_program": ESPUser.objects.filter(
+                    Q_accepted
+                ).distinct(),
+            }
 
     def studentDesc(self):
         if not self.program.isUsingStudentApps():
             return {}
-        return {'studentapps_complete': """Students who have completed the student application""",
-                'studentapps':          """Students who have started the student application""",
-                'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
+        return {
+            "studentapps_complete": """Students who have completed the student application""",
+            "studentapps": """Students who have started the student application""",
+            "app_accepted_to_one_program": """Students who are accepted to at least one class""",
+        }
 
     def isCompleted(self, user=None):
-        """ This step is completed if the student has marked their application as complete or answered questions for
+        """This step is completed if the student has marked their application as complete or answered questions for
         all of their classes.  I know this is slow sometimes.  -Michael P"""
         user = self._resolve_user(user)
         app = user.getApplication(self.program)
@@ -109,44 +123,48 @@ class StudentJunctionAppModule(ProgramModuleObj):
         #   Check that they responded to everything.
         classes = user.getAppliedClasses(self.program)
         for cls in classes:
-            for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
+            for i in [x["id"] for x in cls.studentappquestion_set.all().values("id")]:
                 if i not in response_question_ids:
                     return False
-                elif (not response_dict[i].complete) and len(response_dict[i].response) == 0:
+                elif (not response_dict[i].complete) and len(
+                    response_dict[i].response
+                ) == 0:
                     return False
         return True
 
     def deadline_met(self):
-        return super().deadline_met('/Applications')
+        return super().deadline_met("/Applications")
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Applications')
+    @meets_deadline("/Applications")
     def application(self, request, tl, one, two, module, extra, prog):
         app = request.user.getApplication(self.program)
         app.set_questions()
         form = None
-        if request.method == 'POST':
+        if request.method == "POST":
             data = request.POST.copy()
             forms = app.get_forms(data)
             for form in forms:
                 if form.is_valid():
                     form.target.update(form)
-            submitform = request.POST.get('submitform', '').lower()
-            if submitform == 'complete':
+            submitform = request.POST.get("submitform", "").lower()
+            if submitform == "complete":
                 app.done = True
-            elif submitform == 'mark as unfinished':
+            elif submitform == "mark as unfinished":
                 app.done = False
             app.save()
             return self.goToCore(tl)
         else:
             forms = app.get_forms()
 
-        return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
+        return render_to_response(
+            self.baseDir() + "application.html", request, {"forms": forms, "app": app}
+        )
 
     def isStep(self):
         return self.program.isUsingStudentApps()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

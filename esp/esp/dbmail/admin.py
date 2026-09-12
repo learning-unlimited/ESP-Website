@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -35,34 +34,64 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
+from esp.dbmail.models import (
+    MessageVars,
+    EmailList,
+    PlainRedirect,
+    MessageRequest,
+    TextOfEmail,
+)
 from esp.utils.admin_user_search import default_user_search
 
+
 class MessageVarsAdmin(admin.ModelAdmin):
-    list_display = ('id', 'messagerequest', 'provider_name')
-    list_filter = ('provider_name',)
-    search_fields = ('messagerequest__subject',)
+    list_display = ("id", "messagerequest", "provider_name")
+    list_filter = ("provider_name",)
+    search_fields = ("messagerequest__subject",)
+
+
 admin_site.register(MessageVars, MessageVarsAdmin)
 
+
 class EmailListAdmin(admin.ModelAdmin):
-    list_display = ('description', 'regex')
+    list_display = ("description", "regex")
+
+
 admin_site.register(EmailList, EmailListAdmin)
 
+
 class PlainRedirectAdmin(admin.ModelAdmin):
-    list_display = ('original', 'destination')
-    search_fields = ('original', 'destination')
+    list_display = ("original", "destination")
+    search_fields = ("original", "destination")
+
+
 admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
+
 class MessageRequestAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'creator', 'sender', 'recipients', 'created_at', 'processed_by', 'processed', 'public')
-    list_filter = ('processed', 'processed_by', 'public')
-    search_fields = default_user_search('creator') + ['subject', 'sender']
-    date_hierarchy = 'processed_by'
+    list_display = (
+        "subject",
+        "creator",
+        "sender",
+        "recipients",
+        "created_at",
+        "processed_by",
+        "processed",
+        "public",
+    )
+    list_filter = ("processed", "processed_by", "public")
+    search_fields = default_user_search("creator") + ["subject", "sender"]
+    date_hierarchy = "processed_by"
+
+
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
+
 class TextOfEmailAdmin(admin.ModelAdmin):
-    list_display = ('id', 'send_from', 'send_to', 'subject', 'sent', 'user')
-    search_fields = ('=id', 'send_from', 'send_to', 'subject', 'user')
-    date_hierarchy = 'sent'
-    list_filter = ('send_from',)
+    list_display = ("id", "send_from", "send_to", "subject", "sent", "user")
+    search_fields = ("=id", "send_from", "send_to", "subject", "user")
+    date_hierarchy = "sent"
+    list_filter = ("send_from",)
+
+
 admin_site.register(TextOfEmail, TextOfEmailAdmin)

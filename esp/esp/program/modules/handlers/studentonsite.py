@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,20 +35,29 @@ import datetime
 
 from django import forms
 
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, meets_cap
-from esp.program.models  import ClassSubject, ClassSection, StudentRegistration
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    CoreModule,
+    main_call,
+    aux_call,
+    meets_cap,
+)
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration
 from esp.accounting.controllers import IndividualAccountingController
 from esp.utils.web import render_to_response
-from esp.users.models    import Record, RecordType, Permission
+from esp.users.models import Record, RecordType, Permission
 from esp.cal.models import Event
-from esp.middleware   import ESPError, ESPError_NoLog
-from esp.survey.views   import survey_view
-from esp.tagdict.models  import Tag
+from esp.middleware import ESPError, ESPError_NoLog
+from esp.survey.views import survey_view
+from esp.tagdict.models import Tag
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
     doc = """Serves a mobile-friendly interface for common onsite functions for students."""
@@ -60,265 +69,323 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
             "admin_title": "Student Onsite Webapp",
             "module_type": "learn",
             "seq": 9999,
-            "choosable": 1
-            }
+            "choosable": 1,
+        }
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     @meets_cap
     def studentonsite(self, request, tl, one, two, module, extra, prog):
-        """ Display the landing page for the student onsite webapp """
+        """Display the landing page for the student onsite webapp"""
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
         scrm = prog.getModule("StudentClassRegModule")
-        context.update(StudentClassRegModule.prepare_static(user, prog, scrm = scrm))
-        context['deadline_met'] = scrm.deadline_met()
+        context.update(StudentClassRegModule.prepare_static(user, prog, scrm=scrm))
+        context["deadline_met"] = scrm.deadline_met()
 
-        context['webapp_page'] = 'schedule'
-        context['scrmi'] = prog.studentclassregmoduleinfo
-        context['checked_in'] = prog.isCheckedIn(user)
-        context['checkin_note'] = Tag.getProgramTag('student_onsite_checkin_note', program = prog)
+        context["webapp_page"] = "schedule"
+        context["scrmi"] = prog.studentclassregmoduleinfo
+        context["checked_in"] = prog.isCheckedIn(user)
+        context["checkin_note"] = Tag.getProgramTag(
+            "student_onsite_checkin_note", program=prog
+        )
 
-        return render_to_response(self.baseDir()+'schedule.html', request, context)
+        return render_to_response(self.baseDir() + "schedule.html", request, context)
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     @meets_cap
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['webapp_page'] = 'schedule'
+        context["webapp_page"] = "schedule"
         if extra:
             secid = extra
-            sections = ClassSection.objects.filter(id = secid)
+            sections = ClassSection.objects.filter(id=secid)
             if len(sections) == 1:
                 section = sections[0]
-                if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):
-                    context['checked_in'] = prog.isCheckedIn(user)
-                    surveys = prog.getSurveys().filter(category = tl)
-                    context['has_survey'] = surveys.count() > 0 and surveys[0].questions.filter(per_class = True).exists()
+                if StudentRegistration.valid_objects().filter(
+                    section=section, user=user, relationship__name="Enrolled"
+                ):
+                    context["checked_in"] = prog.isCheckedIn(user)
+                    surveys = prog.getSurveys().filter(category=tl)
+                    context["has_survey"] = (
+                        surveys.count() > 0
+                        and surveys[0].questions.filter(per_class=True).exists()
+                    )
                     first_block = section.firstBlockEvent()
                     if first_block:
-                        context['has_started'] =  first_block.start < datetime.datetime.now()
-                    context['section'] = section
-                    return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
-        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                        context["has_started"] = (
+                            first_block.start < datetime.datetime.now()
+                        )
+                    context["section"] = section
+                    return render_to_response(
+                        self.baseDir() + "sectioninfo.html", request, context
+                    )
+        return HttpResponseRedirect(prog.get_learn_url() + "studentonsite")
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     @meets_cap
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog)
-        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
-        context['API_key'] = settings.GOOGLE_MAPS_EMBED_KEY
+        context["webapp_page"] = "map"
+        context["center"] = Tag.getProgramTag("program_center", program=prog)
+        context["zoom"] = Tag.getProgramTag("program_center_zoom", program=prog)
+        context["API_key"] = settings.GOOGLE_MAPS_EMBED_KEY
 
-        return render_to_response(self.baseDir()+'map.html', request, context)
+        return render_to_response(self.baseDir() + "map.html", request, context)
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     @meets_cap
     def onsitecatalog(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['webapp_page'] = 'catalog'
+        context["webapp_page"] = "catalog"
         user_grade = user.getGrade(self.program)
         if extra:
             try:
                 ts = Event.objects.get(id=int(extra), program=prog)
             except (ValueError, Event.DoesNotExist):
-                raise ESPError('Please use the links on the schedule page.', log=False)
-            context['timeslot'] = ts
+                raise ESPError("Please use the links on the schedule page.", log=False)
+            context["timeslot"] = ts
             classes = list(ClassSubject.objects.catalog(prog, ts))
-            classes = [c for c in classes if c.grade_min <=user_grade and c.grade_max >= user_grade]
-            context['checked_in'] = Record.objects.filter(program=prog, event__name='attended', user=user).exists()
+            classes = [
+                c
+                for c in classes
+                if c.grade_min <= user_grade and c.grade_max >= user_grade
+            ]
+            context["checked_in"] = Record.objects.filter(
+                program=prog, event__name="attended", user=user
+            ).exists()
 
         else:
             classes = list(ClassSubject.objects.catalog(prog))
 
         categories_sort = StudentClassRegModule.sort_categories(classes, prog)
 
-        context['classes'] = classes
-        context['categories'] = categories_sort
-        context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
+        context["classes"] = classes
+        context["categories"] = categories_sort
+        context["prereg_url"] = prog.get_learn_url() + "onsiteaddclass"
 
-        return render_to_response(self.baseDir()+'catalog.html', request, context)
+        return render_to_response(self.baseDir() + "catalog.html", request, context)
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     @meets_cap
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        context['webapp_page'] = 'survey'
-        return survey_view(request, tl, one, two, template = self.baseDir()+'survey.html', context = context)
+        context["webapp_page"] = "survey"
+        return survey_view(
+            request,
+            tl,
+            one,
+            two,
+            template=self.baseDir() + "survey.html",
+            context=context,
+        )
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsiteaddclass(self, request, tl, one, two, module, extra, prog):
         from django.db import transaction
-        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+        from esp.program.controllers.studentclassregmodule import (
+            RegistrationTypeController as RTC,
+        )
 
         try:
-            if request.POST.get('force_replace') == 'true':
+            if request.POST.get("force_replace") == "true":
                 with transaction.atomic():
-                    sectionid = request.POST.get('section_id')
+                    sectionid = request.POST.get("section_id")
                     if sectionid:
-                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        section = ClassSection.objects.filter(
+                            id=sectionid, parent_class__parent_program=prog
+                        ).first()
                         if section:
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
                             for conflict in conflicts:
                                 error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
+                                if error and not getattr(
+                                    request.user, "onsite_local", False
+                                ):
                                     raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
-                    success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
+                    success = StudentClassRegModule.addclass_logic(
+                        request, tl, one, two, module, extra, prog, webapp=True
+                    )
                     if not success:
                         transaction.set_rollback(True)
             else:
-                success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
+                success = StudentClassRegModule.addclass_logic(
+                    request, tl, one, two, module, extra, prog, webapp=True
+                )
 
             if success:
-                return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                return HttpResponseRedirect(prog.get_learn_url() + "studentonsite")
         except ESPError_NoLog as inst:
             error_message = inst.args[0] if inst.args else "An error occurred."
             if "conflicts with your schedule" in error_message:
                 try:
-                    sectionid = request.POST.get('section_id')
-                    classid = request.POST.get('class_id')
+                    sectionid = request.POST.get("section_id")
+                    classid = request.POST.get("class_id")
                     if sectionid:
-                        section = ClassSection.objects.filter(id=sectionid, parent_class__parent_program=prog).first()
+                        section = ClassSection.objects.filter(
+                            id=sectionid, parent_class__parent_program=prog
+                        ).first()
                         if section:
                             conflicts = section.get_conflicts(request.user)
-                            conflict_titles = ", ".join([str(c.title()) for c in conflicts])
-                            confirm_msg = "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?" % conflict_titles
+                            conflict_titles = ", ".join(
+                                [str(c.title()) for c in conflicts]
+                            )
+                            confirm_msg = (
+                                "This class conflicts with your schedule! If you add this class, you will be removed from %s. Do you want to proceed?"
+                                % conflict_titles
+                            )
 
                             context = self.onsitecontext(request, tl, one, two, prog)
-                            context['webapp_page'] = 'catalog'
-                            context['confirm_msg'] = confirm_msg
-                            context['section_id'] = sectionid
-                            context['class_id'] = classid
-                            context['prereg_url'] = prog.get_learn_url() + 'onsiteaddclass'
+                            context["webapp_page"] = "catalog"
+                            context["confirm_msg"] = confirm_msg
+                            context["section_id"] = sectionid
+                            context["class_id"] = classid
+                            context["prereg_url"] = (
+                                prog.get_learn_url() + "onsiteaddclass"
+                            )
                             from django.template.context_processors import csrf
+
                             context.update(csrf(request))
-                            return render_to_response(self.baseDir()+'conflict_confirm.html', request, context)
+                            return render_to_response(
+                                self.baseDir() + "conflict_confirm.html",
+                                request,
+                                context,
+                            )
                 except (ClassSection.DoesNotExist, ValueError):
                     pass
             raise ESPError(error_message, log=False)
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
-        result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
+        result = StudentClassRegModule.clearslot_logic(
+            request, tl, one, two, module, extra, prog
+        )
         if isinstance(result, str):
             raise ESPError(result, log=False)
         else:
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+            return HttpResponseRedirect(prog.get_learn_url() + "studentonsite")
 
     @aux_call
     @needs_student_in_grade
     def selfcheckin(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        mode = Tag.getProgramTag('student_self_checkin', program = prog)
+        mode = Tag.getProgramTag("student_self_checkin", program=prog)
         user = request.user
 
         # Redirect to their schedule if self checkin is not available
         if mode == "none":
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+            return HttpResponseRedirect(prog.get_learn_url() + "studentonsite")
 
         # Show message if they are already checked in
         checked_in = prog.isCheckedIn(user)
-        context['checked_in'] = checked_in
+        context["checked_in"] = checked_in
 
         if not checked_in:
             # Show which modules and/or records they haven't completed
             # This only includes the required and non-completed subset of modules/records
             # that would normally be shown on the /studentreg page
-            context['mode'] = mode
-            context['form'] = SelfCheckinForm(program = prog, user = user)
+            context["mode"] = mode
+            context["form"] = SelfCheckinForm(program=prog, user=user)
 
-            modules = prog.getModules(user, 'learn')
-            context['completedAll'] = True
+            modules = prog.getModules(user, "learn")
+            context["completedAll"] = True
             for module in modules:
                 # If completed all required modules so far...
-                if context['completedAll']:
+                if context["completedAll"]:
                     if not module.isCompleted(user) and module.isRequired():
-                        context['completedAll'] = False
+                        context["completedAll"] = False
 
-            records = StudentRegCore.get_reg_records(user, prog, 'learn')
+            records = StudentRegCore.get_reg_records(user, prog, "learn")
 
-            context['modules'] = [x for x in modules if (x.isRequired() and not x.isCompleted(user))]
-            context['records'] = [x for x in records if not x['isCompleted']]
+            context["modules"] = [
+                x for x in modules if (x.isRequired() and not x.isCompleted(user))
+            ]
+            context["records"] = [x for x in records if not x["isCompleted"]]
 
-            if Tag.getBooleanTag('student_self_checkin_paid', program = prog):
+            if Tag.getBooleanTag("student_self_checkin_paid", program=prog):
                 iac = IndividualAccountingController(prog, user)
-                context['owes_money'] = iac.amount_due() > 0
-                if context['owes_money']:
-                    if Permission.user_has_perm(user, 'Student/Payment', prog):
+                context["owes_money"] = iac.amount_due() > 0
+                if context["owes_money"]:
+                    if Permission.user_has_perm(user, "Student/Payment", prog):
                         if prog.hasModule("CreditCardModule_Stripe"):
-                            context['payment_url'] = "payonline"
+                            context["payment_url"] = "payonline"
                         elif prog.hasModule("CreditCardModule_Cybersource"):
-                            context['payment_url'] = "cybersource"
+                            context["payment_url"] = "cybersource"
 
-            if request.method == 'POST':
-                form = SelfCheckinForm(request.POST, program = prog, user = user)
+            if request.method == "POST":
+                form = SelfCheckinForm(request.POST, program=prog, user=user)
                 if form.is_valid():
                     # Check in the student
                     rt = RecordType.objects.get(name="attended")
                     rec = Record(user=user, program=prog, event=rt)
                     rec.save()
-                    return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+                    return HttpResponseRedirect(prog.get_learn_url() + "studentonsite")
                 else:
-                    context['form'] = form
+                    context["form"] = form
 
-        return render_to_response(self.baseDir()+'selfcheckin.html', request, context)
+        return render_to_response(self.baseDir() + "selfcheckin.html", request, context)
 
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
         context = {}
-        surveys = prog.getSurveys().filter(category = tl).select_related()
+        surveys = prog.getSurveys().filter(category=tl).select_related()
         if len(surveys) == 0:
-            context['survey_status'] = 'none'
-        context['user'] = request.user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
-        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY and Tag.getProgramTag('program_center', program = prog))
+            context["survey_status"] = "none"
+        context["user"] = request.user
+        context["program"] = prog
+        context["one"] = one
+        context["two"] = two
+        context["map_tab"] = bool(
+            settings.GOOGLE_MAPS_EMBED_KEY
+            and Tag.getProgramTag("program_center", program=prog)
+        )
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('student_webapp_isstep', program=self.program)
+        return Tag.getBooleanTag("student_webapp_isstep", program=self.program)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"
+
 
 class SelfCheckinForm(forms.Form):
-    code = forms.CharField(min_length = 6, max_length = 6, required = True)
+    code = forms.CharField(min_length=6, max_length=6, required=True)
 
     def __init__(self, *args, **kwargs):
-        if 'program' in kwargs and 'user' in kwargs:
-            program = kwargs.pop('program')
-            user = kwargs.pop('user')
+        if "program" in kwargs and "user" in kwargs:
+            program = kwargs.pop("program")
+            user = kwargs.pop("user")
         else:
-            raise KeyError('Need to supply program and user as named arguments to SelfCheckinForm')
+            raise KeyError(
+                "Need to supply program and user as named arguments to SelfCheckinForm"
+            )
         super().__init__(*args, **kwargs)
-        mode = Tag.getProgramTag('student_self_checkin', program = program)
+        mode = Tag.getProgramTag("student_self_checkin", program=program)
         self.hash = user.userHash(program)
-        if mode != 'code':
-            self.fields['code'].initial = self.hash
-            self.fields['code'].widget = forms.HiddenInput()
+        if mode != "code":
+            self.fields["code"].initial = self.hash
+            self.fields["code"].widget = forms.HiddenInput()
 
     def clean_code(self):
-        data = self.cleaned_data['code']
+        data = self.cleaned_data["code"]
         if data != self.hash:
             raise forms.ValidationError("That code is invalid")
         return data

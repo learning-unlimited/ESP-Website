@@ -29,9 +29,9 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
 
     def setUp(self):
         # SQLite ignores row locks; this regression targets backends used in production.
-        if not getattr(connection.features, 'supports_select_for_update', False):
+        if not getattr(connection.features, "supports_select_for_update", False):
             raise unittest.SkipTest(
-                'Database backend must support SELECT ... FOR UPDATE (not available on SQLite).'
+                "Database backend must support SELECT ... FOR UPDATE (not available on SQLite)."
             )
         super().setUp()
 
@@ -77,29 +77,29 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
                 # letting the exception escape the worker thread.
                 client.raise_request_exception = False
                 self.assertTrue(
-                    client.login(username=user.username, password='password'),
+                    client.login(username=user.username, password="password"),
                     "Couldn't log in as %s" % user.username,
                 )
                 barrier.wait()
                 resp = client.post(
-                    '/learn/%s/ajax_addclass' % self.program.getUrlBase(),
+                    "/learn/%s/ajax_addclass" % self.program.getUrlBase(),
                     data={
-                        'class_id': str(self.parent_class.id),
-                        'section_id': str(self.section.id),
+                        "class_id": str(self.parent_class.id),
+                        "section_id": str(self.section.id),
                         # Keep response JSON-only (skip ajax_schedule rendering).
-                        'no_schedule': '1',
+                        "no_schedule": "1",
                     },
-                    HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+                    HTTP_X_REQUESTED_WITH="XMLHttpRequest",
                 )
                 payload = None
                 try:
-                    payload = json.loads(resp.content.decode('utf-8'))
+                    payload = json.loads(resp.content.decode("utf-8"))
                 except Exception:
                     payload = None
                 with results_lock:
                     results[user.id] = {
-                        'status_code': resp.status_code,
-                        'payload': payload,
+                        "status_code": resp.status_code,
+                        "payload": payload,
                     }
             finally:
                 close_old_connections()
@@ -121,9 +121,9 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
         failures = 0
         for r in results.values():
             ok = (
-                r['status_code'] == 200
-                and isinstance(r['payload'], dict)
-                and r['payload'].get('status') is True
+                r["status_code"] == 200
+                and isinstance(r["payload"], dict)
+                and r["payload"].get("status") is True
             )
             if ok:
                 successes += 1
@@ -133,20 +133,25 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
         self.assertEqual(
             successes,
             1,
-            'Expected exactly one successful ajax_addclass response; got %s (results=%r)' % (successes, results),
+            "Expected exactly one successful ajax_addclass response; got %s (results=%r)"
+            % (successes, results),
         )
         self.assertEqual(
             failures,
             1,
-            'Expected exactly one failed ajax_addclass response; got %s (results=%r)' % (failures, results),
+            "Expected exactly one failed ajax_addclass response; got %s (results=%r)"
+            % (failures, results),
         )
 
-        enrollment_count = StudentRegistration.valid_objects().filter(
-            section=self.section,
-        ).count()
+        enrollment_count = (
+            StudentRegistration.valid_objects()
+            .filter(
+                section=self.section,
+            )
+            .count()
+        )
         self.assertEqual(
             enrollment_count,
             1,
-            'Exactly one student should hold the single seat after concurrent addclass_logic calls.',
+            "Exactly one student should hold the single seat after concurrent addclass_logic calls.",
         )
-

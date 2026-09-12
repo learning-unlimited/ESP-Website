@@ -21,11 +21,15 @@ import argparse
 from datetime import datetime
 from io import open
 
+
 def main():
-    parser = argparse.ArgumentParser(description = "Add accounting records for students that have already paid")
+    parser = argparse.ArgumentParser(
+        description="Add accounting records for students that have already paid"
+    )
     parser.add_argument("program", help="Program name")
-    parser.add_argument("csv_filename",
-                        help="Full path to CSV file with student information")
+    parser.add_argument(
+        "csv_filename", help="Full path to CSV file with student information"
+    )
     args = parser.parse_args()
 
     PROGRAM = Program.objects.get(name=args.program)
@@ -34,12 +38,12 @@ def main():
     csvfile = open(filename, "r")
     reader = csv.DictReader(csvfile)
 
-    if 'username' not in reader.fieldnames:
+    if "username" not in reader.fieldnames:
         print("Error: csv file does not have a 'username' column")
     else:
-        usernames = [x['username'] for x in reader]
-        lineitem = LineItemType.objects.get(text = "Student payment", program = PROGRAM)
-        acc = Account.objects.get(name = "receivable")
+        usernames = [x["username"] for x in reader]
+        lineitem = LineItemType.objects.get(text="Student payment", program=PROGRAM)
+        acc = Account.objects.get(name="receivable")
         for username in usernames:
             try:
                 student = ESPUser.objects.get(id=username)
@@ -57,10 +61,18 @@ def main():
                 if amt <= 0:
                     print(username + " has no amount due for " + PROGRAM.name)
                 else:
-                    transfer = Transfer.objects.create(destination = acc, user = student, line_item = lineitem, amount_dec = amt)
-                    print(username + " has now paid " + str(amt) + " for " + PROGRAM.name)
+                    transfer = Transfer.objects.create(
+                        destination=acc,
+                        user=student,
+                        line_item=lineitem,
+                        amount_dec=amt,
+                    )
+                    print(
+                        username + " has now paid " + str(amt) + " for " + PROGRAM.name
+                    )
 
         print("All usernames processed.")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

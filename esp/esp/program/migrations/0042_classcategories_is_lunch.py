@@ -6,7 +6,7 @@ from django.db.models import Q
 
 def forwards_func(apps, schema_editor):
     ClassCategories = apps.get_model("program", "ClassCategories")
-    ClassCategories.objects.filter(category__iexact='lunch').update(is_lunch=True)
+    ClassCategories.objects.filter(category__iexact="lunch").update(is_lunch=True)
 
 
 def dedupe_lunch(apps, schema_editor):
@@ -35,37 +35,42 @@ def dedupe_lunch(apps, schema_editor):
     # Repoint the on_delete=CASCADE foreign keys BEFORE deleting the dup rows,
     # otherwise the delete would cascade away lunch classes and schedule tests.
     ClassSubject.objects.filter(category_id__in=dup_ids).update(category=survivor)
-    ScheduleTestCategory.objects.filter(category_id__in=dup_ids).update(category=survivor)
+    ScheduleTestCategory.objects.filter(category_id__in=dup_ids).update(
+        category=survivor
+    )
 
     # Fold M2M memberships onto the survivor; dup memberships drop on delete.
     for prog in Program.objects.filter(class_categories__id__in=dup_ids).distinct():
         prog.class_categories.add(survivor)
-    for rec in ModeratorRecord.objects.filter(class_categories__id__in=dup_ids).distinct():
+    for rec in ModeratorRecord.objects.filter(
+        class_categories__id__in=dup_ids
+    ).distinct():
         rec.class_categories.add(survivor)
 
     ClassCategories.objects.filter(id__in=dup_ids).delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0041_classsection_cancellation_reason'),
+        ("program", "0041_classsection_cancellation_reason"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='classcategories',
-            name='is_lunch',
-            field=models.BooleanField(default=False, help_text='True if this category represents Lunch'),
+            model_name="classcategories",
+            name="is_lunch",
+            field=models.BooleanField(
+                default=False, help_text="True if this category represents Lunch"
+            ),
         ),
         migrations.RunPython(forwards_func, migrations.RunPython.noop),
         migrations.RunPython(dedupe_lunch, migrations.RunPython.noop),
         migrations.AddConstraint(
-            model_name='classcategories',
+            model_name="classcategories",
             constraint=models.UniqueConstraint(
-                fields=['is_lunch'],
+                fields=["is_lunch"],
                 condition=Q(is_lunch=True),
-                name='unique_lunch_category',
+                name="unique_lunch_category",
             ),
         ),
     ]

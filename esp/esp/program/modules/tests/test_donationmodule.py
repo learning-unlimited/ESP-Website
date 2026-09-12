@@ -1,8 +1,10 @@
 """Tests for esp.program.modules.handlers.donationmodule"""
+
 from django.test import SimpleTestCase, TestCase
 from esp.program.modules.handlers.donationmodule import DonationModule, DonationForm
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+
 
 class DonationFormTest(SimpleTestCase):
     """Tests for DonationForm validation logic."""
@@ -10,31 +12,38 @@ class DonationFormTest(SimpleTestCase):
     def test_donation_form_preset_amount(self):
         """Test form validates successfully with a preset amount."""
         settings = {
-            'donation_text': 'Support us',
-            'donation_options': [10, 20, 50],
+            "donation_text": "Support us",
+            "donation_options": [10, 20, 50],
         }
-        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '20'})
+        form = DonationModule.get_form(
+            settings=settings, form_data={"amount_donation": "20"}
+        )
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.amount, '20')
+        self.assertEqual(form.amount, "20")
 
     def test_donation_form_custom_amount(self):
         """Test form validates successfully with a valid custom amount."""
         settings = {
-            'donation_text': 'Support us',
-            'donation_options': [10, 20, 50],
+            "donation_text": "Support us",
+            "donation_options": [10, 20, 50],
         }
-        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '-1', 'custom_amount': '25'})
+        form = DonationModule.get_form(
+            settings=settings,
+            form_data={"amount_donation": "-1", "custom_amount": "25"},
+        )
         self.assertTrue(form.is_valid())
 
     def test_donation_form_missing_custom_amount(self):
         """Test form validation fails when custom is selected but amount is missing."""
         settings = {
-            'donation_text': 'Support us',
-            'donation_options': [10, 20, 50],
+            "donation_text": "Support us",
+            "donation_options": [10, 20, 50],
         }
-        form = DonationModule.get_form(settings=settings, form_data={'amount_donation': '-1', 'custom_amount': ''})
+        form = DonationModule.get_form(
+            settings=settings, form_data={"amount_donation": "-1", "custom_amount": ""}
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('custom_amount', form.errors)
+        self.assertIn("custom_amount", form.errors)
 
 
 class DonationModuleTest(TestCase):
@@ -68,9 +77,9 @@ class DonationModuleTest(TestCase):
     def test_apply_settings_defaults(self):
         """Test apply_settings sets up expected default configurations."""
         settings = self.module.apply_settings()
-        self.assertIn('donation_text', settings)
-        self.assertIn('donation_options', settings)
-        self.assertIsInstance(settings['donation_options'], list)
+        self.assertIn("donation_text", settings)
+        self.assertIn("donation_options", settings)
+        self.assertIsInstance(settings["donation_options"], list)
 
     def test_line_item_type_resolution(self):
         """Test that line_item_type correctly resolves or creates accounting records."""

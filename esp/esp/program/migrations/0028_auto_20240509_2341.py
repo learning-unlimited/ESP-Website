@@ -6,30 +6,37 @@ import django.db.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0027_auto_20240220_2124'),
+        ("program", "0027_auto_20240220_2124"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classsection',
-            name='attending_students',
+            model_name="classsection",
+            name="attending_students",
             field=django.db.models.fields.IntegerField(default=0),
         ),
         migrations.AlterField(
-            model_name='classsection',
-            name='enrolled_students',
+            model_name="classsection",
+            name="enrolled_students",
             field=django.db.models.fields.IntegerField(default=0),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='class_categories',
-            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.', to='program.ClassCategories'),
+            model_name="program",
+            name="class_categories",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text='You can add new categories or modify existing ones <a href="/manage/catsflagsrecs/categories">here</a>.',
+                to="program.ClassCategories",
+            ),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='flag_types',
-            field=models.ManyToManyField(blank=True, help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.', to='program.ClassFlagType'),
+            model_name="program",
+            name="flag_types",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/catsflagsrecs/flagtypes">here</a>.',
+                to="program.ClassFlagType",
+            ),
         ),
     ]

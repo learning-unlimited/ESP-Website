@@ -14,20 +14,21 @@ from esp.program.models.class_ import ClassSection
 from esp.users.models import ESPUser
 
 program = choose_program()
-relationship = RegistrationType.objects.get(name='Enrolled')
+relationship = RegistrationType.objects.get(name="Enrolled")
 
 srs = StudentRegistration.valid_objects().filter(
-    section__parent_class__parent_program=program,
-    relationship=relationship)
+    section__parent_class__parent_program=program, relationship=relationship
+)
 
-srs_pairs = srs.values_list('user', 'section')
+srs_pairs = srs.values_list("user", "section")
 
-users = ESPUser.objects.filter(id__in=srs.values_list('user'))
+users = ESPUser.objects.filter(id__in=srs.values_list("user"))
 sections = ClassSection.objects.filter(
     parent_class__parent_program=program
-).prefetch_related('meeting_times')
+).prefetch_related("meeting_times")
 timeblocks = Event.objects.filter(
-    program=program, event_type__description='Class Time Block')
+    program=program, event_type__description="Class Time Block"
+)
 
 users_by_id = {user.id: user for user in users}
 sections_by_id = {section.id: section for section in sections}
@@ -35,12 +36,14 @@ timeblocks_by_id = {timeblock.id: timeblock for timeblock in timeblocks}
 sections_by_user_timeblock = {
     (user_id, timeblock.id): section_id
     for user_id, section_id in srs_pairs
-    for timeblock in sections_by_id[section_id].meeting_times.all()}
+    for timeblock in sections_by_id[section_id].meeting_times.all()
+}
 
-lunches = ClassSection.objects.filter(parent_class__parent_program=program,
-                                      parent_class__category__is_lunch=True,
-                                      meeting_times__isnull=False
-                                      ).values_list('meeting_times', 'id')
+lunches = ClassSection.objects.filter(
+    parent_class__parent_program=program,
+    parent_class__category__is_lunch=True,
+    meeting_times__isnull=False,
+).values_list("meeting_times", "id")
 lunches_by_timeblock = defaultdict(list)
 lunch_ids = set()
 
@@ -59,8 +62,10 @@ for timeblock_id, section_id in lunches:
 for user in users:
     for day, lunchtimes in lunchtimes_by_day.items():
         # If the user has any lunch already, continue to the next day/user
-        if any(sections_by_user_timeblock.get((user.id, lunchtime_id), 0)
-               in lunch_ids for lunchtime_id in lunchtimes):
+        if any(
+            sections_by_user_timeblock.get((user.id, lunchtime_id), 0) in lunch_ids
+            for lunchtime_id in lunchtimes
+        ):
             print("[", user.username, "already had lunch]")
             continue
         # Otherwise, check lunch blocks in a random order until finding an
@@ -71,11 +76,13 @@ for user in users:
             if (user.id, lunchtime_id) not in sections_by_user_timeblock:
                 # The user has nothing here; assign a lunch and skip to the
                 # next day/user
-                print("assigning", user.username, "to lunch", end=' ')
+                print("assigning", user.username, "to lunch", end=" ")
                 print(timeblocks_by_id[lunchtime_id])
                 available_lunches = [
-                    section_id for section_id in lunches_by_timeblock[lunchtime_id]
-                    if sections_by_id[section_id].num_students() < sections_by_id[section_id].capacity
+                    section_id
+                    for section_id in lunches_by_timeblock[lunchtime_id]
+                    if sections_by_id[section_id].num_students()
+                    < sections_by_id[section_id].capacity
                 ]
                 if not available_lunches:
                     continue
@@ -83,7 +90,8 @@ for user in users:
                 StudentRegistration.objects.create(
                     user=users_by_id[user.id],
                     section=sections_by_id[chosen_lunch_id],
-                    relationship=relationship)
+                    relationship=relationship,
+                )
                 hungry = False
                 break
         if hungry:

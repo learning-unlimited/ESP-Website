@@ -6,20 +6,18 @@ import esp.program.modules.base
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0024_mapgenmodule'),
+        ("modules", "0024_mapgenmodule"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='LineItemsModule',
-            fields=[
-            ],
+            name="LineItemsModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
     ]

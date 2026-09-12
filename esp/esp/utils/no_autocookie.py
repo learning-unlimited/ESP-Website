@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from functools import wraps
 
+
 def disable_csrf_cookie_update(fn):
     """
     If a user doesn't have a CSRF cookie, Django's csrf middleware
@@ -10,11 +11,12 @@ def disable_csrf_cookie_update(fn):
     should have neither behavior.  This decorator will prevent the
     csrf middleware from doing either.
     """
+
     @wraps(fn)
     def wrapped(*args, **kwargs):
         response = fn(*args, **kwargs)
         response.csrf_processing_done = True
         response.no_set_cookies = True
         return response
-    return wrapped
 
+    return wrapped

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -34,9 +33,13 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
-from esp.utils.web       import render_to_response
-from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from argcache            import cache_function
+from esp.utils.web import render_to_response
+from esp.accounting.controllers import (
+    ProgramAccountingController,
+    IndividualAccountingController,
+)
+from argcache import cache_function
+
 
 class CreditCardViewer(ProgramModuleObj):
     doc = """Lists the credit card payments for the program."""
@@ -49,7 +52,7 @@ class CreditCardViewer(ProgramModuleObj):
             "module_type": "manage",
             "seq": 10000,
             "choosable": 0,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -79,35 +82,36 @@ class CreditCardViewer(ProgramModuleObj):
         (num_payments, total_payment) = pac.payments_summary()
 
         context = {
-            'program': prog,
-            'payment_table': payment_table,
-            'num_students': len(student_list),
-            'num_payments': num_payments,
-            'total_payment': total_payment,
+            "program": prog,
+            "payment_table": payment_table,
+            "num_students": len(student_list),
+            "num_payments": num_payments,
+            "total_payment": total_payment,
         }
 
-        return render_to_response(self.baseDir() + 'viewpay.html', request, context)
+        return render_to_response(self.baseDir() + "viewpay.html", request, context)
 
     @staticmethod
     @cache_function
     def _payment_table_row_cached(prog, student):
         iac = IndividualAccountingController(prog, student)
         return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due())
-    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemType')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOptions')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
-    _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
+
+    _payment_table_row_cached.__func__.depend_on_model("accounting.LineItemType")
+    _payment_table_row_cached.__func__.depend_on_model("accounting.LineItemOptions")
+    _payment_table_row_cached.__func__.depend_on_model("accounting.FinancialAidGrant")
+    _payment_table_row_cached.__func__.depend_on_model("accounting.Account")
+    _payment_table_row_cached.__func__.depend_on_model("accounting.Transfer")
 
     def isStep(self):
-        return self.program.hasModule('CreditCardModule_Stripe')
+        return self.program.hasModule("CreditCardModule_Stripe")
 
     setup_title = "Set up the website for credit card payments (including the 'stripe settings' tag) (you may need to reach out to the websupport team)"
     setup_path = "tags/learn"
 
     def isCompleted(self, user=None):
-        return self.program.getModule('CreditCardModule_Stripe').check_setup()
+        return self.program.getModule("CreditCardModule_Stripe").check_setup()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

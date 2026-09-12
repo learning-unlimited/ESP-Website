@@ -10,23 +10,25 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 @user_is_staff
 """
 
+
 def autocomplete_wrapper(function, data, is_staff, **kwargs):
     """Call the model's ajax_autocomplete; pass request if the function accepts it."""
     # Only pass 'request' if the function actually accepts it
     try:
         sig = inspect.signature(function)
-        if 'request' not in sig.parameters:
-            kwargs.pop('request', None)
+        if "request" not in sig.parameters:
+            kwargs.pop("request", None)
     except (TypeError, ValueError):
-        kwargs.pop('request', None)
+        kwargs.pop("request", None)
     if is_staff:
         return function(data, **kwargs)
     # Unwrap classmethod/bound method to get the underlying function
-    fn = getattr(function, '__func__', function)
-    code = getattr(fn, '__code__', None)
-    if code and 'allow_non_staff' in code.co_varnames:
+    fn = getattr(function, "__func__", function)
+    code = getattr(fn, "__code__", None)
+    if code and "allow_non_staff" in code.co_varnames:
         return function(data, **kwargs)
     return []
+
 
 @login_required
 def ajax_autocomplete(request):
@@ -35,39 +37,50 @@ def ajax_autocomplete(request):
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:
-        limit = int(request.GET.get('limit', 10))
-        model_module = request.GET['model_module']
-        model_name   = request.GET['model_name']
-        ajax_func    = request.GET.get('ajax_func', 'ajax_autocomplete')
-        data         = request.GET['ajax_data']
-        prog         = request.GET['prog']
-        grade        = request.GET.get('grade')
-        last_name_range = request.GET.get('last_name_range')
+        limit = int(request.GET.get("limit", 10))
+        model_module = request.GET["model_module"]
+        model_name = request.GET["model_name"]
+        ajax_func = request.GET.get("ajax_func", "ajax_autocomplete")
+        data = request.GET["ajax_data"]
+        prog = request.GET["prog"]
+        grade = request.GET.get("grade")
+        last_name_range = request.GET.get("last_name_range")
     except (KeyError, ValueError):
         # bad request
-        return JsonResponse({'error': 'Malformed Input'}, status=400)
-
+        return JsonResponse({"error": "Malformed Input"}, status=400)
 
     # import the model
     try:
         Model = getattr(__import__(model_module, (), (), [str(model_name)]), model_name)
     except AttributeError:
-        return JsonResponse({'error': 'Malformed Input'}, status=400)
+        return JsonResponse({"error": "Malformed Input"}, status=400)
 
     from esp.program.models import Program
+
     try:
         prog_obj = Program.objects.get(id=prog)
     except (Program.DoesNotExist, ValueError):
         prog_obj = None
 
-    kwargs = {'grade': grade, 'last_name_range': last_name_range, 'prog': prog_obj, 'request': request}
+    kwargs = {
+        "grade": grade,
+        "last_name_range": last_name_range,
+        "prog": prog_obj,
+        "request": request,
+    }
 
-    func = getattr(Model.objects, ajax_func) if hasattr(Model.objects, ajax_func) else getattr(Model, ajax_func)
+    func = (
+        getattr(Model.objects, ajax_func)
+        if hasattr(Model.objects, ajax_func)
+        else getattr(Model, ajax_func)
+    )
     query_set = autocomplete_wrapper(func, data, request.user.is_staff, **kwargs)
 
     output = list(query_set[:limit])
     output2 = []
     for item in output:
-        output2.append({'id': item['id'], 'ajax_str': f'{item["ajax_str"]} ({item["id"]})'})
+        output2.append(
+            {"id": item["id"], "ajax_str": f"{item['ajax_str']} ({item['id']})"}
+        )
 
-    return JsonResponse({'result': output2})
+    return JsonResponse({"result": output2})

@@ -4,30 +4,37 @@
 from django.db import migrations, models
 from django.db.models import Count
 
+
 def set_my_defaults(apps, schema_editor):
-    Program = apps.get_model('program', 'Program')
-    dupe_urls = Program.objects.values_list('url', flat=True).order_by().annotate(count=Count('url')).filter(count__gt=1)
+    Program = apps.get_model("program", "Program")
+    dupe_urls = (
+        Program.objects.values_list("url", flat=True)
+        .order_by()
+        .annotate(count=Count("url"))
+        .filter(count__gt=1)
+    )
     for dupe_url in dupe_urls:
-        dupe_progs = Program.objects.filter(url=dupe_url).order_by('id')
+        dupe_progs = Program.objects.filter(url=dupe_url).order_by("id")
         for i in range(1, dupe_progs.count()):
             dupe_prog = dupe_progs[i]
-            dupe_prog.url = dupe_prog.url + '_' + str(i)
+            dupe_prog.url = dupe_prog.url + "_" + str(i)
             dupe_prog.save()
+
 
 def reverse_func(apps, schema_editor):
     pass  #
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('program', '0023_auto_20210526_1921'),
+        ("program", "0023_auto_20210526_1921"),
     ]
 
     operations = [
         migrations.RunPython(set_my_defaults, reverse_func),
         migrations.AlterField(
-            model_name='program',
-            name='url',
+            model_name="program",
+            name="url",
             field=models.CharField(max_length=80, unique=True),
         ),
     ]

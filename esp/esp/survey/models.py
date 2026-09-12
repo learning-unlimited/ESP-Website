@@ -1,10 +1,10 @@
-" Survey models for Educational Studies Program. "
+"Survey models for Educational Studies Program."
 
-__author__    = "$LastChangedBy$"
-__date__      = "$LastChangedDate$"
-__rev__       = "$LastChangedRevision$"
-__headurl__   = "$HeadURL$"
-__license__   = "AGPL v.3"
+__author__ = "$LastChangedBy$"
+__date__ = "$LastChangedDate$"
+__rev__ = "$LastChangedRevision$"
+__headurl__ = "$HeadURL$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -54,62 +54,88 @@ from esp.program.models import Program
 from esp.tagdict.models import Tag
 from esp.survey.fields import ListField
 
+
 class Survey(models.Model):
-    """ A single survey. """
+    """A single survey."""
+
     name = models.CharField(max_length=255)
-    program = models.ForeignKey(Program, related_name='surveys',
-                                blank=True, null=True,
-                                help_text="Blank if not associated to a program", on_delete=models.CASCADE)
+    program = models.ForeignKey(
+        Program,
+        related_name="surveys",
+        blank=True,
+        null=True,
+        help_text="Blank if not associated to a program",
+        on_delete=models.CASCADE,
+    )
 
     survey_choices = [("learn", "learn"), ("teach", "teach")]
-    category = models.CharField(max_length = 10, choices = survey_choices)
+    category = models.CharField(max_length=10, choices=survey_choices)
 
     def __str__(self):
-        return f'{self.name} ({self.category}) for {self.program}'
+        return f"{self.name} ({self.category}) for {self.program}"
 
     def num_participants(self):
         #   If there is a program for this survey, select the appropriate number
         #   of participants based on the category.
         prog = self.program
         if prog:
-            if self.category == 'teach':
-                filters = [x.strip() for x in Tag.getProgramTag('survey_teacher_filter', prog).split(",") if x.strip()]
-                return len(set().union(*[prog.teachers().get(filter, []) for filter in filters]))
-            elif self.category == 'learn':
-                filters = [x.strip() for x in Tag.getProgramTag('survey_student_filter', prog).split(",") if x.strip()]
-                return len(set().union(*[prog.students().get(filter, []) for filter in filters]))
+            if self.category == "teach":
+                filters = [
+                    x.strip()
+                    for x in Tag.getProgramTag("survey_teacher_filter", prog).split(",")
+                    if x.strip()
+                ]
+                return len(
+                    set().union(
+                        *[prog.teachers().get(filter, []) for filter in filters]
+                    )
+                )
+            elif self.category == "learn":
+                filters = [
+                    x.strip()
+                    for x in Tag.getProgramTag("survey_student_filter", prog).split(",")
+                    if x.strip()
+                ]
+                return len(
+                    set().union(
+                        *[prog.students().get(filter, []) for filter in filters]
+                    )
+                )
             else:
                 return 0
         else:
             return 0
 
+
 class SurveyResponse(models.Model):
-    """ A single survey taken by a person. """
+    """A single survey taken by a person."""
+
     time_filled = models.DateTimeField(default=datetime.datetime.now)
     survey = models.ForeignKey(Survey, db_index=True, on_delete=models.CASCADE)
 
     def set_answers(self, get_or_post, save=False):
-        """ For a given get or post, get a set of answers. """
+        """For a given get or post, get a set of answers."""
         from esp.program.models import ClassSection
 
         # First, set up attendance dictionary based on the attendance questions
         # If there were no attendance questions, this wasn't a student survey
         attendances = {}
-        keys = [x for x in list(get_or_post.keys()) if x.startswith('attendance_')]
+        keys = [x for x in list(get_or_post.keys()) if x.startswith("attendance_")]
         for key in keys:
             try:
-                attendances[ int( key[11:] ) ] = int(get_or_post.getlist(key)[0])
+                attendances[int(key[11:])] = int(get_or_post.getlist(key)[0])
             except (TypeError, ValueError):
                 pass
 
         answers = []
-        keys = [x for x in list(get_or_post.keys()) if x.startswith('question_')]
+        keys = [x for x in list(get_or_post.keys()) if x.startswith("question_")]
         for key in keys:
             value = get_or_post.getlist(key)
-            if len(value) == 1: value = value[0]
-            str_list = key.split('_')
+            if len(value) == 1:
+                value = value[0]
+            str_list = key.split("_")
             if len(str_list) < 2 or len(str_list) > 3:
-                raise ESPError(f'Inappropriate question key: {key}')
+                raise ESPError(f"Inappropriate question key: {key}")
 
             new_answer = Answer()
             new_answer.survey_response = self
@@ -125,11 +151,11 @@ class SurveyResponse(models.Model):
                     question = Question.objects.get(id=qid)
                     sec = ClassSection.objects.get(id=cid)
                 except ClassSection.DoesNotExist:
-                    raise ESPError(f'Error finding class from {key}')
+                    raise ESPError(f"Error finding class from {key}")
                 except Question.DoesNotExist:
-                    raise ESPError(f'Error finding question from {key}')
+                    raise ESPError(f"Error finding question from {key}")
                 except ValueError:
-                    raise ESPError(f'Error getting IDs from {key}')
+                    raise ESPError(f"Error getting IDs from {key}")
 
                 new_answer.target = sec
 
@@ -138,9 +164,9 @@ class SurveyResponse(models.Model):
                     qid = int(str_list[1])
                     question = Question.objects.get(id=qid)
                 except Question.DoesNotExist:
-                    raise ESPError(f'Error finding question from {key}')
+                    raise ESPError(f"Error finding question from {key}")
                 except ValueError:
-                    raise ESPError(f'Error getting IDs from {key}')
+                    raise ESPError(f"Error getting IDs from {key}")
                 new_answer.target = self.survey.program
 
             new_answer.answer = value
@@ -156,8 +182,9 @@ class SurveyResponse(models.Model):
     def __str__(self):
         return f"Survey for {self.survey.program} filled out at {self.time_filled}"
 
+
 class QuestionType(models.Model):
-    """ A type of question.
+    """A type of question.
     Examples:
         - Yes/No
         - Rate from 1-5
@@ -166,43 +193,49 @@ class QuestionType(models.Model):
     """
 
     # Canonical name for the Long Answer row in migrations / DB (template path derives from name).
-    LONG_ANSWER_NAME = 'Long Answer'
+    LONG_ANSWER_NAME = "Long Answer"
 
     name = models.CharField(max_length=255)
-    _param_names = models.TextField("Parameter names", blank=True,
-                                    help_text="A pipe (|) delimited list of parameter names.")
-    param_names = ListField('_param_names')
+    _param_names = models.TextField(
+        "Parameter names",
+        blank=True,
+        help_text="A pipe (|) delimited list of parameter names.",
+    )
+    param_names = ListField("_param_names")
     is_numeric = models.BooleanField(default=False)
     is_countable = models.BooleanField(default=False)
 
     @property
     def template_file(self):
-        return f'survey/questions/{self.name.replace(" ", "_").lower()}.html'
+        return f"survey/questions/{self.name.replace(' ', '_').lower()}.html"
 
     def __str__(self):
         if len(self.param_names) > 0:
-            return f'{self.name}: includes {self._param_names.replace("|", ", ")}'
+            return f"{self.name}: includes {self._param_names.replace('|', ', ')}"
         else:
             return str(self.name)
 
+
 class Question(models.Model):
-    survey = models.ForeignKey(Survey, related_name="questions", on_delete=models.CASCADE)
+    survey = models.ForeignKey(
+        Survey, related_name="questions", on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=255)
     question_type = models.ForeignKey(QuestionType, on_delete=models.CASCADE)
-    _param_values = models.TextField("Parameter values", blank=True,
-                                     help_text="A pipe (|) delimited list of values.")
-    param_values = ListField('_param_values')
+    _param_values = models.TextField(
+        "Parameter values", blank=True, help_text="A pipe (|) delimited list of values."
+    )
+    param_values = ListField("_param_values")
     per_class = models.BooleanField(default=False)
     seq = models.IntegerField(default=0)
 
     def get_params(self):
-        " Get the parameters for this question, as a dictionary. "
+        "Get the parameters for this question, as a dictionary."
 
         a, b = self.question_type.param_names, self.param_values
-        params = OrderedDict(list(zip([x.replace(' ', '_').lower() for x in a],
-                          b)))
+        params = OrderedDict(list(zip([x.replace(" ", "_").lower() for x in a], b)))
         min_length = min(len(a), len(b))
-        params['list'] = b[min_length:]
+        params["list"] = b[min_length:]
 
         return params
 
@@ -214,7 +247,7 @@ class Question(models.Model):
         """True if this question uses the Long Answer type, without an extra query when FK is cached."""
         if not self.question_type_id:
             return False
-        cached = self.__dict__.get('question_type')
+        cached = self.__dict__.get("question_type")
         if cached is not None:
             return cached.name == QuestionType.LONG_ANSWER_NAME
         return QuestionType.objects.filter(
@@ -228,27 +261,35 @@ class Question(models.Model):
             return
         vals = self.param_values
         if not vals or not str(vals[0]).strip():
-            raise ValidationError({
-                '_param_values': (
-                    f'{QuestionType.LONG_ANSWER_NAME} questions require a Rows value of at least 1.'
-                ),
-            })
+            raise ValidationError(
+                {
+                    "_param_values": (
+                        f"{QuestionType.LONG_ANSWER_NAME} questions require a Rows value of at least 1."
+                    ),
+                }
+            )
         try:
             rows = int(str(vals[0]).strip())
         except (ValueError, TypeError):
-            raise ValidationError({
-                '_param_values': 'Rows must be a whole number.',
-            })
+            raise ValidationError(
+                {
+                    "_param_values": "Rows must be a whole number.",
+                }
+            )
         if rows < 1:
-            raise ValidationError({
-                '_param_values': 'Rows must be at least 1.',
-            })
+            raise ValidationError(
+                {
+                    "_param_values": "Rows must be at least 1.",
+                }
+            )
 
     def __str__(self):
-        return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
+        return (
+            f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
+        )
 
     def get_value(self, data_dict):
-        question_key = f'question_{self.id}'
+        question_key = f"question_{self.id}"
 
         try:
             value = data_dict.getlist(question_key)
@@ -260,7 +301,7 @@ class Question(models.Model):
         return value
 
     def render(self, data_dict=None):
-        """ Render this question to text (usually HTML).
+        """Render this question to text (usually HTML).
 
         If specified, data_dict will contain the pre-filled data
         from a GET or POST operation.
@@ -275,12 +316,12 @@ class Question(models.Model):
         ##########
         # Render the HTML
         params = self.get_params()
-        params['name'] = self.name
-        params['id'] = self.id
-        params['value'] = value
+        params["name"] = self.name
+        params["id"] = self.id
+        params["value"] = value
 
         if self.per_class:
-            params['for_class'] = True
+            params["for_class"] = True
 
         return loader.render_to_string(self.question_type.template_file, params)
 
@@ -288,7 +329,7 @@ class Question(models.Model):
     def global_average(self):
         def pretty_val(val):
             if val == 0:
-                return 'N/A'
+                return "N/A"
             else:
                 return str(round(val, 2))
 
@@ -304,25 +345,30 @@ class Question(models.Model):
             if ans_count == 0:
                 new_val = 0
             else:
-                new_val = ans_sum // ans_count;
+                new_val = ans_sum // ans_count
             return pretty_val(new_val)
         except (ValueError, TypeError):
-            return 'N/A'
-    global_average.depend_on_row('survey.Answer', lambda ans: {'self': ans.question})
+            return "N/A"
+
+    global_average.depend_on_row("survey.Answer", lambda ans: {"self": ans.question})
 
     class Meta:
-        ordering = ['seq']
+        ordering = ["seq"]
+
 
 class Answer(models.Model):
-    """ An answer for a single question for a single survey response. """
+    """An answer for a single question for a single survey response."""
 
-    survey_response = models.ForeignKey(SurveyResponse, db_index=True,
-                                        related_name='answers', on_delete=models.CASCADE)
+    survey_response = models.ForeignKey(
+        SurveyResponse, db_index=True, related_name="answers", on_delete=models.CASCADE
+    )
 
     ## Generic ForeignKey: either the program, the class, or the section ##
-    content_type = models.ForeignKey(ContentType, blank=True, null=True, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(
+        ContentType, blank=True, null=True, on_delete=models.CASCADE
+    )
     object_id = models.PositiveIntegerField(blank=True, null=True)
-    target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    target = GenericForeignKey(ct_field="content_type", fk_field="object_id")
     ## End Generic ForeignKey ##
 
     question = models.ForeignKey(Question, db_index=True, on_delete=models.CASCADE)
@@ -333,17 +379,20 @@ class Answer(models.Model):
         super().clean()
         if (self.content_type_id is None) != (self.object_id is None):
             from django.core.exceptions import ValidationError
-            raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
+
+            raise ValidationError(
+                "Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set."
+            )
 
     def save(self, *args, **kwargs):
         self.clean()
         return super().save(*args, **kwargs)
 
     def _answer_getter(self):
-        """ The actual, unpickled answer. """
+        """The actual, unpickled answer."""
         if not self.value:
             return None
-        if hasattr(self, '_answer'):
+        if hasattr(self, "_answer"):
             return self._answer
         if self.value_type == "<class 'list'>":
             value = json.loads(self.value)

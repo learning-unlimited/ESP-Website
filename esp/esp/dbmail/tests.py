@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -45,7 +45,14 @@ from esp.users.models import ESPUser, PersistentQueryFilter
 
 
 def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -54,54 +61,54 @@ class SendMailTest(TestCase):
         super().setUp()
         _setup_roles()
         self.user = ESPUser.objects.create_user(
-            username='mailuser',
-            email='mailuser@example.com',
-            password='password',
+            username="mailuser",
+            email="mailuser@example.com",
+            password="password",
         )
 
     def test_send_mail_basic(self):
         send_mail(
-            'Test Subject',
-            'Test body',
-            'from@learningu.org',
-            ['to@example.com'],
+            "Test Subject",
+            "Test body",
+            "from@learningu.org",
+            ["to@example.com"],
         )
         self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, 'Test Subject')
+        self.assertEqual(mail.outbox[0].subject, "Test Subject")
 
     def test_send_mail_with_bcc(self):
         send_mail(
-            'BCC Test',
-            'Body',
-            'from@learningu.org',
-            ['to@example.com'],
-            bcc=['bcc@example.com'],
+            "BCC Test",
+            "Body",
+            "from@learningu.org",
+            ["to@example.com"],
+            bcc=["bcc@example.com"],
         )
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('bcc@example.com', mail.outbox[0].bcc)
+        self.assertIn("bcc@example.com", mail.outbox[0].bcc)
 
     def test_send_mail_with_user_adds_unsubscribe(self):
         send_mail(
-            'Unsub Test',
-            'Body',
-            'from@learningu.org',
-            ['to@example.com'],
+            "Unsub Test",
+            "Body",
+            "from@learningu.org",
+            ["to@example.com"],
             user=self.user,
         )
         self.assertEqual(len(mail.outbox), 1)
         sent = mail.outbox[0]
-        self.assertIn('List-Unsubscribe', sent.extra_headers)
+        self.assertIn("List-Unsubscribe", sent.extra_headers)
 
 
 class ActionHandlerTest(TestCase):
     def test_getattribute_delegates_to_obj(self):
         class FakeObj:
             def foo(self, user):
-                return f'result_{user}'
+                return f"result_{user}"
 
-        handler = ActionHandler(FakeObj(), 'testuser')
-        result = handler.foo('testuser')
-        self.assertEqual(result, 'result_testuser')
+        handler = ActionHandler(FakeObj(), "testuser")
+        result = handler.foo("testuser")
+        self.assertEqual(result, "result_testuser")
 
 
 class MessageRequestTest(TestCase):
@@ -110,10 +117,10 @@ class MessageRequestTest(TestCase):
         _setup_roles()
 
     def test_is_sendto_fn_name_choice_valid(self):
-        self.assertTrue(MessageRequest.is_sendto_fn_name_choice('send_to_guardian'))
+        self.assertTrue(MessageRequest.is_sendto_fn_name_choice("send_to_guardian"))
 
     def test_is_sendto_fn_name_choice_invalid(self):
-        self.assertFalse(MessageRequest.is_sendto_fn_name_choice('not_a_real_choice'))
+        self.assertFalse(MessageRequest.is_sendto_fn_name_choice("not_a_real_choice"))
 
 
 class CronmailImportTest(TestCase):
@@ -121,10 +128,12 @@ class CronmailImportTest(TestCase):
 
     def test_import(self):
         from esp.dbmail import cronmail
-        self.assertTrue(hasattr(cronmail, 'process_messages'))
+
+        self.assertTrue(hasattr(cronmail, "process_messages"))
 
     def test_process_messages_callable(self):
         from esp.dbmail.cronmail import process_messages
+
         self.assertTrue(callable(process_messages))
 
 
@@ -139,15 +148,16 @@ from esp.dbmail.receivers.classlist import ClassList
 from esp.dbmail.receivers.sectionlist import SectionList
 
 
-def _make_message(to='test@learningu.org', frm='sender@example.com',
-                  subject='Test', list_id=None):
+def _make_message(
+    to="test@learningu.org", frm="sender@example.com", subject="Test", list_id=None
+):
     """Helper to build a simple email.message for handler tests."""
-    msg = MIMEText('Test body')
-    msg['To'] = to
-    msg['From'] = frm
-    msg['Subject'] = subject
+    msg = MIMEText("Test body")
+    msg["To"] = to
+    msg["From"] = frm
+    msg["Subject"] = subject
     if list_id:
-        msg['List-Id'] = list_id
+        msg["List-Id"] = list_id
     return msg
 
 
@@ -158,56 +168,56 @@ class UserEmailHandlerTest(TestCase):
         super().setUp()
         _setup_roles()
         self.teacher = ESPUser.objects.create_user(
-            username='teacher_user',
-            email='teacher@example.com',
-            password='password',
+            username="teacher_user",
+            email="teacher@example.com",
+            password="password",
         )
-        self.teacher.makeRole('Teacher')
+        self.teacher.makeRole("Teacher")
 
         self.student = ESPUser.objects.create_user(
-            username='student_user',
-            email='student@example.com',
-            password='password',
+            username="student_user",
+            email="student@example.com",
+            password="password",
         )
-        self.student.makeRole('Student')
+        self.student.makeRole("Student")
 
         self.email_list = EmailList.objects.create(
-            regex=r'^(.+)$',
+            regex=r"^(.+)$",
             seq=10,
-            handler='UserEmail',
+            handler="UserEmail",
             cc_all=False,
         )
 
     def test_teacher_sets_recipients_and_preserve_headers(self):
         msg = _make_message()
         handler = UserEmail(self.email_list, msg)
-        handler.process('teacher_user', 'teacher_user')
+        handler.process("teacher_user", "teacher_user")
 
         self.assertTrue(handler.send)
-        self.assertEqual(handler.recipients, ['teacher@example.com'])
+        self.assertEqual(handler.recipients, ["teacher@example.com"])
         self.assertTrue(handler.preserve_headers)
-        self.assertFalse(hasattr(handler, 'direct_send'))
+        self.assertFalse(hasattr(handler, "direct_send"))
 
     def test_student_without_list_id_does_not_send(self):
         msg = _make_message()
         handler = UserEmail(self.email_list, msg)
-        handler.process('student_user', 'student_user')
+        handler.process("student_user", "student_user")
 
         self.assertFalse(handler.send)
 
     def test_student_with_list_id_sets_recipients(self):
-        msg = _make_message(list_id='<list.example.com>')
+        msg = _make_message(list_id="<list.example.com>")
         handler = UserEmail(self.email_list, msg)
-        handler.process('student_user', 'student_user')
+        handler.process("student_user", "student_user")
 
         self.assertTrue(handler.send)
-        self.assertEqual(handler.recipients, ['student@example.com'])
+        self.assertEqual(handler.recipients, ["student@example.com"])
         self.assertTrue(handler.preserve_headers)
 
     def test_nonexistent_user_does_not_send(self):
         msg = _make_message()
         handler = UserEmail(self.email_list, msg)
-        handler.process('nobody', 'nobody')
+        handler.process("nobody", "nobody")
 
         self.assertFalse(handler.send)
 
@@ -219,19 +229,19 @@ class ClassListBugFixTest(TestCase):
         super().setUp()
         _setup_roles()
         self.email_list = EmailList.objects.create(
-            regex=r'^(\d+)-(teachers|students|class)$',
+            regex=r"^(\d+)-(teachers|students|class)$",
             seq=5,
-            handler='ClassList',
+            handler="ClassList",
             cc_all=False,
         )
 
-    @patch('esp.dbmail.receivers.classlist.settings')
+    @patch("esp.dbmail.receivers.classlist.settings")
     def test_invalid_class_id_does_not_raise(self, mock_settings):
         mock_settings.USE_MAILMAN = False
         msg = _make_message()
         handler = ClassList(self.email_list, msg)
         # class_id 99999 does not exist — should return gracefully
-        handler.process('99999-teachers', '99999', 'teachers')
+        handler.process("99999-teachers", "99999", "teachers")
         self.assertFalse(handler.send)
 
 
@@ -242,18 +252,18 @@ class SectionListBugFixTest(TestCase):
         super().setUp()
         _setup_roles()
         self.email_list = EmailList.objects.create(
-            regex=r'^(\d+)\.(\d+)-(teachers|students|class)$',
+            regex=r"^(\d+)\.(\d+)-(teachers|students|class)$",
             seq=6,
-            handler='SectionList',
+            handler="SectionList",
             cc_all=False,
         )
 
-    @patch('esp.dbmail.receivers.sectionlist.settings')
+    @patch("esp.dbmail.receivers.sectionlist.settings")
     def test_invalid_class_id_does_not_raise(self, mock_settings):
         mock_settings.USE_MAILMAN = False
         msg = _make_message()
         handler = SectionList(self.email_list, msg)
-        handler.process('99999.1-teachers', '99999', '1', 'teachers')
+        handler.process("99999.1-teachers", "99999", "1", "teachers")
         self.assertFalse(handler.send)
 
 
@@ -264,9 +274,9 @@ class MailgateBounceTest(TestCase):
         super().setUp()
         _setup_roles()
         self.known_user = ESPUser.objects.create_user(
-            username='knownuser',
-            email='known@example.com',
-            password='password',
+            username="knownuser",
+            email="known@example.com",
+            password="password",
         )
 
     def test_bounce_sent_for_known_user(self):
@@ -275,33 +285,34 @@ class MailgateBounceTest(TestCase):
         from django.core.mail import send_mail as django_send_mail
         from django.conf import settings
 
-        sender_email = 'known@example.com'
-        local_part = 'nonexistent'
-        hostname = 'learningu.org'
-        support = settings.DEFAULT_EMAIL_ADDRESSES.get('support', 'support@localhost')
+        sender_email = "known@example.com"
+        local_part = "nonexistent"
+        hostname = "learningu.org"
+        support = settings.DEFAULT_EMAIL_ADDRESSES.get("support", "support@localhost")
 
         # Replicate the bounce logic from mailgate.py
-        if (sender_email
-                and sender_email.lower() != support.lower()
-                and ESPUser.objects.filter(email__iexact=sender_email).exists()):
+        if (
+            sender_email
+            and sender_email.lower() != support.lower()
+            and ESPUser.objects.filter(email__iexact=sender_email).exists()
+        ):
             django_send_mail(
-                'Undeliverable mail to %s@%s' % (local_part, hostname),
-                'Your message could not be delivered.',
+                "Undeliverable mail to %s@%s" % (local_part, hostname),
+                "Your message could not be delivered.",
                 support,
                 [sender_email],
                 fail_silently=True,
             )
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertIn('nonexistent', mail.outbox[0].subject)
-        self.assertEqual(mail.outbox[0].to, ['known@example.com'])
+        self.assertIn("nonexistent", mail.outbox[0].subject)
+        self.assertEqual(mail.outbox[0].to, ["known@example.com"])
 
     def test_no_bounce_for_unknown_sender(self):
         """Unknown sender should NOT receive a bounce email."""
-        sender_email = 'unknown@spammer.com'
+        sender_email = "unknown@spammer.com"
 
-        if (sender_email
-                and ESPUser.objects.filter(email__iexact=sender_email).exists()):
+        if sender_email and ESPUser.objects.filter(email__iexact=sender_email).exists():
             pass  # Would send bounce, but won't match
 
         self.assertEqual(len(mail.outbox), 0)
@@ -309,45 +320,47 @@ class MailgateBounceTest(TestCase):
     def test_no_bounce_for_empty_from(self):
         """Empty/missing From header should not trigger bounce."""
         import email.utils
-        _name, addr = email.utils.parseaddr('')
-        self.assertEqual(addr, '')
+
+        _name, addr = email.utils.parseaddr("")
+        self.assertEqual(addr, "")
         # Empty addr means bounce logic is skipped
+
 
 class PlainRedirectValidationTest(TestCase):
     def test_valid_single_destination(self):
-        redirect = PlainRedirect(original='directors', destination='user@example.com')
+        redirect = PlainRedirect(original="directors", destination="user@example.com")
         redirect.full_clean()
 
     def test_valid_multiple_destinations(self):
         redirect = PlainRedirect(
-            original='announcements',
-            destination='user1@example.com, user2@example.com',
+            original="announcements",
+            destination="user1@example.com, user2@example.com",
         )
         redirect.full_clean()
 
     def test_invalid_destination_email_fails_validation(self):
         redirect = PlainRedirect(
-            original='directors',
-            destination='user@example.com, not-an-email',
+            original="directors",
+            destination="user@example.com, not-an-email",
         )
 
         with self.assertRaises(ValidationError) as error:
             redirect.full_clean()
 
-        self.assertIn('destination', error.exception.message_dict)
-        self.assertIn('not-an-email', error.exception.message_dict['destination'][0])
+        self.assertIn("destination", error.exception.message_dict)
+        self.assertIn("not-an-email", error.exception.message_dict["destination"][0])
 
     def test_empty_destination_entry_fails_validation(self):
         redirect = PlainRedirect(
-            original='directors',
-            destination='user@example.com,',
+            original="directors",
+            destination="user@example.com,",
         )
 
         with self.assertRaises(ValidationError) as error:
             redirect.full_clean()
 
-        self.assertIn('destination', error.exception.message_dict)
-        self.assertIn('<empty>', error.exception.message_dict['destination'][0])
+        self.assertIn("destination", error.exception.message_dict)
+        self.assertIn("<empty>", error.exception.message_dict["destination"][0])
 
 
 class MessageRequestAdminTest(TestCase):
@@ -365,38 +378,38 @@ class MessageRequestAdminTest(TestCase):
 
         # Create an admin user
         self.admin = ESPUser.objects.create_superuser(
-            username='test_admin',
-            email='admin@test.com',
-            password='password',
+            username="test_admin",
+            email="admin@test.com",
+            password="password",
         )
 
         # Create a PersistentQueryFilter (required FK on MessageRequest)
         self.recipients = PersistentQueryFilter.create_from_Q(
             item_model=ESPUser,
             q_filter=Q(id=self.admin.id),
-            description='Test filter',
+            description="Test filter",
         )
 
-        self.client.login(username='test_admin', password='password')
+        self.client.login(username="test_admin", password="password")
 
     def _post_messagerequest(self, extra_data=None):
         """POST to the admin add view for MessageRequest."""
         data = {
-            'subject': 'Test subject',
-            'msgtext': 'Test message',
-            'special_headers': '',
-            'recipients': self.recipients.id,
-            'sendto_fn_name': '',   # SEND_TO_SELF — the problematic empty value
-            'sender': '',
-            'creator': self.admin.id,
-            'processed': False,
-            'processed_by': '',     # nullable datetime — left blank
-            'priority_level': '',
-            'public': False,
+            "subject": "Test subject",
+            "msgtext": "Test message",
+            "special_headers": "",
+            "recipients": self.recipients.id,
+            "sendto_fn_name": "",  # SEND_TO_SELF — the problematic empty value
+            "sender": "",
+            "creator": self.admin.id,
+            "processed": False,
+            "processed_by": "",  # nullable datetime — left blank
+            "priority_level": "",
+            "public": False,
         }
         if extra_data:
             data.update(extra_data)
-        return self.client.post('/admin/dbmail/messagerequest/add/', data, follow=True)
+        return self.client.post("/admin/dbmail/messagerequest/add/", data, follow=True)
 
     def test_sendto_fn_name_blank_is_valid(self):
         """
@@ -405,8 +418,8 @@ class MessageRequestAdminTest(TestCase):
         """
         response = self._post_messagerequest()
         # A successful save redirects to the changelist; no form errors
-        self.assertNotIn(b'This field is required', response.content)
-        self.assertTrue(MessageRequest.objects.filter(subject='Test subject').exists())
+        self.assertNotIn(b"This field is required", response.content)
+        self.assertTrue(MessageRequest.objects.filter(subject="Test subject").exists())
 
     def test_processed_by_blank_is_valid(self):
         """
@@ -414,7 +427,7 @@ class MessageRequestAdminTest(TestCase):
         error in the admin, since the field is nullable.
         """
         response = self._post_messagerequest()
-        self.assertNotIn(b'This field is required', response.content)
-        mr = MessageRequest.objects.filter(subject='Test subject').first()
+        self.assertNotIn(b"This field is required", response.content)
+        mr = MessageRequest.objects.filter(subject="Test subject").first()
         self.assertIsNotNone(mr)
         self.assertIsNone(mr.processed_by)

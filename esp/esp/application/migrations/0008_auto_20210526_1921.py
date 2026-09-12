@@ -5,14 +5,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('application', '0007_remove_formstackappsettings_module'),
+        ("application", "0007_remove_formstackappsettings_module"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='formstackappsettings',
-            options={'verbose_name_plural': 'Formstack app settings'},
+            name="formstackappsettings",
+            options={"verbose_name_plural": "Formstack app settings"},
         ),
     ]

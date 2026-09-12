@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -48,208 +48,298 @@ from django.contrib.auth.models import Group
 
 import re
 
-class UserSearchController(object):
 
+class UserSearchController(object):
     #   Static parameters
-    preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
+    preferred_lists = [
+        "enrolled",
+        "studentfinaid",
+        "student_profile",
+        "class_approved",
+        "lotteried_students",
+        "teacher_profile",
+        "class_proposed",
+        "volunteer_all",
+    ]
 
     def __init__(self, *args, **kwargs):
         self.updated = False
 
     def filter_from_criteria(self, base_list, criteria, program=None):
-        return base_list.filter(self.query_from_criteria('any', criteria, program)).distinct()
+        return base_list.filter(
+            self.query_from_criteria("any", criteria, program)
+        ).distinct()
 
     def query_from_criteria(self, user_type, criteria, program=None):
-
-        """ Get the "base list" consisting of all the users of a specific type. """
-        if user_type.lower() == 'any':
+        """Get the "base list" consisting of all the users of a specific type."""
+        if user_type.lower() == "any":
             Q_base = Q()
         else:
             if user_type not in ESPUser.getTypes():
-                raise ESPError('user_type must be one of '+str(ESPUser.getTypes()))
+                raise ESPError("user_type must be one of " + str(ESPUser.getTypes()))
             Q_base = ESPUser.getAllOfType(user_type, True)
 
         Q_include = Q()
         Q_exclude = Q()
 
         """ Apply the specified criteria to filter the list of users. """
-        if criteria.get('userid', '').strip():
-
+        if criteria.get("userid", "").strip():
             ##  Select users based on their IDs only
             userid = []
-            for digit in criteria['userid'].split(','):
+            for digit in criteria["userid"].split(","):
                 try:
                     userid.append(int(digit))
                 except (ValueError, TypeError):
-                    raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
+                    raise ESPError(
+                        "User id invalid, please enter a number or comma-separated list of numbers.",
+                        log=False,
+                    )
 
-            if 'userid__not' in criteria:
-                Q_exclude |= Q(id__in = userid)
+            if "userid__not" in criteria:
+                Q_exclude |= Q(id__in=userid)
             else:
-                Q_include &= Q(id__in = userid)
+                Q_include &= Q(id__in=userid)
             self.updated = True
 
         else:
-
             ##  Select users based on all other criteria that was entered
-            if criteria.get('clsid', '').strip():
+            if criteria.get("clsid", "").strip():
                 clsid = []
-                for digit in criteria['clsid'].split(','):
+                for digit in criteria["clsid"].split(","):
                     try:
                         clsid.append(int(digit))
                     except (ValueError, TypeError):
-                        raise ESPError('Class id invalid, please enter a comma-separated list of numbers.', log=False)
-                if 'regtypes' in criteria:
-                    student_verbs = criteria['regtypes']
+                        raise ESPError(
+                            "Class id invalid, please enter a comma-separated list of numbers.",
+                            log=False,
+                        )
+                if "regtypes" in criteria:
+                    student_verbs = criteria["regtypes"]
                 else:
-                    student_verbs = ['Enrolled']
-                Q_include &= Q(studentregistration__section__parent_class__id__in=clsid,
-                               studentregistration__relationship__name__in=student_verbs) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+                    student_verbs = ["Enrolled"]
+                Q_include &= Q(
+                    studentregistration__section__parent_class__id__in=clsid,
+                    studentregistration__relationship__name__in=student_verbs,
+                ) & nest_Q(
+                    StudentRegistration.is_valid_qobject(), "studentregistration"
+                )
 
-            if 'class_times' in criteria:
-                class_times = criteria['class_times']
-                if 'regtypes' in criteria:
-                    student_verbs = criteria['regtypes']
+            if "class_times" in criteria:
+                class_times = criteria["class_times"]
+                if "regtypes" in criteria:
+                    student_verbs = criteria["regtypes"]
                 else:
-                    student_verbs = ['Enrolled']
-                Q_include &= Q(studentregistration__section__meeting_times__id__in=class_times, studentregistration__relationship__name__in=student_verbs) \
-                             & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
+                    student_verbs = ["Enrolled"]
+                Q_include &= Q(
+                    studentregistration__section__meeting_times__id__in=class_times,
+                    studentregistration__relationship__name__in=student_verbs,
+                ) & nest_Q(
+                    StudentRegistration.is_valid_qobject(), "studentregistration"
+                )
                 self.updated = True
 
-            if 'teaching_times' in criteria:
-                teaching_times = criteria['teaching_times']
-                Q_include &= Q(classsubject__sections__meeting_times__id__in=teaching_times)
+            if "teaching_times" in criteria:
+                teaching_times = criteria["teaching_times"]
+                Q_include &= Q(
+                    classsubject__sections__meeting_times__id__in=teaching_times
+                )
                 self.updated = True
 
-            if 'teacher_events' in criteria:
-                teacher_events = criteria['teacher_events']
+            if "teacher_events" in criteria:
+                teacher_events = criteria["teacher_events"]
                 Q_include &= Q(useravailability__event__id__in=teacher_events)
                 self.updated = True
 
-            if 'groups_include' in criteria:
-                groups_include = criteria['groups_include']
-                #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
+            if "groups_include" in criteria:
+                groups_include = criteria["groups_include"]
+                # Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_include &= Q(registrationprofile__user__groups__id__in=groups_include)
                 self.updated = True
 
-            if 'groups_exclude' in criteria:
-                groups_exclude = criteria['groups_exclude']
-                #Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
+            if "groups_exclude" in criteria:
+                groups_exclude = criteria["groups_exclude"]
+                # Can't just filter by group because we are already filtering by group with user_type above. - willgearty, 2016-11-23
                 Q_exclude |= Q(registrationprofile__user__groups__id__in=groups_exclude)
                 self.updated = True
 
-            for field in ['username', 'last_name', 'first_name', 'email']:
-                if criteria.get(field, '').strip():
+            for field in ["username", "last_name", "first_name", "email"]:
+                if criteria.get(field, "").strip():
                     #   Check that it's a valid regular expression
                     try:
                         rc = re.compile(criteria[field])
                     except re.error:
-                        raise ESPError(f'Invalid search expression, please check your syntax: {criteria[field]}', log=False)
-                    filter_dict = {f'{field}__iregex': criteria[field]}
-                    if f'{field}__not' in criteria:
+                        raise ESPError(
+                            f"Invalid search expression, please check your syntax: {criteria[field]}",
+                            log=False,
+                        )
+                    filter_dict = {f"{field}__iregex": criteria[field]}
+                    if f"{field}__not" in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:
                         Q_include &= Q(**filter_dict)
                     self.updated = True
 
-            if 'zipcode' in criteria and 'zipdistance' in criteria and \
-                len(criteria['zipcode'].strip()) > 0 and len(criteria['zipdistance'].strip()) > 0:
+            if (
+                "zipcode" in criteria
+                and "zipdistance" in criteria
+                and len(criteria["zipcode"].strip()) > 0
+                and len(criteria["zipdistance"].strip()) > 0
+            ):
                 try:
-                    zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
+                    zipc = ZipCode.objects.get(zip_code=criteria["zipcode"])
                 except ZipCode.DoesNotExist:
-                    raise ESPError(f'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "{criteria["zipcode"]}"', log=False)
-                zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
+                    raise ESPError(
+                        f'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "{criteria["zipcode"]}"',
+                        log=False,
+                    )
+                zipcodes = zipc.close_zipcodes(criteria["zipdistance"])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
-                if criteria.get('zipdistance_exclude', '').strip():
-                    zipcodes_exclude = zipc.close_zipcodes(criteria['zipdistance_exclude'])
-                    zipcodes = [ zipcode for zipcode in zipcodes if zipcode not in zipcodes_exclude ]
+                if criteria.get("zipdistance_exclude", "").strip():
+                    zipcodes_exclude = zipc.close_zipcodes(
+                        criteria["zipdistance_exclude"]
+                    )
+                    zipcodes = [
+                        zipcode
+                        for zipcode in zipcodes
+                        if zipcode not in zipcodes_exclude
+                    ]
                 if len(zipcodes) > 0:
-                    Q_include &= Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+                    Q_include &= Q(
+                        registrationprofile__contact_user__address_zip__in=zipcodes,
+                        registrationprofile__most_recent_profile=True,
+                    )
                     self.updated = True
 
-            if criteria.get('states', '').strip():
-                state_codes = criteria['states'].strip().upper().split(',')
-                if 'states__not' in criteria:
-                    Q_exclude |= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
+            if criteria.get("states", "").strip():
+                state_codes = criteria["states"].strip().upper().split(",")
+                if "states__not" in criteria:
+                    Q_exclude |= Q(
+                        registrationprofile__contact_user__address_state__in=state_codes,
+                        registrationprofile__most_recent_profile=True,
+                    )
                 else:
-                    Q_include &= Q(registrationprofile__contact_user__address_state__in = state_codes, registrationprofile__most_recent_profile=True)
+                    Q_include &= Q(
+                        registrationprofile__contact_user__address_state__in=state_codes,
+                        registrationprofile__most_recent_profile=True,
+                    )
                 self.updated = True
 
-            if criteria.get('grade_min', '').strip():
-                yog = ESPUser.YOGFromGrade(criteria['grade_min'])
+            if criteria.get("grade_min", "").strip():
+                yog = ESPUser.YOGFromGrade(criteria["grade_min"])
                 if yog != 0:
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
+                    Q_include &= Q(
+                        registrationprofile__student_info__graduation_year__lte=yog,
+                        registrationprofile__most_recent_profile=True,
+                    )
                     self.updated = True
 
-            if criteria.get('grade_max', '').strip():
-                yog = ESPUser.YOGFromGrade(criteria['grade_max'])
+            if criteria.get("grade_max", "").strip():
+                yog = ESPUser.YOGFromGrade(criteria["grade_max"])
                 if yog != 0:
-                    Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
+                    Q_include &= Q(
+                        registrationprofile__student_info__graduation_year__gte=yog,
+                        registrationprofile__most_recent_profile=True,
+                    )
                     self.updated = True
 
-            if criteria.get('school', '').strip():
-                school = criteria['school']
+            if criteria.get("school", "").strip():
+                school = criteria["school"]
                 if school:
-                    Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
+                    Q_include &= Q(studentinfo__school__icontains=school) | Q(
+                        studentinfo__k12school__name__icontains=school
+                    )
                     self.updated = True
 
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = list(range(1920, 2120))
-            if criteria.get('gradyear_min', '').strip():
+            if criteria.get("gradyear_min", "").strip():
                 try:
-                    gradyear_min = int(criteria['gradyear_min'])
+                    gradyear_min = int(criteria["gradyear_min"])
                 except (ValueError, TypeError):
-                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
-                possible_gradyears = [x for x in possible_gradyears if x >= gradyear_min]
-            if criteria.get('gradyear_max', '').strip():
+                    raise ESPError(
+                        "Please enter a 4-digit integer for graduation year limits.",
+                        log=False,
+                    )
+                possible_gradyears = [
+                    x for x in possible_gradyears if x >= gradyear_min
+                ]
+            if criteria.get("gradyear_max", "").strip():
                 try:
-                    gradyear_max = int(criteria['gradyear_max'])
+                    gradyear_max = int(criteria["gradyear_max"])
                 except (ValueError, TypeError):
-                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
-                possible_gradyears = [x for x in possible_gradyears if x <= gradyear_max]
-            if criteria.get('gradyear_min', '').strip() or criteria.get('gradyear_max', '').strip():
-                Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = list(map(str, possible_gradyears)), registrationprofile__most_recent_profile=True)
+                    raise ESPError(
+                        "Please enter a 4-digit integer for graduation year limits.",
+                        log=False,
+                    )
+                possible_gradyears = [
+                    x for x in possible_gradyears if x <= gradyear_max
+                ]
+            if (
+                criteria.get("gradyear_min", "").strip()
+                or criteria.get("gradyear_max", "").strip()
+            ):
+                Q_include &= Q(
+                    registrationprofile__teacher_info__graduation_year__in=list(
+                        map(str, possible_gradyears)
+                    ),
+                    registrationprofile__most_recent_profile=True,
+                )
                 self.updated = True
 
-            if criteria.get('hours_min', '').strip() or criteria.get('hours_max', '').strip():
+            if (
+                criteria.get("hours_min", "").strip()
+                or criteria.get("hours_max", "").strip()
+            ):
                 current_Q = Q_base & (Q_include & ~Q_exclude)
                 # Annotate each user with total enrolled meeting-time slots
                 # in a single query, instead of per-user + per-section loops.
                 annotated_users = ESPUser.objects.filter(current_Q).annotate(
                     num_hours=Count(
-                        'studentregistration__section__meeting_times',
+                        "studentregistration__section__meeting_times",
                         filter=Q(
                             studentregistration__section__parent_class__parent_program=program,
-                            studentregistration__relationship__name='Enrolled',
+                            studentregistration__relationship__name="Enrolled",
                         ),
                         distinct=True,
                     )
                 )
                 exclude_user_list = []
-                if 'hours_min' in criteria:
-                    hours_min = criteria['hours_min']
+                if "hours_min" in criteria:
+                    hours_min = criteria["hours_min"]
                     if hours_min:
                         exclude_user_list += list(
-                            annotated_users.filter(num_hours__lt=int(hours_min))
-                            .values_list('id', flat=True)
+                            annotated_users.filter(
+                                num_hours__lt=int(hours_min)
+                            ).values_list("id", flat=True)
                         )
-                if 'hours_max' in criteria:
-                    hours_max = criteria['hours_max']
+                if "hours_max" in criteria:
+                    hours_max = criteria["hours_max"]
                     if hours_max:
                         exclude_user_list += list(
-                            annotated_users.filter(num_hours__gt=int(hours_max))
-                            .values_list('id', flat=True)
+                            annotated_users.filter(
+                                num_hours__gt=int(hours_max)
+                            ).values_list("id", flat=True)
                         )
                 Q_exclude |= Q(id__in=exclude_user_list)
                 self.updated = True
 
-            if criteria.get('target_user') is not None:
-                student_id = criteria['target_user']
+            if criteria.get("target_user") is not None:
+                student_id = criteria["target_user"]
                 if student_id == "invalid":
-                    raise ESPError('Please select a valid student whose teachers to email.', log=False)
+                    raise ESPError(
+                        "Please select a valid student whose teachers to email.",
+                        log=False,
+                    )
                 else:
-                    sections = [sr.section for sr in StudentRegistration.valid_objects().filter(user_id=student_id, relationship__name="Enrolled", section__parent_class__parent_program=program)]
+                    sections = [
+                        sr.section
+                        for sr in StudentRegistration.valid_objects().filter(
+                            user_id=student_id,
+                            relationship__name="Enrolled",
+                            section__parent_class__parent_program=program,
+                        )
+                    ]
                     if len(sections):
                         teacher_filter = Q(classsubject__sections__in=sections)
                     else:
@@ -259,8 +349,8 @@ class UserSearchController(object):
         return Q_base & (Q_include & ~Q_exclude)
 
     def query_from_postdata(self, program, data):
-        """ Get a Q object for the targeted list of users from the POST data submitted
-            on the main "comm panel" page
+        """Get a Q object for the targeted list of users from the POST data submitted
+        on the main "comm panel" page
         """
 
         def get_recipient_type(list_name):
@@ -271,37 +361,41 @@ class UserSearchController(object):
 
         subquery = None
 
-        if 'base_list' in data and 'recipient_type' in data:
+        if "base_list" in data and "recipient_type" in data:
             #   Get the program-specific part of the query (e.g. which list to use)
-            if data['recipient_type'] not in ESPUser.getTypes():
-                recipient_type = 'any'
+            if data["recipient_type"] not in ESPUser.getTypes():
+                recipient_type = "any"
                 q_program = Q()
             else:
-                if data['base_list'].startswith('all'):
+                if data["base_list"].startswith("all"):
                     q_program = Q()
-                    recipient_type = data['recipient_type']
+                    recipient_type = data["recipient_type"]
                 else:
-                    program_lists = getattr(program, data['recipient_type'].lower()+'s')(QObjects=True)
-                    q_program = program_lists[data['base_list']]
+                    program_lists = getattr(
+                        program, data["recipient_type"].lower() + "s"
+                    )(QObjects=True)
+                    q_program = program_lists[data["base_list"]]
                     """ Some program queries rely on UserBits, and since user types are also stored in
                         UserBits we cannot store both of these in a single Q object.  To compensate, we
                         ignore the user type when performing a program-specific query.  """
-                    recipient_type = 'any'
+                    recipient_type = "any"
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria(recipient_type, data, program)
 
         ##  Handle "combination list" submissions
-        elif 'combo_base_list' in data:
+        elif "combo_base_list" in data:
             #   Get an initial query from the supplied base list
-            recipient_type, list_name = data['combo_base_list'].split(':')
-            if list_name.startswith('all'):
+            recipient_type, list_name = data["combo_base_list"].split(":")
+            if list_name.startswith("all"):
                 if recipient_type in ESPUser.getTypes():
                     q_program = ESPUser.getAllOfType(recipient_type, True)
                 else:
                     q_program = Q()
             else:
-                q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
+                q_program = getattr(program, recipient_type.lower() + "s")(
+                    QObjects=True
+                )[list_name]
 
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
@@ -309,15 +403,27 @@ class UserSearchController(object):
             #   Only treat a checkbox as active when it has a truthy value;
             #   unchecked boxes can still appear in the POST data with an empty
             #   value, and must not be applied as list filters.
-            checkbox_keys = [x[9:] for x in list(data.keys()) if x.startswith('checkbox_') and data.get(x)]
-            and_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('and_')]]
-            or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith('or_')]]
-            not_keys = [x[4:] for x in [x for x in checkbox_keys if x.startswith('not_')]]
+            checkbox_keys = [
+                x[9:]
+                for x in list(data.keys())
+                if x.startswith("checkbox_") and data.get(x)
+            ]
+            and_keys = [
+                x[4:] for x in [x for x in checkbox_keys if x.startswith("and_")]
+            ]
+            or_keys = [x[3:] for x in [x for x in checkbox_keys if x.startswith("or_")]]
+            not_keys = [
+                x[4:] for x in [x for x in checkbox_keys if x.startswith("not_")]
+            ]
             for and_list_name in and_keys:
                 user_type = get_recipient_type(and_list_name)
                 if user_type:
                     qobject = getattr(program, user_type)(QObjects=True)[and_list_name]
-                    subquery_qs = ESPUser.objects.filter(qobject).values_list('pk', flat=True).distinct()
+                    subquery_qs = (
+                        ESPUser.objects.filter(qobject)
+                        .values_list("pk", flat=True)
+                        .distinct()
+                    )
 
                     if and_list_name in not_keys:
                         q_program = q_program & ~Q(pk__in=subquery_qs)
@@ -328,7 +434,11 @@ class UserSearchController(object):
                 user_type = get_recipient_type(or_list_name)
                 if user_type:
                     qobject = getattr(program, user_type)(QObjects=True)[or_list_name]
-                    subquery_qs = ESPUser.objects.filter(qobject).values_list('pk', flat=True).distinct()
+                    subquery_qs = (
+                        ESPUser.objects.filter(qobject)
+                        .values_list("pk", flat=True)
+                        .distinct()
+                    )
 
                     if or_list_name not in not_keys:
                         q_program = q_program | Q(pk__in=subquery_qs)
@@ -336,17 +446,19 @@ class UserSearchController(object):
                         q_program = q_program | ~Q(pk__in=subquery_qs)
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria('any', data, program)
+            q_extra = self.query_from_criteria("any", data, program)
 
-        qobject = (q_extra & q_program & Q(is_active=True))
+        qobject = q_extra & q_program & Q(is_active=True)
 
-        #strip out duplicate clauses
+        # strip out duplicate clauses
         #   Note: in some cases, the children of the Q object are unhashable.
         #   Keep these separate.
         clauses_hashable = []
         clauses_unhashable = []
         for clause in qobject.children:
-            if isinstance(clause, Q) or (isinstance(clause, tuple) and isinstance(clause[1], Hashable)):
+            if isinstance(clause, Q) or (
+                isinstance(clause, tuple) and isinstance(clause[1], Hashable)
+            ):
                 clauses_hashable.append(clause)
             else:
                 clauses_unhashable.append(clause)
@@ -357,111 +469,163 @@ class UserSearchController(object):
         return qobject
 
     def filter_from_postdata(self, program, data):
-        """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
+        """Wraps the query_from_postdata function above to return a PersistentQueryFilter."""
 
         query = self.query_from_postdata(program, data)
 
-        #TODO-determine best location to inject subquery
-        #the string subquery should be assigned to .extra of the resultant filter
+        # TODO-determine best location to inject subquery
+        # the string subquery should be assigned to .extra of the resultant filter
         filterObj = PersistentQueryFilter.create_from_Q(ESPUser, query)
 
-        if 'base_list' in data and 'recipient_type' in data:
-            filterObj.useful_name = f'Program list: {data["base_list"]}'
-        elif 'combo_base_list' in data:
-            filterObj.useful_name = 'Custom user list'
+        if "base_list" in data and "recipient_type" in data:
+            filterObj.useful_name = f"Program list: {data['base_list']}"
+        elif "combo_base_list" in data:
+            filterObj.useful_name = "Custom user list"
         filterObj.save()
         return filterObj
 
     def sendto_fn_from_postdata(self, data):
-        recipient_type = data.get('recipient_type', '') or data.get('combo_base_list', ':').split(':')[0]
+        recipient_type = (
+            data.get("recipient_type", "")
+            or data.get("combo_base_list", ":").split(":")[0]
+        )
         sendtos = []
-        if recipient_type == 'Student':
+        if recipient_type == "Student":
             for key, value in data.items():
-                if ('student_sendto_' in key) and (value == '1'):
-                    sendtos.append(key[1+key.rindex('_'):])
+                if ("student_sendto_" in key) and (value == "1"):
+                    sendtos.append(key[1 + key.rindex("_") :])
             if not sendtos:
-                sendtos.append('self')
-            sendtos.sort(key=['self', 'guardian', 'emergency'].index)
-            return 'send_to_' + '_and_'.join(sendtos)
+                sendtos.append("self")
+            sendtos.sort(key=["self", "guardian", "emergency"].index)
+            return "send_to_" + "_and_".join(sendtos)
         else:
             return MessageRequest.SEND_TO_SELF_REAL
 
     def prepare_context(self, program, target_path=None, add_to_context=None):
         context = dict(add_to_context) if add_to_context else {}
-        context['program'] = program
-        context['student_search_form'] = StudentSearchForm()
-        context['combo_form'] = True
-        context['include_continue'] = True
-        context['user_types'] = ESPUser.getTypes()
+        context["program"] = program
+        context["student_search_form"] = StudentSearchForm()
+        context["combo_form"] = True
+        context["include_continue"] = True
+        context["user_types"] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
 
         #   Add in program-specific lists for most common user types
-        for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
+        for user_type, list_func in zip(
+            Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS
+        ):
             raw_lists = getattr(program, list_func)(True)
-            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
+            category_lists[user_type] = [
+                {
+                    "name": key,
+                    "list": raw_lists[key],
+                    "description": list_descriptions[key],
+                }
+                for key in raw_lists
+            ]
             for item in category_lists[user_type]:
-                if item['name'] in UserSearchController.preferred_lists:
-                    item['preferred'] = True
+                if item["name"] in UserSearchController.preferred_lists:
+                    item["preferred"] = True
 
         #   Add in global lists for each user type
         for user_type in ESPUser.getTypes():
-            key = user_type.lower() + 's'
+            key = user_type.lower() + "s"
             if user_type not in category_lists:
                 category_lists[user_type] = []
-            category_lists[user_type].insert(0, {'name': f'all_{user_type}', 'list': ESPUser.getAllOfType(user_type), 'description': f'All {key} in the database', 'preferred': True, 'all_flag': True})
+            category_lists[user_type].insert(
+                0,
+                {
+                    "name": f"all_{user_type}",
+                    "list": ESPUser.getAllOfType(user_type),
+                    "description": f"All {key} in the database",
+                    "preferred": True,
+                    "all_flag": True,
+                },
+            )
 
         #   Add in mailing list accounts
-        category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
+        category_lists["emaillist"] = [
+            {
+                "name": "all_emaillist",
+                "list": Q(password="emailuser"),
+                "description": "Everyone signed up for the mailing list",
+                "preferred": True,
+            }
+        ]
 
-        context['lists'] = category_lists
-        context['all_list_names'] = []
+        context["lists"] = category_lists
+        context["all_list_names"] = []
         for category in category_lists:
             for item in category_lists[category]:
-                context['all_list_names'].append(item['name'])
+                context["all_list_names"].append(item["name"])
 
         if target_path is None:
-            target_path = f'/manage/{program.getUrlBase()}/commpanel'
-        context['action_path'] = target_path
-        context['groups'] = Group.objects.all()
-        context['regtypes'] = RegistrationType.objects.all().order_by("name")
-        context['class_times'] = program.getTimeSlots(types = [EventType.get_from_desc('Class Time Block')]).order_by('start')
-        context['teacher_events'] = program.getTimeSlots(types = [EventType.get_from_desc('Teacher Training'), EventType.get_from_desc('Teacher Interview')]).order_by('start')
+            target_path = f"/manage/{program.getUrlBase()}/commpanel"
+        context["action_path"] = target_path
+        context["groups"] = Group.objects.all()
+        context["regtypes"] = RegistrationType.objects.all().order_by("name")
+        context["class_times"] = program.getTimeSlots(
+            types=[EventType.get_from_desc("Class Time Block")]
+        ).order_by("start")
+        context["teacher_events"] = program.getTimeSlots(
+            types=[
+                EventType.get_from_desc("Teacher Training"),
+                EventType.get_from_desc("Teacher Interview"),
+            ]
+        ).order_by("start")
 
         return context
 
-    def create_filter(self, request, program, template=None, target_path=None, add_to_context=None):
+    def create_filter(
+        self, request, program, template=None, target_path=None, add_to_context=None
+    ):
         from esp.program.modules.handlers.listgenmodule import ListGenModule
+
         """ Function to obtain a list of users, possibly requiring multiple requests.
             Similar to the old get_user_list function.
         """
 
         if template is None:
-            template = 'users/usersearch/usersearch_default.html'
+            template = "users/usersearch/usersearch_default.html"
         if add_to_context is None:
             add_to_context = {}
 
-        if request.method == 'POST':
+        if request.method == "POST":
             data = ListGenModule.processPost(request)
 
             #   Look for signs that this request contains user search options and act accordingly
-            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
+            if ("base_list" in data and "recipient_type" in data) or (
+                "combo_base_list" in data
+            ):
                 try:
                     filterObj = self.filter_from_postdata(program, data)
                     return (filterObj, True)
                 except (ESPError_Log, ESPError_NoLog) as e:
-                    add_to_context['error'] = str(e)
+                    add_to_context["error"] = str(e)
 
         if target_path is None:
             target_path = request.path
 
-        return (render_to_response(template, request, self.prepare_context(program, target_path, add_to_context = add_to_context)), False)
+        return (
+            render_to_response(
+                template,
+                request,
+                self.prepare_context(
+                    program, target_path, add_to_context=add_to_context
+                ),
+            ),
+            False,
+        )
 
     def selected_list_from_postdata(self, data):
         selected = []
-        selected.append(str(data.get('base_list', '')) or str(data.get('combo_base_list', ':').split(':')[1]))
+        selected.append(
+            str(data.get("base_list", ""))
+            or str(data.get("combo_base_list", ":").split(":")[1])
+        )
         for k, v in data.items():
-            if k.startswith('checkbox_'):
-                selected.append(str(k.split('checkbox_')[1]))
+            if k.startswith("checkbox_"):
+                selected.append(str(k.split("checkbox_")[1]))
 
-        return str(', '.join(selected))
+        return str(", ".join(selected))

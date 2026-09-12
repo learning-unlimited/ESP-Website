@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -33,7 +32,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, aux_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_teacher,
+    main_call,
+    aux_call,
+)
 from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp
@@ -41,24 +45,27 @@ from esp.application.models import StudentProgramApp, StudentClassApp
 from django.http import HttpResponse
 import json
 
+
 class AdmissionsDashboard(ProgramModuleObj):
     doc = """A dashboard for Junction core teachers to review applications for their class.
     Not to be confused with TeacherReviewApps, the app questions module."""
 
     @classmethod
     def module_properties(cls):
-        return [{
+        return [
+            {
                 "admin_title": "Teacher Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "teach",
                 "choosable": 0,
-                },
-                {
+            },
+            {
                 "admin_title": "Admin Admissions Dashboard",
                 "link_title": "Admissions Dashboard",
                 "module_type": "manage",
                 "choosable": 0,
-                }]
+            },
+        ]
 
     @main_call
     @needs_teacher
@@ -67,15 +74,25 @@ class AdmissionsDashboard(ProgramModuleObj):
             classes = prog.classes()
         else:
             classes = request.user.getTaughtClassesFromProgram(prog)
-        admin_status_choices = StudentProgramApp._meta.get_field('admin_status').choices
-        teacher_rating_choices = StudentClassApp._meta.get_field('teacher_rating').choices
-        decision_action_choices = [('admit', 'Admit'), ('unadmit', 'Unadmit'), ('waitlist', 'Waitlist')]
-        return render_to_response(self.baseDir() + 'admissions.html',
-                                  request,
-                                  {'classes': classes,
-                                   'admin_status_choices': admin_status_choices,
-                                   'teacher_rating_choices': teacher_rating_choices,
-                                   'decision_action_choices': decision_action_choices})
+        admin_status_choices = StudentProgramApp._meta.get_field("admin_status").choices
+        teacher_rating_choices = StudentClassApp._meta.get_field(
+            "teacher_rating"
+        ).choices
+        decision_action_choices = [
+            ("admit", "Admit"),
+            ("unadmit", "Unadmit"),
+            ("waitlist", "Waitlist"),
+        ]
+        return render_to_response(
+            self.baseDir() + "admissions.html",
+            request,
+            {
+                "classes": classes,
+                "admin_status_choices": admin_status_choices,
+                "teacher_rating_choices": teacher_rating_choices,
+                "decision_action_choices": decision_action_choices,
+            },
+        )
 
     @aux_call
     @needs_teacher
@@ -87,35 +104,39 @@ class AdmissionsDashboard(ProgramModuleObj):
             classapps = classapps.filter(subject__in=classes)
         if extra:
             classapps = classapps.filter(subject__id=extra)
-        if tl != 'manage':
+        if tl != "manage":
             classapps = classapps.filter(app__admin_status=StudentProgramApp.APPROVED)
 
         results = []
         for classapp in classapps:
             result = {}
-            result['id'] = classapp.id
-            result['user'] = {'id': classapp.app.user.id,
-                              'name': classapp.app.user.name()}
-            result['subject'] = {'id': classapp.subject.id,
-                                 'title': classapp.subject.title}
-            result['teacher_rating'] = classapp.teacher_rating
-            result['teacher_ranking'] = classapp.teacher_ranking
-            result['teacher_comment'] = classapp.teacher_comment
-            result['student_preference'] = classapp.student_preference
-            if tl == 'manage' and request.user.isAdmin(prog):
-                result['admin_status'] = classapp.app.admin_status
-                result['admin_comment'] = classapp.app.admin_comment
+            result["id"] = classapp.id
+            result["user"] = {
+                "id": classapp.app.user.id,
+                "name": classapp.app.user.name(),
+            }
+            result["subject"] = {
+                "id": classapp.subject.id,
+                "title": classapp.subject.title,
+            }
+            result["teacher_rating"] = classapp.teacher_rating
+            result["teacher_ranking"] = classapp.teacher_ranking
+            result["teacher_comment"] = classapp.teacher_comment
+            result["student_preference"] = classapp.student_preference
+            if tl == "manage" and request.user.isAdmin(prog):
+                result["admin_status"] = classapp.app.admin_status
+                result["admin_comment"] = classapp.app.admin_comment
                 decision_status_lines = []
                 cls = classapp.app.admitted_to_class()
                 if cls is not None:
-                    line = f'Admitted: {cls.title}'
+                    line = f"Admitted: {cls.title}"
                     decision_status_lines.append(line)
                 for cls in classapp.app.waitlisted_to_class():
-                    line = f'Waitlisted: {cls.title}'
+                    line = f"Waitlisted: {cls.title}"
                     decision_status_lines.append(line)
-                result['decision_status'] = '\n'.join(decision_status_lines)
+                result["decision_status"] = "\n".join(decision_status_lines)
             results.append(result)
-        return {'apps': results}
+        return {"apps": results}
 
     @aux_call
     @needs_teacher
@@ -123,8 +144,11 @@ class AdmissionsDashboard(ProgramModuleObj):
         try:
             classapp = StudentClassApp.objects.get(id=extra)
         except StudentClassApp.DoesNotExist:
-            return self.goToCore(tl) # XXX: more useful error here
-        if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
+            return self.goToCore(tl)  # XXX: more useful error here
+        if not (
+            request.user.isAdmin(prog)
+            or classapp.subject in request.user.getTaughtClassesFromProgram(prog)
+        ):
             return self.goToCore(tl)
         content = classapp.get_teacher_view(prog)
         return HttpResponse(content)
@@ -133,51 +157,61 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     @json_response(None)
     def update_apps(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
+        if request.method == "POST":
             updated = []
 
-            changes_data = request.POST.get('changes')
+            changes_data = request.POST.get("changes")
             if not changes_data:
-                return {'success': 0, 'error': 'Missing changes data'}
+                return {"success": 0, "error": "Missing changes data"}
 
             try:
                 changes = json.loads(changes_data)
             except (ValueError, TypeError):
-                return {'success': 0, 'error': 'Invalid JSON data'}
+                return {"success": 0, "error": "Invalid JSON data"}
 
             for app_id, change in changes.items():
                 try:
                     classapp = StudentClassApp.objects.get(id=app_id)
                 except StudentClassApp.DoesNotExist:
                     continue
-                if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
+                if not (
+                    request.user.isAdmin(prog)
+                    or classapp.subject
+                    in request.user.getTaughtClassesFromProgram(prog)
+                ):
                     continue
 
-                classapp.teacher_rating = change.get('teacher_rating', classapp.teacher_rating)
-                classapp.teacher_ranking = change.get('teacher_ranking', classapp.teacher_ranking)
-                classapp.teacher_comment = change.get('teacher_comment', classapp.teacher_comment)
+                classapp.teacher_rating = change.get(
+                    "teacher_rating", classapp.teacher_rating
+                )
+                classapp.teacher_ranking = change.get(
+                    "teacher_ranking", classapp.teacher_ranking
+                )
+                classapp.teacher_comment = change.get(
+                    "teacher_comment", classapp.teacher_comment
+                )
                 classapp.save()
 
                 if request.user.isAdmin(prog):
                     app = classapp.app
-                    app.admin_status = change.get('admin_status', app.admin_status)
-                    app.admin_comment = change.get('admin_comment', app.admin_comment)
+                    app.admin_status = change.get("admin_status", app.admin_status)
+                    app.admin_comment = change.get("admin_comment", app.admin_comment)
                     app.save()
-                    decision_action = change.get('decision_action')
-                    if decision_action == 'admit':
+                    decision_action = change.get("decision_action")
+                    if decision_action == "admit":
                         classapp.admit()
-                    elif decision_action == 'unadmit':
+                    elif decision_action == "unadmit":
                         classapp.unadmit()
-                    elif decision_action == 'waitlist':
+                    elif decision_action == "waitlist":
                         classapp.waitlist()
 
                 updated.append(app_id)
 
-            return {'success': 1, 'updated': updated}
+            return {"success": 1, "updated": updated}
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

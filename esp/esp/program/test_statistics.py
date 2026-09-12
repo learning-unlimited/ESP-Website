@@ -43,6 +43,7 @@ from esp.users.models import ESPUser
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _form(limit=0):
     """Return a minimal stand-in form whose cleaned_data supports ``limit``."""
     return SimpleNamespace(cleaned_data={"limit": limit})
@@ -67,12 +68,8 @@ class StatisticsTestBase(ProgramFrameworkTest):
 
         # Build QuerySets from the list fixtures set by ProgramFrameworkTest.
         self.programs = Program.objects.filter(pk=self.program.pk)
-        self.student_qs = ESPUser.objects.filter(
-            pk__in=[s.pk for s in self.students]
-        )
-        self.teacher_qs = ESPUser.objects.filter(
-            pk__in=[t.pk for t in self.teachers]
-        )
+        self.student_qs = ESPUser.objects.filter(pk__in=[s.pk for s in self.students])
+        self.teacher_qs = ESPUser.objects.filter(pk__in=[t.pk for t in self.teachers])
         self.student_profiles = RegistrationProfile.objects.filter(
             user__in=self.student_qs, most_recent_profile=True
         )
@@ -87,8 +84,8 @@ class StatisticsTestBase(ProgramFrameworkTest):
 # zipcodes()
 # ===========================================================================
 
-class ZipcodesTest(StatisticsTestBase):
 
+class ZipcodesTest(StatisticsTestBase):
     def _call(self, form=None, profiles=None, rd=None):
         if form is None:
             form = _form()
@@ -155,8 +152,8 @@ class ZipcodesTest(StatisticsTestBase):
 # demographics()
 # ===========================================================================
 
-class DemographicsTest(StatisticsTestBase):
 
+class DemographicsTest(StatisticsTestBase):
     def _call(self, students=None, profiles=None, rd=None):
         if students is None:
             students = self.student_qs
@@ -173,9 +170,15 @@ class DemographicsTest(StatisticsTestBase):
     def test_result_dict_has_all_keys(self):
         _, rd = self._call(rd={})
         expected_keys = [
-            "num_classes", "num_sections", "num_class_hours",
-            "num_student_class_hours", "gradyear_data", "birthyear_data",
-            "finaid_applied", "finaid_lunch", "finaid_approved",
+            "num_classes",
+            "num_sections",
+            "num_class_hours",
+            "num_student_class_hours",
+            "gradyear_data",
+            "birthyear_data",
+            "finaid_applied",
+            "finaid_lunch",
+            "finaid_approved",
         ]
         for key in expected_keys:
             self.assertIn(key, rd, msg=f"Missing key in result_dict: {key}")
@@ -193,7 +196,9 @@ class DemographicsTest(StatisticsTestBase):
         self.assertGreaterEqual(rd["finaid_approved"], 0)
 
     def test_empty_students(self):
-        result, rd = self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        result, rd = self._call(
+            students=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertIsInstance(result, str)
         self.assertEqual(rd["finaid_applied"], 0)
         self.assertEqual(rd["finaid_approved"], 0)
@@ -208,16 +213,13 @@ class DemographicsTest(StatisticsTestBase):
 
     def test_birthyear_counting_logic(self):
         dob_dummy = SimpleNamespace(
-            student_info=SimpleNamespace(
-                graduation_year=2027,
-                dob=date(2005, 5, 20)
-            )
+            student_info=SimpleNamespace(graduation_year=2027, dob=date(2005, 5, 20))
         )
         profiles = [dob_dummy]
         _, rd = self._call(profiles=profiles)
 
-        self.assertEqual(rd['birthyear_data'], [(2005, 1)])
-        self.assertEqual(rd['gradyear_data'], [(2027, 1)])
+        self.assertEqual(rd["birthyear_data"], [(2005, 1)])
+        self.assertEqual(rd["gradyear_data"], [(2027, 1)])
 
     def test_birthyear_aggregation_multiple_students(self):
         student_a = SimpleNamespace(
@@ -229,15 +231,15 @@ class DemographicsTest(StatisticsTestBase):
         profiles = [student_a, student_b]
         _, rd = self._call(profiles=profiles)
 
-        self.assertEqual(rd['birthyear_data'], [(2005, 2)])
+        self.assertEqual(rd["birthyear_data"], [(2005, 2)])
 
 
 # ===========================================================================
 # schools()
 # ===========================================================================
 
-class SchoolsTest(StatisticsTestBase):
 
+class SchoolsTest(StatisticsTestBase):
     def _call(self, form=None, profiles=None, rd=None):
         if form is None:
             form = _form()
@@ -279,26 +281,24 @@ class SchoolsTest(StatisticsTestBase):
     def test_school_and_k12_counting_logic(self):
         k12_dummy = SimpleNamespace(
             student_info=SimpleNamespace(
-                k12school=SimpleNamespace(name="Chaitanya Techno School"),
-                school=None
+                k12school=SimpleNamespace(name="Chaitanya Techno School"), school=None
             )
         )
 
         uni_dummy = SimpleNamespace(
             student_info=SimpleNamespace(
-                k12school=None,
-                school="Amrita Vishwa Vidyapeetham"
+                k12school=None, school="Amrita Vishwa Vidyapeetham"
             )
         )
 
         profiles = [k12_dummy, uni_dummy]
         _, rd = self._call(profiles=profiles, rd={})
 
-        self.assertEqual(rd['num_k12school'], 1)
-        self.assertEqual(rd['num_school'], 1)
+        self.assertEqual(rd["num_k12school"], 1)
+        self.assertEqual(rd["num_school"], 1)
 
         expected_names = ["Amrita Vishwa Vidyapeetham", "Chaitanya Techno School"]
-        actual_names = [item[0] for item in rd['school_data']]
+        actual_names = [item[0] for item in rd["school_data"]]
 
         self.assertCountEqual(actual_names, expected_names)
 
@@ -307,8 +307,8 @@ class SchoolsTest(StatisticsTestBase):
 # startreg()
 # ===========================================================================
 
-class StartRegTest(StatisticsTestBase):
 
+class StartRegTest(StatisticsTestBase):
     def _call(self, students=None, profiles=None, rd=None):
         if students is None:
             students = self.student_qs
@@ -331,7 +331,9 @@ class StartRegTest(StatisticsTestBase):
         self.assertEqual(len(rd["program_data"]), self.programs.count())
 
     def test_empty_students(self):
-        result, rd = self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        result, rd = self._call(
+            students=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertIsInstance(result, str)
         # All registration/confirmation lists should be empty.
         for _prog, reg_list, confirm_list in rd["program_data"]:
@@ -341,29 +343,36 @@ class StartRegTest(StatisticsTestBase):
     def test_registration_and_confirmation_counting(self):
         mock_regs = [
             {
-                'user_id': 1,
-                'section__parent_class__parent_program': self.programs[0].id,
-                'first_date': datetime(2026, 3, 20)
+                "user_id": 1,
+                "section__parent_class__parent_program": self.programs[0].id,
+                "first_date": datetime(2026, 3, 20),
             }
         ]
 
         mock_confirms = [
             {
-                'user_id': 1,
-                'program_id': self.programs[0].id,
-                'last_time': datetime(2026, 3, 21)
+                "user_id": 1,
+                "program_id": self.programs[0].id,
+                "last_time": datetime(2026, 3, 21),
             }
         ]
 
-        with patch('esp.program.models.StudentRegistration.objects.filter') as mock_reg_query, \
-             patch('esp.users.models.Record.objects.filter') as mock_conf_query:
-
-            mock_reg_query.return_value.values.return_value.annotate.return_value = mock_regs
-            mock_conf_query.return_value.values.return_value.annotate.return_value = mock_confirms
+        with (
+            patch(
+                "esp.program.models.StudentRegistration.objects.filter"
+            ) as mock_reg_query,
+            patch("esp.users.models.Record.objects.filter") as mock_conf_query,
+        ):
+            mock_reg_query.return_value.values.return_value.annotate.return_value = (
+                mock_regs
+            )
+            mock_conf_query.return_value.values.return_value.annotate.return_value = (
+                mock_confirms
+            )
 
             _, rd = self._call(rd={})
 
-            program, reg_list, confirm_list = rd['program_data'][0]
+            program, reg_list, confirm_list = rd["program_data"][0]
 
             self.assertEqual(reg_list[0][0], datetime(2026, 3, 20).date())
             self.assertEqual(reg_list[0][1], 1)
@@ -375,6 +384,7 @@ class StartRegTest(StatisticsTestBase):
 # ===========================================================================
 # repeats()
 # ===========================================================================
+
 
 class RepeatsTest(StatisticsTestBase):
     """Tests for statistics.repeats()."""
@@ -401,7 +411,9 @@ class RepeatsTest(StatisticsTestBase):
         self.assertIsInstance(rd["repeat_data"], list)
 
     def test_empty_students_gives_empty_repeat_data(self):
-        _, rd = self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        _, rd = self._call(
+            students=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertEqual(rd["repeat_data"], [])
 
     def test_repeats_logic_flow(self):
@@ -412,24 +424,28 @@ class RepeatsTest(StatisticsTestBase):
             (2, "Math/456"),
         ]
 
-        with patch('esp.users.models.Record.objects.filter') as mock_filter:
+        with patch("esp.users.models.Record.objects.filter") as mock_filter:
             mock_filter.return_value.values_list.return_value = mock_data
 
             _, rd = self._call(rd={})
-            repeat_data = dict(rd['repeat_data'])
+            repeat_data = dict(rd["repeat_data"])
 
             self.assertIn("1x Math, 2x Science", repeat_data)
-            self.assertEqual(repeat_data["1x Math, 2x Science"], 1) # One student has this signature
+            self.assertEqual(
+                repeat_data["1x Math, 2x Science"], 1
+            )  # One student has this signature
             self.assertIn("1x Math", repeat_data)
-            self.assertEqual(repeat_data["1x Math"], 1) # One student has this signature
+            self.assertEqual(
+                repeat_data["1x Math"], 1
+            )  # One student has this signature
 
 
 # ===========================================================================
 # heardabout()
 # ===========================================================================
 
-class HeardAboutTest(StatisticsTestBase):
 
+class HeardAboutTest(StatisticsTestBase):
     def _call(self, form=None, profiles=None, rd=None):
         if form is None:
             form = _form()
@@ -469,20 +485,20 @@ class HeardAboutTest(StatisticsTestBase):
 
         _, rd = self._call(profiles=profiles, rd={})
 
-        data_dict = dict(rd['heardabout_data'])
+        data_dict = dict(rd["heardabout_data"])
 
         self.assertEqual(data_dict["School!"], 2)
         self.assertEqual(data_dict["Friend..."], 2)
 
-        self.assertEqual(len(rd['heardabout_data']), 2)
+        self.assertEqual(len(rd["heardabout_data"]), 2)
 
 
 # ===========================================================================
 # hours()
 # ===========================================================================
 
-class HoursTest(StatisticsTestBase):
 
+class HoursTest(StatisticsTestBase):
     def _call(self, students=None, profiles=None, rd=None):
         if students is None:
             students = self.student_qs
@@ -510,16 +526,21 @@ class HoursTest(StatisticsTestBase):
         students_count)."""
         _, rd = self._call(rd={})
         for entry in rd["hours_data"]:
-            self.assertEqual(len(entry), 7, msg=f"Unexpected hours_data tuple length: {entry}")
+            self.assertEqual(
+                len(entry), 7, msg=f"Unexpected hours_data tuple length: {entry}"
+            )
 
     def test_empty_students(self):
-        result, _ = self._call(students=self.empty_users, profiles=self.empty_profiles, rd={})
+        result, _ = self._call(
+            students=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertIsInstance(result, str)
 
 
 # ===========================================================================
 # student_reg()
 # ===========================================================================
+
 
 class StudentRegStatTest(StatisticsTestBase):
     """Tests for statistics.student_reg (not esp.program.modules.studentreg)."""
@@ -553,7 +574,9 @@ class StudentRegStatTest(StatisticsTestBase):
     def test_each_prog_stat_has_four_values(self):
         _, rd = self._call(rd={})
         for _prog, stats in rd["prog_data"]:
-            self.assertEqual(len(stats), 4, msg=f"Expected 4 stats per program, got {stats}")
+            self.assertEqual(
+                len(stats), 4, msg=f"Expected 4 stats per program, got {stats}"
+            )
 
     def test_stat_counts_nonnegative(self):
         _, rd = self._call(rd={})
@@ -566,8 +589,8 @@ class StudentRegStatTest(StatisticsTestBase):
 # teacher_reg()
 # ===========================================================================
 
-class TeacherRegTest(StatisticsTestBase):
 
+class TeacherRegTest(StatisticsTestBase):
     def _call(self, teachers=None, profiles=None, rd=None):
         if teachers is None:
             teachers = self.teacher_qs
@@ -600,7 +623,9 @@ class TeacherRegTest(StatisticsTestBase):
             self.assertEqual(len(stats), 3)
 
     def test_empty_teachers(self):
-        result, _ = self._call(teachers=self.empty_users, profiles=self.empty_profiles, rd={})
+        result, _ = self._call(
+            teachers=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertIsInstance(result, str)
 
 
@@ -608,8 +633,8 @@ class TeacherRegTest(StatisticsTestBase):
 # class_reg()
 # ===========================================================================
 
-class ClassRegTest(StatisticsTestBase):
 
+class ClassRegTest(StatisticsTestBase):
     def _call(self, teachers=None, profiles=None, rd=None):
         if teachers is None:
             teachers = self.teacher_qs
@@ -626,8 +651,12 @@ class ClassRegTest(StatisticsTestBase):
     def test_result_dict_has_all_keys(self):
         _, rd = self._call(rd={})
         for key in (
-            "prog_data", "stat_names", "stat_categories",
-            "x_axis_categories", "left_axis_data", "right_axis_data",
+            "prog_data",
+            "stat_names",
+            "stat_categories",
+            "x_axis_categories",
+            "left_axis_data",
+            "right_axis_data",
         ):
             self.assertIn(key, rd, msg=f"Missing key: {key}")
 
@@ -652,5 +681,7 @@ class ClassRegTest(StatisticsTestBase):
                 self.assertGreaterEqual(val, 0)
 
     def test_empty_teachers(self):
-        result, _ = self._call(teachers=self.empty_users, profiles=self.empty_profiles, rd={})
+        result, _ = self._call(
+            teachers=self.empty_users, profiles=self.empty_profiles, rd={}
+        )
         self.assertIsInstance(result, str)

@@ -1,4 +1,5 @@
 """Tests for admin dashboard search (get_admin_search_entries, serialization, safety)."""
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.admin_search import (
@@ -14,12 +15,16 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
     """Test that admin search entries are built correctly and exclude invalid links."""
 
     def setUp(self):
-        super().setUp(modules=[ProgramModule.objects.get(handler='AdminCore')])
+        super().setUp(modules=[ProgramModule.objects.get(handler="AdminCore")])
 
     def test_returns_list_of_entries(self):
         entries = get_admin_search_entries(self.program)
         self.assertIsInstance(entries, list)
-        self.assertGreater(len(entries), 0, "Program with AdminCore should have at least one search entry")
+        self.assertGreater(
+            len(entries),
+            0,
+            "Program with AdminCore should have at least one search entry",
+        )
         for e in entries:
             self.assertIsInstance(e, AdminSearchEntry)
             self.assertTrue(e.id, "entry should have id")
@@ -33,9 +38,15 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
         entries = get_admin_search_entries(self.program)
         for e in entries:
             # e.id is formed as tl_viewname
-            tl, view_name = e.id.split('_', 1)
-            self.assertIn(tl, e.keywords, "Keywords for %s should include area %r" % (e.id, tl))
-            self.assertIn(view_name, e.keywords, "Keywords for %s should include view name %r" % (e.id, view_name))
+            tl, view_name = e.id.split("_", 1)
+            self.assertIn(
+                tl, e.keywords, "Keywords for %s should include area %r" % (e.id, tl)
+            )
+            self.assertIn(
+                view_name,
+                e.keywords,
+                "Keywords for %s should include view name %r" % (e.id, view_name),
+            )
 
     def test_entries_have_required_fields(self):
         """Every listed entry has non-empty title, keywords, url, and id."""
@@ -43,7 +54,7 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
         for e in entries:
             self.assertTrue(e.title, "Every entry should have a non-empty title")
             self.assertTrue(e.keywords, "Every entry should have at least one keyword")
-            self.assertTrue(e.url.startswith('/'), "URL should be absolute path")
+            self.assertTrue(e.url.startswith("/"), "URL should be absolute path")
             self.assertTrue(e.id, "Every entry should have an id")
 
     def test_excluded_views_not_in_results(self):
@@ -51,8 +62,16 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
         entries = get_admin_search_entries(self.program)
         entry_ids = {e.id for e in entries}
         for excluded in EXCLUDED_VIEW_NAMES:
-            found = [e for e in entries if excluded in e.id.lower() or excluded in e.url.lower()]
-            self.assertEqual(found, [], "Excluded view %r should not appear in search results" % excluded)
+            found = [
+                e
+                for e in entries
+                if excluded in e.id.lower() or excluded in e.url.lower()
+            ]
+            self.assertEqual(
+                found,
+                [],
+                "Excluded view %r should not appear in search results" % excluded,
+            )
 
     def test_serialize_returns_list_of_dicts(self):
         data = serialize_admin_search_entries(self.program)
@@ -60,9 +79,9 @@ class AdminSearchEntriesTest(ProgramFrameworkTest):
         self.assertGreater(len(data), 0)
         for d in data:
             self.assertIsInstance(d, dict)
-            for key in ('id', 'url', 'title', 'category', 'keywords'):
+            for key in ("id", "url", "title", "category", "keywords"):
                 self.assertIn(key, d, "Serialized entry should have key %r" % key)
-            self.assertIsInstance(d['keywords'], list)
+            self.assertIsInstance(d["keywords"], list)
 
     def test_humanize_view_name(self):
         """View names are title-cased with underscores as spaces (labels live in module files)."""
@@ -84,26 +103,29 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
     # Dashboard section headers from directory.html; a featured module's search
     # entry must be categorized under one of these. The same strings live in
     # admin_search.py as the SEARCH_CATEGORY_* constants.
-    _KNOWN_SECTIONS = frozenset([
-        'Program Management and Settings',
-        'Class Management and Scheduling',
-        'Registration',
-        'Participants and Communication',
-        'Financial and Accounting',
-        'Printables',
-    ])
+    _KNOWN_SECTIONS = frozenset(
+        [
+            "Program Management and Settings",
+            "Class Management and Scheduling",
+            "Registration",
+            "Participants and Communication",
+            "Financial and Accounting",
+            "Printables",
+        ]
+    )
     # 'Other' is for manage tools that are searchable but not featured on the
     # dashboard
-    _OTHER = 'Other'
+    _OTHER = "Other"
 
     # Featured modules that intentionally produce no search entry
-    _FEATURED_NOT_SEARCHABLE = frozenset(['ClassFlagModule'])
+    _FEATURED_NOT_SEARCHABLE = frozenset(["ClassFlagModule"])
 
     def _featured_modules(self):
         """Featured modules we expect to be searchable: the isAdminPortalFeatured()
         whitelist as instantiated for this program, minus documented exceptions."""
         return [
-            pmo for pmo in self.program.getModules()
+            pmo
+            for pmo in self.program.getModules()
             if pmo.isAdminPortalFeatured()
             and pmo.module.handler not in self._FEATURED_NOT_SEARCHABLE
         ]
@@ -112,7 +134,7 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
         """Entry ids a module could produce, as `<module_type>_<view>` over all of
         its views. Mirrors how get_admin_search_entries() forms ids, so these can
         be matched against actual entry ids."""
-        return {'%s_%s' % (pmo.module.module_type, v) for v in pmo.views}
+        return {"%s_%s" % (pmo.module.module_type, v) for v in pmo.views}
 
     def test_every_featured_module_is_searchable(self):
         """Each featured module contributes at least one search entry."""
@@ -128,13 +150,13 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
             )
 
     def test_all_entries_use_a_known_category(self):
-        """Every search entry must use a known category.
-        """
+        """Every search entry must use a known category."""
         allowed = self._KNOWN_SECTIONS | {self._OTHER}
         entries = get_admin_search_entries(self.program)
         for entry in entries:
             self.assertIn(
-                entry.category, allowed,
+                entry.category,
+                allowed,
                 "%s uses category %r, which is not a valid search category"
                 % (entry.id, entry.category),
             )
@@ -147,12 +169,21 @@ class FeaturedModuleSearchEntryTest(ProgramFrameworkTest):
         avoid broken search links (e.g. /manage/<prog>/grouptextfinal).
         """
         aux_views = [
-            'create_autorule', 'batchclassregfinal', 'grouptextfinal',
-            'deactivatefinal', 'usergroupfinal', 'userrecordsfinal',
-            'start_testing', 'reset_testing', 'survey_manage',
+            "create_autorule",
+            "batchclassregfinal",
+            "grouptextfinal",
+            "deactivatefinal",
+            "usergroupfinal",
+            "userrecordsfinal",
+            "start_testing",
+            "reset_testing",
+            "survey_manage",
         ]
         entries = get_admin_search_entries(self.program)
         entry_ids = {e.id for e in entries}
         for aux in aux_views:
-            self.assertNotIn('manage_%s' % aux, entry_ids,
-                             "Aux endpoint %r should not produce a search entry" % aux)
+            self.assertNotIn(
+                "manage_%s" % aux,
+                entry_ids,
+                "Aux endpoint %r should not produce a search entry" % aux,
+            )

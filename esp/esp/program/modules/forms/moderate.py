@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2010 by the individual contributors
@@ -36,45 +36,53 @@ from django import forms
 from esp.program.models import ModeratorRecord
 from esp.tagdict.models import Tag
 
+
 class ModeratorForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
-        if 'program' in kwargs:
-            self.program = kwargs['program']
-            del kwargs['program']
+        if "program" in kwargs:
+            self.program = kwargs["program"]
+            del kwargs["program"]
         else:
-            raise KeyError('Need to supply program as named argument to ModeratorForm')
+            raise KeyError("Need to supply program as named argument to ModeratorForm")
         super().__init__(*args, **kwargs)
-        self.fields['class_categories'].queryset = self.program.class_categories.all()
-        choices = [(0, 'Please select an option')] + [(num, num) for num in range(1, self.program.num_timeslots() + 1)]
-        self.fields['num_slots'].choices = choices
-        self.fields['num_slots'].widget.choices = choices
+        self.fields["class_categories"].queryset = self.program.class_categories.all()
+        choices = [(0, "Please select an option")] + [
+            (num, num) for num in range(1, self.program.num_timeslots() + 1)
+        ]
+        self.fields["num_slots"].choices = choices
+        self.fields["num_slots"].widget.choices = choices
 
-        #set default labels that need custom title
-        self.fields['will_moderate'].label = f'Will you serve as a {self.program.getModeratorTitle().lower()}?'
+        # set default labels that need custom title
+        self.fields[
+            "will_moderate"
+        ].label = f"Will you serve as a {self.program.getModeratorTitle().lower()}?"
 
         # set default help texts that need custom title
-        self.fields['will_moderate'].help_text = f"Would you like to serve as a {self.program.getModeratorTitle().lower()} for other teachers' classes?"
-        self.fields['num_slots'].help_text = f'For how many timeslots can you serve as a {self.program.getModeratorTitle().lower()} (we will use your teacher availability)?'
+        self.fields[
+            "will_moderate"
+        ].help_text = f"Would you like to serve as a {self.program.getModeratorTitle().lower()} for other teachers' classes?"
+        self.fields[
+            "num_slots"
+        ].help_text = f"For how many timeslots can you serve as a {self.program.getModeratorTitle().lower()} (we will use your teacher availability)?"
 
         # override help text/labels with tags
         for field in self.fields.keys():
-            tag_data = Tag.getProgramTag('moderatorreg_label_%s' % field, self.program)
+            tag_data = Tag.getProgramTag("moderatorreg_label_%s" % field, self.program)
             if tag_data:
                 self.fields[field].label = tag_data
-            tag_data = Tag.getProgramTag('moderatorreg_help_text_%s' % field, self.program)
+            tag_data = Tag.getProgramTag(
+                "moderatorreg_help_text_%s" % field, self.program
+            )
             if tag_data:
                 self.fields[field].help_text = tag_data
 
     class Meta:
         model = ModeratorRecord
-        fields = ('will_moderate', 'num_slots', 'class_categories', 'comments')
+        fields = ("will_moderate", "num_slots", "class_categories", "comments")
         labels = {
-            'num_slots': 'Number of timeslots?',
+            "num_slots": "Number of timeslots?",
         }
         help_texts = {
-            'class_categories': 'Which categories of classes are you most interested in?',
+            "class_categories": "Which categories of classes are you most interested in?",
         }
-        widgets = {
-            'num_slots': forms.widgets.Select()
-        }
+        widgets = {"num_slots": forms.widgets.Select()}

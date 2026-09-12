@@ -15,7 +15,7 @@ def try_login(selenium, username, password):
     username_input.send_keys(username)
     password_input = selenium.find_element(By.NAME, "password")
     password_input.send_keys(password)
-    selenium.find_element(By.ID, 'gologin').click()
+    selenium.find_element(By.ID, "gologin").click()
 
 
 def try_normal_login(selenium, live_server_url, username, password):
@@ -23,9 +23,9 @@ def try_normal_login(selenium, live_server_url, username, password):
     WebDriverWait(selenium, 10).until(
         EC.visibility_of_element_located((By.CLASS_NAME, "logged_in"))
     )
-    selenium.get('%s%s' % (live_server_url, "/"))
+    selenium.get("%s%s" % (live_server_url, "/"))
 
 
 def logout(selenium, live_server_url):
-    selenium.get('%s%s' % (live_server_url, "/myesp/signout/"))
-    selenium.get('%s%s' % (live_server_url, "/"))
+    selenium.get("%s%s" % (live_server_url, "/myesp/signout/"))
+    selenium.get("%s%s" % (live_server_url, "/"))

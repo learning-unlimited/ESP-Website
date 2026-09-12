@@ -5,18 +5,17 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0003_messagerequest_public'),
+        ("dbmail", "0003_messagerequest_public"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='messagevars',
-            options={'verbose_name_plural': 'Message variables'},
+            name="messagevars",
+            options={"verbose_name_plural": "Message variables"},
         ),
         migrations.AlterModelOptions(
-            name='textofemail',
-            options={'verbose_name_plural': 'Email texts'},
+            name="textofemail",
+            options={"verbose_name_plural": "Email texts"},
         ),
     ]

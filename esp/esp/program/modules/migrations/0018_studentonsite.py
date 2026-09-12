@@ -3,18 +3,18 @@
 from django.db import migrations
 import esp.program.modules.base
 
+
 class Migration(migrations.Migration):
     dependencies = [
-        ('modules', '0017_checkavailabilitymodule_finaidapprovemodule'),
+        ("modules", "0017_checkavailabilitymodule_finaidapprovemodule"),
     ]
     operations = [
         migrations.CreateModel(
-            name='StudentOnsite',
-            fields=[
-            ],
+            name="StudentOnsite",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj', esp.program.modules.base.CoreModule),
+            bases=("modules.programmoduleobj", esp.program.modules.base.CoreModule),
         ),
     ]

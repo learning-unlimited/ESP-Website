@@ -6,20 +6,19 @@ import django.utils.timezone
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0008_merge_20240509_2131'),
+        ("dbmail", "0008_merge_20240509_2131"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='messagevars',
-            name='pickled_provider_migration2024',
+            model_name="messagevars",
+            name="pickled_provider_migration2024",
         ),
         migrations.AlterField(
-            model_name='messagevars',
-            name='pickled_provider',
-            field=models.BinaryField(default=b''),
+            model_name="messagevars",
+            name="pickled_provider",
+            field=models.BinaryField(default=b""),
             preserve_default=False,
         ),
     ]

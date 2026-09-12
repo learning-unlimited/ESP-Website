@@ -5,20 +5,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0031_auto_20220726_2128'),
+        ("users", "0031_auto_20220726_2128"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='recordtype',
-            name='description',
-            field=models.CharField(help_text='A unique sentence case description for the record type', max_length=255, unique=True),
+            model_name="recordtype",
+            name="description",
+            field=models.CharField(
+                help_text="A unique sentence case description for the record type",
+                max_length=255,
+                unique=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='recordtype',
-            name='name',
-            field=models.CharField(help_text='A unique short snake_case name for the record type', max_length=80, unique=True),
+            model_name="recordtype",
+            name="name",
+            field=models.CharField(
+                help_text="A unique short snake_case name for the record type",
+                max_length=80,
+                unique=True,
+            ),
         ),
     ]

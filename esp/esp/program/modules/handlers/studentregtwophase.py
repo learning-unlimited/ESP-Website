@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 import datetime
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.conf import settings
@@ -45,36 +46,59 @@ from django.template.loader import render_to_string
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
-from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
+from esp.program.models import (
+    ClassCategories,
+    ClassSection,
+    ClassSubject,
+    RegistrationType,
+    StudentRegistration,
+    StudentSubjectInterest,
+)
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    main_call,
+    aux_call,
+    meets_deadline,
+    needs_student_in_grade,
+    meets_cap,
+    no_auth,
+)
 from esp.users.models import Record, RecordType, ESPUser
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.utils.query_utils import nest_Q
 
+
 class StudentRegTwoPhase(ProgramModuleObj):
     doc = """Allows students to set preferences for the class lottery."""
 
-    def students(self, QObject = False):
-        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
-        q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest')
+    def students(self, QObject=False):
+        q_sr = Q(
+            studentregistration__section__parent_class__parent_program=self.program
+        ) & nest_Q(StudentRegistration.is_valid_qobject(), "studentregistration")
+        q_ssi = Q(
+            studentsubjectinterest__subject__parent_program=self.program
+        ) & nest_Q(StudentSubjectInterest.is_valid_qobject(), "studentsubjectinterest")
         if QObject:
-            return {'twophase_star_students': q_ssi,
-                    'twophase_priority_students' : q_sr}
+            return {"twophase_star_students": q_ssi, "twophase_priority_students": q_sr}
         else:
-            return {'twophase_star_students': ESPUser.objects.filter(q_ssi).distinct(),
-                    'twophase_priority_students': ESPUser.objects.filter(q_sr).distinct()}
+            return {
+                "twophase_star_students": ESPUser.objects.filter(q_ssi).distinct(),
+                "twophase_priority_students": ESPUser.objects.filter(q_sr).distinct(),
+            }
 
     def studentDesc(self):
-        return {'twophase_star_students': "Students who have starred classes in the two-phase lottery",
-                'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
+        return {
+            "twophase_star_students": "Students who have starred classes in the two-phase lottery",
+            "twophase_priority_students": "Students who have marked choices in the two-phase lottery",
+        }
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        records = Record.objects.filter(user=user,
-                                        event__name="twophase_reg_done",
-                                        program=self.program)
+        records = Record.objects.filter(
+            user=user, event__name="twophase_reg_done", program=self.program
+        )
         return records.exists()
 
     @classmethod
@@ -86,11 +110,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "seq": 3,
             "required": True,
             "choosable": 0,
-            }
+        }
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def studentreg2phase(self, request, tl, one, two, module, extra, prog):
         """
@@ -103,14 +127,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
         priority_regs = StudentRegistration.valid_objects().filter(
-            user=request.user, relationship__name__startswith='Priority')
+            user=request.user, relationship__name__startswith="Priority"
+        )
         priority_regs = priority_regs.select_related(
-            'relationship', 'section', 'section__parent_class')
+            "relationship", "section", "section__parent_class"
+        )
         for student_reg in priority_regs:
             rel = student_reg.relationship.name
             title = student_reg.section.parent_class.title
             sec = student_reg.section
-            times = sec.meeting_times.all().order_by('start')
+            times = sec.meeting_times.all().order_by("start")
             if times.count() == 0:
                 continue
             timeslot = times[0].id
@@ -121,9 +147,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         star_counts = {}
         interests = StudentSubjectInterest.valid_objects().filter(
-            user=request.user, subject__parent_program=prog)
-        interests = interests.select_related(
-            'subject').prefetch_related('subject__sections__meeting_times')
+            user=request.user, subject__parent_program=prog
+        )
+        interests = interests.select_related("subject").prefetch_related(
+            "subject__sections__meeting_times"
+        )
         for interest in interests:
             cls = interest.subject
             for sec in cls.sections.all():
@@ -140,11 +168,13 @@ class StudentRegTwoPhase(ProgramModuleObj):
         prevTimeSlot = None
         blockCount = 0
         schedule = []
-        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslots = prog.getTimeSlots(types=["Class Time Block", "Compulsory"])
 
-        context['num_priority'] = prog.priorityLimit()
-        context['num_star'] = int(Tag.getProgramTag("num_stars", program = prog))
-        context['min_classes'] = int(Tag.getProgramTag("twophase_min_classes", program=prog, default=0))
+        context["num_priority"] = prog.priorityLimit()
+        context["num_star"] = int(Tag.getProgramTag("num_stars", program=prog))
+        context["min_classes"] = int(
+            Tag.getProgramTag("twophase_min_classes", program=prog, default=0)
+        )
 
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
@@ -157,9 +187,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
             else:
                 priority_dict = {}
             temp_list = []
-            for i in range(1, context['num_priority'] + 1):
-                priority_name = 'Priority/%s' % i
-                reg_type, created = RegistrationType.objects.get_or_create(name = priority_name, category = "student")
+            for i in range(1, context["num_priority"] + 1):
+                priority_name = "Priority/%s" % i
+                reg_type, created = RegistrationType.objects.get_or_create(
+                    name=priority_name, category="student"
+                )
                 if priority_name in priority_dict:
                     temp_list.append((reg_type, priority_dict[priority_name]))
                 else:
@@ -168,15 +200,24 @@ class StudentRegTwoPhase(ProgramModuleObj):
             star_count = 0
             if timeslot.id in star_counts:
                 star_count = star_counts[timeslot.id]
-            schedule.append((timeslot, priority_list, blockCount + 1, star_count, float(star_count)/context['num_star']*100))
+            schedule.append(
+                (
+                    timeslot,
+                    priority_list,
+                    blockCount + 1,
+                    star_count,
+                    float(star_count) / context["num_star"] * 100,
+                )
+            )
 
             prevTimeSlot = timeslot
 
-        context['timeslots'] = schedule
-        context['is_confirmed'] = self.isCompleted()
+        context["timeslots"] = schedule
+        context["is_confirmed"] = self.isCompleted()
 
         return render_to_response(
-            self.baseDir()+'studentregtwophase.html', request, context)
+            self.baseDir() + "studentregtwophase.html", request, context
+        )
 
     def catalog_context(self, request, tl, one, two, module, extra, prog):
         """
@@ -186,12 +227,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context = {}
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes
-        context['open_class_category_id'] = prog.open_class_category.id
+        context["open_class_category_id"] = prog.open_class_category.id
         lunch_category = ClassCategories.get_lunch()
         if lunch_category:
-            context['lunch_category_id'] = lunch_category.id
+            context["lunch_category_id"] = lunch_category.id
         else:
-            context['lunch_category_id'] = -1
+            context["lunch_category_id"] = -1
         return context
 
     @aux_call
@@ -218,23 +259,26 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
-        context['category_choices'] = group_columns(category_choices)
+        context["category_choices"] = group_columns(category_choices)
 
         grade_choices = []
-        grade_choices.append(('ALL', 'All'))
+        grade_choices.append(("ALL", "All"))
         for grade in range(prog.grade_min, prog.grade_max + 1):
             grade_choices.append((grade, grade))
-        context['grade_choices'] = group_columns(grade_choices)
+        context["grade_choices"] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two, module, extra, prog)
+            request, tl, one, two, module, extra, prog
+        )
         context.update(catalog_context)
 
-        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
+        return render_to_response(
+            self.baseDir() + "view_classes.html", request, context
+        )
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def mark_classes(self, request, tl, one, two, module, extra, prog):
         """
@@ -259,17 +303,20 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
-        context['category_choices'] = group_columns(category_choices)
+        context["category_choices"] = group_columns(category_choices)
 
         catalog_context = self.catalog_context(
-            request, tl, one, two, module, extra, prog)
+            request, tl, one, two, module, extra, prog
+        )
         context.update(catalog_context)
 
-        return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
+        return render_to_response(
+            self.baseDir() + "mark_classes.html", request, context
+        )
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
         """
@@ -280,53 +327,56 @@ class StudentRegTwoPhase(ProgramModuleObj):
             'not_interested': [4,6,10]
         }
         """
-        if not 'json_data' in request.POST:
-            return HttpResponseBadRequest('JSON data not included in request.')
+        if not "json_data" in request.POST:
+            return HttpResponseBadRequest("JSON data not included in request.")
         try:
-            json_data = json.loads(request.POST['json_data'])
+            json_data = json.loads(request.POST["json_data"])
         except ValueError:
-            return HttpResponseBadRequest('JSON data mis-formatted.')
-        if not isinstance(json_data.get('interested'), list) or \
-           not isinstance(json_data.get('not_interested'), list):
-            return HttpResponseBadRequest('JSON data mis-formatted.')
+            return HttpResponseBadRequest("JSON data mis-formatted.")
+        if not isinstance(json_data.get("interested"), list) or not isinstance(
+            json_data.get("not_interested"), list
+        ):
+            return HttpResponseBadRequest("JSON data mis-formatted.")
 
         # Determine which of the given class ids are valid
         valid_classes = ClassSubject.objects.filter(
-            pk__in=json_data['interested'],
+            pk__in=json_data["interested"],
             parent_program=prog,
             status__gte=0,
             grade_min__lte=request.user.getGrade(prog),
-            grade_max__gte=request.user.getGrade(prog))
+            grade_max__gte=request.user.getGrade(prog),
+        )
         # Unexpire any matching SSIs that exist already (to avoid
         # creating duplicate objects).
         to_unexpire = StudentSubjectInterest.objects.filter(
-            user=request.user,
-            subject__in=valid_classes)
+            user=request.user, subject__in=valid_classes
+        )
         to_unexpire.update(end_date=None)
         # Determine which valid ids haven't had SSIs created yet
         # and bulk create those objects.
-        valid_ids = valid_classes.values_list('pk', flat=True)
-        existing_ids = to_unexpire.values_list('subject__pk', flat=True)
+        valid_ids = valid_classes.values_list("pk", flat=True)
+        existing_ids = to_unexpire.values_list("subject__pk", flat=True)
         to_create_ids = set(valid_ids) - set(existing_ids)
-        StudentSubjectInterest.objects.bulk_create([
-            StudentSubjectInterest(
-                user=request.user,
-                subject_id=subj_id)
-            for subj_id in to_create_ids])
+        StudentSubjectInterest.objects.bulk_create(
+            [
+                StudentSubjectInterest(user=request.user, subject_id=subj_id)
+                for subj_id in to_create_ids
+            ]
+        )
         # Expire any matching SSIs that are in 'not_interested'
         to_expire = StudentSubjectInterest.objects.filter(
-            user=request.user,
-            subject__pk__in=json_data['not_interested'])
+            user=request.user, subject__pk__in=json_data["not_interested"]
+        )
         to_expire.update(end_date=datetime.datetime.now())
 
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             return HttpResponse()
         else:
             return self.goToCore(tl)
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def rank_classes(self, request, tl, one, two, module, extra, prog):
         """
@@ -340,92 +390,105 @@ class StudentRegTwoPhase(ProgramModuleObj):
         except (TypeError, ValueError, Event.DoesNotExist) as e:
             raise Http404
         context = dict()
-        context['timeslot'] = timeslot
-        context['num_priorities'] = prog.priorityLimit()
-        context['priorities'] = []
-        for rel_index in range(1, prog.priorityLimit()+1):
-            rel_name = 'Priority/%s' % rel_index
+        context["timeslot"] = timeslot
+        context["num_priorities"] = prog.priorityLimit()
+        context["priorities"] = []
+        for rel_index in range(1, prog.priorityLimit() + 1):
+            rel_name = "Priority/%s" % rel_index
             rel, created = RegistrationType.objects.get_or_create(
-                name=rel_name, category='student')
-            context['priorities'].append((rel_index, rel))
+                name=rel_name, category="student"
+            )
+            context["priorities"].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
-            request, tl, one, two, module, extra, prog)
+            request, tl, one, two, module, extra, prog
+        )
         context.update(catalog_context)
 
         return render_to_response(
-            self.baseDir() + 'rank_classes.html', request, context)
+            self.baseDir() + "rank_classes.html", request, context
+        )
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def save_priorities(self, request, tl, one, two, module, extra, prog):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        if not 'json_data' in request.POST:
-            return HttpResponseBadRequest('JSON data not included in request.')
+        if not "json_data" in request.POST:
+            return HttpResponseBadRequest("JSON data not included in request.")
         try:
-            json_data = json.loads(request.POST['json_data'])
+            json_data = json.loads(request.POST["json_data"])
         except ValueError:
-            return HttpResponseBadRequest('JSON data mis-formatted.')
+            return HttpResponseBadRequest("JSON data mis-formatted.")
         try:
             [timeslot_id] = list(json_data.keys())
         except ValueError:
-            return HttpResponseBadRequest('JSON data mis-formatted.')
+            return HttpResponseBadRequest("JSON data mis-formatted.")
         if not isinstance(json_data[timeslot_id], dict):
-            return HttpResponseBadRequest('JSON data mis-formatted.')
+            return HttpResponseBadRequest("JSON data mis-formatted.")
 
         timeslot = Event.objects.get(pk=timeslot_id)
         priorities = json_data[timeslot_id]
         for rel_index, cls_id in priorities.items():
-            rel_name = 'Priority/%s' % rel_index
-            rel = RegistrationType.objects.get(name=rel_name, category='student')
+            rel_name = "Priority/%s" % rel_index
+            rel = RegistrationType.objects.get(name=rel_name, category="student")
 
             # Pull up any registrations that exist (including expired ones)
             srs = StudentRegistration.objects.annotate(
-                Min('section__meeting_times__start'))
+                Min("section__meeting_times__start")
+            )
             srs = srs.filter(
                 user=request.user,
                 section__parent_class__parent_program=prog,
                 section__meeting_times__start__min=timeslot.start,
-                relationship=rel)
+                relationship=rel,
+            )
 
-            if cls_id == '':
+            if cls_id == "":
                 # Blank: nothing selected, expire existing registrations
                 for sr in srs:
                     sr.expire()
                 continue
 
             cls_id = int(cls_id)
-            sec = ClassSection.objects.annotate(Min('meeting_times__start'))
+            sec = ClassSection.objects.annotate(Min("meeting_times__start"))
             try:
-                sec = sec.get(parent_class=cls_id,
-                              parent_class__parent_program=prog,
-                              meeting_times__start__min=timeslot.start)
-            except (ClassSection.DoesNotExist,
-                    ClassSection.MultipleObjectsReturned):
+                sec = sec.get(
+                    parent_class=cls_id,
+                    parent_class__parent_program=prog,
+                    meeting_times__start__min=timeslot.start,
+                )
+            except (ClassSection.DoesNotExist, ClassSection.MultipleObjectsReturned):
                 # XXX: what if a class has multiple sections in a timeblock?
-                logger.warning("Could not save priority for class %s in "
-                               "timeblock %s", cls_id, timeslot_id)
+                logger.warning(
+                    "Could not save priority for class %s in timeblock %s",
+                    cls_id,
+                    timeslot_id,
+                )
                 continue
             # sanity checks
-            if (not sec.status > 0 or not sec.parent_class.status > 0):
-                logger.warning("Class '%s' was not approved.  Not letting "
-                               "user '%s' register.", sec, request.user)
+            if not sec.status > 0 or not sec.parent_class.status > 0:
+                logger.warning(
+                    "Class '%s' was not approved.  Not letting user '%s' register.",
+                    sec,
+                    request.user,
+                )
                 continue
-            if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
-                or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
-                logger.warning("User '%s' not in class grade range; not "
-                               "letting them register.", request.user)
+            if not sec.parent_class.grade_min <= request.user.getGrade(
+                prog
+            ) or not sec.parent_class.grade_max >= request.user.getGrade(prog):
+                logger.warning(
+                    "User '%s' not in class grade range; not letting them register.",
+                    request.user,
+                )
                 continue
 
             if not srs.exists():
                 # Create a new registration
-                sr = StudentRegistration(
-                    user=request.user,
-                    relationship=rel)
+                sr = StudentRegistration(user=request.user, relationship=rel)
             else:
                 # Pull the first StudentRegistration, expire the others
                 for sr in srs[1:]:
@@ -443,24 +506,25 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lottery')
+    @meets_deadline("/Classes/Lottery")
     @meets_cap
     def confirm_registration(self, request, tl, one, two, module, extra, prog):
         """
         Confirms the student's lottery preferences. Creates a twophase_reg_done
         Record, sends a confirmation email, and shows a confirmation page.
         """
-        if request.method != 'POST':
+        if request.method != "POST":
             return self.goToCore(tl)
 
         # Gather the student's current preferences for the confirmation page/email
         priority_regs = StudentRegistration.valid_objects().filter(
             user=request.user,
-            relationship__name__startswith='Priority',
+            relationship__name__startswith="Priority",
             section__parent_class__parent_program=prog,
         )
         priority_regs = priority_regs.select_related(
-            'relationship', 'section', 'section__parent_class').prefetch_related('section__meeting_times')
+            "relationship", "section", "section__parent_class"
+        ).prefetch_related("section__meeting_times")
 
         # Build timeslot -> priority list mapping
         timeslot_dict = {}
@@ -477,40 +541,45 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 continue
             timeslot = times[0]
             if timeslot.id not in timeslot_dict:
-                timeslot_dict[timeslot.id] = {'timeslot': timeslot, 'priorities': {}}
-            timeslot_dict[timeslot.id]['priorities'][rel] = title
+                timeslot_dict[timeslot.id] = {"timeslot": timeslot, "priorities": {}}
+            timeslot_dict[timeslot.id]["priorities"][rel] = title
 
         # Get starred classes
         interests = StudentSubjectInterest.valid_objects().filter(
-            user=request.user, subject__parent_program=prog)
-        interests = interests.select_related('subject')
+            user=request.user, subject__parent_program=prog
+        )
+        interests = interests.select_related("subject")
         starred_classes = [interest.subject.title for interest in interests]
 
         # Check optional minimum class requirement
-        min_classes = int(Tag.getProgramTag("twophase_min_classes", program=prog, default=0))
+        min_classes = int(
+            Tag.getProgramTag("twophase_min_classes", program=prog, default=0)
+        )
         total_classes = len(starred_classes)
         if min_classes > 0 and total_classes < min_classes:
             messages.error(
                 request,
-                'You must star at least %d classes before confirming your preferences. '
-                'You currently have %d starred.' % (min_classes, total_classes)
+                "You must star at least %d classes before confirming your preferences. "
+                "You currently have %d starred." % (min_classes, total_classes),
             )
             return self.goToCore(tl)
 
         # Build sorted schedule for display
         num_priority = prog.priorityLimit()
         schedule = []
-        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslots = prog.getTimeSlots(types=["Class Time Block", "Compulsory"])
         for timeslot in timeslots:
             # Get any existing priorities for this timeslot; default to none
-            entry = timeslot_dict.get(timeslot.id, {'priorities': {}})
+            entry = timeslot_dict.get(timeslot.id, {"priorities": {}})
             priorities = []
             for i in range(1, num_priority + 1):
-                priority_name = 'Priority/%s' % i
-                if priority_name in entry['priorities']:
-                    priorities.append(('Priority %s' % i, entry['priorities'][priority_name]))
+                priority_name = "Priority/%s" % i
+                if priority_name in entry["priorities"]:
+                    priorities.append(
+                        ("Priority %s" % i, entry["priorities"][priority_name])
+                    )
                 else:
-                    priorities.append(('Priority %s' % i, '(not set)'))
+                    priorities.append(("Priority %s" % i, "(not set)"))
             schedule.append((timeslot, priorities))
 
         # Create or update the twophase_reg_done Record
@@ -525,35 +594,40 @@ class StudentRegTwoPhase(ProgramModuleObj):
         self.send_confirmation_email(request.user, schedule, starred_classes)
 
         context = {
-            'program': prog,
-            'schedule': schedule,
-            'starred_classes': starred_classes,
-            'num_starred': len(starred_classes),
+            "program": prog,
+            "schedule": schedule,
+            "starred_classes": starred_classes,
+            "num_starred": len(starred_classes),
         }
 
         return render_to_response(
-            self.baseDir() + 'confirmation.html', request, context)
+            self.baseDir() + "confirmation.html", request, context
+        )
 
     def send_confirmation_email(self, student, schedule, starred_classes):
         """Send a confirmation email with the student's lottery preferences."""
-        email_title = 'Lottery Preferences Confirmation for %s: %s' % (
-            self.program.niceName(), student.name())
-        email_from = '%s Registration System <server@%s>' % (
-            self.program.program_type, settings.EMAIL_HOST_SENDER)
+        email_title = "Lottery Preferences Confirmation for %s: %s" % (
+            self.program.niceName(),
+            student.name(),
+        )
+        email_from = "%s Registration System <server@%s>" % (
+            self.program.program_type,
+            settings.EMAIL_HOST_SENDER,
+        )
         email_context = {
-            'student': student,
-            'program': self.program,
-            'schedule': schedule,
-            'starred_classes': starred_classes,
-            'curtime': datetime.datetime.now(),
-            'DEFAULT_HOST': settings.DEFAULT_HOST,
+            "student": student,
+            "program": self.program,
+            "schedule": schedule,
+            "starred_classes": starred_classes,
+            "curtime": datetime.datetime.now(),
+            "DEFAULT_HOST": settings.DEFAULT_HOST,
         }
         email_contents = render_to_string(
-            'program/modules/studentregtwophase/confirmation_email.txt',
-            email_context)
+            "program/modules/studentregtwophase/confirmation_email.txt", email_context
+        )
         email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

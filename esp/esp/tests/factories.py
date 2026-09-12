@@ -37,7 +37,8 @@ from esp.users.models import ESPUser, Permission
 # User factory
 # ---------------------------------------------------------------------------
 
-def make_user(role, username=None, password='password'):
+
+def make_user(role, username=None, password="password"):
     """Create and return a single ESPUser with the given role.
 
     This is the single-user equivalent of the user-creation loop inside
@@ -64,15 +65,15 @@ def make_user(role, username=None, password='password'):
     user_role_setup()
 
     if username is None:
-        username = 'test_%s' % role.lower()
+        username = "test_%s" % role.lower()
 
     user, created = ESPUser.objects.get_or_create(
         username=username,
         defaults={
-            'first_name': role,
-            'last_name':  'TestUser',
-            'email':      '%s@test.learningu.org' % username,
-        }
+            "first_name": role,
+            "last_name": "TestUser",
+            "email": "%s@test.learningu.org" % username,
+        },
     )
     user.set_password(password)
     user.save()
@@ -84,10 +85,11 @@ def make_user(role, username=None, password='password'):
 # Program factory
 # ---------------------------------------------------------------------------
 
+
 def make_program(
-    program_type='TestProgram',
-    instance_name='2222_Summer',
-    instance_label='Summer 2222',
+    program_type="TestProgram",
+    instance_name="2222_Summer",
+    instance_label="Summer 2222",
     grade_min=7,
     grade_max=12,
     base_cost=0,
@@ -154,14 +156,14 @@ def make_program(
     elif admin is not None:
         admin_list = [admin]
     else:
-        admin_list = [make_user('Administrator', username='factory_admin')]
+        admin_list = [make_user("Administrator", username="factory_admin")]
 
     if categories is not None:
         category_list = categories
     else:
         category, _ = ClassCategories.objects.get_or_create(
-            category='Factory Category',
-            defaults={'symbol': 'F'},
+            category="Factory Category",
+            defaults={"symbol": "F"},
         )
         category_list = [category]
 
@@ -169,22 +171,24 @@ def make_program(
         start_time = datetime(2222, 7, 7, 7, 5)
 
     prog_form_values = {
-        'term':              instance_name,
-        'term_friendly':     instance_label,
-        'grade_min':         str(grade_min),
-        'grade_max':         str(grade_max),
-        'director_email':    'factory@test.learningu.org',
-        'program_size_max':  '3000',
-        'program_type':      program_type,
-        'program_modules':   modules if modules is not None else ProgramModule.objects.all(),
-        'class_categories':  [c.id for c in category_list],
-        'admins':            [u.id for u in admin_list],
-        'teacher_reg_start': '2000-01-01 00:00:00',
-        'teacher_reg_end':   '3001-01-01 00:00:00',
-        'student_reg_start': '2000-01-01 00:00:00',
-        'student_reg_end':   '3001-01-01 00:00:00',
-        'base_cost':         base_cost,
-        'sibling_discount':  sibling_discount,
+        "term": instance_name,
+        "term_friendly": instance_label,
+        "grade_min": str(grade_min),
+        "grade_max": str(grade_max),
+        "director_email": "factory@test.learningu.org",
+        "program_size_max": "3000",
+        "program_type": program_type,
+        "program_modules": modules
+        if modules is not None
+        else ProgramModule.objects.all(),
+        "class_categories": [c.id for c in category_list],
+        "admins": [u.id for u in admin_list],
+        "teacher_reg_start": "2000-01-01 00:00:00",
+        "teacher_reg_end": "3001-01-01 00:00:00",
+        "student_reg_start": "2000-01-01 00:00:00",
+        "student_reg_end": "3001-01-01 00:00:00",
+        "base_cost": base_cost,
+        "sibling_discount": sibling_discount,
     }
 
     pcf = ProgramCreationForm(prog_form_values)
@@ -198,38 +202,41 @@ def make_program(
 
     new_prog = pcf.save(commit=False)
     ptype_slug = re.sub(
-        r'[-\s]+', '_',
+        r"[-\s]+",
+        "_",
         re.sub(
-            r'[^\w\s-]', '',
-            unicodedata.normalize('NFKD', pcf.cleaned_data['program_type'])
-        ).strip()
+            r"[^\w\s-]",
+            "",
+            unicodedata.normalize("NFKD", pcf.cleaned_data["program_type"]),
+        ).strip(),
     )
-    new_prog.url  = ptype_slug + '/' + pcf.cleaned_data['term']
+    new_prog.url = ptype_slug + "/" + pcf.cleaned_data["term"]
     new_prog.name = (
-        pcf.cleaned_data['program_type'] + ' ' + pcf.cleaned_data['term_friendly']
+        pcf.cleaned_data["program_type"] + " " + pcf.cleaned_data["term_friendly"]
     )
     new_prog.save()
     pcf.save_m2m()
     commit_program(
-        new_prog, perms,
-        pcf.cleaned_data['base_cost'],
-        pcf.cleaned_data['sibling_discount'],
+        new_prog,
+        perms,
+        pcf.cleaned_data["base_cost"],
+        pcf.cleaned_data["sibling_discount"],
     )
 
     # Open registration for teachers and students
     Permission.objects.get_or_create(
-        role=Group.objects.get(name='Teacher'),
-        permission_type='Teacher/All',
+        role=Group.objects.get(name="Teacher"),
+        permission_type="Teacher/All",
         program=new_prog,
     )
     Permission.objects.get_or_create(
-        role=Group.objects.get(name='Student'),
-        permission_type='Student/All',
+        role=Group.objects.get(name="Student"),
+        permission_type="Student/All",
         program=new_prog,
     )
 
     # Create timeslots
-    event_type = EventType.get_from_desc('Class Time Block')
+    event_type = EventType.get_from_desc("Class Time Block")
     for i in range(num_timeslots):
         slot_start = start_time + timedelta(
             minutes=i * (timeslot_length + timeslot_gap)
@@ -240,8 +247,8 @@ def make_program(
             event_type=event_type,
             start=slot_start,
             end=slot_end,
-            short_description='Slot %d' % i,
-            defaults={'description': slot_start.strftime('%H:%M %m/%d/%Y')},
+            short_description="Slot %d" % i,
+            defaults={"description": slot_start.strftime("%H:%M %m/%d/%Y")},
         )
 
     # Create classroom resources
@@ -249,10 +256,10 @@ def make_program(
     for i in range(num_rooms):
         for ts in timeslots:
             Resource.objects.get_or_create(
-                name='Room %d' % i,
+                name="Room %d" % i,
                 num_students=room_capacity,
                 event=ts,
-                res_type=ResourceType.get_or_create('Classroom'),
+                res_type=ResourceType.get_or_create("Classroom"),
             )
 
     return new_prog
@@ -262,9 +269,20 @@ def make_program(
 # Class factory
 # ---------------------------------------------------------------------------
 
-def make_class(program, teacher, title=None, category=None,
-               grade_min=7, grade_max=12, class_size_max=30,
-               class_info=None, duration=None, sections=1, accept=False):
+
+def make_class(
+    program,
+    teacher,
+    title=None,
+    category=None,
+    grade_min=7,
+    grade_max=12,
+    class_size_max=30,
+    class_info=None,
+    duration=None,
+    sections=1,
+    accept=False,
+):
     """Create and return a ClassSubject with one or more ClassSections.
 
     Note: unlike ProgramFrameworkTest.setUp() which calls cls.accept() on
@@ -304,10 +322,10 @@ def make_class(program, teacher, title=None, category=None,
         cls     = make_class(program, teacher, sections=3)
     """
     if title is None:
-        title = 'Factory Class for %s' % teacher.username
+        title = "Factory Class for %s" % teacher.username
 
     if class_info is None:
-        class_info = 'Auto-generated by make_class() factory.'
+        class_info = "Auto-generated by make_class() factory."
 
     if category is None:
         cats = program.class_categories.all()
@@ -315,8 +333,8 @@ def make_class(program, teacher, title=None, category=None,
             category = cats.first()
         else:
             category, _ = ClassCategories.objects.get_or_create(
-                category='Factory Category',
-                defaults={'symbol': 'F'},
+                category="Factory Category",
+                defaults={"symbol": "F"},
             )
 
     if duration is None:
@@ -327,11 +345,11 @@ def make_class(program, teacher, title=None, category=None,
         title=title,
         parent_program=program,
         defaults={
-            'category':       category,
-            'grade_min':      grade_min,
-            'grade_max':      grade_max,
-            'class_size_max': class_size_max,
-            'class_info':     class_info,
+            "category": category,
+            "grade_min": grade_min,
+            "grade_max": grade_max,
+            "class_size_max": class_size_max,
+            "class_info": class_info,
         },
     )
 

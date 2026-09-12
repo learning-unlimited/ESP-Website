@@ -5,6 +5,7 @@ It is spelled out in the director_email help text and enforced by a model
 validator; the HTML `pattern` attributes and the outgoing-mail guard are
 separate copies of the same rule, so these tests check they all agree.
 """
+
 import re
 
 from django.conf import settings
@@ -19,14 +20,18 @@ from esp.program.modules.forms.admincore import ProgramSettingsForm
 
 SITE = settings.SITE_INFO[1]
 
-ALLOWED = ['director@%s' % SITE,
-           'web-team@learningu.org',
-           'info@web.learningu.org',
-           'info@a.b.learningu.org']
+ALLOWED = [
+    "director@%s" % SITE,
+    "web-team@learningu.org",
+    "info@web.learningu.org",
+    "info@a.b.learningu.org",
+]
 
-REJECTED = ['someone@example.com',
-            'someone@notlearningu.org',
-            'someone@learningu.org.example.com']
+REJECTED = [
+    "someone@example.com",
+    "someone@notlearningu.org",
+    "someone@learningu.org.example.com",
+]
 
 
 class DirectorEmailValidatorTest(SimpleTestCase):
@@ -34,7 +39,7 @@ class DirectorEmailValidatorTest(SimpleTestCase):
 
     def accepts(self, email):
         try:
-            for validator in Program._meta.get_field('director_email').validators:
+            for validator in Program._meta.get_field("director_email").validators:
                 validator(email)
         except ValidationError:
             return False
@@ -56,10 +61,12 @@ class DirectorEmailPatternTest(SimpleTestCase):
 
     def patterns(self):
         return {
-            'ProgramCreationForm':
-                ProgramCreationForm.base_fields['director_email'].widget.attrs['pattern'],
-            'ProgramSettingsForm':
-                ProgramSettingsForm.base_fields['director_email'].widget.attrs['pattern'],
+            "ProgramCreationForm": ProgramCreationForm.base_fields[
+                "director_email"
+            ].widget.attrs["pattern"],
+            "ProgramSettingsForm": ProgramSettingsForm.base_fields[
+                "director_email"
+            ].widget.attrs["pattern"],
         }
 
     def test_patterns_accept_allowed_addresses(self):
@@ -75,12 +82,12 @@ class DirectorEmailPatternTest(SimpleTestCase):
                     self.assertFalse(re.match(pattern, email))
 
 
-@override_settings(EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
 class SendMailFromAddressTest(SimpleTestCase):
     """send_mail guards the From address so DMARC does not reject the message."""
 
     def send_from(self, from_email):
-        send_mail('subject', 'body', from_email, ['someone@example.com'])
+        send_mail("subject", "body", from_email, ["someone@example.com"])
 
     def test_accepts_allowed_addresses(self):
         for email in ALLOWED:
@@ -89,7 +96,7 @@ class SendMailFromAddressTest(SimpleTestCase):
 
     def test_accepts_display_name_form(self):
         # The guard has separate alternations for bare and "Name <addr>" forms
-        self.send_from('LU Directors <info@a.b.learningu.org>')
+        self.send_from("LU Directors <info@a.b.learningu.org>")
 
     def test_rejects_other_domains(self):
         for email in REJECTED:

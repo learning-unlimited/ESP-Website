@@ -1,8 +1,9 @@
 from io import open
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -50,59 +51,123 @@ except ImportError:
 
 register = template.Library()
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.html')
+
+@cache_inclusion_tag(register, "inclusion/survey/responses_for_program.html")
 def render_responses_for_program(survey):
     """Render the survey responses for admin review."""
     return _render_responses_for_program_helper(survey)
-render_responses_for_program.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(Program)))
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_program.tex')
+
+render_responses_for_program.cached_function.depend_on_row(
+    "survey.Answer",
+    lambda ans: {"survey": ans.question.survey},
+    filter=lambda ans: ans.content_type == ContentType.objects.get_for_model(Program),
+)
+
+
+@cache_inclusion_tag(register, "inclusion/survey/responses_for_program.tex")
 def render_responses_for_program_pdf(survey):
     """Render the survey responses for admin review."""
     return _render_responses_for_program_helper(survey)
-render_responses_for_program_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(Program)))
+
+
+render_responses_for_program_pdf.cached_function.depend_on_row(
+    "survey.Answer",
+    lambda ans: {"survey": ans.question.survey},
+    filter=lambda ans: ans.content_type == ContentType.objects.get_for_model(Program),
+)
+
 
 def _render_responses_for_program_helper(survey):
     """Render the survey responses for admin review."""
-    questions = survey.questions.filter(per_class=False).order_by('-question_type__is_numeric', 'seq')
-    display_data = [ { 'question': y, 'answers': y.answer_set.all() } for y in questions ]
-    return {'display_data': display_data, 'survey': survey, 'tl': 'manage'}
+    questions = survey.questions.filter(per_class=False).order_by(
+        "-question_type__is_numeric", "seq"
+    )
+    display_data = [{"question": y, "answers": y.answer_set.all()} for y in questions]
+    return {"display_data": display_data, "survey": survey, "tl": "manage"}
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.html')
+
+@cache_inclusion_tag(register, "inclusion/survey/responses_for_section.html")
 def render_responses_for_section(sec, survey, tl):
     """Render the survey responses for teacher review in HTML."""
     return _render_responses_for_section_helper(sec, survey, tl)
-render_responses_for_section.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
 
-@cache_inclusion_tag(register, 'inclusion/survey/responses_for_section.tex')
+
+render_responses_for_section.cached_function.depend_on_row(
+    "survey.Answer",
+    lambda ans: {
+        "survey": ans.question.survey,
+        "sec": ClassSection.objects.get(id=ans.object_id),
+    },
+    filter=lambda ans: (
+        ans.content_type == ContentType.objects.get_for_model(ClassSection)
+    ),
+)
+
+
+@cache_inclusion_tag(register, "inclusion/survey/responses_for_section.tex")
 def render_responses_for_section_pdf(sec, survey):
     """Render the survey responses for teacher review in LaTeX."""
     return _render_responses_for_section_helper(sec, survey)
-render_responses_for_section_pdf.cached_function.depend_on_row('survey.Answer', lambda ans: {'survey': ans.question.survey, 'sec': ClassSection.objects.get(id=ans.object_id)}, filter=lambda ans: (ans.content_type == ContentType.objects.get_for_model(ClassSection)))
 
-def _render_responses_for_section_helper(sec, survey, tl = None):
+
+render_responses_for_section_pdf.cached_function.depend_on_row(
+    "survey.Answer",
+    lambda ans: {
+        "survey": ans.question.survey,
+        "sec": ClassSection.objects.get(id=ans.object_id),
+    },
+    filter=lambda ans: (
+        ans.content_type == ContentType.objects.get_for_model(ClassSection)
+    ),
+)
+
+
+def _render_responses_for_section_helper(sec, survey, tl=None):
     """Render the survey responses for teacher review."""
-    class_questions = survey.questions.filter(per_class=True).order_by('-question_type__is_numeric', 'seq')
-    class_data = [ { 'question': question, 'answers': question.answer_set.filter(Q(content_type=ContentType.objects.get_for_model(ClassSection), object_id=sec.id) | Q(content_type=ContentType.objects.get_for_model(ClassSubject), object_id=sec.parent_class.id)) } for question in class_questions ]
-    dict = {'class_data': class_data, 'sec': sec, 'survey': survey}
-    if tl: dict['tl'] = tl
+    class_questions = survey.questions.filter(per_class=True).order_by(
+        "-question_type__is_numeric", "seq"
+    )
+    class_data = [
+        {
+            "question": question,
+            "answers": question.answer_set.filter(
+                Q(
+                    content_type=ContentType.objects.get_for_model(ClassSection),
+                    object_id=sec.id,
+                )
+                | Q(
+                    content_type=ContentType.objects.get_for_model(ClassSubject),
+                    object_id=sec.parent_class.id,
+                )
+            ),
+        }
+        for question in class_questions
+    ]
+    dict = {"class_data": class_data, "sec": sec, "survey": survey}
+    if tl:
+        dict["tl"] = tl
     return dict
+
 
 @register.filter
 def midValue(sizeLs0):
     sizeLst = int(sizeLs0)
-    if sizeLst%2 == 1:
-        return ((sizeLst + 1) // 2 )
+    if sizeLst % 2 == 1:
+        return (sizeLst + 1) // 2
     else:
         return -1
+
 
 @register.filter
 def intrange(min_val, max_val):
     return list(range(int(min_val), int(max_val) + 1))
 
+
 @register.filter
 def field_width(min_val, max_val):
-    return f'{70 // (int(max_val) - int(min_val) + 1)}%'
+    return f"{70 // (int(max_val) - int(min_val) + 1)}%"
+
 
 @register.filter
 def substitute(input_str, item):
@@ -111,39 +176,46 @@ def substitute(input_str, item):
     c = template.Context(item.__dict__)
     return t.render(c)
 
+
 @register.filter
 def uselist(input_str, lst):
     #   Takes a list of stuff and puts it in context as 'lst'
     t = template.Template(input_str)
-    c = template.Context({'lst': lst})
+    c = template.Context({"lst": lst})
     return t.render(c)
+
 
 @register.filter
 def unpack_answers(lst):
     # Pulls out actual, unpickled answers from a list of Answer objects
     return [x.answer for x in lst]
 
+
 @register.filter
 def drop_empty_answers(lst):
     #   Takes a list of answers and drops empty ones. Whitespace-only is empty.
-    return [ ans for ans in lst if (not isinstance(ans.answer, str)) or ans.answer.strip() ]
+    return [
+        ans for ans in lst if (not isinstance(ans.answer, str)) or ans.answer.strip()
+    ]
+
 
 @register.filter
 def average(lst):
     if len(lst) == 0:
-        return 'N/A'
+        return "N/A"
     try:
         sum = 0.0
         for l in lst:
             sum += float(l)
         return str(round(sum // len(lst), 2))
     except (ValueError, TypeError):
-        return 'N/A'
+        return "N/A"
+
 
 @register.filter
 def stdev(lst):
     if len(lst) == 0:
-        return 'N/A'
+        return "N/A"
     try:
         sum = 0.0
         std_sum = 0.0
@@ -154,13 +226,15 @@ def stdev(lst):
             std_sum += abs(float(l) - mean)
         return str(round(std_sum // len(lst), 2))
     except (ValueError, TypeError):
-        return 'N/A'
+        return "N/A"
+
 
 @register.filter
-def histogram(answer_list, args='format=html'):
-    """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
+def histogram(answer_list, args="format=html"):
+    """Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it."""
     from django.conf import settings
-    HISTOGRAM_PATH = 'images/histograms/'
+
+    HISTOGRAM_PATH = "images/histograms/"
     HISTOGRAM_DIR = settings.MEDIA_ROOT + HISTOGRAM_PATH
     import tempfile
 
@@ -178,40 +252,46 @@ def histogram(answer_list, args='format=html'):
 
     #   Place results in key, value pairs where keys contain values and values contain frequencies.
     context = {}
-    context['title'] = 'Results of survey'
-    context['num_responses'] = len(answer_list)
+    context["title"] = "Results of survey"
+    context["num_responses"] = len(answer_list)
 
-    if args_dict.get('max'):
-        context['results'] = [{'value': str(x), 'freq': 0} for x in range(1, int(args_dict.get('max')) + 1)]
-    elif args_dict.get('opts'):
-        context['results'] = [{'value': str(x), 'freq': 0} for x in args_dict.get('opts').split("|")]
+    if args_dict.get("max"):
+        context["results"] = [
+            {"value": str(x), "freq": 0}
+            for x in range(1, int(args_dict.get("max")) + 1)
+        ]
+    elif args_dict.get("opts"):
+        context["results"] = [
+            {"value": str(x), "freq": 0} for x in args_dict.get("opts").split("|")
+        ]
     else:
-        context['results'] = []
+        context["results"] = []
 
     for ans in answer_list:
         try:
-            i = [r['value'] for r in context['results']].index(str(ans))
-            context['results'][i]['freq'] += 1
+            i = [r["value"] for r in context["results"]].index(str(ans))
+            context["results"][i]["freq"] += 1
         except ValueError:
-            context['results'].append({'value': ans, 'freq': 1})
+            context["results"].append({"value": ans, "freq": 1})
 
     # sorting key to handle text & number labels
     def sort_key(x):
         try:
-            return (0, float(x['value']), '')
+            return (0, float(x["value"]), "")
         except ValueError:
-            return (1, 0, x['value'])
-    context['results'].sort(key=sort_key)
+            return (1, 0, x["value"])
+
+    context["results"].sort(key=sort_key)
 
     #   Compute simple stats so postscript doesn't have to
     max_freq = 0
-    context['num_keys'] = len(context['results'])
-    for item in context['results']:
-        if item['freq'] > max_freq:
-            max_freq = item['freq']
-            context['max_freq'] = max_freq
+    context["num_keys"] = len(context["results"])
+    for item in context["results"]:
+        if item["freq"] > max_freq:
+            max_freq = item["freq"]
+            context["max_freq"] = max_freq
 
-    max_label_length = max([len(r['value']) for r in context['results']], default=1)
+    max_label_length = max([len(r["value"]) for r in context["results"]], default=1)
 
     def decide_label_rotate(bar_width_pts, num_keys, max_label_length):
         if bar_width_pts < 9:
@@ -221,39 +301,43 @@ def histogram(answer_list, args='format=html'):
         else:
             return 0
 
-    num_keys_safe = max(context['num_keys'], 1)
+    num_keys_safe = max(context["num_keys"], 1)
 
     bar_width_pts = 180 / num_keys_safe
-    context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+    context["label_rotate"] = decide_label_rotate(
+        bar_width_pts, context["num_keys"], max_label_length
+    )
 
     # second pass for crowded (rotated) layouts: use 168pt, which matches the EPS width when crowded
-    if context['label_rotate'] > 0:
+    if context["label_rotate"] > 0:
         bar_width_pts = 168 / num_keys_safe
-        context['label_rotate'] = decide_label_rotate(bar_width_pts, context['num_keys'], max_label_length)
+        context["label_rotate"] = decide_label_rotate(
+            bar_width_pts, context["num_keys"], max_label_length
+        )
 
-    context['crowded'] = context['label_rotate'] > 0
+    context["crowded"] = context["label_rotate"] > 0
 
     # Compute font size based on bars number
-    if context['num_keys'] > 15:
-        context['font_size'] = 7
-    elif context['num_keys'] > 10:
-        context['font_size'] = 8
+    if context["num_keys"] > 15:
+        context["font_size"] = 7
+    elif context["num_keys"] > 10:
+        context["font_size"] = 8
     else:
-        context['font_size'] = 10
+        context["font_size"] = 10
 
     # Dynamically avoiding label overlap
     # Arial average width is ~0.55 * font_size
-    max_label_width_pts = max_label_length * context['font_size'] * 0.55
-    context['yspaceneg'] = -12
+    max_label_width_pts = max_label_length * context["font_size"] * 0.55
+    context["yspaceneg"] = -12
 
-    if context['label_rotate'] == 45:
+    if context["label_rotate"] == 45:
         # 45 deg rotation (counter-clockwise), right-aligned, labels extend to the left and down from the tick.
-        left_extent = max_label_width_pts * 0.707 # label_width * cos(45)
-        label_descent = max_label_width_pts * 0.707 # label_width * sin(45)
-    elif context['label_rotate'] == 90:
+        left_extent = max_label_width_pts * 0.707  # label_width * cos(45)
+        label_descent = max_label_width_pts * 0.707  # label_width * sin(45)
+    elif context["label_rotate"] == 90:
         # Straight down (-90 deg clockwise, anchored at start)
         label_descent = max_label_width_pts
-        left_extent = context['font_size']
+        left_extent = context["font_size"]
     else:
         # Horizontal (centered)
         label_descent = 0
@@ -268,69 +352,81 @@ def histogram(answer_list, args='format=html'):
     MARGIN_TOP, MARGIN_RIGHT = 20, 18
     # offsety (space below the x-axis)
     # The label descent starts from y_tick_label_base (abs val of yspaceneg)
-    context['offsety'] = int(max(MIN_BOTTOM_MARGIN,
-        abs(context['yspaceneg']) + label_descent + RESPONSE_TITLE_HEIGHT + PADDING))
+    context["offsety"] = int(
+        max(
+            MIN_BOTTOM_MARGIN,
+            abs(context["yspaceneg"]) + label_descent + RESPONSE_TITLE_HEIGHT + PADDING,
+        )
+    )
 
     # Calculate response_label_y (relative to the axis origin, so negative)
     # Place at the bottom-most possible position within offsety
-    context['response_label_y'] = - (context['offsety'] - PADDING)
+    context["response_label_y"] = -(context["offsety"] - PADDING)
 
     # Calculate horizontal geometry (offsetx and pX, bb_width)
-    num_keys_safe = max(context['num_keys'], 1)
-    context['pX'] = PLOT_WIDTH
-    sectionwidth = context['pX'] / num_keys_safe
+    num_keys_safe = max(context["num_keys"], 1)
+    context["pX"] = PLOT_WIDTH
+    sectionwidth = context["pX"] / num_keys_safe
     xlabel0 = sectionwidth / 2
 
     # offsetx: needed space to the left of the axis start
-    context['offsetx'] = int(max(MIN_LEFT_MARGIN,
-        left_extent - xlabel0 + PADDING))
+    context["offsetx"] = int(max(MIN_LEFT_MARGIN, left_extent - xlabel0 + PADDING))
 
     # Calculate pY (bar height) and bb dimensions
-    context['pY'] = PLOT_HEIGHT
-    context['bb_height'] = context['offsety'] + context['pY'] + MARGIN_TOP
-    context['bb_width'] = context['offsetx'] + context['pX'] + MARGIN_RIGHT
+    context["pY"] = PLOT_HEIGHT
+    context["bb_height"] = context["offsety"] + context["pY"] + MARGIN_TOP
+    context["bb_width"] = context["offsetx"] + context["pX"] + MARGIN_RIGHT
 
     # Ghostscript parameters
     HISTOGRAM_DPI = 192
     HISTOGRAM_HTML_DOWNSCALE_FACTOR = 2
-    HISTOGRAM_HTML_WIDTH_PX = int((context['bb_width'] * HISTOGRAM_DPI / 72) / HISTOGRAM_HTML_DOWNSCALE_FACTOR) # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
+    HISTOGRAM_HTML_WIDTH_PX = int(
+        (context["bb_width"] * HISTOGRAM_DPI / 72) / HISTOGRAM_HTML_DOWNSCALE_FACTOR
+    )  # to achieve Nx downscale ratio -> (DEVICE_WIDTH_PT * DPI / 72) / N
 
     import hashlib
-    file_base = hashlib.sha256(pickle.dumps(context)).hexdigest()
-    file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
-    template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
-                                 'survey', 'histogram_base.eps')
 
-    context['file_name'] = file_name # This guy depends on the hash
+    file_base = hashlib.sha256(pickle.dumps(context)).hexdigest()
+    file_name = os.path.join(tempfile.gettempdir(), file_base + ".eps")
+    template_file = os.path.join(
+        settings.TEMPLATES[0]["DIRS"][0], "survey", "histogram_base.eps"
+    )
+
+    context["file_name"] = file_name  # This guy depends on the hash
 
     #  No point in hash-caching these guys; they're in /tmp
     file_contents = loader.render_to_string(template_file, context)
-    file_obj = open(file_name, 'w')
+    file_obj = open(file_name, "w")
     file_obj.write(file_contents)
     file_obj.close()
 
     #   We have the necessary EPS file, now we do any necessary conversions and include
     #   it into the output.
     png_filename = f"{file_base}.png"
-    if args_dict.get('format') == 'tex':
+    if args_dict.get("format") == "tex":
         image_path = os.path.join(tempfile.gettempdir(), png_filename)
-    elif args_dict.get('format') == 'html':
+    elif args_dict.get("format") == "html":
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
-        subprocess.call([
-            'gs',
-            '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-            f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
-            f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
-            '-sDEVICE=png16m',
-            f'-r{HISTOGRAM_DPI}',
-            '-sOutputFile=' + image_path,
-            file_name
-        ])
-    if args_dict.get('format') == 'tex':
-        return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
-    if args_dict.get('format') == 'html':
+        subprocess.call(
+            [
+                "gs",
+                "-dBATCH",
+                "-dNOPAUSE",
+                "-dTextAlphaBits=4",
+                f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
+                f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
+                "-sDEVICE=png16m",
+                f"-r{HISTOGRAM_DPI}",
+                "-sOutputFile=" + image_path,
+                file_name,
+            ]
+        )
+    if args_dict.get("format") == "tex":
+        return f"\\includegraphics[width={image_width}in]{{{image_path}}}"
+    if args_dict.get("format") == "html":
         return f'<img src="/media/{HISTOGRAM_PATH}{png_filename}" style="width: {HISTOGRAM_HTML_WIDTH_PX}px; max-width: 100%; height: auto;"/>'
+
 
 @register.filter
 def answer_to_list(ans):
@@ -339,12 +435,16 @@ def answer_to_list(ans):
     if isinstance(ans.answer, list):
         value = ans.answer
     else:
-        value = [ ans.answer ]
+        value = [ans.answer]
 
-    if ans.question.question_type.name == 'Favorite Class':
-        return [ c.emailcode() + ': ' + c.title for c in ClassSubject.objects.filter(id__in=value) ]
+    if ans.question.question_type.name == "Favorite Class":
+        return [
+            c.emailcode() + ": " + c.title
+            for c in ClassSubject.objects.filter(id__in=value)
+        ]
 
     return value
+
 
 @register.filter
 def favorite_classes(answer_list, limit=20):
@@ -355,7 +455,7 @@ def favorite_classes(answer_list, limit=20):
         if isinstance(a, list):
             l = a
         else:
-            l = [ a ]
+            l = [a]
         for i in l:
             ind = int(i)
             if ind in class_dict:
@@ -371,11 +471,17 @@ def favorite_classes(answer_list, limit=20):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_list.append({'title': f'{cl[0].emailcode()}: {cl[0].title}', 'votes': class_dict[key]})
+            result_list.append(
+                {
+                    "title": f"{cl[0].emailcode()}: {cl[0].title}",
+                    "votes": class_dict[key],
+                }
+            )
 
     return result_list
 
+
 @register.filter(is_safe=True)
 def dictlookup(key, dict):
-    '''Get the correct column for the answer, for dump_survey.'''
+    """Get the correct column for the answer, for dump_survey."""
     return dict[key]

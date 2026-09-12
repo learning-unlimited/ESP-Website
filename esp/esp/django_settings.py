@@ -1,8 +1,9 @@
-""" Django settings for ESP website. """
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+"""Django settings for ESP website."""
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -46,10 +47,10 @@ import os
 #  you really don't want to leave this as is. #
 ###############################################
 
-SITE_INFO = (1, 'esp.mit.edu', 'Main ESP Site')
+SITE_INFO = (1, "esp.mit.edu", "Main ESP Site")
 
 # Must be unique for every site hosted
-CACHE_PREFIX="ESP"
+CACHE_PREFIX = "ESP"
 
 # Auto-populated in settings.py
 # Can also be overridden in local_settings.py
@@ -59,20 +60,20 @@ ALLOWED_HOSTS = []
 # Default file locations  #
 ###########################
 # Becomes concatenated with PROJECT_ROOT to form MEDIA_ROOT (see settings.py)
-MEDIA_ROOT_DIR = 'public/media/'
+MEDIA_ROOT_DIR = "public/media/"
 
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 
-STATIC_ROOT_DIR =  'public/static/'
-STATIC_URL = '/static/'
+STATIC_ROOT_DIR = "public/static/"
+STATIC_URL = "/static/"
 
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = "/"
 
 LOG_FILE = "/tmp/esp-website.log"
 # Set to DEBUG for more spam or WARNING for less.  Note: setting to 'DEBUG'
 # when DEBUG=True will cause every query to be logged (to the
 # django.db.backends logger).
-LOG_LEVEL = 'INFO'
+LOG_LEVEL = "INFO"
 
 
 ###########################
@@ -82,75 +83,71 @@ DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
 
-INTERNAL_IPS = (
-    '127.0.0.1',
-)
+INTERNAL_IPS = ("127.0.0.1",)
 
 ##################
 # Default admins #
 ##################
-ADMINS = (
-    ('LU Web Team', 'serverlog@learningu.org'),
-)
+ADMINS = (("LU Web Team", "serverlog@learningu.org"),)
 
-#GRAPPELLI_ADMIN_TITLE = "ESP administration"
+# GRAPPELLI_ADMIN_TITLE = "ESP administration"
 
 #############################
 # Default database settings #
 #############################
 
 # The name, user and password must be filled in via local_settings.py and django_settings.py
-DATABASES = {'default':
-    {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
-        'USER': '',
-        'PASSWORD': '',
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "",
+        "HOST": "localhost",
+        "PORT": "5432",
+        "USER": "",
+        "PASSWORD": "",
     }
 }
 
 # How long a custom form schema change (creating or altering a response table)
 # waits for a database lock before giving up (passed to PostgreSQL's lock_timeout)
-CUSTOMFORMS_LOCK_TIMEOUT = '5s'
+CUSTOMFORMS_LOCK_TIMEOUT = "5s"
 
 ##########################
 # Default email settings #
 ##########################
-EMAIL_HOST   = 'localhost'
-EMAIL_PORT   = '25'
+EMAIL_HOST = "localhost"
+EMAIL_PORT = "25"
 try:
-    SERVER_EMAIL = 'server@{}'.format(os.uname()[1])
+    SERVER_EMAIL = "server@{}".format(os.uname()[1])
 except AttributeError:
-    SERVER_EMAIL = 'server@localhost'  # os.uname() is Unix-only
-EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
+    SERVER_EMAIL = "server@localhost"  # os.uname() is Unix-only
+EMAIL_SUBJECT_PREFIX = "[ ESP ERROR ] "
 EMAIL_HOST_SENDER = EMAIL_HOST
-EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
+EMAIL_BACKEND = "esp.dbmail.models.CustomSMTPBackend"
 
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
-    'archive': 'splashwebsitearchive@learningu.org',
-    'bounces': 'emailbounces@learningu.org',
-    'support': 'websupport@learningu.org',
-    'membership': 'info@learningu.org',
-    'default': 'info@learningu.org',
-    'treasury': 'esp-credit-cards@mit.edu',
-    'mailman_moderator': 'esp-moderators@mit.edu'
+    "archive": "splashwebsitearchive@learningu.org",
+    "bounces": "emailbounces@learningu.org",
+    "support": "websupport@learningu.org",
+    "membership": "info@learningu.org",
+    "default": "info@learningu.org",
+    "treasury": "esp-credit-cards@mit.edu",
+    "mailman_moderator": "esp-moderators@mit.edu",
 }
 # The name of your host institution.
-INSTITUTION_NAME = 'LearningUniversity'
+INSTITUTION_NAME = "LearningUniversity"
 # A 'slug' used in email titles, like 'ESP' or 'Splash'
-ORGANIZATION_SHORT_NAME = 'Splash'
+ORGANIZATION_SHORT_NAME = "Splash"
 # The host for ESP site-supported email lists.
-EMAIL_HOST = 'localhost'
+EMAIL_HOST = "localhost"
 
 #################################
 # Default localization settings #
 #################################
-TIME_ZONE = 'America/New_York'
+TIME_ZONE = "America/New_York"
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
 
 ################################################################################
@@ -166,117 +163,120 @@ SITE_ID = 1
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [
             # Filled in by settings.py so it can depend on PROJECT_ROOT
         ],
-        'OPTIONS': {
-            'context_processors': [
-                'esp.context_processors.media_url', # remove this one after all branches are transitioned
-                'esp.context_processors.esp_user',
-                'esp.context_processors.current_site',
-                'esp.context_processors.index_backgrounds',
-                'esp.context_processors.espuserified_request',
-                'esp.context_processors.preload_images',
-                'esp.context_processors.email_settings',
-                'esp.context_processors.program',
-                'esp.context_processors.schoolyear',
-                'django.template.context_processors.i18n',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'django.template.context_processors.media',
-                'django.template.context_processors.debug',
-                'django.template.context_processors.static',
-                'django.template.context_processors.request',
+        "OPTIONS": {
+            "context_processors": [
+                "esp.context_processors.media_url",  # remove this one after all branches are transitioned
+                "esp.context_processors.esp_user",
+                "esp.context_processors.current_site",
+                "esp.context_processors.index_backgrounds",
+                "esp.context_processors.espuserified_request",
+                "esp.context_processors.preload_images",
+                "esp.context_processors.email_settings",
+                "esp.context_processors.program",
+                "esp.context_processors.schoolyear",
+                "django.template.context_processors.i18n",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.media",
+                "django.template.context_processors.debug",
+                "django.template.context_processors.static",
+                "django.template.context_processors.request",
             ],
-            'loaders': [
-                'admin_tools.template_loaders.Loader',
-                'esp.utils.template.Loader', # for template overrides
-                'esp.utils.template.ThemeLoader', # theme templates
-                ('django.template.loaders.cached.Loader',
+            "loaders": [
+                "admin_tools.template_loaders.Loader",
+                "esp.utils.template.Loader",  # for template overrides
+                "esp.utils.template.ThemeLoader",  # theme templates
+                (
+                    "django.template.loaders.cached.Loader",
                     (
-                     'django.template.loaders.filesystem.Loader',
-                     'django.template.loaders.app_directories.Loader',
-                    )
+                        "django.template.loaders.filesystem.Loader",
+                        "django.template.loaders.app_directories.Loader",
+                    ),
                 ),
-            ]
+            ],
         },
     },
 ]
 
-FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
+FORM_RENDERER = "esp.utils.forms.TableFormRenderer"
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
-    (  50, 'django.middleware.security.SecurityMiddleware'),
-    ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
-   #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-    ( 500, 'esp.middleware.ESPErrorMiddleware'),
-    ( 700, 'django.middleware.common.CommonMiddleware'),
-    ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
-    ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
-    (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
-    (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
-    (1100, 'django.contrib.admindocs.middleware.XViewMiddleware'),
-    (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
-    (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
+    (50, "django.middleware.security.SecurityMiddleware"),
+    (100, "esp.middleware.threadlocalrequest.ThreadLocals"),
+    # ( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
+    (500, "esp.middleware.ESPErrorMiddleware"),
+    (700, "django.middleware.common.CommonMiddleware"),
+    (900, "django.contrib.sessions.middleware.SessionMiddleware"),
+    (950, "django.contrib.messages.middleware.MessageMiddleware"),
+    (1000, "esp.middleware.espauthmiddleware.ESPAuthMiddleware"),
+    (1050, "django.middleware.csrf.CsrfViewMiddleware"),
+    (1100, "django.contrib.admindocs.middleware.XViewMiddleware"),
+    (1250, "esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware"),
+    (9000, "esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware"),
 ]
 
-ROOT_URLCONF = 'esp.urls'
+ROOT_URLCONF = "esp.urls"
 
-APPEND_SLASH=False
+APPEND_SLASH = False
 
 INSTALLED_APPS = (
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'esp.tagdict',  # Early so Tag table exists before other esp apps' migrations
-    'django.contrib.messages',
-    'django.contrib.sessions',
-    'django.contrib.sites',
-    'django.contrib.staticfiles',
-    'esp.users.apps.UsersConfig',
-    'esp.web.apps.WebConfig',
-    'esp.program.apps.ProgramConfig',
-    'esp.program.modules.apps.ModulesConfig',
-    'esp.dbmail',
-    'esp.cal.apps.CalConfig',
-    'esp.qsd',
-    'esp.qsdmedia',
-    'esp.resources.apps.ResourcesConfig',
-    'esp.survey',
-    'esp.accounting.apps.AccountingConfig',
-    'esp.customforms.apps.CustomformsConfig',
-    'esp.utils.apps.UtilsConfig',    # Not a real app, but, has test cases that the test-case runner needs to find
-    'esp.seltests',
-    'esp.themes',
-    'esp.varnish',
-    'argcache.apps.ArgCacheConfig',
-    'django_extensions',
-    'reversion',
-    'captcha',
-    'form_utils',
-    'phonenumber_field',
-    'django.contrib.redirects',
-    'debug_toolbar',
-    'esp.formstack',
-    'esp.application.apps.ApplicationConfig',
-    'admin_tools',
-    'admin_tools.theming',
-    'admin_tools.menu',
-    'admin_tools.dashboard',
-    'filebrowser',
-    'django.contrib.admin.apps.SimpleAdminConfig',
-    'django.contrib.admindocs',
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "esp.tagdict",  # Early so Tag table exists before other esp apps' migrations
+    "django.contrib.messages",
+    "django.contrib.sessions",
+    "django.contrib.sites",
+    "django.contrib.staticfiles",
+    "esp.users.apps.UsersConfig",
+    "esp.web.apps.WebConfig",
+    "esp.program.apps.ProgramConfig",
+    "esp.program.modules.apps.ModulesConfig",
+    "esp.dbmail",
+    "esp.cal.apps.CalConfig",
+    "esp.qsd",
+    "esp.qsdmedia",
+    "esp.resources.apps.ResourcesConfig",
+    "esp.survey",
+    "esp.accounting.apps.AccountingConfig",
+    "esp.customforms.apps.CustomformsConfig",
+    "esp.utils.apps.UtilsConfig",  # Not a real app, but, has test cases that the test-case runner needs to find
+    "esp.seltests",
+    "esp.themes",
+    "esp.varnish",
+    "argcache.apps.ArgCacheConfig",
+    "django_extensions",
+    "reversion",
+    "captcha",
+    "form_utils",
+    "phonenumber_field",
+    "django.contrib.redirects",
+    "debug_toolbar",
+    "esp.formstack",
+    "esp.application.apps.ApplicationConfig",
+    "admin_tools",
+    "admin_tools.theming",
+    "admin_tools.menu",
+    "admin_tools.dashboard",
+    "filebrowser",
+    "django.contrib.admin.apps.SimpleAdminConfig",
+    "django.contrib.admindocs",
 )
 
-for app in ('django_evolution', 'django_command_extensions'):
+for app in ("django_evolution", "django_command_extensions"):
     if os.path.exists(app):
         INSTALLED_APPS += (app,)
 
 
-SESSION_EXPIRE_AT_BROWSER_CLOSE=True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+SESSION_ENGINE = (
+    "django.contrib.sessions.backends.cached_db"  # which is persistent storage
+)
 
 # Keep the CSRF cookie readable by JavaScript
 CSRF_COOKIE_HTTPONLY = False
@@ -285,100 +285,103 @@ ATOMIC_REQUESTS = True
 
 # Dotted path to callable to be used as view when a request is
 # rejected by the CSRF middleware.
-CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
+CSRF_FAILURE_VIEW = "esp.web.views.csrf.csrf_failure"
 
 # no i18n
 USE_I18N = False
 
-FORCE_SCRIPT_NAME = ''
+FORCE_SCRIPT_NAME = ""
 
 # Page to redirect people to when they log in
 # (Could be '/' for example)
-DEFAULT_REDIRECT = '/myesp/redirect'
+DEFAULT_REDIRECT = "/myesp/redirect"
 
 USE_MAILMAN = False
-MAILMAN_PATH = '/usr/lib/mailman/bin/'
+MAILMAN_PATH = "/usr/lib/mailman/bin/"
 
-AUTHENTICATION_BACKENDS = (
-    'esp.utils.auth_backend.ESPAuthBackend',
-    )
+AUTHENTICATION_BACKENDS = ("esp.utils.auth_backend.ESPAuthBackend",)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-        'OPTIONS': {'min_length': 8},
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        "OPTIONS": {"min_length": 8},
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
 CONTACTFORM_EMAIL_CHOICES = (
-    ('esp', 'Unknown'),
-    ('general', 'General'),
-    ('esp-web', 'Website Problems'),
-    ('relations',  'K-12 School Relations'),
-    )
+    ("esp", "Unknown"),
+    ("general", "General"),
+    ("esp-web", "Website Problems"),
+    ("relations", "K-12 School Relations"),
+)
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
 
 #   Certain media files can be served from LU's CDN.  The address of the CDN is here.
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
-CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
+CDN_ADDRESS = "https://dfwb7shzx5j05.cloudfront.net"
 
-JQUERY_VERSION = '3.6.0'
-JQUERY_HASH = 'sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=='
+JQUERY_VERSION = "3.6.0"
+JQUERY_HASH = "sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
 
-JQUERY_UI_VERSION = '1.13.2'
+JQUERY_UI_VERSION = "1.13.2"
 
 # allow configuration of additional Javascript to be placed on website
 # configuration should include <script></script> tags
-ADDITIONAL_TEMPLATE_SCRIPTS = ''
+ADDITIONAL_TEMPLATE_SCRIPTS = ""
 
-DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
+DEBUG_TOOLBAR = (
+    True  # set to False in local_settings to globally disable the debug toolbar
+)
 
 DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.headers.HeadersPanel',
-    'debug_toolbar.panels.logging.LoggingPanel',
-    'debug_toolbar.panels.request.RequestPanel',
-    'debug_toolbar.panels.settings.SettingsPanel',
-    'debug_toolbar.panels.signals.SignalsPanel',
-    'debug_toolbar.panels.sql.SQLPanel',
-    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-    'esp.utils.debug_panels.TemplatesPanel',
-    'debug_toolbar.panels.timer.TimerPanel',
-    'debug_toolbar.panels.versions.VersionsPanel',
-    'debug_toolbar.panels.redirects.RedirectsPanel',
-    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
-    'esp.utils.debug_panels.SafeCachePanel',
+    "debug_toolbar.panels.headers.HeadersPanel",
+    "debug_toolbar.panels.logging.LoggingPanel",
+    "debug_toolbar.panels.request.RequestPanel",
+    "debug_toolbar.panels.settings.SettingsPanel",
+    "debug_toolbar.panels.signals.SignalsPanel",
+    "debug_toolbar.panels.sql.SQLPanel",
+    "debug_toolbar.panels.staticfiles.StaticFilesPanel",
+    "esp.utils.debug_panels.TemplatesPanel",
+    "debug_toolbar.panels.timer.TimerPanel",
+    "debug_toolbar.panels.versions.VersionsPanel",
+    "debug_toolbar.panels.redirects.RedirectsPanel",
+    "esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel",
+    "esp.utils.debug_panels.SafeCachePanel",
 )
+
 
 def custom_show_toolbar(request):
     from esp.middleware.debugtoolbar.middleware import ESPDebugToolbarMiddleware
+
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
 
+
 DEBUG_TOOLBAR_CONFIG = {
-    'DISABLE_PANELS': {
-        'esp.utils.debug_panels.SafeCachePanel',
-        'debug_toolbar.panels.sql.SQLPanel',
-        'debug_toolbar.panels.redirects.RedirectsPanel',
-        'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel',
+    "DISABLE_PANELS": {
+        "esp.utils.debug_panels.SafeCachePanel",
+        "debug_toolbar.panels.sql.SQLPanel",
+        "debug_toolbar.panels.redirects.RedirectsPanel",
+        "esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel",
     },
-    'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
-    'EXTRA_SIGNALS': [
-        'argcache.signals.cache_deleted',
+    "SHOW_TOOLBAR_CALLBACK": "esp.settings.custom_show_toolbar",
+    "EXTRA_SIGNALS": [
+        "argcache.signals.cache_deleted",
     ],
-    'SHOW_TEMPLATE_CONTEXT': True,
-    'INSERT_BEFORE': '</body>',
-    'RENDER_PANELS': None,
-    'SHOW_COLLAPSED': True,
+    "SHOW_TEMPLATE_CONTEXT": True,
+    "INSERT_BEFORE": "</body>",
+    "RENDER_PANELS": None,
+    "SHOW_COLLAPSED": True,
 }
 
 # Settings for Stripe credit card payments (can be overridden in
@@ -386,35 +389,35 @@ DEBUG_TOOLBAR_CONFIG = {
 # but the keys can be overridden in the 'stripe_settings' Tag object to direct
 # payments to different accounts, either on a global or per-program basis.
 STRIPE_CONFIG = {
-    'secret_key': '',
-    'publishable_key': '',
+    "secret_key": "",
+    "publishable_key": "",
 }
 
 # Settings for Cybersource credit card payments. Unlike Stripe, does not support
 # overrides.
 CYBERSOURCE_CONFIG = {
-    'post_url': '',
-    'merchant_id': '',
+    "post_url": "",
+    "merchant_id": "",
 }
 
-FILEBROWSER_CUSTOM_ADMIN = 'esp.admin.admin_site'
+FILEBROWSER_CUSTOM_ADMIN = "esp.admin.admin_site"
 
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
-FILEBROWSER_DIRECTORY = ''
+FILEBROWSER_DIRECTORY = ""
 
 FILEBROWSER_EXTENSIONS = {
-    'Image': ['.jpg', '.jpeg', '.gif', '.png', '.tif', '.tiff', '.ico'],
-    'Document': ['.pdf', '.doc', '.rtf', '.txt', '.xls', '.xlsx', '.csv'],
-    'Video': ['.mov', '.wmv', '.mpeg', '.mpg', '.avi', '.rm'],
-    'Audio': ['.mp3', '.mp4', '.wav', '.aiff', '.midi', '.m4p'],
+    "Image": [".jpg", ".jpeg", ".gif", ".png", ".tif", ".tiff", ".ico"],
+    "Document": [".pdf", ".doc", ".rtf", ".txt", ".xls", ".xlsx", ".csv"],
+    "Video": [".mov", ".wmv", ".mpeg", ".mpg", ".avi", ".rm"],
+    "Audio": [".mp3", ".mp4", ".wav", ".aiff", ".midi", ".m4p"],
 }
 
 FILEBROWSER_SELECT_FORMATS = {
-    'file': ['Image', 'Document', 'Video', 'Audio'],
-    'image': ['Image'],
-    'document': ['Document'],
-    'media': ['Video', 'Audio'],
+    "file": ["Image", "Document", "Video", "Audio"],
+    "image": ["Image"],
+    "document": ["Document"],
+    "media": ["Video", "Audio"],
 }
 
 # Custom file storage backend that lowercases file extensions
@@ -435,13 +438,11 @@ STORAGES = {
 USE_TZ = False
 
 #   Default imports for shell_plus, for convenience.
-SHELL_PLUS_POST_IMPORTS = (
-        ('esp.utils.shell_utils', '*'),
-        )
+SHELL_PLUS_POST_IMPORTS = (("esp.utils.shell_utils", "*"),)
 
 # django-phonenumber-field settings
-PHONENUMBER_DEFAULT_REGION = 'US'
-PHONENUMBER_DEFAULT_FORMAT = 'NATIONAL'  # or 'E164', 'INTERNATIONAL'
+PHONENUMBER_DEFAULT_REGION = "US"
+PHONENUMBER_DEFAULT_FORMAT = "NATIONAL"  # or 'E164', 'INTERNATIONAL'
 
 #   Twilio configuration - should be completed in local_settings.py
 TWILIO_ACCOUNT_SID = None
@@ -452,14 +453,13 @@ TWILIO_ACCOUNT_NUMBERS = None
 # and the themes frontend refuse to do anything
 LOCAL_THEME = False
 
-ADMIN_TOOLS_MENU = 'admintoolsmenu.CustomMenu'
-ADMIN_TOOLS_INDEX_DASHBOARD = 'admintoolsdash.CustomIndexDashboard'
-ADMIN_TOOLS_APP_INDEX_DASHBOARD = 'admintoolsdash.CustomAppIndexDashboard'
+ADMIN_TOOLS_MENU = "admintoolsmenu.CustomMenu"
+ADMIN_TOOLS_INDEX_DASHBOARD = "admintoolsdash.CustomIndexDashboard"
+ADMIN_TOOLS_APP_INDEX_DASHBOARD = "admintoolsdash.CustomAppIndexDashboard"
 
-ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
+ADMIN_TOOLS_THEMING_CSS = "/media/styles/admin_theme.css"
 
-SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
-                          'debug_toolbar.W006']
+SILENCED_SYSTEM_CHECKS = ["captcha.recaptcha_test_key_error", "debug_toolbar.W006"]
 
 # Google Maps Embed API key
-GOOGLE_MAPS_EMBED_KEY = ''
+GOOGLE_MAPS_EMBED_KEY = ""

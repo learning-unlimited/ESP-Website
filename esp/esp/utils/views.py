@@ -1,8 +1,9 @@
 from io import open
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -41,6 +42,7 @@ import os.path
 from django.conf import settings
 from django.http import Http404, JsonResponse
 
+
 @admin_required
 def get_default_template_content(request):
     """Return the on-disk content of a default template as JSON, for use by
@@ -53,24 +55,24 @@ def get_default_template_content(request):
         {"content": "..."} on success
         {"error": "..."} on failure (with an appropriate HTTP status code)
     """
-    name = request.GET.get('name', '').strip()
+    name = request.GET.get("name", "").strip()
     if not name:
-        return JsonResponse({'error': 'No template name provided.'}, status=400)
+        return JsonResponse({"error": "No template name provided."}, status=400)
 
-    template_dir = os.path.realpath(os.path.join(settings.PROJECT_ROOT, 'templates'))
+    template_dir = os.path.realpath(os.path.join(settings.PROJECT_ROOT, "templates"))
     requested_path = os.path.realpath(os.path.join(template_dir, name))
 
     # Guard against path traversal (e.g. "../../etc/passwd")
     if not requested_path.startswith(template_dir + os.sep):
-        return JsonResponse({'error': 'Invalid template name.'}, status=400)
+        return JsonResponse({"error": "Invalid template name."}, status=400)
 
     if not os.path.isfile(requested_path):
-        return JsonResponse({'error': 'Template not found: %s' % name}, status=404)
+        return JsonResponse({"error": "Template not found: %s" % name}, status=404)
 
     with open(requested_path) as f:
         content = f.read()
 
-    return JsonResponse({'content': content})
+    return JsonResponse({"content": content})
 
 
 def _normalize_lines_for_diff(text):
@@ -88,11 +90,11 @@ def _normalize_lines_for_diff(text):
 
 @admin_required
 def diff_templateoverride(request, template_id):
-    template_dir = os.path.join(settings.PROJECT_ROOT, 'templates')
+    template_dir = os.path.join(settings.PROJECT_ROOT, "templates")
     template_dir_real = os.path.realpath(template_dir)
     qs = TemplateOverride.objects.filter(id=template_id)
     if qs.exists():
-        override_obj = qs.order_by('-version')[0]
+        override_obj = qs.order_by("-version")[0]
     else:
         raise Http404
 
@@ -104,17 +106,20 @@ def diff_templateoverride(request, template_id):
     original_real = os.path.realpath(original_path)
     # Prevent directory traversal: ensure the resolved path stays within template_dir_real
     if os.path.commonpath([template_dir_real, original_real]) != template_dir_real:
-        raise Http404('Original template file not found: %s' % override_obj.name)
+        raise Http404("Original template file not found: %s" % override_obj.name)
 
     if not os.path.isfile(original_real):
-        raise Http404('Original template file not found: %s' % override_obj.name)
-    with open(original_real, encoding='utf-8', errors='replace') as original_file:
+        raise Http404("Original template file not found: %s" % override_obj.name)
+    with open(original_real, encoding="utf-8", errors="replace") as original_file:
         original_lines = _normalize_lines_for_diff(original_file.read())
 
     context = {}
-    context['name'] = override_obj.name
-    context['version'] = override_obj.version
-    context['diff'] = HtmlDiff().make_table(
-            original_lines, override_lines,
-            'original', f'override (id {template_id}, version {override_obj.version})')
-    return render_to_response('utils/diff_templateoverride.html', request, context)
+    context["name"] = override_obj.name
+    context["version"] = override_obj.version
+    context["diff"] = HtmlDiff().make_table(
+        original_lines,
+        override_lines,
+        "original",
+        f"override (id {template_id}, version {override_obj.version})",
+    )
+    return render_to_response("utils/diff_templateoverride.html", request, context)

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -36,6 +35,7 @@ Learning Unlimited, Inc.
 from debug_toolbar.panels.templates import TemplatesPanel as BaseTemplatesPanel
 from django.core import signing
 
+
 # Override the debug toolbar's TemplatesPanel to fix how it behaves with template overrides
 class TemplatesPanel(BaseTemplatesPanel):
     def generate_stats(self, request, response):
@@ -56,12 +56,14 @@ class TemplatesPanel(BaseTemplatesPanel):
                 template.origin_hash = signing.dumps(template.origin.template_name)
         return result
 
+
 import os
 import threading
 from django.utils.safestring import mark_safe
 from debug_toolbar.panels.cache import CachePanel
 
 _cache_panel_depth = threading.local()
+
 
 def format_stacktrace_simple(trace):
     """Format stacktrace without using Django templates."""
@@ -84,32 +86,51 @@ def format_stacktrace_simple(trace):
             f'(<span class="djdt-lineno">{lineno}</span>)\n'
             f'  <span class="djdt-code">{code}</span>'
         )
-    return mark_safe('\n'.join(lines))
+    return mark_safe("\n".join(lines))
+
 
 # Override the debug toolbar's CachePanel to fix how it behaves with argcache
 class SafeCachePanel(CachePanel):
     """Cache panel that prevents recursion when cache calls trigger template loading."""
 
-    def _store_call_info(self, name, time_taken, return_value, args, kwargs, trace, template_info, backend):
-        depth = getattr(_cache_panel_depth, 'depth', 0)
+    def _store_call_info(
+        self,
+        name,
+        time_taken,
+        return_value,
+        args,
+        kwargs,
+        trace,
+        template_info,
+        backend,
+    ):
+        depth = getattr(_cache_panel_depth, "depth", 0)
         _cache_panel_depth.depth = depth + 1
 
         try:
             if depth > 0:
-                self.calls.append({
-                    "name": name,
-                    "time": time_taken,
-                    "template_info": template_info,
-                    "return_value": return_value,
-                    "args": args,
-                    "kwargs": kwargs,
-                    "trace": format_stacktrace_simple(trace),
-                    "backend": backend,
-                })
+                self.calls.append(
+                    {
+                        "name": name,
+                        "time": time_taken,
+                        "template_info": template_info,
+                        "return_value": return_value,
+                        "args": args,
+                        "kwargs": kwargs,
+                        "trace": format_stacktrace_simple(trace),
+                        "backend": backend,
+                    }
+                )
             else:
                 super()._store_call_info(
-                    name, time_taken, return_value,
-                    args, kwargs, trace, template_info, backend
+                    name,
+                    time_taken,
+                    return_value,
+                    args,
+                    kwargs,
+                    trace,
+                    template_info,
+                    backend,
                 )
         finally:
             _cache_panel_depth.depth = depth

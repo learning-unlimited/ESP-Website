@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,119 +32,190 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from collections import OrderedDict
-from django              import forms
+from django import forms
 from django.db.models.query import Q
-from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
+from esp.accounting.controllers import (
+    IndividualAccountingController,
+    ProgramAccountingController,
+)
 from esp.accounting.models import LineItemOptions
-from esp.middleware      import ESPError
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models  import SplashInfo
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
+from esp.program.models import SplashInfo
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    main_call,
+    meets_cap,
+)
 from esp.program.modules.forms.splashinfo import SiblingDiscountForm
 from esp.tagdict.models import Tag
-from esp.users.models    import Record, RecordType, ESPUser
+from esp.users.models import Record, RecordType, ESPUser
 from esp.utils.web import render_to_response
-from esp.utils.widgets import ChoiceWithOtherField, RadioSelectWithData, CheckboxSelectMultipleWithData
+from esp.utils.widgets import (
+    ChoiceWithOtherField,
+    RadioSelectWithData,
+    CheckboxSelectMultipleWithData,
+)
 from esp.utils.query_utils import nest_Q
+
 
 class CostItem(forms.Form):
     def __init__(self, *args, **kwargs):
-        required = kwargs.pop('required', False)
-        cost = kwargs.pop('cost', 0)
-        for_finaid = kwargs.pop('for_finaid', False)
+        required = kwargs.pop("required", False)
+        cost = kwargs.pop("cost", 0)
+        for_finaid = kwargs.pop("for_finaid", False)
         super().__init__(*args, **kwargs)
-        self.fields['cost'] = forms.BooleanField(required=required, label='', widget=forms.CheckboxInput(attrs={'class': 'cost', 'data-cost': cost, 'data-for_finaid': 'true' if for_finaid else 'false'}))
+        self.fields["cost"] = forms.BooleanField(
+            required=required,
+            label="",
+            widget=forms.CheckboxInput(
+                attrs={
+                    "class": "cost",
+                    "data-cost": cost,
+                    "data-for_finaid": "true" if for_finaid else "false",
+                }
+            ),
+        )
+
 
 class MultiCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
-        required = kwargs.pop('required', False)
-        cost = kwargs.pop('cost', 0)
-        for_finaid = kwargs.pop('for_finaid', False)
-        max_quantity = kwargs.pop('max_quantity', 10)
+        required = kwargs.pop("required", False)
+        cost = kwargs.pop("cost", 0)
+        for_finaid = kwargs.pop("for_finaid", False)
+        max_quantity = kwargs.pop("max_quantity", 10)
         min_quantity = 1 if required else 0
         super().__init__(*args, **kwargs)
-        self.fields['count'] = forms.IntegerField(required=required, initial=min_quantity, max_value=max_quantity, min_value=min_quantity, widget=forms.NumberInput(attrs={'class': 'multicost input-mini', 'data-cost': cost, 'data-for_finaid': 1 if for_finaid else 0}))
+        self.fields["count"] = forms.IntegerField(
+            required=required,
+            initial=min_quantity,
+            max_value=max_quantity,
+            min_value=min_quantity,
+            widget=forms.NumberInput(
+                attrs={
+                    "class": "multicost input-mini",
+                    "data-cost": cost,
+                    "data-for_finaid": 1 if for_finaid else 0,
+                }
+            ),
+        )
+
 
 class MultiSelectCostItem(forms.Form):
     def __init__(self, *args, **kwargs):
-        choices = kwargs.pop('choices')
-        required = kwargs.pop('required')
-        for_finaid = kwargs.pop('for_finaid', False)
-        is_custom = kwargs.pop('is_custom', False)
-        option_data = kwargs.pop('option_data', {})
+        choices = kwargs.pop("choices")
+        required = kwargs.pop("required")
+        for_finaid = kwargs.pop("for_finaid", False)
+        is_custom = kwargs.pop("is_custom", False)
+        option_data = kwargs.pop("option_data", {})
         super().__init__(*args, **kwargs)
         if is_custom:
-            self.fields['option'] = ChoiceWithOtherField(required=required, label='', choices=choices, option_data=option_data)
+            self.fields["option"] = ChoiceWithOtherField(
+                required=required, label="", choices=choices, option_data=option_data
+            )
         else:
-            self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=RadioSelectWithData(option_data=option_data))
+            self.fields["option"] = forms.ChoiceField(
+                required=required,
+                label="",
+                choices=choices,
+                widget=RadioSelectWithData(option_data=option_data),
+            )
 
 
 def custom_amount_field_name(option_id):
-    """ Name of the field holding the amount entered for a custom line item option. """
-    return 'custom_amount_%s' % option_id
+    """Name of the field holding the amount entered for a custom line item option."""
+    return "custom_amount_%s" % option_id
 
 
 def option_data_for_lineitem(lineitem_type):
-    """ Per-option `data-` attributes needed by extracosts.js to keep the
-        displayed total in sync with the student's selections.  """
-    return {option.id: {'cost': option.amount_dec_inherited,
-                        'is_custom': 'true' if option.is_custom else 'false',
-                        'for_finaid': 'true' if lineitem_type.for_finaid else 'false'}
-            for option in lineitem_type.lineitemoptions_set.all()}
+    """Per-option `data-` attributes needed by extracosts.js to keep the
+    displayed total in sync with the student's selections."""
+    return {
+        option.id: {
+            "cost": option.amount_dec_inherited,
+            "is_custom": "true" if option.is_custom else "false",
+            "for_finaid": "true" if lineitem_type.for_finaid else "false",
+        }
+        for option in lineitem_type.lineitemoptions_set.all()
+    }
 
 
 class MultiOptionCostItem(forms.Form):
-    """ Checkboxes allowing any number of a line item type's options to be
-        selected. Selected option IDs are stored in `options`; the amount for
-        each option that allows a custom amount is stored in its own
-        `custom_amount_<option ID>` field.  """
+    """Checkboxes allowing any number of a line item type's options to be
+    selected. Selected option IDs are stored in `options`; the amount for
+    each option that allows a custom amount is stored in its own
+    `custom_amount_<option ID>` field."""
 
     def __init__(self, *args, **kwargs):
-        lineitem_type = kwargs.pop('lineitem_type')
-        required = kwargs.pop('required', False)
+        lineitem_type = kwargs.pop("lineitem_type")
+        required = kwargs.pop("required", False)
         super().__init__(*args, **kwargs)
 
         self.lineitem_type = lineitem_type
-        self.custom_options = [option for option in lineitem_type.lineitemoptions_set.all() if option.is_custom]
+        self.custom_options = [
+            option
+            for option in lineitem_type.lineitemoptions_set.all()
+            if option.is_custom
+        ]
 
-        self.fields['options'] = forms.MultipleChoiceField(
-            required=required, label='', choices=lineitem_type.option_choices,
-            widget=CheckboxSelectMultipleWithData(option_data=option_data_for_lineitem(lineitem_type)))
+        self.fields["options"] = forms.MultipleChoiceField(
+            required=required,
+            label="",
+            choices=lineitem_type.option_choices,
+            widget=CheckboxSelectMultipleWithData(
+                option_data=option_data_for_lineitem(lineitem_type)
+            ),
+        )
 
         for option in self.custom_options:
             self.fields[custom_amount_field_name(option.id)] = forms.DecimalField(
-                required=False, min_value=0, max_digits=9, decimal_places=2, label=option.description,
-                widget=forms.NumberInput(attrs={'class': 'option-custom-amount input-mini',
-                                                'data-option-id': option.id}))
+                required=False,
+                min_value=0,
+                max_digits=9,
+                decimal_places=2,
+                label=option.description,
+                widget=forms.NumberInput(
+                    attrs={
+                        "class": "option-custom-amount input-mini",
+                        "data-option-id": option.id,
+                    }
+                ),
+            )
 
     def clean(self):
         cleaned_data = super().clean()
-        selected = set(cleaned_data.get('options') or [])
+        selected = set(cleaned_data.get("options") or [])
         for option in self.custom_options:
             field_name = custom_amount_field_name(option.id)
             if str(option.id) in selected and not cleaned_data.get(field_name):
-                self.add_error(field_name, 'Please enter an amount for this selection.')
+                self.add_error(field_name, "Please enter an amount for this selection.")
         return cleaned_data
 
     @property
     def missing_custom_amount(self):
-        """ True if a selected option that allows a custom amount has no amount. """
-        return any(name.startswith('custom_amount_') for name in self.errors)
+        """True if a selected option that allows a custom amount has no amount."""
+        return any(name.startswith("custom_amount_") for name in self.errors)
 
     def option_rows(self):
-        """ Yield a (checkbox, custom amount field or None) pair per option, so
-            that the template can render each custom amount input next to the
-            checkbox it belongs to.  """
-        custom_amount_fields = {str(option.id): self[custom_amount_field_name(option.id)]
-                                for option in self.custom_options}
-        for checkbox in self['options'].subwidgets:
-            yield (checkbox, custom_amount_fields.get(str(checkbox.data['value'])))
+        """Yield a (checkbox, custom amount field or None) pair per option, so
+        that the template can render each custom amount input next to the
+        checkbox it belongs to."""
+        custom_amount_fields = {
+            str(option.id): self[custom_amount_field_name(option.id)]
+            for option in self.custom_options
+        }
+        for checkbox in self["options"].subwidgets:
+            yield (checkbox, custom_amount_fields.get(str(checkbox.data["value"])))
 
     def preferences(self):
-        """ The (line item name, quantity, amount, option ID) tuples selected on
-            this form, one per checked option.  """
+        """The (line item name, quantity, amount, option ID) tuples selected on
+        this form, one per checked option."""
         result = []
-        for option in self.lineitem_type.lineitemoptions_set.filter(id__in=self.cleaned_data['options']):
+        for option in self.lineitem_type.lineitemoptions_set.filter(
+            id__in=self.cleaned_data["options"]
+        ):
             if option.is_custom:
                 amount = self.cleaned_data[custom_amount_field_name(option.id)]
             else:
@@ -156,7 +227,7 @@ class MultiOptionCostItem(forms.Form):
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
     doc = """Serves a form during student registration for students to purchase other items."""
-    permission_types = ('Student/ExtraCosts',)
+    permission_types = ("Student/ExtraCosts",)
 
     @classmethod
     def module_properties(cls):
@@ -166,29 +237,35 @@ class StudentExtraCosts(ProgramModuleObj):
             "module_type": "learn",
             "seq": 30,
             "choosable": 0,
-            }
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.event = "extra_costs_done"
 
     def studentDesc(self):
-        """ Return a description for each line item type that students can be filtered by. """
+        """Return a description for each line item type that students can be filtered by."""
         student_desc = {}
         pac = ProgramAccountingController(self.program)
         for line_item_type in pac.get_lineitemtypes(include_donations=False):
-            student_desc[f'extracosts_{line_item_type.id}'] = f"""Students who have opted for '{line_item_type.text}'"""
+            student_desc[f"extracosts_{line_item_type.id}"] = (
+                f"""Students who have opted for '{line_item_type.text}'"""
+            )
             for option in line_item_type.options:
                 (option_id, option_amount, option_description, has_custom_amt) = option
-                key = f'extracosts_{line_item_type.id}_{option_id}'
-                student_desc[key] = f"""Students who have opted for '{option_description}' for '{line_item_type.text}' (${option_amount or line_item_type.amount_dec})"""
+                key = f"extracosts_{line_item_type.id}_{option_id}"
+                student_desc[key] = (
+                    f"""Students who have opted for '{option_description}' for '{line_item_type.text}' (${option_amount or line_item_type.amount_dec})"""
+                )
         if self.program.sibling_discount:
-            student_desc['sibling_discount'] = """Students who have opted for a sibling discount"""
+            student_desc["sibling_discount"] = (
+                """Students who have opted for a sibling discount"""
+            )
 
         return student_desc
 
-    def students(self, QObject = False):
-        """ Return the useful lists of students for the Extra Costs module. """
+    def students(self, QObject=False):
+        """Return the useful lists of students for the Extra Costs module."""
 
         student_lists = OrderedDict()
         pac = ProgramAccountingController(self.program)
@@ -196,14 +273,14 @@ class StudentExtraCosts(ProgramModuleObj):
         # Get all the line item types for this program.
         for i in pac.get_lineitemtypes(include_donations=False):
             q_object = pac.all_transfers_Q(lineitemtype_id=i.id)
-            students_q = nest_Q(q_object, 'transfer')
+            students_q = nest_Q(q_object, "transfer")
             if QObject:
-                student_lists[f'extracosts_{i.id}'] = students_q
+                student_lists[f"extracosts_{i.id}"] = students_q
             else:
                 students = ESPUser.objects.filter(students_q).distinct()
-                student_lists[f'extracosts_{i.id}'] = students
+                student_lists[f"extracosts_{i.id}"] = students
             for option in i.options:
-                key = f'extracosts_{i.id}_{option[0]}'
+                key = f"extracosts_{i.id}_{option[0]}"
                 filter_qobject = Q(transfer__option=option[0])
                 if QObject:
                     student_lists[key] = students_q & filter_qobject
@@ -212,23 +289,31 @@ class StudentExtraCosts(ProgramModuleObj):
         if self.program.sibling_discount:
             sibling_line_item = pac.default_siblingdiscount_lineitemtype()
             if QObject:
-                student_lists['sibling_discount'] = pac.all_students_Q(lineitemtype_id=sibling_line_item.id)
+                student_lists["sibling_discount"] = pac.all_students_Q(
+                    lineitemtype_id=sibling_line_item.id
+                )
             else:
-                student_lists['sibling_discount'] = pac.all_students(lineitemtype_id=sibling_line_item.id).distinct()
+                student_lists["sibling_discount"] = pac.all_students(
+                    lineitemtype_id=sibling_line_item.id
+                ).distinct()
 
         return student_lists
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
+        return Record.objects.filter(
+            user=user, program=self.program, event__name=self.event
+        ).exists()
 
     def lineitemtypes(self):
         pac = ProgramAccountingController(self.program)
-        return pac.get_lineitemtypes(include_donations=False).exclude(text__in=pac.admission_items)
+        return pac.get_lineitemtypes(include_donations=False).exclude(
+            text__in=pac.admission_items
+        )
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/ExtraCosts')
+    @meets_deadline("/ExtraCosts")
     @meets_cap
     def extracosts(self, request, tl, one, two, module, extra, prog):
         """
@@ -239,18 +324,27 @@ class StudentExtraCosts(ProgramModuleObj):
         """
         iac = IndividualAccountingController(self.program, request.user)
         if iac.has_paid():
-            if not Tag.getBooleanTag('already_paid_extracosts_allowed', program = prog):
-                raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
+            if not Tag.getBooleanTag("already_paid_extracosts_allowed", program=prog):
+                raise ESPError(
+                    "You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.",
+                    log=False,
+                )
 
         #   Determine which line item types we will be asking about
-        costs_list = self.lineitemtypes().filter(max_quantity__lte=1, lineitemoptions__isnull=True)
-        multicosts_list = self.lineitemtypes().filter(max_quantity__gt=1, lineitemoptions__isnull=True)
+        costs_list = self.lineitemtypes().filter(
+            max_quantity__lte=1, lineitemoptions__isnull=True
+        )
+        multicosts_list = self.lineitemtypes().filter(
+            max_quantity__gt=1, lineitemoptions__isnull=True
+        )
         multiselect_list = self.lineitemtypes().filter(lineitemoptions__isnull=False)
-        multiselect_single_list = multiselect_list.filter(selection_type='single')
-        multiselect_multi_list = multiselect_list.filter(selection_type='multiple')
+        multiselect_single_list = multiselect_list.filter(selection_type="single")
+        multiselect_multi_list = multiselect_list.filter(selection_type="multiple")
         if prog.sibling_discount:
             sibling_line_item = iac.default_siblingdiscount_lineitemtype()
-            sibling_form = SiblingDiscountForm(prefix="%s" % sibling_line_item.id, program=prog)
+            sibling_form = SiblingDiscountForm(
+                prefix="%s" % sibling_line_item.id, program=prog
+            )
             spi = SplashInfo.getForUser(request.user, self.program)
             sibling_form.load(spi)
 
@@ -262,62 +356,102 @@ class StudentExtraCosts(ProgramModuleObj):
         preserve_items = {}
 
         ## Another dirty hack, left as an exercise to the reader
-        if request.method == 'POST':
-
+        if request.method == "POST":
             #   Initialize a list of forms using the POST data
-            costs_db = [ { 'LineItemType': x,
-                           'CostChoice': CostItem(request.POST, prefix="%s" % x.id,
-                                                  required=(x.required), cost=(x.amount_dec),
-                                                  for_finaid=(x.for_finaid)) }
-                         for x in costs_list ] + \
-                           [ { 'LineItemType': x,
-                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id,
-                                                           required=(x.required),
-                                                           max_quantity=(x.max_quantity),
-                                                           cost=(x.amount_dec),
-                                                           for_finaid=(x.for_finaid)) }
-                             for x in multicosts_list ] + \
-                           [ { 'LineItemType': x,
-                               'CostChoice': MultiSelectCostItem(
-                                   request.POST,
-                                   prefix="multi%s" % x.id,
-                                   choices=x.option_choices,
-                                   required=(x.required),
-                                   is_custom=(x.has_custom_options),
-                                   option_data=option_data_for_lineitem(x),
-                               ) }
-                             for x in multiselect_single_list ] + \
-                           [ { 'LineItemType': x,
-                               'CostChoice': MultiOptionCostItem(request.POST, prefix="multi%s" % x.id,
-                                                                 lineitem_type=x,
-                                                                 required=(x.required)) }
-                             for x in multiselect_multi_list ]
+            costs_db = (
+                [
+                    {
+                        "LineItemType": x,
+                        "CostChoice": CostItem(
+                            request.POST,
+                            prefix="%s" % x.id,
+                            required=(x.required),
+                            cost=(x.amount_dec),
+                            for_finaid=(x.for_finaid),
+                        ),
+                    }
+                    for x in costs_list
+                ]
+                + [
+                    {
+                        "LineItemType": x,
+                        "CostChoice": MultiCostItem(
+                            request.POST,
+                            prefix="%s" % x.id,
+                            required=(x.required),
+                            max_quantity=(x.max_quantity),
+                            cost=(x.amount_dec),
+                            for_finaid=(x.for_finaid),
+                        ),
+                    }
+                    for x in multicosts_list
+                ]
+                + [
+                    {
+                        "LineItemType": x,
+                        "CostChoice": MultiSelectCostItem(
+                            request.POST,
+                            prefix="multi%s" % x.id,
+                            choices=x.option_choices,
+                            required=(x.required),
+                            is_custom=(x.has_custom_options),
+                            option_data=option_data_for_lineitem(x),
+                        ),
+                    }
+                    for x in multiselect_single_list
+                ]
+                + [
+                    {
+                        "LineItemType": x,
+                        "CostChoice": MultiOptionCostItem(
+                            request.POST,
+                            prefix="multi%s" % x.id,
+                            lineitem_type=x,
+                            required=(x.required),
+                        ),
+                    }
+                    for x in multiselect_multi_list
+                ]
+            )
             if prog.sibling_discount:
-                sibling_form = SiblingDiscountForm(request.POST, prefix="%s" % sibling_line_item.id, program=prog)
-                costs_db.append({'LineItemType': sibling_line_item, 'CostChoice': sibling_form})
+                sibling_form = SiblingDiscountForm(
+                    request.POST, prefix="%s" % sibling_line_item.id, program=prog
+                )
+                costs_db.append(
+                    {"LineItemType": sibling_line_item, "CostChoice": sibling_form}
+                )
 
             #   Get a list of the (line item, quantity) pairs stored in the forms
             #   as well as a list of line items which had invalid forms
             form_prefs = []
 
             for item in costs_db:
-                form = item['CostChoice']
-                lineitem_type = item['LineItemType']
+                form = item["CostChoice"]
+                lineitem_type = item["LineItemType"]
 
                 if form.is_valid():
                     if isinstance(form, CostItem):
-                        if form.cleaned_data['cost'] is True:
-                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount, None))
+                        if form.cleaned_data["cost"] is True:
+                            form_prefs.append(
+                                (lineitem_type.text, 1, lineitem_type.amount, None)
+                            )
 
                     elif isinstance(form, MultiCostItem):
-                        form_prefs.append((lineitem_type.text, form.cleaned_data['count'] or 0, lineitem_type.amount, None))
+                        form_prefs.append(
+                            (
+                                lineitem_type.text,
+                                form.cleaned_data["count"] or 0,
+                                lineitem_type.amount,
+                                None,
+                            )
+                        )
 
                     elif isinstance(form, MultiSelectCostItem):
-                        if form.cleaned_data['option']:
+                        if form.cleaned_data["option"]:
                             if lineitem_type.has_custom_options:
-                                option_id, option_amount = form.cleaned_data['option']
+                                option_id, option_amount = form.cleaned_data["option"]
                             else:
-                                option_id = form.cleaned_data['option']
+                                option_id = form.cleaned_data["option"]
                                 option_amount = None
                             if option_id:
                                 option = LineItemOptions.objects.get(id=option_id)
@@ -340,7 +474,14 @@ class StudentExtraCosts(ProgramModuleObj):
                                     # Use default amount if this option doesn't allow a custom amount
                                     if not option.is_custom:
                                         option_amount = option.amount_dec_inherited
-                                    form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
+                                    form_prefs.append(
+                                        (
+                                            lineitem_type.text,
+                                            1,
+                                            float(option_amount),
+                                            int(option_id),
+                                        )
+                                    )
 
                     elif isinstance(form, MultiOptionCostItem):
                         form_prefs.extend(form.preferences())
@@ -351,7 +492,10 @@ class StudentExtraCosts(ProgramModuleObj):
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items[lineitem_type.text] = form
                     forms_all_valid = False
-                    if isinstance(form, MultiOptionCostItem) and form.missing_custom_amount:
+                    if (
+                        isinstance(form, MultiOptionCostItem)
+                        and form.missing_custom_amount
+                    ):
                         error_custom = True
 
             #   Merge previous and new preferences (update only if the form was valid)
@@ -366,99 +510,142 @@ class StudentExtraCosts(ProgramModuleObj):
             #   (otherwise, the code below will reload the page)
             if forms_all_valid:
                 rt = RecordType.objects.get(name=self.event)
-                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=rt)
+                bit, created = Record.objects.get_or_create(
+                    user=request.user, program=self.program, event=rt
+                )
                 return self.goToCore(tl)
 
             ### End Post
 
         count_map = {}
         for lineitem_type in self.lineitemtypes():
-            count_map[lineitem_type.text] = [lineitem_type.id, 1 if lineitem_type.required else 0, None, None]
+            count_map[lineitem_type.text] = [
+                lineitem_type.id,
+                1 if lineitem_type.required else 0,
+                None,
+                None,
+            ]
 
         current_prefs = list(iac.get_preferences(self.lineitemtypes()))
         for item in current_prefs:
             for i in range(1, 4):
                 count_map[item[0]][i] = item[i]
 
-        cost_items =  \
-        [
+        cost_items = [
             {
-               'form': preserve_items.get(x.text) or CostItem( prefix="%s" % x.id,
-                                                               initial={'cost': (count_map[x.text][1] > 0) },
-                                                               cost=(x.amount_dec),
-                                                               required=(x.required),
-                                                               for_finaid=(x.for_finaid) ),
-               'type': 'single',
-               'LineItem': x
+                "form": preserve_items.get(x.text)
+                or CostItem(
+                    prefix="%s" % x.id,
+                    initial={"cost": (count_map[x.text][1] > 0)},
+                    cost=(x.amount_dec),
+                    required=(x.required),
+                    for_finaid=(x.for_finaid),
+                ),
+                "type": "single",
+                "LineItem": x,
             }
-
             for x in costs_list
         ]
 
-        multi_cost_items = \
-        [
+        multi_cost_items = [
             {
-                'form': preserve_items.get(x.text) or MultiCostItem( prefix="%s" % x.id,
-                                                                     initial={'count': count_map[x.text][1] },
-                                                                     cost=(x.amount_dec),
-                                                                     required=(x.required),
-                                                                     max_quantity=(x.max_quantity),
-                                                                     for_finaid=(x.for_finaid) ),
-                'type': 'multiple',
-                'LineItem': x
+                "form": preserve_items.get(x.text)
+                or MultiCostItem(
+                    prefix="%s" % x.id,
+                    initial={"count": count_map[x.text][1]},
+                    cost=(x.amount_dec),
+                    required=(x.required),
+                    max_quantity=(x.max_quantity),
+                    for_finaid=(x.for_finaid),
+                ),
+                "type": "multiple",
+                "LineItem": x,
             }
-
             for x in multicosts_list
         ]
 
         multiselect_costitems = []
         for x in multiselect_single_list:
-            new_entry = {'type': 'select', 'LineItem': x}
-            form_kwargs = {'prefix': "multi%s" % x.id, 'choices': x.option_choices, 'required': x.required,
-                           'option_data': option_data_for_lineitem(x)}
+            new_entry = {"type": "select", "LineItem": x}
+            form_kwargs = {
+                "prefix": "multi%s" % x.id,
+                "choices": x.option_choices,
+                "required": x.required,
+                "option_data": option_data_for_lineitem(x),
+            }
             if x.has_custom_options:
                 #   Provide an initial value for a custom amount if an option has been selected
                 #   and the saved amount differs from the amount this option would normally cost.
-                custom_amount = ''
+                custom_amount = ""
                 if count_map[x.text][3]:
-                    default_amount = LineItemOptions.objects.get(id=count_map[x.text][3]).amount_dec_inherited
+                    default_amount = LineItemOptions.objects.get(
+                        id=count_map[x.text][3]
+                    ).amount_dec_inherited
                     if count_map[x.text][2] != default_amount:
                         custom_amount = count_map[x.text][2]
-                form_kwargs['initial'] = {'option': (count_map[x.text][3], custom_amount)}
-                form_kwargs['is_custom'] = True
+                form_kwargs["initial"] = {
+                    "option": (count_map[x.text][3], custom_amount)
+                }
+                form_kwargs["is_custom"] = True
             else:
-                form_kwargs['initial'] = {'option': count_map[x.text][3]}
-                form_kwargs['is_custom'] = False
-            new_entry['form'] = preserve_items.get(x.text) or MultiSelectCostItem(**form_kwargs)
+                form_kwargs["initial"] = {"option": count_map[x.text][3]}
+                form_kwargs["is_custom"] = False
+            new_entry["form"] = preserve_items.get(x.text) or MultiSelectCostItem(
+                **form_kwargs
+            )
             multiselect_costitems.append(new_entry)
 
         multiselect_multi_costitems = []
         for x in multiselect_multi_list:
-            selected_prefs = [item for item in current_prefs if item[0] == x.text and item[3]]
-            initial = {'options': [item[3] for item in selected_prefs]}
-            initial.update({custom_amount_field_name(item[3]): item[2] for item in selected_prefs})
-            multiselect_multi_costitems.append({
-                'type': 'multiselect',
-                'LineItem': x,
-                'form': preserve_items.get(x.text) or MultiOptionCostItem(prefix="multi%s" % x.id,
-                                                                          lineitem_type=x,
-                                                                          required=x.required,
-                                                                          initial=initial),
-            })
+            selected_prefs = [
+                item for item in current_prefs if item[0] == x.text and item[3]
+            ]
+            initial = {"options": [item[3] for item in selected_prefs]}
+            initial.update(
+                {custom_amount_field_name(item[3]): item[2] for item in selected_prefs}
+            )
+            multiselect_multi_costitems.append(
+                {
+                    "type": "multiselect",
+                    "LineItem": x,
+                    "form": preserve_items.get(x.text)
+                    or MultiOptionCostItem(
+                        prefix="multi%s" % x.id,
+                        lineitem_type=x,
+                        required=x.required,
+                        initial=initial,
+                    ),
+                }
+            )
 
-        forms = cost_items + multi_cost_items + multiselect_costitems + multiselect_multi_costitems
+        forms = (
+            cost_items
+            + multi_cost_items
+            + multiselect_costitems
+            + multiselect_multi_costitems
+        )
         if prog.sibling_discount:
-            forms.append({
-                    'form': sibling_form,
-                    'type': 'sibling',
-                    'LineItem': sibling_line_item
-                })
+            forms.append(
+                {"form": sibling_form, "type": "sibling", "LineItem": sibling_line_item}
+            )
 
-        return render_to_response(self.baseDir()+'extracosts.html',
-                                  request,
-                                  { 'errors': not forms_all_valid, 'error_custom': error_custom, 'forms': forms, 'finaid_grant': iac.latest_finaid_grant(), 'select_qty': len(multicosts_list) > 0,
-                                    'paid_for': iac.has_paid(), 'amount_paid': iac.amount_paid(), 'amount_donation': iac.amount_donation(),
-                                    'paid_for_text': Tag.getProgramTag("already_paid_extracosts_text", program = prog) })
+        return render_to_response(
+            self.baseDir() + "extracosts.html",
+            request,
+            {
+                "errors": not forms_all_valid,
+                "error_custom": error_custom,
+                "forms": forms,
+                "finaid_grant": iac.latest_finaid_grant(),
+                "select_qty": len(multicosts_list) > 0,
+                "paid_for": iac.has_paid(),
+                "amount_paid": iac.amount_paid(),
+                "amount_donation": iac.amount_donation(),
+                "paid_for_text": Tag.getProgramTag(
+                    "already_paid_extracosts_text", program=prog
+                ),
+            },
+        )
 
     def isStep(self):
         return self.lineitemtypes().exists()
@@ -468,4 +655,4 @@ class StudentExtraCosts(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

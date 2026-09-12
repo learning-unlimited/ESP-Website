@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -34,8 +33,9 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call
 from esp.program.models import TeacherBio
-from esp.users.models   import ESPUser
-from django.db.models.query   import Q
+from esp.users.models import ESPUser
+from django.db.models.query import Q
+
 
 # reg profile module
 class TeacherBioModule(ProgramModuleObj):
@@ -49,24 +49,27 @@ class TeacherBioModule(ProgramModuleObj):
             "module_type": "teach",
             "seq": -111,
             "choosable": 1,
-            }
+        }
 
-    def teachers(self, QObject = False):
+    def teachers(self, QObject=False):
         if QObject:
-            return {'teacher_biographies': Q(teacherbio__program = self.program)}
+            return {"teacher_biographies": Q(teacherbio__program=self.program)}
 
-        teachers = ESPUser.objects.filter(teacherbio__program = self.program).distinct()
-        return {'teacher_biographies': teachers }
+        teachers = ESPUser.objects.filter(teacherbio__program=self.program).distinct()
+        return {"teacher_biographies": teachers}
 
     def teacherDesc(self):
-        return {'teacher_biographies': """Teachers who have completed the biography"""}
+        return {"teacher_biographies": """Teachers who have completed the biography"""}
 
     @main_call
     @needs_teacher
     def biography(self, request, tl, one, two, module, extra, prog):
-        """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+        """Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program"""
         from esp.web.views.bio import bio_edit_user_program
-        result = bio_edit_user_program(request, request.user, self.program, external=True)
+
+        result = bio_edit_user_program(
+            request, request.user, self.program, external=True
+        )
 
         if result is not True:
             return result
@@ -86,4 +89,4 @@ class TeacherBioModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

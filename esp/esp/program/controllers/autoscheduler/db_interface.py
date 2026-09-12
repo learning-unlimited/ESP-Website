@@ -10,8 +10,12 @@ import logging
 from django.db.models import Count
 from django.db import transaction
 
-from esp.resources.models import \
-    ResourceType, Resource, ResourceAssignment, ResourceRequest
+from esp.resources.models import (
+    ResourceType,
+    Resource,
+    ResourceAssignment,
+    ResourceRequest,
+)
 from esp.program.models import ClassSection
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, UserAvailability
@@ -20,41 +24,59 @@ from esp.program.modules import module_ext
 from esp.tagdict.models import Tag
 
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
-from esp.program.controllers.autoscheduler.data_model import \
-    AS_Schedule, AS_ClassSection, AS_Teacher, AS_Classroom, \
-    AS_Timeslot, AS_RoomSlot, AS_ResourceType
-from esp.program.controllers.autoscheduler import \
-    util, config, resource_checker
+from esp.program.controllers.autoscheduler.data_model import (
+    AS_Schedule,
+    AS_ClassSection,
+    AS_Teacher,
+    AS_Classroom,
+    AS_Timeslot,
+    AS_RoomSlot,
+    AS_ResourceType,
+)
+from esp.program.controllers.autoscheduler import util, config, resource_checker
 
 logger = logging.getLogger(__name__)
 
 
 @util.timed_func("db_interface_load_schedule_from_db")
 def load_schedule_from_db(
-        program, require_approved=True, exclude_lunch=True,
-        exclude_walkins=True, exclude_scheduled=True, exclude_locked=True,
-        **kwargs):
+    program,
+    require_approved=True,
+    exclude_lunch=True,
+    exclude_walkins=True,
+    exclude_scheduled=True,
+    exclude_locked=True,
+    **kwargs,
+):
     """Loads an AS_Schedule based on the database of a program. exclude_locked
     means that classes locked on the AJAX scheduler are not loaded (and instead
     are blocked off as unavailable), and has nothing to do with the lock_level
     for a ResourceAssignment."""
     ESPUser.create_membership_methods()
 
-    timeslots = sorted(
-        batch_convert_events(program.getTimeSlots(), program))
+    timeslots = sorted(batch_convert_events(program.getTimeSlots(), program))
 
     lunch_events = program.lunch_timeslots()
 
     lunch_timeslots = [(e.start, e.end) for e in lunch_events]
 
-    schedule = AS_Schedule(program=program, timeslots=timeslots,
-                           lunch_timeslots=lunch_timeslots,
-                           exclude_locked=exclude_locked)
+    schedule = AS_Schedule(
+        program=program,
+        timeslots=timeslots,
+        lunch_timeslots=lunch_timeslots,
+        exclude_locked=exclude_locked,
+    )
 
     schedule.class_sections, schedule.teachers, schedule.classrooms = (
         load_sections_and_teachers_and_classrooms(
-            schedule, require_approved, exclude_lunch,
-            exclude_walkins, exclude_scheduled, exclude_locked))
+            schedule,
+            require_approved,
+            exclude_lunch,
+            exclude_walkins,
+            exclude_scheduled,
+            exclude_locked,
+        )
+    )
 
     schedule.run_consistency_checks()
     schedule.run_constraint_checks()
@@ -64,8 +86,13 @@ def load_schedule_from_db(
 
 @util.timed_func("db_interface_load_sections_and_teachers_and_classrooms")
 def load_sections_and_teachers_and_classrooms(
-        schedule, require_approved, exclude_lunch,
-        exclude_walkins, exclude_scheduled, exclude_locked):
+    schedule,
+    require_approved,
+    exclude_lunch,
+    exclude_walkins,
+    exclude_scheduled,
+    exclude_locked,
+):
     """Loads sections, teachers, and classrooms into the schedule from the
     database. Helper function for load_schedule_from_db, to make use of the
     schedule's construction of the timeslot dict."""
@@ -73,27 +100,26 @@ def load_sections_and_teachers_and_classrooms(
 
     # Get all the approved class sections for the program
     sections = ClassSection.objects.filter(
-            parent_class__parent_program=schedule.program,
-            ).select_related()
+        parent_class__parent_program=schedule.program,
+    ).select_related()
 
     if require_approved:
         sections = sections.filter(status=ClassStatus.ACCEPTED)
     if exclude_scheduled:
         # Exclude all already-scheduled classes
-        sections = sections.annotate(
-                num_meeting_times=Count("meeting_times"))
+        sections = sections.annotate(num_meeting_times=Count("meeting_times"))
         sections = sections.filter(num_meeting_times=0)
 
     if exclude_lunch:
-        sections = sections.exclude(
-                parent_class__category__is_lunch=True)
+        sections = sections.exclude(parent_class__category__is_lunch=True)
     if exclude_walkins and schedule.program.open_class_registration:
         sections = sections.exclude(
-                parent_class__category=schedule.program.open_class_category)
+            parent_class__category=schedule.program.open_class_category
+        )
     if exclude_locked:
         locked_sections = module_ext.AJAXSectionDetail.objects.filter(
-            program=schedule.program, locked=True).values_list(
-                    "cls_id", flat=True)
+            program=schedule.program, locked=True
+        ).values_list("cls_id", flat=True)
         sections = sections.exclude(id__in=locked_sections)
 
     logger.info("Filtered")
@@ -105,8 +131,8 @@ def load_sections_and_teachers_and_classrooms(
 
     teacher_ids = sections.values_list("parent_class__teachers", flat=True)
     teaching_times = ClassSection.objects.filter(
-        parent_class__parent_program=schedule.program).values_list(
-            "parent_class__teachers", "meeting_times")
+        parent_class__parent_program=schedule.program
+    ).values_list("parent_class__teachers", "meeting_times")
     teaching_times_by_teacher = {teacher: set() for teacher in teacher_ids}
     availabilities_by_teacher = {teacher: [] for teacher in teacher_ids}
 
@@ -114,42 +140,52 @@ def load_sections_and_teachers_and_classrooms(
         if time is not None and teacher in teaching_times_by_teacher:
             teaching_times_by_teacher[teacher].add(time)
     if schedule.program.hasModule("AvailabilityModule"):
-        user_availabilities = UserAvailability.objects.filter(
-            event__program=schedule.program).order_by(
-                "event__start").values_list(
-                    "user__id", "event__start", "event__end", "event__id")
-        for teacher, event_start, event_end, event_id \
-                in user_availabilities:
+        user_availabilities = (
+            UserAvailability.objects.filter(event__program=schedule.program)
+            .order_by("event__start")
+            .values_list("user__id", "event__start", "event__end", "event__id")
+        )
+        for teacher, event_start, event_end, event_id in user_availabilities:
             if teacher in teacher_ids:
                 teaching = teaching_times_by_teacher[teacher]
                 times = (event_start, event_end)
-                if (event_id not in teaching
-                        and times in schedule.timeslot_dict):
+                if event_id not in teaching and times in schedule.timeslot_dict:
                     availabilities_by_teacher[teacher].append(
-                        schedule.timeslot_dict[times])
+                        schedule.timeslot_dict[times]
+                    )
     else:
         for teacher in availabilities_by_teacher:
             teaching = teaching_times_by_teacher[teacher]
             availabilities_by_teacher[teacher] = [
-                t for t in schedule.timeslots if t.id not in teaching]
+                t for t in schedule.timeslots if t.id not in teaching
+            ]
     admins = set(
         ESPUser.objects.filter(groups__name="Administrator").values_list(
-            "id", flat=True))
+            "id", flat=True
+        )
+    )
     teachers = {
         teacher: AS_Teacher(
-            availabilities_by_teacher[teacher], teacher, teacher in admins)
-        for teacher in teacher_ids}
+            availabilities_by_teacher[teacher], teacher, teacher in admins
+        )
+        for teacher in teacher_ids
+    }
     logger.info("Teachers loaded")
 
     known_sections = {section.id: section for section in sections}
     rooms_by_section, meeting_times_by_section, requests_by_section = (
-        load_section_assignments(known_sections))
+        load_section_assignments(known_sections)
+    )
     logger.info("Assignments loaded")
     # Load classrooms from groupedClassrooms
     classrooms = convert_classroom_resources(
-            schedule.program.getClassrooms(), schedule.program,
-            schedule.timeslot_dict, known_sections,
-            rooms_by_section, meeting_times_by_section)
+        schedule.program.getClassrooms(),
+        schedule.program,
+        schedule.timeslot_dict,
+        known_sections,
+        rooms_by_section,
+        meeting_times_by_section,
+    )
     logger.info("Classrooms loaded")
 
     section_teachers = sections.values_list("id", "parent_class__teachers")
@@ -158,9 +194,15 @@ def load_sections_and_teachers_and_classrooms(
         teachers_by_section[section].append(teachers[teacher])
 
     converted_sections = batch_convert_sections(
-        sections, schedule.program, teachers_by_section,
-        schedule.timeslot_dict, classrooms,
-        rooms_by_section, meeting_times_by_section, requests_by_section)
+        sections,
+        schedule.program,
+        teachers_by_section,
+        schedule.timeslot_dict,
+        classrooms,
+        rooms_by_section,
+        meeting_times_by_section,
+        requests_by_section,
+    )
     logger.info("Sections converted")
 
     sections_dict = {sec.id: sec for sec in converted_sections}
@@ -183,9 +225,10 @@ def save(schedule, check_consistency=True, check_constraints=True):
 
     # Find all sections which we've actually moved.
     changed_sections = set(
-        section for section in schedule.class_sections.values()
-        if section.initial_state
-        != section.scheduling_hash())
+        section
+        for section in schedule.class_sections.values()
+        if section.initial_state != section.scheduling_hash()
+    )
     # Note: we need to be careful not to cache anything after we save
     # because a rollback will not roll back the cache. Ideally we would flush
     # the relevant entries of cache but I don't know how to do that. (TODO)
@@ -193,7 +236,8 @@ def save(schedule, check_consistency=True, check_constraints=True):
     with transaction.atomic():
         ajax_change_log = get_ajax_change_log(schedule.program)
         section_objs = ClassSection.objects.filter(
-                id__in=[s.id for s in changed_sections]).select_related()
+            id__in=[s.id for s in changed_sections]
+        ).select_related()
 
         # Compute meeting times, classroom, and potentially conflicting classes
         # for each class.
@@ -203,34 +247,41 @@ def save(schedule, check_consistency=True, check_constraints=True):
             possible_conflicts = []
             for teacher in section.teachers:
                 teacher_obj = ESPUser.objects.get(id=teacher.id)
-                other_sections = teacher_obj.getTaughtSections(
-                    schedule.program)
+                other_sections = teacher_obj.getTaughtSections(schedule.program)
                 possible_conflicts.append(
-                        (teacher.id, [other for other in other_sections
-                                      if other.id != section.id]))
+                    (
+                        teacher.id,
+                        [other for other in other_sections if other.id != section.id],
+                    )
+                )
 
             # Compute our meeting times and classroom
             if section.is_scheduled():
                 meeting_times = Event.objects.filter(
-                        id__in=[roomslot.timeslot.id
-                                for roomslot
-                                in section.assigned_roomslots])
+                    id__in=[
+                        roomslot.timeslot.id for roomslot in section.assigned_roomslots
+                    ]
+                )
 
                 initial_room_num = section.assigned_roomslots[0].room.name
-                assert all([roomslot.room.name == initial_room_num
-                            for roomslot in section.assigned_roomslots]), \
-                    "Section was assigned to multiple rooms"
+                assert all(
+                    [
+                        roomslot.room.name == initial_room_num
+                        for roomslot in section.assigned_roomslots
+                    ]
+                ), "Section was assigned to multiple rooms"
 
                 room_objs = Resource.objects.filter(
-                        name=initial_room_num,
-                        res_type__name="Classroom",
-                        event__in=meeting_times)
+                    name=initial_room_num,
+                    res_type__name="Classroom",
+                    event__in=meeting_times,
+                )
             else:
                 meeting_times = []
                 room_objs = []
             section_infos.append(
-                (section, section_obj, possible_conflicts,
-                 meeting_times, room_objs))
+                (section, section_obj, possible_conflicts, meeting_times, room_objs)
+            )
 
         # First, we check to make sure nobody moved any sections we want, and
         # unschedule them to ensure we don't get cross-conflicts.
@@ -241,11 +292,17 @@ def save(schedule, check_consistency=True, check_constraints=True):
                 unschedule_section(so, ajax_change_log)
 
         check_can_schedule_sections(section_infos, schedule)
-        for (section, section_obj, possible_conflicts, meeting_times,
-                room_objs) in section_infos:
+        for (
+            section,
+            section_obj,
+            possible_conflicts,
+            meeting_times,
+            room_objs,
+        ) in section_infos:
             if section.is_scheduled():
                 schedule_section(
-                    section_obj, meeting_times, room_objs[0], ajax_change_log)
+                    section_obj, meeting_times, room_objs[0], ajax_change_log
+                )
 
         # Check again in case something bad happened while we were saving.
         for so in section_objs:
@@ -266,12 +323,19 @@ def check_can_schedule_sections(section_infos, schedule):
     A SchedulingError is thrown if any of these occur, otherwise nothing
     happens. This function should avoid caching anything because the cached
     value won't get rolled back by the transaction"""
-    locked_sections = set(module_ext.AJAXSectionDetail.objects.filter(
-            program=schedule.program, locked=True).values_list(
-                    "cls_id", flat=True))
+    locked_sections = set(
+        module_ext.AJAXSectionDetail.objects.filter(
+            program=schedule.program, locked=True
+        ).values_list("cls_id", flat=True)
+    )
 
-    for section, section_obj, possible_conflicts, meeting_times, room_objs \
-            in section_infos:
+    for (
+        section,
+        section_obj,
+        possible_conflicts,
+        meeting_times,
+        room_objs,
+    ) in section_infos:
         if section.id in locked_sections:
             raise SchedulingError(f"Section {section_obj.emailcode()} is locked!")
         if section.is_scheduled():
@@ -281,11 +345,13 @@ def check_can_schedule_sections(section_infos, schedule):
                 # Make sure the teacher isn't teaching
                 for other_section in other_sections:
                     for other_time in other_section.meeting_times.all():
-                        if not (other_time.start >= end_time
-                                or other_time.end <= start_time):
+                        if not (
+                            other_time.start >= end_time or other_time.end <= start_time
+                        ):
                             raise SchedulingError(
                                 f"Teacher {teacher_id} of section {section_obj.emailcode()} is already teaching "
-                                f"section {other_section.emailcode()}")
+                                f"section {other_section.emailcode()}"
+                            )
 
             # Make sure the room is available
             for room_obj in room_objs:
@@ -296,7 +362,8 @@ def check_can_schedule_sections(section_infos, schedule):
                         if other_section.id != section.id:
                             raise SchedulingError(
                                 f"Destination room {room_obj.name} of section {section_obj.emailcode()} was "
-                                f"already occupied by section {other_section.emailcode()}")
+                                f"already occupied by section {other_section.emailcode()}"
+                            )
 
 
 @util.timed_func("db_interface_ensure_section_not_moved")
@@ -307,13 +374,11 @@ def ensure_section_not_moved(section, as_section):
     anything to avoid a stale cache result not being rolled back"""
     assert section.id == as_section.id, "Unexpected ID mismatch"
     if scheduling_hash_of(section) != as_section.initial_state:
-        raise SchedulingError(
-                f"Section {section.emailcode()} was moved.")
+        raise SchedulingError(f"Section {section.emailcode()} was moved.")
 
 
 @util.timed_func("db_interface_unschedule_section")
-def unschedule_section(
-        section, ajax_change_log, unscheduled_sections_log=None):
+def unschedule_section(section, ajax_change_log, unscheduled_sections_log=None):
     """Unschedules a ClassSection and records it as needed."""
     logger.info(f"Unscheduling {section.emailcode()}")
     section.clear_meeting_times()
@@ -332,10 +397,9 @@ def schedule_section(section, times, room, ajax_change_log):
     if not status:
         section.clear_meeting_times()
         raise SchedulingError(
-                "Room assignment failed with errors: "
-                + " | ".join(errors))
-    ajax_change_log.appendScheduling(
-        [t.id for t in times], room.name, section.id, None)
+            "Room assignment failed with errors: " + " | ".join(errors)
+        )
+    ajax_change_log.appendScheduling([t.id for t in times], room.name, section.id, None)
 
 
 def get_ajax_change_log(prog):
@@ -354,21 +418,29 @@ def get_ajax_change_log(prog):
 
 
 def convert_classection_obj(
-        section, program, teachers_by_section, timeslot_dict, rooms,
-        rooms_by_section, meeting_times_by_section,
-        requests_by_section):
+    section,
+    program,
+    teachers_by_section,
+    timeslot_dict,
+    rooms,
+    rooms_by_section,
+    meeting_times_by_section,
+    requests_by_section,
+):
     """Create a AS_ClassSection from a ClassSection and Program. Will also
     populate the given dictionary of teachers and uses the given dictionary
-    of timeslots for availabilities. """
+    of timeslots for availabilities."""
     if not section_satisfies_constraints(
-            section, rooms_by_section, meeting_times_by_section):
-        logger.info(f"Warning: Autoscheduler can't handle section {section.emailcode()}")
+        section, rooms_by_section, meeting_times_by_section
+    ):
+        logger.info(
+            f"Warning: Autoscheduler can't handle section {section.emailcode()}"
+        )
         return None
 
     teachers = teachers_by_section[section.id]
 
-    resource_requests = batch_convert_resource_requests(
-            requests_by_section[section.id])
+    resource_requests = batch_convert_resource_requests(requests_by_section[section.id])
 
     resource_requests_dict = {r.name: r for r in resource_requests}
     roomslots = []
@@ -379,18 +451,25 @@ def convert_classection_obj(
     roomslots.sort(key=lambda r: r.timeslot)
 
     as_section = AS_ClassSection(
-            teachers, float(section.duration), get_section_capacity(section),
-            section.category.id, roomslots,
-            section_id=section.id, parent_class_id=section.parent_class.id,
-            grade_min=section.parent_class.grade_min,
-            grade_max=section.parent_class.grade_max,
-            resource_requests=resource_requests_dict)
+        teachers,
+        float(section.duration),
+        get_section_capacity(section),
+        section.category.id,
+        roomslots,
+        section_id=section.id,
+        parent_class_id=section.parent_class.id,
+        grade_min=section.parent_class.grade_min,
+        grade_max=section.parent_class.grade_max,
+        resource_requests=resource_requests_dict,
+    )
 
-    assert (scheduling_hash_of(
-            section, rooms_by_section, meeting_times_by_section) ==
-            as_section.initial_state), (
+    assert (
+        scheduling_hash_of(section, rooms_by_section, meeting_times_by_section)
+        == as_section.initial_state
+    ), (
         f"AS_ClassSection state doesn't match ClassSection state "
-        f"for section {section.emailcode()}")
+        f"for section {section.emailcode()}"
+    )
 
     return as_section
 
@@ -410,55 +489,50 @@ def load_section_assignments(section_ids):
     to minimize database queries."""
     resource_assignments = ResourceAssignment.objects.filter(
         target__in=section_ids, resource__res_type__name="Classroom"
-        ).values_list("target", "resource")
-    sections_by_resource = {resource: target for target, resource in
-                            resource_assignments}
-    resources = Resource.objects.filter(
-        id__in=sections_by_resource
-    ).select_related()
+    ).values_list("target", "resource")
+    sections_by_resource = {
+        resource: target for target, resource in resource_assignments
+    }
+    resources = Resource.objects.filter(id__in=sections_by_resource).select_related()
     rooms_by_section = {section: [] for section in section_ids}
     for resource in resources:
-        rooms_by_section[
-            sections_by_resource[resource.id]].append(resource)
-    meeting_times = ClassSection.objects.filter(
-        id__in=section_ids
-    ).values_list("id", "meeting_times")
-    all_meeting_times = set(time for sec, time in meeting_times if time is
-                            not None)
-    meeting_time_objs = Event.objects.filter(
-        id__in=all_meeting_times
-    ).select_related()
+        rooms_by_section[sections_by_resource[resource.id]].append(resource)
+    meeting_times = ClassSection.objects.filter(id__in=section_ids).values_list(
+        "id", "meeting_times"
+    )
+    all_meeting_times = set(time for sec, time in meeting_times if time is not None)
+    meeting_time_objs = Event.objects.filter(id__in=all_meeting_times).select_related()
     meeting_times_by_id = {e.id: e for e in meeting_time_objs}
     meeting_times_by_section = {section: [] for section in section_ids}
     for section, time in meeting_times:
         if time is not None:
-            meeting_times_by_section[section].append(
-                meeting_times_by_id[time])
+            meeting_times_by_section[section].append(meeting_times_by_id[time])
 
-    requests = ResourceRequest.objects.filter(
-        target__in=section_ids).select_related("target", "res_type")
+    requests = ResourceRequest.objects.filter(target__in=section_ids).select_related(
+        "target", "res_type"
+    )
     requests_by_section = {section: [] for section in section_ids}
     for request in requests:
         requests_by_section[request.target.id].append(request)
-    return (rooms_by_section, meeting_times_by_section,
-            requests_by_section)
+    return (rooms_by_section, meeting_times_by_section, requests_by_section)
 
 
 @util.timed_func("db_interface_section_satisfies_constraints")
 def section_satisfies_constraints(
-        section_obj, rooms_by_section, meeting_times_by_section):
+    section_obj, rooms_by_section, meeting_times_by_section
+):
     """Returns False if the section:
-     - Is scheduled in more than one classroom
-     - Meeting times disagree with classroomassignments
-     - Is scheduled in nonconsecutive timeslots
-     - Isn't scheduled for its duration"""
-    classrooms = sorted(
-        rooms_by_section[section_obj.id], key=lambda c: c.event)
+    - Is scheduled in more than one classroom
+    - Meeting times disagree with classroomassignments
+    - Is scheduled in nonconsecutive timeslots
+    - Isn't scheduled for its duration"""
+    classrooms = sorted(rooms_by_section[section_obj.id], key=lambda c: c.event)
     meeting_times = sorted(meeting_times_by_section[section_obj.id])
     if len(classrooms) != len(meeting_times):
         return False
     for room1, time1, room2, time2 in zip(
-            classrooms, meeting_times, classrooms[1:], meeting_times[1:]):
+        classrooms, meeting_times, classrooms[1:], meeting_times[1:]
+    ):
         # This function was written for AS_Timeslots, but it also works
         # with Events.
         if not util.contiguous(time1, time2):
@@ -471,8 +545,7 @@ def section_satisfies_constraints(
         start_time = meeting_times[0].start
         end_time = meeting_times[-1].end
         scheduled_duration = util.hours_difference(start_time, end_time)
-        if (abs(scheduled_duration - float(section_obj.duration))
-                > config.DELTA_TIME):
+        if abs(scheduled_duration - float(section_obj.duration)) > config.DELTA_TIME:
             return False
     return True
 
@@ -484,18 +557,18 @@ def load_constraints(program, constraints_overrides=None):
     if constraints_overrides is None:
         constraints_overrides = {}
 
-    tag_value = Tag.getProgramTag(config.CONSTRAINT_TAG,
-                                  program=program)
+    tag_value = Tag.getProgramTag(config.CONSTRAINT_TAG, program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
     except ValueError as e:
         raise SchedulingError(
-                f"Constraints Tag is malformatted with error {e}: {tag_value}")
+            f"Constraints Tag is malformatted with error {e}: {tag_value}"
+        )
 
     return util.override(
-        [config.DEFAULT_CONSTRAINTS_ENABLED,
-         tag_overrides, constraints_overrides])
+        [config.DEFAULT_CONSTRAINTS_ENABLED, tag_overrides, constraints_overrides]
+    )
 
 
 @util.timed_func("db_interface_load_scorers")
@@ -505,122 +578,146 @@ def load_scorers(program, scorer_overrides=None):
     if scorer_overrides is None:
         scorer_overrides = {}
 
-    tag_value = Tag.getProgramTag(config.SCORER_TAG,
-                                  program=program)
+    tag_value = Tag.getProgramTag(config.SCORER_TAG, program=program)
 
     try:
         tag_overrides = json.loads(tag_value)
     except ValueError as e:
-        raise SchedulingError(f"Scoring Tag is malformatted with error {e}: {tag_value}")
+        raise SchedulingError(
+            f"Scoring Tag is malformatted with error {e}: {tag_value}"
+        )
 
     return util.override(
-        [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides])
+        [config.DEFAULT_SCORER_WEIGHTS, tag_overrides, scorer_overrides]
+    )
 
 
 @util.timed_func("db_interface_load_resource_constraints")
 def load_resource_constraints(
-        program, specification_overrides=None, specs_only=False,
-        ignore_comments=True):
+    program, specification_overrides=None, specs_only=False, ignore_comments=True
+):
     if specification_overrides is None:
         specification_overrides = {}
 
-    tag_value = Tag.getProgramTag(config.RESOURCE_CONSTRAINTS_TAG,
-                                  program=program)
+    tag_value = Tag.getProgramTag(config.RESOURCE_CONSTRAINTS_TAG, program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in tag_overrides.items()
-                if "_comment" not in k}
+                k: v for k, v in tag_overrides.items() if "_comment" not in k
+            }
     except ValueError as e:
         raise SchedulingError(
-            f"Resource constraints Tag is malformatted with error {e}: {tag_value}")
-    specs = [config.DEFAULT_RESOURCE_CONSTRAINTS,
-             tag_overrides,
-             specification_overrides]
+            f"Resource constraints Tag is malformatted with error {e}: {tag_value}"
+        )
+    specs = [
+        config.DEFAULT_RESOURCE_CONSTRAINTS,
+        tag_overrides,
+        specification_overrides,
+    ]
     if specs_only:
         return {
-            name: spec for name, spec
-            in util.override(specs).items()
-            if spec != "None" and spec is not None}
+            name: spec
+            for name, spec in util.override(specs).items()
+            if spec != "None" and spec is not None
+        }
     else:
-        valid_res_types = ResourceType.objects.filter(
-            program=program).values_list("name", flat=True)
-        return resource_checker.create_resource_criteria(
-                specs, valid_res_types)
+        valid_res_types = ResourceType.objects.filter(program=program).values_list(
+            "name", flat=True
+        )
+        return resource_checker.create_resource_criteria(specs, valid_res_types)
 
 
 @util.timed_func("db_interface_load_resoure_scoring")
 def load_resource_scoring(
-        program, specification_overrides=None, specs_only=True,
-        ignore_comments=True):
+    program, specification_overrides=None, specs_only=True, ignore_comments=True
+):
     if specification_overrides is None:
         specification_overrides = {}
 
-    tag_value = Tag.getProgramTag(config.RESOURCE_SCORING_TAG,
-                                  program=program)
+    tag_value = Tag.getProgramTag(config.RESOURCE_SCORING_TAG, program=program)
     try:
         tag_overrides = json.loads(tag_value)
         if ignore_comments:
             tag_overrides = {
-                k: v for k, v in tag_overrides.items()
-                if "_comment" not in k}
+                k: v for k, v in tag_overrides.items() if "_comment" not in k
+            }
     except ValueError as e:
         raise SchedulingError(
-            f"Resource scoring Tag is malformatted with error {e}: {tag_value}")
+            f"Resource scoring Tag is malformatted with error {e}: {tag_value}"
+        )
 
-    specs = [config.DEFAULT_RESOURCE_SCORING,
-             tag_overrides,
-             specification_overrides]
+    specs = [config.DEFAULT_RESOURCE_SCORING, tag_overrides, specification_overrides]
     if specs_only:
         return {
-            name: (spec, weight) for name, (spec, weight)
-            in util.override(specs).items()
-            if spec != "None" and spec is not None}
+            name: (spec, weight)
+            for name, (spec, weight) in util.override(specs).items()
+            if spec != "None" and spec is not None
+        }
     else:
-        valid_res_types = ResourceType.objects.filter(
-            program=program).values_list("name", flat=True)
+        valid_res_types = ResourceType.objects.filter(program=program).values_list(
+            "name", flat=True
+        )
         return resource_checker.create_resource_criteria(
-                specs, valid_res_types, use_weights=True)
+            specs, valid_res_types, use_weights=True
+        )
 
 
 @util.timed_func("db_interface_batch_convert_sections")
 def batch_convert_sections(
-        sections, program, teachers_by_section, timeslot_dict, rooms,
-        rooms_by_section, meeting_times_by_section,
-        requests_by_section):
+    sections,
+    program,
+    teachers_by_section,
+    timeslot_dict,
+    rooms,
+    rooms_by_section,
+    meeting_times_by_section,
+    requests_by_section,
+):
     converted_sections = []
     for s_obj in sections:
         s = convert_classection_obj(
-            s_obj, program, teachers_by_section,
-            timeslot_dict, rooms, rooms_by_section,
-            meeting_times_by_section, requests_by_section)
+            s_obj,
+            program,
+            teachers_by_section,
+            timeslot_dict,
+            rooms,
+            rooms_by_section,
+            meeting_times_by_section,
+            requests_by_section,
+        )
         if s is not None:
             converted_sections.append(s)
     return converted_sections
 
 
 @util.timed_func("db_interface_scheduling_hash_of")
-def scheduling_hash_of(
-        section, rooms_by_section=None, meeting_times_by_section=None):
+def scheduling_hash_of(section, rooms_by_section=None, meeting_times_by_section=None):
     """Creates a unique hash based on the timeslots and rooms assigned to a
     section."""
     if meeting_times_by_section is not None:
         meeting_times = meeting_times_by_section[section.id]
     else:
         meeting_times = section.meeting_times.all()
-    meeting_times = sorted([(str(e.start), str(e.end))
-                            for e in meeting_times])
-    rooms = (rooms_by_section[section.id] if rooms_by_section is not None
-             else section.classrooms())
+    meeting_times = sorted([(str(e.start), str(e.end)) for e in meeting_times])
+    rooms = (
+        rooms_by_section[section.id]
+        if rooms_by_section is not None
+        else section.classrooms()
+    )
     rooms = sorted(list(set(r.name for r in rooms)))
     return json.dumps([meeting_times, rooms])
 
 
 @util.timed_func("db_interface_convert_classroom_resources")
 def convert_classroom_resources(
-        classrooms, program, timeslot_dict, known_sections,
-        rooms_by_section, meeting_times_by_section):
+    classrooms,
+    program,
+    timeslot_dict,
+    known_sections,
+    rooms_by_section,
+    meeting_times_by_section,
+):
     """Create a dict by roon name of AS_Classroms from a collection of
     Resources. Also takes in a dict of known sections mapping from ids to
     ClassSection objects, and two dicts from section ids to lists of
@@ -632,15 +729,15 @@ def convert_classroom_resources(
     # Dict mapping from names to timeslots and furnishings.
     classroom_info_dict = {}
     # Build a dict mapping from resources and events to lists of targets
-    all_assignments = (
-        ResourceAssignment.objects.filter(resource__in=classrooms)
-        .values_list(
-            "resource__name", "resource__event__id", "target__id"))
-    resource_groups = [r.res_group_id for r in classrooms
-                       if r.res_group_id is not None]
-    all_furnishings = Resource.objects.filter(
-        res_group__in=resource_groups).exclude(
-        res_type__name="Classroom").select_related()
+    all_assignments = ResourceAssignment.objects.filter(
+        resource__in=classrooms
+    ).values_list("resource__name", "resource__event__id", "target__id")
+    resource_groups = [r.res_group_id for r in classrooms if r.res_group_id is not None]
+    all_furnishings = (
+        Resource.objects.filter(res_group__in=resource_groups)
+        .exclude(res_type__name="Classroom")
+        .select_related()
+    )
     furnishings_by_group = {group_id: [] for group_id in resource_groups}
     for furnishing in all_furnishings:
         furnishings_by_group[furnishing.res_group_id].append(furnishing)
@@ -648,14 +745,12 @@ def convert_classroom_resources(
     for resource, event, target in all_assignments:
         if resource not in assignments_dict:
             assignments_dict[(resource, event)] = []
-        assignments_dict[
-            (resource, event)].append(target)
+        assignments_dict[(resource, event)].append(target)
 
     classroom_restype = ResourceType.get_or_create("Classroom")
     for classroom in classrooms:
         assert classroom.res_type == classroom_restype
-        assignments = assignments_dict.get(
-            (classroom.name, classroom.event.id), [])
+        assignments = assignments_dict.get((classroom.name, classroom.event.id), [])
         unavailable = False
         if len(assignments) > 1:
             # If a room is double-booked, we can ignore it if it doesn't
@@ -664,41 +759,44 @@ def convert_classroom_resources(
             for target in assignments:
                 if target in known_sections:
                     raise SchedulingError(
-                        f"Room {classroom.name} is double-booked and has known section " +
-                        f"num {target}")
+                        f"Room {classroom.name} is double-booked and has known section "
+                        + f"num {target}"
+                    )
         elif len(assignments) == 1:
             target = assignments[0]
             if target not in known_sections:
                 unavailable = True
             elif not section_satisfies_constraints(
-                    known_sections[target],
-                    rooms_by_section, meeting_times_by_section):
+                known_sections[target], rooms_by_section, meeting_times_by_section
+            ):
                 unavailable = True
         if not unavailable:
             if classroom.name not in classroom_info_dict:
                 furnishing_objs = (
                     furnishings_by_group[classroom.res_group_id]
-                    if classroom.res_group_id is not None else [])
-                furnishings = batch_convert_resources(
-                    furnishing_objs)
+                    if classroom.res_group_id is not None
+                    else []
+                )
+                furnishings = batch_convert_resources(furnishing_objs)
                 furnishings_dict = {r.name: r for r in furnishings}
                 classroom_info_dict[classroom.name] = (
-                    ([], classroom.num_students, furnishings_dict))
+                    [],
+                    classroom.num_students,
+                    furnishings_dict,
+                )
             event = classroom.event
             timeslot = timeslot_dict[(event.start, event.end)]
             classroom_info_dict[classroom.name][0].append(timeslot)
     classroom_dict = {}
     for room in classroom_info_dict:
         timeslots, capacity, furnishings = classroom_info_dict[room]
-        classroom_dict[room] = AS_Classroom(
-            room, capacity, timeslots, furnishings)
+        classroom_dict[room] = AS_Classroom(room, capacity, timeslots, furnishings)
     return classroom_dict
 
 
 def convert_event(event, program):
     """Create an AS_Timeslot from an Event."""
-    assert event.parent_program() == program, \
-        "Event parent program doesn't match"
+    assert event.parent_program() == program, "Event parent program doesn't match"
     assert event.start < event.end, "Timeslot doesn't end after start time"
     return AS_Timeslot(event.start, event.end, event.id, None)
 
@@ -717,8 +815,7 @@ def batch_find_events(events, timeslot_dict):
         times = (event.start, event.end)
         if times in timeslot_dict:
             timeslot = timeslot_dict[times]
-            assert timeslot.id == event.id, \
-                "Timeslot and event ID didn't match"
+            assert timeslot.id == event.id, "Timeslot and event ID didn't match"
             timeslots.append(timeslot)
     return sorted(timeslots)
 

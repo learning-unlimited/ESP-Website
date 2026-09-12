@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -33,17 +32,27 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
-from esp.program.models          import ClassSection, StudentRegistration
-from esp.users.models            import Record, RecordType
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    main_call,
+    needs_student_in_grade,
+    meets_cap,
+    meets_deadline,
+)
+from esp.program.models import ClassSection, StudentRegistration
+from esp.users.models import Record, RecordType
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.utils.web               import render_to_response
+from esp.utils.web import render_to_response
 
-from django                      import forms
+from django import forms
+
 
 class StudentLunchSelectionForm(forms.Form):
-
-    timeslot = forms.ChoiceField(choices=[], widget=forms.RadioSelect, label="Select a timeslot for your lunch period:")
+    timeslot = forms.ChoiceField(
+        choices=[],
+        widget=forms.RadioSelect,
+        label="Select a timeslot for your lunch period:",
+    )
 
     def __init__(self, program, user, day, *args, **kwargs):
         self.program = program
@@ -56,18 +65,34 @@ class StudentLunchSelectionForm(forms.Form):
         #   [(None, '')] +
         events_all = self.program.lunch_timeslots()
         events_filtered = [x for x in events_all if x.start.day == self.day.day]
-        self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
+        self.fields["timeslot"].choices = [
+            (ts.id, ts.short_description) for ts in events_filtered
+        ] + [(-1, "No lunch period")]
 
     def load_data(self):
-        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__is_lunch=True, section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
-        lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
+        lunch_registrations = (
+            StudentRegistration.valid_objects()
+            .filter(
+                user=self.user,
+                section__parent_class__category__is_lunch=True,
+                section__parent_class__parent_program=self.program,
+            )
+            .select_related("section")
+            .prefetch_related("section__meeting_times")
+        )
+        lunch_registrations = [
+            lunch_registration
+            for lunch_registration in lunch_registrations
+            if list(lunch_registration.section.meeting_times.all())[0].start.day
+            == self.day.day
+        ]
         if len(lunch_registrations) > 0:
             section = lunch_registrations[0].section
             if len(section.get_meeting_times()) > 0:
-                self.initial['timeslot'] = section.get_meeting_times()[0].id
+                self.initial["timeslot"] = section.get_meeting_times()[0].id
 
     def save_data(self):
-        msg = ''
+        msg = ""
         result = False
 
         #   Clear existing lunch periods for this day
@@ -77,8 +102,14 @@ class StudentLunchSelectionForm(forms.Form):
                     section.unpreregister_student(self.user)
 
         #   Attempt to sign up for a new lunch period if specified
-        if int(self.cleaned_data['timeslot']) != -1:
-            sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=self.cleaned_data['timeslot']))
+        if int(self.cleaned_data["timeslot"]) != -1:
+            sections = list(
+                ClassSection.objects.filter(
+                    parent_class__parent_program=self.program,
+                    parent_class__category__is_lunch=True,
+                    meeting_times=self.cleaned_data["timeslot"],
+                )
+            )
             if len(sections) > 0:
                 ca_msg = sections[0].cannotAdd(self.user, ignore_constraints=True)
                 if ca_msg:
@@ -86,20 +117,24 @@ class StudentLunchSelectionForm(forms.Form):
                 else:
                     result = sections[0].preregister_student(self.user)
                 if result:
-                    msg = 'Registered for %s.' % sections[0]
+                    msg = "Registered for %s." % sections[0]
                 else:
-                    msg = 'Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule.' % sections[0]
+                    msg = (
+                        "Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule."
+                        % sections[0]
+                    )
             else:
-                msg = 'No lunch sections are available for that timeslot.'
+                msg = "No lunch sections are available for that timeslot."
         else:
             result = True
-            msg = 'Lunch period declined.'
+            msg = "Lunch period declined."
 
         return (result, msg)
 
+
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""
-    permission_types = ('Student/Classes/Lunch',)
+    permission_types = ("Student/Classes/Lunch",)
 
     @classmethod
     def module_properties(cls):
@@ -110,53 +145,67 @@ class StudentLunchSelection(ProgramModuleObj):
             "required": True,
             "seq": 5,
             "choosable": 0,
-            }
+        }
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user, event__name="lunch_selected", program=self.program).exists()
+        return Record.objects.filter(
+            user=user, event__name="lunch_selected", program=self.program
+        ).exists()
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Classes/Lunch')
+    @meets_deadline("/Classes/Lunch")
     @meets_cap
     def select_lunch(self, request, tl, one, two, module, extra, prog):
-        context = {'prog': self.program}
+        context = {"prog": self.program}
         user = request.user
         dates = prog.dates()
 
-        if request.method == 'POST':
-            forms = [StudentLunchSelectionForm(prog, user, dates[i], request.POST, prefix='day%d' % i) for i in range(len(dates))]
+        if request.method == "POST":
+            forms = [
+                StudentLunchSelectionForm(
+                    prog, user, dates[i], request.POST, prefix="day%d" % i
+                )
+                for i in range(len(dates))
+            ]
             all_valid = True
             success = True
             for form in forms:
                 if not form.is_valid():
                     all_valid = False
             if all_valid:
-                context['messages'] = []
+                context["messages"] = []
                 for form in forms:
                     (result, msg) = form.save_data()
                     if not result:
                         success = False
-                    context['messages'] += [msg]
+                    context["messages"] += [msg]
                 if success:
                     rt = RecordType.objects.get(name="lunch_selected")
-                    rec, created = Record.objects.get_or_create(user=user, program=prog, event=rt)
+                    rec, created = Record.objects.get_or_create(
+                        user=user, program=prog, event=rt
+                    )
                     return self.goToCore(tl)
             else:
-                context['errors'] = True
+                context["errors"] = True
         else:
-            forms = [StudentLunchSelectionForm(prog, user, dates[i], prefix='day%d' % i) for i in range(len(dates))]
+            forms = [
+                StudentLunchSelectionForm(prog, user, dates[i], prefix="day%d" % i)
+                for i in range(len(dates))
+            ]
             for i in range(len(forms)):
                 forms[i].load_data()
 
-        context['forms'] = forms
+        context["forms"] = forms
 
-        return render_to_response(self.baseDir()+'select_lunch.html', request, context)
+        return render_to_response(
+            self.baseDir() + "select_lunch.html", request, context
+        )
 
     def isStep(self):
         return self.program.lunch_timeslots().exists()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

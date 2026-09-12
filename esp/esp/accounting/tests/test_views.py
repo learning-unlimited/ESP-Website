@@ -15,8 +15,14 @@ from esp.accounting.views import user_accounting
 
 def _setup_roles():
     """Helper to set up standard roles needed for ESP users."""
-    for name in ['Student', 'Teacher', 'Educator',
-                 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -24,14 +30,10 @@ class AdminViewTestMixin:
     """Mixin for testing @admin_required views."""
 
     def _create_admin_and_student(self):
-        self.admin = ESPUser.objects.create_user(
-            username='admin', password='pass'
-        )
-        self.admin.makeRole('Administrator')
-        self.student = ESPUser.objects.create_user(
-            username='student', password='pass'
-        )
-        self.student.makeRole('Student')
+        self.admin = ESPUser.objects.create_user(username="admin", password="pass")
+        self.admin.makeRole("Administrator")
+        self.student = ESPUser.objects.create_user(username="student", password="pass")
+        self.student.makeRole("Student")
 
 
 class SummaryViewTest(AdminViewTestMixin, TestCase):
@@ -41,7 +43,7 @@ class SummaryViewTest(AdminViewTestMixin, TestCase):
         self.client = Client()
         self._create_admin_and_student()
         GlobalAccountingController().setup_accounts()
-        self.url = reverse('accounting_summary')
+        self.url = reverse("accounting_summary")
 
     def test_summary_admin_can_access(self):
         """Admin user gets 200 response from summary view."""
@@ -67,7 +69,7 @@ class UserSummaryViewTest(AdminViewTestMixin, TestCase):
         _setup_roles()
         self.client = Client()
         self._create_admin_and_student()
-        self.url = reverse('accounting_user_summary')
+        self.url = reverse("accounting_user_summary")
 
     def test_user_summary_non_admin_blocked(self):
         """Non-admin user gets 403 from user_summary."""
@@ -85,17 +87,14 @@ class UserSummaryViewTest(AdminViewTestMixin, TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('form', response.context)
+        self.assertIn("form", response.context)
 
     def test_user_summary_get_with_valid_user(self):
         """GET with valid target_user ID shows accounting data for that user."""
         self.client.force_login(self.admin)
-        response = self.client.get(
-            self.url,
-            {'target_user': self.student.id}
-        )
+        response = self.client.get(self.url, {"target_user": self.student.id})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['target_user'], self.student)
+        self.assertEqual(response.context["target_user"], self.student)
 
 
 class UserAccountingFunctionTest(TestCase):
@@ -103,12 +102,8 @@ class UserAccountingFunctionTest(TestCase):
         super().setUp()
         _setup_roles()
 
-        self.program = Program.objects.create(
-            grade_min=7, grade_max=12
-        )
-        self.student = ESPUser.objects.create_user(
-            username='student', password='pass'
-        )
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.student = ESPUser.objects.create_user(username="student", password="pass")
 
         GlobalAccountingController().setup_accounts()
         pac = ProgramAccountingController(self.program)
@@ -124,21 +119,19 @@ class UserAccountingFunctionTest(TestCase):
         """user_accounting returns exactly one result per program provided."""
         result = user_accounting(self.student, [self.program])
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['program'], self.program)
+        self.assertEqual(result[0]["program"], self.program)
 
     def test_user_accounting_has_identifier(self):
         """user_accounting result dictionary includes the identifier string."""
         result = user_accounting(self.student, [self.program])
-        self.assertIn('identifier', result[0])
+        self.assertIn("identifier", result[0])
 
     def test_user_accounting_after_payment(self):
         """user_accounting shows correct paid and due amounts after a payment."""
-        iac = IndividualAccountingController(
-            self.program, self.student
-        )
+        iac = IndividualAccountingController(self.program, self.student)
         iac.ensure_required_transfers()
-        iac.submit_payment(Decimal('50.00'))
+        iac.submit_payment(Decimal("50.00"))
 
         result = user_accounting(self.student, [self.program])
-        self.assertEqual(result[0]['paid'], Decimal('50.00'))
-        self.assertEqual(result[0]['due'], Decimal('0.00'))
+        self.assertEqual(result[0]["paid"], Decimal("50.00"))
+        self.assertEqual(result[0]["due"], Decimal("0.00"))

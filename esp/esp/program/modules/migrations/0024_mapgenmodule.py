@@ -5,20 +5,18 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0023_auto_20200730_2006'),
+        ("modules", "0023_auto_20200730_2006"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MapGenModule',
-            fields=[
-            ],
+            name="MapGenModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

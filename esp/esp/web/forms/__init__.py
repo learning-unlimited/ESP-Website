@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -39,20 +38,21 @@ Learning Unlimited, Inc.
 from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+
 class ResizeImageField(forms.ImageField):
-    """ This field will allow one to upload a file, and that image
-    to have a size to be resized to. """
+    """This field will allow one to upload a file, and that image
+    to have a size to be resized to."""
 
     def __init__(self, size=None, **kwargs):
-        """ Give this a tuple size, like (128,128), and the image
-            will be resized so that it is no larger than that box, but
-            its aspect ratio is preserved. """
+        """Give this a tuple size, like (128,128), and the image
+        will be resized so that it is no larger than that box, but
+        its aspect ratio is preserved."""
 
         forms.ImageField.__init__(self, **kwargs)
         self.size = size
 
     def clean(self, file, initial=None):
-        """ gets the image and resizes it """
+        """gets the image and resizes it"""
         file = super(forms.ImageField, self).clean(file, initial)
         if file and self.size is not None:
             import os
@@ -63,25 +63,24 @@ class ResizeImageField(forms.ImageField):
             filename = filename_root + filename_ext.lower()
 
             picturefile = BytesIO()
-            if hasattr(file, 'temporary_file_path'):
+            if hasattr(file, "temporary_file_path"):
                 file = file.temporary_file_path()
             #   Check that there was indeed something submitted.  Otherwise give up.
-            elif hasattr(file, 'read'):
+            elif hasattr(file, "read"):
                 file = BytesIO(file.read())
             else:
-                raise forms.ValidationError('Image unreadable.')
+                raise forms.ValidationError("Image unreadable.")
 
             try:
                 im = Image.open(file)
                 im.thumbnail(self.size, Image.ANTIALIAS)
                 im.save(picturefile, im.format)
             except IOError:
-                raise forms.ValidationError('Image resize failed.')
+                raise forms.ValidationError("Image resize failed.")
 
             picturefile.seek(0)
             file = SimpleUploadedFile(
                 name=filename,
                 content=picturefile.getvalue(),
-                )
+            )
         return file
-

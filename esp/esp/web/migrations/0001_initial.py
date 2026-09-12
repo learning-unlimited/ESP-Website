@@ -5,33 +5,61 @@ import esp.web.models
 
 
 class Migration(migrations.Migration):
-
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='NavBarCategory',
+            name="NavBarCategory",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('include_auto_links', models.BooleanField(default=False)),
-                ('name', models.CharField(max_length=64)),
-                ('path', models.CharField(default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash', max_length=64)),
-                ('long_explanation', models.TextField()),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("include_auto_links", models.BooleanField(default=False)),
+                ("name", models.CharField(max_length=64)),
+                (
+                    "path",
+                    models.CharField(
+                        default="",
+                        help_text="Matches the beginning of the URL (without the /).  Example: learn/splash",
+                        max_length=64,
+                    ),
+                ),
+                ("long_explanation", models.TextField()),
             ],
         ),
         migrations.CreateModel(
-            name='NavBarEntry',
+            name="NavBarEntry",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('sort_rank', models.IntegerField()),
-                ('link', models.CharField(max_length=256, null=True, blank=True)),
-                ('text', models.CharField(max_length=64)),
-                ('indent', models.BooleanField(default=False)),
-                ('category', models.ForeignKey(default=esp.web.models.default_navbarcategory, to='web.NavBarCategory', on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("sort_rank", models.IntegerField()),
+                ("link", models.CharField(max_length=256, null=True, blank=True)),
+                ("text", models.CharField(max_length=64)),
+                ("indent", models.BooleanField(default=False)),
+                (
+                    "category",
+                    models.ForeignKey(
+                        default=esp.web.models.default_navbarcategory,
+                        to="web.NavBarCategory",
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Nav Bar Entries',
+                "verbose_name_plural": "Nav Bar Entries",
             },
         ),
     ]

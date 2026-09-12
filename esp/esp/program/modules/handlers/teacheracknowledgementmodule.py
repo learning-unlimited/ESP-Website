@@ -1,9 +1,15 @@
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_teacher,
+    main_call,
+    meets_deadline,
+)
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, Record, RecordType
+from esp.users.models import ESPUser, Record, RecordType
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
+
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
@@ -23,9 +29,10 @@ def teacheracknowledgementform_factory(prog):
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
 
+
 class TeacherAcknowledgementModule(ProgramModuleObj):
     doc = """Serves a form asking teachers to acknowledge some agreement."""
-    permission_types = ('Teacher/Acknowledgement',)
+    permission_types = ("Teacher/Acknowledgement",)
 
     @classmethod
     def module_properties(cls):
@@ -34,51 +41,57 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
             "required": True,
-            'choosable': 1,
+            "choosable": 1,
         }
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user,
-                                     program=self.program,
-                                     event__name="teacheracknowledgement").exists()
+        return Record.objects.filter(
+            user=user, program=self.program, event__name="teacheracknowledgement"
+        ).exists()
 
     @main_call
     @needs_teacher
-    @meets_deadline('/Acknowledgement')
+    @meets_deadline("/Acknowledgement")
     def acknowledgement(self, request, tl, one, two, module, extra, prog):
-        context = {'prog': prog}
-        if request.method == 'POST':
-            context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
+        context = {"prog": prog}
+        if request.method == "POST":
+            context["form"] = teacheracknowledgementform_factory(prog)(request.POST)
             rt = RecordType.objects.get(name="teacheracknowledgement")
-            rec, created = Record.objects.get_or_create(user=request.user,
-                                                        program=self.program,
-                                                        event=rt)
-            if context['form'].is_valid():
+            rec, created = Record.objects.get_or_create(
+                user=request.user, program=self.program, event=rt
+            )
+            if context["form"].is_valid():
                 return self.goToCore(tl)
             else:
                 rec.delete()
         elif self.isCompleted(request.user):
-            context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
+            context["form"] = teacheracknowledgementform_factory(prog)(
+                {"acknowledgement": True}
+            )
         else:
-            context['form'] = teacheracknowledgementform_factory(prog)()
-        return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
+            context["form"] = teacheracknowledgementform_factory(prog)()
+        return render_to_response(
+            self.baseDir() + "acknowledgement.html", request, context
+        )
 
-    def teachers(self, QObject = False):
-        """ Returns a list of teachers who have submitted the acknowledgement. """
-        qo = Q(record__program=self.program, record__event__name="teacheracknowledgement")
+    def teachers(self, QObject=False):
+        """Returns a list of teachers who have submitted the acknowledgement."""
+        qo = Q(
+            record__program=self.program, record__event__name="teacheracknowledgement"
+        )
         if QObject is True:
-            return {'acknowledgement': qo}
+            return {"acknowledgement": qo}
 
         teacher_list = ESPUser.objects.filter(qo).distinct()
 
-        return {'acknowledgement': teacher_list }
+        return {"acknowledgement": teacher_list}
 
     def teacherDesc(self):
-        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program"""}
+        return {
+            "acknowledgement": """Teachers who have submitted the acknowledgement for the program"""
+        }
 
     class Meta:
         proxy = True
-        app_label = 'modules'
-
-
+        app_label = "modules"

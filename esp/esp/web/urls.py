@@ -3,6 +3,10 @@ from esp.web.views import bio
 
 urlpatterns = [
     # Teacher bios
-    re_path(r'^(?P<username>[^/]+)/bio\.html$', bio.bio, name='teacher_bio'),
-    re_path(r'^(?P<username>[^/]+)/bio\.edit\.html/?$', bio.bio_edit, name='teacher_bio_edit'),
+    re_path(r"^(?P<username>[^/]+)/bio\.html$", bio.bio, name="teacher_bio"),
+    re_path(
+        r"^(?P<username>[^/]+)/bio\.edit\.html/?$",
+        bio.bio_edit,
+        name="teacher_bio_edit",
+    ),
 ]

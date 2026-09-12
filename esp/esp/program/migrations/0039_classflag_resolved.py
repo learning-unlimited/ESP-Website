@@ -6,36 +6,53 @@ import esp.db.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0040_auto_20260106_2204'),
-        ('program', '0038_autoclassflagrule'),
+        ("users", "0040_auto_20260106_2204"),
+        ("program", "0038_autoclassflagrule"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='classflag',
-            name='resolved',
+            model_name="classflag",
+            name="resolved",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='classflag',
-            name='resolved_by',
-            field=esp.db.fields.AjaxForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='classflags_resolved', to='users.ESPUser'),
+            model_name="classflag",
+            name="resolved_by",
+            field=esp.db.fields.AjaxForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="classflags_resolved",
+                to="users.ESPUser",
+            ),
         ),
         migrations.AddField(
-            model_name='classflag',
-            name='resolved_time',
+            model_name="classflag",
+            name="resolved_time",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='classflag',
-            name='created_by',
-            field=esp.db.fields.AjaxForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='classflags_created', to='users.ESPUser'),
+            model_name="classflag",
+            name="created_by",
+            field=esp.db.fields.AjaxForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="classflags_created",
+                to="users.ESPUser",
+            ),
         ),
         migrations.AlterField(
-            model_name='classflag',
-            name='modified_by',
-            field=esp.db.fields.AjaxForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='classflags_modified', to='users.ESPUser'),
+            model_name="classflag",
+            name="modified_by",
+            field=esp.db.fields.AjaxForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="classflags_modified",
+                to="users.ESPUser",
+            ),
         ),
     ]

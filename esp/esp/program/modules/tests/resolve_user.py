@@ -15,17 +15,18 @@ class ResolveUserTest(ProgramFrameworkTest):
 
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
-        kwargs.update({'num_students': 2})
+
+        kwargs.update({"num_students": 2})
         super(ResolveUserTest, self).setUp(*args, **kwargs)
 
-        m = ProgramModule.objects.filter(module_type='learn').first()
+        m = ProgramModule.objects.filter(module_type="learn").first()
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
         # Push a deterministic fake request into thread-local storage so that
         # tests relying on get_current_request() do not depend on implicit state
         # left by other tests.
         factory = RequestFactory()
-        self._fake_request = factory.get('/')
+        self._fake_request = factory.get("/")
         self._fake_request.user = self.students[0]
         _tlr_module._threading_local.request = self._fake_request
 
@@ -38,25 +39,34 @@ class ResolveUserTest(ProgramFrameworkTest):
         """Explicit argument must win over self.user."""
         self.moduleobj.user = self.students[0]
         resolved = self.moduleobj._resolve_user(self.students[1])
-        self.assertEqual(resolved, self.students[1],
-                         "_resolve_user should return the explicit argument, not self.user")
+        self.assertEqual(
+            resolved,
+            self.students[1],
+            "_resolve_user should return the explicit argument, not self.user",
+        )
 
     def test_self_user_takes_priority_over_request(self):
         """self.user must win over get_current_request().user."""
         self._fake_request.user = self.students[1]
         self.moduleobj.user = self.students[0]
         resolved = self.moduleobj._resolve_user(None)
-        self.assertEqual(resolved, self.students[0],
-                         "_resolve_user should return self.user when no explicit user is given")
+        self.assertEqual(
+            resolved,
+            self.students[0],
+            "_resolve_user should return self.user when no explicit user is given",
+        )
 
     def test_fallback_to_request_user_when_no_self_user(self):
         """When neither explicit user nor self.user exists, fall back to request."""
-        if hasattr(self.moduleobj, 'user'):
+        if hasattr(self.moduleobj, "user"):
             del self.moduleobj.user
         self._fake_request.user = self.students[0]
         resolved = self.moduleobj._resolve_user(None)
-        self.assertEqual(resolved, self.students[0],
-                         "_resolve_user should fall back to get_current_request().user")
+        self.assertEqual(
+            resolved,
+            self.students[0],
+            "_resolve_user should fall back to get_current_request().user",
+        )
 
     def test_getmodules_passes_user_to_isCompleted(self):
         """getModules(user) should sort modules using the explicit user, not request state."""
@@ -64,7 +74,10 @@ class ResolveUserTest(ProgramFrameworkTest):
         self._fake_request.user = self.students[1]
 
         # getModules with explicit student[0] must attach student[0] to each module
-        modules = self.program.getModules(self.students[0], 'learn')
+        modules = self.program.getModules(self.students[0], "learn")
         for m in modules:
-            self.assertEqual(m.user, self.students[0],
-                             "getModules should attach the explicit user to every module")
+            self.assertEqual(
+                m.user,
+                self.students[0],
+                "getModules should attach the explicit user to every module",
+            )

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -40,13 +39,17 @@ from django.db.models.query import Q
 
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PRINTABLES
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PRINTABLES,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
+
 
 class NameTagModule(ProgramModuleObj):
     doc = """This module allows you to generate a bunch of IDs for users that match specific criteria."""
@@ -59,7 +62,7 @@ class NameTagModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 100,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -77,40 +80,70 @@ class NameTagModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def selectidoptions(self, request, tl, one, two, module, extra, prog):
-        """ Display a page for admins to pick users for nametags """
-        context = {'module': self}
-        context['groups'] = Group.objects.all()
+        """Display a page for admins to pick users for nametags"""
+        context = {"module": self}
+        context["groups"] = Group.objects.all()
         usc = UserSearchController()
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/generatetags' % prog.url))
-        context['combo_form'] = False
-        context['include_continue'] = False
-        context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
+        context.update(
+            usc.prepare_context(prog, target_path="/manage/%s/generatetags" % prog.url)
+        )
+        context["combo_form"] = False
+        context["include_continue"] = False
+        context["self_checkin"] = (
+            Tag.getProgramTag("student_self_checkin", program=prog) == "code"
+        )
 
-        return render_to_response(self.baseDir()+'selectoptions.html', request, context)
+        return render_to_response(
+            self.baseDir() + "selectoptions.html", request, context
+        )
 
-    def nametag_data(self, users_list1, user_title1, users_list2=ESPUser.objects.none(), user_title2=None, program=None, sort_by_time=False):
+    def nametag_data(
+        self,
+        users_list1,
+        user_title1,
+        users_list2=ESPUser.objects.none(),
+        user_title2=None,
+        program=None,
+        sort_by_time=False,
+    ):
         import datetime
+
         users = []
-        users_list = [user for user in users_list1 | users_list2 if len(user.first_name + user.last_name)]
+        users_list = [
+            user
+            for user in users_list1 | users_list2
+            if len(user.first_name + user.last_name)
+        ]
 
         if sort_by_time and program:
             user_first_starts = {}
             for user in users_list:
                 earliest = datetime.datetime.max
-                class_objects = user.getTaughtOrModeratingSectionsFromProgram(program).prefetch_related(
-                    'meeting_times',
-                    'resourceassignment_set',
+                class_objects = user.getTaughtOrModeratingSectionsFromProgram(
+                    program
+                ).prefetch_related(
+                    "meeting_times",
+                    "resourceassignment_set",
                 )
                 for cls in class_objects:
                     meeting_times = list(cls.meeting_times.all())
                     resource_assignments = list(cls.resourceassignment_set.all())
                     if not meeting_times or not resource_assignments or cls.status <= 0:
                         continue
-                    cls_earliest = min((mt.start for mt in meeting_times), default=datetime.datetime.max)
+                    cls_earliest = min(
+                        (mt.start for mt in meeting_times),
+                        default=datetime.datetime.max,
+                    )
                     if cls_earliest < earliest:
                         earliest = cls_earliest
                 user_first_starts[user.id] = earliest
-            users_list.sort(key=lambda x: (user_first_starts[x.id], x.last_name.lower(), x.first_name.lower()))
+            users_list.sort(
+                key=lambda x: (
+                    user_first_starts[x.id],
+                    x.last_name.lower(),
+                    x.first_name.lower(),
+                )
+            )
         else:
             users_list = sorted(users_list)
 
@@ -126,163 +159,201 @@ class NameTagModule(ProgramModuleObj):
                 pronoun = prof.student_info.pronoun
             else:
                 pronoun = None
-            user_dict = {'title': title,
-                         'name' : f'{user.first_name} {user.last_name}',
-                         'id'   : user.id,
-                         'username': user.username,
-                         'pronoun': pronoun}
-            if program and Tag.getProgramTag('student_self_checkin', program = program) == 'code':
-                user_dict['hash'] = user.userHash(program)
+            user_dict = {
+                "title": title,
+                "name": f"{user.first_name} {user.last_name}",
+                "id": user.id,
+                "username": user.username,
+                "pronoun": pronoun,
+            }
+            if (
+                program
+                and Tag.getProgramTag("student_self_checkin", program=program) == "code"
+            ):
+                user_dict["hash"] = user.userHash(program)
             users.append(user_dict)
         return users
 
     @aux_call
     @needs_admin
     def generatetags(self, request, tl, one, two, module, extra, prog):
-        """ generate nametags """
+        """generate nametags"""
 
         # Default to students
-        if 'type' not in request.POST:
-            raise ESPError("You need to select the TYPE of Name Tag to print. (students,teachers,etc)", log=False)
-        idtype = request.POST['type']
-        sort_by_time_flag = request.POST.get('sort_by_time') in ['True', 'true', '1', 'on']
+        if "type" not in request.POST:
+            raise ESPError(
+                "You need to select the TYPE of Name Tag to print. (students,teachers,etc)",
+                log=False,
+            )
+        idtype = request.POST["type"]
+        sort_by_time_flag = request.POST.get("sort_by_time") in [
+            "True",
+            "true",
+            "1",
+            "on",
+        ]
 
         users = []
 
         user_title = idtype
 
-        if idtype == 'aul':
-            user_title = request.POST['blanktitle']
+        if idtype == "aul":
+            user_title = request.POST["blanktitle"]
             data = ListGenModule.processPost(request)
             usc = UserSearchController()
             try:
                 filterObj = usc.filter_from_postdata(prog, data)
             except (ESPError_Log, ESPError_NoLog) as e:
-                context = {'module': self}
-                context['groups'] = Group.objects.all()
+                context = {"module": self}
+                context["groups"] = Group.objects.all()
                 context.update(usc.prepare_context(prog, target_path=request.path))
-                context['combo_form'] = False
-                context['include_continue'] = False
-                context['self_checkin'] = Tag.getProgramTag('student_self_checkin', program = prog) == 'code'
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'selectoptions.html', request, context)
-            users = self.nametag_data(ESPUser.objects.filter(filterObj.get_Q()).distinct(), user_title, program=prog, sort_by_time=sort_by_time_flag)
+                context["combo_form"] = False
+                context["include_continue"] = False
+                context["self_checkin"] = (
+                    Tag.getProgramTag("student_self_checkin", program=prog) == "code"
+                )
+                context["error"] = str(e)
+                return render_to_response(
+                    self.baseDir() + "selectoptions.html", request, context
+                )
+            users = self.nametag_data(
+                ESPUser.objects.filter(filterObj.get_Q()).distinct(),
+                user_title,
+                program=prog,
+                sort_by_time=sort_by_time_flag,
+            )
 
-        elif idtype == 'students':
+        elif idtype == "students":
             user_title = "Student"
-            student_dict = self.program.students(QObjects = True)
-            if 'classreg' in student_dict:
-                students = ESPUser.objects.filter(student_dict['classreg']).distinct()
+            student_dict = self.program.students(QObjects=True)
+            if "classreg" in student_dict:
+                students = ESPUser.objects.filter(student_dict["classreg"]).distinct()
             else:
-                students = ESPUser.objects.filter(student_dict['confirmed']).distinct()
+                students = ESPUser.objects.filter(student_dict["confirmed"]).distinct()
 
-            users = self.nametag_data(students, user_title, program=prog, sort_by_time=sort_by_time_flag)
+            users = self.nametag_data(
+                students, user_title, program=prog, sort_by_time=sort_by_time_flag
+            )
 
-        elif idtype == 'teacher':
+        elif idtype == "teacher":
             user_title = "Teacher"
-            teachers = self.program.teachers()['class_approved'].distinct()
+            teachers = self.program.teachers()["class_approved"].distinct()
 
-            users = self.nametag_data(teachers, user_title, program=prog, sort_by_time=sort_by_time_flag)
+            users = self.nametag_data(
+                teachers, user_title, program=prog, sort_by_time=sort_by_time_flag
+            )
 
-        elif idtype == 'teachermoderators':
+        elif idtype == "teachermoderators":
             user_title = "Teacher"
             user_title2 = self.program.getModeratorTitle()
             teacher_dict = self.program.teachers()
-            teachers = teacher_dict['class_approved'].distinct()
-            moderators = teacher_dict['assigned_moderator'].distinct()
+            teachers = teacher_dict["class_approved"].distinct()
+            moderators = teacher_dict["assigned_moderator"].distinct()
 
-            users = self.nametag_data(teachers, user_title, moderators, user_title2, program=prog, sort_by_time=sort_by_time_flag)
+            users = self.nametag_data(
+                teachers,
+                user_title,
+                moderators,
+                user_title2,
+                program=prog,
+                sort_by_time=sort_by_time_flag,
+            )
 
-        elif idtype == 'moderators':
+        elif idtype == "moderators":
             user_title = self.program.getModeratorTitle()
             teacher_dict = self.program.teachers()
-            moderators = teacher_dict['assigned_moderator'].distinct()
+            moderators = teacher_dict["assigned_moderator"].distinct()
 
-            users = self.nametag_data(moderators, user_title, program=prog, sort_by_time=sort_by_time_flag)
+            users = self.nametag_data(
+                moderators, user_title, program=prog, sort_by_time=sort_by_time_flag
+            )
 
-        elif idtype == 'other':
-            user_title = request.POST['blanktitle']
-            if request.POST['group'] == '':
+        elif idtype == "other":
+            user_title = request.POST["blanktitle"]
+            if request.POST["group"] == "":
                 raise ESPError("You need to select a group", log=False)
-            group = request.POST['group']
+            group = request.POST["group"]
             user_Q = Q(groups=group)
             users_list = ESPUser.objects.filter(user_Q).distinct()
 
             users = self.nametag_data(users_list, user_title)
 
-        elif idtype == 'volunteers':
+        elif idtype == "volunteers":
             user_title = "Volunteer"
             volunteer_dict = self.program.volunteers(QObjects=True)
-            volunteers = ESPUser.objects.filter(volunteer_dict['volunteer_all']).distinct()
+            volunteers = ESPUser.objects.filter(
+                volunteer_dict["volunteer_all"]
+            ).distinct()
 
             users = self.nametag_data(volunteers, user_title)
 
-        elif idtype == 'misc':
+        elif idtype == "misc":
             users = []
-            misc = request.POST['misc_info']
+            misc = request.POST["misc_info"]
             for user in misc.split("\n"):
                 arruser = user.split(",", 1)
 
                 if len(arruser) >= 2:
                     user_title = arruser[1].strip()
-                    users.append({'title': user_title,
-                                  'name' : arruser[0].strip(),
-                                  'id'   : ''})
+                    users.append(
+                        {"title": user_title, "name": arruser[0].strip(), "id": ""}
+                    )
 
-        elif idtype == 'blank':
+        elif idtype == "blank":
             users = []
-            user_title = request.POST['blanktitle']
-            for i in range(int(request.POST['number'])):
-                users.append({'title': user_title,
-                              'name' : '',
-                              'id'   : ''})
+            user_title = request.POST["blanktitle"]
+            for i in range(int(request.POST["number"])):
+                users.append({"title": user_title, "name": "", "id": ""})
 
-        context = {'module': self,
-                   'programname': request.POST['progname']
-                   }
+        context = {"module": self, "programname": request.POST["progname"]}
 
         numperpage = 6
 
         expanded = [[] for i in range(numperpage)]
 
         for i in range(len(users)):
-            expanded[(i*numperpage)//len(users)].append(users[i])
+            expanded[(i * numperpage) // len(users)].append(users[i])
 
         users = []
 
         for i in range(len(expanded[0])):
             for j in range(len(expanded)):
                 if len(expanded[j]) <= i:
-                    users.append({'title': user_title,
-                                  'name' : '',
-                                  'id'   : ''})
+                    users.append({"title": user_title, "name": "", "id": ""})
                 else:
                     users.append(expanded[j][i])
 
-        user_backs = [None]*len(users)
+        user_backs = [None] * len(users)
         for j in range(len(users)):
             if j % 2 == 0:
-                user_backs[j+1] = users[j]
+                user_backs[j + 1] = users[j]
             else:
-                user_backs[j-1] = users[j]
+                user_backs[j - 1] = users[j]
 
         users_and_backs = []
-        for j in range(len(users)//6):
-            users_and_backs.append([users[j*6:(j+1)*6], user_backs[j*6:(j+1)*6]])
+        for j in range(len(users) // 6):
+            users_and_backs.append(
+                [users[j * 6 : (j + 1) * 6], user_backs[j * 6 : (j + 1) * 6]]
+            )
 
-        context['barcodes'] = True if 'barcodes' in request.POST else False
-        context['users_and_backs'] = users_and_backs
-        context['group_name'] = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
-        context['phone_number'] = Tag.getTag('group_phone_number')
-        current_logo_version = Tag.getTag('current_logo_version')
-        context['current_logo_version'] = current_logo_version if current_logo_version is not None else ''
-        context['has_logo'] = default_storage.exists('images/theme/logo.png')
+        context["barcodes"] = True if "barcodes" in request.POST else False
+        context["users_and_backs"] = users_and_backs
+        context["group_name"] = (
+            Tag.getTag("full_group_name")
+            or f"{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}"
+        )
+        context["phone_number"] = Tag.getTag("group_phone_number")
+        current_logo_version = Tag.getTag("current_logo_version")
+        context["current_logo_version"] = (
+            current_logo_version if current_logo_version is not None else ""
+        )
+        context["has_logo"] = default_storage.exists("images/theme/logo.png")
 
-        return render_to_response(self.baseDir()+'ids.html', request, context)
+        return render_to_response(self.baseDir() + "ids.html", request, context)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

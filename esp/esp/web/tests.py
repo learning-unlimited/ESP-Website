@@ -1,9 +1,10 @@
 from io import open
 from unittest.mock import patch
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -35,7 +36,9 @@ Learning Unlimited, Inc.
 """
 
 from esp.web.models import NavBarEntry, NavBarCategory, default_navbarcategory
-from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
+from esp.program.tests import (
+    ProgramFrameworkTest,
+)  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from django.conf import settings
 from django.test import RequestFactory
@@ -50,15 +53,17 @@ from django.core.files.base import ContentFile
 
 import difflib
 import logging
+
 logger = logging.getLogger(__name__)
 import re
 import os
 import subprocess
 import tempfile
 
+
 # Make sure that we can actually download the homepage
 class PageTest(TestCase):
-    """ Validate common hard-coded flatpages """
+    """Validate common hard-coded flatpages"""
 
     # Util Functions
     def assertStringContains(self, string, contents):
@@ -70,7 +75,7 @@ class PageTest(TestCase):
             self.fail(f"'{contents}' are in '{string}' and shouldn't be")
 
     def testHomePage(self):
-        """ Make sure that we can actually download the homepage """
+        """Make sure that we can actually download the homepage"""
         c = Client()
 
         response = c.get("/")
@@ -79,28 +84,33 @@ class PageTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Make sure that we've gotten an HTML document, and not a Django error
-        self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
-        self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
+        self.assertStringContains(str(response.content, encoding="UTF-8"), "<html")
+        self.assertNotStringContains(
+            str(response.content, encoding="UTF-8"),
+            "You're seeing this error because you have <code>DEBUG = True</code>",
+        )
+
 
 class NavbarTest(TestCase):
-
-    def get_navbar_titles(self, path='/'):
+    def get_navbar_titles(self, path="/"):
         response = self.client.get(path)
 
-        navbaritem_re = re.compile(r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>')
-        re_results = re.findall(navbaritem_re, str(response.content, encoding='UTF-8'))
+        navbaritem_re = re.compile(
+            r'<li class="divsecondarynavlink (?:indent)?">\s+(.*)\s+</li>'
+        )
+        re_results = re.findall(navbaritem_re, str(response.content, encoding="UTF-8"))
         return re_results
 
     def navbars_enabled(self):
         #   Check that the main template uses navbars
-        qs = TemplateOverride.objects.filter(name='main.html').order_by('-id')
+        qs = TemplateOverride.objects.filter(name="main.html").order_by("-id")
         if qs.exists():
-            if qs[0].content.find('{% navbar_gen') < 0:
+            if qs[0].content.find("{% navbar_gen") < 0:
                 return False
         return True
 
     def testNavbarBehavior(self):
-        home_category, created = NavBarCategory.objects.get_or_create(name='home')
+        home_category, created = NavBarCategory.objects.get_or_create(name="home")
 
         #   Don't bother testing this if the site doesn't have navbars showing.
         if not self.navbars_enabled():
@@ -108,43 +118,58 @@ class NavbarTest(TestCase):
 
         #   Clear navbars and ensure we get nothing
         NavBarEntry.objects.all().delete()
-        self.assertTrue(self.get_navbar_titles('/') == [], f'Non-existent navbars appearing: got {self.get_navbar_titles("/")}, expected {[]}')
+        self.assertTrue(
+            self.get_navbar_titles("/") == [],
+            f"Non-existent navbars appearing: got {self.get_navbar_titles('/')}, expected {[]}",
+        )
 
         #   Check that when you create a nav bar it shows up
-        n1 = NavBarEntry(category=home_category, sort_rank=0, text='NavBar1', indent=False)
+        n1 = NavBarEntry(
+            category=home_category, sort_rank=0, text="NavBar1", indent=False
+        )
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1'], f'New navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1"]}')
+        self.assertTrue(
+            self.get_navbar_titles("/") == ["NavBar1"],
+            f"New navbar not showing up: got {self.get_navbar_titles('/')}, expected {['NavBar1']}",
+        )
 
         #   Check that when you edit a nav bar it changes
-        n1.text = 'NavBar1A'
+        n1.text = "NavBar1A"
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A'], f'Changes to navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A"]}')
+        self.assertTrue(
+            self.get_navbar_titles("/") == ["NavBar1A"],
+            f"Changes to navbar not showing up: got {self.get_navbar_titles('/')}, expected {['NavBar1A']}",
+        )
 
         #   Check that you can create a navbar and reorder them
-        n2 = NavBarEntry(category=home_category, sort_rank=10, text='NavBar2', indent=False)
+        n2 = NavBarEntry(
+            category=home_category, sort_rank=10, text="NavBar2", indent=False
+        )
         n2.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar1A', 'NavBar2'], f'Additional navbar not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar1A", "NavBar2"]}')
+        self.assertTrue(
+            self.get_navbar_titles("/") == ["NavBar1A", "NavBar2"],
+            f"Additional navbar not showing up: got {self.get_navbar_titles('/')}, expected {['NavBar1A', 'NavBar2']}",
+        )
         n1.sort_rank = 20
         n1.save()
-        self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], f'Altered navbar order not showing up: got {self.get_navbar_titles("/")}, expected {["NavBar2", "NavBar1A"]}')
+        self.assertTrue(
+            self.get_navbar_titles("/") == ["NavBar2", "NavBar1A"],
+            f"Altered navbar order not showing up: got {self.get_navbar_titles('/')}, expected {['NavBar2', 'NavBar1A']}",
+        )
 
 
 class NavBarAdminDeletionTest(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
 
         # Create superuser
         self.user = User.objects.create_superuser(
-            username="admin",
-            email="admin@test.com",
-            password="password"
+            username="admin", email="admin@test.com", password="password"
         )
 
         # Ensure default category exists
         self.default_category = NavBarCategory.objects.create(
-            name="default",
-            long_explanation="Default category"
+            name="default", long_explanation="Default category"
         )
 
         self.admin = NavBarCategoryAdmin(NavBarCategory, admin_site)
@@ -154,33 +179,25 @@ class NavBarAdminDeletionTest(TestCase):
         request.user = self.user
 
         has_permission = self.admin.has_delete_permission(
-            request,
-            obj=self.default_category
+            request, obj=self.default_category
         )
 
         self.assertFalse(
-            has_permission,
-            '"default" nav category should not be deletable.'
+            has_permission, '"default" nav category should not be deletable.'
         )
 
     def test_non_default_category_can_be_deleted(self):
         other = NavBarCategory.objects.create(
-            name="home",
-            long_explanation="Home category"
+            name="home", long_explanation="Home category"
         )
 
         request = self.factory.get("/")
         request.user = self.user
 
-        has_permission = self.admin.has_delete_permission(
-            request,
-            obj=other
-        )
+        has_permission = self.admin.has_delete_permission(request, obj=other)
 
-        self.assertTrue(
-            has_permission,
-            'Non-default nav category should be deletable.'
-        )
+        self.assertTrue(has_permission, "Non-default nav category should be deletable.")
+
 
 class NoVaryOnCookieTest(ProgramFrameworkTest):
     """
@@ -198,34 +215,48 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         res = c.get(self.url + "index.html")
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_out_content = res.content.decode('UTF-8')
+        self.assertTrue("Vary" not in res or "Cookie" not in res["Vary"])
+        logged_out_content = res.content.decode("UTF-8")
 
-        c.login(username=self.admins[0], password='password')
+        c.login(username=self.admins[0], password="password")
         res = c.get(self.url + "index.html")
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_in_content = res.content.decode('UTF-8')
+        self.assertTrue("Vary" not in res or "Cookie" not in res["Vary"])
+        logged_in_content = res.content.decode("UTF-8")
 
-        self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
+        self.assertEqual(
+            "\n".join(
+                difflib.context_diff(
+                    logged_out_content.split("\n"), logged_in_content.split("\n")
+                )
+            ),
+            "",
+        )
 
     def testCatalog(self):
         c = Client()
         res = c.get(self.url + "catalog")
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_out_content = res.content.decode('UTF-8')
+        self.assertTrue("Vary" not in res or "Cookie" not in res["Vary"])
+        logged_out_content = res.content.decode("UTF-8")
 
-        c.login(username=self.admins[0], password='password')
+        c.login(username=self.admins[0], password="password")
         res = c.get(self.url + "catalog")
 
         self.assertEqual(res.status_code, 200)
-        self.assertTrue('Vary' not in res or 'Cookie' not in res['Vary'])
-        logged_in_content = res.content.decode('UTF-8')
+        self.assertTrue("Vary" not in res or "Cookie" not in res["Vary"])
+        logged_in_content = res.content.decode("UTF-8")
 
-        self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
+        self.assertEqual(
+            "\n".join(
+                difflib.context_diff(
+                    logged_out_content.split("\n"), logged_in_content.split("\n")
+                )
+            ),
+            "",
+        )
 
     def setUp(self):
         super().setUp()
@@ -246,23 +277,26 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
 
 
 class JavascriptSyntaxTest(TestCase):
-
     def runTest(self, display=False):
 
         #   Determine if the Closure compiler is installed and give up if it isn't
-        if hasattr(settings, 'CLOSURE_COMPILER_PATH'):
-            closure_path = settings.CLOSURE_COMPILER_PATH.rstrip('/') + '/'
+        if hasattr(settings, "CLOSURE_COMPILER_PATH"):
+            closure_path = settings.CLOSURE_COMPILER_PATH.rstrip("/") + "/"
         else:
-            closure_path = ''
-        if not os.path.exists(f'{closure_path}compiler.jar'):
-            if display: logger.info('Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"', closure_path)
+            closure_path = ""
+        if not os.path.exists(f"{closure_path}compiler.jar"):
+            if display:
+                logger.info(
+                    'Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"',
+                    closure_path,
+                )
             return
 
-        closure_output_code = os.path.join(tempfile.gettempdir(), 'closure_output.js')
-        closure_output_file = os.path.join(tempfile.gettempdir(), 'closure.out')
+        closure_output_code = os.path.join(tempfile.gettempdir(), "closure_output.js")
+        closure_output_file = os.path.join(tempfile.gettempdir(), "closure.out")
 
-        base_path = settings.MEDIA_ROOT + 'scripts/'
-        exclude_names = ['extjs', 'jquery', 'showdown']
+        base_path = settings.MEDIA_ROOT + "scripts/"
+        exclude_names = ["extjs", "jquery", "showdown"]
 
         #   Walk the directory tree and try compiling
         path_gen = os.walk(base_path)
@@ -280,9 +314,9 @@ class JavascriptSyntaxTest(TestCase):
                     break
             if not exclude:
                 if display:
-                    logger.info('Entering directory %s', dirpath)
+                    logger.info("Entering directory %s", dirpath)
                 for file in filenames:
-                    if not file.endswith('.js'):
+                    if not file.endswith(".js"):
                         continue
                     exclude = False
                     for name in exclude_names:
@@ -292,28 +326,38 @@ class JavascriptSyntaxTest(TestCase):
                     if exclude:
                         continue
 
-                    file_list.append(f'{dirpath}/{file}')
+                    file_list.append(f"{dirpath}/{file}")
                     num_files += 1
 
-        cmd = ['java', '-jar', f"'{closure_path}'/compiler.jar'"]
+        cmd = ["java", "-jar", f"'{closure_path}'/compiler.jar'"]
         for file in file_list:
-            cmd.extend(['--js', file])
-        cmd.extend(['--js_output_file', closure_output_code])
-        with open(closure_output_file, 'w') as err_file:
+            cmd.extend(["--js", file])
+        cmd.extend(["--js_output_file", closure_output_code])
+        with open(closure_output_file, "w") as err_file:
             subprocess.run(cmd, stderr=err_file, stdout=subprocess.DEVNULL, check=True)
         with open(closure_output_file) as checkfile:
-            results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+            results = [
+                line.rstrip("\n")
+                for line in checkfile.readlines()
+                if len(line.strip()) > 0
+            ]
 
         if len(results) > 0:
-            closure_result = results[-1].split(',')
+            closure_result = results[-1].split(",")
             num_errors = int(closure_result[0].split()[0])
             num_warnings = int(closure_result[1].split()[0])
 
-            logger.info('-- Displaying Closure results: %d Javascript syntax errors, %d warnings', num_errors, num_warnings)
+            logger.info(
+                "-- Displaying Closure results: %d Javascript syntax errors, %d warnings",
+                num_errors,
+                num_warnings,
+            )
             for line in results:
                 logger.info(line)
 
-            self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
+            self.assertEqual(
+                num_errors, 0, "Closure compiler detected Javascript syntax errors"
+            )
 
 
 class TeacherBioUrlTest(ProgramFrameworkTest):
@@ -324,118 +368,140 @@ class TeacherBioUrlTest(ProgramFrameworkTest):
         self.teacher = self.teachers[0]
         # Create TeacherBio objects for testing
         from esp.program.models import TeacherBio
+
         for teacher in self.teachers:
             TeacherBio.objects.create(
                 user=teacher,
-                bio='Test bio for ' + teacher.username,
-                slugbio='Test Teacher'
+                bio="Test bio for " + teacher.username,
+                slugbio="Test Teacher",
             )
 
     def test_canonical_bio_view(self):
         """Canonical /teach/teachers/<username>/bio.html should return 200."""
-        response = self.client.get('/teach/teachers/%s/bio.html' % self.teacher.username)
+        response = self.client.get(
+            "/teach/teachers/%s/bio.html" % self.teacher.username
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_canonical_bio_edit_requires_login(self):
         """Canonical bio edit URL should redirect to login when not authenticated."""
-        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        response = self.client.get(
+            "/teach/teachers/%s/bio.edit.html" % self.teacher.username
+        )
         self.assertEqual(response.status_code, 302)
-        self.assertIn('login', response['Location'])
+        self.assertIn("login", response["Location"])
 
     def test_canonical_bio_edit_authenticated(self):
         """Canonical bio edit URL should return 200 for the logged-in teacher."""
-        self.client.login(username=self.teacher.username, password='password')
-        response = self.client.get('/teach/teachers/%s/bio.edit.html' % self.teacher.username)
+        self.client.login(username=self.teacher.username, password="password")
+        response = self.client.get(
+            "/teach/teachers/%s/bio.edit.html" % self.teacher.username
+        )
         self.assertEqual(response.status_code, 200)
 
     def test_bio_edit_extra_path_rejected(self):
         """A trailing path after bio.edit.html should 404."""
-        self.client.login(username=self.teacher.username, password='password')
-        response = self.client.get('/teach/teachers/%s/bio.edit.html/trailing' % self.teacher.username)
+        self.client.login(username=self.teacher.username, password="password")
+        response = self.client.get(
+            "/teach/teachers/%s/bio.edit.html/trailing" % self.teacher.username
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_deprecated_learn_prefix_returns_404(self):
         """Deprecated /learn/teachers/<username>/bio.html should return 404."""
-        response = self.client.get('/learn/teachers/%s/bio.html' % self.teacher.username)
+        response = self.client.get(
+            "/learn/teachers/%s/bio.html" % self.teacher.username
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_deprecated_name_based_url_returns_404(self):
         """Deprecated /teach/teachers/<last>/<first>/bio.html should return 404."""
-        response = self.client.get('/teach/teachers/%s/%s/bio.html' % (
-            self.teacher.last_name, self.teacher.first_name))
+        response = self.client.get(
+            "/teach/teachers/%s/%s/bio.html"
+            % (self.teacher.last_name, self.teacher.first_name)
+        )
         self.assertEqual(response.status_code, 404)
 
     def test_nonexistent_user_returns_404(self):
         """Bio page for a non-existent user should return 404."""
-        response = self.client.get('/teach/teachers/nonexistent_user_xyz/bio.html')
+        response = self.client.get("/teach/teachers/nonexistent_user_xyz/bio.html")
         self.assertEqual(response.status_code, 404)
 
     def test_bio_edit_wrong_user_returns_404(self):
         """A teacher should not be able to edit another teacher's bio."""
         other_teacher = self.teachers[1]
-        self.client.login(username=self.teacher.username, password='password')
-        response = self.client.get('/teach/teachers/%s/bio.edit.html' % other_teacher.username)
+        self.client.login(username=self.teacher.username, password="password")
+        response = self.client.get(
+            "/teach/teachers/%s/bio.edit.html" % other_teacher.username
+        )
         self.assertEqual(response.status_code, 404)
 
 
 class ExtractThemeTest(TestCase):
-
     NAV = {
-        'nav_structure': [
+        "nav_structure": [
             {
-                'header_link': '/learn/',
-                'links': [{'link': '/learn/'}, {'link': '/learn/classes/'}],
+                "header_link": "/learn/",
+                "links": [{"link": "/learn/"}, {"link": "/learn/classes/"}],
             },
             {
-                'header_link': '/teach/',
-                'links': [{'link': '/teach/'}, {'link': '/teach/classes/'}],
+                "header_link": "/teach/",
+                "links": [{"link": "/teach/"}, {"link": "/teach/classes/"}],
             },
         ]
     }
 
     def _extract(self, url, nav=None):
-        with patch('esp.web.templatetags.main.ThemeController') as mock_tc:
+        with patch("esp.web.templatetags.main.ThemeController") as mock_tc:
             mock_tc.return_value.get_template_settings.return_value = nav or self.NAV
             from esp.web.templatetags.main import extract_theme
+
             return extract_theme(url)
 
     def test_first_tab_url_returns_tabcolor1(self):
-        self.assertEqual(self._extract('/learn/'), 'tabcolor1')
+        self.assertEqual(self._extract("/learn/"), "tabcolor1")
 
     def test_deep_subtab_returns_tabcolor2(self):
-        self.assertEqual(self._extract('/learn/classes/'), 'tabcolor2')
+        self.assertEqual(self._extract("/learn/classes/"), "tabcolor2")
 
     def test_unmatched_url_returns_tabcolor0(self):
-        self.assertEqual(self._extract('/volunteer/'), 'tabcolor0')
+        self.assertEqual(self._extract("/volunteer/"), "tabcolor0")
 
     def test_empty_header_link_does_not_crash(self):
-        nav = {'nav_structure': [{'header_link': '', 'links': [{'link': '/learn/'}]}]}
-        self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
+        nav = {"nav_structure": [{"header_link": "", "links": [{"link": "/learn/"}]}]}
+        self.assertEqual(self._extract("/learn/", nav=nav), "tabcolor1")
 
     def test_missing_header_link_is_skipped(self):
         """nav_structure entries without 'header_link' are silently skipped."""
         nav = {
-            'nav_structure': [
-                {'links': []},                                              # no header_link key
-                {'header_link': '/learn/', 'links': [{'link': '/learn/'}]}, # valid entry
+            "nav_structure": [
+                {"links": []},  # no header_link key
+                {
+                    "header_link": "/learn/",
+                    "links": [{"link": "/learn/"}],
+                },  # valid entry
             ]
         }
-        self.assertEqual(self._extract('/learn/', nav=nav), 'tabcolor1')
+        self.assertEqual(self._extract("/learn/", nav=nav), "tabcolor1")
 
     def test_get_nav_category_skips_missing_header_link(self):
         """get_nav_category skips entries without 'header_link' and returns valid match."""
         from esp.web.templatetags.main import get_nav_category
+
         nav = {
-            'nav_structure': [
-                {'links': []},                                              # no header_link key
-                {'header_link': '/teach/', 'links': [{'link': '/teach/'}]}, # valid entry
+            "nav_structure": [
+                {"links": []},  # no header_link key
+                {
+                    "header_link": "/teach/",
+                    "links": [{"link": "/teach/"}],
+                },  # valid entry
             ]
         }
-        with patch('esp.web.templatetags.main.ThemeController') as mock_tc:
+        with patch("esp.web.templatetags.main.ThemeController") as mock_tc:
             mock_tc.return_value.get_template_settings.return_value = nav
-            result = get_nav_category('/teach/')
+            result = get_nav_category("/teach/")
             self.assertIsNotNone(result)
-            self.assertEqual(result['header_link'], '/teach/')
+            self.assertEqual(result["header_link"], "/teach/")
 
 
 class TabMatchingTest(TestCase):
@@ -443,58 +509,63 @@ class TabMatchingTest(TestCase):
     Tests the URL to tab matching logic in the extract_theme template filter,
     ensuring directory boundary logic works and sub-links win ties over header links.
     """
+
     def test_extract_theme(self):
         from esp.web.templatetags.main import extract_theme
 
         # Mock settings dictionary with a structure similar to what ThemeController returns
         settings_dict = {
-            'nav_structure': [
+            "nav_structure": [
                 {
-                    'header_link': '/teach/splash.html',
-                    'links': [
-                        {'link': '/teach/splash.html', 'text': 'Splash'},
-                        {'link': '/teach/classes.html', 'text': 'Classes'},
-                        {'link': '/teach/ideas.html', 'text': 'Ideas'},
+                    "header_link": "/teach/splash.html",
+                    "links": [
+                        {"link": "/teach/splash.html", "text": "Splash"},
+                        {"link": "/teach/classes.html", "text": "Classes"},
+                        {"link": "/teach/ideas.html", "text": "Ideas"},
                         # Additional link to test mid-segment prefix behavior:
                         # nav link '/teach/ideas' vs URL '/teach/ideas.html'.
-                        {'link': '/teach/ideas', 'text': 'Ideas (no suffix)'},
-                    ]
+                        {"link": "/teach/ideas", "text": "Ideas (no suffix)"},
+                    ],
                 },
                 {
-                    'header_link': '/learn/',
-                    'links': [
-                        {'link': '/learn/catalog', 'text': 'Catalog'},
-                    ]
-                }
+                    "header_link": "/learn/",
+                    "links": [
+                        {"link": "/learn/catalog", "text": "Catalog"},
+                    ],
+                },
             ]
         }
 
         # Patch ThemeController to return our fixed settings_dict
         from unittest.mock import patch
-        with patch('esp.themes.controllers.ThemeController.get_template_settings', return_value=settings_dict):
+
+        with patch(
+            "esp.themes.controllers.ThemeController.get_template_settings",
+            return_value=settings_dict,
+        ):
             # Test 1: Identical URL for header and sublink. The exact sublink should win (tab_1)
-            self.assertEqual(extract_theme('/teach/splash.html'), 'tabcolor1')
+            self.assertEqual(extract_theme("/teach/splash.html"), "tabcolor1")
 
             # Test 2: Substring mismatch test. /teach/index.html shares the prefix '/teach/i' with
             # /teach/ideas.html. Ensure we don't partial-match on that substring and mistakenly pick
             # the ideas sublink; instead, we should fall back to the longest common '/teach/' prefix,
             # which corresponds to the teach header tab (tab_0).
-            self.assertEqual(extract_theme('/teach/index.html'), 'tabcolor0')
+            self.assertEqual(extract_theme("/teach/index.html"), "tabcolor0")
 
             # Test 3: Normal sublink should match
-            self.assertEqual(extract_theme('/teach/classes.html'), 'tabcolor2')
+            self.assertEqual(extract_theme("/teach/classes.html"), "tabcolor2")
 
             # Test 4: Another category base
-            self.assertEqual(extract_theme('/learn/index.html'), 'tabcolor0')
+            self.assertEqual(extract_theme("/learn/index.html"), "tabcolor0")
 
             # Test 5: Exact match for ideas.html should map to its own tab (third sublink).
-            self.assertEqual(extract_theme('/teach/ideas.html'), 'tabcolor3')
+            self.assertEqual(extract_theme("/teach/ideas.html"), "tabcolor3")
 
             # Test 6: Mid-segment prefix link '/teach/ideas' must not be treated as a match for
             # URL '/teach/ideas.html'. They should resolve to different tabs.
             self.assertNotEqual(
-                extract_theme('/teach/ideas.html'),
-                extract_theme('/teach/ideas'),
+                extract_theme("/teach/ideas.html"),
+                extract_theme("/teach/ideas"),
             )
 
 
@@ -508,14 +579,15 @@ class ProfileEditorCapitalizationTest(TestCase):
 
     def setUp(self):
         # Create a CamelCase group like it exists in real DB
-        self.group = Group.objects.get_or_create(name='StudentRep')[0]
+        self.group = Group.objects.get_or_create(name="StudentRep")[0]
 
         # Create a test user
         from esp.users.models import ESPUser
+
         self.user = ESPUser.objects.create_user(
-            username='teststudentrep',
-            password='password',
-            email='teststudentrep@test.com'
+            username="teststudentrep",
+            password="password",
+            email="teststudentrep@test.com",
         )
 
         # Assign ONLY the CamelCase group â€" no standard role
@@ -528,10 +600,11 @@ class ProfileEditorCapitalizationTest(TestCase):
         able to visit their profile page without a ValueError crash.
         """
         from django.test.client import Client
+
         c = Client()
-        logged_in = c.login(username='teststudentrep', password='password')
+        logged_in = c.login(username="teststudentrep", password="password")
         self.assertTrue(logged_in, "Could not log in test user 'teststudentrep'")
-        response = c.get('/myesp/profile/')
+        response = c.get("/myesp/profile/")
 
         # Should load fine â€" not crash with ValueError
         self.assertEqual(response.status_code, 200)
@@ -542,36 +615,36 @@ class LowercaseExtensionStorageTest(TestCase):
         self.storage = LowercaseExtensionStorage()
 
     def test_uppercase_extension_lowercased(self):
-        result = self.storage._normalize_filename('photo.JPG')
-        self.assertEqual(result, 'photo.jpg')
+        result = self.storage._normalize_filename("photo.JPG")
+        self.assertEqual(result, "photo.jpg")
 
     def test_mixed_case_extension_lowercased(self):
-        result = self.storage._normalize_filename('photo.Jpg')
-        self.assertEqual(result, 'photo.jpg')
+        result = self.storage._normalize_filename("photo.Jpg")
+        self.assertEqual(result, "photo.jpg")
 
     def test_no_extension_unchanged(self):
-        result = self.storage._normalize_filename('photo')
-        self.assertEqual(result, 'photo')
+        result = self.storage._normalize_filename("photo")
+        self.assertEqual(result, "photo")
 
     def test_empty_string_unchanged(self):
-        result = self.storage._normalize_filename('')
-        self.assertEqual(result, '')
+        result = self.storage._normalize_filename("")
+        self.assertEqual(result, "")
 
     def test_directory_path_extension_lowercased(self):
-        result = self.storage._normalize_filename('uploads/photos/photo.JPG')
-        self.assertEqual(result, 'uploads/photos/photo.jpg')
+        result = self.storage._normalize_filename("uploads/photos/photo.JPG")
+        self.assertEqual(result, "uploads/photos/photo.jpg")
 
     def test_already_lowercase_extension_unchanged(self):
-        result = self.storage._normalize_filename('photo.jpg')
-        self.assertEqual(result, 'photo.jpg')
+        result = self.storage._normalize_filename("photo.jpg")
+        self.assertEqual(result, "photo.jpg")
 
     def test_save_lowercases_extension(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             storage = LowercaseExtensionStorage(location=temp_dir)
             name = None
             try:
-                name = storage.save('test.JPG', ContentFile(b'test content'))
-                self.assertTrue(name.endswith('.jpg'))
+                name = storage.save("test.JPG", ContentFile(b"test content"))
+                self.assertTrue(name.endswith(".jpg"))
             finally:
                 if name is not None:
                     storage.delete(name)
@@ -582,28 +655,29 @@ class MediaCacheVersionTest(TestCase):
 
     def setUp(self):
         from esp.utils.web import _media_cache_version
+
         self._fn = _media_cache_version
 
     def test_returns_tag_when_present(self):
         """Returns the stored Tag value when one is set."""
-        with patch('esp.utils.web.Tag') as mock_tag:
-            mock_tag.getTag.return_value = '0xabc'
-            result = self._fn('images/theme/logo.png', 'current_logo_version')
-        self.assertEqual(result, '0xabc')
+        with patch("esp.utils.web.Tag") as mock_tag:
+            mock_tag.getTag.return_value = "0xabc"
+            result = self._fn("images/theme/logo.png", "current_logo_version")
+        self.assertEqual(result, "0xabc")
 
     def test_falls_back_to_mtime_when_tag_absent(self):
         """Returns a hex mtime string when the Tag is empty but the file exists."""
-        with patch('esp.utils.web.Tag') as mock_tag:
-            mock_tag.getTag.return_value = ''
-            with patch('esp.utils.web.os.path.exists', return_value=True):
-                with patch('esp.utils.web.os.path.getmtime', return_value=1700000000.0):
-                    result = self._fn('images/theme/logo.png', 'current_logo_version')
+        with patch("esp.utils.web.Tag") as mock_tag:
+            mock_tag.getTag.return_value = ""
+            with patch("esp.utils.web.os.path.exists", return_value=True):
+                with patch("esp.utils.web.os.path.getmtime", return_value=1700000000.0):
+                    result = self._fn("images/theme/logo.png", "current_logo_version")
         self.assertEqual(result, hex(1700000000))
 
     def test_returns_empty_string_when_no_tag_and_no_file(self):
         """Returns empty string when neither Tag nor file is present."""
-        with patch('esp.utils.web.Tag') as mock_tag:
-            mock_tag.getTag.return_value = ''
-            with patch('esp.utils.web.os.path.exists', return_value=False):
-                result = self._fn('images/theme/logo.png', 'current_logo_version')
-        self.assertEqual(result, '')
+        with patch("esp.utils.web.Tag") as mock_tag:
+            mock_tag.getTag.return_value = ""
+            with patch("esp.utils.web.os.path.exists", return_value=False):
+                result = self._fn("images/theme/logo.png", "current_logo_version")
+        self.assertEqual(result, "")

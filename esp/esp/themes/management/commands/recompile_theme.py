@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2014 by the individual contributors
@@ -34,14 +33,18 @@ Learning Unlimited, Inc.
 """
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.core.management.base import BaseCommand
 
+
 class Command(BaseCommand):
     """Recompile the current theme."""
+
     def handle(self, *args, **options):
         from esp.themes.controllers import ThemeController
+
         tc = ThemeController()
         # Resolve once before any attempt. recompile_theme() calls clear_theme()
         # which unsets current_theme_name, so a bare retry would fall back to
@@ -50,8 +53,9 @@ class Command(BaseCommand):
         customization_name = tc.get_current_customization()
         try:
             # If this changes, make sure it still respects settings.LOCAL_THEME
-            tc.recompile_theme(theme_name=theme_name,
-                               customization_name=customization_name)
+            tc.recompile_theme(
+                theme_name=theme_name, customization_name=customization_name
+            )
         except Exception:
             # Keep the first failure's traceback so the real root cause is
             # visible even when the retry fails for a different reason.
@@ -62,5 +66,6 @@ class Command(BaseCommand):
                 customization_name,
                 exc_info=True,
             )
-            tc.recompile_theme(theme_name=theme_name,
-                               customization_name=customization_name)
+            tc.recompile_theme(
+                theme_name=theme_name, customization_name=customization_name
+            )

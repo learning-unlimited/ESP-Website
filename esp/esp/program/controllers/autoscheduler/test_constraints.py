@@ -17,7 +17,8 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
 
     def _make_composite(self, child_constraints):
         composite = constraints.CompositeConstraint.__new__(
-            constraints.CompositeConstraint)
+            constraints.CompositeConstraint
+        )
         composite.constraints = child_constraints
         return composite
 
@@ -28,10 +29,12 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
         composite = self._make_composite([mock_c])
 
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
 
         mock_c.check_swap_sections.assert_called_once_with(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
         self.assertIsNone(result)
 
     def test_returns_first_violation(self):
@@ -44,7 +47,8 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
 
         composite = self._make_composite([mock_ok, mock_bad])
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
 
         self.assertIs(result, violation)
 
@@ -57,29 +61,37 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
 
         composite = self._make_composite([mock_bad, mock_after])
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
 
         self.assertIs(result, violation)
         mock_bad.check_swap_sections.assert_called_once_with(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
         mock_after.check_swap_sections.assert_not_called()
 
     def test_returns_none_when_no_violations(self):
         """Returns None when all child constraints pass."""
-        composite = self._make_composite([
-            constraints.ContiguousConstraint(),
-        ])
+        composite = self._make_composite(
+            [
+                constraints.ContiguousConstraint(),
+            ]
+        )
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
         self.assertIsNone(result)
 
     def test_precondition_violation_for_mismatched_swap_lengths(self):
         """PreconditionConstraint rejects swaps with mismatched slot counts."""
-        composite = self._make_composite([
-            constraints.PreconditionConstraint(),
-        ])
+        composite = self._make_composite(
+            [
+                constraints.PreconditionConstraint(),
+            ]
+        )
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
 
         self.assertIsInstance(result, constraints.ConstraintViolation)
         self.assertEqual(result.constraint_name, "PreconditionConstraint")
@@ -93,18 +105,22 @@ class CompositeConstraintCheckSwapSectionsTest(unittest.TestCase):
         self.section1.duration = self.section2.duration
 
         precondition = constraints.PreconditionConstraint()
-        self.assertIsNone(precondition.check_swap_sections(
-            self.section1, self.section2, self.schedule))
+        self.assertIsNone(
+            precondition.check_swap_sections(
+                self.section1, self.section2, self.schedule
+            )
+        )
 
-        composite = self._make_composite([
-            constraints.TeacherAvailabilityConstraint(),
-        ])
+        composite = self._make_composite(
+            [
+                constraints.TeacherAvailabilityConstraint(),
+            ]
+        )
         result = composite.check_swap_sections(
-            self.section1, self.section2, self.schedule)
+            self.section1, self.section2, self.schedule
+        )
         self.assertIsInstance(result, constraints.ConstraintViolation)
-        self.assertEqual(
-            result.constraint_name,
-            "TeacherAvailabilityConstraint")
+        self.assertEqual(result.constraint_name, "TeacherAvailabilityConstraint")
         self.assertIn("won't be available", result.reason)
 
 

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,11 +31,14 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
-from esp.middleware              import ESPError
-from esp.utils.web               import render_to_response
-from esp.users.models            import ESPUser
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PARTICIPANTS,
+)
+from esp.middleware import ESPError
+from esp.utils.web import render_to_response
+from esp.users.models import ESPUser
 from esp.users.forms.generic_search_form import TeacherSearchForm
 from esp.program.modules.handlers.availabilitymodule import AvailabilityModule
 
@@ -46,13 +48,15 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return [ {
-            "admin_title": "Teacher Availability Checker",
-            "link_title": "Check Teacher Availability",
-            "module_type": "manage",
-            "seq": 0,
-            "choosable": 1,
-            } ]
+        return [
+            {
+                "admin_title": "Teacher Availability Checker",
+                "link_title": "Check Teacher Availability",
+                "module_type": "manage",
+                "seq": 0,
+                "choosable": 1,
+            }
+        ]
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -64,7 +68,14 @@ class CheckAvailabilityModule(ProgramModuleObj):
             url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
             title="Check Teacher Availability",
             category=SEARCH_CATEGORY_PARTICIPANTS,
-            keywords=["availability", "teacher", "check", "edit", "schedule", "check availability"],
+            keywords=[
+                "availability",
+                "teacher",
+                "check",
+                "edit",
+                "schedule",
+                "check availability",
+            ],
         )
 
     @main_call
@@ -76,16 +87,20 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
         target_id = None
 
-        if 'user' in request.GET:
-            target_id = request.GET['user']
-        elif 'user' in request.POST:
-            target_id = request.POST['user']
-        elif 'target_user' in request.POST:
-            target_id = request.POST['target_user']
+        if "user" in request.GET:
+            target_id = request.GET["user"]
+        elif "user" in request.POST:
+            target_id = request.POST["user"]
+        elif "target_user" in request.POST:
+            target_id = request.POST["target_user"]
         else:
             form = TeacherSearchForm()
-            context = {'search_form': form, 'isAdmin': True, 'prog': self.program}
-            return render_to_response('program/modules/availabilitymodule/availability_form.html', request, context)
+            context = {"search_form": form, "isAdmin": True, "prog": self.program}
+            return render_to_response(
+                "program/modules/availabilitymodule/availability_form.html",
+                request,
+                context,
+            )
 
         try:
             teacher = ESPUser.objects.get(id=target_id)
@@ -93,8 +108,13 @@ class CheckAvailabilityModule(ProgramModuleObj):
             try:
                 teacher = ESPUser.objects.get(username=target_id)
             except ESPUser.DoesNotExist:
-                raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
-        availability = AvailabilityModule(program = prog)
+                raise ESPError(
+                    "The user with id/username="
+                    + str(target_id)
+                    + " does not appear to exist!",
+                    log=False,
+                )
+        availability = AvailabilityModule(program=prog)
         return availability.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     def isStep(self):
@@ -102,4 +122,4 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

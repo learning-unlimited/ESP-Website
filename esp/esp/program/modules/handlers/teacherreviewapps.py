@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -31,22 +31,34 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_teacher,
+    meets_deadline,
+    aux_call,
+)
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
+from esp.program.models import (
+    ClassSubject,
+    StudentAppQuestion,
+    StudentAppReview,
+    StudentRegistration,
+    StudentApplication,
+)
 from datetime import datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
-__all__ = ['TeacherReviewApps']
+__all__ = ["TeacherReviewApps"]
+
 
 class TeacherReviewApps(ProgramModuleObj):
     doc = """Allows teachers to review student applications for their classes."""
-    permission_types = ('Teacher/AppReview',)
+    permission_types = ("Teacher/AppReview",)
 
     @classmethod
     def module_properties(cls):
@@ -57,7 +69,7 @@ class TeacherReviewApps(ProgramModuleObj):
             "seq": 1000,
             "inline_template": "teacherreviewapp.html",
             "choosable": 0,
-            }
+        }
 
     @aux_call
     @needs_teacher
@@ -65,9 +77,9 @@ class TeacherReviewApps(ProgramModuleObj):
     @method_decorator(never_cache)
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = ClassSubject.objects.get(id=extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError(f'Cannot find class with ID {extra}.', log=False)
+            raise ESPError(f"Cannot find class with ID {extra}.", log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError(f'You cannot edit class "{cls}"', log=False)
@@ -80,15 +92,21 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+            reg = (
+                StudentRegistration.valid_objects()
+                .filter(section__parent_class=cls, user=student)
+                .first()
+            )
             student.added_class = reg.start_date if reg else None
             try:
-                student.app = student.studentapplication_set.get(program = self.program)
+                student.app = student.studentapplication_set.get(program=self.program)
             except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=request.user, score__isnull=False)
+                reviews = student.app.reviews.all().filter(
+                    reviewer=request.user, score__isnull=False
+                )
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
@@ -108,29 +126,31 @@ class TeacherReviewApps(ProgramModuleObj):
         students = list(students)
         students.sort(key=lambda s: s.added_class or datetime.min)
 
-        if 'prev' in request.GET:
-            prev_id = int(request.GET.get('prev'))
+        if "prev" in request.GET:
+            prev_id = int(request.GET.get("prev"))
             prev = students[0]
             current = None
             for current in students[1:]:
                 if prev.id == prev_id and current.app_completed:
                     from django.shortcuts import redirect
+
                     url = f"/{tl}/{one}/{two}/review_student/{extra}/?student={current.id}"
                     return redirect(url)
                 if prev.id != prev_id:
                     prev = current
 
-        return render_to_response(self.baseDir()+'roster.html',
-                                  request,
-                                  {'class': cls,
-                                   'students':students})
+        return render_to_response(
+            self.baseDir() + "roster.html",
+            request,
+            {"class": cls, "students": students},
+        )
 
     @aux_call
     @needs_teacher
     @meets_deadline()
     def app_questions(self, request, tl, one, two, module, extra, prog):
-        """ Edit the subject-specific questions that students will respond to on
-        their applications. """
+        """Edit the subject-specific questions that students will respond to on
+        their applications."""
         subjects = request.user.getTaughtClasses(prog)
         clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
         question_list = []
@@ -141,7 +161,9 @@ class TeacherReviewApps(ProgramModuleObj):
             existing_questions = StudentAppQuestion.objects.filter(subject=s)
             question_list += list(existing_questions)
             if existing_questions.count() < clrmi.num_teacher_questions:
-                for i in range(0, clrmi.num_teacher_questions - existing_questions.count()):
+                for i in range(
+                    0, clrmi.num_teacher_questions - existing_questions.count()
+                ):
                     q = StudentAppQuestion(subject=s)
                     question_list.append(q)
 
@@ -150,15 +172,15 @@ class TeacherReviewApps(ProgramModuleObj):
         form_list = []
         i = 1
         for q in question_list:
-            if not (hasattr(q, 'id') and q.id):
-                form = q.get_form(form_prefix='question_new_%d' % i)
+            if not (hasattr(q, "id") and q.id):
+                form = q.get_form(form_prefix="question_new_%d" % i)
             else:
                 form = q.get_form()
             form.app_question = q
             form_list.append(form)
             i += 1
 
-        if request.method == 'POST':
+        if request.method == "POST":
             data = request.POST
             for f in form_list:
                 #   Reinitialize the form with a bound one having the same prefix.
@@ -168,16 +190,16 @@ class TeacherReviewApps(ProgramModuleObj):
                 #   If the form is valid and has question text, save the question.
                 #   Otherwise, if it's an existing question (with an ID), delete it.
                 #   This prevents empty records for unfilled classes and deletes cleared questions.
-                if form.is_valid() and form.cleaned_data.get('question', '').strip():
+                if form.is_valid() and form.cleaned_data.get("question", "").strip():
                     q.update(form)
                     q.save()
-                elif hasattr(q, 'id') and q.id:
+                elif hasattr(q, "id") and q.id:
                     q.delete()
 
             return self.goToCore(tl)
 
-        context = {'clrmi': clrmi, 'prog': prog, 'forms': form_list}
-        return render_to_response(self.baseDir()+'questions.html', request, context)
+        context = {"clrmi": clrmi, "prog": prog, "forms": form_list}
+        return render_to_response(self.baseDir() + "questions.html", request, context)
 
     @aux_call
     @needs_teacher
@@ -190,69 +212,88 @@ class TeacherReviewApps(ProgramModuleObj):
             return self.goToCore(tl)
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = ClassSubject.objects.get(id=extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+            raise ESPError("Cannot find class.", log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError(f'You cannot edit class "{cls}"', log=False)
 
-        student = request.GET.get('student', None)
+        student = request.GET.get("student", None)
         if not student:
-            student = request.POST.get('student', '')
+            student = request.POST.get("student", "")
 
         try:
-            student = ESPUser.objects.get(id = int(student))
+            student = ESPUser.objects.get(id=int(student))
         except ESPUser.DoesNotExist:
-            raise ESPError(f'Cannot find student, {student}', log=False)
+            raise ESPError(f"Cannot find student, {student}", log=False)
 
-        not_registered = not StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student).exists()
+        not_registered = (
+            not StudentRegistration.valid_objects()
+            .filter(section__parent_class=cls, user=student)
+            .exists()
+        )
         if not_registered:
-            raise ESPError('Student not a student of this class.', log=False)
+            raise ESPError("Student not a student of this class.", log=False)
 
         try:
-            student.app = student.studentapplication_set.get(program = self.program)
+            student.app = student.studentapplication_set.get(program=self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            raise ESPError('Error: Student did not start an application.', log=False)
+            raise ESPError("Error: Student did not start an application.", log=False)
 
-        reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+        reg = (
+            StudentRegistration.valid_objects()
+            .filter(section__parent_class=cls, user=student)
+            .first()
+        )
         student.added_class = reg.start_date if reg else None
 
         teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
         if teacher_reviews.count() > 0:
-            this_review = teacher_reviews.order_by('id')[0]
+            this_review = teacher_reviews.order_by("id")[0]
         else:
             this_review = StudentAppReview(reviewer=request.user)
             this_review.save()
             student.app.reviews.add(this_review)
 
-        if request.method == 'POST':
+        if request.method == "POST":
             form = this_review.get_form(request.POST)
             if form.is_valid():
                 form.target.update(form)
-                if 'submit_next' in request.POST or 'submit_return' in request.POST:
-                    url = f'/{tl}/{one}/{two}/review_students/{extra}/'
-                    if 'submit_next' in request.POST:
-                        url += f'?prev={student.id}'
+                if "submit_next" in request.POST or "submit_return" in request.POST:
+                    url = f"/{tl}/{one}/{two}/review_students/{extra}/"
+                    if "submit_next" in request.POST:
+                        url += f"?prev={student.id}"
                     from django.shortcuts import redirect
-                    return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
+
+                    return redirect(
+                        url
+                    )  # self.review_students(request, tl, one, two, module, extra, prog)
 
         else:
             form = this_review.get_form()
 
-        return render_to_response(self.baseDir()+'review.html',
-                                  request,
-                                  {'class': cls,
-                                   'reviews': teacher_reviews,
-                                  'program': prog,
-                                   'student':student,
-                                   'form': form})
+        return render_to_response(
+            self.baseDir() + "review.html",
+            request,
+            {
+                "class": cls,
+                "reviews": teacher_reviews,
+                "program": prog,
+                "student": student,
+                "form": form,
+            },
+        )
 
     def prepare(self, context):
         clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
-        context['num_teacher_questions'] = clrmi.num_teacher_questions;
-        context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
+        context["num_teacher_questions"] = clrmi.num_teacher_questions
+        context["classes"] = (
+            get_current_request()
+            .user.getTaughtClasses()
+            .filter(parent_program=self.program)
+        )
         return context
 
     def isStep(self):
@@ -260,4 +301,4 @@ class TeacherReviewApps(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

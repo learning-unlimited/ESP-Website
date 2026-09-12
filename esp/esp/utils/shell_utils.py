@@ -1,4 +1,4 @@
-'''Things that will be useful to have in shell_plus, which it will auto-import.'''
+"""Things that will be useful to have in shell_plus, which it will auto-import."""
 
 from django.db.models import F, Q, Count, Avg, Min, Max, Sum
 
@@ -9,8 +9,18 @@ from esp.utils.query_utils import nest_Q
 
 from esp.program.modules.base import CoreModule, ProgramModuleObj
 
-from esp.accounting.controllers import BaseAccountingController, GlobalAccountingController, IndividualAccountingController
-from esp.customforms.DynamicForm import BaseCustomForm, CustomFormHandler, FormStorage, ComboForm, FormHandler
+from esp.accounting.controllers import (
+    BaseAccountingController,
+    GlobalAccountingController,
+    IndividualAccountingController,
+)
+from esp.customforms.DynamicForm import (
+    BaseCustomForm,
+    CustomFormHandler,
+    FormStorage,
+    ComboForm,
+    FormHandler,
+)
 from esp.customforms.DynamicModel import DynamicModelHandler, DMH
 from esp.customforms.linkfields import CustomFormsLinkModel, CustomFormsCache
 from esp.program.controllers.classchange import ClassChangeController
@@ -25,11 +35,13 @@ from esp.themes.controllers import ThemeController
 from esp.users.controllers.usersearch import UserSearchController
 
 import os
+
 os.environ.setdefault("DJANGO_IS_IN_SCRIPT", "True")
 # For convenience, set up a logger (and hide logging so people use the logger
 # instead)
 from logging import getLogger
-logger = getLogger('esp.shell_plus')
+
+logger = getLogger("esp.shell_plus")
 
 
 def choose_program(program_id=None, program_name=None, program_url=None):
@@ -107,13 +119,19 @@ def choose_program(program_id=None, program_name=None, program_url=None):
         if suggestions:
             print("Suggested programs (based on current date):")
             for i, prog in enumerate(suggestions, start=1):
-                print("  [{}] {} (id={}, url={})".format(i, prog.name, prog.id, prog.url))
+                print(
+                    "  [{}] {} (id={}, url={})".format(i, prog.name, prog.id, prog.url)
+                )
         else:
             print("(No current programs found in the database.)")
 
         print("\nEnter one of:")
         if suggestions:
-            print("  • i:<number> to select a suggested program (1-{})".format(len(suggestions)))
+            print(
+                "  • i:<number> to select a suggested program (1-{})".format(
+                    len(suggestions)
+                )
+            )
         print("  • id:<number> for a numeric program ID")
         print("  • A program name  (e.g. 'Splash 2014')")
         print("  • A program URL   (e.g. 'Splash/2014_Fall')")
@@ -125,7 +143,7 @@ def choose_program(program_id=None, program_name=None, program_url=None):
 
         # 1. Explicit suggestion index (i:<number>).
         lowered = raw.lower()
-        if lowered.startswith('i:'):
+        if lowered.startswith("i:"):
             index_text = raw[2:].strip()
             if index_text.isdigit() and suggestions:
                 number = int(index_text)
@@ -135,7 +153,7 @@ def choose_program(program_id=None, program_name=None, program_url=None):
             continue
 
         # 2. Explicit numeric program id (id:<number>).
-        if lowered.startswith('id:'):
+        if lowered.startswith("id:"):
             id_text = raw[3:].strip()
             if not id_text.isdigit():
                 print("Invalid program id '{}'. Please use id:<number>.".format(raw))
@@ -158,7 +176,9 @@ def choose_program(program_id=None, program_name=None, program_url=None):
             pass
         except Program.MultipleObjectsReturned:
             # Name is not unique, so multiple matches are possible; handle gracefully.
-            print("Multiple programs share that name — please use an ID or URL instead.")
+            print(
+                "Multiple programs share that name — please use an ID or URL instead."
+            )
             continue
 
         # 5. Try as an exact URL match.

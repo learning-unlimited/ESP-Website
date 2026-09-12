@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -37,9 +36,15 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from esp.web.forms import ResizeImageField
 
+
 class BioEditForm(forms.Form):
-    """ A form for editing TeacherBios """
-    slugbio = forms.CharField(required = False, max_length = 50, widget = forms.TextInput({'size': 50}))
-    bio = forms.CharField(required = False, widget = forms.Textarea({'rows':20, 'cols':60}))
-    picture = ResizeImageField(required = False, size = (300, 300))
-    hidden = forms.BooleanField(required = False)
+    """A form for editing TeacherBios"""
+
+    slugbio = forms.CharField(
+        required=False, max_length=50, widget=forms.TextInput({"size": 50})
+    )
+    bio = forms.CharField(
+        required=False, widget=forms.Textarea({"rows": 20, "cols": 60})
+    )
+    picture = ResizeImageField(required=False, size=(300, 300))
+    hidden = forms.BooleanField(required=False)

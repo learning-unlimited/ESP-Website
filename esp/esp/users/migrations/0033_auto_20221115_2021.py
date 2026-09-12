@@ -5,20 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0032_auto_20220811_2056'),
+        ("users", "0032_auto_20220811_2056"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='studentinfo',
-            name='pronoun',
+            model_name="studentinfo",
+            name="pronoun",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
         migrations.AddField(
-            model_name='teacherinfo',
-            name='pronoun',
+            model_name="teacherinfo",
+            name="pronoun",
             field=models.CharField(blank=True, max_length=50, null=True),
         ),
     ]

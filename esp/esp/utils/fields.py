@@ -1,8 +1,9 @@
-""" Copied from: https://djangosnippets.org/snippets/1478/ """
+"""Copied from: https://djangosnippets.org/snippets/1478/"""
 
 from django.db import models
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+
 
 class JSONField(models.TextField):
     """JSONField is a generic textfield that neatly serializes/unserializes

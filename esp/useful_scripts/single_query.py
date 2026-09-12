@@ -6,7 +6,8 @@
 # Intended primarily to be used by run_queries.sh.
 
 import sys
-sys.path.insert(0, sys.argv[1]+'/esp/useful_scripts')
+
+sys.path.insert(0, sys.argv[1] + "/esp/useful_scripts")
 
 try:
     from script_setup import *

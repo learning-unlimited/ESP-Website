@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,10 +34,11 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.utils.web import render_to_response
 from django.contrib.auth.models import Group
-from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
+from esp.users.models import ESPUser, Record, ContactInfo, StudentInfo, K12School
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting.controllers import IndividualAccountingController
+
 
 class OnSiteRegister(ProgramModuleObj):
     doc = """Register a new student onsite."""
@@ -51,83 +51,109 @@ class OnSiteRegister(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 30,
             "choosable": 1,
-            }
-
+        }
 
     @main_call
     @needs_onsite
     def onsite_create(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
+        if request.method == "POST":
             form = OnSiteRegForm(request.POST)
 
             if form.is_valid():
                 new_data = form.cleaned_data
-                username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
-                new_user = ESPUser.objects.create_user(username = username,
-                                first_name = new_data['first_name'],
-                                last_name  = new_data['last_name'],
-                                email      = new_data['email'])
+                username = ESPUser.get_unused_username(
+                    new_data["first_name"], new_data["last_name"]
+                )
+                new_user = ESPUser.objects.create_user(
+                    username=username,
+                    first_name=new_data["first_name"],
+                    last_name=new_data["last_name"],
+                    email=new_data["email"],
+                )
 
                 self.user = new_user
 
-                regProf = RegistrationProfile.getLastForProgram(new_user,
-                                                                self.program)
-                contact_user = ContactInfo(first_name = new_user.first_name,
-                                           last_name  = new_user.last_name,
-                                           e_mail     = new_user.email,
-                                           user       = new_user)
+                regProf = RegistrationProfile.getLastForProgram(new_user, self.program)
+                contact_user = ContactInfo(
+                    first_name=new_user.first_name,
+                    last_name=new_user.last_name,
+                    e_mail=new_user.email,
+                    user=new_user,
+                )
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade'], ESPUser.program_schoolyear(self.program)))
+                student_info = StudentInfo(
+                    user=new_user,
+                    graduation_year=ESPUser.YOGFromGrade(
+                        new_data["grade"], ESPUser.program_schoolyear(self.program)
+                    ),
+                )
 
                 try:
-                    if isinstance(new_data['k12school'], K12School):
-                        student_info.k12school = new_data['k12school']
+                    if isinstance(new_data["k12school"], K12School):
+                        student_info.k12school = new_data["k12school"]
                     else:
-                        if isinstance(new_data['k12school'], int):
-                            student_info.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                        if isinstance(new_data["k12school"], int):
+                            student_info.k12school = K12School.objects.get(
+                                id=int(new_data["k12school"])
+                            )
                         else:
-                            student_info.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+                            student_info.k12school = K12School.objects.filter(
+                                name__icontains=new_data["k12school"]
+                            )[0]
                 except (K12School.DoesNotExist, ValueError, IndexError):
                     student_info.k12school = None
-                student_info.school = new_data['school'] if not student_info.k12school else student_info.k12school.name
+                student_info.school = (
+                    new_data["school"]
+                    if not student_info.k12school
+                    else student_info.k12school.name
+                )
 
                 student_info.save()
                 regProf.student_info = student_info
 
                 regProf.save()
 
-                if new_data['paid']:
-                    IndividualAccountingController.updatePaid(self.program, self.user, True)
+                if new_data["paid"]:
+                    IndividualAccountingController.updatePaid(
+                        self.program, self.user, True
+                    )
                 else:
-                    IndividualAccountingController.updatePaid(self.program, self.user, False)
+                    IndividualAccountingController.updatePaid(
+                        self.program, self.user, False
+                    )
 
-                Record.createBit('Attended', self.program, self.user)
+                Record.createBit("Attended", self.program, self.user)
 
-                if new_data['medical']:
-                    Record.createBit('Med', self.program, self.user)
+                if new_data["medical"]:
+                    Record.createBit("Med", self.program, self.user)
 
-                if new_data['liability']:
-                    Record.createBit('Liab', self.program, self.user)
+                if new_data["liability"]:
+                    Record.createBit("Liab", self.program, self.user)
 
-                Record.createBit('OnSite', self.program, self.user)
-
+                Record.createBit("OnSite", self.program, self.user)
 
                 new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
 
-                return render_to_response(self.baseDir()+'reg_success.html', request, {
-                    'student': new_user,
-                    'retUrl': f'/onsite/{self.program.getUrlBase()}/classchange_grid?student_id={new_user.id}'
-                    })
+                return render_to_response(
+                    self.baseDir() + "reg_success.html",
+                    request,
+                    {
+                        "student": new_user,
+                        "retUrl": f"/onsite/{self.program.getUrlBase()}/classchange_grid?student_id={new_user.id}",
+                    },
+                )
 
         else:
             form = OnSiteRegForm()
 
-        return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form})
+        return render_to_response(
+            self.baseDir() + "reg_info.html", request, {"form": form}
+        )
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

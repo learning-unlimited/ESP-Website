@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -39,41 +38,49 @@ from django.forms.renderers import TemplatesSetting
 from esp.tagdict.models import Tag
 from esp.utils.widgets import DummyWidget
 
+
 class TableFormRenderer(TemplatesSetting):
     form_template_name = "django/forms/table.html"
     formset_template_name = "django/forms/formsets/table.html"
 
+
 class SizedCharField(forms.CharField):
-    """ Just like CharField, but you can set the width of the text widget. """
+    """Just like CharField, but you can set the width of the text widget."""
+
     def __init__(self, length=None, *args, **kwargs):
         forms.CharField.__init__(self, *args, **kwargs)
-        self.widget.attrs['size'] = length
+        self.widget.attrs["size"] = length
+
 
 class StrippedCharField(SizedCharField):
     def clean(self, value):
         return super().clean(self.to_python(value).strip())
 
+
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
 #### DO NOT OMIT IT if overriding __init__() when subclassing these forms
 
+
 class FormWithRequiredCss(forms.Form):
-    """ Form that adds the "required" class to every required widget, to restore oldforms behavior. """
+    """Form that adds the "required" class to every required widget, to restore oldforms behavior."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             if field.required:
-                if 'class' in field.widget.attrs:
-                    field.widget.attrs['class'] += ' required'
+                if "class" in field.widget.attrs:
+                    field.widget.attrs["class"] += " required"
                 else:
-                    field.widget.attrs['class'] = 'required'
+                    field.widget.attrs["class"] = "required"
+
 
 class FormWithTagInitialValues(forms.Form):
     def __init__(self, *args, **kwargs):
 
         #   Get tag data in the form of a dictionary:
         #     field name -> tag to look up for initial value
-        if 'tag_map' in kwargs:
-            tag_map = kwargs['tag_map']
+        if "tag_map" in kwargs:
+            tag_map = kwargs["tag_map"]
             tag_defaults = {}
             for field_name in tag_map:
                 #   Check for existence of tag
@@ -81,33 +88,36 @@ class FormWithTagInitialValues(forms.Form):
                 #   Use tag data as initial value if the tag was found
                 if tag_data:
                     tag_defaults[field_name] = tag_data
-            if 'initial' not in kwargs:
-                kwargs['initial'] = {}
+            if "initial" not in kwargs:
+                kwargs["initial"] = {}
             #   Apply defaults to form quietly (don't override provided values)
             for key in tag_defaults:
-                if key not in kwargs['initial']:
-                    kwargs['initial'][key] = tag_defaults[key]
+                if key not in kwargs["initial"]:
+                    kwargs["initial"][key] = tag_defaults[key]
             #   Remove the tag_map so as not to confuse other functions
-            del kwargs['tag_map']
+            del kwargs["tag_map"]
 
         super().__init__(*args, **kwargs)
 
+
 class FormUnrestrictedOtherUser(FormWithRequiredCss):
-    """ Form that implements makeRequired for the old form --- disables required fields at in some cases. """
+    """Form that implements makeRequired for the old form --- disables required fields at in some cases."""
 
     def __init__(self, user=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
-        if user is None or not (hasattr(user, 'other_user') and user.other_user):
+        if user is None or not (hasattr(user, "other_user") and user.other_user):
             pass
         else:
             for field in self.fields.values():
                 if field.required:
                     field.required = False
-                    field.widget.attrs['class'] = None # GAH!
+                    field.widget.attrs["class"] = None  # GAH!
+
 
 class DummyField(forms.Field):
     widget = DummyWidget
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         #   Set a flag that can be checked in Python code or template rendering

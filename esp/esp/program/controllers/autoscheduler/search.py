@@ -34,7 +34,8 @@ class SearchOptimizer:
             # Pruning the search for them now might lead to a small but
             # nontrivial speedup?
             needed_slots = roomslot.room.get_roomslots_by_duration(
-                    roomslot, section.duration)
+                roomslot, section.duration
+            )
             other_sections = []
             proposed_actions = []
             failed = False
@@ -47,8 +48,7 @@ class SearchOptimizer:
                         break
                     other_section = needed_slot.assigned_section
                     other_sections.append(other_section)
-                    success = \
-                        self.manipulator.unschedule_section(other_section)
+                    success = self.manipulator.unschedule_section(other_section)
                     if not success:
                         self.revert(len(proposed_actions))
                         failed = True
@@ -69,9 +69,9 @@ class SearchOptimizer:
 
             # Recurse on each evicted section.
             for other_section in other_sections:
-                proposed_actions += \
-                        self.optimize_section(other_section, depth - 1,
-                                              timeout)
+                proposed_actions += self.optimize_section(
+                    other_section, depth - 1, timeout
+                )
                 if not other_section.is_scheduled():
                     # Evicted sections must be scheduled
                     self.revert(len(proposed_actions))

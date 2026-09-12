@@ -5,20 +5,19 @@ import pickle
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0035_auto_20240306_0103'),
+        ("users", "0035_auto_20240306_0103"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='persistentqueryfilter',
-            old_name='q_filter',
-            new_name='q_filter_migration2024',
+            model_name="persistentqueryfilter",
+            old_name="q_filter",
+            new_name="q_filter_migration2024",
         ),
         migrations.AddField(
-            model_name='persistentqueryfilter',
-            name='q_filter',
+            model_name="persistentqueryfilter",
+            name="q_filter",
             field=models.BinaryField(null=True),
-        )
+        ),
     ]

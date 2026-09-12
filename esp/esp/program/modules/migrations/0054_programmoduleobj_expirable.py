@@ -17,30 +17,29 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0053_delete_mailinglabels'),
+        ("modules", "0053_delete_mailinglabels"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='programmoduleobj',
-            name='start_date',
+            model_name="programmoduleobj",
+            name="start_date",
             field=models.DateTimeField(
                 blank=True,
                 null=True,
                 default=None,
-                help_text='If blank, has always started.',
+                help_text="If blank, has always started.",
             ),
         ),
         migrations.AddField(
-            model_name='programmoduleobj',
-            name='end_date',
+            model_name="programmoduleobj",
+            name="end_date",
             field=models.DateTimeField(
                 blank=True,
                 null=True,
                 default=None,
-                help_text='If blank, never ends.',
+                help_text="If blank, never ends.",
             ),
         ),
     ]

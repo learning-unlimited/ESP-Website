@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -49,6 +49,7 @@ from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController
 import datetime
 
+
 class AccountingModule(ProgramModuleObj):
     doc = """Lists accounting information for the program for a single user."""
 
@@ -60,7 +61,7 @@ class AccountingModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 253,
             "choosable": 0,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -80,40 +81,45 @@ class AccountingModule(ProgramModuleObj):
     def _get_cc_totals(self, prog):
         # Load Stripe settings exactly mimicking refund_views
         stripe_settings = {
-            'offer_donation': True,
-            'donation_text': 'Donation to Learning Unlimited',
+            "offer_donation": True,
+            "donation_text": "Donation to Learning Unlimited",
         }
-        if hasattr(settings, 'STRIPE_CONFIG'):
+        if hasattr(settings, "STRIPE_CONFIG"):
             stripe_settings.update(settings.STRIPE_CONFIG)
 
         try:
-            tag_data_str = Tag.getProgramTag('stripe_settings', prog)
+            tag_data_str = Tag.getProgramTag("stripe_settings", prog)
             if tag_data_str:
                 stripe_settings.update(json.loads(tag_data_str))
         except (ValueError, TypeError):
             pass
 
-        secret_key = stripe_settings.get('secret_key')
+        secret_key = stripe_settings.get("secret_key")
         if not secret_key:
             return None
 
         # Find starting time from earliest credit card payment
-        earliest_transfer = Transfer.objects.filter(
-            line_item__program=prog,
-            line_item__text="Student payment"
-        ).exclude(transaction_id="").exclude(transaction_id=None).order_by('timestamp').first()
+        earliest_transfer = (
+            Transfer.objects.filter(
+                line_item__program=prog, line_item__text="Student payment"
+            )
+            .exclude(transaction_id="")
+            .exclude(transaction_id=None)
+            .order_by("timestamp")
+            .first()
+        )
 
         if not earliest_transfer:
             return {
-                'gross_amount': Decimal('0.00'),
-                'gross_count': 0,
-                'refunded_amount': Decimal('0.00'),
-                'total_stripe_fees': Decimal('0.00'),
-                'donation_amount': Decimal('0.00'),
-                'donation_count': 0,
-                'cc_donation_fees': Decimal('0.00'),
-                'error': None,
-                'is_configured': True,
+                "gross_amount": Decimal("0.00"),
+                "gross_count": 0,
+                "refunded_amount": Decimal("0.00"),
+                "total_stripe_fees": Decimal("0.00"),
+                "donation_amount": Decimal("0.00"),
+                "donation_count": 0,
+                "cc_donation_fees": Decimal("0.00"),
+                "error": None,
+                "is_configured": True,
             }
 
         start_time = earliest_transfer.timestamp - datetime.timedelta(days=1)
@@ -121,13 +127,19 @@ class AccountingModule(ProgramModuleObj):
 
         pac = ProgramAccountingController(prog)
         transfers = pac.all_transfers()
-        donation_amount = Decimal('0.00')
+        donation_amount = Decimal("0.00")
         donation_count = 0
-        donation_text = stripe_settings.get('donation_text', 'Donation to Learning Unlimited')
+        donation_text = stripe_settings.get(
+            "donation_text", "Donation to Learning Unlimited"
+        )
 
         donation_lineitem_id = None
         for t in transfers:
-            if t.line_item and t.line_item.text and donation_text in str(t.line_item.text):
+            if (
+                t.line_item
+                and t.line_item.text
+                and donation_text in str(t.line_item.text)
+            ):
                 donation_lineitem_id = t.line_item_id
                 break
 
@@ -138,69 +150,83 @@ class AccountingModule(ProgramModuleObj):
                     donation_count += 1
 
         totals = {
-            'gross_amount': Decimal('0.00'),
-            'gross_count': 0,
-            'refunded_amount': Decimal('0.00'),
-            'total_stripe_fees': Decimal('0.00'),
-            'cc_donation_fees': (Decimal(str(donation_count)) * Decimal('0.01')) + (donation_amount * Decimal(str(self.CC_FEE_RATE))),
-            'donation_amount': donation_amount,
-            'donation_count': donation_count,
-            'error': None,
-            'is_configured': True,
+            "gross_amount": Decimal("0.00"),
+            "gross_count": 0,
+            "refunded_amount": Decimal("0.00"),
+            "total_stripe_fees": Decimal("0.00"),
+            "cc_donation_fees": (Decimal(str(donation_count)) * Decimal("0.01"))
+            + (donation_amount * Decimal(str(self.CC_FEE_RATE))),
+            "donation_amount": donation_amount,
+            "donation_count": donation_count,
+            "error": None,
+            "is_configured": True,
         }
 
         headers = {
-            'Authorization': 'Bearer ' + secret_key,
-            'Stripe-Version': '2022-11-15'
+            "Authorization": "Bearer " + secret_key,
+            "Stripe-Version": "2022-11-15",
         }
-        url = 'https://api.stripe.com/v1/charges'
+        url = "https://api.stripe.com/v1/charges"
 
         has_more = True
         starting_after = None
         try:
             pages_checked = 0
-            while has_more and pages_checked < 100: # Increased limit for time-based search
+            while (
+                has_more and pages_checked < 100
+            ):  # Increased limit for time-based search
                 query_params = [
-                    ('limit', '100'),
-                    ('created[gte]', str(start_timestamp)),
-                    ('expand[]', 'data.balance_transaction'),
+                    ("limit", "100"),
+                    ("created[gte]", str(start_timestamp)),
+                    ("expand[]", "data.balance_transaction"),
                 ]
                 if starting_after:
-                    query_params.append(('starting_after', starting_after))
+                    query_params.append(("starting_after", starting_after))
 
                 params_encoded = urlencode(query_params)
-                req = urllib.request.Request(url + '?' + params_encoded, headers=headers)
+                req = urllib.request.Request(
+                    url + "?" + params_encoded, headers=headers
+                )
 
                 try:
                     with urllib.request.urlopen(req, timeout=10) as response:
-                        resp_data = response.read().decode('utf-8')
+                        resp_data = response.read().decode("utf-8")
                         data = json.loads(resp_data)
                 except URLError as e:
-                    if hasattr(e, 'code') and hasattr(e, 'read'):
-                        totals['error'] = "Provider API returned %s: %s" % (e.code, e.read().decode('utf-8', errors='ignore'))
+                    if hasattr(e, "code") and hasattr(e, "read"):
+                        totals["error"] = "Provider API returned %s: %s" % (
+                            e.code,
+                            e.read().decode("utf-8", errors="ignore"),
+                        )
                     else:
-                        totals['error'] = "Provider API error: %s" % str(e)
+                        totals["error"] = "Provider API error: %s" % str(e)
                     break
-                charges = data.get('data', [])
+                charges = data.get("data", [])
                 for charge in charges:
                     # Filter by program name in the description to ensure we only count charges for this program
-                    if prog.name not in charge.get('description', ''):
+                    if prog.name not in charge.get("description", ""):
                         continue
 
-                    totals['gross_count'] += 1
-                    totals['gross_amount'] += Decimal(str(charge.get('amount', 0))) / 100
-                    totals['refunded_amount'] += Decimal(str(charge.get('amount_refunded', 0))) / 100
+                    totals["gross_count"] += 1
+                    totals["gross_amount"] += (
+                        Decimal(str(charge.get("amount", 0))) / 100
+                    )
+                    totals["refunded_amount"] += (
+                        Decimal(str(charge.get("amount_refunded", 0))) / 100
+                    )
 
-                    bt = charge.get('balance_transaction')
+                    bt = charge.get("balance_transaction")
                     if bt and isinstance(bt, dict):
-                        totals['total_stripe_fees'] += Decimal(str(bt.get('fee', 0))) / 100
+                        totals["total_stripe_fees"] += (
+                            Decimal(str(bt.get("fee", 0))) / 100
+                        )
 
-                has_more = data.get('has_more', False)
+                has_more = data.get("has_more", False)
                 if has_more and charges:
-                    starting_after = charges[-1]['id']
+                    starting_after = charges[-1]["id"]
                 pages_checked += 1
         except Exception as e:
-            totals['error'] = str(e)
+            totals["error"] = str(e)
 
         return totals
 
@@ -211,54 +237,58 @@ class AccountingModule(ProgramModuleObj):
         context = {}
         if extra:
             user = ESPUser.objects.get(id=extra)
-        elif 'target_user' in request.POST:
+        elif "target_user" in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():
-                user = form.cleaned_data['target_user']
+                user = form.cleaned_data["target_user"]
         else:
             form = StudentSearchForm()
 
         if user:
-            form = StudentSearchForm(initial={'target_user': user.id})
-            context['prog_results'] = user_accounting(user, [prog])
+            form = StudentSearchForm(initial={"target_user": user.id})
+            context["prog_results"] = user_accounting(user, [prog])
 
         if not user:
-            context['cc_enabled'] = bool(Tag.getProgramTag('stripe_settings', prog)) or bool(getattr(settings, 'STRIPE_CONFIG', {}).get('secret_key'))
-            if context['cc_enabled'] and request.GET.get('fetch_cc_totals') == '1':
+            context["cc_enabled"] = bool(
+                Tag.getProgramTag("stripe_settings", prog)
+            ) or bool(getattr(settings, "STRIPE_CONFIG", {}).get("secret_key"))
+            if context["cc_enabled"] and request.GET.get("fetch_cc_totals") == "1":
                 cc_totals = self._get_cc_totals(prog)
-                context['cc_totals'] = cc_totals
+                context["cc_totals"] = cc_totals
 
-        context['target_user'] = user
-        context['form'] = form
+        context["target_user"] = user
+        context["form"] = form
 
         pac = ProgramAccountingController(self.program)
 
-        context['donation_count'], context['donation_total'] = pac.donation_summary()
-        context['admission_count'], context['admission_total'] = pac.admission_summary()
+        context["donation_count"], context["donation_total"] = pac.donation_summary()
+        context["admission_count"], context["admission_total"] = pac.admission_summary()
 
         donation_data = pac.donation_times()
         if donation_data:
             cumulative = []
-            running = Decimal('0')
+            running = Decimal("0")
             for amount, dt in donation_data:
                 running += amount
-                cumulative.append([dt.timestamp() * 1000, float(running)]) # [timestamp_ms, value]
-            context['donation_graph_data'] = cumulative
+                cumulative.append(
+                    [dt.timestamp() * 1000, float(running)]
+                )  # [timestamp_ms, value]
+            context["donation_graph_data"] = cumulative
 
         admission_data = pac.admission_times()
         if admission_data:
             cumulative = []
-            running = Decimal('0')
+            running = Decimal("0")
             for amount, dt in admission_data:
                 running += amount
                 cumulative.append([dt.timestamp() * 1000, float(running)])
-            context['admission_graph_data'] = cumulative
+            context["admission_graph_data"] = cumulative
 
-        return render_to_response(self.baseDir()+'accounting.html', request, context)
+        return render_to_response(self.baseDir() + "accounting.html", request, context)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -31,42 +31,54 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    usercheck_usetl,
+    main_call,
+    meets_deadline,
+)
 from esp.program.models import RegistrationProfile
-from esp.users.models   import ESPUser
+from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 
 class TeacherRegProfileModule(ProgramModuleObj):
     doc = """Serves the profile editor during teacher registration."""
-    permission_types = ('Teacher/Profile',)
+    permission_types = ("Teacher/Profile",)
 
     @classmethod
     def module_properties(cls):
-        return [{
-            "admin_title": "Teacher Profile Editor",
-            "link_title": "Update Your Profile",
-            "module_type": "teach",
-            "seq": 0,
-            "required": True,
-            "choosable": 1,
-        }]
+        return [
+            {
+                "admin_title": "Teacher Profile Editor",
+                "link_title": "Update Your Profile",
+                "module_type": "teach",
+                "seq": 0,
+                "required": True,
+                "choosable": 1,
+            }
+        ]
 
     def teachers(self, QObject=False):
         if QObject:
-            return {'teacher_profile': Q(registrationprofile__program=self.program) &
-                                       Q(registrationprofile__teacher_info__isnull=False)}
-        teachers = ESPUser.objects.filter(registrationprofile__program=self.program, registrationprofile__teacher_info__isnull=False).distinct()
-        return {'teacher_profile': teachers}
+            return {
+                "teacher_profile": Q(registrationprofile__program=self.program)
+                & Q(registrationprofile__teacher_info__isnull=False)
+            }
+        teachers = ESPUser.objects.filter(
+            registrationprofile__program=self.program,
+            registrationprofile__teacher_info__isnull=False,
+        ).distinct()
+        return {"teacher_profile": teachers}
 
     def teacherDesc(self):
-        return {'teacher_profile': """Teachers who have filled out a profile"""}
+        return {"teacher_profile": """Teachers who have filled out a profile"""}
 
     @main_call
     @usercheck_usetl
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog):
-        """ Display the registration profile page, the page that contains the contact information for a teacher, as attached to a particular program """
+        """Display the registration profile page, the page that contains the contact information for a teacher, as attached to a particular program"""
 
         from esp.web.views.myesp import profile_editor
 
@@ -75,8 +87,8 @@ class TeacherRegProfileModule(ProgramModuleObj):
         #   Otherwise, make a wild guess.
         user_roles = request.user.getUserTypes()
         user_roles = [x.lower() for x in user_roles]
-        if 'teacher' in user_roles or 'student' in user_roles:
-            role = {'teach': 'teacher','learn': 'student'}[tl]
+        if "teacher" in user_roles or "student" in user_roles:
+            role = {"teach": "teacher", "learn": "student"}[tl]
         else:
             role = user_roles[0]
 
@@ -89,8 +101,8 @@ class TeacherRegProfileModule(ProgramModuleObj):
         # aseering 8/20/2007: It is possible for a user to not have a
         # contact_user associated with their registration profile.
         # Deal nicely with this.
-        if hasattr(regProf.contact_user, 'e_mail'):
-            regProf.contact_user.e_mail = ''
+        if hasattr(regProf.contact_user, "e_mail"):
+            regProf.contact_user.e_mail = ""
             regProf.contact_user.save()
 
         response = profile_editor(request, prog, False, role)
@@ -100,9 +112,11 @@ class TeacherRegProfileModule(ProgramModuleObj):
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
+        regProf = RegistrationProfile.getLastForProgram(
+            user, self.program, self.module.module_type
+        )
         return regProf.id is not None
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

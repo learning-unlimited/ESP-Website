@@ -3,8 +3,9 @@
 
 from django.db import migrations
 
+
 def set_my_defaults(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
+    ProgramModule = apps.get_model("program", "ProgramModule")
     old_pms = ProgramModule.objects.filter(handler="CustomFormModule")
     if old_pms.exists():
         for pm in old_pms:
@@ -16,8 +17,9 @@ def set_my_defaults(apps, schema_editor):
                 pm.link_title = "Additional Student Information"
             pm.save()
 
+
 def reverse_func(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
+    ProgramModule = apps.get_model("program", "ProgramModule")
     pms = ProgramModule.objects.filter(handler="StudentCustomFormModule")
     if pms.count() == 1:
         new_pm1 = pms[0] if pms.count() == 1 else None
@@ -29,35 +31,33 @@ def reverse_func(apps, schema_editor):
         pm.link_title = "Additional Profile Information"
         pm.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('modules', '0028_auto_20210518_0923'),
+        ("modules", "0028_auto_20210518_0923"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='StudentCustomFormModule',
-            fields=[
-            ],
+            name="StudentCustomFormModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='TeacherCustomFormModule',
-            fields=[
-            ],
+            name="TeacherCustomFormModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.RunPython(set_my_defaults, reverse_func),
         migrations.DeleteModel(
-            name='CustomFormModule',
+            name="CustomFormModule",
         ),
     ]

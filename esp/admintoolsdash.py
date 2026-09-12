@@ -22,47 +22,51 @@ class CustomIndexDashboard(Dashboard):
     """
     Custom index dashboard for esp.
     """
+
     def init_with_context(self, context):
         site_name = get_admin_site_name(context)
         # append a link list module for "quick links"
-        self.children.append(modules.LinkList(
-            _('Quick links'),
-            layout='inline',
-            draggable=False,
-            deletable=False,
-            collapsible=False,
-            children=[
-                [_('Return to site'), '/'],
-                [_('Filebrowser'), '/admin/filebrowser/browse/'],
-                [_('Theme Settings'), '/themes']
-            ]
-        ))
+        self.children.append(
+            modules.LinkList(
+                _("Quick links"),
+                layout="inline",
+                draggable=False,
+                deletable=False,
+                collapsible=False,
+                children=[
+                    [_("Return to site"), "/"],
+                    [_("Filebrowser"), "/admin/filebrowser/browse/"],
+                    [_("Theme Settings"), "/themes"],
+                ],
+            )
+        )
 
         # separate each app into a separate group
-        items = get_avail_models(context['request'])
+        items = get_avail_models(context["request"])
         apps = {}
 
         for model, perms in items:
             app_label = model._meta.app_label
             if app_label not in apps:
                 apps[app_label] = {
-                    'title': django_apps.get_app_config(app_label).verbose_name,
-                    'models': []
+                    "title": django_apps.get_app_config(app_label).verbose_name,
+                    "models": [],
                 }
-            apps[app_label]['models'].append('%s.%s' % (model.__module__, model.__name__))
+            apps[app_label]["models"].append(
+                "%s.%s" % (model.__module__, model.__name__)
+            )
 
         for app in sorted(apps.keys()):
             # append an app list module for each set of models
-            self.children.append(modules.ModelList(
-                _(apps[app]['title']),
-                models=apps[app]['models'],
-            ))
+            self.children.append(
+                modules.ModelList(
+                    _(apps[app]["title"]),
+                    models=apps[app]["models"],
+                )
+            )
 
         # append a recent actions module
-        self.children.append(modules.RecentActions(
-            _('Recent Actions'),
-            limit=10
-        ))
+        self.children.append(modules.RecentActions(_("Recent Actions"), limit=10))
 
 
 class CustomAppIndexDashboard(AppIndexDashboard):
@@ -71,7 +75,7 @@ class CustomAppIndexDashboard(AppIndexDashboard):
     """
 
     # we disable title because its redundant with the model list module
-    title = ''
+    title = ""
 
     def __init__(self, *args, **kwargs):
         AppIndexDashboard.__init__(self, *args, **kwargs)
@@ -80,13 +84,13 @@ class CustomAppIndexDashboard(AppIndexDashboard):
         self.children += [
             modules.ModelList(
                 self.app_title,
-                models = self.models,
+                models=self.models,
             ),
             modules.RecentActions(
-                _('Recent Actions'),
-                #include_list=self.models,
-                limit=10
-            )
+                _("Recent Actions"),
+                # include_list=self.models,
+                limit=10,
+            ),
         ]
 
     def init_with_context(self, context):

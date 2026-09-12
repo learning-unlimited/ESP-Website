@@ -5,15 +5,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0040_auto_20220719_2056'),
+        ("modules", "0040_auto_20220719_2056"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='studentclassregmoduleinfo',
-            name='use_grade_range_exceptions',
-            field=models.BooleanField(default=False, help_text=b'Check this box to enable grade range exceptions for the two-phase class lottery.'),
+            model_name="studentclassregmoduleinfo",
+            name="use_grade_range_exceptions",
+            field=models.BooleanField(
+                default=False,
+                help_text=b"Check this box to enable grade range exceptions for the two-phase class lottery.",
+            ),
         ),
     ]

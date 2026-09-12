@@ -20,6 +20,7 @@ from esp.utils.sanitize import sanitize_html_comments
 
 register = template.Library()
 
+
 @register.filter(is_safe=True)
 def markdown(value):
     """Runs Markdown over a given value, stripping malformed HTML comment

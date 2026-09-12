@@ -1,4 +1,4 @@
-﻿from django.test import RequestFactory, TestCase
+from django.test import RequestFactory, TestCase
 
 from esp.accounting.models import LineItemOptions, LineItemType
 from esp.program.models import Program
@@ -46,7 +46,9 @@ class StudentExtraCostsTest(TestCase):
             f"multi{item_type.id}_option_0": str(option.id),
             f"multi{item_type.id}_option_1": "invalid_string_amount",
         }
-        request = self.factory.post(f"/learn/{self.program.url}/studentextracosts/", post_data)
+        request = self.factory.post(
+            f"/learn/{self.program.url}/studentextracosts/", post_data
+        )
         request.user = self.user
         request.session = {}
 

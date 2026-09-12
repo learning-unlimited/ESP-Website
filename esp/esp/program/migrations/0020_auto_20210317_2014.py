@@ -8,35 +8,46 @@ import esp.db.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0023_contactinfo_address_country'),
-        ('program', '0019_classsection_ever_checked_in_students'),
+        ("users", "0023_contactinfo_address_country"),
+        ("program", "0019_classsection_ever_checked_in_students"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ModeratorRecord',
+            name="ModeratorRecord",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('will_moderate', models.BooleanField(default=False)),
-                ('num_slots', models.PositiveIntegerField(default=0)),
-                ('comments', models.TextField(blank=True, null=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("will_moderate", models.BooleanField(default=False)),
+                ("num_slots", models.PositiveIntegerField(default=0)),
+                ("comments", models.TextField(blank=True, null=True)),
             ],
         ),
         migrations.AddField(
-            model_name='moderatorrecord',
-            name='class_categories',
-            field=models.ManyToManyField(blank=True, to='program.ClassCategories'),
+            model_name="moderatorrecord",
+            name="class_categories",
+            field=models.ManyToManyField(blank=True, to="program.ClassCategories"),
         ),
         migrations.AddField(
-            model_name='moderatorrecord',
-            name='program',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='program.Program'),
+            model_name="moderatorrecord",
+            name="program",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="program.Program"
+            ),
         ),
         migrations.AddField(
-            model_name='moderatorrecord',
-            name='user',
-            field=esp.db.fields.AjaxForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.ESPUser'),
+            model_name="moderatorrecord",
+            name="user",
+            field=esp.db.fields.AjaxForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="users.ESPUser"
+            ),
         ),
     ]

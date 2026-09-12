@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -44,6 +43,7 @@ from esp.utils.web import render_to_response
 
 logger = logging.getLogger(__name__)
 
+
 class UnenrollModule(ProgramModuleObj):
     doc = """Frontend to unenroll students from classes."""
 
@@ -59,7 +59,7 @@ class UnenrollModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"
 
     @main_call
     @needs_admin
@@ -70,13 +70,14 @@ class UnenrollModule(ProgramModuleObj):
         times.
 
         """
-        if request.method == 'POST':
+        if request.method == "POST":
             context = {}
-            if 'undo' in request.POST:
-                selected_enrollments = request.POST['selected_enrollments']
-                ids = [int(id) for id in selected_enrollments.split(',')]
+            if "undo" in request.POST:
+                selected_enrollments = request.POST["selected_enrollments"]
+                ids = [int(id) for id in selected_enrollments.split(",")]
                 qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                    'user', 'section', 'section__parent_class')
+                    "user", "section", "section__parent_class"
+                )
                 reg_list = list(qs)
                 qs.update(end_date=None)
                 logger.info("Unexpired student registrations: %s", ids)
@@ -86,25 +87,36 @@ class UnenrollModule(ProgramModuleObj):
                 # Update mailman lists for unexpired registrations (dedupe list/user pairs)
                 from esp.mailman import add_list_member
 
-                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                program_list = "%s_%s-students" % (
+                    prog.program_type,
+                    prog.program_instance,
+                )
                 mailman_adds = set()
                 for reg in reg_list:
                     user = reg.user
                     section = reg.section
-                    mailman_adds.add(("%s-%s" % (section.emailcode(), "students"), user.pk))
-                    mailman_adds.add(("%s-%s" % (section.parent_class.emailcode(), "students"), user.pk))
+                    mailman_adds.add(
+                        ("%s-%s" % (section.emailcode(), "students"), user.pk)
+                    )
+                    mailman_adds.add(
+                        (
+                            "%s-%s" % (section.parent_class.emailcode(), "students"),
+                            user.pk,
+                        )
+                    )
                     mailman_adds.add((program_list, user.pk))
                 users_by_id = {reg.user_id: reg.user for reg in reg_list}
                 for list_name, user_id in mailman_adds:
                     add_list_member(list_name, users_by_id[user_id])
 
-                context['undo'] = True
+                context["undo"] = True
             else:
-                selected_enrollments = request.POST['selected_enrollments']
-                ids = [int(id) for id in selected_enrollments.split(',')]
+                selected_enrollments = request.POST["selected_enrollments"]
+                ids = [int(id) for id in selected_enrollments.split(",")]
                 now = datetime.datetime.now()
                 qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                    'user', 'section', 'section__parent_class')
+                    "user", "section", "section__parent_class"
+                )
                 reg_list = list(qs)
                 qs.update(end_date=now)
                 logger.info("Expired student registrations: %s", ids)
@@ -114,42 +126,57 @@ class UnenrollModule(ProgramModuleObj):
                 # Update mailman lists for expired registrations
                 from esp.mailman import remove_list_member
 
-                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                program_list = "%s_%s-students" % (
+                    prog.program_type,
+                    prog.program_instance,
+                )
                 mailman_removals = set()
                 for reg in reg_list:
                     section = reg.section
                     email = reg.user.email
-                    mailman_removals.add(("%s-%s" % (section.emailcode(), "students"), email))
-                    mailman_removals.add(("%s-%s" % (section.parent_class.emailcode(), "students"), email))
+                    mailman_removals.add(
+                        ("%s-%s" % (section.emailcode(), "students"), email)
+                    )
+                    mailman_removals.add(
+                        (
+                            "%s-%s" % (section.parent_class.emailcode(), "students"),
+                            email,
+                        )
+                    )
                 for list_name, email in mailman_removals:
                     remove_list_member(list_name, email)
 
                 affected_user_ids = {reg.user_id for reg in reg_list}
                 users_by_id = {reg.user_id: reg.user for reg in reg_list}
                 for user_id in affected_user_ids:
-                    if not StudentRegistration.valid_objects(now).filter(
+                    if (
+                        not StudentRegistration.valid_objects(now)
+                        .filter(
                             user_id=user_id,
                             section__parent_class__parent_program=prog,
-                            relationship__name='Enrolled',
-                    ).exists():
+                            relationship__name="Enrolled",
+                        )
+                        .exists()
+                    ):
                         remove_list_member(program_list, users_by_id[user_id].email)
-            context['ids'] = ids
-            return render_to_response(
-                self.baseDir()+'result.html', request, context)
+            context["ids"] = ids
+            return render_to_response(self.baseDir() + "result.html", request, context)
 
         timeslots = prog.getTimeSlotList()
         now = datetime.datetime.now()
         hour = datetime.timedelta(minutes=60)
-        selections = [{
-            'slot': timeslot,
-            'seq': seq,
-            'passed': timeslot.start < now - hour,
-            'upcoming': timeslot.start >= now - hour,
-        } for seq, timeslot in enumerate(timeslots)]
+        selections = [
+            {
+                "slot": timeslot,
+                "seq": seq,
+                "passed": timeslot.start < now - hour,
+                "upcoming": timeslot.start >= now - hour,
+            }
+            for seq, timeslot in enumerate(timeslots)
+        ]
         context = {}
-        context['selections'] = selections
-        return render_to_response(
-            self.baseDir()+'select.html', request, context)
+        context["selections"] = selections
+        return render_to_response(self.baseDir() + "select.html", request, context)
 
     @aux_call
     @json_response(None)
@@ -167,30 +194,29 @@ class UnenrollModule(ProgramModuleObj):
         section_timeslots: { section id -> event id of first timeslot }
 
         """
-        enrolled = RegistrationType.objects.get(name='Enrolled')
+        enrolled = RegistrationType.objects.get(name="Enrolled")
 
-        sections = prog.sections().filter(
-            status__gt=0, parent_class__status__gt=0)
-        sections = sections.exclude(
-            parent_class__category__is_lunch=True)
+        sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0)
+        sections = sections.exclude(parent_class__category__is_lunch=True)
 
         enrollments = StudentRegistration.valid_objects().filter(
-            relationship=enrolled, section__in=sections)
+            relationship=enrolled, section__in=sections
+        )
 
         # students not checked in
-        students = ESPUser.objects.filter(
-            id__in=enrollments.values('user'))
-        records = Record.objects.filter(program=prog, event__name='attended')
-        students = students.exclude(id__in=records.values('user'))
+        students = ESPUser.objects.filter(id__in=enrollments.values("user"))
+        records = Record.objects.filter(program=prog, event__name="attended")
+        students = students.exclude(id__in=records.values("user"))
 
         # enrollments for those students
         relevant = enrollments.filter(user__in=students).values_list(
-            'id', 'user', 'section', 'section__meeting_times')
-        relevant = relevant.order_by('section__meeting_times__start')
+            "id", "user", "section", "section__meeting_times"
+        )
+        relevant = relevant.order_by("section__meeting_times__start")
 
         section_timeslots = {}  # section -> starting timeslot id
         student_timeslots = {}  # student -> starting timeslot id
-        enrollments = {}        # id -> (student, section)
+        enrollments = {}  # id -> (student, section)
         for id, student, section, ts in relevant:
             if ts is None:
                 continue
@@ -204,18 +230,21 @@ class UnenrollModule(ProgramModuleObj):
             enrollments[id] = (student, section)
 
         return {
-            'section_timeslots': section_timeslots,
-            'student_timeslots': student_timeslots,
-            'enrollments': enrollments
+            "section_timeslots": section_timeslots,
+            "student_timeslots": student_timeslots,
+            "enrollments": enrollments,
         }
+
     cache = unenroll_status.method.cached_function
-    cache.depend_on_row(StudentRegistration,
-        lambda sr: {'prog': sr.section.parent_class.parent_program})
-    cache.depend_on_row('users.Record',
-        lambda record: {'prog': record.program},
-        lambda record: record.event and record.event.name == 'attended')
-    cache.depend_on_model('program.ClassSection')
-    cache.depend_on_model('program.ClassSubject')
-    cache.depend_on_model('cal.Event')
-    cache.depend_on_m2m('program.ClassSection', 'meeting_times',
-        lambda sec, event: {})
+    cache.depend_on_row(
+        StudentRegistration, lambda sr: {"prog": sr.section.parent_class.parent_program}
+    )
+    cache.depend_on_row(
+        "users.Record",
+        lambda record: {"prog": record.program},
+        lambda record: record.event and record.event.name == "attended",
+    )
+    cache.depend_on_model("program.ClassSection")
+    cache.depend_on_model("program.ClassSubject")
+    cache.depend_on_model("cal.Event")
+    cache.depend_on_m2m("program.ClassSection", "meeting_times", lambda sec, event: {})

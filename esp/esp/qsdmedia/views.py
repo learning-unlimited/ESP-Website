@@ -1,9 +1,9 @@
-
 from io import open
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -46,57 +46,63 @@ import fnmatch
 
 @admin_required
 def site_media(request):
-    """ Manage site-wide media (team photos, maps, policy docs) — not tied to a program. """
+    """Manage site-wide media (team photos, maps, policy docs) — not tied to a program."""
     uploadform = FileUploadForm()
     renameform = FileRenameForm()
 
-    if request.method == 'POST':
-        if request.POST.get('command') == 'delete':
-            docid = request.POST.get('docid')
+    if request.method == "POST":
+        if request.POST.get("command") == "delete":
+            docid = request.POST.get("docid")
             try:
-                media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
+                media = Media.objects.get(
+                    id=docid, owner_type__isnull=True, owner_id__isnull=True
+                )
                 media.delete()
             except Media.DoesNotExist:
                 pass
-            return HttpResponseRedirect(reverse('manage_site_media'))
-        if request.POST.get('command') == 'add':
+            return HttpResponseRedirect(reverse("manage_site_media"))
+        if request.POST.get("command") == "add":
             form = FileUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 media = Media(
-                    friendly_name=form.cleaned_data['title'],
+                    friendly_name=form.cleaned_data["title"],
                     owner_type=None,
                     owner_id=None,
                 )
-                ufile = form.cleaned_data['uploadedfile']
+                ufile = form.cleaned_data["uploadedfile"]
                 media.handle_file(ufile, ufile.name)
-                media.format = ''
+                media.format = ""
                 media.save()
-                return HttpResponseRedirect(reverse('manage_site_media'))
+                return HttpResponseRedirect(reverse("manage_site_media"))
             uploadform = form
-        elif request.POST.get('command') == 'rename':
+        elif request.POST.get("command") == "rename":
             form = FileRenameForm(request.POST, request.FILES)
             if form.is_valid():
-                docid = request.POST.get('docid')
+                docid = request.POST.get("docid")
                 try:
-                    media = Media.objects.get(id=docid, owner_type__isnull=True, owner_id__isnull=True)
-                    media.rename(form.cleaned_data['title'])
+                    media = Media.objects.get(
+                        id=docid, owner_type__isnull=True, owner_id__isnull=True
+                    )
+                    media.rename(form.cleaned_data["title"])
                     media.save()
-                    return HttpResponseRedirect(reverse('manage_site_media'))
+                    return HttpResponseRedirect(reverse("manage_site_media"))
                 except Media.DoesNotExist:
                     pass
             renameform = form
 
-    site_media_list = Media.objects.filter(owner_type__isnull=True, owner_id__isnull=True).order_by('friendly_name')
+    site_media_list = Media.objects.filter(
+        owner_type__isnull=True, owner_id__isnull=True
+    ).order_by("friendly_name")
     context = {
-        'site_media_list': site_media_list,
-        'uploadform': uploadform,
-        'renameform': renameform,
+        "site_media_list": site_media_list,
+        "uploadform": uploadform,
+        "renameform": renameform,
     }
-    return render_to_response('qsdmedia/site_media.html', request, context)
+    return render_to_response("qsdmedia/site_media.html", request, context)
 
 
 def qsdmedia2(request, url, ignored_part=None):
-    """ Download a media file """
+    """Download a media file"""
 
     try:
         # the default format url=hashed_name/friendly_name
@@ -111,27 +117,32 @@ def qsdmedia2(request, url, ignored_part=None):
         except Media.DoesNotExist:
             raise Http404
         except MultipleObjectsReturned:
-            media_rec = Media.objects.filter(file_name=url).latest('id')
-    except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
-        media_rec = Media.objects.filter(hashed_name=url).latest('id')
+            media_rec = Media.objects.filter(file_name=url).latest("id")
+    except (
+        MultipleObjectsReturned
+    ):  # If there exist multiple Media entries, we want the first one
+        media_rec = Media.objects.filter(hashed_name=url).latest("id")
 
     file_name = media_rec.get_uploaded_filename()
     try:
-        f = open(file_name, 'rb')
+        f = open(file_name, "rb")
     except FileNotFoundError:
         raise Http404
     response = HttpResponse(f.read(), content_type=media_rec.mime_type)
 
-    inline_dispositions = ['application/pdf', 'image/*', 'audio/*', 'video/*']
+    inline_dispositions = ["application/pdf", "image/*", "audio/*", "video/*"]
     # these MIME types are served with Content-Disposition: inline (show in browser)
     # all others are served with Content-Disposition: attachment (download)
-    disposition = 'attachment'
+    disposition = "attachment"
     for disp in inline_dispositions:
         if media_rec.mime_type and fnmatch.fnmatch(media_rec.mime_type, disp):
-            disposition = 'inline'
+            disposition = "inline"
             break
-    response['Content-Disposition'] = disposition + '; filename="' + media_rec.file_name + '"'
+    response["Content-Disposition"] = (
+        disposition + '; filename="' + media_rec.file_name + '"'
+    )
 
-    response['X-Content-Type-Options'] = 'nosniff'  # prevent browsers from second-guessing our MIME type
+    response["X-Content-Type-Options"] = (
+        "nosniff"  # prevent browsers from second-guessing our MIME type
+    )
     return response
-

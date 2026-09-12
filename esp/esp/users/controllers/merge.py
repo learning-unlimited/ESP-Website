@@ -7,11 +7,12 @@ logger = logging.getLogger(__name__)
 
 from esp.users.models import UserForwarder
 
-__all__ = ['get_related', 'merge', 'merge_users']
+__all__ = ["get_related", "merge", "merge_users"]
 
 #####################
 # Internal use only #
 #####################
+
 
 def _populate_related(target, related_list, many_to_many):
     """Populate a list of related objects in a palatable format."""
@@ -26,20 +27,31 @@ def _populate_related(target, related_list, many_to_many):
             ans.append((obj, name_in, many_to_many))
     return ans
 
+
 def _get_simply_related(target):
     """Gets objects related to 'target' through anything but many-to-many."""
-    objects = [f for f in target._meta.get_fields() if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete]
+    objects = [
+        f
+        for f in target._meta.get_fields()
+        if (f.one_to_many or f.one_to_one) and f.auto_created and not f.concrete
+    ]
     return _populate_related(target, objects, False)
+
 
 def _get_m2m_related(target):
     """Gets objects related to 'target' through a many-to-many."""
-    objects = [f for f in target._meta.get_fields(include_hidden=True) if f.many_to_many and f.auto_created]
+    objects = [
+        f
+        for f in target._meta.get_fields(include_hidden=True)
+        if f.many_to_many and f.auto_created
+    ]
     return _populate_related(target, objects, True)
 
 
 ################################
 # Potentially useful elsewhere #
 ################################
+
 
 def get_related(target):
     """
@@ -50,6 +62,7 @@ def get_related(target):
 
     """
     return _get_simply_related(target) + _get_m2m_related(target)
+
 
 def merge(absorber, absorbee):
     """Transfers everything from absorbee to absorber."""
@@ -74,7 +87,11 @@ def merge(absorber, absorbee):
             logger.warning(
                 "IntegrityError while merging %s %s.%s from user %s to %s; "
                 "skipping (likely duplicate constraint)",
-                obj.__class__.__name__, obj.pk, name, absorbee.pk, absorber.pk
+                obj.__class__.__name__,
+                obj.pk,
+                name,
+                absorbee.pk,
+                absorber.pk,
             )
     # Also transfer forward m2m relations (including symmetric).
     for field in absorber._meta.local_many_to_many:
@@ -91,6 +108,7 @@ def merge(absorber, absorbee):
 #########################
 # Usable from the shell #
 #########################
+
 
 @transaction.atomic
 def merge_users(absorber, absorbee, forward=True, deactivate=False):

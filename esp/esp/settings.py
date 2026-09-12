@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -37,7 +37,7 @@ import warnings
 import tempfile
 import django
 
-PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
+PROJECT_ROOT = os.path.join(os.path.dirname(__file__), "..")
 # Django expects BASE_DIR
 BASE_DIR = PROJECT_ROOT
 # set by shell_plus and script_setup (via esp.utils.shell_utils); should also
@@ -52,30 +52,30 @@ from .django_settings import *
 from .local_settings import *
 
 # Allow env to override DB settings (CI and Docker set these to match the PostgreSQL service)
-if os.environ.get('DATABASE_HOST'):
-    DATABASES['default']['HOST'] = os.environ.get('DATABASE_HOST')
-if os.environ.get('DATABASE_PORT'):
-    DATABASES['default']['PORT'] = os.environ.get('DATABASE_PORT')
-if os.environ.get('DATABASE_USER'):
-    DATABASE_USER = os.environ.get('DATABASE_USER')
-    DATABASES['default']['USER'] = DATABASE_USER
-if os.environ.get('DATABASE_PASSWORD'):
-    DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
-    DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
-if os.environ.get('DATABASE_NAME'):
-    DATABASE_NAME = os.environ.get('DATABASE_NAME')
-    DATABASES['default']['NAME'] = DATABASE_NAME
+if os.environ.get("DATABASE_HOST"):
+    DATABASES["default"]["HOST"] = os.environ.get("DATABASE_HOST")
+if os.environ.get("DATABASE_PORT"):
+    DATABASES["default"]["PORT"] = os.environ.get("DATABASE_PORT")
+if os.environ.get("DATABASE_USER"):
+    DATABASE_USER = os.environ.get("DATABASE_USER")
+    DATABASES["default"]["USER"] = DATABASE_USER
+if os.environ.get("DATABASE_PASSWORD"):
+    DATABASE_PASSWORD = os.environ.get("DATABASE_PASSWORD")
+    DATABASES["default"]["PASSWORD"] = DATABASE_PASSWORD
+if os.environ.get("DATABASE_NAME"):
+    DATABASE_NAME = os.environ.get("DATABASE_NAME")
+    DATABASES["default"]["NAME"] = DATABASE_NAME
 
 # Preserve the pre-Django-3.2 AutoField behaviour to silence models.W042
 # warnings. Explicitly locking this in prevents unintended schema changes if
 # Django's default evolves further. Revisit when migrating to BigAutoField
 # as part of the Django upgrade
-DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 
 # Do this here so we have access to PROJECT_ROOT
-TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
-TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
-TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
+TEMPLATES[0]["DIRS"].append(os.path.join(PROJECT_ROOT, "templates"))
+TEMPLATES[0]["DIRS"].append(django.__path__[0] + "/forms/templates")
+TEMPLATES[0]["OPTIONS"]["debug"] = DEBUG
 
 ######################
 # Transport security #
@@ -83,34 +83,40 @@ TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 # These depend on DEBUG, so they must be derived after local_settings.py has been imported.
 from . import local_settings as _local_settings
 
-if not hasattr(_local_settings, 'SESSION_COOKIE_SECURE'):
+if not hasattr(_local_settings, "SESSION_COOKIE_SECURE"):
     SESSION_COOKIE_SECURE = not DEBUG
-if not hasattr(_local_settings, 'CSRF_COOKIE_SECURE'):
+if not hasattr(_local_settings, "CSRF_COOKIE_SECURE"):
     CSRF_COOKIE_SECURE = not DEBUG
-if not hasattr(_local_settings, 'SECURE_SSL_REDIRECT'):
+if not hasattr(_local_settings, "SECURE_SSL_REDIRECT"):
     SECURE_SSL_REDIRECT = not DEBUG
-if not hasattr(_local_settings, 'SECURE_HSTS_SECONDS'):
+if not hasattr(_local_settings, "SECURE_HSTS_SECONDS"):
     # see https://docs.djangoproject.com/en/5.2/ref/middleware/#http-strict-transport-security
     SECURE_HSTS_SECONDS = 0 if DEBUG else 3600
 
 # Ensure database settings are set properly
-if len(DATABASES['default']['USER']) == 0:
+if len(DATABASES["default"]["USER"]) == 0:
     try:
-        DATABASES['default']['USER'] = DATABASE_USER
+        DATABASES["default"]["USER"] = DATABASE_USER
     except NameError:
-        raise Exception("You need to supply either DATABASES['default']['USER'] or DATABASE_USER in database_settings.py")
-if len(DATABASES['default']['PASSWORD']) == 0:
+        raise Exception(
+            "You need to supply either DATABASES['default']['USER'] or DATABASE_USER in database_settings.py"
+        )
+if len(DATABASES["default"]["PASSWORD"]) == 0:
     try:
-        DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
+        DATABASES["default"]["PASSWORD"] = DATABASE_PASSWORD
     except NameError:
-        raise Exception("You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py")
-if len(DATABASES['default']['NAME']) == 0:
+        raise Exception(
+            "You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py"
+        )
+if len(DATABASES["default"]["NAME"]) == 0:
     try:
-        DATABASES['default']['NAME'] = DATABASE_NAME
+        DATABASES["default"]["NAME"] = DATABASE_NAME
     except NameError:
-        raise Exception("You need to supply either DATABASES['default']['NAME'] or DATABASE_NAME in local_settings.py")
+        raise Exception(
+            "You need to supply either DATABASES['default']['NAME'] or DATABASE_NAME in local_settings.py"
+        )
 
-SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
+SERVER_EMAIL = "server@%s" % EMAIL_HOST_SENDER
 
 ############################################
 
@@ -126,112 +132,132 @@ STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 
 warnings.simplefilter("default", PendingDeprecationWarning)
 
-if LOG_FILE.endswith('.log'):
-    SHELL_LOG_FILE = LOG_FILE[:-4] + '.shell.log'
+if LOG_FILE.endswith(".log"):
+    SHELL_LOG_FILE = LOG_FILE[:-4] + ".shell.log"
 else:
-    SHELL_LOG_FILE = LOG_FILE + '.shell'
+    SHELL_LOG_FILE = LOG_FILE + ".shell"
 
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[%(asctime)s %(name)s:%(lineno)s] %(levelname)s: %(message)s",
         },
-        'brief': {
-            'format': '%(levelname)s: %(message)s',
-        },
-    },
-    'filters': {
-        'require_debug_false': {
-            '()': 'django.utils.log.RequireDebugFalse',
-        },
-        'require_debug_true': {
-            '()': 'django.utils.log.RequireDebugTrue',
-        },
-        'require_in_script': {
-            '()': 'esp.utils.log.RequireInScript',
-        },
-        'require_not_in_script': {
-            '()': 'esp.utils.log.RequireNotInScript',
+        "brief": {
+            "format": "%(levelname)s: %(message)s",
         },
     },
-    'handlers': {
-        'file': {
-            'level': LOG_LEVEL,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+        "require_in_script": {
+            "()": "esp.utils.log.RequireInScript",
+        },
+        "require_not_in_script": {
+            "()": "esp.utils.log.RequireNotInScript",
+        },
+    },
+    "handlers": {
+        "file": {
+            "level": LOG_LEVEL,
             # logrotate will take care of rotation if desired
-            'class': 'logging.FileHandler',
-            'filters': ['require_not_in_script'],
+            "class": "logging.FileHandler",
+            "filters": ["require_not_in_script"],
             # LOG_FILE is set in django_settings or overridden in
             # local_settings
-            'filename': LOG_FILE,
-            'formatter': 'verbose',
+            "filename": LOG_FILE,
+            "formatter": "verbose",
         },
-        'filescript': {
-            'level': LOG_LEVEL,
+        "filescript": {
+            "level": LOG_LEVEL,
             # logrotate will take care of rotation if desired
-            'class': 'logging.FileHandler',
-            'filters': ['require_in_script'],
-            'filename': SHELL_LOG_FILE,  # computed from LOG_FILE above
-            'formatter': 'verbose',
+            "class": "logging.FileHandler",
+            "filters": ["require_in_script"],
+            "filename": SHELL_LOG_FILE,  # computed from LOG_FILE above
+            "formatter": "verbose",
         },
-        'console': {
-            'level': LOG_LEVEL,
-            'filters': ['require_debug_true', 'require_not_in_script'],
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
+        "console": {
+            "level": LOG_LEVEL,
+            "filters": ["require_debug_true", "require_not_in_script"],
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
         },
-        'consolescript': {
-            'level': LOG_LEVEL,
-            'filters': ['require_in_script'],
-            'class': 'logging.StreamHandler',
-            'formatter': 'brief',
+        "consolescript": {
+            "level": LOG_LEVEL,
+            "filters": ["require_in_script"],
+            "class": "logging.StreamHandler",
+            "formatter": "brief",
         },
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false', 'require_not_in_script'],
-            'class': 'django.utils.log.AdminEmailHandler',
-            'include_html': True,
-            'formatter': 'verbose',
+        "mail_admins": {
+            "level": "ERROR",
+            "filters": ["require_debug_false", "require_not_in_script"],
+            "class": "django.utils.log.AdminEmailHandler",
+            "include_html": True,
+            "formatter": "verbose",
         },
     },
     # We don't have a root logger, because it for various reasons ends up
     # confusing runserver_plus and getting doubled log output.  I can't figure
     # out a good way around that, and we should ideally be logging everything
     # under 'esp' anyway.
-    'loggers': {
-        'django.security.DisallowedHost': {
+    "loggers": {
+        "django.security.DisallowedHost": {
             # Don't bother with the DisallowedHost errors.
-            'handlers': ['file', 'console'],
-            'propagate': False,
+            "handlers": ["file", "console"],
+            "propagate": False,
         },
         # TODO(benkraft): until 1.9 we need to have the following two handlers
         # around to override django's.  In 1.9 we will be able to remove them,
         # and just override 'django'.
-        'django.security': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins'],
-            'level': 'DEBUG',
+        "django.security": {
+            "handlers": [
+                "file",
+                "filescript",
+                "console",
+                "consolescript",
+                "mail_admins",
+            ],
+            "level": "DEBUG",
         },
-        'django.request': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins'],
-            'level': 'DEBUG',
+        "django.request": {
+            "handlers": [
+                "file",
+                "filescript",
+                "console",
+                "consolescript",
+                "mail_admins",
+            ],
+            "level": "DEBUG",
         },
-        'django': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins'],
-            'level': 'DEBUG',
+        "django": {
+            "handlers": [
+                "file",
+                "filescript",
+                "console",
+                "consolescript",
+                "mail_admins",
+            ],
+            "level": "DEBUG",
         },
-        'py.warnings': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript'],
+        "py.warnings": {
+            "handlers": ["file", "filescript", "console", "consolescript"],
         },
-        'esp': {
-            'handlers': ['file', 'filescript', 'console', 'consolescript',
-                         'mail_admins'],
-            'level': 'DEBUG',
+        "esp": {
+            "handlers": [
+                "file",
+                "filescript",
+                "console",
+                "consolescript",
+                "mail_admins",
+            ],
+            "level": "DEBUG",
         },
-    }
+    },
 }
 
 MANAGERS = ADMINS
@@ -240,30 +266,41 @@ DEFAULT_HOST = SITE_INFO[1]
 ALLOWED_HOSTS.append(DEFAULT_HOST)
 
 # Docker dev: allow localhost when a host local_settings.py is volume-mounted
-if os.environ.get('DJANGO_ALLOWED_HOSTS'):
-    _allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS').strip()
-    if _allowed_hosts == '*':
-        ALLOWED_HOSTS = ['*']
+if os.environ.get("DJANGO_ALLOWED_HOSTS"):
+    _allowed_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS").strip()
+    if _allowed_hosts == "*":
+        ALLOWED_HOSTS = ["*"]
     else:
-        ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts.split(',') if host.strip()]
+        ALLOWED_HOSTS = [
+            host.strip() for host in _allowed_hosts.split(",") if host.strip()
+        ]
 
-for (key, value) in CONTACTFORM_EMAIL_CHOICES:
-    if (key in ('esp', 'general', 'esp-web', 'relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
-        CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
+for key, value in CONTACTFORM_EMAIL_CHOICES:
+    if (key in ("esp", "general", "esp-web", "relations")) and not (
+        key in CONTACTFORM_EMAIL_ADDRESSES
+    ):
+        CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[
+            {
+                "esp": "default",
+                "general": "default",
+                "esp-web": "support",
+                "relations": "default",
+            }[key]
+        ]
 
 
-if 'CACHES' not in locals():
+if "CACHES" not in locals():
     CACHES = {
-        'default': {
-            'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
-            'LOCATION': '127.0.0.1:11211',
-            'TIMEOUT': DEFAULT_CACHE_TIMEOUT,
+        "default": {
+            "BACKEND": "esp.utils.memcached_multikey.CacheClass",
+            "LOCATION": "127.0.0.1:11211",
+            "TIMEOUT": DEFAULT_CACHE_TIMEOUT,
         }
     }
 
 # Docker dev: override memcached host when the repo is volume-mounted
-if os.environ.get('MEMCACHED_LOCATION'):
-    CACHES['default']['LOCATION'] = os.environ.get('MEMCACHED_LOCATION')
+if os.environ.get("MEMCACHED_LOCATION"):
+    CACHES["default"]["LOCATION"] = os.environ.get("MEMCACHED_LOCATION")
 
 MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LOCAL)])
 
@@ -272,9 +309,13 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # developer running tests) each get their own directory.  This prevents the
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
-if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    uid_str = str(getattr(os, 'getuid', os.getpid)())
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + uid_str)
+if not getattr(
+    tempfile, "alreadytwiddled", False
+):  # Python appears to run this multiple times
+    uid_str = str(getattr(os, "getuid", os.getpid)())
+    tempdir = os.path.join(
+        tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + uid_str
+    )
     os.makedirs(tempdir, mode=0o700, exist_ok=True)
     try:
         os.chmod(tempdir, 0o700)
@@ -286,4 +327,4 @@ if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this
 
 # change csrf cookie name from default to prevent collisions with misbehaving sites
 # that set a cookie on the top-level domain
-CSRF_COOKIE_NAME = 'esp_csrftoken'
+CSRF_COOKIE_NAME = "esp_csrftoken"

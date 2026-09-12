@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -36,7 +36,13 @@ import random
 from datetime import datetime
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
-from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentRegistration
+from esp.program.models import (
+    StudentApplication,
+    StudentAppQuestion,
+    StudentAppResponse,
+    StudentRegistration,
+)
+
 
 class TeacherReviewAppsTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -56,14 +62,14 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
 
         # Create an unauthorized teacher
         self.unauthorized_teacher, created = ESPUser.objects.get_or_create(
-            username='unauthorized_teacher',
-            first_name='Unauthorized',
-            last_name='Teacher',
-            email='unauthorized_teacher@example.com'
+            username="unauthorized_teacher",
+            first_name="Unauthorized",
+            last_name="Teacher",
+            email="unauthorized_teacher@example.com",
         )
-        self.unauthorized_teacher.set_password('password')
+        self.unauthorized_teacher.set_password("password")
         self.unauthorized_teacher.save()
-        self.unauthorized_teacher.makeRole('Teacher')
+        self.unauthorized_teacher.makeRole("Teacher")
 
         # Ensure the selected class has at least 2 students registered so that
         # tests requiring prev/next behavior have enough data to work with.
@@ -97,9 +103,13 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         # -- otherwise picking them by students_dict() iteration order (which
         # has no relation to added_class) makes the redirect assertion flaky.
         def added_class(student):
-            reg = StudentRegistration.valid_objects().filter(
-                section__parent_class=self.cls, user=student).first()
+            reg = (
+                StudentRegistration.valid_objects()
+                .filter(section__parent_class=self.cls, user=student)
+                .first()
+            )
             return reg.start_date if reg else datetime.min
+
         class_roster.sort(key=added_class)
 
         for student in class_roster[:2]:
@@ -112,8 +122,7 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         StudentAppQuestion.objects.filter(subject=self.cls).delete()
         for i in range(2):
             StudentAppQuestion.objects.create(
-                subject=self.cls,
-                question=f"Test Question {i+1}"
+                subject=self.cls, question=f"Test Question {i + 1}"
             )
 
         # Ensure newly created questions are attached to existing applications
@@ -123,24 +132,19 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         # Make the second student's application completed
         if len(self.student_apps) > 1:
             for question in self.student_apps[1].questions.all():
-                StudentAppResponse.objects.create(
-                    question=question,
-                    complete=True
-                )
+                StudentAppResponse.objects.create(question=question, complete=True)
 
     def test_review_students_valid(self):
         """Test that a valid teacher can access the review_students view (200 OK)"""
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
-            "Failed to log in as teacher"
+            self.client.login(username=self.teacher.username, password="password"),
+            "Failed to log in as teacher",
         )
 
         url = f"{self.program.get_teach_url()}review_students/{self.cls.id}/"
         response = self.client.get(url)
         self.assertEqual(
-            response.status_code,
-            200,
-            f"Expected 200, got {response.status_code}"
+            response.status_code, 200, f"Expected 200, got {response.status_code}"
         )
         # Ensure the view returns some content so that it is actually exercised
         self.assertTrue(response.content, "Expected non-empty response content")
@@ -150,8 +154,8 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
     def test_rejection_invalid_class(self):
         """Test that a non-existent class ID returns 404 or error"""
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
-            "Failed to log in as teacher"
+            self.client.login(username=self.teacher.username, password="password"),
+            "Failed to log in as teacher",
         )
 
         invalid_class_id = 999999
@@ -159,18 +163,18 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         response = self.client.get(url)
         # Should be error response (500) due to ESPError
         self.assertEqual(
-            response.status_code,
-            500,
-            f"Expected 500, got {response.status_code}"
+            response.status_code, 500, f"Expected 500, got {response.status_code}"
         )
         # Check that the error message is present
-        self.assertContains(response, 'Cannot find class with ID', status_code=500)
+        self.assertContains(response, "Cannot find class with ID", status_code=500)
 
     def test_rejection_unauthorized(self):
         """Test that a teacher without edit permissions is rejected"""
         self.assertTrue(
-            self.client.login(username=self.unauthorized_teacher.username, password='password'),
-            "Failed to log in as unauthorized teacher"
+            self.client.login(
+                username=self.unauthorized_teacher.username, password="password"
+            ),
+            "Failed to log in as unauthorized teacher",
         )
 
         url = f"{self.program.get_teach_url()}review_students/{self.cls.id}/"
@@ -180,20 +184,24 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         self.assertEqual(
             response.status_code,
             500,
-            f"Expected 500 for unauthorized teacher, got {response.status_code}"
+            f"Expected 500 for unauthorized teacher, got {response.status_code}",
         )
         # Check that the error message is present
-        self.assertContains(response, 'You cannot edit class', status_code=500)
+        self.assertContains(response, "You cannot edit class", status_code=500)
 
     def test_prev_redirect(self):
         """Test the redirect logic when ?prev=ID goes to next completed application"""
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
-            "Failed to log in as teacher"
+            self.client.login(username=self.teacher.username, password="password"),
+            "Failed to log in as teacher",
         )
 
         # Ensure we have at least two students with apps
-        self.assertGreaterEqual(len(self.students_with_apps), 2, "Fixture must provide at least two students with apps for prev/next behavior")
+        self.assertGreaterEqual(
+            len(self.students_with_apps),
+            2,
+            "Fixture must provide at least two students with apps for prev/next behavior",
+        )
 
         prev_student = self.students_with_apps[0]
         next_student = self.students_with_apps[1]
@@ -208,31 +216,29 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         self.assertEqual(
             response.status_code,
             302,
-            f"Expected 302 redirect, got {response.status_code}"
+            f"Expected 302 redirect, got {response.status_code}",
         )
 
         location = response["Location"]
         expected_location = f"{self.program.get_teach_url()}review_student/{self.cls.id}/?student={next_student.id}"
         self.assertTrue(
             location.endswith(expected_location),
-            f"Expected redirect to {expected_location}, got {location}"
+            f"Expected redirect to {expected_location}, got {location}",
         )
 
     def test_app_questions(self):
         """Test that the teacher's app questions view works correctly"""
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
-            "Failed to log in as teacher"
+            self.client.login(username=self.teacher.username, password="password"),
+            "Failed to log in as teacher",
         )
 
         url = f"{self.program.get_teach_url()}app_questions/"
 
         response = self.client.get(url)
         self.assertEqual(
-            response.status_code,
-            200,
-            f"Expected 200, got {response.status_code}"
+            response.status_code, 200, f"Expected 200, got {response.status_code}"
         )
 
         # Verify that the response contains form elements for questions
-        self.assertContains(response, 'question', status_code=200)
+        self.assertContains(response, "question", status_code=200)

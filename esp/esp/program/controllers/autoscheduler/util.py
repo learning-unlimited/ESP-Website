@@ -55,7 +55,9 @@ def timed_func(key):
             retval = func(*args, **kwargs)
             TIMER.end(key)
             return retval
+
         return wrapper
+
     return timer
 
 
@@ -75,7 +77,7 @@ def contiguous(timeslot1, timeslot2):
     """
     tol = timedelta(minutes=20)
 
-    if (timeslot2.start < timeslot1.end):
+    if timeslot2.start < timeslot1.end:
         return False
     if (timeslot2.start - timeslot1.end) < tol:
         return True
@@ -123,4 +125,5 @@ def memoize(f):
         if args not in cache:
             cache[args] = f(*args)
         return cache[args]
+
     return memoized_f

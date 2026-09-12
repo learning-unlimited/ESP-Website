@@ -39,21 +39,21 @@ class ModuleHandlerTestMixin:
             AssertionError: If login fails (wrong password or user not found).
         """
         role_map = {
-            'admin':   self.admins,
-            'teacher': self.teachers,
-            'student': self.students,
+            "admin": self.admins,
+            "teacher": self.teachers,
+            "student": self.students,
         }
         if role not in role_map:
             raise ValueError(
                 "Unknown role %r. Must be one of: %s"
-                % (role, ', '.join(sorted(role_map)))
+                % (role, ", ".join(sorted(role_map)))
             )
         user = role_map[role][0]
         self.assertTrue(
-            self.client.login(username=user.username, password='password'),
+            self.client.login(username=user.username, password="password"),
             "Could not log in as %s (username=%r). "
             "Check that ProgramFrameworkTest.setUp() created this user."
-            % (role, user.username)
+            % (role, user.username),
         )
         return user
 
@@ -83,7 +83,7 @@ class ModuleHandlerTestMixin:
             url = self.get_module_url('manage', 'finaidapprove')
             # -> '/manage/TestProgram/2222_Summer/finaidapprove'
         """
-        return '/%s/%s/%s' % (tl, self.program.url, view)
+        return "/%s/%s/%s" % (tl, self.program.url, view)
 
     # ------------------------------------------------------------------
     # Assertion helpers
@@ -100,10 +100,11 @@ class ModuleHandlerTestMixin:
         """
         response = self.client.get(url)
         self.assertEqual(
-            response.status_code, 200,
+            response.status_code,
+            200,
             "Expected HTTP 200 for GET %s, got %d. "
             "Check that the user is logged in and has the correct role."
-            % (url, response.status_code)
+            % (url, response.status_code),
         )
         return response
 
@@ -123,9 +124,10 @@ class ModuleHandlerTestMixin:
         """
         response = self.client.get(url)
         self.assertIn(
-            response.status_code, [302, 403],
+            response.status_code,
+            [302, 403],
             "Expected HTTP 302 or 403 for GET %s (access should be denied), "
-            "got %d." % (url, response.status_code)
+            "got %d." % (url, response.status_code),
         )
         return response
 

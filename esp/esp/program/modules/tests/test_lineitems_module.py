@@ -2,6 +2,7 @@
 Tests for esp.program.modules.handlers.lineitemsmodule
 Source: esp/esp/program/modules/handlers/lineitemsmodule.py
 """
+
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import Group
@@ -16,8 +17,14 @@ from esp.users.models import ESPUser
 
 
 def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator',
-                 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -26,9 +33,7 @@ class LineItemsModuleAdminSearchTest(TestCase):
 
     def test_wrong_view_name_returns_none(self):
         """get_admin_search_entry should return None for non-matching view names."""
-        result = LineItemsModule.get_admin_search_entry(
-            None, None, "wrongview", None
-        )
+        result = LineItemsModule.get_admin_search_entry(None, None, "wrongview", None)
         self.assertIsNone(result)
 
     def test_correct_view_name_returns_admin_search_entry(self):
@@ -90,7 +95,7 @@ class LineItemsModuleIsCompletedTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.lineitemtype_set.exclude.return_value.exists.return_value = False
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             self.assertFalse(module.isCompleted())
 
     def test_is_completed_true_when_lineitems_exist(self):
@@ -98,7 +103,7 @@ class LineItemsModuleIsCompletedTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.lineitemtype_set.exclude.return_value.exists.return_value = True
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             self.assertTrue(module.isCompleted())
 
     def test_is_completed_returns_boolean(self):
@@ -106,7 +111,7 @@ class LineItemsModuleIsCompletedTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.lineitemtype_set.exclude.return_value.exists.return_value = False
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             result = module.isCompleted()
             self.assertIsInstance(result, bool)
 
@@ -123,7 +128,7 @@ class LineItemsModuleIsStepTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.hasModule.return_value = False
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             self.assertFalse(module.isStep())
 
     def test_is_step_true_when_student_extra_costs_module_exists(self):
@@ -131,7 +136,7 @@ class LineItemsModuleIsStepTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.hasModule.return_value = True
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             self.assertTrue(module.isStep())
 
     def test_is_step_checks_correct_module_name(self):
@@ -139,7 +144,7 @@ class LineItemsModuleIsStepTest(TestCase):
         module = LineItemsModule()
         mock_program = MagicMock()
         mock_program.hasModule.return_value = False
-        with patch.object(LineItemsModule, 'program', mock_program):
+        with patch.object(LineItemsModule, "program", mock_program):
             module.isStep()
             mock_program.hasModule.assert_called_once_with("StudentExtraCosts")
 
@@ -171,7 +176,7 @@ class LineItemsModulePropertiesTest(TestCase):
 
     def test_setup_title_exists(self):
         """LineItemsModule should have a setup_title defined."""
-        self.assertTrue(hasattr(LineItemsModule, 'setup_title'))
+        self.assertTrue(hasattr(LineItemsModule, "setup_title"))
         self.assertIsInstance(LineItemsModule.setup_title, str)
 
 
@@ -180,34 +185,36 @@ class LineItemsModuleViewTest(ProgramFrameworkTest):
 
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler='LineItemsModule'),
-            ProgramModule.objects.get(handler='AdminCore'),
+            ProgramModule.objects.get(handler="LineItemsModule"),
+            ProgramModule.objects.get(handler="AdminCore"),
         ]
         super().setUp(modules=modules)
 
         self.adminUser, created = ESPUser.objects.get_or_create(
-            username='lineitemsadmin'
+            username="lineitemsadmin"
         )
-        self.adminUser.set_password('password')
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
         self.student = self.students[0]
-        self.student.set_password('password')
+        self.student.set_password("password")
         self.student.save()
 
-        self.url = '/manage/' + self.program.url + '/lineitems'
+        self.url = "/manage/" + self.program.url + "/lineitems"
 
     def test_admin_can_access_lineitems_view(self):
         """Admin users should get 200 response from lineitems view."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
     def test_non_admin_cannot_access_lineitems_view(self):
         """Non-admin users should not see line items management content."""
-        self.client.login(username=self.student.username,password='password')
+        self.client.login(username=self.student.username, password="password")
         response = self.client.get(self.url)
-        self.assertNotContains(response, 'Line Items Management', status_code=response.status_code)
+        self.assertNotContains(
+            response, "Line Items Management", status_code=response.status_code
+        )
 
     def test_unauthenticated_user_redirected(self):
         """Unauthenticated users should be redirected from lineitems view."""
@@ -216,70 +223,67 @@ class LineItemsModuleViewTest(ProgramFrameworkTest):
 
     def test_lineitems_view_contains_program_in_context(self):
         """Lineitems view should include program in context."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('prog', response.context)
+        self.assertIn("prog", response.context)
 
     def test_get_delete_shows_confirmation(self):
         """GET with op=delete should show delete confirmation page."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         lineitem = LineItemType.objects.create(
-            text='Test Item',
+            text="Test Item",
             amount_dec=10.00,
             program=self.program,
             required=False,
         )
-        response = self.client.get(
-            self.url + '?op=delete&id=' + str(lineitem.id)
-        )
+        response = self.client.get(self.url + "?op=delete&id=" + str(lineitem.id))
         self.assertEqual(response.status_code, 200)
 
     def test_post_delete_removes_lineitem(self):
         """POST with command=reallyremove should delete the line item."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         lineitem = LineItemType.objects.create(
-            text='Delete Me',
+            text="Delete Me",
             amount_dec=5.00,
             program=self.program,
             required=False,
         )
         lineitem_id = lineitem.id
-        self.client.post(self.url, {
-            'command': 'reallyremove',
-            'id': lineitem_id,
-        })
-        self.assertFalse(
-            LineItemType.objects.filter(id=lineitem_id).exists()
+        self.client.post(
+            self.url,
+            {
+                "command": "reallyremove",
+                "id": lineitem_id,
+            },
         )
+        self.assertFalse(LineItemType.objects.filter(id=lineitem_id).exists())
 
     def test_lineitems_view_shows_existing_lineitems(self):
         """Lineitems view should list existing line items in context."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         LineItemType.objects.create(
-            text='Visible Item',
+            text="Visible Item",
             amount_dec=20.00,
             program=self.program,
             required=False,
         )
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('lineitems', response.context)
+        self.assertIn("lineitems", response.context)
 
     def test_get_edit_loads_lineitem_form(self):
         """GET with op=edit should load the line item form with correct instance."""
-        self.client.login(username='lineitemsadmin', password='password')
+        self.client.login(username="lineitemsadmin", password="password")
         lineitem = LineItemType.objects.create(
-            text='Edit Me',
+            text="Edit Me",
             amount_dec=15.00,
             program=self.program,
             required=False,
         )
-        response = self.client.get(
-            self.url + '?op=edit&id=' + str(lineitem.id)
-        )
+        response = self.client.get(self.url + "?op=edit&id=" + str(lineitem.id))
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('lineitem_form', response.context)
-        self.assertIn('lineitem', response.context)
-        self.assertEqual(response.context['lineitem'].id, lineitem.id)
+        self.assertIn("lineitem_form", response.context)
+        self.assertIn("lineitem", response.context)
+        self.assertEqual(response.context["lineitem"].id, lineitem.id)

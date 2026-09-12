@@ -35,29 +35,33 @@ def classes_by_day(classes):
     rows = []
 
     # Allow callers to pass a single section/event instead of a list.
-    if isinstance(classes, Event) or not hasattr(classes, '__iter__'):
+    if isinstance(classes, Event) or not hasattr(classes, "__iter__"):
         classes = [classes]
 
     for cls in classes:
         # Compulsory timeslot -- an Event injected directly by the view
         if isinstance(cls, Event):
-            rows.append({
-                'cls': cls,
-                'event': cls,
-                'day_time': cls.pretty_time(include_date=True),
-                'is_repeating': False,
-            })
+            rows.append(
+                {
+                    "cls": cls,
+                    "event": cls,
+                    "day_time": cls.pretty_time(include_date=True),
+                    "is_repeating": False,
+                }
+            )
             continue
 
         meeting_times = list(cls.meeting_times.all())
 
         if not meeting_times:
-            rows.append({
-                'cls': cls,
-                'event': None,
-                'day_time': '',
-                'is_repeating': False,
-            })
+            rows.append(
+                {
+                    "cls": cls,
+                    "event": None,
+                    "day_time": "",
+                    "is_repeating": False,
+                }
+            )
             continue
 
         # Group events by calendar date to detect repeating classes
@@ -71,24 +75,30 @@ def classes_by_day(classes):
             # Yield one row per week; collapse same-day events into one time string
             for date in sorted(by_date.keys()):
                 day_events = sorted(by_date[date], key=lambda e: e.start)
-                collapsed = Event.collapse(day_events, tol=datetime.timedelta(minutes=15))
-                day_time = ', '.join(
+                collapsed = Event.collapse(
+                    day_events, tol=datetime.timedelta(minutes=15)
+                )
+                day_time = ", ".join(
                     e.pretty_time(include_date=True) for e in collapsed
                 )
-                rows.append({
-                    'cls': cls,
-                    'event': day_events[0],
-                    'day_time': day_time,
-                    'is_repeating': True,
-                })
+                rows.append(
+                    {
+                        "cls": cls,
+                        "event": day_events[0],
+                        "day_time": day_time,
+                        "is_repeating": True,
+                    }
+                )
         else:
             first_event = min(meeting_times, key=lambda e: e.start)
-            rows.append({
-                'cls': cls,
-                'event': first_event,
-                'day_time': ', '.join(cls.friendly_times(include_date=True)),
-                'is_repeating': False,
-            })
+            rows.append(
+                {
+                    "cls": cls,
+                    "event": first_event,
+                    "day_time": ", ".join(cls.friendly_times(include_date=True)),
+                    "is_repeating": False,
+                }
+            )
 
-    rows.sort(key=lambda r: (0, r['event'].start) if r['event'] else (1,))
+    rows.sort(key=lambda r: (0, r["event"].start) if r["event"] else (1,))
     return rows

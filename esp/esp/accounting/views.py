@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -33,7 +32,10 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.accounting.controllers import IndividualAccountingController, GlobalAccountingController
+from esp.accounting.controllers import (
+    IndividualAccountingController,
+    GlobalAccountingController,
+)
 from esp.accounting.models import Account, Transfer
 from esp.program.models import Program
 from esp.utils.web import render_to_response
@@ -41,83 +43,109 @@ from esp.users.models import admin_required, ESPUser
 from esp.users.forms.generic_search_form import StudentSearchForm
 from decimal import Decimal
 
+
 @admin_required
 def summary(request):
     context = {}
-    context['accounts'] = Account.objects.all().order_by('id')
+    context["accounts"] = Account.objects.all().order_by("id")
 
     gac = GlobalAccountingController()
 
-    context['donation_count'], context['donation_total'] = gac.global_donation_summary()
+    context["donation_count"], context["donation_total"] = gac.global_donation_summary()
 
     donation_data = gac.global_donation_times()
     if donation_data:
         cumulative = []
-        running = Decimal('0')
+        running = Decimal("0")
         for amount, dt in donation_data:
             running += amount
-            cumulative.append([dt.timestamp() * 1000, float(running)]) # [timestamp_ms, value]
-        context['donation_graph_data'] = cumulative
+            cumulative.append(
+                [dt.timestamp() * 1000, float(running)]
+            )  # [timestamp_ms, value]
+        context["donation_graph_data"] = cumulative
 
-    return render_to_response('accounting/summary.html', request, context)
+    return render_to_response("accounting/summary.html", request, context)
+
 
 @admin_required
 def user_summary(request):
-    '''Lists accounting for a user.
+    """Lists accounting for a user.
 
     Defaults to the current user, but can take the user ID in the extra
-    argument instead.'''
+    argument instead."""
     user = None
     context = {}
     form = StudentSearchForm()
-    if 'target_user' in request.GET:
-        users = ESPUser.objects.filter(id=request.GET['target_user'])
+    if "target_user" in request.GET:
+        users = ESPUser.objects.filter(id=request.GET["target_user"])
         if users.count() == 1:
             user = users[0]
-    elif 'target_user' in request.POST:
+    elif "target_user" in request.POST:
         form = StudentSearchForm(request.POST)
         if form.is_valid():
-            user = form.cleaned_data['target_user']
+            user = form.cleaned_data["target_user"]
 
     if user:
-        form = StudentSearchForm(initial={'target_user': user.id})
-        programs = Program.objects.filter(id__in=list(Transfer.objects.filter(user=user).values_list('line_item__program', flat = True).distinct()))
-        context['prog_results'] = user_accounting(user, programs)
+        form = StudentSearchForm(initial={"target_user": user.id})
+        programs = Program.objects.filter(
+            id__in=list(
+                Transfer.objects.filter(user=user)
+                .values_list("line_item__program", flat=True)
+                .distinct()
+            )
+        )
+        context["prog_results"] = user_accounting(user, programs)
 
-    context['target_user'] = user
-    context['form'] = form
-    return render_to_response('program/modules/accountingmodule/accounting.html', request, context)
+    context["target_user"] = user
+    context["form"] = form
+    return render_to_response(
+        "program/modules/accountingmodule/accounting.html", request, context
+    )
 
-def user_accounting(user, progs = []):
+
+def user_accounting(user, progs=[]):
     results = []
     for prog in progs:
         iac = IndividualAccountingController(prog, user)
         classified_transfers = [
-            { 'transfer': t, 'type': iac.classify_transfer(t) }
-            for t in iac.get_transfers().select_related('line_item')
+            {"transfer": t, "type": iac.classify_transfer(t)}
+            for t in iac.get_transfers().select_related("line_item")
         ]
         # Include refund transfers (excluded from get_transfers by default)
         refund_lit = iac.default_refund_lineitemtype()
         if refund_lit:
-            for t in Transfer.objects.filter(user=user, line_item=refund_lit, destination__isnull=True).select_related('line_item'):
-                classified_transfers.append({'transfer': t, 'type': iac.classify_transfer(t)})
+            for t in Transfer.objects.filter(
+                user=user, line_item=refund_lit, destination__isnull=True
+            ).select_related("line_item"):
+                classified_transfers.append(
+                    {"transfer": t, "type": iac.classify_transfer(t)}
+                )
 
-        sort_order = {"Cost (required)": 0, "Cost (optional)": 1, "Sibling discount": 2, "Financial aid": 3, "Payment": 4, "Refund": 5}
-        classified_transfers.sort(key=lambda t: 'Program admission' not in t['transfer'].line_item.text) # put Program admission at the top
-        classified_transfers.sort(key=lambda t: sort_order.get(t['type'], 100))
+        sort_order = {
+            "Cost (required)": 0,
+            "Cost (optional)": 1,
+            "Sibling discount": 2,
+            "Financial aid": 3,
+            "Payment": 4,
+            "Refund": 5,
+        }
+        classified_transfers.sort(
+            key=lambda t: "Program admission" not in t["transfer"].line_item.text
+        )  # put Program admission at the top
+        classified_transfers.sort(key=lambda t: sort_order.get(t["type"], 100))
         result = {
-            'program': prog,
-            'transfers': classified_transfers,
-            'identifier': iac.get_identifier(),
-            'grant': iac.latest_finaid_grant(),
+            "program": prog,
+            "transfers": classified_transfers,
+            "identifier": iac.get_identifier(),
+            "grant": iac.latest_finaid_grant(),
         }
         if iac.transfers_to_program_exist():
-            result['transfers_exist'] = True
-            result['requested'] = iac.amount_requested(ensure_required=False)
-            result['finaid'] = iac.amount_finaid()
-            result['siblingdiscount'] = iac.amount_siblingdiscount()
-            result['paid'] = iac.amount_paid()
-            result['refunded'] = iac.amount_refunded()
-            result['due'] = iac.amount_due()
+            result["transfers_exist"] = True
+            result["requested"] = iac.amount_requested(ensure_required=False)
+            result["finaid"] = iac.amount_finaid()
+            result["siblingdiscount"] = iac.amount_siblingdiscount()
+            result["paid"] = iac.amount_paid()
+            result["refunded"] = iac.amount_refunded()
+            result["due"] = iac.amount_due()
         results.append(result)
     return results

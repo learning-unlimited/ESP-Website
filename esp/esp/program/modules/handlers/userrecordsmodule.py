@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -33,13 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PARTICIPANTS,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, PersistentQueryFilter, Record, RecordType
+from esp.users.models import ESPUser, PersistentQueryFilter, Record, RecordType
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist, get_user_list
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
+
 
 class UserRecordsModule(ProgramModuleObj):
     doc = """Set arbitrary records for an arbitrary list of users"""
@@ -71,13 +74,15 @@ class UserRecordsModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def userrecordsfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('User filter has not been properly set')
+        if request.method != "POST" or "filterid" not in request.GET:
+            raise ESPError()("User filter has not been properly set")
 
         try:
-            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET["filterid"])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user records management process.')
+            raise ESPError()(
+                "The specified filter no longer exists or is invalid. Please restart the user records management process."
+            )
         users = filterObj.getList(ESPUser)
         try:
             users = users.distinct()
@@ -87,33 +92,35 @@ class UserRecordsModule(ProgramModuleObj):
         if not users:
             raise ESPError()("Your query did not match any users")
 
-        records = request.POST.getlist('records')
+        records = request.POST.getlist("records")
         record_type_map = {
             rt.name: rt for rt in RecordType.objects.filter(name__in=set(records))
         }
 
-        Record.objects.bulk_create([
-            Record(event=record_type_map[rec], program=prog, user=user)
-            for user in users
-            for rec in records
-        ])
+        Record.objects.bulk_create(
+            [
+                Record(event=record_type_map[rec], program=prog, user=user)
+                for user in users
+                for rec in records
+            ]
+        )
 
-        context = {'num_users': users.count(), 'records': records}
+        context = {"num_users": users.count(), "records": records}
 
-        return render_to_response(self.baseDir()+'finished.html', request, context)
+        return render_to_response(self.baseDir() + "finished.html", request, context)
 
     @main_call
     @needs_admin
     def userrecords(self, request, tl, one, two, module, extra, prog):
         usc = UserSearchController()
         context = {}
-        context['program'] = prog
-        context['records'] = list(RecordType.desc())
+        context["program"] = prog
+        context["records"] = list(RecordType.desc())
 
         if request.method == "POST":
             selected = []
             data = ListGenModule.processPost(request)
-            if data.get('submit_checklist') == 'true':
+            if data.get("submit_checklist") == "true":
                 filterObj, found = get_user_list(request, self.program.getLists(True))
                 selected = usc.selected_list_from_postdata(data)
             else:
@@ -121,24 +128,34 @@ class UserRecordsModule(ProgramModuleObj):
                     filterObj = usc.filter_from_postdata(prog, data)
                 except (ESPError_Log, ESPError_NoLog) as e:
                     context.update(usc.prepare_context(prog, target_path=request.path))
-                    context['error'] = str(e)
-                    return render_to_response(self.baseDir()+'search.html', request, context)
+                    context["error"] = str(e)
+                    return render_to_response(
+                        self.baseDir() + "search.html", request, context
+                    )
 
-            if data.get('use_checklist') == '1':
-                (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/userrecords' % prog.getUrlBase(), extra_context = {'module': "User Records Portal"})
+            if data.get("use_checklist") == "1":
+                (response, unused) = get_user_checklist(
+                    request,
+                    ESPUser.objects.filter(filterObj.get_Q()).distinct(),
+                    filterObj.id,
+                    "/manage/%s/userrecords" % prog.getUrlBase(),
+                    extra_context={"module": "User Records Portal"},
+                )
                 return response
 
-            context['selected'] = selected
-            context['filterid'] = filterObj.id
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            return render_to_response(self.baseDir()+'options.html', request, context)
+            context["selected"] = selected
+            context["filterid"] = filterObj.id
+            context["num_users"] = (
+                ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            )
+            return render_to_response(self.baseDir() + "options.html", request, context)
 
         context.update(usc.prepare_context(prog, target_path=request.path))
-        return render_to_response(self.baseDir()+'search.html', request, context)
+        return render_to_response(self.baseDir() + "search.html", request, context)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

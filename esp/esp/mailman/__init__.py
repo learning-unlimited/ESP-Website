@@ -1,4 +1,3 @@
-
 import os
 from subprocess import call, Popen, PIPE
 from django.conf import settings
@@ -14,10 +13,11 @@ if settings.USE_MAILMAN:
     MM_PATH = settings.MAILMAN_PATH
     MAILMAN_PASSWORD = settings.MAILMAN_PASSWORD
 else:
-    MAILMAN_PASSWORD = ''
+    MAILMAN_PASSWORD = ""
     MM_PATH = "/usr/sbin/"
 
 ## Functions for Mailman interop
+
 
 @enable_with_setting(settings.USE_MAILMAN)
 def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
@@ -32,6 +32,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 
     return call([MM_PATH + "newlist", "-q", list, owner, admin_password])
 
+
 @enable_with_setting(settings.USE_MAILMAN)
 def load_list_settings(list, listfile):
     """
@@ -39,7 +40,7 @@ def load_list_settings(list, listfile):
 
     If the path specified isn't an absolute path, it will be taken to be relative to the project root.
     """
-    if listfile[0] == '/':
+    if listfile[0] == "/":
         listpath = listfile
     else:
         listpath = os.path.join(settings.PROJECT_ROOT, listfile)
@@ -69,7 +70,7 @@ def apply_list_settings(list, data):
     """
 
     with NamedTemporaryFile() as f:
-        f.writelines( ( "%s = %s\n" % (key, repr(value)) for key, value in data.items() ) )
+        f.writelines(("%s = %s\n" % (key, repr(value)) for key, value in data.items()))
         f.file.flush()
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
@@ -88,7 +89,7 @@ del sha
     if not password:
         password = get_random_string(
             length=10,
-            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+            allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",
         )
 
     data_str = data_str_template % (password)
@@ -111,7 +112,7 @@ del sha
     if not password:
         password = get_random_string(
             length=10,
-            allowed_chars='abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+            allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",
         )
 
     data_str = data_str_template % (password)
@@ -135,18 +136,26 @@ def add_list_members(list_name, members):
 
     'members' is an iterable of email address strings or ESPUser objects.
     """
-    members = [x.get_email_sendto_address() if isinstance(x, User) else str(x) for x in members]
+    members = [
+        x.get_email_sendto_address() if isinstance(x, User) else str(x) for x in members
+    ]
 
-    members = '\n'.join(members)
+    members = "\n".join(members)
 
     # encode as iso-8859-1 to match Mailman's daft Unicode handling, see:
     # https://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Defaults.py.in#L1584
     # https://bazaar.launchpad.net/~mailman-coders/mailman/2.1/view/head:/Mailman/Utils.py#L822
     # this is probably fine since non-ASCII mostly happens in real names,
     # for which it doesn't matter much if we lose a few chars
-    members = members.encode('iso-8859-1', 'replace')
+    members = members.encode("iso-8859-1", "replace")
 
-    return Popen([MM_PATH + "add_members", "--regular-members-file=-", list_name], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(members)
+    return Popen(
+        [MM_PATH + "add_members", "--regular-members-file=-", list_name],
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+    ).communicate(members)
+
 
 @enable_with_setting(settings.USE_MAILMAN)
 def remove_list_member(list, member):
@@ -166,29 +175,41 @@ def remove_list_member(list, member):
         member = "\n".join(member)
 
     if isinstance(member, str):
-        member = member.encode('iso-8859-1', 'replace')
+        member = member.encode("iso-8859-1", "replace")
 
-    return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
+    return Popen(
+        [MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list],
+        stdin=PIPE,
+        stdout=PIPE,
+        stderr=PIPE,
+    ).communicate(member)
+
 
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
-    """ Return the list of email addresses on the specified mailing list """
-    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    """Return the list of email addresses on the specified mailing list"""
+    contents = (
+        Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE)
+        .communicate()[0]
+        .split("\n")
+    )
 
     try:
         # It seems the empty string gets dragged into this list.
-        contents.remove('')
+        contents.remove("")
     except ValueError:
         pass
 
     return contents
 
+
 @enable_with_setting(settings.USE_MAILMAN)
 def list_members(lst):
-    """ Return the list (QuerySet) of ESPUsers who are on this mailing list """
+    """Return the list (QuerySet) of ESPUsers who are on this mailing list"""
     contents = list_contents(lst)
     usernames = [x[:-12] for x in contents if x[-12:] == "@esp.mit.edu"]
     return ESPUser.objects.filter(Q(email__in=contents) | Q(username__in=usernames))
+
 
 @enable_with_setting(settings.USE_MAILMAN)
 def all_lists(show_nonpublic=False):
@@ -200,19 +221,20 @@ def all_lists(show_nonpublic=False):
     args = [MM_PATH + "list_lists", "-b"]
     if not show_nonpublic:
         args.append("-a")
-    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split("\n")
+
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
-    """ Return all lists that a user is a member of """
+    """Return all lists that a user is a member of"""
     if isinstance(user, str):
-        search_regex="^%s$" % user
+        search_regex = "^%s$" % user
     else:
         search_regex = "^(%s|%s@%s)$" % (user.email, user.username, "esp.mit.edu")
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
+    data = data[0].split("\n")
 
     # find_member's output is of the form
     #

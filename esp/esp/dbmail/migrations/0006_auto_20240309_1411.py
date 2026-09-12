@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0005_auto_20220719_2056'),
+        ("dbmail", "0005_auto_20220719_2056"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='messagevars',
-            old_name='pickled_provider',
-            new_name='pickled_provider_migration2024',
+            model_name="messagevars",
+            old_name="pickled_provider",
+            new_name="pickled_provider_migration2024",
         ),
         migrations.AddField(
-            model_name='messagevars',
-            name='pickled_provider',
+            model_name="messagevars",
+            name="pickled_provider",
             field=models.BinaryField(null=True),
         ),
     ]

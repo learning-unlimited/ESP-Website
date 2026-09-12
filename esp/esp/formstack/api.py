@@ -23,11 +23,11 @@
 import urllib.request, urllib.error, urllib.parse
 import json
 
-class Formstack(object):
 
+class Formstack(object):
     def __init__(self, api_key):
 
-        self.__api_url = 'https://www.formstack.com/api'
+        self.__api_url = "https://www.formstack.com/api"
         self.__api_key = api_key
 
     def forms(self):
@@ -38,31 +38,31 @@ class Formstack(object):
         display the form.
         """
 
-        return self.__request('forms')
+        return self.__request("forms")
 
     def form(self, id, args=None):
         """Returns detailed information about a form."""
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('form', args)
+        args["id"] = id
+        return self.__request("form", args)
 
     def data(self, id, args=None):
         """Returns data collected for a form."""
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('data', args)
+        args["id"] = id
+        return self.__request("data", args)
 
     def submission(self, id, args=None):
         """Returns a single submission collected for a form."""
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('submission', args)
+        args["id"] = id
+        return self.__request("submission", args)
 
     def submit(self, id, args=None):
         """
@@ -76,8 +76,8 @@ class Formstack(object):
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('submit', args)
+        args["id"] = id
+        return self.__request("submit", args)
 
     def edit(self, id, args=None):
         """
@@ -87,45 +87,45 @@ class Formstack(object):
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('edit', args)
+        args["id"] = id
+        return self.__request("edit", args)
 
     def delete(self, id, args=None):
         """Deletes an existing submission."""
 
         if args is None:
             args = {}
-        args['id'] = id
-        return self.__request('delete', args)
+        args["id"] = id
+        return self.__request("delete", args)
 
     def create_field(self, form, args=None):
-        """ Creates a field."""
+        """Creates a field."""
 
         if args is None:
             args = {}
-        args['form'] = form
-        return self.__request('createField', args)
+        args["form"] = form
+        return self.__request("createField", args)
 
     def __request(self, method, args=None):
-        """ Makes a Formstack API call and returns the response as an array."""
+        """Makes a Formstack API call and returns the response as an array."""
 
         if args is None:
             args = {}
-        args['api_key'] = self.__api_key
-        args['type'] = 'json'
-        req = urllib.request.Request(self.__api_url + '/' + method, \
-                              urllib.parse.urlencode(args))
+        args["api_key"] = self.__api_key
+        args["type"] = "json"
+        req = urllib.request.Request(
+            self.__api_url + "/" + method, urllib.parse.urlencode(args)
+        )
         try:
-
             res = urllib.request.urlopen(req)
             res = json.load(res)
 
-            if len(res) and res['status'] == 'ok':
-                return res['response']
-            elif len(res) and res['status'] == 'error':
-                raise APIError(res['error'])
+            if len(res) and res["status"] == "ok":
+                return res["response"]
+            elif len(res) and res["status"] == "error":
+                raise APIError(res["error"])
             else:
-                raise APIError('Unknown Error')
+                raise APIError("Unknown Error")
 
         # I don't know what they were thinking with try ... except: pass
         # --lua
@@ -134,7 +134,8 @@ class Formstack(object):
 
         return None
 
+
 class APIError(Exception):
     def __str__(self):
-        msg = self.args[0] if self.args else ''
-        return f'Formstack API error: {msg}'
+        msg = self.args[0] if self.args else ""
+        return f"Formstack API error: {msg}"

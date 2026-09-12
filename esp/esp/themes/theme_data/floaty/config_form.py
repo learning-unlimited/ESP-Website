@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -40,18 +39,33 @@ from esp.utils.widgets import NavStructureWidget
 
 from django import forms
 
+
 class ConfigForm(ThemeConfigurationForm):
     title_text = forms.CharField()
     subtitle_text = forms.CharField()
     titlebar_prefix = forms.CharField()
-    show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the footer?')
-    contact_links = forms.Field(required = False, widget=ContactFieldsWidget,
-                                label='Contact links below contact info (use absolute or relative URLs)',
-                                initial=[{"text": "contact us", "link": "/contact.html"}])
+    show_email = forms.BooleanField(
+        required=False,
+        help_text="Should the group email address be shown in the footer?",
+    )
+    contact_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label="Contact links below contact info (use absolute or relative URLs)",
+        initial=[{"text": "contact us", "link": "/contact.html"}],
+    )
     nav_structure = forms.Field(widget=NavStructureWidget)
-    facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
+    facebook_link = forms.URLField(
+        required=False, help_text="Leave blank to omit a Facebook link."
+    )
     # URLField requires an absolute URL, here we probably want relative.
-    faq_link = forms.CharField(required=False, initial='/faq.html',
-                               help_text='Leave blank to omit an FAQ link.')
-    show_footer_textbox = forms.BooleanField(initial = False, required = False,
-                                            help_text='Should there be an editable text field in the footer?')
+    faq_link = forms.CharField(
+        required=False,
+        initial="/faq.html",
+        help_text="Leave blank to omit an FAQ link.",
+    )
+    show_footer_textbox = forms.BooleanField(
+        initial=False,
+        required=False,
+        help_text="Should there be an editable text field in the footer?",
+    )

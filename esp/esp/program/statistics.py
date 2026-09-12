@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2010 by the individual contributors
@@ -40,7 +39,12 @@ from django.db.models import Count, Sum, F, DecimalField, Min, Max
 from django.template.loader import render_to_string
 
 from esp.accounting.models import FinancialAidGrant
-from esp.program.models import ClassSection, FinancialAidRequest, Program, StudentRegistration
+from esp.program.models import (
+    ClassSection,
+    FinancialAidRequest,
+    Program,
+    StudentRegistration,
+)
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
@@ -58,13 +62,14 @@ Do not place a top-level function in this file if you would not like it to
 be supported as a type of query.
 """
 
+
 def zipcodes(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
 
     #   Get zip codes and filter out invalid ones
     zip_dict = {}
-    result_dict['invalid'] = 0
+    result_dict["invalid"] = 0
     for profile in profiles:
         if profile.contact_user:
             zip_code = profile.contact_user.address_zip
@@ -73,43 +78,42 @@ def zipcodes(form, programs, students, profiles, result_dict=None):
                     zip_dict[zip_code] = 0
                 zip_dict[zip_code] += 1
             else:
-                result_dict['invalid'] += 1
+                result_dict["invalid"] += 1
         else:
-            result_dict['invalid'] += 1
+            result_dict["invalid"] += 1
     zip_codes = sorted(zip_dict.keys())
     zip_counts = [zip_dict[x] for x in zip_codes]
 
     #   Compile and render
-    result_dict['zip_data'] = sorted(zip(zip_codes, zip_counts), key=lambda pair: -pair[1])
-    if form.cleaned_data['limit']:
-        result_dict['zip_data'] = result_dict['zip_data'][:form.cleaned_data['limit']]
-    return render_to_string('program/statistics/zip_codes.html', result_dict)
+    result_dict["zip_data"] = sorted(
+        zip(zip_codes, zip_counts), key=lambda pair: -pair[1]
+    )
+    if form.cleaned_data["limit"]:
+        result_dict["zip_data"] = result_dict["zip_data"][: form.cleaned_data["limit"]]
+    return render_to_string("program/statistics/zip_codes.html", result_dict)
+
 
 def demographics(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
 
     #   Get aggregate 'vitals' info via cross-program SQL aggregation.
-    agg = (
-        ClassSection.objects
-        .filter(
-            parent_class__parent_program__in=programs,
-            status=ClassStatus.ACCEPTED,
-        )
-        .aggregate(
-            num_classes=Count('parent_class', distinct=True),
-            num_sections=Count('id'),
-            num_class_hours=Sum('duration'),
-            num_student_class_hours=Sum(
-                F('duration') * F('parent_class__class_size_max'),
-                output_field=DecimalField(),
-            ),
-        )
+    agg = ClassSection.objects.filter(
+        parent_class__parent_program__in=programs,
+        status=ClassStatus.ACCEPTED,
+    ).aggregate(
+        num_classes=Count("parent_class", distinct=True),
+        num_sections=Count("id"),
+        num_class_hours=Sum("duration"),
+        num_student_class_hours=Sum(
+            F("duration") * F("parent_class__class_size_max"),
+            output_field=DecimalField(),
+        ),
     )
-    result_dict['num_classes'] = agg['num_classes'] or 0
-    result_dict['num_sections'] = agg['num_sections'] or 0
-    result_dict['num_class_hours'] = int(agg['num_class_hours'] or 0)
-    result_dict['num_student_class_hours'] = int(agg['num_student_class_hours'] or 0)
+    result_dict["num_classes"] = agg["num_classes"] or 0
+    result_dict["num_sections"] = agg["num_sections"] or 0
+    result_dict["num_class_hours"] = int(agg["num_class_hours"] or 0)
+    result_dict["num_student_class_hours"] = int(agg["num_student_class_hours"] or 0)
 
     #   Get grade/age info
     gradyear_dict = {}
@@ -136,7 +140,7 @@ def demographics(form, programs, students, profiles, result_dict=None):
             user__in=students,
             program__in=programs,
             done=True,
-        ).values_list('user_id', flat=True)
+        ).values_list("user_id", flat=True)
     )
 
     #   2. Of those, students with reduced_lunch=True
@@ -146,7 +150,7 @@ def demographics(form, programs, students, profiles, result_dict=None):
             program__in=programs,
             done=True,
             reduced_lunch=True,
-        ).values_list('user_id', flat=True)
+        ).values_list("user_id", flat=True)
     )
 
     #   3. Students who have been approved (have a FinancialAidGrant)
@@ -154,7 +158,7 @@ def demographics(form, programs, students, profiles, result_dict=None):
         FinancialAidGrant.objects.filter(
             request__user__in=students,
             request__program__in=programs,
-        ).values_list('request__user_id', flat=True)
+        ).values_list("request__user_id", flat=True)
     )
 
     finaid_applied = list(applied_user_ids)
@@ -164,14 +168,15 @@ def demographics(form, programs, students, profiles, result_dict=None):
     #   Compile and render
     grad_years = sorted(gradyear_dict.keys())
     grad_counts = [gradyear_dict[key] for key in grad_years]
-    result_dict['gradyear_data'] = list(zip(grad_years, grad_counts))
+    result_dict["gradyear_data"] = list(zip(grad_years, grad_counts))
     birth_years = sorted(birthyear_dict.keys())
     birth_counts = [birthyear_dict[key] for key in birth_years]
-    result_dict['birthyear_data'] = list(zip(birth_years, birth_counts))
-    result_dict['finaid_applied'] = len(set(finaid_applied))
-    result_dict['finaid_lunch'] = len(set(finaid_lunch))
-    result_dict['finaid_approved'] = len(set(finaid_approved))
-    return render_to_string('program/statistics/demographics.html', result_dict)
+    result_dict["birthyear_data"] = list(zip(birth_years, birth_counts))
+    result_dict["finaid_applied"] = len(set(finaid_applied))
+    result_dict["finaid_lunch"] = len(set(finaid_lunch))
+    result_dict["finaid_approved"] = len(set(finaid_approved))
+    return render_to_string("program/statistics/demographics.html", result_dict)
+
 
 def schools(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
@@ -179,28 +184,33 @@ def schools(form, programs, students, profiles, result_dict=None):
 
     #   Count by name of every student's school
     school_dict = {}
-    result_dict['num_k12school'] = 0
-    result_dict['num_school'] = 0
+    result_dict["num_k12school"] = 0
+    result_dict["num_school"] = 0
     for profile in profiles:
         if profile.student_info:
             if profile.student_info.k12school:
                 if profile.student_info.k12school.name not in school_dict:
                     school_dict[profile.student_info.k12school.name] = 0
                 school_dict[profile.student_info.k12school.name] += 1
-                result_dict['num_k12school'] += 1
+                result_dict["num_k12school"] += 1
             elif profile.student_info.school:
                 if profile.student_info.school not in school_dict:
                     school_dict[profile.student_info.school] = 0
                 school_dict[profile.student_info.school] += 1
-                result_dict['num_school'] += 1
+                result_dict["num_school"] += 1
 
     #   Compile and render
     schools = sorted(school_dict.keys())
     school_counts = [school_dict[school] for school in schools]
-    result_dict['school_data'] = sorted(zip(schools, school_counts), key=lambda pair: -pair[1])
-    if form.cleaned_data['limit']:
-        result_dict['school_data'] = result_dict['school_data'][:form.cleaned_data['limit']]
-    return render_to_string('program/statistics/schools.html', result_dict)
+    result_dict["school_data"] = sorted(
+        zip(schools, school_counts), key=lambda pair: -pair[1]
+    )
+    if form.cleaned_data["limit"]:
+        result_dict["school_data"] = result_dict["school_data"][
+            : form.cleaned_data["limit"]
+        ]
+    return render_to_string("program/statistics/schools.html", result_dict)
+
 
 def startreg(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
@@ -218,28 +228,28 @@ def startreg(form, programs, students, profiles, result_dict=None):
             user__in=students,
             section__parent_class__parent_program__in=programs,
         )
-        .values('user_id', 'section__parent_class__parent_program')
-        .annotate(first_date=Min('start_date'))
+        .values("user_id", "section__parent_class__parent_program")
+        .annotate(first_date=Min("start_date"))
     )
     for entry in first_regs:
-        prog = program_lookup.get(entry['section__parent_class__parent_program'])
-        if prog and entry['first_date']:
-            reg_dict[prog][entry['first_date'].date()] += 1
+        prog = program_lookup.get(entry["section__parent_class__parent_program"])
+        if prog and entry["first_date"]:
+            reg_dict[prog][entry["first_date"].date()] += 1
 
     #   Bulk-fetch the latest confirmation time per (student, program)
     last_confirms = (
         Record.objects.filter(
             user__in=students,
-            event__name='reg_confirmed',
+            event__name="reg_confirmed",
             program__in=programs,
         )
-        .values('user_id', 'program_id')
-        .annotate(last_time=Max('time'))
+        .values("user_id", "program_id")
+        .annotate(last_time=Max("time"))
     )
     for entry in last_confirms:
-        prog = program_lookup.get(entry['program_id'])
-        if prog and entry['last_time']:
-            confirm_dict[prog][entry['last_time'].date()] += 1
+        prog = program_lookup.get(entry["program_id"])
+        if prog and entry["last_time"]:
+            confirm_dict[prog][entry["last_time"].date()] += 1
 
     #   Compile and render
     startreg_list = []
@@ -251,9 +261,10 @@ def startreg(form, programs, students, profiles, result_dict=None):
         confirm_dates = sorted(confirm_dict[program].keys())
         confirm_counts = [confirm_dict[program][key] for key in confirm_dates]
         confirm_list.append(list(zip(confirm_dates, confirm_counts)))
-    result_dict['program_data'] = list(zip(programs, startreg_list, confirm_list))
+    result_dict["program_data"] = list(zip(programs, startreg_list, confirm_list))
 
-    return render_to_string('program/statistics/startreg.html', result_dict)
+    return render_to_string("program/statistics/startreg.html", result_dict)
+
 
 def repeats(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
@@ -264,18 +275,15 @@ def repeats(form, programs, students, profiles, result_dict=None):
 
     #   Fetch all confirmed (user_id, program_url) pairs in one query,
     #   then derive program_type from the url below
-    confirmed_pairs = (
-        Record.objects.filter(
-            user__in=students,
-            event__name='reg_confirmed',
-        )
-        .values_list('user_id', 'program__url')
-    )
+    confirmed_pairs = Record.objects.filter(
+        user__in=students,
+        event__name="reg_confirmed",
+    ).values_list("user_id", "program__url")
 
     #   Group by user: count how many programs of each type they confirmed
     user_type_counts = defaultdict(Counter)
     for user_id, program_url in confirmed_pairs:
-        program_type = program_url.split('/')[0] if program_url else program_url
+        program_type = program_url.split("/")[0] if program_url else program_url
         user_type_counts[user_id][program_type] += 1
 
     #   Bin students by their (program_type, count) signature
@@ -292,14 +300,15 @@ def repeats(form, programs, students, profiles, result_dict=None):
     repeat_labels = []
     for key in repeat_count:
         if len(key) > 0:
-            repeat_labels.append(', '.join(['%dx %s' % (x[1], x[0]) for x in key]))
+            repeat_labels.append(", ".join(["%dx %s" % (x[1], x[0]) for x in key]))
             key_map[repeat_labels[-1]] = key
     repeat_labels.sort()
     repeat_counts = []
     for label in repeat_labels:
         repeat_counts.append(repeat_count[key_map[label]])
-    result_dict['repeat_data'] = list(zip(repeat_labels, repeat_counts))
-    return render_to_string('program/statistics/repeats.html', result_dict)
+    result_dict["repeat_data"] = list(zip(repeat_labels, repeat_counts))
+    return render_to_string("program/statistics/repeats.html", result_dict)
+
 
 def heardabout(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
@@ -313,9 +322,9 @@ def heardabout(form, programs, students, profiles, result_dict=None):
             #   Attempt to maintain some semblance of similarity by removing punctuation
             ha_str = profile.student_info.heard_about
             if ha_str:
-                ha_key = ha_str.rstrip('s').lower()
-                for char in ' _:-/.,!?+':
-                    ha_key = ha_key.replace(char, '')
+                ha_key = ha_str.rstrip("s").lower()
+                for char in " _:-/.,!?+":
+                    ha_key = ha_key.replace(char, "")
                 if ha_key not in case_map:
                     case_map[ha_key] = ha_str
                     reasons_dict[ha_str] = 0
@@ -324,10 +333,15 @@ def heardabout(form, programs, students, profiles, result_dict=None):
     #   Compile and render
     reasons = list(reasons_dict.keys())
     counts = [reasons_dict[x] for x in reasons]
-    result_dict['heardabout_data'] = sorted(zip(reasons, counts), key=lambda pair: -pair[1])
-    if form.cleaned_data['limit']:
-        result_dict['heardabout_data'] = result_dict['heardabout_data'][:form.cleaned_data['limit']]
-    return render_to_string('program/statistics/heardabout.html', result_dict)
+    result_dict["heardabout_data"] = sorted(
+        zip(reasons, counts), key=lambda pair: -pair[1]
+    )
+    if form.cleaned_data["limit"]:
+        result_dict["heardabout_data"] = result_dict["heardabout_data"][
+            : form.cleaned_data["limit"]
+        ]
+    return render_to_string("program/statistics/heardabout.html", result_dict)
+
 
 def hours(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
@@ -340,7 +354,7 @@ def hours(form, programs, students, profiles, result_dict=None):
     students_list = []
     timeslots_enrolled_list = []
     timeslots_attended_list = []
-    student_ids = set(students.values_list('id', flat=True))
+    student_ids = set(students.values_list("id", flat=True))
     for program in programs:
         #   Bulk-fetch all (user_id, timeslot_id) pairs for enrolled students
         enrolled_pairs = (
@@ -348,9 +362,9 @@ def hours(form, programs, students, profiles, result_dict=None):
             .filter(
                 user_id__in=student_ids,
                 section__parent_class__parent_program=program,
-                relationship__name='Enrolled',
+                relationship__name="Enrolled",
             )
-            .values_list('user_id', 'section__meeting_times')
+            .values_list("user_id", "section__meeting_times")
             .distinct()
         )
         #   Group enrolled timeslots by user
@@ -361,13 +375,12 @@ def hours(form, programs, students, profiles, result_dict=None):
 
         #   Bulk-fetch all (user_id, timeslot_id) pairs for attended students
         attended_pairs = (
-            StudentRegistration.objects
-            .filter(
+            StudentRegistration.objects.filter(
                 user_id__in=student_ids,
                 section__parent_class__parent_program=program,
-                relationship__name='Attended',
+                relationship__name="Attended",
             )
-            .values_list('user_id', 'section__meeting_times')
+            .values_list("user_id", "section__meeting_times")
             .distinct()
         )
         #   Group attended timeslots by user
@@ -383,7 +396,9 @@ def hours(form, programs, students, profiles, result_dict=None):
             all_timeslot_ids |= ts_set
         for ts_set in user_attended_timeslots.values():
             all_timeslot_ids |= ts_set
-        timeslot_lookup = {e.id: e for e in Event.objects.filter(id__in=all_timeslot_ids)}
+        timeslot_lookup = {
+            e.id: e for e in Event.objects.filter(id__in=all_timeslot_ids)
+        }
 
         #   Build the same dicts as the original code
         prog_students = 0
@@ -417,7 +432,6 @@ def hours(form, programs, students, profiles, result_dict=None):
         attended_list.append(dict(attended_dict))
         students_list.append(prog_students)
 
-
     #   Compile and render
     enrolled_flat = []
     attended_flat = []
@@ -444,17 +458,28 @@ def hours(form, programs, students, profiles, result_dict=None):
         counts = [timeslots_dict[key] for key in slots]
         timeslots_attended_flat.append(list(zip(slots, counts)))
     program_timeslots = [prog.getTimeSlots() for prog in programs]
-    result_dict['hours_data'] = list(zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list))
-    return render_to_string('program/statistics/hours.html', result_dict)
+    result_dict["hours_data"] = list(
+        zip(
+            programs,
+            enrolled_flat,
+            attended_flat,
+            program_timeslots,
+            timeslots_enrolled_flat,
+            timeslots_attended_flat,
+            students_list,
+        )
+    )
+    return render_to_string("program/statistics/hours.html", result_dict)
+
 
 def student_reg(form, programs, students, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
     stat_names = [
-        'Student Lottery',
-        'Class Lottery',
-        'Enrolled',
-        'Checked In',
+        "Student Lottery",
+        "Class Lottery",
+        "Enrolled",
+        "Checked In",
     ]
     prog_stats = []
     # ordered dictionary so the legend is in order
@@ -464,50 +489,64 @@ def student_reg(form, programs, students, profiles, result_dict=None):
     # one query, replacing one SQL INTERSECT query per program inside the loop.
     phasezero_by_program = defaultdict(set)
     for program_id, user_id in (
-        ESPUser.objects
-        .filter(phasezerorecord__program__in=programs)
-        .values_list('phasezerorecord__program_id', 'id')
+        ESPUser.objects.filter(phasezerorecord__program__in=programs)
+        .values_list("phasezerorecord__program_id", "id")
         .distinct()
     ):
         phasezero_by_program[program_id].add(user_id)
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = len(phasezero_by_program.get(program.id, set()) & student_id_set)
-        series_data['Student Lottery'].append([program.name, stud_lott_num])
+        stud_lott_num = len(
+            phasezero_by_program.get(program.id, set()) & student_id_set
+        )
+        series_data["Student Lottery"].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
-        class_lott_num = len(BigBoardModule.users_with_lottery(program) & student_id_set)
-        series_data['Class Lottery'].append([program.name, class_lott_num])
+        class_lott_num = len(
+            BigBoardModule.users_with_lottery(program) & student_id_set
+        )
+        series_data["Class Lottery"].append([program.name, class_lott_num])
         stats_list.append(class_lott_num)
         # enrolled in at least one class
         enroll_num = len(set(BigBoardModule.users_enrolled(program)) & student_id_set)
-        series_data['Enrolled'].append([program.name, enroll_num])
+        series_data["Enrolled"].append([program.name, enroll_num])
         stats_list.append(enroll_num)
         # students checked in
-        checked_num = len(set(BigBoardModule.checked_in_users(program)) & student_id_set)
-        series_data['Checked In'].append([program.name, checked_num])
+        checked_num = len(
+            set(BigBoardModule.checked_in_users(program)) & student_id_set
+        )
+        series_data["Checked In"].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)
     prog_data = list(zip(programs, prog_stats))
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
-    left_axis_data = [
-            {"axis_name": "# Students Registered", "series_data": graph_data},
+    graph_data = [
+        {"description": desc, "data": json.dumps(data)}
+        for desc, data in series_data.items()
     ]
-    result_dict.update({"prog_data": prog_data,
-                        "stat_names": stat_names,
-                        "x_axis_categories": json.dumps([program.name for program in programs.order_by('id')]),
-                        "left_axis_data": left_axis_data,
-                       })
-    return render_to_string('program/statistics/student_reg.html', result_dict)
+    left_axis_data = [
+        {"axis_name": "# Students Registered", "series_data": graph_data},
+    ]
+    result_dict.update(
+        {
+            "prog_data": prog_data,
+            "stat_names": stat_names,
+            "x_axis_categories": json.dumps(
+                [program.name for program in programs.order_by("id")]
+            ),
+            "left_axis_data": left_axis_data,
+        }
+    )
+    return render_to_string("program/statistics/student_reg.html", result_dict)
+
 
 def teacher_reg(form, programs, teachers, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
     stat_names = [
-        'Class Registered',
-        'Class Approved',
-        'Class Scheduled',
+        "Class Registered",
+        "Class Approved",
+        "Class Scheduled",
     ]
     prog_stats = []
     # ordered dictionary so the legend is in order
@@ -515,41 +554,56 @@ def teacher_reg(form, programs, teachers, profiles, result_dict=None):
     for program in programs:
         stats_list = []
         # teachers that registered a class
-        teach_reg = TeacherBigBoardModule.num_teachers_teaching(program, teachers = teachers)
-        series_data['Class Registered'].append([program.name, teach_reg])
+        teach_reg = TeacherBigBoardModule.num_teachers_teaching(
+            program, teachers=teachers
+        )
+        series_data["Class Registered"].append([program.name, teach_reg])
         stats_list.append(teach_reg)
         # teachers with an approved class
-        teach_app = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, teachers = teachers)
-        series_data['Class Approved'].append([program.name, teach_app])
+        teach_app = TeacherBigBoardModule.num_teachers_teaching(
+            program, approved=True, teachers=teachers
+        )
+        series_data["Class Approved"].append([program.name, teach_app])
         stats_list.append(teach_app)
         # teachers with a scheduled class
-        teach_sch = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, scheduled = True, teachers = teachers)
-        series_data['Class Scheduled'].append([program.name, teach_sch])
+        teach_sch = TeacherBigBoardModule.num_teachers_teaching(
+            program, approved=True, scheduled=True, teachers=teachers
+        )
+        series_data["Class Scheduled"].append([program.name, teach_sch])
         stats_list.append(teach_sch)
         prog_stats.append(stats_list)
     prog_data = list(zip(programs, prog_stats))
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in series_data.items()]
+    graph_data = [
+        {"description": desc, "data": json.dumps(data)}
+        for desc, data in series_data.items()
+    ]
     left_axis_data = [
         {"axis_name": "# Teachers", "series_data": graph_data},
     ]
-    result_dict.update({"prog_data": prog_data,
-                        "stat_names": stat_names,
-                        "x_axis_categories": json.dumps([program.name for program in programs.order_by('id')]),
-                        "left_axis_data": left_axis_data,
-                       })
-    return render_to_string('program/statistics/teacher_reg.html', result_dict)
+    result_dict.update(
+        {
+            "prog_data": prog_data,
+            "stat_names": stat_names,
+            "x_axis_categories": json.dumps(
+                [program.name for program in programs.order_by("id")]
+            ),
+            "left_axis_data": left_axis_data,
+        }
+    )
+    return render_to_string("program/statistics/teacher_reg.html", result_dict)
+
 
 def class_reg(form, programs, teachers, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
     stat_categories = ["Classes", "Class-student-hours"]
     stat_names = [
-        'Classes Registered',
-        'Classes Approved',
-        'Classes Scheduled',
-        'Class-student-hours Registered',
-        'Class-student-hours Approved',
-        'Class-student-hours Scheduled',
+        "Classes Registered",
+        "Classes Approved",
+        "Classes Scheduled",
+        "Class-student-hours Registered",
+        "Class-student-hours Approved",
+        "Class-student-hours Scheduled",
     ]
     prog_stats = []
     # ordered dictionary so the legend is in order
@@ -557,41 +611,72 @@ def class_reg(form, programs, teachers, profiles, result_dict=None):
     for program in programs:
         stats_list = []
         # registered classes
-        class_reg = TeacherBigBoardModule.num_class_reg(program, teachers = teachers)
-        series_data['Classes Registered'].append([program.name, class_reg])
+        class_reg = TeacherBigBoardModule.num_class_reg(program, teachers=teachers)
+        series_data["Classes Registered"].append([program.name, class_reg])
         stats_list.append(class_reg)
         # teachers with an approved class
-        class_app = TeacherBigBoardModule.num_class_reg(program, approved = True, teachers = teachers)
-        series_data['Classes Approved'].append([program.name, class_app])
+        class_app = TeacherBigBoardModule.num_class_reg(
+            program, approved=True, teachers=teachers
+        )
+        series_data["Classes Approved"].append([program.name, class_app])
         stats_list.append(class_app)
-        class_sch = TeacherBigBoardModule.num_class_reg(program, approved = True, scheduled = True, teachers = teachers)
-        series_data['Classes Scheduled'].append([program.name, class_sch])
+        class_sch = TeacherBigBoardModule.num_class_reg(
+            program, approved=True, scheduled=True, teachers=teachers
+        )
+        series_data["Classes Scheduled"].append([program.name, class_sch])
         stats_list.append(class_sch)
-        class_hours, student_hours = TeacherBigBoardModule.static_hours(program, teachers = teachers)
-        series_data['Class-student-hours Registered'].append([program.name, float(student_hours)])
+        class_hours, student_hours = TeacherBigBoardModule.static_hours(
+            program, teachers=teachers
+        )
+        series_data["Class-student-hours Registered"].append(
+            [program.name, float(student_hours)]
+        )
         stats_list.append(float(student_hours))
-        class_hours_approved, student_hours_approved = TeacherBigBoardModule.static_hours(program, approved = True, teachers = teachers)
-        series_data['Class-student-hours Approved'].append([program.name, float(student_hours_approved)])
+        class_hours_approved, student_hours_approved = (
+            TeacherBigBoardModule.static_hours(
+                program, approved=True, teachers=teachers
+            )
+        )
+        series_data["Class-student-hours Approved"].append(
+            [program.name, float(student_hours_approved)]
+        )
         stats_list.append(float(student_hours_approved))
-        class_hours_scheduled, student_hours_scheduled = TeacherBigBoardModule.static_hours(program, approved = True, scheduled = True, teachers = teachers)
-        series_data['Class-student-hours Scheduled'].append([program.name, float(student_hours_scheduled)])
+        class_hours_scheduled, student_hours_scheduled = (
+            TeacherBigBoardModule.static_hours(
+                program, approved=True, scheduled=True, teachers=teachers
+            )
+        )
+        series_data["Class-student-hours Scheduled"].append(
+            [program.name, float(student_hours_scheduled)]
+        )
         stats_list.append(float(student_hours_scheduled))
         prog_stats.append(stats_list)
     prog_data = list(zip(programs, prog_stats))
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in list(series_data.items())[0:3]]
+    graph_data = [
+        {"description": desc, "data": json.dumps(data)}
+        for desc, data in list(series_data.items())[0:3]
+    ]
     left_axis_data = [
         {"axis_name": "# Classes", "series_data": graph_data},
     ]
-    graph_data = [{"description": desc, "data": json.dumps(data)} for desc, data in list(series_data.items())[3:6]]
+    graph_data = [
+        {"description": desc, "data": json.dumps(data)}
+        for desc, data in list(series_data.items())[3:6]
+    ]
     right_axis_data = [
         {"axis_name": "# Class-student-hours", "series_data": graph_data},
     ]
-    result_dict.update({"prog_data": prog_data,
-                        "stat_categories": stat_categories,
-                        "stats_per_category": len(stat_names)//len(stat_categories),
-                        "stat_names": [stat_name.split(' ')[1] for stat_name in stat_names],
-                        "x_axis_categories": json.dumps([program.name for program in programs.order_by('id')]),
-                        "left_axis_data": left_axis_data,
-                        "right_axis_data": right_axis_data,
-                       })
-    return render_to_string('program/statistics/class_reg.html', result_dict)
+    result_dict.update(
+        {
+            "prog_data": prog_data,
+            "stat_categories": stat_categories,
+            "stats_per_category": len(stat_names) // len(stat_categories),
+            "stat_names": [stat_name.split(" ")[1] for stat_name in stat_names],
+            "x_axis_categories": json.dumps(
+                [program.name for program in programs.order_by("id")]
+            ),
+            "left_axis_data": left_axis_data,
+            "right_axis_data": right_axis_data,
+        }
+    )
+    return render_to_string("program/statistics/class_reg.html", result_dict)

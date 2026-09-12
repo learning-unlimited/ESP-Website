@@ -5,11 +5,10 @@ import esp.program.modules.base
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0019_auto_20200502_1251'),
+        ("modules", "0019_auto_20200502_1251"),
     ]
 
     operations = [
-        migrations.RenameModel('CreditCardViewer_Cybersource', 'CreditCardViewer')
+        migrations.RenameModel("CreditCardViewer_Cybersource", "CreditCardViewer")
     ]

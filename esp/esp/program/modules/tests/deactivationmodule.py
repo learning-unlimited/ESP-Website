@@ -10,26 +10,28 @@ from esp.users.models import ESPUser, PersistentQueryFilter
 
 class DeactivationModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        kwargs.update({
-            'num_students': 5,
-            'num_teachers': 1,
-            'num_admins': 1,
-        })
+        kwargs.update(
+            {
+                "num_students": 5,
+                "num_teachers": 1,
+                "num_admins": 1,
+            }
+        )
         super(DeactivationModuleTest, self).setUp(*args, **kwargs)
 
-        pm = ProgramModule.objects.get(handler='DeactivationModule')
+        pm = ProgramModule.objects.get(handler="DeactivationModule")
         self.module = ProgramModuleObj.getFromProgModule(self.program, pm)
 
         self.assertTrue(
-            self.client.login(username=self.admins[0].username, password='password'),
+            self.client.login(username=self.admins[0].username, password="password"),
             "Failed to log in admin user.",
         )
 
     def _url(self, filterid=None):
-        base = '/manage/%s/deactivatefinal' % self.program.getUrlBase()
+        base = "/manage/%s/deactivatefinal" % self.program.getUrlBase()
         if filterid is None:
             return base
-        return '%s?filterid=%s' % (base, filterid)
+        return "%s?filterid=%s" % (base, filterid)
 
     def _make_filter(self, users):
         q = Q(id__in=[user.id for user in users])
@@ -45,15 +47,15 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         re-raise ESPError_Log. Support both so these tests are environment-stable.
         """
         if data is None:
-            data = {'confirm': 'on'}
+            data = {"confirm": "on"}
         return self.client.post(self._url(filterid), data)
 
     def _assert_graceful_esp_error(self, response, *substrings):
         """Assert a handled ESPError rather than an uncaught 500/traceback."""
         self.assertEqual(response.status_code, 500)
-        self.assertTemplateUsed(response, 'error.html')
+        self.assertTemplateUsed(response, "error.html")
         if substrings:
-            error_message = str(response.context['error'])
+            error_message = str(response.context["error"])
             for substring in substrings:
                 self.assertIn(substring, error_message)
 
@@ -68,7 +70,7 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         response = self._post_deactivatefinal(filterObj.id)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'FINISHED')
+        self.assertContains(response, "FINISHED")
         for user in targets:
             user.refresh_from_db()
             self.assertFalse(user.is_active)
@@ -81,7 +83,8 @@ class DeactivationModuleTest(ProgramFrameworkTest):
 
         response = self._post_deactivatefinal()
         self._assert_graceful_esp_error(
-            response, 'Filter has not been properly set',
+            response,
+            "Filter has not been properly set",
         )
 
         target.refresh_from_db()
@@ -100,7 +103,9 @@ class DeactivationModuleTest(ProgramFrameworkTest):
 
         response = self._post_deactivatefinal(filter_id)
         self._assert_graceful_esp_error(
-            response, 'no longer exists', 'deactivation',
+            response,
+            "no longer exists",
+            "deactivation",
         )
 
         for user in targets:
@@ -111,16 +116,20 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         """A numeric filterid with no matching row is a graceful ESPError."""
         response = self._post_deactivatefinal(99999999)
         self._assert_graceful_esp_error(
-            response, 'no longer exists', 'deactivation',
+            response,
+            "no longer exists",
+            "deactivation",
         )
 
     def test_deactivatefinal_invalid_filterid(self):
         """A non-numeric filterid is a graceful ESPError, not a ValueError/500."""
-        response = self._post_deactivatefinal('abc')
+        response = self._post_deactivatefinal("abc")
         self._assert_graceful_esp_error(
-            response, 'no longer exists', 'invalid', 'deactivation',
+            response,
+            "no longer exists",
+            "invalid",
+            "deactivation",
         )
-
 
     def test_deactivatefinal_missing_confirmation(self):
         """Missing confirm checkbox is a graceful ESPError and does not deactivate."""
@@ -130,7 +139,7 @@ class DeactivationModuleTest(ProgramFrameworkTest):
             user.save()
         filterObj = self._make_filter(targets)
         response = self.client.post(self._url(filterObj.id), {})
-        self._assert_graceful_esp_error(response, 'confirm')
+        self._assert_graceful_esp_error(response, "confirm")
         for user in targets:
             user.refresh_from_db()
             self.assertTrue(user.is_active)
@@ -140,21 +149,24 @@ class DeactivationModuleTest(ProgramFrameworkTest):
         filterObj = self._make_filter([])
         # Force empty Q that matches nothing active
         from django.db.models import Q as DQ
+
         empty = PersistentQueryFilter.create_from_Q(ESPUser, DQ(id=-1))
         response = self._post_deactivatefinal(empty.id)
-        self._assert_graceful_esp_error(response, 'did not match')
+        self._assert_graceful_esp_error(response, "did not match")
 
     def test_deactivate_search_page_renders(self):
         """Admin can open the mass deactivation search page."""
-        response = self.client.get('/manage/%s/deactivate' % self.program.getUrlBase())
+        response = self.client.get("/manage/%s/deactivate" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'program/modules/deactivationmodule/search.html')
+        self.assertTemplateUsed(
+            response, "program/modules/deactivationmodule/search.html"
+        )
 
     def test_student_cannot_access_deactivate(self):
         self.client.logout()
         self.assertTrue(
-            self.client.login(username=self.students[0].username, password='password')
+            self.client.login(username=self.students[0].username, password="password")
         )
-        response = self.client.get('/manage/%s/deactivate' % self.program.getUrlBase())
+        response = self.client.get("/manage/%s/deactivate" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        self.assertTemplateUsed(response, "errors/program/notanadmin.html")

@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0040_printablejob'),
+        ("program", "0040_printablejob"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='classsection',
-            name='cancellation_reason',
+            model_name="classsection",
+            name="cancellation_reason",
             field=models.TextField(blank=True, null=True),
         ),
     ]

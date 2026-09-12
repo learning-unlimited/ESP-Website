@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -42,10 +42,16 @@ class ExpirableModel(models.Model):
     """
     Abstract model which any models requiring start/end and expiry should extend.
     """
-    start_date = models.DateTimeField(blank=True, null=True, default=datetime.now,
-                                      help_text="If blank, has always started.")
-    end_date = models.DateTimeField(blank=True, null=True, default=None,
-                                    help_text="If blank, never ends.")
+
+    start_date = models.DateTimeField(
+        blank=True,
+        null=True,
+        default=datetime.now,
+        help_text="If blank, has always started.",
+    )
+    end_date = models.DateTimeField(
+        blank=True, null=True, default=None, help_text="If blank, never ends."
+    )
 
     def expire(self, save=True):
         self.end_date = datetime.now()
@@ -62,8 +68,9 @@ class ExpirableModel(models.Model):
     def is_valid(self, when=None):
         if when is None:
             when = datetime.now()
-        return (self.start_date is None or self.start_date <= when) and \
-               (self.end_date is None or self.end_date >= when)
+        return (self.start_date is None or self.start_date <= when) and (
+            self.end_date is None or self.end_date >= when
+        )
 
     @classmethod
     def valid_objects(cls, when=None):

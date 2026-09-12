@@ -9,8 +9,11 @@ These tests verify:
 
 from esp.program.controllers.testingutils import DataCleanupController
 from esp.program.models import (
-    RegistrationType, StudentRegistration, StudentSubjectInterest,
-    FinancialAidRequest, RegistrationProfile,
+    RegistrationType,
+    StudentRegistration,
+    StudentSubjectInterest,
+    FinancialAidRequest,
+    RegistrationProfile,
 )
 from esp.program.models.class_ import ClassSubject
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
@@ -36,34 +39,39 @@ class TestDataCleanupTest(TestCase):
         def make_program(slug):
             categories = []
             cat, _ = ClassCategories.objects.get_or_create(
-                category='Category A', symbol='A')
+                category="Category A", symbol="A"
+            )
             categories.append(cat)
 
             admin, _ = ESPUser.objects.get_or_create(
-                username='admin_%s' % slug,
-                defaults={'first_name': 'Admin', 'last_name': slug,
-                          'email': 'admin_%s@test.example' % slug})
-            admin.set_password('password')
+                username="admin_%s" % slug,
+                defaults={
+                    "first_name": "Admin",
+                    "last_name": slug,
+                    "email": "admin_%s@test.example" % slug,
+                },
+            )
+            admin.set_password("password")
             admin.save()
-            admin.makeRole('Administrator')
+            admin.makeRole("Administrator")
 
             prog_form_values = {
-                'term': '2222_%s' % slug,
-                'term_friendly': 'Summer 2222 %s' % slug,
-                'grade_min': '7',
-                'grade_max': '12',
-                'director_email': 'info@test.learningu.org',
-                'program_size_max': '3000',
-                'program_type': 'TestProg',
-                'program_modules': ProgramModule.objects.all(),
-                'class_categories': [cat.id for cat in categories],
-                'admins': [admin.id],
-                'teacher_reg_start': '2000-01-01 00:00:00',
-                'teacher_reg_end': '3001-01-01 00:00:00',
-                'student_reg_start': '2000-01-01 00:00:00',
-                'student_reg_end': '3001-01-01 00:00:00',
-                'base_cost': '0',
-                'sibling_discount': '0',
+                "term": "2222_%s" % slug,
+                "term_friendly": "Summer 2222 %s" % slug,
+                "grade_min": "7",
+                "grade_max": "12",
+                "director_email": "info@test.learningu.org",
+                "program_size_max": "3000",
+                "program_type": "TestProg",
+                "program_modules": ProgramModule.objects.all(),
+                "class_categories": [cat.id for cat in categories],
+                "admins": [admin.id],
+                "teacher_reg_start": "2000-01-01 00:00:00",
+                "teacher_reg_end": "3001-01-01 00:00:00",
+                "student_reg_start": "2000-01-01 00:00:00",
+                "student_reg_end": "3001-01-01 00:00:00",
+                "base_cost": "0",
+                "sibling_discount": "0",
             }
             pcf = ProgramCreationForm(prog_form_values)
             if not pcf.is_valid():
@@ -72,48 +80,65 @@ class TestDataCleanupTest(TestCase):
             perms, modules = prepare_program(temp_prog, pcf.data)
             new_prog = pcf.save(commit=False)
             ptype_slug = re.sub(
-                r'[-\s]+', '_',
-                re.sub(r'[^\w\s-]', '', unicodedata.normalize(
-                    'NFKD', pcf.cleaned_data['program_type'])).strip())
-            new_prog.url = ptype_slug + '/' + pcf.cleaned_data['term']
-            new_prog.name = (pcf.cleaned_data['program_type'] + ' ' +
-                             pcf.cleaned_data['term_friendly'])
+                r"[-\s]+",
+                "_",
+                re.sub(
+                    r"[^\w\s-]",
+                    "",
+                    unicodedata.normalize("NFKD", pcf.cleaned_data["program_type"]),
+                ).strip(),
+            )
+            new_prog.url = ptype_slug + "/" + pcf.cleaned_data["term"]
+            new_prog.name = (
+                pcf.cleaned_data["program_type"]
+                + " "
+                + pcf.cleaned_data["term_friendly"]
+            )
             new_prog.save()
             pcf.save_m2m()
-            commit_program(new_prog, perms,
-                           pcf.cleaned_data['base_cost'],
-                           pcf.cleaned_data['sibling_discount'])
+            commit_program(
+                new_prog,
+                perms,
+                pcf.cleaned_data["base_cost"],
+                pcf.cleaned_data["sibling_discount"],
+            )
             from django.contrib.auth.models import Group
-            Group.objects.get_or_create(name='Teacher')
-            Group.objects.get_or_create(name='Student')
+
+            Group.objects.get_or_create(name="Teacher")
+            Group.objects.get_or_create(name="Student")
             return new_prog
 
-        self.prog = make_program('alpha')
-        self.other_prog = make_program('beta')
+        self.prog = make_program("alpha")
+        self.other_prog = make_program("beta")
 
         # Users
         def make_user(username, role):
             u, _ = ESPUser.objects.get_or_create(
                 username=username,
-                defaults={'first_name': username, 'last_name': 'Test',
-                          'email': '%s@test.example' % username})
-            u.set_password('password')
+                defaults={
+                    "first_name": username,
+                    "last_name": "Test",
+                    "email": "%s@test.example" % username,
+                },
+            )
+            u.set_password("password")
             u.save()
             u.makeRole(role)
             return u
 
-        self.student = make_user('wipe_student_a', 'Student')
-        self.other_student = make_user('wipe_student_b', 'Student')
-        self.teacher = make_user('wipe_teacher_a', 'Teacher')
+        self.student = make_user("wipe_student_a", "Student")
+        self.other_student = make_user("wipe_student_b", "Student")
+        self.teacher = make_user("wipe_teacher_a", "Teacher")
 
         # A class section in self.prog
         cat, _ = ClassSubject.objects.model._meta.get_field(
-            'category').related_model.objects.get_or_create(
-                category='Category A', symbol='A')
+            "category"
+        ).related_model.objects.get_or_create(category="Category A", symbol="A")
         self.cls = ClassSubject.objects.create(
-            title='Wipe Test Class',
+            title="Wipe Test Class",
             category=cat,
-            grade_min=7, grade_max=12,
+            grade_min=7,
+            grade_max=12,
             parent_program=self.prog,
             class_size_max=30,
         )
@@ -123,7 +148,8 @@ class TestDataCleanupTest(TestCase):
 
         # StudentRegistration for self.student
         enrolled, _ = RegistrationType.objects.get_or_create(
-            name='Enrolled', category='student')
+            name="Enrolled", category="student"
+        )
         self.sr = StudentRegistration.objects.create(
             user=self.student,
             section=self.section,
@@ -144,7 +170,7 @@ class TestDataCleanupTest(TestCase):
         )
 
         # Record
-        rec_type, _ = RecordType.objects.get_or_create(name='reg_confirmed')
+        rec_type, _ = RecordType.objects.get_or_create(name="reg_confirmed")
         self.rec = Record.objects.create(
             user=self.student,
             program=self.prog,
@@ -183,30 +209,30 @@ class TestDataCleanupTest(TestCase):
         """execute() removes student-side data for the target user+program."""
         ctrl = DataCleanupController(self.prog, self.student)
         counts = ctrl.get_counts()
-        self.assertGreater(counts['student_registrations'], 0)
-        self.assertGreater(counts['records'], 0)
+        self.assertGreater(counts["student_registrations"], 0)
+        self.assertGreater(counts["records"], 0)
 
         ctrl.execute()
 
         self.assertFalse(
             StudentRegistration.objects.filter(id=self.sr.id).exists(),
-            'StudentRegistration should be deleted',
+            "StudentRegistration should be deleted",
         )
         self.assertFalse(
             StudentSubjectInterest.objects.filter(id=self.ssi.id).exists(),
-            'StudentSubjectInterest should be deleted',
+            "StudentSubjectInterest should be deleted",
         )
         self.assertFalse(
             Record.objects.filter(id=self.rec.id).exists(),
-            'Record should be deleted',
+            "Record should be deleted",
         )
         self.assertFalse(
             FinancialAidRequest.objects.filter(id=self.fin.id).exists(),
-            'FinancialAidRequest should be deleted',
+            "FinancialAidRequest should be deleted",
         )
         self.assertFalse(
             RegistrationProfile.objects.filter(id=self.profile.id).exists(),
-            'RegistrationProfile should be deleted',
+            "RegistrationProfile should be deleted",
         )
 
     def test_wipe_does_not_touch_other_user(self):
@@ -216,7 +242,7 @@ class TestDataCleanupTest(TestCase):
 
         self.assertTrue(
             StudentRegistration.objects.filter(id=self.sr_other.id).exists(),
-            'Other student registration must be preserved',
+            "Other student registration must be preserved",
         )
 
     def test_wipe_does_not_touch_other_program(self):
@@ -226,5 +252,5 @@ class TestDataCleanupTest(TestCase):
 
         self.assertTrue(
             Record.objects.filter(id=self.rec_other_prog.id).exists(),
-            'Record from a different program must be preserved',
+            "Record from a different program must be preserved",
         )

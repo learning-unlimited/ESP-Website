@@ -4,24 +4,23 @@ from django.db import migrations, models
 
 
 def fill_missing_form_titles(apps, schema_editor):
-    Form = apps.get_model('customforms', 'Form')
-    for form in Form.objects.all().only('id', 'title'):
-        if not (form.title or '').strip():
-            form.title = 'Untitled Form'
-            form.save(update_fields=['title'])
+    Form = apps.get_model("customforms", "Form")
+    for form in Form.objects.all().only("id", "title"):
+        if not (form.title or "").strip():
+            form.title = "Untitled Form"
+            form.save(update_fields=["title"])
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('customforms', '0002_auto_20151109_0048'),
+        ("customforms", "0002_auto_20151109_0048"),
     ]
 
     operations = [
         migrations.RunPython(fill_missing_form_titles, migrations.RunPython.noop),
         migrations.AlterField(
-            model_name='form',
-            name='title',
+            model_name="form",
+            name="title",
             field=models.CharField(max_length=40),
         ),
     ]

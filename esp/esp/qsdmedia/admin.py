@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,9 +36,20 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.qsdmedia.models import Media
 
+
 class MediaAdmin(admin.ModelAdmin):
-    list_display = ['owner_type', 'owner_id', 'friendly_name', 'target_file', ]
-    list_display_links = ['friendly_name']
-    search_fields = ['friendly_name', 'owner_id', ]
-    list_filter = ('owner_type',)
+    list_display = [
+        "owner_type",
+        "owner_id",
+        "friendly_name",
+        "target_file",
+    ]
+    list_display_links = ["friendly_name"]
+    search_fields = [
+        "friendly_name",
+        "owner_id",
+    ]
+    list_filter = ("owner_type",)
+
+
 admin_site.register(Media, MediaAdmin)

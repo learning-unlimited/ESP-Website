@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,9 +36,11 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.middleware.threadlocalrequest import get_current_request
 from django.http import HttpResponseRedirect
 
+
 class StudentRegConfirm(ProgramModuleObj):
     doc = """Basically, a dirty hack to add a link to registration confirmation into the list of stuffs to do during reg"""
-    permission_types = ('Student/Confirm',)
+    permission_types = ("Student/Confirm",)
+
     @classmethod
     def module_properties(cls):
         return {
@@ -48,7 +49,7 @@ class StudentRegConfirm(ProgramModuleObj):
             "module_type": "learn",
             "seq": 99999,
             "choosable": 1,
-            }
+        }
 
     @main_call
     @needs_student_in_grade
@@ -64,4 +65,4 @@ class StudentRegConfirm(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

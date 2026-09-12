@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,10 +36,13 @@ from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import ClassSection
 from esp.utils.web import render_to_response
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.users.models    import ESPUser, Record, RecordType
+from esp.users.models import ESPUser, Record, RecordType
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.program.controllers.studentclassregmodule import (
+    RegistrationTypeController as RTC,
+)
+
 
 class OnSiteCheckoutModule(ProgramModuleObj):
     doc = """Check students out (temporarily or indefinitely) from a program."""
@@ -52,8 +54,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             "link_title": "Check-out Students",
             "module_type": "onsite",
             "seq": 1,
-            "choosable": 1
-            }
+            "choosable": 1,
+        }
 
     @main_call
     @needs_onsite
@@ -65,19 +67,21 @@ class OnSiteCheckoutModule(ProgramModuleObj):
             rt = RecordType.objects.get(name="checked_out")
             for student in students:
                 Record.objects.create(user=student, event=rt, program=prog)
-            context['checkout_all_message'] = f"Successfully checked out {students.count()} students"
+            context["checkout_all_message"] = (
+                f"Successfully checked out {students.count()} students"
+            )
 
         target_id = None
         student = None
-        if 'target_user' in request.POST:
+        if "target_user" in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():
-                student = form.cleaned_data['target_user']
+                student = form.cleaned_data["target_user"]
         else:
-            if 'user' in request.GET:
-                target_id = request.GET['user']
-            elif 'user' in request.POST:
-                target_id = request.POST['user']
+            if "user" in request.GET:
+                target_id = request.GET["user"]
+            elif "user" in request.POST:
+                target_id = request.POST["user"]
             if target_id:
                 try:
                     student = ESPUser.objects.get(id=target_id)
@@ -85,35 +89,45 @@ class OnSiteCheckoutModule(ProgramModuleObj):
                     try:
                         student = ESPUser.objects.get(username=target_id)
                     except ESPUser.DoesNotExist:
-                        raise ESPError("The user with id/username=" + str(target_id) + " does not appear to exist!", log=False)
+                        raise ESPError(
+                            "The user with id/username="
+                            + str(target_id)
+                            + " does not appear to exist!",
+                            log=False,
+                        )
 
         if student:
-            context['student'] = student
-            form = StudentSearchForm(initial={'target_user': student.id})
+            context["student"] = student
+            form = StudentSearchForm(initial={"target_user": student.id})
 
             # Get most recent check-in record
             if not prog.isCheckedIn(student):
-                context['checkout_message_warning'] = f"Caution: {student.name()} ({student.username}) is not currently checked in for this program!"
+                context["checkout_message_warning"] = (
+                    f"Caution: {student.name()} ({student.username}) is not currently checked in for this program!"
+                )
 
-            if 'checkout_student' in request.POST:
+            if "checkout_student" in request.POST:
                 # Make checked_out record
                 rt = RecordType.objects.get(name="checked_out")
                 Record.objects.create(user=student, event=rt, program=prog)
 
                 # Unenroll student from selected classes
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                for sec in ClassSection.objects.filter(id__in=[_f for _f in request.POST.getlist('unenroll') if _f]).distinct():
+                for sec in ClassSection.objects.filter(
+                    id__in=[_f for _f in request.POST.getlist("unenroll") if _f]
+                ).distinct():
                     sec.unpreregister_student(student, verbs)
-                context['checkout_message_success'] = f"Successfully checked out {student.name()} ({student.username})"
+                context["checkout_message_success"] = (
+                    f"Successfully checked out {student.name()} ({student.username})"
+                )
 
             context.update(StudentClassRegModule.prepare_static(student, prog))
         else:
             form = StudentSearchForm()
 
-        context['form'] = form
-        return render_to_response(self.baseDir()+'checkout.html', request, context)
-
+        context["form"] = form
+        return render_to_response(self.baseDir() + "checkout.html", request, context)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

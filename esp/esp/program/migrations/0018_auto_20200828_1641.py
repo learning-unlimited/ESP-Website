@@ -7,15 +7,16 @@ import django_extensions.db.fields.json
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0017_regtype_defaults'),
+        ("program", "0017_regtype_defaults"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classsubject',
-            name='custom_form_data',
-            field=django_extensions.db.fields.json.JSONField(blank=True, default=dict, null=True),
+            model_name="classsubject",
+            name="custom_form_data",
+            field=django_extensions.db.fields.json.JSONField(
+                blank=True, default=dict, null=True
+            ),
         ),
     ]

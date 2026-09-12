@@ -16,11 +16,20 @@ SEARCH_CATEGORY_FINANCIAL = "Financial and Accounting"
 # Views that require a class ID or extra path segment; linking to /tl/prog/view
 # would not open a valid page. Excluded from admin search so users don't get
 # broken links.
-EXCLUDED_VIEW_NAMES = frozenset([
-    "editclass", "manageclass", "addsection", "deletesection",
-    "deleteclass", "approveclass", "rejectclass", "coteachers",
-    "classavailability", "reviewclass",
-])
+EXCLUDED_VIEW_NAMES = frozenset(
+    [
+        "editclass",
+        "manageclass",
+        "addsection",
+        "deletesection",
+        "deleteclass",
+        "approveclass",
+        "rejectclass",
+        "coteachers",
+        "classavailability",
+        "reviewclass",
+    ]
+)
 
 
 @dataclass
@@ -81,9 +90,7 @@ def get_admin_search_entries(program):
 
         entry = None
         if hasattr(handler_class, "get_admin_search_entry"):
-            entry = handler_class.get_admin_search_entry(
-                program, tl, view_name, pmo
-            )
+            entry = handler_class.get_admin_search_entry(program, tl, view_name, pmo)
 
         # Only list views that explicitly opt in. Do not add default entries for
         # views that return None (e.g. JSON/AJAX endpoints, internal pages).

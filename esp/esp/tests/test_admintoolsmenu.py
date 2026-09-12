@@ -35,12 +35,12 @@ class CustomMenuInitTest(TestCase):
         """First child should be a MenuItem (the Dashboard link)."""
         first = self.menu.children[0]
         self.assertIsInstance(first, items.MenuItem)
-        self.assertEqual(first.url, reverse('admin:index'))
+        self.assertEqual(first.url, reverse("admin:index"))
 
     def test_dashboard_item_title(self):
         """Dashboard MenuItem title should match the translated string."""
         first = self.menu.children[0]
-        self.assertEqual(str(first.title), str(_('Dashboard')))
+        self.assertEqual(str(first.title), str(_("Dashboard")))
 
     def test_bookmarks_item_is_second(self):
         """Second child should be a Bookmarks instance."""
@@ -51,23 +51,23 @@ class CustomMenuInitTest(TestCase):
         """Third child should be an AppList named 'Applications'."""
         third = self.menu.children[2]
         self.assertIsInstance(third, items.AppList)
-        self.assertEqual(str(third.title), str(_('Applications')))
+        self.assertEqual(str(third.title), str(_("Applications")))
 
     def test_applications_applist_excludes_contrib(self):
         """Applications AppList should exclude django.contrib.*"""
         third = self.menu.children[2]
-        self.assertIn('django.contrib.*', third.exclude)
+        self.assertIn("django.contrib.*", third.exclude)
 
     def test_administration_applist_is_fourth(self):
         """Fourth child should be an AppList named 'Administration'."""
         fourth = self.menu.children[3]
         self.assertIsInstance(fourth, items.AppList)
-        self.assertEqual(str(fourth.title), str(_('Administration')))
+        self.assertEqual(str(fourth.title), str(_("Administration")))
 
     def test_administration_applist_includes_only_contrib(self):
         """Administration AppList should only include django.contrib.*"""
         fourth = self.menu.children[3]
-        self.assertIn('django.contrib.*', fourth.models)
+        self.assertIn("django.contrib.*", fourth.models)
 
 
 class CustomMenuInitWithContextTest(TestCase):
@@ -81,7 +81,7 @@ class CustomMenuInitWithContextTest(TestCase):
         """
         menu = CustomMenu()
         factory = RequestFactory()
-        request = factory.get('/')
+        request = factory.get("/")
         # admin_tools Menu.init_with_context accepts any object;
         # using a dict simulates a minimal context.
-        menu.init_with_context({'request': request})
+        menu.init_with_context({"request": request})

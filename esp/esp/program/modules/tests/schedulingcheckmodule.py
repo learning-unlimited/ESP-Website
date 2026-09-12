@@ -16,26 +16,33 @@
 from django.test import RequestFactory
 
 from esp.middleware.threadlocalrequest import ThreadLocals, clear_current_request
-from esp.program.modules.handlers.schedulingcheckmodule import RawSCFormatter, SchedulingCheckRunner
+from esp.program.modules.handlers.schedulingcheckmodule import (
+    RawSCFormatter,
+    SchedulingCheckRunner,
+)
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource
 
 
 class SchedulingCheckModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        kwargs.update({
-            'num_timeslots': 2,
-            'num_rooms': 5,
-            'num_teachers': 8,
-            'classes_per_teacher': 1,
-            'sections_per_class': 1,
-        })
+        kwargs.update(
+            {
+                "num_timeslots": 2,
+                "num_rooms": 5,
+                "num_teachers": 8,
+                "classes_per_teacher": 1,
+                "sections_per_class": 1,
+            }
+        )
         super().setUp(*args, **kwargs)
 
-        request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
+        request = RequestFactory().get(
+            "/manage/%s/scheduling_checks" % self.program.getUrlBase()
+        )
         ThreadLocals(get_response=lambda request: None).process_request(request)
 
-        self.timeslots = list(self.program.getTimeSlots().order_by('start'))
+        self.timeslots = list(self.program.getTimeSlots().order_by("start"))
 
     def tearDown(self):
         clear_current_request()
@@ -52,7 +59,7 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         section.moderators.set(moderators)
 
     def test_moderator_movement_dependency_loop_is_reported(self):
-        sections = list(self.program.sections().order_by('id')[:4])
+        sections = list(self.program.sections().order_by("id")[:4])
         self.assertEqual(len(sections), 4)
 
         moderator_a = self.teachers[0]
@@ -61,23 +68,26 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         slot_1 = self.timeslots[1]
 
         # A and B swap rooms between consecutive blocks, creating a dependency loop.
-        self._schedule_section(sections[0], slot_0, 'Room 0', [moderator_a])
-        self._schedule_section(sections[1], slot_0, 'Room 1', [moderator_b])
-        self._schedule_section(sections[2], slot_1, 'Room 1', [moderator_a])
-        self._schedule_section(sections[3], slot_1, 'Room 0', [moderator_b])
+        self._schedule_section(sections[0], slot_0, "Room 0", [moderator_a])
+        self._schedule_section(sections[1], slot_0, "Room 1", [moderator_b])
+        self._schedule_section(sections[2], slot_1, "Room 1", [moderator_a])
+        self._schedule_section(sections[3], slot_1, "Room 0", [moderator_b])
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
 
-        loop_rows = [row for row in results if row['Loop'] == 'Yes']
+        loop_rows = [row for row in results if row["Loop"] == "Yes"]
         self.assertTrue(loop_rows)
-        self.assertTrue(any(
-            moderator_a.username in row['Dependency Chain'] and moderator_b.username in row['Dependency Chain']
-            for row in loop_rows
-        ))
+        self.assertTrue(
+            any(
+                moderator_a.username in row["Dependency Chain"]
+                and moderator_b.username in row["Dependency Chain"]
+                for row in loop_rows
+            )
+        )
 
     def test_moderator_dependency_chain_without_loop_is_reported(self):
-        sections = list(self.program.sections().order_by('id')[:5])
+        sections = list(self.program.sections().order_by("id")[:5])
         self.assertEqual(len(sections), 5)
 
         moderator_a = self.teachers[0]
@@ -87,22 +97,28 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         slot_1 = self.timeslots[1]
 
         # A depends on B to replace room movement; B has no reciprocal dependency.
-        self._schedule_section(sections[0], slot_0, 'Room 0', [moderator_a])
-        self._schedule_section(sections[1], slot_0, 'Room 1', [moderator_b])
-        self._schedule_section(sections[2], slot_1, 'Room 2', [moderator_a])
-        self._schedule_section(sections[3], slot_1, 'Room 0', [moderator_b])
-        self._schedule_section(sections[4], slot_1, 'Room 1', [moderator_d])
+        self._schedule_section(sections[0], slot_0, "Room 0", [moderator_a])
+        self._schedule_section(sections[1], slot_0, "Room 1", [moderator_b])
+        self._schedule_section(sections[2], slot_1, "Room 2", [moderator_a])
+        self._schedule_section(sections[3], slot_1, "Room 0", [moderator_b])
+        self._schedule_section(sections[4], slot_1, "Room 1", [moderator_d])
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
 
-        non_loop_rows = [row for row in results if row['Loop'] == 'No']
+        non_loop_rows = [row for row in results if row["Loop"] == "No"]
         self.assertTrue(non_loop_rows)
-        self.assertTrue(any(row['Dependency Chain'].startswith('%s -> %s' % (moderator_a.username, moderator_b.username))
-                            for row in non_loop_rows))
+        self.assertTrue(
+            any(
+                row["Dependency Chain"].startswith(
+                    "%s -> %s" % (moderator_a.username, moderator_b.username)
+                )
+                for row in non_loop_rows
+            )
+        )
 
     def test_moderator_branching_dependencies_are_all_reported(self):
-        sections = list(self.program.sections().order_by('id')[:5])
+        sections = list(self.program.sections().order_by("id")[:5])
         self.assertEqual(len(sections), 5)
 
         moderator_a = self.teachers[0]
@@ -112,27 +128,43 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         slot_1 = self.timeslots[1]
 
         # Block 0 assignments.
-        self._schedule_section(sections[0], slot_0, 'Room 0', [moderator_a])
-        self._schedule_section(sections[1], slot_0, 'Room 1', [moderator_b])
-        self._schedule_section(sections[2], slot_0, 'Room 2', [moderator_c])
+        self._schedule_section(sections[0], slot_0, "Room 0", [moderator_a])
+        self._schedule_section(sections[1], slot_0, "Room 1", [moderator_b])
+        self._schedule_section(sections[2], slot_0, "Room 2", [moderator_c])
 
         # Block 1 assignments:
         # - A moves to Room 2
         # - B and C both move into A's old room (Room 0), creating branches A->B and A->C
         # - C then depends on A through Room 2, creating loop A->C->A
-        self._schedule_section(sections[3], slot_1, 'Room 2', [moderator_a])
-        self._schedule_section(sections[4], slot_1, 'Room 0', [moderator_b, moderator_c])
+        self._schedule_section(sections[3], slot_1, "Room 2", [moderator_a])
+        self._schedule_section(
+            sections[4], slot_1, "Room 0", [moderator_b, moderator_c]
+        )
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
 
-        chains = [row['Dependency Chain'] for row in results]
-        self.assertTrue(any(chain.startswith('%s -> %s' % (moderator_a.username, moderator_b.username)) for chain in chains))
-        self.assertTrue(any(chain.startswith('%s -> %s -> %s' % (moderator_a.username, moderator_c.username, moderator_a.username))
-                            for chain in chains))
+        chains = [row["Dependency Chain"] for row in results]
+        self.assertTrue(
+            any(
+                chain.startswith(
+                    "%s -> %s" % (moderator_a.username, moderator_b.username)
+                )
+                for chain in chains
+            )
+        )
+        self.assertTrue(
+            any(
+                chain.startswith(
+                    "%s -> %s -> %s"
+                    % (moderator_a.username, moderator_c.username, moderator_a.username)
+                )
+                for chain in chains
+            )
+        )
 
     def test_moderator_long_dependency_chain_without_loop_is_reported(self):
-        sections = list(self.program.sections().order_by('id')[:8])
+        sections = list(self.program.sections().order_by("id")[:8])
         self.assertEqual(len(sections), 8)
 
         moderator_a = self.teachers[0]
@@ -143,30 +175,34 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         slot_1 = self.timeslots[1]
 
         # Build a non-loop chain A -> B -> C -> D across two contiguous blocks.
-        self._schedule_section(sections[0], slot_0, 'Room 0', [moderator_a])
-        self._schedule_section(sections[1], slot_0, 'Room 1', [moderator_b])
-        self._schedule_section(sections[2], slot_0, 'Room 2', [moderator_c])
-        self._schedule_section(sections[3], slot_0, 'Room 3', [moderator_d])
+        self._schedule_section(sections[0], slot_0, "Room 0", [moderator_a])
+        self._schedule_section(sections[1], slot_0, "Room 1", [moderator_b])
+        self._schedule_section(sections[2], slot_0, "Room 2", [moderator_c])
+        self._schedule_section(sections[3], slot_0, "Room 3", [moderator_d])
 
-        self._schedule_section(sections[4], slot_1, 'Room 4', [moderator_a])
-        self._schedule_section(sections[5], slot_1, 'Room 0', [moderator_b])
-        self._schedule_section(sections[6], slot_1, 'Room 1', [moderator_c])
-        self._schedule_section(sections[7], slot_1, 'Room 2', [moderator_d])
+        self._schedule_section(sections[4], slot_1, "Room 4", [moderator_a])
+        self._schedule_section(sections[5], slot_1, "Room 0", [moderator_b])
+        self._schedule_section(sections[6], slot_1, "Room 1", [moderator_c])
+        self._schedule_section(sections[7], slot_1, "Room 2", [moderator_d])
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
 
-        long_non_loop_chain = '%s -> %s -> %s -> %s' % (
+        long_non_loop_chain = "%s -> %s -> %s -> %s" % (
             moderator_a.username,
             moderator_b.username,
             moderator_c.username,
             moderator_d.username,
         )
-        self.assertTrue(any(row['Dependency Chain'] == long_non_loop_chain and row['Loop'] == 'No'
-                            for row in results))
+        self.assertTrue(
+            any(
+                row["Dependency Chain"] == long_non_loop_chain and row["Loop"] == "No"
+                for row in results
+            )
+        )
 
     def test_moderator_long_dependency_loop_is_reported(self):
-        sections = list(self.program.sections().order_by('id')[:6])
+        sections = list(self.program.sections().order_by("id")[:6])
         self.assertEqual(len(sections), 6)
 
         moderator_a = self.teachers[0]
@@ -176,22 +212,26 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         slot_1 = self.timeslots[1]
 
         # Build a loop A -> B -> C -> A across two contiguous blocks.
-        self._schedule_section(sections[0], slot_0, 'Room 0', [moderator_a])
-        self._schedule_section(sections[1], slot_0, 'Room 1', [moderator_b])
-        self._schedule_section(sections[2], slot_0, 'Room 2', [moderator_c])
+        self._schedule_section(sections[0], slot_0, "Room 0", [moderator_a])
+        self._schedule_section(sections[1], slot_0, "Room 1", [moderator_b])
+        self._schedule_section(sections[2], slot_0, "Room 2", [moderator_c])
 
-        self._schedule_section(sections[3], slot_1, 'Room 2', [moderator_a])
-        self._schedule_section(sections[4], slot_1, 'Room 0', [moderator_b])
-        self._schedule_section(sections[5], slot_1, 'Room 1', [moderator_c])
+        self._schedule_section(sections[3], slot_1, "Room 2", [moderator_a])
+        self._schedule_section(sections[4], slot_1, "Room 0", [moderator_b])
+        self._schedule_section(sections[5], slot_1, "Room 1", [moderator_c])
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         results = runner.moderator_movement_dependency_loops()
 
-        long_loop_chain = '%s -> %s -> %s -> %s' % (
+        long_loop_chain = "%s -> %s -> %s -> %s" % (
             moderator_a.username,
             moderator_b.username,
             moderator_c.username,
             moderator_a.username,
         )
-        self.assertTrue(any(row['Dependency Chain'] == long_loop_chain and row['Loop'] == 'Yes'
-                            for row in results))
+        self.assertTrue(
+            any(
+                row["Dependency Chain"] == long_loop_chain and row["Loop"] == "Yes"
+                for row in results
+            )
+        )

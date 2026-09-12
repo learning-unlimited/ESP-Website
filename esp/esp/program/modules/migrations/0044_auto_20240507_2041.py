@@ -5,15 +5,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0043_auto_20240321_2023'),
+        ("modules", "0043_auto_20240321_2023"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='studentclassregmoduleinfo',
-            name='send_confirmation',
-            field=models.BooleanField(default=True, help_text='Check this box to send each student an email each time they confirm their registration. You can customize the text of the email using the "Confirmemail" registration receipt below.'),
+            model_name="studentclassregmoduleinfo",
+            name="send_confirmation",
+            field=models.BooleanField(
+                default=True,
+                help_text='Check this box to send each student an email each time they confirm their registration. You can customize the text of the email using the "Confirmemail" registration receipt below.',
+            ),
         ),
     ]

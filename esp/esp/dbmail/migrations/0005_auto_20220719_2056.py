@@ -5,20 +5,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0004_auto_20210526_1921'),
+        ("dbmail", "0004_auto_20210526_1921"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='plainredirect',
-            name='destination',
-            field=models.CharField(help_text='A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)', max_length=512),
+            model_name="plainredirect",
+            name="destination",
+            field=models.CharField(
+                help_text="A comma-seperated list of one or more real email address(es) that will receive the redirected email(s)",
+                max_length=512,
+            ),
         ),
         migrations.AlterField(
-            model_name='plainredirect',
-            name='original',
-            field=models.CharField(help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).', max_length=512),
+            model_name="plainredirect",
+            name="original",
+            field=models.CharField(
+                help_text='A real or custom email address name (e.g., "directors" or "splash"). Any emails to &lt;original&gt;@&lt;yourdomain&gt; will be redirected to the destination email address(es).',
+                max_length=512,
+            ),
         ),
     ]

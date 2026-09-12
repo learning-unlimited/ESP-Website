@@ -1,9 +1,9 @@
-
 from io import open
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -49,29 +49,31 @@ from django.template import Template, loader
 from esp.middleware import ESPError
 
 TEX_TEMP = tempfile.gettempdir()
-TEX_EXT  = '.tex'
+TEX_EXT = ".tex"
 _devnull_sentinel = object()
-LATEX_OPTIONS = ['-interaction', 'nonstopmode', '-halt-on-error']
+LATEX_OPTIONS = ["-interaction", "nonstopmode", "-halt-on-error"]
 
 # File types that are valid outputs, and the corresponding response mimetypes
 FILE_MIME_TYPES = {
-    'pdf': 'application/pdf',
-    'log': 'text/plain',
-    'tex': 'text/plain',
-    'svg': 'image/svg+xml',
-    'png': 'image/png',
+    "pdf": "application/pdf",
+    "log": "text/plain",
+    "tex": "text/plain",
+    "svg": "image/svg+xml",
+    "png": "image/png",
 }
 
 
-def render_to_latex(filepath, context_dict=None, file_type='pdf'):
+def render_to_latex(filepath, context_dict=None, file_type="pdf"):
     """Render some tex source to latex.
 
     This will run the latex interpreter and generate the necessary file type,
     which must be one of those from FILE_MIME_TYPES.
     """
     if file_type not in FILE_MIME_TYPES:
-        raise ESPError(f'Invalid type received for latex generation: {file_type} should '
-                       f'be one of {", ".join(FILE_MIME_TYPES)}')
+        raise ESPError(
+            f"Invalid type received for latex generation: {file_type} should "
+            f"be one of {', '.join(FILE_MIME_TYPES)}"
+        )
 
     context_dict = context_dict or {}
 
@@ -82,9 +84,9 @@ def render_to_latex(filepath, context_dict=None, file_type='pdf'):
     else:
         t = loader.get_template(filepath)
 
-    context_dict['MEDIA_ROOT'] = settings.MEDIA_ROOT
-    context_dict['file_type'] = file_type
-    context_dict['settings'] = settings
+    context_dict["MEDIA_ROOT"] = settings.MEDIA_ROOT
+    context_dict["file_type"] = file_type
+    context_dict["settings"] = settings
 
     rendered_source = t.render(context_dict)
 
@@ -92,7 +94,9 @@ def render_to_latex(filepath, context_dict=None, file_type='pdf'):
     return HttpResponse(contents, content_type=FILE_MIME_TYPES[file_type])
 
 
-def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subprocess.STDOUT):
+def gen_latex(
+    texcode, file_type="pdf", stdout=_devnull_sentinel, stderr=subprocess.STDOUT
+):
     """Generate the latex code.
 
     :param texcode:
@@ -123,25 +127,27 @@ def gen_latex(texcode, file_type='pdf', stdout=_devnull_sentinel, stderr=subproc
     :rtype:
         `str`
     """
-    with open(os.devnull, 'w') as devnull_file:
+    with open(os.devnull, "w") as devnull_file:
         # NOTE(jmoldow): `_devnull_sentinel` is private, and currently only the
         # default parameter for `stdout` uses it, so this list comprehension
         # isn't necessary. But using the list comprehension means that the
         # right thing will happen if someone were to change the default
         # parameter for `stderr`.
-        stdout, stderr = [devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]]
+        stdout, stderr = [
+            devnull_file if f is _devnull_sentinel else f for f in [stdout, stderr]
+        ]
 
         return _gen_latex(texcode, stdout=stdout, stderr=stderr, file_type=file_type)
 
 
-def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
+def _gen_latex(texcode, stdout, stderr, file_type="pdf"):
     file_base = os.path.join(TEX_TEMP, get_rand_file_base())
 
-    if file_type == 'tex':
+    if file_type == "tex":
         return texcode
 
     # Write with explicit UTF-8 so unicode survives even on non-UTF-8 locales.
-    with open(file_base+TEX_EXT, 'w', encoding='utf-8') as texfile:
+    with open(file_base + TEX_EXT, "w", encoding="utf-8") as texfile:
         texfile.write(texcode)
 
     # All command calls will use the same values for the cwd, stdout, and
@@ -149,10 +155,10 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
     # makes it easier to call subprocess.call() with these values.
     call = partial(subprocess.call, cwd=TEX_TEMP, stdout=stdout, stderr=stderr)
 
-    retcode = call(['pdflatex'] + LATEX_OPTIONS + [f'{file_base}.tex'])
+    retcode = call(["pdflatex"] + LATEX_OPTIONS + [f"{file_base}.tex"])
 
     try:
-        with open(f'{file_base}.log') as f:
+        with open(f"{file_base}.log") as f:
             tex_log = f.read()
     except Exception as e:
         # In this case, there's not much to do except error -- pdflatex will
@@ -161,10 +167,12 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # TODO(benkraft): We could also return the stdout of the process,
         # although it's a little tricky since we have to make sure to buffer
         # the pipe correctly -- see c42bd1b9.
-        raise ESPError('Could not read log file; something has gone horribly '
-                       f'wrong.  Error details: {e}')
+        raise ESPError(
+            "Could not read log file; something has gone horribly "
+            f"wrong.  Error details: {e}"
+        )
 
-    if file_type == 'log':
+    if file_type == "log":
         # If we're getting the log, an error is fine -- we're probably trying
         # to debug one!
         return tex_log
@@ -173,43 +181,45 @@ def _gen_latex(texcode, stdout, stderr, file_type='pdf'):
         # didn't work.
         # TODO(benkraft): Try to extract the actual error out of pdflatex's
         # various output.  Or use stdout, which is a bit less noisy.
-        raise ESPError(f'LaTeX failed with code {retcode}; try looking at the log '
-                       'file.  Here are '
-                       f'the last 1000 characters of the log: {tex_log[-1000:]}')
-    elif 'No pages of output' in tex_log:
+        raise ESPError(
+            f"LaTeX failed with code {retcode}; try looking at the log "
+            "file.  Here are "
+            f"the last 1000 characters of the log: {tex_log[-1000:]}"
+        )
+    elif "No pages of output" in tex_log:
         # One common problem (which LaTeX doesn't treat as an error) is
         # selecting no students, which results in no output (thus a nonexistent
         # file, and an error converting or reading it later).  We'll just exit
         # right here in that case.
-        raise ESPError('LaTeX generated no output.  Are you sure you selected '
-                       'any users?')
+        raise ESPError(
+            "LaTeX generated no output.  Are you sure you selected any users?"
+        )
 
-    if file_type == 'svg':
-        retcode = call(['inkscape', f'{file_base}.pdf', '-l',
-                        f'{file_base}.svg'])
-    elif file_type == 'png':
-        retcode = call(['convert', '-density', '192', f'{file_base}.pdf',
-                        f'{file_base}.png'])
+    if file_type == "svg":
+        retcode = call(["inkscape", f"{file_base}.pdf", "-l", f"{file_base}.svg"])
+    elif file_type == "png":
+        retcode = call(
+            ["convert", "-density", "192", f"{file_base}.pdf", f"{file_base}.png"]
+        )
 
     if retcode:
         raise ESPError("Postprocessing failed; try downloading as PDF.")
 
-    out_file = file_base + '.' + file_type
-    if file_type == 'png' and not os.path.isfile(out_file):
+    out_file = file_base + "." + file_type
+    if file_type == "png" and not os.path.isfile(out_file):
         # If the schedule is multiple pages (such as a schedule if the program
         # is using barcode check-in), ImageMagick will generate files of the
         # form file_base-n.png.  In this case, we will just return the first
         # page.  Most of the time, if we expect something multi-page, we won't
         # use PNG anyway; this is mostly for the benefit of the schedule
         # printing script.
-        out_file = file_base + '-0.png'
+        out_file = file_base + "-0.png"
     if not os.path.isfile(out_file):
         # We probably shouldn't get here -- this means either LaTeX failed,
         # LaTeX generated no output, or a postprocessor failed, all of which we
         # handle above.  But we'll at least return a specific error.
-        raise ESPError(f'No output file {out_file} found; try looking at the log '
-                       'file.')
-    with open(out_file, 'rb') as f:
+        raise ESPError(f"No output file {out_file} found; try looking at the log file.")
+    with open(out_file, "rb") as f:
         return f.read()
 
 

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,7 +31,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, CoreModule, main_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_onsite,
+    CoreModule,
+    main_call,
+)
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.utils.web import render_to_response
 
@@ -48,7 +52,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "module_type": "onsite",
             "seq": -1000,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -67,29 +71,27 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
     @main_call
     @needs_onsite
     def main(self, request, tl, one, two, module, extra, prog):
-        """ Display the onsite landing page """
+        """Display the onsite landing page"""
         context = {}
-        modules = self.program.getModules(request.user, 'onsite')
+        modules = self.program.getModules(request.user, "onsite")
 
         for module in modules:
             context = module.prepare(context)
 
-
-        context['modules'] = modules
-        context['one'] = one
-        context['two'] = two
+        context["modules"] = modules
+        context["one"] = one
+        context["two"] = two
 
         if request.user.isAdmin(self.program):
-            context['core_admin'] = True
+            context["core_admin"] = True
         else:
-            context['core_admin'] = False
+            context["core_admin"] = False
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, context)
+        return render_to_response(self.baseDir() + "mainpage.html", request, context)
 
     def isStep(self):
         return False
 
-
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

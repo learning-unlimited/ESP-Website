@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -33,14 +32,18 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PARTICIPANTS,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.models import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 from django.contrib.auth.models import Group
+
 
 class UserGroupModule(ProgramModuleObj):
     doc = """Modify which users are in which user groups"""
@@ -72,32 +75,43 @@ class UserGroupModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def usergroupfinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET or (request.POST.get('group_name_new', '') and request.POST.get('group_name_old', '')):
-            raise ESPError()('Filter and/or group has not been properly set')
+        if (
+            request.method != "POST"
+            or "filterid" not in request.GET
+            or (
+                request.POST.get("group_name_new", "")
+                and request.POST.get("group_name_old", "")
+            )
+        ):
+            raise ESPError()("Filter and/or group has not been properly set")
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         try:
-            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET["filterid"])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user group management process.')
-        if request.POST.get('group_name_new', ''):
-            group = request.POST['group_name_new']
+            raise ESPError()(
+                "The specified filter no longer exists or is invalid. Please restart the user group management process."
+            )
+        if request.POST.get("group_name_new", ""):
+            group = request.POST["group_name_new"]
         else:
-            group = request.POST['group_name_old']
+            group = request.POST["group_name_old"]
         clean = False
-        if 'group_clean' in request.POST:
-            clean = request.POST['group_clean']
+        if "group_clean" in request.POST:
+            clean = request.POST["group_clean"]
 
         log = self.updateGroup(filterObj, group, clean)
 
-        return render_to_response(self.baseDir()+'finished.html', request, {'log': log})
+        return render_to_response(
+            self.baseDir() + "finished.html", request, {"log": log}
+        )
 
     @main_call
     @needs_admin
     def usergroup(self, request, tl, one, two, module, extra, prog):
         usc = UserSearchController()
         context = {}
-        context['program'] = prog
+        context["program"] = prog
 
         if request.method == "POST":
             data = ListGenModule.processPost(request)
@@ -105,21 +119,25 @@ class UserGroupModule(ProgramModuleObj):
                 filterObj = usc.filter_from_postdata(prog, data)
             except (ESPError_Log, ESPError_NoLog) as e:
                 context.update(usc.prepare_context(prog, target_path=request.path))
-                context['error'] = str(e)
-                return render_to_response(self.baseDir()+'search.html', request, context)
+                context["error"] = str(e)
+                return render_to_response(
+                    self.baseDir() + "search.html", request, context
+                )
 
-            context['filterid'] = filterObj.id
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            context['groups'] = Group.objects.all().values_list('name', flat=True)
-            return render_to_response(self.baseDir()+'options.html', request, context)
+            context["filterid"] = filterObj.id
+            context["num_users"] = (
+                ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            )
+            context["groups"] = Group.objects.all().values_list("name", flat=True)
+            return render_to_response(self.baseDir() + "options.html", request, context)
 
         context.update(usc.prepare_context(prog, target_path=request.path))
-        return render_to_response(self.baseDir()+'search.html', request, context)
+        return render_to_response(self.baseDir() + "search.html", request, context)
 
     @staticmethod
-    def updateGroup(filterobj, group_name, clean = False):
-        """ Adds the specified users to the specified group. Removes anyone else if clean == True.
-            Returns a log which can be displayed to user. """
+    def updateGroup(filterobj, group_name, clean=False):
+        """Adds the specified users to the specified group. Removes anyone else if clean == True.
+        Returns a log which can be displayed to user."""
 
         users = filterobj.getList(ESPUser)
         try:
@@ -130,7 +148,7 @@ class UserGroupModule(ProgramModuleObj):
         if not users:
             raise ESPError()("Your query did not match any users")
 
-        group, created = Group.objects.get_or_create(name = group_name)
+        group, created = Group.objects.get_or_create(name=group_name)
 
         diff1 = users.difference(group.user_set.all()).count()
         diff2 = group.user_set.all().difference(users).count()
@@ -155,4 +173,4 @@ class UserGroupModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

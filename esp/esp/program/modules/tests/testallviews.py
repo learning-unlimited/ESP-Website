@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -46,10 +46,11 @@ from esp.users.models import ESPUser
 
 import json
 
+
 class AllViewsTest(ProgramFrameworkTest):
     def setUp(self):
         # Set up the program framework and randomly schedule classes
-        super().setUp(modules = ProgramModule.objects.all())
+        super().setUp(modules=ProgramModule.objects.all())
 
         # We don't want to get stuck in registration
         scrmi = self.program.studentclassregmoduleinfo
@@ -63,15 +64,17 @@ class AllViewsTest(ProgramFrameworkTest):
             pmo.save()
 
         # Create an admin account so we have access to every view
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin', first_name = 'Admin', last_name = 'Admin')
-        self.adminUser.set_password('password')
+        self.adminUser, created = ESPUser.objects.get_or_create(
+            username="admin", first_name="Admin", last_name="Admin"
+        )
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
-        self.adminUser.makeRole('Student')
-        self.adminUser.makeRole('Teacher')
-        self.adminUser.makeRole('Volunteer')
+        self.adminUser.makeRole("Student")
+        self.adminUser.makeRole("Teacher")
+        self.adminUser.makeRole("Volunteer")
 
         # Login with the admin account
-        self.client.login(username='admin', password='password')
+        self.client.login(username="admin", password="password")
 
         # Set up a schedule for the program and enroll students
         self.add_user_profiles()
@@ -79,60 +82,186 @@ class AllViewsTest(ProgramFrameworkTest):
         self.classreg_students()
 
         # Set up surveys for the program
-        (survey1, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
-        (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
-        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True)
-        (question_base, created) = Question.objects.get_or_create(survey=survey1, name='Question1', question_type=text_qtype, per_class=False, seq=0)
-        (question_perclass, created) = Question.objects.get_or_create(survey=survey1, name='Question2', question_type=text_qtype, per_class=True, seq=1)
-        (question_number, created) = Question.objects.get_or_create(survey=survey1, name='Question3', question_type=number_qtype, per_class=True, seq=2)
-        (survey2, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='teach')
-        (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
-        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True)
-        (question_base, created) = Question.objects.get_or_create(survey=survey2, name='Question1', question_type=text_qtype, per_class=False, seq=0)
-        (question_perclass, created) = Question.objects.get_or_create(survey=survey2, name='Question2', question_type=text_qtype, per_class=True, seq=1)
-        (question_number, created) = Question.objects.get_or_create(survey=survey2, name='Question3', question_type=number_qtype, per_class=True, seq=2)
+        (survey1, created) = Survey.objects.get_or_create(
+            name="Test Survey", program=self.program, category="learn"
+        )
+        (text_qtype, created) = QuestionType.objects.get_or_create(
+            name="yes-no response"
+        )
+        (number_qtype, created) = QuestionType.objects.get_or_create(
+            name="numeric rating", is_numeric=True, is_countable=True
+        )
+        (question_base, created) = Question.objects.get_or_create(
+            survey=survey1,
+            name="Question1",
+            question_type=text_qtype,
+            per_class=False,
+            seq=0,
+        )
+        (question_perclass, created) = Question.objects.get_or_create(
+            survey=survey1,
+            name="Question2",
+            question_type=text_qtype,
+            per_class=True,
+            seq=1,
+        )
+        (question_number, created) = Question.objects.get_or_create(
+            survey=survey1,
+            name="Question3",
+            question_type=number_qtype,
+            per_class=True,
+            seq=2,
+        )
+        (survey2, created) = Survey.objects.get_or_create(
+            name="Test Survey", program=self.program, category="teach"
+        )
+        (text_qtype, created) = QuestionType.objects.get_or_create(
+            name="yes-no response"
+        )
+        (number_qtype, created) = QuestionType.objects.get_or_create(
+            name="numeric rating", is_numeric=True, is_countable=True
+        )
+        (question_base, created) = Question.objects.get_or_create(
+            survey=survey2,
+            name="Question1",
+            question_type=text_qtype,
+            per_class=False,
+            seq=0,
+        )
+        (question_perclass, created) = Question.objects.get_or_create(
+            survey=survey2,
+            name="Question2",
+            question_type=text_qtype,
+            per_class=True,
+            seq=1,
+        )
+        (question_number, created) = Question.objects.get_or_create(
+            survey=survey2,
+            name="Question3",
+            question_type=number_qtype,
+            per_class=True,
+            seq=2,
+        )
 
         # Set up custom forms for the program
         form_data = {
-            'title': 'Test Form',
-            'perms': '',
-            'link_id': -1,
-            'success_url': '/formsuccess.html',
-            'success_message': 'Thank you!',
-            'anonymous': False,
-            'pages': [{
-                'parent_id': -1,
-                'sections': [{
-                    'fields': [
-                        {'data': {'field_type': 'textField', 'question_text': 'ShortText', 'seq': 0, 'required': True, 'parent_id': -1, 'attrs':{'correct_answer': 'Smart', 'charlimits': '0,100'}, 'help_text': 'Instructions'}},
-                        {'data': {'field_type': 'phone', 'question_text': 'Your phone no.', 'seq': 1, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
-                        {'data': {'field_type': 'gender', 'question_text': 'Your gender', 'seq': 2, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text': ''}},
-                        {'data': {'field_type': 'radio', 'question_text': 'Choose an option', 'seq': 3, 'required': True, 'parent_id': -1, 'attrs': {'correct_answer': '1', 'options': 'A|B|C|'}, 'help_text': ''}},
-                        {'data': {'field_type': 'boolean', 'question_text': 'True/false', 'seq': 4, 'required': True, 'parent_id': -1, 'attrs': {}, 'help_text':''}},
-                        {'data': {'field_type': 'textField', 'question_text': 'NonRequired', 'seq': 5, 'required': False, 'parent_id': -1, 'attrs': {'correct_answer': '', 'charlimits': ','}, 'help_text': ''}}
+            "title": "Test Form",
+            "perms": "",
+            "link_id": -1,
+            "success_url": "/formsuccess.html",
+            "success_message": "Thank you!",
+            "anonymous": False,
+            "pages": [
+                {
+                    "parent_id": -1,
+                    "sections": [
+                        {
+                            "fields": [
+                                {
+                                    "data": {
+                                        "field_type": "textField",
+                                        "question_text": "ShortText",
+                                        "seq": 0,
+                                        "required": True,
+                                        "parent_id": -1,
+                                        "attrs": {
+                                            "correct_answer": "Smart",
+                                            "charlimits": "0,100",
+                                        },
+                                        "help_text": "Instructions",
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "field_type": "phone",
+                                        "question_text": "Your phone no.",
+                                        "seq": 1,
+                                        "required": True,
+                                        "parent_id": -1,
+                                        "attrs": {},
+                                        "help_text": "",
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "field_type": "gender",
+                                        "question_text": "Your gender",
+                                        "seq": 2,
+                                        "required": True,
+                                        "parent_id": -1,
+                                        "attrs": {},
+                                        "help_text": "",
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "field_type": "radio",
+                                        "question_text": "Choose an option",
+                                        "seq": 3,
+                                        "required": True,
+                                        "parent_id": -1,
+                                        "attrs": {
+                                            "correct_answer": "1",
+                                            "options": "A|B|C|",
+                                        },
+                                        "help_text": "",
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "field_type": "boolean",
+                                        "question_text": "True/false",
+                                        "seq": 4,
+                                        "required": True,
+                                        "parent_id": -1,
+                                        "attrs": {},
+                                        "help_text": "",
+                                    }
+                                },
+                                {
+                                    "data": {
+                                        "field_type": "textField",
+                                        "question_text": "NonRequired",
+                                        "seq": 5,
+                                        "required": False,
+                                        "parent_id": -1,
+                                        "attrs": {
+                                            "correct_answer": "",
+                                            "charlimits": ",",
+                                        },
+                                        "help_text": "",
+                                    }
+                                },
+                            ],
+                            "data": {"help_text": "", "question_text": "", "seq": 0},
+                        }
                     ],
-                'data': {'help_text': '', 'question_text': '', 'seq': 0}
-                }],
-                'seq': 0
-            }],
-            'link_type': '-1',
-            'desc': 'Test'
+                    "seq": 0,
+                }
+            ],
+            "link_type": "-1",
+            "desc": "Test",
         }
 
-        response = self.client.post("/customforms/submit/", json.dumps(form_data), content_type='application/json', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        form = Form.objects.filter(title='Test Form')[0]
-        Tag.setTag(key='learn_extraform_id', value=form.id, target=self.program)
-        Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)
-        Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
+        response = self.client.post(
+            "/customforms/submit/",
+            json.dumps(form_data),
+            content_type="application/json",
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+        form = Form.objects.filter(title="Test Form")[0]
+        Tag.setTag(key="learn_extraform_id", value=form.id, target=self.program)
+        Tag.setTag(key="teach_extraform_id", value=form.id, target=self.program)
+        Tag.setTag(key="quiz_form_id", value=form.id, target=self.program)
 
         # Set up credit card test keys
         settings.STRIPE_CONFIG = {
-            'secret_key': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
-            'publishable_key': 'pk_test_TYooMQauvdEDq54NiTphI7jx',
+            "secret_key": "sk_test_4eC39HqLyjWDarjtT1zdp7dc",
+            "publishable_key": "pk_test_TYooMQauvdEDq54NiTphI7jx",
         }
         settings.CYBERSOURCE_CONFIG = {
-            'post_url': 'https://apitest.cybersource.com/pts/v2/payments',
-            'merchant_id': 'test',
+            "post_url": "https://apitest.cybersource.com/pts/v2/payments",
+            "merchant_id": "test",
         }
 
     def tearDown(self):
@@ -140,9 +269,9 @@ class AllViewsTest(ProgramFrameworkTest):
         for form in Form.objects.all():
             dmh = DynamicModelHandler(form)
             dmh.purgeDynModel()
-        Tag.unSetTag(key='learn_extraform_id', target=self.program)
-        Tag.unSetTag(key='teach_extraform_id', target=self.program)
-        Tag.unSetTag(key='quiz_form_id', target=self.program)
+        Tag.unSetTag(key="learn_extraform_id", target=self.program)
+        Tag.unSetTag(key="teach_extraform_id", target=self.program)
+        Tag.unSetTag(key="quiz_form_id", target=self.program)
 
         # clean up surveys
         Survey.objects.all().delete()
@@ -150,13 +279,13 @@ class AllViewsTest(ProgramFrameworkTest):
     def testAllViews(self):
         # Check all views of all modules
         failed_modules = {}
-        for tl in ['learn', 'teach', 'admin', 'volunteer']:
-            modules = self.program.getModules(tl = tl)
+        for tl in ["learn", "teach", "admin", "volunteer"]:
+            modules = self.program.getModules(tl=tl)
             for module in modules:
                 views = module.views
                 for view in views:
                     passes = False
-                    module_view = module.module.handler + '.' + view
+                    module_view = module.module.handler + "." + view
                     failed_modules[module_view] = {}
                     cls = self.program.classes()[0]
                     cls_id = str(cls.id)
@@ -168,56 +297,135 @@ class AllViewsTest(ProgramFrameworkTest):
                     sec.preregister_student(self.adminUser)
                     # Try a whole bunch of different requests (because different views have different expectations)
                     # Skip to the next view if this view ever properly serves a page (or redirects to another page)
-                    try: # Various GET arguments
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
-                        if str(response.status_code)[:1] in ['2', '3']:
+                    try:  # Various GET arguments
+                        response = self.client.get(
+                            "/"
+                            + tl
+                            + "/"
+                            + self.program.getUrlBase()
+                            + "/"
+                            + view
+                            + "?cls="
+                            + cls_id
+                            + "&clsid="
+                            + cls_id
+                            + "&name=Admin&username=admin"
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a class ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["GET"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Use a class ID as the extra argument
+                        response = self.client.get(
+                            "/"
+                            + tl
+                            + "/"
+                            + self.program.getUrlBase()
+                            + "/"
+                            + view
+                            + "/"
+                            + cls_id
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET class'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a section ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["GET class"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Use a section ID as the extra argument
+                        response = self.client.get(
+                            "/"
+                            + tl
+                            + "/"
+                            + self.program.getUrlBase()
+                            + "/"
+                            + view
+                            + "/"
+                            + sec_id
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET section'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use an event ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["GET section"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Use an event ID as the extra argument
+                        response = self.client.get(
+                            "/"
+                            + tl
+                            + "/"
+                            + self.program.getUrlBase()
+                            + "/"
+                            + view
+                            + "/"
+                            + event_id
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET event'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a user ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + str(self.adminUser.id))
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["GET event"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Use a user ID as the extra argument
+                        response = self.client.get(
+                            "/"
+                            + tl
+                            + "/"
+                            + self.program.getUrlBase()
+                            + "/"
+                            + view
+                            + "/"
+                            + str(self.adminUser.id)
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['GET user'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Various POST data
+                        failed_modules[module_view]["GET user"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Various POST data
                         # Mostly used for registering for classes, so unregister for the class in advance
                         sec.unpreregister_student(self.adminUser)
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        response = self.client.post(
+                            "/" + tl + "/" + self.program.getUrlBase() + "/" + view,
+                            {
+                                "class_id": cls_id,
+                                "section_id": sec_id,
+                                "json_data": "{}",
+                            },
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['POST FCFS'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["POST FCFS"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Student lottery POST data
+                        response = self.client.post(
+                            "/" + tl + "/" + self.program.getUrlBase() + "/" + view,
+                            {
+                                "json_data": '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'
+                            },
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['POST lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Different student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
+                        failed_modules[module_view]["POST lottery"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
+                    try:  # Different student lottery POST data
+                        response = self.client.post(
+                            "/" + tl + "/" + self.program.getUrlBase() + "/" + view,
+                            {"json_data": '{"' + event_id + '": {}}'},
+                        )
+                        if str(response.status_code)[:1] in ["2", "3"]:
                             passes = True
                     except Exception as e:
-                        failed_modules[module_view]['POST alt lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
+                        failed_modules[module_view]["POST alt lottery"] = (
+                            f"{module_view} is throwing a {response.status_code} error:\n{e}"
+                        )
                     if passes:
                         del failed_modules[module_view]
         # Check if any failed

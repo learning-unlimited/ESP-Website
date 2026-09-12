@@ -1,5 +1,6 @@
 from debug_toolbar.panels.profiling import ProfilingPanel
 
+
 class ESPProfilingPanel(ProfilingPanel):
     """
     A subclass of ProfilingPanel that warns admins to disable it when not
@@ -11,5 +12,4 @@ class ESPProfilingPanel(ProfilingPanel):
 
     @property
     def nav_subtitle(self):
-        return 'Significantly slows site. Disable when not needed.'
-
+        return "Significantly slows site. Disable when not needed."

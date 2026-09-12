@@ -4,23 +4,21 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0012_auto_20160212_1903'),
+        ("modules", "0012_auto_20160212_1903"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UnenrollModule',
-            fields=[
-            ],
+            name="UnenrollModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.RemoveField(
-            model_name='studentclassregmoduleinfo',
-            name='signup_verb',
+            model_name="studentclassregmoduleinfo",
+            name="signup_verb",
         ),
     ]

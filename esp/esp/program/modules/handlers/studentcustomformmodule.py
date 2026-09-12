@@ -1,10 +1,9 @@
-
 import logging
 
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -51,6 +50,7 @@ from django.db.models.query import Q
 
 logger = logging.getLogger(__name__)
 
+
 class StudentCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
     event = "student_extra_form_done"
@@ -59,9 +59,18 @@ class StudentCustomComboForm(ComboForm):
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
         rt = RecordType.objects.get(name=self.event)
-        Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
-        Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
-        return super().done(form_list=form_list, redirect_url = '/learn/'+self.program.getUrlBase()+'/studentreg', **kwargs)
+        Record.objects.filter(
+            user=self.curr_request.user, program=self.program, event=rt
+        ).delete()
+        Record.objects.create(
+            user=self.curr_request.user, program=self.program, event=rt
+        )
+        return super().done(
+            form_list=form_list,
+            redirect_url="/learn/" + self.program.getUrlBase() + "/studentreg",
+            **kwargs,
+        )
+
 
 class StudentCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of student registration."""
@@ -72,37 +81,41 @@ class StudentCustomFormModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return [ {
-            "module_type": "learn",
-            'required': False,
-            'admin_title': 'Student Custom Form',
-            'link_title': 'Additional Student Information',
-            'seq': 4,
-            'choosable': 0,
-        } ]
+        return [
+            {
+                "module_type": "learn",
+                "required": False,
+                "admin_title": "Student Custom Form",
+                "link_title": "Additional Student Information",
+                "seq": 4,
+                "choosable": 0,
+            }
+        ]
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         """Returns lists of students who've completed the custom form."""
 
         qo = Q(record__event__name=self.event, record__program=self.program)
         if QObject is True:
             return {
-                'student_custom_form': qo,
+                "student_custom_form": qo,
             }
         else:
             return {
-                'student_custom_form': ESPUser.objects.filter(qo).distinct(),
+                "student_custom_form": ESPUser.objects.filter(qo).distinct(),
             }
 
     def studentDesc(self):
         return {
-            'student_custom_form': """Students who have completed the custom form""",
+            "student_custom_form": """Students who have completed the custom form""",
         }
 
     def isCompleted(self, user=None):
         """Return true if user has filled out the student custom form."""
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
+        return Record.objects.filter(
+            user=user, program=self.program, event__name=self.event
+        ).exists()
 
     @main_call
     @needs_student_in_grade
@@ -111,15 +124,22 @@ class StudentCustomFormModule(ProgramModuleObj):
             try:
                 return FormHandler(cf, request, request.user).get_wizard_view(
                     wizard_view=StudentCustomComboForm,
-                    extra_context={'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title},
+                    extra_context={
+                        "prog": prog,
+                        "qsd_name": "learn:customform_header",
+                        "module": self.module.link_title,
+                    },
                     program=prog,
                     **kwargs,
                 )
             except SuspiciousOperation:
-                logger.warning('Invalid or missing wizard ManagementForm in StudentCustomFormModule.extraform', exc_info=True)
+                logger.warning(
+                    "Invalid or missing wizard ManagementForm in StudentCustomFormModule.extraform",
+                    exc_info=True,
+                )
                 return HttpResponseRedirect(request.path)
 
-        custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
+        custom_form_id = Tag.getProgramTag("learn_extraform_id", prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
@@ -137,9 +157,9 @@ class StudentCustomFormModule(ProgramModuleObj):
             return _safe_wizard_view()
 
     def isStep(self):
-        custom_form_id = Tag.getProgramTag('learn_extraform_id', self.program)
+        custom_form_id = Tag.getProgramTag("learn_extraform_id", self.program)
         return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

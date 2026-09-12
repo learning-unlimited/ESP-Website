@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -41,49 +40,71 @@ from django.conf import settings
 from captcha.fields import ReCaptchaField
 
 person_type = (
-    ('Student', 'K-12 Student'),
-    ('Parent',  'Parent/Guardian'),
-    ('Teacher', 'Teacher for ' + settings.ORGANIZATION_SHORT_NAME),
-    ('K-12 Educator', 'K-12 Educator'),
-    ('Other',   'Other'),
-    )
+    ("Student", "K-12 Student"),
+    ("Parent", "Parent/Guardian"),
+    ("Teacher", "Teacher for " + settings.ORGANIZATION_SHORT_NAME),
+    ("K-12 Educator", "K-12 Educator"),
+    ("Other", "Other"),
+)
 
 hear_about = (
-    ('School', 'School'),
-    ('Posters', 'Posters'),
-    ('Friend', 'Friend'),
-    ('Website', 'Website'),
-    ('Referral', 'Referral'),
-    ('Other', 'Other'),
-    )
+    ("School", "School"),
+    ("Posters", "Posters"),
+    ("Friend", "Friend"),
+    ("Website", "Website"),
+    ("Referral", "Referral"),
+    ("Other", "Other"),
+)
+
 
 class ContactForm(forms.Form):
-    anonymous = forms.BooleanField(label=_("Anonymous"), required = False,
-                                   help_text=_("(By checking this, we will make your submission anonymous by removing all identifying information from your submission.)") )
+    anonymous = forms.BooleanField(
+        label=_("Anonymous"),
+        required=False,
+        help_text=_(
+            "(By checking this, we will make your submission anonymous by removing all identifying information from your submission.)"
+        ),
+    )
 
-    sender  = forms.EmailField(label=_("Your Email"), required = False,
-                               help_text=_("(e.g.: john.doe@domain.xyz)"))
+    sender = forms.EmailField(
+        label=_("Your Email"),
+        required=False,
+        help_text=_("(e.g.: john.doe@domain.xyz)"),
+    )
 
-    cc_myself = forms.BooleanField(label=_("Copy me"), required = False, initial = True,
-                                   help_text=_("(By checking this, we will send a carbon-copy (cc) of this email to the address listed above. If you checked the 'Anonymous' box, we will send a blind carbon-copy (bcc) of this email.)") )
+    cc_myself = forms.BooleanField(
+        label=_("Copy me"),
+        required=False,
+        initial=True,
+        help_text=_(
+            "(By checking this, we will send a carbon-copy (cc) of this email to the address listed above. If you checked the 'Anonymous' box, we will send a blind carbon-copy (bcc) of this email.)"
+        ),
+    )
 
-    name      = forms.CharField(max_length=100, label="Your Name", required=False)
+    name = forms.CharField(max_length=100, label="Your Name", required=False)
 
-    person_type  = forms.ChoiceField(choices = person_type, label=_("I am a(n)"))
+    person_type = forms.ChoiceField(choices=person_type, label=_("I am a(n)"))
 
-    hear_about   = forms.ChoiceField(choices = hear_about, label="How did you hear about us?")
-    topic   = forms.ChoiceField(choices = settings.CONTACTFORM_EMAIL_CHOICES, label=_("Topic"),
-                                help_text = "(This determines who gets the message.)")
+    hear_about = forms.ChoiceField(
+        choices=hear_about, label="How did you hear about us?"
+    )
+    topic = forms.ChoiceField(
+        choices=settings.CONTACTFORM_EMAIL_CHOICES,
+        label=_("Topic"),
+        help_text="(This determines who gets the message.)",
+    )
 
     subject = forms.CharField(max_length=100, label=_("Subject"))
 
-    message = forms.CharField(label=_("Message"),
-                              widget = forms.Textarea(attrs={'cols': 60,
-                                                             'rows': 15,
-                                                             'style': "width: 400px"}))
+    message = forms.CharField(
+        label=_("Message"),
+        widget=forms.Textarea(attrs={"cols": 60, "rows": 15, "style": "width: 400px"}),
+    )
 
     # If this is true, then the user has seen and clicked through a message
     # checking whether they want to recover login information.
-    decline_password_recovery = forms.BooleanField(required=False, widget=forms.HiddenInput)
+    decline_password_recovery = forms.BooleanField(
+        required=False, widget=forms.HiddenInput
+    )
 
     captcha = ReCaptchaField()

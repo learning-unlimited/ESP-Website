@@ -13,6 +13,7 @@ manage.py test. Files matching pytest's built-in python_files pattern
 (test_*.py) are intentionally excluded here since pytest collects those
 natively, avoiding double-collection.
 """
+
 import pytest
 from pathlib import Path
 

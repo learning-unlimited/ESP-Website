@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 """ Models for Resources application """
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from esp.cal.models import Event
@@ -42,7 +43,7 @@ from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from argcache import cache_function
-from esp.tagdict.models          import Tag
+from esp.tagdict.models import Tag
 
 from django.db import models
 from django.db.models.query import Q
@@ -66,28 +67,43 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
+
 class ResourceType(models.Model):
-    """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
+    """A type of resource (e.g.: Projector, Classroom, Box of Chalk)"""
+
     # TODO: this model can almost certainly be cleaned up. It is probably possible to delete the caching and dumping
     # and just use `attributes` as a pipe-separated list
     from esp.survey.fields import ListField
 
-    name = models.CharField(max_length=40)                          #   Brief name
-    description = models.TextField()                                #   What is this resource?
-    consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
-    priority_default = models.IntegerField(default=-1)  #   How important is this compared to other types?
-    only_one = models.BooleanField(default=False, help_text="If set, in some cases, only allow adding one instance of this resource.")
-    attributes_dumped  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")
+    name = models.CharField(max_length=40)  #   Brief name
+    description = models.TextField()  #   What is this resource?
+    consumable = models.BooleanField(
+        default=False
+    )  #   Is this consumable?  (Not usable yet. -Michael P)
+    priority_default = models.IntegerField(
+        default=-1
+    )  #   How important is this compared to other types?
+    only_one = models.BooleanField(
+        default=False,
+        help_text="If set, in some cases, only allow adding one instance of this resource.",
+    )
+    attributes_dumped = models.TextField(
+        default="Don't care",
+        blank=True,
+        help_text="A pipe (|) delimited list of possible attribute values.",
+    )
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
-    choices = ListField('attributes_dumped')
-    program = models.ForeignKey('program.Program', null=True, blank=True, on_delete=models.CASCADE)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    choices = ListField("attributes_dumped")
+    program = models.ForeignKey(
+        "program.Program", null=True, blank=True, on_delete=models.CASCADE
+    )  #   If null, this resource type is global.  Otherwise it's specific to one program.
     autocreated = models.BooleanField(default=False)
     #   Whether to offer this resource type as an option in the class creation/editing form
     hidden = models.BooleanField(default=False)
 
     def _get_attributes(self):
-        if hasattr(self, '_attributes_cached'):
+        if hasattr(self, "_attributes_cached"):
             return self._attributes_cached
 
         if self.attributes_dumped:
@@ -106,11 +122,12 @@ class ResourceType(models.Model):
     attributes = property(_get_attributes, _set_attributes)
 
     def save(self, *args, **kwargs):
-        if hasattr(self, '_attributes_cached'):
+        if hasattr(self, "_attributes_cached"):
             self.attributes_dumped = json.dumps(self._attributes_cached)
         super().save(*args, **kwargs)
 
     _get_or_create_cache = {}
+
     @classmethod
     def get_or_create(cls, label, program=None):
         if (label, program) in cls._get_or_create_cache:
@@ -118,7 +135,7 @@ class ResourceType(models.Model):
 
         if program:
             base_q = Q(program=program)
-            if Tag.getBooleanTag('allow_global_restypes'):
+            if Tag.getBooleanTag("allow_global_restypes"):
                 base_q = base_q | Q(program__isnull=True)
         else:
             base_q = Q(program__isnull=True)
@@ -128,7 +145,7 @@ class ResourceType(models.Model):
         else:
             nt = ResourceType()
             nt.name = label
-            nt.description = ''
+            nt.description = ""
             nt.attributes_dumped = "Yes"
             nt.program = program
             nt.autocreated = True
@@ -141,26 +158,33 @@ class ResourceType(models.Model):
     def __str__(self):
         return f'Resource Type "{self.name}", priority={self.priority_default}'
 
-class ResourceRequest(models.Model):
-    """ A request for a particular type of resource associated with a particular clas section. """
 
-    target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
-    target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
+class ResourceRequest(models.Model):
+    """A request for a particular type of resource associated with a particular clas section."""
+
+    target = models.ForeignKey(
+        "program.ClassSection", null=True, on_delete=models.CASCADE
+    )
+    target_subj = models.ForeignKey(
+        "program.ClassSubject", null=True, on_delete=models.CASCADE
+    )
     res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     desired_value = models.TextField()
 
     def __str__(self):
-        return f'Resource request of {self.res_type} for {self.target.emailcode()}: {self.desired_value}'
+        return f"Resource request of {self.res_type} for {self.target.emailcode()}: {self.desired_value}"
+
 
 class ResourceGroup(models.Model):
-    """ A hack to make the database handle resource group ID creation """
+    """A hack to make the database handle resource group ID creation"""
 
     def __str__(self):
-        return f'Resource group {self.id}'
+        return f"Resource group {self.id}"
+
 
 class Resource(models.Model):
-    """ An individual resource, such as a class room or piece of equipment.  Categorize by
-    res_type, attach to a user if necessary. """
+    """An individual resource, such as a class room or piece of equipment.  Categorize by
+    res_type, attach to a user if necessary."""
 
     name = models.CharField(max_length=80)
     res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
@@ -169,7 +193,9 @@ class Resource(models.Model):
     # group_id can be removed with a future migration after all sites
     # have successfully run the migration to res_group
     group_id = models.IntegerField(default=-1)
-    res_group = models.ForeignKey(ResourceGroup, null=True, blank=True, on_delete=models.CASCADE)
+    res_group = models.ForeignKey(
+        ResourceGroup, null=True, blank=True, on_delete=models.CASCADE
+    )
     is_unique = models.BooleanField(default=False)
     user = AjaxForeignKey(ESPUser, null=True, blank=True, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
@@ -179,12 +205,14 @@ class Resource(models.Model):
 
     def __str__(self):
         if self.user is not None:
-            return f'For {self.user}: {self.name} ({self.res_type})'
+            return f"For {self.user}: {self.name} ({self.res_type})"
         else:
             if self.num_students != -1:
-                return f'For {self.num_students} students: {self.name} ({self.res_type})'
+                return (
+                    f"For {self.num_students} students: {self.name} ({self.res_type})"
+                )
             else:
-                return f'{self.name} ({self.res_type})'
+                return f"{self.name} ({self.res_type})"
 
     def save(self, *args, **kwargs):
         if self.res_group is None:
@@ -208,8 +236,7 @@ class Resource(models.Model):
 
     __sub__ = distance
 
-
-    def identical_resources(self, prog = None):
+    def identical_resources(self, prog=None):
         res_list = Resource.objects.filter(name=self.name)
         if prog:
             res_list = res_list.filter(event__program=prog)
@@ -217,10 +244,10 @@ class Resource(models.Model):
 
     def identical_id(self, prog=None):
         res_list = self.identical_resources(prog=prog)
-        return min(res_list.values_list("id", flat = True))
+        return min(res_list.values_list("id", flat=True))
 
     def duplicates(self):
-        res_list = Resource.objects.filter(name=self.name, event = self.event)
+        res_list = Resource.objects.filter(name=self.name, event=self.event)
         return res_list
 
     def number_duplicates(self):
@@ -253,16 +280,30 @@ class Resource(models.Model):
         return Resource.objects.filter(res_group=self.res_group_id)
 
     def associated_resources(self):
-        return self.grouped_resources().exclude(id=self.id).exclude(res_type__name='Classroom')
+        return (
+            self.grouped_resources()
+            .exclude(id=self.id)
+            .exclude(res_type__name="Classroom")
+        )
 
-    def assign_to_section(self, section, check_constraint=True, override=False, group=None):
+    def assign_to_section(
+        self, section, check_constraint=True, override=False, group=None
+    ):
         if override:
             self.clear_assignments()
         if self.is_available():
-            if check_constraint and self.is_unique and self.res_type.name != 'Classroom' and self.has_unreturned_prior_assignment(self.event, ignore_section=section):
+            if (
+                check_constraint
+                and self.is_unique
+                and self.res_type.name != "Classroom"
+                and self.has_unreturned_prior_assignment(
+                    self.event, ignore_section=section
+                )
+            ):
                 raise ESPError(
-                    'Resource %s has not been returned from a prior assignment.' % self.name,
-                    log=True
+                    "Resource %s has not been returned from a prior assignment."
+                    % self.name,
+                    log=True,
                 )
             new_ra = ResourceAssignment()
             new_ra.resource = self
@@ -271,7 +312,10 @@ class Resource(models.Model):
                 new_ra.assignment_group = group
             new_ra.save()
         else:
-            raise ESPError(f'Attempted to assign class section {section.id} to conflicted resource; and constraint check was on.', log=True)
+            raise ESPError(
+                f"Attempted to assign class section {section.id} to conflicted resource; and constraint check was on.",
+                log=True,
+            )
         return new_ra
 
     assign_to_class = assign_to_section
@@ -283,8 +327,8 @@ class Resource(models.Model):
         return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
 
     def schedule_sequence(self, program):
-        """ Returns a list of strings, which are the status of the room (and its identical
-        companions) at each time block belonging to the program. """
+        """Returns a list of strings, which are the status of the room (and its identical
+        companions) at each time block belonging to the program."""
 
         sequence = []
         event_list = list(program.getTimeSlots())
@@ -296,36 +340,44 @@ class Resource(models.Model):
                 asl = list(room.assignments())
 
                 if len(asl) == 0:
-                    sequence.append('Empty')
+                    sequence.append("Empty")
                 elif len(asl) == 1:
                     sequence.append(asl[0].getTargetOrSubject().emailcode())
                 else:
-                    init_str = 'Conflict: '
+                    init_str = "Conflict: "
                     for ra in asl:
-                        init_str += ra.getTargetOrSubject().emailcode() + ' '
+                        init_str += ra.getTargetOrSubject().emailcode() + " "
                     sequence.append(init_str)
             else:
-                sequence.append('N/A')
+                sequence.append("N/A")
 
         return sequence
 
     def available_any_time(self, program=None):
-        return (len(self.available_times(program)) > 0)
+        return len(self.available_times(program)) > 0
 
     def available_times_html(self, program=None):
-        return '<br /> '.join([str(e) for e in Event.collapse(self.available_times(program))])
+        return "<br /> ".join(
+            [str(e) for e in Event.collapse(self.available_times(program))]
+        )
 
     def available_times(self, program=None):
-        event_list = [x for x in list(self.matching_times(program)) if self.is_available(timeslot=x)]
+        event_list = [
+            x
+            for x in list(self.matching_times(program))
+            if self.is_available(timeslot=x)
+        ]
         return event_list
 
     def matching_times(self, program=None):
         #   Find all times for which a resource of the same name is available.
-        event_list = self.identical_resources().values_list('event', flat=True)
+        event_list = self.identical_resources().values_list("event", flat=True)
         if program:
-            return Event.objects.filter(id__in=event_list, program=program).order_by('start')
+            return Event.objects.filter(id__in=event_list, program=program).order_by(
+                "start"
+            )
         else:
-            return Event.objects.filter(id__in=event_list).order_by('start')
+            return Event.objects.filter(id__in=event_list).order_by("start")
 
     @cache_function
     def is_available(self, QObjects=False, timeslot=None):
@@ -338,9 +390,12 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
-    is_available.get_or_create_token(('self',))
-    is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
-    is_available.depend_on_row('cal.Event', lambda instance: {})
+
+    is_available.get_or_create_token(("self",))
+    is_available.depend_on_row(
+        "resources.ResourceAssignment", lambda instance: {"self": instance.resource}
+    )
+    is_available.depend_on_row("cal.Event", lambda instance: {})
 
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -372,26 +427,37 @@ class Resource(models.Model):
 
 
 class AssignmentGroup(models.Model):
-    """ A hack to make the database handle assignment group ID creation """
+    """A hack to make the database handle assignment group ID creation"""
 
     def __str__(self):
-        return f'Assignment group {self.id}'
+        return f"Assignment group {self.id}"
+
 
 class ResourceAssignment(models.Model):
-    """ The binding of a resource to the class that it belongs to. """
+    """The binding of a resource to the class that it belongs to."""
 
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE) #   Note: this really points to a bunch of Resources. See resources() below.
+    resource = models.ForeignKey(
+        Resource, on_delete=models.CASCADE
+    )  #   Note: this really points to a bunch of Resources. See resources() below.
 
-    target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
-    target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
+    target = models.ForeignKey(
+        "program.ClassSection", null=True, on_delete=models.CASCADE
+    )
+    target_subj = models.ForeignKey(
+        "program.ClassSubject", null=True, on_delete=models.CASCADE
+    )
     lock_level = models.IntegerField(default=0)
-    returned = models.BooleanField(default=False) # Only really relevant for floating resources
-    assignment_group = models.ForeignKey(AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE)
+    returned = models.BooleanField(
+        default=False
+    )  # Only really relevant for floating resources
+    assignment_group = models.ForeignKey(
+        AssignmentGroup, null=True, blank=True, on_delete=models.CASCADE
+    )
 
     def __str__(self):
-        result = f'Resource assignment for {self.getTargetOrSubject()}'
+        result = f"Resource assignment for {self.getTargetOrSubject()}"
         if self.lock_level > 0:
-            result += ' (locked)'
+            result += " (locked)"
         return result
 
     def save(self, *args, **kwargs):
@@ -402,7 +468,7 @@ class ResourceAssignment(models.Model):
         super().save(*args, **kwargs)
 
     def getTargetOrSubject(self):
-        """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
+        """Returns the most finely specified target. (target if it's set, target_subj otherwise)"""
         if self.target is not None:
             return self.target
         return self.target_subj
@@ -419,33 +485,33 @@ class ResourceAssignment(models.Model):
 def install():
     #   Create default resource types.
     logger.info("Installing esp.resources initial data...")
-    if not ResourceType.objects.filter(name='Classroom').exists():
+    if not ResourceType.objects.filter(name="Classroom").exists():
         ResourceType.objects.create(
-            name='Classroom',
-            description='Type of classroom',
-            attributes_dumped='Lecture|Discussion|Outdoor|Lab|Open space',
+            name="Classroom",
+            description="Type of classroom",
+            attributes_dumped="Lecture|Discussion|Outdoor|Lab|Open space",
         )
-    if not ResourceType.objects.filter(name='A/V').exists():
+    if not ResourceType.objects.filter(name="A/V").exists():
         ResourceType.objects.create(
-            name='A/V',
-            description='A/V equipment',
-            attributes_dumped='LCD projector|Overhead projector|Amplified speaker|VCR|DVD player',
+            name="A/V",
+            description="A/V equipment",
+            attributes_dumped="LCD projector|Overhead projector|Amplified speaker|VCR|DVD player",
         )
-    if not ResourceType.objects.filter(name='Computer[s]').exists():
+    if not ResourceType.objects.filter(name="Computer[s]").exists():
         ResourceType.objects.create(
-            name='Computer[s]',
-            description='Computer[s]',
-            attributes_dumped='ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students',
+            name="Computer[s]",
+            description="Computer[s]",
+            attributes_dumped="ESP laptop|Athena workstation|Macs for students|Windows PCs for students|Linux PCs for students",
         )
-    if not ResourceType.objects.filter(name='Seating').exists():
+    if not ResourceType.objects.filter(name="Seating").exists():
         ResourceType.objects.create(
-            name='Seating',
-            description='Seating arrangement',
+            name="Seating",
+            description="Seating arrangement",
             attributes_dumped="Don't care|Fixed seats|Movable desks",
         )
-    if not ResourceType.objects.filter(name='Light control').exists():
+    if not ResourceType.objects.filter(name="Light control").exists():
         ResourceType.objects.create(
-            name='Light control',
-            description='Light control',
+            name="Light control",
+            description="Light control",
             attributes_dumped="Don't care|Darkenable",
         )

@@ -22,6 +22,7 @@ class QueryBuilder(object):
         `english_name`: the english name of the things to search, such as
             "foobar".  May be omitted, in which case the model's name will be used.
     """
+
     def __init__(self, base, filters, english_name=None):
         self.base = base
         if english_name is None:
@@ -37,9 +38,9 @@ class QueryBuilder(object):
         See query-builder.jsx for the format generated.
         """
         return {
-            'englishName': self.english_name,
-            'filterNames': [f.name for f in self.filters],
-            'filters': {f.name: f.spec() for f in self.filters},
+            "englishName": self.english_name,
+            "filterNames": [f.name for f in self.filters],
+            "filters": {f.name: f.spec() for f in self.filters},
         }
 
     def as_queryset(self, value):
@@ -47,27 +48,27 @@ class QueryBuilder(object):
 
         The data returned will be in the format specified in query-builder.jsx.
         """
-        if value['filter'] in ['and', 'or']:
-            if value['filter'] == 'and':
+        if value["filter"] in ["and", "or"]:
+            if value["filter"] == "and":
                 op = operator.and_
             else:
                 op = operator.or_
-            combined = reduce(op, list(map(self.as_queryset, value['values'])))
-            if value['negated']:
+            combined = reduce(op, list(map(self.as_queryset, value["values"])))
+            if value["negated"]:
                 return self.base.exclude(pk__in=combined)
             else:
                 return combined
-        elif value['filter'] in self.filter_dict:
-            filter_obj = self.filter_dict[value['filter']]
-            filter_q = filter_obj.as_q(value['values'])
-            if value['negated'] ^ filter_obj.inverted:
+        elif value["filter"] in self.filter_dict:
+            filter_obj = self.filter_dict[value["filter"]]
+            filter_q = filter_obj.as_q(value["values"])
+            if value["negated"] ^ filter_obj.inverted:
                 # Due to https://code.djangoproject.com/ticket/14645, we have
                 # to write this query a little weirdly.
                 return self.base.exclude(id__in=self.base.filter(filter_q))
             else:
                 return self.base.filter(filter_q)
         else:
-            raise ESPError(f'Invalid filter {value.get("filter")}')
+            raise ESPError(f"Invalid filter {value.get('filter')}")
 
 
 class SearchFilter(object):
@@ -99,6 +100,7 @@ class SearchFilter(object):
     which generally have the same name, implementing the corresponding input
     class APIs.
     """
+
     def __init__(self, name, title=None, inputs=None, inverted=False):
         self.name = name
         if title is None:
@@ -114,9 +116,9 @@ class SearchFilter(object):
         See query-builder.jsx for the format generated.
         """
         return {
-            'name': self.name,
-            'title': self.title,
-            'inputs': [inp.spec() for inp in self.inputs],
+            "name": self.name,
+            "title": self.title,
+            "inputs": [inp.spec() for inp in self.inputs],
         }
 
     def as_q(self, value):
@@ -125,8 +127,7 @@ class SearchFilter(object):
         The data returned will be in the format specified in query-builder.jsx.
         """
         # AND together the Q objects from each input
-        return reduce(operator.and_,
-                      [i.as_q(v) for i, v in zip(self.inputs, value)])
+        return reduce(operator.and_, [i.as_q(v) for i, v in zip(self.inputs, value)])
 
 
 class SelectInput(object):
@@ -138,6 +139,7 @@ class SelectInput(object):
         `options`: a dict of ids -> user-friendly names of the options for the
             select.  The ids should be strings.
     """
+
     def __init__(self, field_name, options):
         self.field_name = field_name
         self.options = options
@@ -145,16 +147,16 @@ class SelectInput(object):
 
     def spec(self):
         return {
-            'reactClass': 'SelectInput',
-            'options': [{'name': k, 'title': v}
-                        for k, v in self.options.items()],
+            "reactClass": "SelectInput",
+            "options": [{"name": k, "title": v} for k, v in self.options.items()],
         }
 
     def as_q(self, value):
         if value in self.options:
             return Q(**{self.field_name: value})
         else:
-            raise ESPError(f'Invalid choice {value} for input {self.field_name}')
+            raise ESPError(f"Invalid choice {value} for input {self.field_name}")
+
 
 class SelectQInput(object):
     """An input represented by an HTML <select> with a fixed set of options. Each
@@ -164,20 +166,22 @@ class SelectQInput(object):
         `options`: a dict where the keys are ids and the values are dictionaries with a user-friendly title
             and Q object.  The ids should be strings.
     """
+
     def __init__(self, options):
         self.options = options
         # TODO: warn if option ids are not strings.
 
     def spec(self):
         return {
-            'reactClass': 'SelectInput',
-            'options': [{'name': k, 'title': v['title']}
-                        for k, v in self.options.items()],
+            "reactClass": "SelectInput",
+            "options": [
+                {"name": k, "title": v["title"]} for k, v in self.options.items()
+            ],
         }
 
     def as_q(self, value):
         if value in self.options:
-            return self.options[value]['Q']
+            return self.options[value]["Q"]
         else:
             return Q()
 
@@ -188,11 +192,12 @@ class ConstantInput(object):
     Arguments:
         `q`: the Q object to be used.
     """
+
     def __init__(self, q):
         self.q = q
 
     def spec(self):
-        return {'reactClass': 'ConstantInput'}
+        return {"reactClass": "ConstantInput"}
 
     def as_q(self, value):
         return self.q
@@ -205,22 +210,23 @@ class OptionalInput(object):
         `inner`: the input that might be used.
         `name`: the name to go on the button to turn it on and off.
     """
+
     def __init__(self, inner, name="+"):
         self.inner = inner
         self.name = name
 
     def spec(self):
         return {
-            'reactClass': 'OptionalInput',
-            'name': self.name,
-            'inner': self.inner.spec(),
+            "reactClass": "OptionalInput",
+            "name": self.name,
+            "inner": self.inner.spec(),
         }
 
     def as_q(self, value):
         if value is None:
             return Q()
         else:
-            return self.inner.as_q(value['inner'])
+            return self.inner.as_q(value["inner"])
 
 
 class DatetimeInput(object):
@@ -231,28 +237,29 @@ class DatetimeInput(object):
         `english_name`: an English description of the field.  Defaults to
             `field_name`.
     """
+
     TIME_FMT = "%m/%d/%Y %H:%M"
 
     def __init__(self, field_name, english_name=None):
         self.field_name = field_name
         if english_name is None:
-            english_name = field_name.replace('_', ' ')
+            english_name = field_name.replace("_", " ")
         self.english_name = english_name
 
     def spec(self):
         return {
-            'reactClass': 'DatetimeInput',
-            'name': self.english_name,
+            "reactClass": "DatetimeInput",
+            "name": self.english_name,
         }
 
     def as_q(self, value):
-        if value['comparison'] == 'before':
-            lookup = self.field_name + '__lt'
-        elif value['comparison'] == 'after':
-            lookup = self.field_name + '__gt'
+        if value["comparison"] == "before":
+            lookup = self.field_name + "__lt"
+        elif value["comparison"] == "after":
+            lookup = self.field_name + "__gt"
         else:
             lookup = self.field_name
-        dt = datetime.datetime.strptime(value['datetime'], self.TIME_FMT)
+        dt = datetime.datetime.strptime(value["datetime"], self.TIME_FMT)
         return Q(**{lookup: dt})
 
 
@@ -265,17 +272,18 @@ class TextInput(object):
         `english_name`: an English description of the field.  Defaults to
             `field_name`.
     """
+
     def __init__(self, field_name, english_name=None):
         self.field_name = field_name
         if english_name is None:
-            self.english_name = field_name.replace('_', ' ')
+            self.english_name = field_name.replace("_", " ")
         else:
             self.english_name = english_name
 
     def spec(self):
         return {
-            'reactClass': 'TextInput',
-            'name': self.english_name,
+            "reactClass": "TextInput",
+            "name": self.english_name,
         }
 
     def as_q(self, value):

@@ -7,21 +7,27 @@ from esp.users.models import ESPUser
 
 MAX_DEPTH = 5
 
+
 class UserForwarder(models.Model):
     """
     Links source user to target user, to make all login sessions under target.
 
     """
-    source = AjaxForeignKey(ESPUser, related_name='forwarders_out', unique=True, on_delete=models.CASCADE)
-    target = AjaxForeignKey(ESPUser, related_name='forwarders_in', on_delete=models.CASCADE)
+
+    source = AjaxForeignKey(
+        ESPUser, related_name="forwarders_out", unique=True, on_delete=models.CASCADE
+    )
+    target = AjaxForeignKey(
+        ESPUser, related_name="forwarders_in", on_delete=models.CASCADE
+    )
 
     # Django tries to figure out the correct app label by going one level up.
     # Since we've had to shard users.models, this isn't quite enough.
     # So we need to specify this explicitly.
     class Meta:
-        app_label = 'users'
+        app_label = "users"
 
-    def updateTarget(self, target, flatten = True, save = True):
+    def updateTarget(self, target, flatten=True, save=True):
         """
         Updates target, avoiding circularity.
 
@@ -61,7 +67,7 @@ class UserForwarder(models.Model):
                 target = original_target
                 break
             # Follow to the next user
-            rewrites.append(f) # Don't bother checking flatten -- do it later
+            rewrites.append(f)  # Don't bother checking flatten -- do it later
             target = f.target
         # Update
         self.target = target
@@ -100,7 +106,7 @@ class UserForwarder(models.Model):
         """
         if user.forwarders_out.exists():
             ans = user.forwarders_out.get().target
-            for extra in ['backend']:
+            for extra in ["backend"]:
                 if hasattr(user, extra):
                     ans.__dict__[extra] = user.__dict__[extra]
             return (ans, True)
@@ -108,4 +114,4 @@ class UserForwarder(models.Model):
             return (user, False)
 
     def __str__(self):
-        return f'{self.source} to {self.target}'
+        return f"{self.source} to {self.target}"

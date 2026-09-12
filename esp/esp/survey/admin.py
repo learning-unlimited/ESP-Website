@@ -1,10 +1,10 @@
-" Survey models for Educational Studies Program. "
+"Survey models for Educational Studies Program."
 
-__author__    = "$LastChangedBy$"
-__date__      = "$LastChangedDate$"
-__rev__       = "$LastChangedRevision$"
-__headurl__   = "$HeadURL$"
-__license__   = "AGPL v.3"
+__author__ = "$LastChangedBy$"
+__date__ = "$LastChangedDate$"
+__rev__ = "$LastChangedRevision$"
+__headurl__ = "$HeadURL$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -40,30 +40,42 @@ from django.conf import settings
 from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
 
+
 class SurveyAdmin(admin.ModelAdmin):
-    list_filter = ('category',)
+    list_filter = ("category",)
+
+
 admin_site.register(Survey, SurveyAdmin)
 
+
 class SurveyResponseAdmin(admin.ModelAdmin):
-    list_display = ('survey', 'time_filled')
-    date_hierarchy = 'time_filled'
-    list_filter = ('survey', 'time_filled')
+    list_display = ("survey", "time_filled")
+    date_hierarchy = "time_filled"
+    list_filter = ("survey", "time_filled")
+
+
 admin_site.register(SurveyResponse, SurveyResponseAdmin)
 
+
 class QuestionTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', '_param_names', 'is_numeric', 'is_countable')
+    list_display = ("name", "_param_names", "is_numeric", "is_countable")
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
-            return self.readonly_fields + ('name',)
+            return self.readonly_fields + ("name",)
         return self.readonly_fields
+
+
 admin_site.register(QuestionType, QuestionTypeAdmin)
 
+
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ['seq', 'name', 'question_type', 'survey', 'per_class']
-    list_display_links = ['name']
-    list_filter = ['survey']
-    search_filter = ('name',)
+    list_display = ["seq", "name", "question_type", "survey", "per_class"]
+    list_display_links = ["name"]
+    list_filter = ["survey"]
+    search_filter = ("name",)
+
+
 admin_site.register(Question, QuestionAdmin)
 
 admin_site.register(Answer)

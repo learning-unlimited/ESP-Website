@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -36,22 +35,34 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.cal.models import EventType, Event
 
+
 class EventTypeAdmin(admin.ModelAdmin):
-    list_display = ('description', 'is_teacher_type')
-    list_filter = ('is_teacher_type',)
-    search_fields = ['description']
+    list_display = ("description", "is_teacher_type")
+    list_filter = ("is_teacher_type",)
+    search_fields = ["description"]
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
-            return self.readonly_fields + ('description',)
+            return self.readonly_fields + ("description",)
         return self.readonly_fields
+
 
 admin_site.register(EventType, EventTypeAdmin)
 
+
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'program', 'name', 'short_time', 'pretty_date', 'event_type', 'short_description')
-    list_filter = ('program', 'start', 'end', 'event_type')
-    date_hierarchy = 'start'
-    search_fields = ('=id', 'name', 'short_description', 'description')
+    list_display = (
+        "id",
+        "program",
+        "name",
+        "short_time",
+        "pretty_date",
+        "event_type",
+        "short_description",
+    )
+    list_filter = ("program", "start", "end", "event_type")
+    date_hierarchy = "start"
+    search_fields = ("=id", "name", "short_description", "description")
+
 
 admin_site.register(Event, EventAdmin)

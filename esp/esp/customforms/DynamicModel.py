@@ -26,7 +26,7 @@ def get_file_upload_path(instance, filename):
     Returns the upload path for the file that is to be saved.
     Files are saved in the directory MEDIA_ROOT/uploaded/Response_[form_id]
     """
-    save_dir = f'uploaded/{instance.__class__.__name__}'
+    save_dir = f"uploaded/{instance.__class__.__name__}"
     save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
     return save_path
@@ -34,12 +34,12 @@ def get_file_upload_path(instance, filename):
 
 #   SQLSTATE that PostgreSQL reports when a statement gives up waiting for a
 #   lock because lock_timeout expired.
-PG_LOCK_NOT_AVAILABLE = '55P03'
+PG_LOCK_NOT_AVAILABLE = "55P03"
 
 #   How long a custom form schema operation is willing to wait for a lock
 #   before giving up.  Anything PostgreSQL's lock_timeout accepts will do;
 #   override with CUSTOMFORMS_LOCK_TIMEOUT in local_settings.py.
-DEFAULT_LOCK_TIMEOUT = '5s'
+DEFAULT_LOCK_TIMEOUT = "5s"
 
 
 def is_lock_timeout(exception):
@@ -47,7 +47,7 @@ def is_lock_timeout(exception):
     Returns True if this OperationalError was caused by lock_timeout expiring.
     """
     for candidate in (exception, exception.__cause__):
-        if getattr(candidate, 'pgcode', None) == PG_LOCK_NOT_AVAILABLE:
+        if getattr(candidate, "pgcode", None) == PG_LOCK_NOT_AVAILABLE:
             return True
     return False
 
@@ -58,12 +58,11 @@ def lock_timeout():
     Runs the wrapped block in a transaction with PostgreSQL's lock_timeout set.
     """
     with transaction.atomic():
-        if connection.vendor != 'postgresql':
+        if connection.vendor != "postgresql":
             yield
             return
 
-        timeout = getattr(settings, 'CUSTOMFORMS_LOCK_TIMEOUT',
-                          DEFAULT_LOCK_TIMEOUT)
+        timeout = getattr(settings, "CUSTOMFORMS_LOCK_TIMEOUT", DEFAULT_LOCK_TIMEOUT)
         with connection.cursor() as cursor:
             cursor.execute("SHOW lock_timeout")
             previous_timeout = cursor.fetchone()[0]
@@ -129,34 +128,100 @@ class DynamicModelHandler:
     separate add and remove methods from the normal fields.
     """
 
-    _app_label = 'customforms'
-    _module = 'esp.customforms.models'
-    _schema_name = 'customforms'
+    _app_label = "customforms"
+    _module = "esp.customforms.models"
+    _schema_name = "customforms"
 
     _field_types = {
-        'textField': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args': []},
-        'longTextField': {'typeMap': models.CharField, 'attrs': {'max_length': 60,}, 'args': []},
-        'longAns': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
-        'reallyLongAns': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
-        'radio': {'typeMap': models.CharField, 'attrs': {'max_length': 200,}, 'args': []},
-        'dropdown': {'typeMap': models.CharField, 'attrs': {'max_length': 200,}, 'args': []},
-        'multiselect': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
-        'checkboxes': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
-        'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, 'default': None}, 'args': []},
-        'date': {'typeMap': models.DateField, 'attrs': {'max_length': 10, 'null': True}, 'args': []},
-        'time': {'typeMap': models.TimeField, 'attrs': {'max_length': 10, 'null': True}, 'args': []},
-        'file': {'typeMap': models.FileField, 'attrs': {'max_length': 200, 'upload_to': get_file_upload_path, }, 'args': []},
-        'phone': {'typeMap': models.CharField, 'attrs': {'max_length': 15}, 'args': []},
-        'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
-        'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
-        'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
-        'pronoun': {'typeMap': models.CharField, 'attrs': {'max_length': 50}, 'args': []},
-        'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
-        'boolean': {'typeMap': models.BooleanField, 'attrs':{'default': False}, 'args':[]},
-        'null_boolean': {'typeMap': models.BooleanField, 'attrs':{'default': None, 'null': True}, 'args':[]},
-        'instructions': {'typeMap': None},
+        "textField": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 30,
+            },
+            "args": [],
+        },
+        "longTextField": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 60,
+            },
+            "args": [],
+        },
+        "longAns": {"typeMap": models.TextField, "attrs": {}, "args": []},
+        "reallyLongAns": {"typeMap": models.TextField, "attrs": {}, "args": []},
+        "radio": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 200,
+            },
+            "args": [],
+        },
+        "dropdown": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 200,
+            },
+            "args": [],
+        },
+        "multiselect": {"typeMap": models.TextField, "attrs": {}, "args": []},
+        "checkboxes": {"typeMap": models.TextField, "attrs": {}, "args": []},
+        "numeric": {
+            "typeMap": models.IntegerField,
+            "attrs": {"null": True, "default": None},
+            "args": [],
+        },
+        "date": {
+            "typeMap": models.DateField,
+            "attrs": {"max_length": 10, "null": True},
+            "args": [],
+        },
+        "time": {
+            "typeMap": models.TimeField,
+            "attrs": {"max_length": 10, "null": True},
+            "args": [],
+        },
+        "file": {
+            "typeMap": models.FileField,
+            "attrs": {
+                "max_length": 200,
+                "upload_to": get_file_upload_path,
+            },
+            "args": [],
+        },
+        "phone": {"typeMap": models.CharField, "attrs": {"max_length": 15}, "args": []},
+        "email": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 30,
+            },
+            "args": [],
+        },
+        "state": {"typeMap": models.CharField, "attrs": {"max_length": 2}, "args": []},
+        "gender": {"typeMap": models.CharField, "attrs": {"max_length": 2}, "args": []},
+        "pronoun": {
+            "typeMap": models.CharField,
+            "attrs": {"max_length": 50},
+            "args": [],
+        },
+        "radio_yesno": {
+            "typeMap": models.CharField,
+            "attrs": {
+                "max_length": 1,
+            },
+            "args": [],
+        },
+        "boolean": {
+            "typeMap": models.BooleanField,
+            "attrs": {"default": False},
+            "args": [],
+        },
+        "null_boolean": {
+            "typeMap": models.BooleanField,
+            "attrs": {"default": None, "null": True},
+            "args": [],
+        },
+        "instructions": {"typeMap": None},
     }
-
 
     def __init__(self, form, fields=[]):
         self.form = form
@@ -170,7 +235,7 @@ class DynamicModelHandler:
         """
         Implemented for caching convenience
         """
-        return 'dyn'
+        return "dyn"
 
     # CHECK THIS
     @cache_function
@@ -179,17 +244,23 @@ class DynamicModelHandler:
         Gets the list of (field_id, field_type) tuples for the present form.
         Called if this list isn't passed to __init__() and the dynamic model needs to be generated.
         """
-        self.fields = Field.objects.filter(form=form).values_list('id', 'field_type')
+        self.fields = Field.objects.filter(form=form).values_list("id", "field_type")
         return self.fields
-    _getFieldsForForm.get_or_create_token(('form',))
-    _getFieldsForForm.depend_on_row('customforms.Field', lambda field: {'form': field.form})
+
+    _getFieldsForForm.get_or_create_token(("form",))
+    _getFieldsForForm.depend_on_row(
+        "customforms.Field", lambda field: {"form": field.form}
+    )
 
     def _getModelField(self, field_type):
         """
         Returns the appropriate Django Model Field based on field_type
         """
-        if self._field_types[field_type]['typeMap']:
-            return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
+        if self._field_types[field_type]["typeMap"]:
+            return self._field_types[field_type]["typeMap"](
+                *self._field_types[field_type]["args"],
+                **self._field_types[field_type]["attrs"],
+            )
         else:
             return None
 
@@ -200,7 +271,9 @@ class DynamicModelHandler:
         # If I don't set db_index=False here, Django tries to create an index,
         # which breaks because Django doesn't know that customforms is in its
         # own schema
-        return models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL, db_index=False)
+        return models.ForeignKey(
+            model, null=True, blank=True, on_delete=models.SET_NULL, db_index=False
+        )
 
     def _getModelFieldList(self):
         """
@@ -215,14 +288,20 @@ class DynamicModelHandler:
         if not self.fields:
             self.fields = self._getFieldsForForm(self.form)
 
-        self.field_list.append( ('id', models.AutoField(primary_key = True) ) )
+        self.field_list.append(("id", models.AutoField(primary_key=True)))
         if not self.form.anonymous:
-            self.field_list.append( ('user', self._getLinkModelField(ESPUser) ) )
+            self.field_list.append(("user", self._getLinkModelField(ESPUser)))
 
         # Checking for only_fkey links
-        if self.form.link_type and self.form.link_type != '-1' and self.form.link_type in cf_cache.only_fkey_models:
+        if (
+            self.form.link_type
+            and self.form.link_type != "-1"
+            and self.form.link_type in cf_cache.only_fkey_models
+        ):
             model_cls = cf_cache.only_fkey_models[self.form.link_type]
-            self.field_list.append( (f'link_{model_cls.__name__}', self._getLinkModelField(model_cls)) )
+            self.field_list.append(
+                (f"link_{model_cls.__name__}", self._getLinkModelField(model_cls))
+            )
 
         # Check for linked fields-
         # Insert a foreign-key to the parent model for link fields
@@ -230,16 +309,17 @@ class DynamicModelHandler:
         for field_id, field in self.fields:
             if cf_cache.isLinkField(field):
                 lm = cf_cache.modelForLinkField(field)
-                if lm not in link_models: link_models.append(lm)
+                if lm not in link_models:
+                    link_models.append(lm)
             else:
                 new_field = self._getModelField(field)
                 if new_field:
-                    self.field_list.append( (f'question_{field_id}', new_field) )
+                    self.field_list.append((f"question_{field_id}", new_field))
 
         for model in link_models:
             if model:
                 new_field = self._getLinkModelField(model)
-                self.field_list.append( (f'link_{model.__name__}', new_field) )
+                self.field_list.append((f"link_{model.__name__}", new_field))
                 self.link_models_list.append(model.__name__)
 
         return self.field_list
@@ -271,11 +351,11 @@ class DynamicModelHandler:
         """
         Returns the model field to add, along with a suitable default
         """
-        attrs = self._field_types[ftype]['attrs'].copy()
-        args = self._field_types[ftype]['args']
-        if ftype != "numeric" and ftype  != "boolean":
-            attrs['default'] = ''
-        return self._field_types[ftype]['typeMap'](*args, **attrs)
+        attrs = self._field_types[ftype]["attrs"].copy()
+        args = self._field_types[ftype]["args"]
+        if ftype != "numeric" and ftype != "boolean":
+            attrs["default"] = ""
+        return self._field_types[ftype]["typeMap"](*args, **attrs)
 
     def get_field_name(self, field):
         """
@@ -284,7 +364,7 @@ class DynamicModelHandler:
         """
         if cf_cache.isLinkField(field.field_type):
             model = cf_cache.modelForLinkField(field.field_type)
-            return 'link_'+model.__name__
+            return "link_" + model.__name__
 
         return f"question_{field.id}"
 
@@ -297,7 +377,7 @@ class DynamicModelHandler:
                     new_field.column = self.get_field_name(field)
                     # We need to set a default (if one isn't set already) in case there are already responses to the form
                     if new_field.default == NOT_PROVIDED:
-                        new_field.default = ''
+                        new_field.default = ""
                     schema_editor.add_field(model, new_field)
 
     def updateField(self, field, old_field):
@@ -308,7 +388,9 @@ class DynamicModelHandler:
                 new_field = self._getModelField(field.field_type)
                 if new_field:
                     new_field.column = self.get_field_name(field)
-                    schema_editor.alter_field(model, model._meta.get_field(old_field_name), new_field)
+                    schema_editor.alter_field(
+                        model, model._meta.get_field(old_field_name), new_field
+                    )
 
     def removeField(self, field):
         """
@@ -333,7 +415,7 @@ class DynamicModelHandler:
                 model = self.createDynModel()
                 link_model_cls = cf_cache.modelForLinkField(field.field_type)
                 if link_model_cls.__name__ in self.link_models_list:
-                    field_name = f'link_{link_model_cls.__name__}'
+                    field_name = f"link_{link_model_cls.__name__}"
                     schema_editor.remove_field(model, model._meta.get_field(field_name))
                     self.link_models_list.remove(link_model_cls.__name__)
 
@@ -351,7 +433,7 @@ class DynamicModelHandler:
                     # Add in the FK-column for this model
                     model = self.createDynModel()
                     new_field = self._getLinkModelField(link_model_cls)
-                    new_field.column = f'link_{link_model_cls.__name__}'
+                    new_field.column = f"link_{link_model_cls.__name__}"
                     schema_editor.add_field(model, new_field)
                     self.link_models_list.append(link_model_cls.__name__)
 
@@ -362,23 +444,35 @@ class DynamicModelHandler:
         """
         with schema_lock("Could not change what this form is linked to"):
             with connection.schema_editor() as schema_editor:
-                if old_link_type != new_link_type and old_link_type and old_link_type != "-1" and old_link_type in cf_cache.only_fkey_models:
+                if (
+                    old_link_type != new_link_type
+                    and old_link_type
+                    and old_link_type != "-1"
+                    and old_link_type in cf_cache.only_fkey_models
+                ):
                     # Old FK column needs to go
                     model = self.createDynModel()
                     old_model_cls = cf_cache.only_fkey_models[old_link_type]
-                    old_field_name = f'link_{old_model_cls.__name__}_id'
-                    schema_editor.remove_field(model, model._meta.get_field(old_field_name))
+                    old_field_name = f"link_{old_model_cls.__name__}_id"
+                    schema_editor.remove_field(
+                        model, model._meta.get_field(old_field_name)
+                    )
 
                 form.link_type = new_link_type
                 form.link_id = link_id
                 form.save()
 
-                if old_link_type != new_link_type and new_link_type and new_link_type != "-1" and new_link_type in cf_cache.only_fkey_models:
+                if (
+                    old_link_type != new_link_type
+                    and new_link_type
+                    and new_link_type != "-1"
+                    and new_link_type in cf_cache.only_fkey_models
+                ):
                     # New FK column needs to be inserted
                     model = self.createDynModel()
                     new_model_cls = cf_cache.only_fkey_models[new_link_type]
                     new_field = self._getLinkModelField(new_model_cls)
-                    new_field.column = f'link_{new_model_cls.__name__}_id'
+                    new_field.column = f"link_{new_model_cls.__name__}_id"
                     schema_editor.add_field(model, new_field)
 
     def createDynModel(self):
@@ -387,7 +481,7 @@ class DynamicModelHandler:
         """
 
         _db_table = self._tname
-        _model_name = f'Response_{self.form.id}'
+        _model_name = f"Response_{self.form.id}"
 
         # Removing any existing model definitions from Django's cache
         self.purgeDynModel()
@@ -396,7 +490,7 @@ class DynamicModelHandler:
             app_label = self._app_label
             db_table = _db_table
 
-        attrs = {'__module__': self._module, 'Meta': Meta}
+        attrs = {"__module__": self._module, "Meta": Meta}
 
         # Updating attrs with the fields
         if not self.field_list:
@@ -411,7 +505,7 @@ class DynamicModelHandler:
         Purges the model from Django's app registry cache.
         """
 
-        _model_name = f'Response_{self.form.id}'
+        _model_name = f"Response_{self.form.id}"
         try:
             # TODO: private API, please fix
             del apps.get_app_config(self._app_label).models[_model_name.lower()]
@@ -422,4 +516,3 @@ class DynamicModelHandler:
 
 # Giving it an alias that's less of a mouthful
 DMH = DynamicModelHandler
-

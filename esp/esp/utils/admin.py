@@ -1,5 +1,4 @@
-
-""" Admin settings for esp.utils. """
+"""Admin settings for esp.utils."""
 
 from esp.utils.models import TemplateOverride, Printer, PrintRequest
 from esp.utils.admin_user_search import default_user_search
@@ -10,22 +9,32 @@ from reversion.admin import VersionAdmin
 
 
 class TemplateOverrideAdmin(VersionAdmin):
-    exclude = ['version']
-    search_fields = ['name']
-    list_display = ['id', 'name', 'version', ]
-    list_display_links = ['id', 'name', ]
+    exclude = ["version"]
+    search_fields = ["name"]
+    list_display = [
+        "id",
+        "name",
+        "version",
+    ]
+    list_display_links = [
+        "id",
+        "name",
+    ]
 
     class Media:
-        js = ('/media/scripts/admin_templateoverride.js',)
+        js = ("/media/scripts/admin_templateoverride.js",)
+
 
 class PrinterAdmin(admin.ModelAdmin):
-    list_display = ['name', 'printer_type']
+    list_display = ["name", "printer_type"]
+
 
 class PrintRequestAdmin(admin.ModelAdmin):
-    list_display = ['user', 'printer', 'time_requested', 'time_executed']
-    list_filter = ['printer', 'time_requested', 'time_executed']
-    date_hierarchy = 'time_requested'
+    list_display = ["user", "printer", "time_requested", "time_executed"]
+    list_filter = ["printer", "time_requested", "time_executed"]
+    date_hierarchy = "time_requested"
     search_fields = default_user_search()
+
 
 admin_site.register(TemplateOverride, TemplateOverrideAdmin)
 admin_site.register(Printer, PrinterAdmin)

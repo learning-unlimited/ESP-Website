@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -40,46 +39,69 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django import forms
 from django.conf import settings
 
+
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
     full_group_name = forms.CharField()
-    show_group_name = forms.BooleanField(required = False, help_text='Should the full group name be shown in the page header?')
-    show_email = forms.BooleanField(required = False, help_text='Should the group email address be shown in the page header?')
-    contact_info = forms.CharField(required = False, widget=forms.Textarea,
-                                   help_text='Generic text to include in the page header. Leave blank to omit this field in the header.')
-    contact_links = forms.Field(required = False, widget=ContactFieldsWidget,
-                                label='Contact links below contact info (use absolute or relative URLs)',
-                                initial=[{"text": "contact us", "link": "/contact.html"}])
-    nav_structure = forms.Field(widget=NavStructureWidget, label='Nav structure (use relative URLs)')
-    facebook_link = forms.URLField(required=False, help_text='Leave blank to omit a Facebook link.')
+    show_group_name = forms.BooleanField(
+        required=False,
+        help_text="Should the full group name be shown in the page header?",
+    )
+    show_email = forms.BooleanField(
+        required=False,
+        help_text="Should the group email address be shown in the page header?",
+    )
+    contact_info = forms.CharField(
+        required=False,
+        widget=forms.Textarea,
+        help_text="Generic text to include in the page header. Leave blank to omit this field in the header.",
+    )
+    contact_links = forms.Field(
+        required=False,
+        widget=ContactFieldsWidget,
+        label="Contact links below contact info (use absolute or relative URLs)",
+        initial=[{"text": "contact us", "link": "/contact.html"}],
+    )
+    nav_structure = forms.Field(
+        widget=NavStructureWidget, label="Nav structure (use relative URLs)"
+    )
+    facebook_link = forms.URLField(
+        required=False, help_text="Leave blank to omit a Facebook link."
+    )
     # URLField requires an absolute URL, here we probably want relative.
-    faq_link = forms.CharField(required=False, initial='/faq.html',
-                               help_text='Leave blank to omit an FAQ link.')
-    show_footer_textbox = forms.BooleanField(initial = False, required = False,
-                                            help_text='Should there be an editable text field in the footer?')
+    faq_link = forms.CharField(
+        required=False,
+        initial="/faq.html",
+        help_text="Leave blank to omit an FAQ link.",
+    )
+    show_footer_textbox = forms.BooleanField(
+        initial=False,
+        required=False,
+        help_text="Should there be an editable text field in the footer?",
+    )
     front_page_style = forms.ChoiceField(
-                           choices=(('bubblesfront.html', 'Bubbles'),
-                                    ('qsdfront.html', 'QSD')),
-                           initial='qsdfront.html',
-                           help_text='Choose the style of the front page of ' +
-                           '<a href="%(home)s">%(host)s</a>. "Bubbles" is a ' +
-                           # %(host)s is filled in by __init__()
-                           'graphical landing page (see for example ' +
-                           '<a href="https://esp.mit.edu">esp.mit.edu</a>), ' +
-                           'and "QSD" is a standard page of editable ' +
-                           'content (see for example ' +
-                           '<a href="https://yale.learningu.org">yale.learningu.org</a>).')
+        choices=(("bubblesfront.html", "Bubbles"), ("qsdfront.html", "QSD")),
+        initial="qsdfront.html",
+        help_text="Choose the style of the front page of "
+        + '<a href="%(home)s">%(host)s</a>. "Bubbles" is a '
+        +
+        # %(host)s is filled in by __init__()
+        "graphical landing page (see for example "
+        + '<a href="https://esp.mit.edu">esp.mit.edu</a>), '
+        + 'and "QSD" is a standard page of editable '
+        + "content (see for example "
+        + '<a href="https://yale.learningu.org">yale.learningu.org</a>).',
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # fill in %(host)s for front_page_style.help_text
         request = get_current_request()
-        if request is not None and 'HTTP_HOST' in request.META:
-            host = request.META['HTTP_HOST']
+        if request is not None and "HTTP_HOST" in request.META:
+            host = request.META["HTTP_HOST"]
         else:
             host = settings.SITE_INFO[1]
-        self.fields['front_page_style'].help_text = \
-            self.fields['front_page_style'].help_text % \
-                {'home': '/', 'host': host}
-
+        self.fields["front_page_style"].help_text = self.fields[
+            "front_page_style"
+        ].help_text % {"home": "/", "host": host}

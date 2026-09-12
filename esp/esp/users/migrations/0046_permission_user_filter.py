@@ -5,15 +5,20 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0045_k12school_city_k12school_state_alter_k12school_name_and_more'),
+        ("users", "0045_k12school_city_k12school_state_alter_k12school_name_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='permission',
-            name='user_filter',
-            field=models.ForeignKey(blank=True, help_text='Apply this permission to all users matching this saved filter.', null=True, on_delete=django.db.models.deletion.CASCADE, to='users.persistentqueryfilter'),
+            model_name="permission",
+            name="user_filter",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Apply this permission to all users matching this saved filter.",
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="users.persistentqueryfilter",
+            ),
         ),
     ]

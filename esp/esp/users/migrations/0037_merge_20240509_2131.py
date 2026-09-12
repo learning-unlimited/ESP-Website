@@ -5,11 +5,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0035_remove_contactinfo_address_postal'),
-        ('users', '0036_auto_20240309_1356'),
+        ("users", "0035_remove_contactinfo_address_postal"),
+        ("users", "0036_auto_20240309_1356"),
     ]
 
-    operations = [
-    ]
+    operations = []

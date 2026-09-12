@@ -4,19 +4,15 @@ from esp.users.models import ESPUser
 
 
 class AccountingModuleTest(TestCase):
-
     def setUp(self):
         self.factory = RequestFactory()
         self.user = ESPUser.objects.create_user(
-            username="test_admin",
-            password="password123"
+            username="test_admin", password="password123"
         )
         self.user.makeAdmin()
 
     def test_user_lookup_via_url_target_user(self):
-        request = self.factory.get(
-            f"/accounting/?target_user={self.user.id}"
-        )
+        request = self.factory.get(f"/accounting/?target_user={self.user.id}")
         request.user = self.user
 
         response = user_summary(request)
@@ -27,10 +23,7 @@ class AccountingModuleTest(TestCase):
         """
         Verify lookup via POST data
         """
-        request = self.factory.post(
-            "/accounting/",
-            {"target_user": self.user.id}
-        )
+        request = self.factory.post("/accounting/", {"target_user": self.user.id})
         request.user = self.user
 
         response = user_summary(request)

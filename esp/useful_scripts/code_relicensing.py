@@ -4,12 +4,12 @@ import re
 import os
 from io import open
 
-direction = 'forward'
-#direction = 'backward'
+direction = "forward"
+# direction = 'backward'
 
 #   Note: codefiles.txt obtained by something like
 #         'git grep -Il "__author__" -- esp/esp > codefiles.txt'
-file = open('codefiles.txt', 'r')
+file = open("codefiles.txt", "r")
 
 filenames = [r.strip() for r in file.readlines()]
 
@@ -55,93 +55,96 @@ Learning Unlimited, Inc.
 7 = copy rest of file verbatim
 """
 for fn in filenames:
-    print('Processing: %s' % fn)
+    print("Processing: %s" % fn)
 
-    if direction == 'forward':
-        curfile = open(fn, 'r')
-        outfile = open(fn + '.new', 'w')
+    if direction == "forward":
+        curfile = open(fn, "r")
+        outfile = open(fn + ".new", "w")
 
-        lines = [r.strip('\n') for r in curfile.readlines()]
+        lines = [r.strip("\n") for r in curfile.readlines()]
         state = 1
         copyright_start_line = 0
-        copyright_text = ''
+        copyright_text = ""
         for i in range(len(lines)):
             line = lines[i]
             if state == 1:
-                if line.startswith('__author__'):
+                if line.startswith("__author__"):
                     author_dir = line.split('"')
                     print('  Author on line %d: "%s"' % (i + 1, author_dir[-2]))
                     if author_dir[-2] == "MIT ESP":
                         print('  -> Rewriting to: "%s"' % NEW_AUTHOR)
                         outfile.write('__author__    = "%s"\n' % NEW_AUTHOR)
                     else:
-                        outfile.write(line + '\n')
+                        outfile.write(line + "\n")
                     state = 2
                     continue
                 else:
-                    outfile.write(line + '\n')
+                    outfile.write(line + "\n")
             elif state == 2:
-                outfile.write(line + '\n')
-                if line.startswith('__date__'):
+                outfile.write(line + "\n")
+                if line.startswith("__date__"):
                     date_dir = line.split('"')
                     print('  Date on line %d: "%s"' % (i + 1, date_dir[-2]))
                     state = 3
                     continue
             elif state == 3:
-                outfile.write(line + '\n')
-                if line.startswith('__rev__'):
+                outfile.write(line + "\n")
+                if line.startswith("__rev__"):
                     rev_dir = line.split('"')
                     print('  Revision on line %d: "%s"' % (i + 1, rev_dir[-2]))
                     state = 4
                     continue
             elif state == 4:
-                if line.startswith('__license__'):
+                if line.startswith("__license__"):
                     license_dir = line.split('"')
                     print('  License on line %d: "%s"' % (i + 1, license_dir[-2]))
                     if license_dir[-2] == "GPL v.2":
                         print('  -> Rewriting to: "%s"' % NEW_LICENSE)
                         outfile.write('__license__   = "%s"\n' % NEW_LICENSE)
                     else:
-                        outfile.write(line + '\n')
+                        outfile.write(line + "\n")
                     state = 5
                     continue
                 else:
-                    outfile.write(line + '\n')
+                    outfile.write(line + "\n")
             elif state == 5:
-                if line.startswith('__copyright__'):
-                    print('  Copyright start on line %d' % (i + 1))
+                if line.startswith("__copyright__"):
+                    print("  Copyright start on line %d" % (i + 1))
                     state = 6
                     continue
             elif state == 6:
                 if line.startswith('"""'):
-                    print('  Copyright end on line %d' % (i + 1))
-                    print('  Copyright contents follow')
+                    print("  Copyright end on line %d" % (i + 1))
+                    print("  Copyright contents follow")
                     print(copyright_text)
 
-                    result = re.search(r'Copyright \(c\) ([-0-9]+)', copyright_text)
+                    result = re.search(r"Copyright \(c\) ([-0-9]+)", copyright_text)
                     if result:
-                        print('  Copyright date search yielded %s' % result.groups()[0])
+                        print("  Copyright date search yielded %s" % result.groups()[0])
 
                         #   Write new copyright notice
-                        outfile.write('__copyright__ = """%s"""\n' % (NEW_COPYRIGHT % result.groups()[0]))
+                        outfile.write(
+                            '__copyright__ = """%s"""\n'
+                            % (NEW_COPYRIGHT % result.groups()[0])
+                        )
                     else:
                         #   Write old copyright notice if it didn't match
                         outfile.write('__copyright__ = """%s"""\n' % copyright_text)
 
                     state = 7
                     continue
-                copyright_text += '\n' + line
+                copyright_text += "\n" + line
             elif state == 7:
-                outfile.write(line + '\n')
+                outfile.write(line + "\n")
 
         curfile.close()
         outfile.close()
 
-        os.rename(fn, fn + '.old')
-        os.rename(fn + '.new', fn)
+        os.rename(fn, fn + ".old")
+        os.rename(fn + ".new", fn)
 
-    elif direction == 'backward':
-        os.rename(fn, fn + '.new')
-        os.rename(fn + '.old', fn)
+    elif direction == "backward":
+        os.rename(fn, fn + ".new")
+        os.rename(fn + ".old", fn)
 
 file.close()

@@ -10,13 +10,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0040_auto_20260106_2204'),
+        ("users", "0040_auto_20260106_2204"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='PasswordRecoveryTicket',
+            name="PasswordRecoveryTicket",
         ),
     ]

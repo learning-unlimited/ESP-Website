@@ -2,11 +2,12 @@ from django import template
 
 register = template.Library()
 
+
 @register.filter
 def description(option):
     return option[2]
 
-@register.filter
 
+@register.filter
 def id(option):
     return option[0]

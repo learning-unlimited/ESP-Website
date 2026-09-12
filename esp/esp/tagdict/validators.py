@@ -16,29 +16,29 @@ logger = logging.getLogger(__name__)
 # Imports are performed lazily inside functions to avoid circular
 # dependencies (the form modules import from tagdict themselves).
 _PROFILE_HIDE_FIELDS_TAGS = {
-    'student_profile_hide_fields': {
-        'module': 'esp.users.forms.user_profile',
-        'form_class': 'StudentProfileForm',
+    "student_profile_hide_fields": {
+        "module": "esp.users.forms.user_profile",
+        "form_class": "StudentProfileForm",
     },
-    'teacher_profile_hide_fields': {
-        'module': 'esp.users.forms.user_profile',
-        'form_class': 'TeacherProfileForm',
+    "teacher_profile_hide_fields": {
+        "module": "esp.users.forms.user_profile",
+        "form_class": "TeacherProfileForm",
     },
-    'guardian_profile_hide_fields': {
-        'module': 'esp.users.forms.user_profile',
-        'form_class': 'GuardianProfileForm',
+    "guardian_profile_hide_fields": {
+        "module": "esp.users.forms.user_profile",
+        "form_class": "GuardianProfileForm",
     },
-    'educator_profile_hide_fields': {
-        'module': 'esp.users.forms.user_profile',
-        'form_class': 'EducatorProfileForm',
+    "educator_profile_hide_fields": {
+        "module": "esp.users.forms.user_profile",
+        "form_class": "EducatorProfileForm",
     },
-    'volunteer_profile_hide_fields': {
-        'module': 'esp.users.forms.user_profile',
-        'form_class': 'VolunteerProfileForm',
+    "volunteer_profile_hide_fields": {
+        "module": "esp.users.forms.user_profile",
+        "form_class": "VolunteerProfileForm",
     },
 }
 
-_TEACHERREG_HIDE_FIELDS_TAG = 'teacherreg_hide_fields'
+_TEACHERREG_HIDE_FIELDS_TAG = "teacherreg_hide_fields"
 
 # All tag keys that this module knows how to validate.
 ALL_HIDE_FIELDS_TAG_KEYS = frozenset(
@@ -53,13 +53,15 @@ def get_valid_field_names_for_tag(tag_key):
     """
     if tag_key in _PROFILE_HIDE_FIELDS_TAGS:
         import importlib
+
         config = _PROFILE_HIDE_FIELDS_TAGS[tag_key]
-        module = importlib.import_module(config['module'])
-        form_class = getattr(module, config['form_class'])
+        module = importlib.import_module(config["module"])
+        form_class = getattr(module, config["form_class"])
         return set(form_class.declared_fields.keys())
 
     if tag_key == _TEACHERREG_HIDE_FIELDS_TAG:
         from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+
         return set(TeacherClassRegForm.declared_fields.keys())
 
     return None
@@ -84,7 +86,7 @@ def validate_hide_fields_value(tag_key, tag_value):
         return ([], [], valid_field_set)
 
     # Normalise exactly the way the form __init__ methods do.
-    field_names = [x.strip().lower() for x in tag_value.split(',') if x.strip()]
+    field_names = [x.strip().lower() for x in tag_value.split(",") if x.strip()]
 
     valid = [f for f in field_names if f in valid_field_set]
     invalid = [f for f in field_names if f not in valid_field_set]

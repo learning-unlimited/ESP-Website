@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -46,6 +45,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django import forms
 from django.db.models.query import Q
 
+
 class TeacherCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
     event = "teacher_extra_form_done"
@@ -53,10 +53,19 @@ class TeacherCustomComboForm(ComboForm):
 
     def done(self, form_list, **kwargs):
         # Delete old records, if any exist, and then make a new one
-        rt = RecordType.objects.get(name = self.event)
-        Record.objects.filter(user=self.curr_request.user, program=self.program, event=rt).delete()
-        Record.objects.create(user=self.curr_request.user, program=self.program, event=rt)
-        return super().done(form_list=form_list, redirect_url = '/teach/'+self.program.getUrlBase()+'/teacherreg', **kwargs)
+        rt = RecordType.objects.get(name=self.event)
+        Record.objects.filter(
+            user=self.curr_request.user, program=self.program, event=rt
+        ).delete()
+        Record.objects.create(
+            user=self.curr_request.user, program=self.program, event=rt
+        )
+        return super().done(
+            form_list=form_list,
+            redirect_url="/teach/" + self.program.getUrlBase() + "/teacherreg",
+            **kwargs,
+        )
+
 
 class TeacherCustomFormModule(ProgramModuleObj):
     doc = """Serve a custom form as part of teacher registration."""
@@ -67,43 +76,47 @@ class TeacherCustomFormModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return [ {
-            "module_type": "teach",
-            'required': False,
-            'admin_title': 'Teacher Custom Form',
-            'link_title': 'Additional Teacher Information',
-            'seq': 4,
-            'choosable': 0,
-        } ]
+        return [
+            {
+                "module_type": "teach",
+                "required": False,
+                "admin_title": "Teacher Custom Form",
+                "link_title": "Additional Teacher Information",
+                "seq": 4,
+                "choosable": 0,
+            }
+        ]
 
-    def teachers(self, QObject = False):
+    def teachers(self, QObject=False):
         """Returns lists of teachers who've completed the custom form."""
 
         qo = Q(record__event__name=self.event, record__program=self.program)
         if QObject is True:
             return {
-                'teacher_custom_form': qo,
+                "teacher_custom_form": qo,
             }
         else:
             return {
-                'teacher_custom_form': ESPUser.objects.filter(qo).distinct(),
+                "teacher_custom_form": ESPUser.objects.filter(qo).distinct(),
             }
 
     def teacherDesc(self):
         return {
-            'teacher_custom_form': """Teachers who have completed the custom form""",
+            "teacher_custom_form": """Teachers who have completed the custom form""",
         }
 
     def isCompleted(self, user=None):
         """Return true if user has filled out the teacher custom form."""
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
+        return Record.objects.filter(
+            user=user, program=self.program, event__name=self.event
+        ).exists()
 
     @staticmethod
     def get_prev_data(form, request):
         dmh = DynamicModelHandler(form)
         form_model = dmh.createDynModel()
-        prev_results = form_model.objects.filter(user=request.user).order_by('-id')
+        prev_results = form_model.objects.filter(user=request.user).order_by("-id")
         prev_result_data = {}
         if prev_results.exists():
             form_wizard = FormHandler(form, request, request.user).get_wizard()
@@ -115,8 +128,10 @@ class TeacherCustomFormModule(ProgramModuleObj):
                     #   Some fields aren't saved or don't have values (e.g., instruction fields)
                     if not hasattr(prev_results[0], field):
                         continue
-                    elif isinstance(plain_form.fields[field], forms.MultipleChoiceField):
-                        field_dict[field] = getattr(prev_results[0], field).split(';')
+                    elif isinstance(
+                        plain_form.fields[field], forms.MultipleChoiceField
+                    ):
+                        field_dict[field] = getattr(prev_results[0], field).split(";")
                     else:
                         field_dict[field] = getattr(prev_results[0], field)
                 prev_result_data[str(step)] = field_dict
@@ -125,7 +140,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
     @main_call
     @needs_teacher
     def extraform(self, request, tl, one, two, module, extra, prog):
-        custom_form_id = Tag.getProgramTag('teach_extraform_id', prog)
+        custom_form_id = Tag.getProgramTag("teach_extraform_id", prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
@@ -138,16 +153,31 @@ class TeacherCustomFormModule(ProgramModuleObj):
         #   If the user already filled out the form, use their earlier response for the initial values
         if self.isCompleted(request.user):
             prev_result_data = self.get_prev_data(cf, request)
-            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm, initial_data = prev_result_data,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header', 'module': self.module.link_title}, program = prog)
+            return FormHandler(cf, request, request.user).get_wizard_view(
+                wizard_view=TeacherCustomComboForm,
+                initial_data=prev_result_data,
+                extra_context={
+                    "prog": prog,
+                    "qsd_name": "teach:customform_header",
+                    "module": self.module.link_title,
+                },
+                program=prog,
+            )
         else:
-            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=TeacherCustomComboForm,
-                               extra_context = {'prog': prog, 'qsd_name': 'teach:customform_header', 'module': self.module.link_title}, program = prog)
+            return FormHandler(cf, request, request.user).get_wizard_view(
+                wizard_view=TeacherCustomComboForm,
+                extra_context={
+                    "prog": prog,
+                    "qsd_name": "teach:customform_header",
+                    "module": self.module.link_title,
+                },
+                program=prog,
+            )
 
     def isStep(self):
-        custom_form_id = Tag.getProgramTag('teach_extraform_id', self.program)
+        custom_form_id = Tag.getProgramTag("teach_extraform_id", self.program)
         return custom_form_id and Form.objects.filter(id=int(custom_form_id)).exists()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

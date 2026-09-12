@@ -3,36 +3,39 @@
 
 from django.db import migrations
 
+
 def set_my_defaults(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
-    old_pm = ProgramModule.objects.filter(handler="TeacherEventsModule", module_type="manage")
+    ProgramModule = apps.get_model("program", "ProgramModule")
+    old_pm = ProgramModule.objects.filter(
+        handler="TeacherEventsModule", module_type="manage"
+    )
     if old_pm.exists():
         old_pm[0].handler = "TeacherEventsManageModule"
         old_pm[0].save()
 
+
 def reverse_func(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
+    ProgramModule = apps.get_model("program", "ProgramModule")
     new_pm = ProgramModule.objects.filter(handler="TeacherEventsManageModule")
     if new_pm.count() == 1:
         new_pm[0].handler = "TeacherEventsModule"
         new_pm[0].save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('modules', '0034_userrecordsmodule'),
+        ("modules", "0034_userrecordsmodule"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TeacherEventsManageModule',
-            fields=[
-            ],
+            name="TeacherEventsManageModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.RunPython(set_my_defaults, reverse_func),
     ]

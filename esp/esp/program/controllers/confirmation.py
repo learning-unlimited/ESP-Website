@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -42,28 +41,53 @@ from django.template import Template, Context
 from django.template.loader import select_template
 from esp.dbmail.models import send_mail
 
+
 class ConfirmationEmailController(object):
-    def send_confirmation_email(self, user, program, repeat=False, override=False, context = {}):
+    def send_confirmation_email(
+        self, user, program, repeat=False, override=False, context={}
+    ):
         options = program.studentclassregmoduleinfo
         ## Get or create a userbit indicating whether or not email's been sent.
         try:
             rt = RecordType.objects.get(name="conf_email")
-            record, created = Record.objects.get_or_create(user=user, event=rt, program=program)
+            record, created = Record.objects.get_or_create(
+                user=user, event=rt, program=program
+            )
         except Exception:
             created = False
         if (created or repeat) and (options.send_confirmation or override):
-            context['user'] = user
-            context['program'] = program
-            receipt = select_template(['program/confemails/%s_custom_receipt.html' %(program.id), 'program/confemails/default.html'])
+            context["user"] = user
+            context["program"] = program
+            receipt = select_template(
+                [
+                    "program/confemails/%s_custom_receipt.html" % (program.id),
+                    "program/confemails/default.html",
+                ]
+            )
             # render the custom pretext first
             try:
-                pretext = DBReceipt.objects.get(program=program, action='confirmemail').receipt
+                pretext = DBReceipt.objects.get(
+                    program=program, action="confirmemail"
+                ).receipt
             except DBReceipt.DoesNotExist:
-                pretext = get_template_source(['program/confemails/%s_custom_pretext.html' %(program.id), 'program/confemails/default_pretext.html'])
-            context['pretext'] = Template(pretext).render( Context(context, autoescape=False) )
-            receipt_text = receipt.render( context )
-            send_mail("Thank you for registering for %s!" %(program.niceName()), \
-                      receipt_text, \
-                      (ESPUser.email_sendto_address(program.director_email, program.niceName() + " Directors")), \
-                      [user.email], True)
-
+                pretext = get_template_source(
+                    [
+                        "program/confemails/%s_custom_pretext.html" % (program.id),
+                        "program/confemails/default_pretext.html",
+                    ]
+                )
+            context["pretext"] = Template(pretext).render(
+                Context(context, autoescape=False)
+            )
+            receipt_text = receipt.render(context)
+            send_mail(
+                "Thank you for registering for %s!" % (program.niceName()),
+                receipt_text,
+                (
+                    ESPUser.email_sendto_address(
+                        program.director_email, program.niceName() + " Directors"
+                    )
+                ),
+                [user.email],
+                True,
+            )

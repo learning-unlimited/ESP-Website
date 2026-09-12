@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -40,20 +40,26 @@ from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 
 """ A template override model that stores the contents of a template in the database. """
-class TemplateOverride(models.Model):
 
-    name = models.CharField(max_length=255, help_text='The filename (relative path) of the template to override.')
+
+class TemplateOverride(models.Model):
+    name = models.CharField(
+        max_length=255,
+        help_text="The filename (relative path) of the template to override.",
+    )
     content = models.TextField()
     version = models.IntegerField()
 
     class Meta:
-        unique_together = (('name', 'version'), )
+        unique_together = (("name", "version"),)
 
     def __str__(self):
-        return f'Ver. {self.version} of {self.name}'
+        return f"Ver. {self.version} of {self.name}"
 
     def next_version(self):
-        max_version = TemplateOverride.objects.filter(name=self.name).aggregate(max_version=Max('version'))['max_version']
+        max_version = TemplateOverride.objects.filter(name=self.name).aggregate(
+            max_version=Max("version")
+        )["max_version"]
         return (max_version or 0) + 1
 
     def save(self, *args, **kwargs):
@@ -64,16 +70,22 @@ class TemplateOverride(models.Model):
     def get_absolute_url(self):
         return "/manage/templateoverride/" + str(self.id)
 
+
 class Printer(models.Model):
-    name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
+    name = models.CharField(
+        max_length=255, help_text="Name to display in onsite interface"
+    )
     printer_type = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
 
+
 class PrintRequest(models.Model):
-    printer = models.ForeignKey(Printer, blank=True, null=True, on_delete=models.CASCADE)     #   Leave blank to allow any printer to be used.
+    printer = models.ForeignKey(
+        Printer, blank=True, null=True, on_delete=models.CASCADE
+    )  #   Leave blank to allow any printer to be used.
     user = AjaxForeignKey(ESPUser, on_delete=models.CASCADE)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)

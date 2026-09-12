@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 import sys
 from datetime import datetime
@@ -48,6 +49,7 @@ try:
 except ImportError:
     MiddlewareMixin = object
 
+
 # TODO(benkraft): replace with the django version
 class Http403(Exception):
     pass
@@ -57,11 +59,13 @@ class Http403(Exception):
 class ESPError_Log(Exception):
     pass
 
+
 class ESPError_NoLog(Exception):
     pass
 
+
 def ESPError(message=None, log=True):
-    """ Use this to raise an error in the ESP world.
+    """Use this to raise an error in the ESP world.
     Example usage::
         from esp.middleware import ESPError
         raise ESPError('This error will not be logged.', log=False)
@@ -93,7 +97,7 @@ def ESPError(message=None, log=True):
 
 
 class ESPErrorMiddleware(MiddlewareMixin):
-    """ This middleware handles errors appropriately.
+    """This middleware handles errors appropriately.
     It will display a friendly error if there indeed was one
     (and emails the admin). This, of course, is only true if DEBUG is
     False in the settings.py. Otherwise, it doesn't do any of that.
@@ -101,20 +105,20 @@ class ESPErrorMiddleware(MiddlewareMixin):
 
     # Maps exception type name -> (friendly title, friendly description)
     _ERROR_MESSAGES = {
-        'ESPError_Log': (
-            'Something went wrong',
-            'The website encountered an error and our team has been notified. '
-            'Please try again or contact us if the problem persists.',
+        "ESPError_Log": (
+            "Something went wrong",
+            "The website encountered an error and our team has been notified. "
+            "Please try again or contact us if the problem persists.",
         ),
-        'ESPError_NoLog': (
+        "ESPError_NoLog": (
             "We couldn't complete that request",
-            'Your request could not be processed. Please check what you '
-            'submitted and try again.',
+            "Your request could not be processed. Please check what you "
+            "submitted and try again.",
         ),
-        'Http403': (
-            'Access Denied',
-            'You do not have permission to view this page. '
-            'Try logging in with an account that has the required access.',
+        "Http403": (
+            "Access Denied",
+            "You do not have permission to view this page. "
+            "Try logging in with an account that has the required access.",
         ),
     }
 
@@ -123,28 +127,29 @@ class ESPErrorMiddleware(MiddlewareMixin):
 
         if exception == ESPError_Log or exception == ESPError_NoLog:
             # TODO(benkraft): remove remaining instances of this.
-            logging.warning("Raising the exception class is deprecated, "
-                            "please raise ESPError(message) instead.")
+            logging.warning(
+                "Raising the exception class is deprecated, "
+                "please raise ESPError(message) instead."
+            )
 
         if isinstance(exception, ESPError_Log) or exception == ESPError_Log:
             # logging.ERROR will take care of emailing the error.
             log_level = logging.ERROR
-            template = 'error.html'
+            template = "error.html"
             status = 500
-            error_type = 'ESPError_Log'
-        elif (isinstance(exception, ESPError_NoLog) or
-              exception == ESPError_NoLog):
+            error_type = "ESPError_Log"
+        elif isinstance(exception, ESPError_NoLog) or exception == ESPError_NoLog:
             log_level = logging.INFO
-            template = 'error.html'
+            template = "error.html"
             # TODO(benkraft): this should probably be a 4xx, since if we're not
             # bothering to log it we probably don't think it was our fault.
             status = 500
-            error_type = 'ESPError_NoLog'
+            error_type = "ESPError_NoLog"
         elif isinstance(exception, Http403):
             log_level = logging.INFO
-            template = '403.html'
+            template = "403.html"
             status = 403
-            error_type = 'Http403'
+            error_type = "Http403"
         else:
             return None
 
@@ -152,19 +157,19 @@ class ESPErrorMiddleware(MiddlewareMixin):
         logger.log(log_level, exc_info[1], exc_info=exc_info)
 
         error_title, error_description = self._ERROR_MESSAGES.get(
-            error_type, ('An error has occurred', 'Please try again.')
+            error_type, ("An error has occurred", "Please try again.")
         )
 
         error_id = None
 
         context = {
-            'error': exc_info[1],
-            'error_type': error_type,
-            'error_title': error_title,
-            'error_description': error_description,
-            'error_id': error_id,
-            'error_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'error_url': request.build_absolute_uri(),
+            "error": exc_info[1],
+            "error_type": error_type,
+            "error_title": error_title,
+            "error_description": error_description,
+            "error_id": error_id,
+            "error_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "error_url": request.build_absolute_uri(),
         }
         # All error templates extend error_base.html, which provides
         # a consistent layout with two-tier information (user vs admin)

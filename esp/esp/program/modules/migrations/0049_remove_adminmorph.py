@@ -7,15 +7,14 @@ def remove_adminmorph_programmodule(apps, schema_editor):
     This cascades to remove it from any Program.modules M2M relations
     so programs that had this module installed are automatically cleaned up.
     """
-    ProgramModule = apps.get_model('program', 'ProgramModule')
-    ProgramModule.objects.filter(handler='AdminMorph').delete()
+    ProgramModule = apps.get_model("program", "ProgramModule")
+    ProgramModule.objects.filter(handler="AdminMorph").delete()
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0048_merge_20260226_0000'),
-        ('program', '0001_initial'),
+        ("modules", "0048_merge_20260226_0000"),
+        ("program", "0001_initial"),
     ]
 
     operations = [
@@ -26,6 +25,6 @@ class Migration(migrations.Migration):
         ),
         # Remove the Django proxy model
         migrations.DeleteModel(
-            name='AdminMorph',
+            name="AdminMorph",
         ),
     ]

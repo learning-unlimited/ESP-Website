@@ -1,4 +1,3 @@
-
 __author__ = "Individual contributors (see AUTHORS file)"
 __date__ = "$DATE$"
 __rev__ = "$REV$"
@@ -40,7 +39,10 @@ from django.template import Variable, Context, VariableDoesNotExist, Template
 
 from esp.application.models import FormstackStudentProgramApp
 from esp.program.modules.base import (
-    ProgramModuleObj, needs_student_in_grade, main_call, aux_call
+    ProgramModuleObj,
+    needs_student_in_grade,
+    main_call,
+    aux_call,
 )
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -65,9 +67,7 @@ def resolve_field_expression(expression, context_vars):
     except VariableDoesNotExist:
         return None
     except Exception:
-        logger.exception(
-            "Error resolving field expression '%s'", expression
-        )
+        logger.exception("Error resolving field expression '%s'", expression)
         return None
 
 
@@ -79,29 +79,31 @@ class FormstackAppModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return [{
-            "admin_title": "Formstack Application Module",
-            "link_title": "Student Application",
-            "module_type": "learn",
-            "seq": 10,
-            "required": True,
-            "choosable": 2,
-            }]
+        return [
+            {
+                "admin_title": "Formstack Application Module",
+                "link_title": "Student Application",
+                "module_type": "learn",
+                "seq": 10,
+                "required": True,
+                "choosable": 2,
+            }
+        ]
 
     def students(self, QObject=False):
         result = {}
 
         Q_applied = Q(studentprogramapp__program=self.program)
         if QObject:
-            result['applied'] = Q_applied
+            result["applied"] = Q_applied
         else:
-            result['applied'] = ESPUser.objects.filter(Q_applied)
+            result["applied"] = ESPUser.objects.filter(Q_applied)
 
         return result
 
     def studentDesc(self):
         result = {}
-        result['applied'] = """Students who submitted an application"""
+        result["applied"] = """Students who submitted an application"""
         return result
 
     def isCompleted(self, user=None):
@@ -113,34 +115,34 @@ class FormstackAppModule(ProgramModuleObj):
     def studentapp(self, request, tl, one, two, module, extra, prog):
         fsas = prog.formstackappsettings
         context = {}
-        context['form'] = fsas.form()
-        context['username_field'] = fsas.username_field
-        context['username'] = request.user.username
-        context['app_is_open'] = context['form'] is not None and (
+        context["form"] = fsas.form()
+        context["username_field"] = fsas.username_field
+        context["username"] = request.user.username
+        context["app_is_open"] = context["form"] is not None and (
             fsas.app_is_open or request.user.isAdmin(prog)
         )
-        context['autopopulated'] = autopopulated = []
-        for line in fsas.autopopulated_fields.strip().split('\n'):
-            field, sep, expr = line.partition(':')
+        context["autopopulated"] = autopopulated = []
+        for line in fsas.autopopulated_fields.strip().split("\n"):
+            field, sep, expr = line.partition(":")
             field_name = field.strip()
             expr_stripped = expr.strip()
             #   Require a colon and both halves (also skips blank lines)
             if not sep or not field_name or not expr_stripped:
                 continue
 
-            if '{{' in expr_stripped or '{%' in expr_stripped:
+            if "{{" in expr_stripped or "{%" in expr_stripped:
                 #   Render with autoescape off so the value is raw here;
                 #   studentapp.html escapes once at output, matching the
                 #   dotted-lookup path below. Do not "fix" this to autoescape on.
                 try:
                     value = Template(expr_stripped).render(
-                        Context({'user': request.user}, autoescape=False)
+                        Context({"user": request.user}, autoescape=False)
                     )
                 except Exception:
                     expr_preview = (
                         expr_stripped
                         if len(expr_stripped) <= 200
-                        else expr_stripped[:197] + '...'
+                        else expr_stripped[:197] + "..."
                     )
                     logger.exception(
                         "Error rendering FormstackAppSettings autopopulated "
@@ -151,17 +153,15 @@ class FormstackAppModule(ProgramModuleObj):
                     continue
             else:
                 #   Backwards-compatible dotted lookup (e.g. user.username)
-                value = resolve_field_expression(expr_stripped, {'user': request.user})
+                value = resolve_field_expression(expr_stripped, {"user": request.user})
 
             #   Skip unresolved/empty; strip stray whitespace before it POSTs to Formstack
-            value = (value or '').strip()
+            value = (value or "").strip()
             if not value:
                 continue
             autopopulated.append((field_name, value))
 
-        return render_to_response(self.baseDir()+'studentapp.html',
-                                  request, context)
-
+        return render_to_response(self.baseDir() + "studentapp.html", request, context)
 
     @aux_call
     @needs_student_in_grade
@@ -169,21 +169,18 @@ class FormstackAppModule(ProgramModuleObj):
         fsas = prog.formstackappsettings
         if not fsas.finaid_form():
             return self.goToCore(tl)  # no finaid form
-        app = FormstackStudentProgramApp.objects.filter(
-            user=request.user, program=prog
-        )
+        app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
         # student has not applied for the program
         if not (app or request.user.isAdmin(prog)):
             return  # XXX: more useful error here
         context = {}
-        context['form'] = fsas.finaid_form()
-        context['user_id_field'] = fsas.finaid_user_id_field
-        context['user_id'] = request.user.id
-        context['username_field'] = fsas.finaid_username_field
-        context['username'] = request.user.username
-        return render_to_response(self.baseDir()+'finaidapp.html',
-                                  request, context)
+        context["form"] = fsas.finaid_form()
+        context["user_id_field"] = fsas.finaid_user_id_field
+        context["user_id"] = request.user.id
+        context["username_field"] = fsas.finaid_username_field
+        context["username"] = request.user.username
+        return render_to_response(self.baseDir() + "finaidapp.html", request, context)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

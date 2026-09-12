@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,13 +31,21 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.http     import HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from esp.users.views import search_for_user
 from esp.utils.web import render_to_response
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    needs_onsite,
+    needs_onsite_no_switchback,
+    main_call,
+    aux_call,
+)
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
+
 
 class OnsiteClassSchedule(ProgramModuleObj):
     doc = """Get and/or print a student's schedule for the program."""
@@ -51,73 +58,99 @@ class OnsiteClassSchedule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 30,
             "choosable": 1,
-            }
+        }
 
     @aux_call
     @needs_student_in_grade
-    def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
-        '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
-        printer = request.GET.get('printer', None)
+    def printschedule(
+        self, request, tl, one, two, module, extra, prog
+    ):  # (self, request, *args, **kwargs):
+        """Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead."""
+        printer = request.GET.get("printer", None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
-        if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
+        if "user" in request.GET:
+            user = ESPUser.objects.get(id=request.GET["user"])
         else:
             user = request.user
-        redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
+        redirectURL = request.GET.get(
+            "next", "/learn/%s/studentreg" % self.program.getUrlBase()
+        )
         PrintRequest.objects.create(user=user, printer=printer)
         return HttpResponseRedirect(redirectURL)
 
     @aux_call
     @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
-        if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
+        if "user" in request.GET:
+            user = ESPUser.objects.get(id=request.GET["user"])
         else:
             user = request.user
 
         #  onsite=False since we probably want a PDF
-        return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
-
+        return ProgramPrintables.get_student_schedules(
+            request, [user], self.program, onsite=False
+        )
 
     @main_call
     @needs_onsite
     def schedule_students(self, request, tl, one, two, module, extra, prog):
-        """ Redirect to student registration, having morphed into the desired
-        student. """
+        """Redirect to student registration, having morphed into the desired
+        student."""
 
-        if request.method == 'POST' and 'student_selected' in request.POST:
-            student_selected = request.POST.get('student_selected', '').strip()
+        if request.method == "POST" and "student_selected" in request.POST:
+            student_selected = request.POST.get("student_selected", "").strip()
             if not student_selected:
-                return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Please select a student.'})
+                return render_to_response(
+                    "program/modules/onsiteclassschedule/schedule_students.html",
+                    request,
+                    {"program": self.program, "error": "Please select a student."},
+                )
             try:
-                user = ESPUser.getAllOfType('Student', False).get(id=int(student_selected))
-                request.user.switch_to_user(request,
-                                         user,
-                                         self.getCoreURL(tl),
-                                         'OnSite Registration!',
-                                         True)
-                return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+                user = ESPUser.getAllOfType("Student", False).get(
+                    id=int(student_selected)
+                )
+                request.user.switch_to_user(
+                    request, user, self.getCoreURL(tl), "OnSite Registration!", True
+                )
+                return HttpResponseRedirect(
+                    "/learn/%s/studentreg" % self.program.getUrlBase()
+                )
             except (TypeError, ValueError, ESPUser.DoesNotExist):
-                return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program, 'error': 'Invalid student selected.'})
+                return render_to_response(
+                    "program/modules/onsiteclassschedule/schedule_students.html",
+                    request,
+                    {"program": self.program, "error": "Invalid student selected."},
+                )
 
-        if 'advanced' in request.GET or request.GET.get('op') == 'usersearch' or (request.method == 'POST' and 'base_list' in request.POST):
-            user, found = search_for_user(request, ESPUser.getAllOfType('Student', False), add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+        if (
+            "advanced" in request.GET
+            or request.GET.get("op") == "usersearch"
+            or (request.method == "POST" and "base_list" in request.POST)
+        ):
+            user, found = search_for_user(
+                request,
+                ESPUser.getAllOfType("Student", False),
+                add_to_context={"tl": "onsite", "module": self.module.link_title},
+            )
             if not found:
                 return user
 
-            request.user.switch_to_user(request,
-                                     user,
-                                     self.getCoreURL(tl),
-                                     'OnSite Registration!',
-                                     True)
+            request.user.switch_to_user(
+                request, user, self.getCoreURL(tl), "OnSite Registration!", True
+            )
 
-            return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+            return HttpResponseRedirect(
+                "/learn/%s/studentreg" % self.program.getUrlBase()
+            )
 
-        return render_to_response('program/modules/onsiteclassschedule/schedule_students.html', request, {'program': self.program})
-
+        return render_to_response(
+            "program/modules/onsiteclassschedule/schedule_students.html",
+            request,
+            {"program": self.program},
+        )
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

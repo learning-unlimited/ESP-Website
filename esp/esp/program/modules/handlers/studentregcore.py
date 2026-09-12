@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -31,23 +31,35 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from argcache            import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from argcache import cache_function
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    CoreModule,
+    main_call,
+    aux_call,
+    _checkDeadline_helper,
+    meets_cap,
+)
 from esp.program.controllers.confirmation import ConfirmationEmailController
-from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.program.controllers.studentclassregmodule import (
+    RegistrationTypeController as RTC,
+)
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response, esp_context_stuff
-from esp.users.models    import ESPUser, Record, RecordType, Permission
+from esp.users.models import ESPUser, Record, RecordType, Permission
 from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
-from esp.middleware   import ESPError
+from esp.middleware import ESPError
 from decimal import Decimal
 from datetime import datetime
 from django.template import Template, Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from django.http import HttpResponse
 from django.template.loader import select_template
+
 
 class StudentRegCore(ProgramModuleObj, CoreModule):
     doc = """Serves the main page for student registration."""
@@ -59,14 +71,18 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "admin_title": "Core Student Registration",
             "module_type": "learn",
             "seq": -9999,
-            "choosable": 1
-            }
+            "choosable": 1,
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         if tl != "learn" or view_name != "studentreg":
             return None
-        from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
+        from esp.program.modules.admin_search import (
+            AdminSearchEntry,
+            SEARCH_CATEGORY_REGISTRATION,
+        )
+
         base = program.getUrlBase()
         return AdminSearchEntry(
             id="learn_studentreg",
@@ -79,88 +95,126 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @cache_function
     def have_paid(self, user):
-        """ Whether the user has paid for this program.  """
+        """Whether the user has paid for this program."""
         iac = IndividualAccountingController(self.program, user)
-        return (iac.has_paid())
-    have_paid.get_or_create_token(('user',))
-    have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
-    have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
-    have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
+        return iac.has_paid()
 
-    def students(self, QObject = False):
+    have_paid.get_or_create_token(("user",))
+    have_paid.depend_on_row(
+        "accounting.Transfer", lambda transfer: {"user": transfer.user}
+    )
+    have_paid.depend_on_row(
+        "program.SplashInfo", lambda splashinfo: {"user": splashinfo.student}
+    )
+    have_paid.depend_on_row(
+        "accounting.FinancialAidGrant", lambda grant: {"user": grant.request.user}
+    )
+
+    def students(self, QObject=False):
         now = datetime.now()
 
-        q_confirmed = Q(record__event__name = "reg_confirmed", record__program=self.program)
-        q_attended = Q(record__event__name= "attended", record__program=self.program)
+        q_confirmed = Q(
+            record__event__name="reg_confirmed", record__program=self.program
+        )
+        q_attended = Q(record__event__name="attended", record__program=self.program)
         # if we don't do list(values_list()), it breaks downstream queries for some weird reason I don't understand -WG
-        q_checked_out = Q(id__in=list(self.program.currentlyCheckedOutStudents().values_list('id', flat = True)))
-        q_checked_in = Q(id__in=list(self.program.currentlyCheckedInStudents().values_list('id', flat = True)))
+        q_checked_out = Q(
+            id__in=list(
+                self.program.currentlyCheckedOutStudents().values_list("id", flat=True)
+            )
+        )
+        q_checked_in = Q(
+            id__in=list(
+                self.program.currentlyCheckedInStudents().values_list("id", flat=True)
+            )
+        )
         q_studentrep = Q(groups__name="StudentRep")
 
         if QObject:
-            retVal = {'confirmed': q_confirmed,
-                      'attended' : q_attended,
-                      'checked_out': q_checked_out,
-                      'checked_in': q_checked_in,
-                      'studentrep': q_studentrep}
-
+            retVal = {
+                "confirmed": q_confirmed,
+                "attended": q_attended,
+                "checked_out": q_checked_out,
+                "checked_in": q_checked_in,
+                "studentrep": q_studentrep,
+            }
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = Q(record__event__name="waitlist", record__program=self.program)
+                retVal["waitlisted_students"] = Q(
+                    record__event__name="waitlist", record__program=self.program
+                )
 
             return retVal
 
-        retVal = {'confirmed': ESPUser.objects.filter(q_confirmed).distinct(),
-                  'attended' : ESPUser.objects.filter(q_attended).distinct(),
-                  'checked_out': ESPUser.objects.filter(q_checked_out).distinct(),
-                  'checked_in': ESPUser.objects.filter(q_checked_in).distinct(),
-                  'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
+        retVal = {
+            "confirmed": ESPUser.objects.filter(q_confirmed).distinct(),
+            "attended": ESPUser.objects.filter(q_attended).distinct(),
+            "checked_out": ESPUser.objects.filter(q_checked_out).distinct(),
+            "checked_in": ESPUser.objects.filter(q_checked_in).distinct(),
+            "studentrep": ESPUser.objects.filter(q_studentrep).distinct(),
+        }
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event__name="waitlist", record__program=self.program)).distinct()
+            retVal["waitlisted_students"] = ESPUser.objects.filter(
+                Q(record__event__name="waitlist", record__program=self.program)
+            ).distinct()
 
         return retVal
 
     def studentDesc(self):
-        retVal = {'confirmed': """Students who have clicked on the `Confirm Registration' button""",
-                  'attended' : """Students who attended %s""" % self.program.niceName(),
-                  'checked_out': """Students who are currently checked out of %s""" % self.program.niceName(),
-                  'checked_in': """Students who are currently checked in to %s""" % self.program.niceName(),
-                  'studentrep': """Student Representatives"""}
+        retVal = {
+            "confirmed": """Students who have clicked on the `Confirm Registration' button""",
+            "attended": """Students who attended %s""" % self.program.niceName(),
+            "checked_out": """Students who are currently checked out of %s"""
+            % self.program.niceName(),
+            "checked_in": """Students who are currently checked in to %s"""
+            % self.program.niceName(),
+            "studentrep": """Student Representatives""",
+        }
 
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = """Students on the program's waitlist"""
+            retVal["waitlisted_students"] = """Students on the program's waitlist"""
 
         return retVal
 
     @aux_call
     @needs_student_in_grade
     def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
-        """ Add this user to the waitlist """
+        """Add this user to the waitlist"""
         self.request = request
 
         if prog.user_can_join(request.user):
             return self.goToCore(tl)
 
-        waitlist = Record.objects.filter(event__name="waitlist",
-                                         user=request.user,
-                                         program=prog)
+        waitlist = Record.objects.filter(
+            event__name="waitlist", user=request.user, program=prog
+        )
 
         if not waitlist.exists():
             rt = RecordType.objects.get(name="waitlist")
-            Record.objects.create(event=rt, user=request.user,
-                                  program=prog)
+            Record.objects.create(event=rt, user=request.user, program=prog)
             already_on_list = False
         else:
             already_on_list = True
 
-        return render_to_response(self.baseDir()+'waitlist.html', request, { 'already_on_list': already_on_list })
+        return render_to_response(
+            self.baseDir() + "waitlist.html",
+            request,
+            {"already_on_list": already_on_list},
+        )
 
     @aux_call
     @needs_student_in_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if Record.objects.filter(user=request.user, event__name="reg_confirmed", program=prog).count() > 0:
-            return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
+        if (
+            Record.objects.filter(
+                user=request.user, event__name="reg_confirmed", program=prog
+            ).count()
+            > 0
+        ):
+            return self.confirmreg_forreal(
+                request, tl, one, two, module, extra, prog, new_reg=False
+            )
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
 
     @meets_deadline("/Confirm")
@@ -168,11 +222,13 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def confirmreg_new(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
-        return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
+        return self.confirmreg_forreal(
+            request, tl, one, two, module, extra, prog, new_reg=True
+        )
 
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
-        """ The page that is shown once the user saves their student reg,
-            giving them the option of printing a confirmation            """
+        """The page that is shown once the user saves their student reg,
+        giving them the option of printing a confirmation"""
         self.request = request
 
         from esp.program.modules.module_ext import DBReceipt
@@ -182,33 +238,42 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         iac = IndividualAccountingController(prog, user)
 
         context = {}
-        context['one'] = one
-        context['two'] = two
+        context["one"] = one
+        context["two"] = two
 
-        context['itemizedcosts'] = iac.get_transfers()
+        context["itemizedcosts"] = iac.get_transfers()
 
         # attach payment information to student
-        user.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
-        user.required = iac.get_transfers(required_only=True).exclude(line_item=iac.default_admission_lineitemtype())
+        user.meals = iac.get_transfers(
+            optional_only=True
+        )  # catch everything that's not admission to the program.
+        user.required = iac.get_transfers(required_only=True).exclude(
+            line_item=iac.default_admission_lineitemtype()
+        )
         user.itemizedcosttotal = iac.amount_due()
 
-        context['user'] = user
-        context['finaid'] = user.hasFinancialAid(prog)
+        context["user"] = user
+        context["finaid"] = user.hasFinancialAid(prog)
         if user.appliedFinancialAid(prog):
-            context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
+            context["finaid_app"] = user.financialaidrequest_set.filter(
+                program=prog
+            ).order_by("-id")[0]
         else:
-            context['finaid_app'] = None
-        context['balance'] = iac.amount_due()
+            context["finaid_app"] = None
+        context["balance"] = iac.amount_due()
 
-        context['owe_money'] = ( context['balance'] != Decimal("0.0") )
+        context["owe_money"] = context["balance"] != Decimal("0.0")
 
         if not prog.user_can_join(user):
-            raise ESPError("This program has filled!  It can't accept any more students.  Please try again next session.", log=False)
+            raise ESPError(
+                "This program has filled!  It can't accept any more students.  Please try again next session.",
+                log=False,
+            )
 
         modules = prog.getModules(user, tl)
         completedAll = True
         for module in modules:
-            if hasattr(module, 'onConfirm'):
+            if hasattr(module, "onConfirm"):
                 module.onConfirm(request)
             if not module.isCompleted(request.user) and module.isRequired():
                 completedAll = False
@@ -217,36 +282,56 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if completedAll:
             if new_reg:
                 rt = RecordType.objects.get(name="reg_confirmed")
-                rec = Record.objects.create(user=user, event=rt,
-                                            program=prog)
+                rec = Record.objects.create(user=user, event=rt, program=prog)
         else:
-            raise ESPError("You must finish all the necessary steps first, then click on the Save button to finish registration.", log=False)
+            raise ESPError(
+                "You must finish all the necessary steps first, then click on the Save button to finish registration.",
+                log=False,
+            )
 
         # when does class registration close for this user?
-        context['deadline'] = Permission.user_deadline_when(user, "Student/Classes", prog)
+        context["deadline"] = Permission.user_deadline_when(
+            user, "Student/Classes", prog
+        )
 
         cfe = ConfirmationEmailController()
         # this email includes the student's schedule (by default), so send a new email each time they confirm their reg
-        cfe.send_confirmation_email(user, self.program, context = context, repeat = True)
+        cfe.send_confirmation_email(user, self.program, context=context, repeat=True)
 
         context["request"] = request
         context["program"] = prog
         context.update(esp_context_stuff())
 
-        receipt = select_template(['program/receipts/%s_custom_receipt.html' %(prog.id), 'program/receipts/default.html'])
+        receipt = select_template(
+            [
+                "program/receipts/%s_custom_receipt.html" % (prog.id),
+                "program/receipts/default.html",
+            ]
+        )
 
         # render the custom pretext first
         try:
-            pretext = DBReceipt.objects.get(program=self.program, action='confirm').receipt
+            pretext = DBReceipt.objects.get(
+                program=self.program, action="confirm"
+            ).receipt
         except DBReceipt.DoesNotExist:
-            pretext = get_template_source(['program/receipts/%s_custom_pretext.html' %(self.program.id), 'program/receipts/default_pretext.html'])
-        context['pretext'] = Template(pretext).render( Context(context, autoescape=False) )
+            pretext = get_template_source(
+                [
+                    "program/receipts/%s_custom_pretext.html" % (self.program.id),
+                    "program/receipts/default_pretext.html",
+                ]
+            )
+        context["pretext"] = Template(pretext).render(
+            Context(context, autoescape=False)
+        )
 
-        return HttpResponse( receipt.render( AutoRequestContext(context, autoescape=False) ) )
+        return HttpResponse(
+            receipt.render(AutoRequestContext(context, autoescape=False))
+        )
 
     @aux_call
     @needs_student_in_grade
-    @meets_deadline('/Cancel')
+    @meets_deadline("/Cancel")
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
@@ -254,17 +339,18 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         # Block cancellation only if the user has made an actual payment via credit card.
         from esp.accounting.controllers import IndividualAccountingController
+
         iac = IndividualAccountingController(prog, request.user)
 
-        if iac.get_transfers().exclude(transaction_id='').exists():
+        if iac.get_transfers().exclude(transaction_id="").exists():
             raise ESPError(
                 "You have already paid for this program. If you want to cancel, please contact us directly to request a refund.",
-                log=False
+                log=False,
             )
 
-        recs = Record.objects.filter(user=request.user,
-                                     event__name="reg_confirmed",
-                                     program=prog)
+        recs = Record.objects.filter(
+            user=request.user, event__name="reg_confirmed", program=prog
+        )
         for rec in recs:
             rec.delete()
 
@@ -282,91 +368,117 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         from esp.program.models import StudentRegistration
         from esp.mailman import remove_list_member
 
-        if not StudentRegistration.valid_objects(datetime.now()).filter(
+        if (
+            not StudentRegistration.valid_objects(datetime.now())
+            .filter(
                 user=request.user,
                 section__parent_class__parent_program=prog,
-                relationship__name='Enrolled',
-        ).exists():
-            remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), request.user.email)
+                relationship__name="Enrolled",
+            )
+            .exists()
+        ):
+            remove_list_member(
+                "%s_%s-students" % (prog.program_type, prog.program_instance),
+                request.user.email,
+            )
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
-            receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
+            receipt_text = DBReceipt.objects.get(
+                program=self.program, action="cancel"
+            ).receipt
             context = {}
             context["request"] = request
             context["program"] = prog
-            return HttpResponse( Template(receipt_text).render( Context(context) ) )
+            return HttpResponse(Template(receipt_text).render(Context(context)))
         except Exception:
             return self.goToCore(tl)
 
     @cache_function
     def printer_names():
-        return Printer.objects.all().values_list('name', flat=True)
-    printer_names.depend_on_model('utils.Printer')
-    printer_names = staticmethod(printer_names) # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
+        return Printer.objects.all().values_list("name", flat=True)
+
+    printer_names.depend_on_model("utils.Printer")
+    printer_names = staticmethod(
+        printer_names
+    )  # stolen from program.models.getLastProfile, not sure if this is actually the right way to do this?
 
     @staticmethod
     def get_reg_records(user, prog, tl):
         records = []
-        if tl == 'learn':
-            tag_data = Tag.getProgramTag('student_reg_records', prog)
+        if tl == "learn":
+            tag_data = Tag.getProgramTag("student_reg_records", prog)
         else:
-            tag_data = Tag.getProgramTag('teacher_reg_records', prog)
+            tag_data = Tag.getProgramTag("teacher_reg_records", prog)
         if tag_data:
-            for rt in RecordType.objects.filter(name__in=tag_data.split(',')):
-                records.append({'event': rt.name, 'full_event': rt.description, 'isCompleted': Record.user_completed(event = rt.name, user = user, program = prog)})
-            records.sort(key=lambda rec: not rec['isCompleted'])
+            for rt in RecordType.objects.filter(name__in=tag_data.split(",")):
+                records.append(
+                    {
+                        "event": rt.name,
+                        "full_event": rt.description,
+                        "isCompleted": Record.user_completed(
+                            event=rt.name, user=user, program=prog
+                        ),
+                    }
+                )
+            records.sort(key=lambda rec: not rec["isCompleted"])
         return records
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/MainPage')
+    @meets_deadline("/MainPage")
     @meets_cap
     def studentreg(self, request, tl, one, two, module, extra, prog):
-        """ Display a student reg page """
+        """Display a student reg page"""
         self.request = request
 
         context = {}
-        modules = prog.getModules(request.user, 'learn')
-        context['completedAll'] = True
+        modules = prog.getModules(request.user, "learn")
+        context["completedAll"] = True
         for module in modules:
             # If completed all required modules so far...
-            if context['completedAll']:
+            if context["completedAll"]:
                 if not module.isCompleted(request.user) and module.isRequired():
-                    context['completedAll'] = False
+                    context["completedAll"] = False
 
             context = module.prepare(context)
 
-        records = self.get_reg_records(request.user, prog, 'learn')
+        records = self.get_reg_records(request.user, prog, "learn")
 
-        context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
+        context["canRegToFullProgram"] = request.user.canRegToFullProgram(prog)
 
-        context['modules'] = modules
-        context['records'] = records
-        context['one'] = one
-        context['two'] = two
-        context['coremodule'] = self
-        context['scrmi'] = prog.studentclassregmoduleinfo
-        context['can_confirm'] = _checkDeadline_helper(None, '/Confirm', self, request, tl)[0]
-        context['isConfirmed'] = self.program.isConfirmed(request.user)
-        context['have_paid'] = self.have_paid(request.user)
-        context['extra_steps'] = "learn:extra_steps"
-        context['printers'] = self.printer_names()
+        context["modules"] = modules
+        context["records"] = records
+        context["one"] = one
+        context["two"] = two
+        context["coremodule"] = self
+        context["scrmi"] = prog.studentclassregmoduleinfo
+        context["can_confirm"] = _checkDeadline_helper(
+            None, "/Confirm", self, request, tl
+        )[0]
+        context["isConfirmed"] = self.program.isConfirmed(request.user)
+        context["have_paid"] = self.have_paid(request.user)
+        context["extra_steps"] = "learn:extra_steps"
+        context["printers"] = self.printer_names()
 
         # Pass flag to frontend to hide the cancel button if a real CC payment exists
         iac = IndividualAccountingController(prog, request.user)
-        context['has_external_payment'] = iac.get_transfers().exclude(transaction_id='').exists()
+        context["has_external_payment"] = (
+            iac.get_transfers().exclude(transaction_id="").exists()
+        )
 
         # Pass the invoice ID and paper schedule opt-out status for the barcode and toggle
-        context['invoice_id'] = iac.get_id()
-        context['opt_out_paper_schedule'] = Record.user_completed(request.user, 'opt_out_paper_schedule', prog)
+        context["invoice_id"] = iac.get_id()
+        context["opt_out_paper_schedule"] = Record.user_completed(
+            request.user, "opt_out_paper_schedule", prog
+        )
 
-        if context['scrmi'] and context['scrmi'].use_priority:
-            context['no_confirm'] = True
+        if context["scrmi"] and context["scrmi"].use_priority:
+            context["no_confirm"] = True
         else:
-            context['no_confirm'] = False
+            context["no_confirm"] = False
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, context)
+        return render_to_response(self.baseDir() + "mainpage.html", request, context)
 
     @aux_call
     @needs_student_in_grade
@@ -378,30 +490,31 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         Returns JSON: { "opted_out": <bool> }
         """
         import json as _json
-        if request.method != 'POST':
+
+        if request.method != "POST":
             return HttpResponse(status=405)
 
-        opt_out_str = request.POST.get('opt_out', 'false').lower()
-        opt_out = opt_out_str in ('true', '1', 'yes')
+        opt_out_str = request.POST.get("opt_out", "false").lower()
+        opt_out = opt_out_str in ("true", "1", "yes")
 
         if opt_out:
             rt, _ = RecordType.objects.get_or_create(
-                name='opt_out_paper_schedule',
-                defaults={'description': 'Opted out of paper schedule printing'}
+                name="opt_out_paper_schedule",
+                defaults={"description": "Opted out of paper schedule printing"},
             )
             Record.objects.get_or_create(user=request.user, event=rt, program=prog)
         else:
             Record.objects.filter(
-                user=request.user,
-                event__name='opt_out_paper_schedule',
-                program=prog
+                user=request.user, event__name="opt_out_paper_schedule", program=prog
             ).delete()
 
-        return HttpResponse(_json.dumps({'opted_out': opt_out}), content_type='application/json')
+        return HttpResponse(
+            _json.dumps({"opted_out": opt_out}), content_type="application/json"
+        )
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

@@ -1,6 +1,7 @@
 from django import http
 from debug_toolbar.middleware import DebugToolbarMiddleware
 
+
 class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
     """
     A subclass of DebugToolbarMiddleware that does some additional processing
@@ -9,14 +10,15 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
     Any conditional panels triggered by a query string in the URL should use
     query string keys that start with 'debug_toolbar'.
     """
+
     def process_request(self, request):
         # The debug toolbar can be enabled or disabled on the page with the
         # 'debug_toolbar' GET param.  If present, the value of this param is
         # stored in the session, so that the toolbar stays enabled or disabled
         # while navigating.
-        param = request.GET.get('debug_toolbar')
+        param = request.GET.get("debug_toolbar")
         if param is not None:
-            request.session['debug_toolbar'] = param
+            request.session["debug_toolbar"] = param
 
         super().process_request(request)
 
@@ -43,10 +45,13 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         # short-circuiting to only call request.user.isAdmin() when necessary,
         # because calling request.user.isAdmin() sets Vary:Cookie and prevents
         # proxy caching. See Github issue #739.
-        enabled = (settings.DEBUG_TOOLBAR and (
-                (settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or
-                (request.session.get('debug_toolbar') == 't' and
-                (request.user.isAdmin() or request.user.is_morphed()))))
+        enabled = settings.DEBUG_TOOLBAR and (
+            (settings.DEBUG and not request.session.get("debug_toolbar") == "f")
+            or (
+                request.session.get("debug_toolbar") == "t"
+                and (request.user.isAdmin() or request.user.is_morphed())
+            )
+        )
 
         # Avoid setting Vary: Cookie across this middleware in production and
         # testing (see above).
@@ -54,4 +59,3 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
             request.session.accessed = accessed
 
         return enabled
-

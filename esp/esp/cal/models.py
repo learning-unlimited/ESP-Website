@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -33,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -40,10 +40,12 @@ from datetime import datetime, timedelta
 from argcache import cache_function
 from esp.utils import cmp
 
+
 # Create your models here.
 class EventType(models.Model):
-    """ A list of possible event types, ie. Program, Social Activity, etc. """
-    description = models.TextField() # Textual description; not computer-parseable
+    """A list of possible event types, ie. Program, Social Activity, etc."""
+
+    description = models.TextField()  # Textual description; not computer-parseable
     is_teacher_type = models.BooleanField(default=False)
 
     def __str__(self):
@@ -51,32 +53,41 @@ class EventType(models.Model):
 
     @cache_function
     def get_from_desc(cls, desc):
-        """ A cached function for getting EventTypes that we know must exist
-        if someone has run install() """
+        """A cached function for getting EventTypes that we know must exist
+        if someone has run install()"""
         return EventType.objects.get(description=desc)
-    get_from_desc.depend_on_model('cal.EventType')
+
+    get_from_desc.depend_on_model("cal.EventType")
     get_from_desc = classmethod(get_from_desc)
 
     @classmethod
     def teacher_event_types(cls):
         return {
-            'interview': cls.get_from_desc('Teacher Interview'),
-            'training': cls.get_from_desc('Teacher Training'),
+            "interview": cls.get_from_desc("Teacher Interview"),
+            "training": cls.get_from_desc("Teacher Training"),
         }
 
-class Event(models.Model):
-    """ A unit calendar entry.
 
-    All calendar entries are events; all data for the event that doesn't fit into the event field is keyed in from a remote class. """
-    start = models.DateTimeField() # Event start time
-    end = models.DateTimeField() # Event end time
-    short_description = models.TextField() # Event short description
-    description = models.TextField() # Event textual description; not computer-parseable
+class Event(models.Model):
+    """A unit calendar entry.
+
+    All calendar entries are events; all data for the event that doesn't fit into the event field is keyed in from a remote class."""
+
+    start = models.DateTimeField()  # Event start time
+    end = models.DateTimeField()  # Event end time
+    short_description = models.TextField()  # Event short description
+    description = (
+        models.TextField()
+    )  # Event textual description; not computer-parseable
     name = models.CharField(max_length=80)
-    program = models.ForeignKey('program.Program', blank=True, null=True, on_delete=models.CASCADE)
-    event_type = models.ForeignKey(EventType, on_delete=models.CASCADE) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
-    priority = models.IntegerField(blank=True, null=True) # Priority of this event
-    group = models.IntegerField(blank=True, null=True) # Event group
+    program = models.ForeignKey(
+        "program.Program", blank=True, null=True, on_delete=models.CASCADE
+    )
+    event_type = models.ForeignKey(
+        EventType, on_delete=models.CASCADE
+    )  # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
+    priority = models.IntegerField(blank=True, null=True)  # Priority of this event
+    group = models.IntegerField(blank=True, null=True)  # Event group
 
     def title(self):
         return self.name
@@ -85,72 +96,75 @@ class Event(models.Model):
         # Matches the rounding of class/section durations
         dur = self.end - self.start
         hrs = round(dur.total_seconds() / 3600.0, 2)
-        return timedelta(hours = hrs)
+        return timedelta(hours=hrs)
 
-    def start_w_buffer(self, buffer = timedelta(minutes=15)):
-        #Adds a buffer to the start time
+    def start_w_buffer(self, buffer=timedelta(minutes=15)):
+        # Adds a buffer to the start time
         return self.start - buffer
 
-    def end_w_buffer(self, buffer = timedelta(minutes=15)):
-        #Adds a buffer to the end time
+    def end_w_buffer(self, buffer=timedelta(minutes=15)):
+        # Adds a buffer to the end time
         return self.end + buffer
 
     def duration_str(self):
         dur = self.end - self.start
         hours = int(dur.seconds // 3600)
         minutes = int(dur.seconds // 60) - hours * 60
-        return f'{hours} hr {minutes} min'
+        return f"{hours} hr {minutes} min"
 
     def __str__(self):
-        return self.start.strftime('%a %b %d: ') + self.short_time()
+        return self.start.strftime("%a %b %d: ") + self.short_time()
 
     def short_time(self):
-        day_list = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        day_list = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
-        start_minutes = ''
-        end_minutes = ''
-        start_ampm = ''
+        start_minutes = ""
+        end_minutes = ""
+        start_ampm = ""
         if self.start.minute != 0:
-            start_minutes = f':{self.start.minute:02d}'
+            start_minutes = f":{self.start.minute:02d}"
         if self.end.minute != 0:
-            end_minutes = f':{self.end.minute:02d}'
+            end_minutes = f":{self.end.minute:02d}"
         if (self.start.hour < 12) != (self.end.hour < 12):
-            start_ampm = self.start.strftime(' %p')
+            start_ampm = self.start.strftime(" %p")
 
-        return f'{(self.start.hour % 12) or 12}{start_minutes}{start_ampm} to {(self.end.hour % 12) or 12}{end_minutes} {self.end.strftime("%p")}'
+        return f"{(self.start.hour % 12) or 12}{start_minutes}{start_ampm} to {(self.end.hour % 12) or 12}{end_minutes} {self.end.strftime('%p')}"
 
     @staticmethod
     def total_length(event_list):
         #   Returns the time from the start of the first event to the end of the last.
         event_list = list(event_list)
-        event_list.sort(key=lambda x:x.start)
+        event_list.sort(key=lambda x: x.start)
         if len(event_list) > 0:
             # Matches the rounding of class/section durations
             dur = event_list[-1].end - event_list[0].start
             hrs = round(dur.total_seconds() / 3600.0, 2)
-            return timedelta(hours = hrs)
+            return timedelta(hours=hrs)
         else:
             return timedelta(seconds=0)
 
     @staticmethod
     def collapse(eventList, tol=timedelta(minutes=1)):
-        """ this method will return a list of new collapsed events """
+        """this method will return a list of new collapsed events"""
         from copy import copy
+
         sortedList = copy(eventList)
         sortedList.sort(key=lambda e: e.start)
 
         for i in range(1, len(sortedList)):
-            if (sortedList[i-1].end+tol) >= sortedList[i].start:
-                sortedList[i]   = Event(start=sortedList[i-1].start, end=sortedList[i].end)
-                sortedList[i-1] = None
+            if (sortedList[i - 1].end + tol) >= sortedList[i].start:
+                sortedList[i] = Event(
+                    start=sortedList[i - 1].start, end=sortedList[i].end
+                )
+                sortedList[i - 1] = None
 
         newList = [x for x in sortedList if x is not None]
 
         return newList
 
     @staticmethod
-    def contiguous(event1, event2, tol = 20):
-        """ Returns true if the second argument is less than <tol> minutes apart from the first one. """
+    def contiguous(event1, event2, tol=20):
+        """Returns true if the second argument is less than <tol> minutes apart from the first one."""
         tol = timedelta(minutes=tol)
 
         if (event2.start - event1.end) < tol:
@@ -159,9 +173,10 @@ class Event(models.Model):
             return False
 
     @staticmethod
-    def group_contiguous(event_list, tol = 20):
-        """ Takes a list of events and returns a list of lists where each sublist is a contiguous group. """
+    def group_contiguous(event_list, tol=20):
+        """Takes a list of events and returns a list of lists where each sublist is a contiguous group."""
         from copy import copy
+
         sorted_list = copy(event_list)
         sorted_list.sort(key=lambda e: e.start)
 
@@ -170,7 +185,6 @@ class Event(models.Model):
         last_event = None
 
         for event in sorted_list:
-
             if last_event is None or Event.contiguous(last_event, event, tol):
                 current_group.append(event)
             else:
@@ -184,28 +198,46 @@ class Event(models.Model):
 
         return grouped_list
 
-    def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
-        s = self.start.strftime('%a')
-        s2 = self.end.strftime('%a')
+    def pretty_time(
+        self, include_date=False
+    ):  # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
+        s = self.start.strftime("%a")
+        s2 = self.end.strftime("%a")
         # The two days of the week are different
         if include_date:
-            s += self.start.strftime(', %b %d,')
-            s2 += self.end.strftime(', %b %d,')
+            s += self.start.strftime(", %b %d,")
+            s2 += self.end.strftime(", %b %d,")
         if s != s2:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+            return (
+                s
+                + " "
+                + self.start.strftime("%I:%M%p").lower().strip("0")
+                + "--"
+                + s2
+                + " "
+                + self.end.strftime("%I:%M%p").lower().strip("0")
+            )
         else:
-            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
-               + self.end.strftime('%I:%M%p').lower().strip('0')
+            return (
+                s
+                + " "
+                + self.start.strftime("%I:%M%p").lower().strip("0")
+                + "--"
+                + self.end.strftime("%I:%M%p").lower().strip("0")
+            )
 
     def pretty_time_with_date(self):
-        return self.pretty_time(include_date = True)
+        return self.pretty_time(include_date=True)
 
     def pretty_date(self):
-        return self.start.strftime('%A, %B %d')
+        return self.start.strftime("%A, %B %d")
 
     def pretty_start_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0')
+        return (
+            self.start.strftime("%a")
+            + " "
+            + self.start.strftime("%I:%M%p").lower().strip("0")
+        )
 
     def parent_program(self):
         return self.program
@@ -215,20 +247,28 @@ class Event(models.Model):
             return cmp(self.start, other.start)
         except AttributeError:
             return 0
+
     def __lt__(self, other):
         return self.__cmp__(other) < 0
+
     def __gt__(self, other):
         return self.__cmp__(other) > 0
+
     def __eq__(self, other):
         return self.__cmp__(other) == 0
+
     def __le__(self, other):
         return self.__cmp__(other) <= 0
+
     def __ge__(self, other):
         return self.__cmp__(other) >= 0
+
     def __ne__(self, other):
         return self.__cmp__(other) != 0
+
     def __hash__(self):
         return hash(self.start)
+
 
 def install():
     """
@@ -239,8 +279,15 @@ def install():
         Teacher Training -- for TeacherEventsModule
     """
     logger.info("Installing esp.cal initial data...")
-    for x in [ 'Class Time Block', 'Open Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer']:
+    for x in [
+        "Class Time Block",
+        "Open Class Time Block",
+        "Teacher Interview",
+        "Teacher Training",
+        "Compulsory",
+        "Volunteer",
+    ]:
         obj, created = EventType.objects.get_or_create(description=x)
-        if x in ['Teacher Interview', 'Teacher Training'] and not obj.is_teacher_type:
+        if x in ["Teacher Interview", "Teacher Training"] and not obj.is_teacher_type:
             obj.is_teacher_type = True
             obj.save()

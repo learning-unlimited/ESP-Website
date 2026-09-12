@@ -5,15 +5,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounting', '0015_auto_20220719_2056'),
+        ("accounting", "0015_auto_20220719_2056"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='lineitemtype',
-            name='amount_dec',
-            field=models.DecimalField(decimal_places=2, default=0, help_text='The cost of this line item.', max_digits=9),
+            model_name="lineitemtype",
+            name="amount_dec",
+            field=models.DecimalField(
+                decimal_places=2,
+                default=0,
+                help_text="The cost of this line item.",
+                max_digits=9,
+            ),
         ),
     ]

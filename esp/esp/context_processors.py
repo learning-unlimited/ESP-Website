@@ -4,35 +4,41 @@ from django.conf import settings
 from esp.program.models import Program
 from esp.users.models import ESPUser
 
+
 def media_url(request):
-    return {'media_url': settings.MEDIA_URL}
+    return {"media_url": settings.MEDIA_URL}
+
 
 def espuserified_request(request):
-    return {'request': request, 'user': None, 'messages': None, 'perms': None}
+    return {"request": request, "user": None, "messages": None, "perms": None}
+
 
 def esp_user(request):
-    return {'user': lambda: request.user}
+    return {"user": lambda: request.user}
+
 
 def email_settings(request):
     context = {}
-    context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST_SENDER'] = settings.EMAIL_HOST_SENDER
-    context['settings'] = settings
+    context["DEFAULT_EMAIL_ADDRESSES"] = settings.DEFAULT_EMAIL_ADDRESSES
+    context["EMAIL_HOST_SENDER"] = settings.EMAIL_HOST_SENDER
+    context["settings"] = settings
     return context
+
 
 def program(request):
     if getattr(request, "program", None):
-        return {'program': request.program}
+        return {"program": request.program}
     elif getattr(request, "prog", None):
-        return {'program': request.prog}
+        return {"program": request.prog}
     else:
-        path_parts = request.path.lstrip('/').split('/')
+        path_parts = request.path.lstrip("/").split("/")
         if len(path_parts) > 3:
-            program_url = '/'.join(path_parts[1:3])
+            program_url = "/".join(path_parts[1:3])
             prog = Program.objects.filter(url=program_url).first()
             if prog:
-                return {'program': prog}
+                return {"program": prog}
     return {}
+
 
 def schoolyear(request):
     program = None
@@ -41,31 +47,39 @@ def schoolyear(request):
     elif getattr(request, "prog", None):
         program = request.prog
     else:
-        path_parts = request.path.lstrip('/').split('/')
+        path_parts = request.path.lstrip("/").split("/")
         if len(path_parts) > 3:
-            program_url = '/'.join(path_parts[1:3])
+            program_url = "/".join(path_parts[1:3])
             program = Program.objects.filter(url=program_url).first()
     if program:
-        return {'schoolyear': ESPUser.program_schoolyear(program)}
+        return {"schoolyear": ESPUser.program_schoolyear(program)}
     else:
-        return {'schoolyear': ESPUser.current_schoolyear()}
+        return {"schoolyear": ESPUser.current_schoolyear()}
+
 
 def index_backgrounds(request):
-    #if request.path.strip() == '':
-    return {'backgrounds': [settings.MEDIA_URL+"images/home/pagebkg1.jpg",
-                            settings.MEDIA_URL+"images/home/pagebkg2.jpg",
-                            settings.MEDIA_URL+"images/home/pagebkg3.jpg"]}
+    # if request.path.strip() == '':
+    return {
+        "backgrounds": [
+            settings.MEDIA_URL + "images/home/pagebkg1.jpg",
+            settings.MEDIA_URL + "images/home/pagebkg2.jpg",
+            settings.MEDIA_URL + "images/home/pagebkg3.jpg",
+        ]
+    }
     return {}
+
 
 def current_site(request):
 
-    if hasattr(settings, 'SITE_INFO'):
-        return {'current_site': Site(*settings.SITE_INFO) }
+    if hasattr(settings, "SITE_INFO"):
+        return {"current_site": Site(*settings.SITE_INFO)}
 
-    return {'current_site': Site.objects.get_current()}
+    return {"current_site": Site.objects.get_current()}
+
 
 def preload_images(request):
-    return {'preload_images': preload_images_data}
+    return {"preload_images": preload_images_data}
+
 
 """ This list can be populated with images to be preloaded by the template.
 
@@ -77,5 +91,4 @@ def preload_images(request):
         ]
 """
 
-preload_images_data = [
-]
+preload_images_data = []

@@ -5,11 +5,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0006_textofemail_user'),
-        ('dbmail', '0007_repickle_specialheaders'),
+        ("dbmail", "0006_textofemail_user"),
+        ("dbmail", "0007_repickle_specialheaders"),
     ]
 
-    operations = [
-    ]
+    operations = []

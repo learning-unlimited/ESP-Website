@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,6 +37,7 @@ Learning Unlimited, Inc.
 """
 from functools import wraps
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -59,15 +60,20 @@ from django.core.exceptions import ImproperlyConfigured
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
+
 def _login_redirect(request):
     return HttpResponseRedirect(
-        f'{settings.LOGIN_URL}?{REDIRECT_FIELD_NAME}={quote(request.get_full_path())}')
+        f"{settings.LOGIN_URL}?{REDIRECT_FIELD_NAME}={quote(request.get_full_path())}"
+    )
+
 
 class CoreModule(object):
     """
     All core modules should derive from this.
     """
+
     pass
+
 
 class ProgramModuleObj(ExpirableModel):
     # Class-level attributes that subclasses can override.
@@ -95,7 +101,7 @@ class ProgramModuleObj(ExpirableModel):
         if not perm_types:
             return
 
-        tl_to_role = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
+        tl_to_role = {"learn": "Student", "teach": "Teacher", "volunteer": "Volunteer"}
         for perm_type in perm_types:
             role_name = None
             if perm_type.startswith("Student"):
@@ -104,14 +110,17 @@ class ProgramModuleObj(ExpirableModel):
                 role_name = "Teacher"
             elif perm_type.startswith("Volunteer"):
                 role_name = "Volunteer"
-            elif hasattr(self.module, 'module_type') and self.module.module_type in tl_to_role:
+            elif (
+                hasattr(self.module, "module_type")
+                and self.module.module_type in tl_to_role
+            ):
                 role_name = tl_to_role[self.module.module_type]
 
             if not role_name:
                 logger.warning(
                     "sync_permissions: could not determine role for permission_type=%s (module=%s)",
                     perm_type,
-                    getattr(self.module, 'handler', getattr(self.module, 'id', None)),
+                    getattr(self.module, "handler", getattr(self.module, "id", None)),
                 )
                 continue
 
@@ -129,7 +138,7 @@ class ProgramModuleObj(ExpirableModel):
                 role=group,
                 permission_type=perm_type,
                 user__isnull=True,
-                user_filter__isnull=True
+                user_filter__isnull=True,
             )
             if perms.exists():
                 perms.update(start_date=self.start_date, end_date=self.end_date)
@@ -141,21 +150,31 @@ class ProgramModuleObj(ExpirableModel):
                     start_date=self.start_date,
                     end_date=self.end_date,
                     user=None,
-                    user_filter=None
+                    user_filter=None,
                 )
 
-    start_date = models.DateTimeField(blank=True, null=True, default=None,
-                                      help_text="If blank, has always started.")
-    program  = models.ForeignKey(Program, on_delete=models.CASCADE)
-    module   = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
-    seq      = models.IntegerField()
+    start_date = models.DateTimeField(
+        blank=True, null=True, default=None, help_text="If blank, has always started."
+    )
+    program = models.ForeignKey(Program, on_delete=models.CASCADE)
+    module = models.ForeignKey(ProgramModule, on_delete=models.CASCADE)
+    seq = models.IntegerField()
     required = models.BooleanField(default=False)
     required_label = models.CharField(max_length=80, blank=True, null=False, default="")
-    link_title = models.CharField(max_length=64, blank=True, null=False, default="",
-                                  help_text="Override the default link title for this program. Leave blank to use the module's default.")
+    link_title = models.CharField(
+        max_length=64,
+        blank=True,
+        null=False,
+        default="",
+        help_text="Override the default link title for this program. Leave blank to use the module's default.",
+    )
 
     def docs(self):
-        if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
+        if (
+            hasattr(self, "doc")
+            and self.doc is not None
+            and str(self.doc).strip() != ""
+        ):
             return self.doc
         return self.module.link_title
 
@@ -163,23 +182,29 @@ class ProgramModuleObj(ExpirableModel):
         return f'"{self.module.admin_title}" for "{self.program}"'
 
     def _get_views_by_call_tag(self, tags):
-        """ We define decorators below (aux_call, main_call, etc.) which allow
-            methods within the ProgramModuleObj subclass to be tagged with
-            metadata.  At the moment, this metadata is a string stored in the
-            'call_tag' attribute.  This function searches the methods of the
-            current program module to find those that match the list supplied
-            in the 'tags' argument. """
+        """We define decorators below (aux_call, main_call, etc.) which allow
+        methods within the ProgramModuleObj subclass to be tagged with
+        metadata.  At the moment, this metadata is a string stored in the
+        'call_tag' attribute.  This function searches the methods of the
+        current program module to find those that match the list supplied
+        in the 'tags' argument."""
         result = []
 
         #   Filter out attributes that we don't want to look at: attributes of
         #   ProgramModuleObj, including Django stuff
-        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_fields())
+        key_set = (
+            set(dir(self))
+            - set(dir(ProgramModuleObj))
+            - set(self.__class__._meta.get_fields())
+        )
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
             item = getattr(self, key)
             #   This is a hack to test whether the item is a bound method,
             #   maybe there is a better way.
-            if isinstance(item, type(self._get_views_by_call_tag)) and hasattr(item, 'call_tag'):
+            if isinstance(item, type(self._get_views_by_call_tag)) and hasattr(
+                item, "call_tag"
+            ):
                 if item.call_tag in tags:
                     result.append(key)
 
@@ -188,10 +213,12 @@ class ProgramModuleObj(ExpirableModel):
     @property
     def main_view(self):
         """The name of the module's main view."""
-        if not hasattr(self, '_main_view'):
-            main_views = self._get_views_by_call_tag(['Main Call'])
+        if not hasattr(self, "_main_view"):
+            main_views = self._get_views_by_call_tag(["Main Call"])
             if len(main_views) > 1:
-                raise ESPError("Module %s has multiple main calls." % self.module.handler)
+                raise ESPError(
+                    "Module %s has multiple main calls." % self.module.handler
+                )
             elif main_views:
                 self._main_view = main_views[0]
             else:
@@ -199,12 +226,14 @@ class ProgramModuleObj(ExpirableModel):
         return self._main_view
 
     def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
-        return getattr(self, self.main_view)(request, tl, one, two, call_txt, extra, prog)
+        return getattr(self, self.main_view)(
+            request, tl, one, two, call_txt, extra, prog
+        )
 
     @property
     def views(self):
-        if not hasattr(self, '_views'):
-            self._views = self._get_views_by_call_tag(['Main Call', 'Aux Call'])
+        if not hasattr(self, "_views"):
+            self._views = self._get_views_by_call_tag(["Main Call", "Aux Call"])
         return self._views
 
     def get_msg_vars(self, user, key):
@@ -212,21 +241,22 @@ class ProgramModuleObj(ExpirableModel):
 
     def getCoreURL(self, tl):
         import esp.program.modules.models
+
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
                 return module.get_full_path()
 
     def goToCore(self, tl):
-        return HttpResponseRedirect(self.getCoreURL(tl) or '/')
+        return HttpResponseRedirect(self.getCoreURL(tl) or "/")
 
     def require_auth(self):
         return True
 
     @cache_function
     def findModuleObject(tl, call_txt, prog):
-        """ This function caches the customized (augmented) program module object
-            matching a particular view function and area. """
+        """This function caches the customized (augmented) program module object
+        matching a particular view function and area."""
         #   Check for a module that has a matching main_call
         main_call_map = prog.getModuleViews(main_only=True)
         if (tl, call_txt) in main_call_map:
@@ -251,68 +281,102 @@ class ProgramModuleObj(ExpirableModel):
         """Includes only required modules"""
         prog = self.program
         module_type = self.module.module_type
-        moduleobjs = [mod for mod in prog.getModules() if mod.module.module_type == module_type and mod.isRequired() == True]
+        moduleobjs = [
+            mod
+            for mod in prog.getModules()
+            if mod.module.module_type == module_type and mod.isRequired() == True
+        ]
         moduleobjs.sort(key=lambda mod: mod.seq)
         return moduleobjs
+
     #   Program.getModules cache takes care of our dependencies
     findRequiredModules.depend_on_cache(Program.getModules_cached, lambda **kwargs: {})
 
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
-        from esp.program.modules.handlers.studentregprofilemodule import StudentRegProfileModule
-        from esp.program.modules.handlers.teacherregprofilemodule import TeacherRegProfileModule
+        from esp.program.modules.handlers.studentregprofilemodule import (
+            StudentRegProfileModule,
+        )
+        from esp.program.modules.handlers.teacherregprofilemodule import (
+            TeacherRegProfileModule,
+        )
+
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
 
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
+        if tl not in ["manage", "json", "volunteer"] and isinstance(
+            moduleobj, CoreModule
+        ):
             scrmi = prog.studentclassregmoduleinfo
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
                     return _login_redirect(request)
                 for m in moduleobj.findRequiredModules():
                     m.request = request
-                    if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
+                    if request.user.updateOnsite(request) and not isinstance(
+                        m, (StudentRegProfileModule, TeacherRegProfileModule)
+                    ):
                         continue
-                    if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
-                        return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
+                    if (
+                        not isinstance(m, CoreModule)
+                        and not m.isCompleted(request.user)
+                        and m.main_view
+                    ):
+                        return m.main_view_fn(
+                            request, tl, one, two, call_txt, extra, prog
+                        )
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
         moduleobj.request = request
         if hasattr(moduleobj, call_txt):
-            return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
+            return getattr(moduleobj, call_txt)(
+                request, tl, one, two, call_txt, extra, prog
+            )
 
         raise Http404
 
     @staticmethod
-    def _initial_defaults(prog, mod, old_prog = None):
-        """ Field values to use when creating a new ProgramModuleObj row."""
+    def _initial_defaults(prog, mod, old_prog=None):
+        """Field values to use when creating a new ProgramModuleObj row."""
         # If an old program is specified, use the seq and required values from that program
         if old_prog is not None:
-            old_pmo = list(ProgramModuleObj.objects.filter(program = old_prog, module = mod)[:2])
+            old_pmo = list(
+                ProgramModuleObj.objects.filter(program=old_prog, module=mod)[:2]
+            )
             if len(old_pmo) == 1:
-                return {'seq': old_pmo[0].seq,
-                        'required': old_pmo[0].required,
-                        'required_label': old_pmo[0].required_label,
-                        'start_date': old_pmo[0].start_date,
-                        'end_date': old_pmo[0].end_date}
+                return {
+                    "seq": old_pmo[0].seq,
+                    "required": old_pmo[0].required,
+                    "required_label": old_pmo[0].required_label,
+                    "start_date": old_pmo[0].start_date,
+                    "end_date": old_pmo[0].end_date,
+                }
 
-        defaults = {'seq': mod.seq, 'required': mod.required}
+        defaults = {"seq": mod.seq, "required": mod.required}
 
         # Populate initial start_date and end_date from program permission records
         try:
             handler_cls = mod.getPythonClass()
-            perm_types = getattr(handler_cls, 'permission_types', ())
-            if not perm_types and hasattr(handler_cls, 'get_permission_types'):
+            perm_types = getattr(handler_cls, "permission_types", ())
+            if not perm_types and hasattr(handler_cls, "get_permission_types"):
                 perm_types = handler_cls.get_permission_types(handler_cls)
             if perm_types:
-                role_by_module_type = {'learn': 'Student', 'teach': 'Teacher', 'volunteer': 'Volunteer'}
-                role_name = role_by_module_type.get(getattr(mod, 'module_type', ''))
+                role_by_module_type = {
+                    "learn": "Student",
+                    "teach": "Teacher",
+                    "volunteer": "Volunteer",
+                }
+                role_name = role_by_module_type.get(getattr(mod, "module_type", ""))
                 if role_name:
-                    perm_types = [pt for pt in perm_types if pt.startswith(role_name)] or perm_types
-                group = Group.objects.filter(name=role_name).first() if role_name else None
+                    perm_types = [
+                        pt for pt in perm_types if pt.startswith(role_name)
+                    ] or perm_types
+                group = (
+                    Group.objects.filter(name=role_name).first() if role_name else None
+                )
                 perm_qs = Permission.objects.filter(
                     program=prog,
                     permission_type__in=perm_types,
@@ -321,41 +385,48 @@ class ProgramModuleObj(ExpirableModel):
                 )
                 if group:
                     perm_qs = perm_qs.filter(role=group)
-                perm = perm_qs.order_by('id').first()
+                perm = perm_qs.order_by("id").first()
                 if perm:
-                    defaults['start_date'] = perm.start_date
-                    defaults['end_date'] = perm.end_date
+                    defaults["start_date"] = perm.start_date
+                    defaults["end_date"] = perm.end_date
         except Exception:
             pass
 
         return defaults
 
     @staticmethod
-    def getFromProgModule(prog, mod, old_prog = None):
+    def getFromProgModule(prog, mod, old_prog=None):
         import esp.program.modules.models
+
         """ Return an appropriate module object for a Module and a Program.
            Note that all the data is forcibly taken from the ProgramModuleObj table """
 
-        BaseModule = ProgramModuleObj.objects.filter(program = prog, module = mod).select_related('module').first()
+        BaseModule = (
+            ProgramModuleObj.objects.filter(program=prog, module=mod)
+            .select_related("module")
+            .first()
+        )
         if BaseModule is None:
             #   Use get_or_create() to prevent a race condition
             BaseModule, _ = ProgramModuleObj.objects.get_or_create(
-                program = prog, module = mod,
-                defaults = ProgramModuleObj._initial_defaults(prog, mod, old_prog))
+                program=prog,
+                module=mod,
+                defaults=ProgramModuleObj._initial_defaults(prog, mod, old_prog),
+            )
 
-        ModuleObj   = mod.getPythonClass()()
+        ModuleObj = mod.getPythonClass()()
         ModuleObj.__dict__.update(BaseModule.__dict__)
 
         return ModuleObj
 
     def baseDir(self):
-        return 'program/modules/'+self.__class__.__name__.lower()+'/'
+        return "program/modules/" + self.__class__.__name__.lower() + "/"
 
-    def deadline_met(self, extension=''):
+    def deadline_met(self, extension=""):
 
         #   Short-circuit the request middleware during testing, when we call
         #   this function without an actual request.
-        if hasattr(self, 'user'):
+        if hasattr(self, "user"):
             user = self.user
         else:
             request = get_current_request()
@@ -364,13 +435,15 @@ class ProgramModuleObj(ExpirableModel):
         if not user or not self.program:
             raise ESPError(False)("There is no user or program object!")
 
-        if self.module.module_type != 'learn' and self.module.module_type != 'teach':
+        if self.module.module_type != "learn" and self.module.module_type != "teach":
             return True
 
         canView = user.isOnsite(self.program) or user.isAdministrator(self.program)
 
         if not canView:
-            deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
+            deadline = {"learn": "Student", "teach": "Teacher"}[
+                self.module.module_type
+            ] + extension
             canView = Permission.user_has_perm(user, deadline, program=self.program)
 
         return canView
@@ -378,21 +451,31 @@ class ProgramModuleObj(ExpirableModel):
     # important functions for hooks...
     @cache_function
     def get_full_path(self):
-        return f'/{self.module.module_type}/{self.program.url}/{self.main_view}'
-    get_full_path.depend_on_row('modules.ProgramModuleObj', 'self')
-    get_full_path.depend_on_model('program.Program')
+        return f"/{self.module.module_type}/{self.program.url}/{self.main_view}"
+
+    get_full_path.depend_on_row("modules.ProgramModuleObj", "self")
+    get_full_path.depend_on_model("program.Program")
 
     def get_link_title(self):
         return self.link_title or self.module.link_title
 
     def makeLink(self):
         title = self.get_link_title()
-        if not self.module.module_type == 'manage':
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), title, title)
+        if not self.module.module_type == "manage":
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % (
+                self.get_full_path(),
+                title,
+                title,
+            )
         else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % (
+                self.get_full_path(),
+                self.docs()
+                .replace("'", "\\'")
+                .replace("\n", "<br />\\n")
+                .replace("\r", ""),
+                title,
+            )
 
         return mark_safe(link)
 
@@ -400,16 +483,24 @@ class ProgramModuleObj(ExpirableModel):
         return self.makeLink()
 
     def get_setup_title(self):
-        if hasattr(self, 'setup_title') and self.setup_title is not None and str(self.setup_title).strip() != '':
+        if (
+            hasattr(self, "setup_title")
+            and self.setup_title is not None
+            and str(self.setup_title).strip() != ""
+        ):
             return self.setup_title
         return self.get_link_title()
 
     def get_setup_path(self):
-        if hasattr(self, 'setup_path') and self.setup_path is not None and str(self.setup_path).strip() != '':
+        if (
+            hasattr(self, "setup_path")
+            and self.setup_path is not None
+            and str(self.setup_path).strip() != ""
+        ):
             path = self.setup_path
         else:
             path = self.main_view
-        return '/manage/' + self.program.url + '/' + path
+        return "/manage/" + self.program.url + "/" + path
 
     def makeSetupLink(self):
         title = self.get_setup_title()
@@ -417,42 +508,76 @@ class ProgramModuleObj(ExpirableModel):
         return mark_safe(f'<a href="{link}" title="{title}">{title}</a>')
 
     def makeButtonLink(self):
-        if not self.module.module_type == 'manage':
+        if not self.module.module_type == "manage":
             link = f"""<div class="module_button">\
                                 <a href="{self.get_full_path()}"><button type="button" class="module_link_large">
                                     <div class="module_link_main">{self.module.link_title}</div>
                                 </button></a>
                             </div>"""
         else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % (
+                self.get_full_path(),
+                self.docs()
+                .replace("'", "\\'")
+                .replace("\n", "<br />\\n")
+                .replace("\r", ""),
+                self.module.link_title,
+            )
 
         return mark_safe(link)
 
     def useTemplate(self):
-        """ Use a template if the `mainView' function doesn't exist. """
-        return (not self.main_view)
+        """Use a template if the `mainView' function doesn't exist."""
+        return not self.main_view
 
     def isAdminPortalFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
-        return self.module.handler in ['AdminCore', 'AdminMaterials',
-                                       'ListGenModule', 'ResourceModule', 'CommModule',
-                                       'VolunteerManage', 'ClassFlagModule', 'ProgramPrintables',
-                                       'AJAXSchedulingModule', 'NameTagModule', 'TeacherEventsManageModule',
-                                       'SurveyManagement',
-                                       'AdminTestingModule', 'BatchClassRegModule', 'BigBoardModule',
-                                       'CheckAvailabilityModule', 'ClassSearchModule', 'DeactivationModule',
-                                       'GroupTextModule', 'MapGenModule', 'SchedulingCheckModule',
-                                       'TeacherBigBoardModule', 'UserGroupModule', 'UserRecordsModule',
-                                       'AccountingModule', 'FinAidApproveModule', 'LineItemsModule',
-                                       'CreditCardViewer']
+        return self.module.handler in [
+            "AdminCore",
+            "AdminMaterials",
+            "ListGenModule",
+            "ResourceModule",
+            "CommModule",
+            "VolunteerManage",
+            "ClassFlagModule",
+            "ProgramPrintables",
+            "AJAXSchedulingModule",
+            "NameTagModule",
+            "TeacherEventsManageModule",
+            "SurveyManagement",
+            "AdminTestingModule",
+            "BatchClassRegModule",
+            "BigBoardModule",
+            "CheckAvailabilityModule",
+            "ClassSearchModule",
+            "DeactivationModule",
+            "GroupTextModule",
+            "MapGenModule",
+            "SchedulingCheckModule",
+            "TeacherBigBoardModule",
+            "UserGroupModule",
+            "UserRecordsModule",
+            "AccountingModule",
+            "FinAidApproveModule",
+            "LineItemsModule",
+            "CreditCardViewer",
+        ]
+
     def isOnSiteFeatured(self):
         """Don't display in the long list of additional modules if it's already featured
         in the main portion of the admin portal"""
-        return self.module.handler in ['OnSiteCheckinModule', 'TeacherCheckinModule', 'OnSiteCheckoutModule',
-                                       'OnsiteClassSchedule', 'OnSiteClassList', 'OnSiteRegister',
-                                       'OnSiteAttendance', 'OnsitePaidItemsModule']
+        return self.module.handler in [
+            "OnSiteCheckinModule",
+            "TeacherCheckinModule",
+            "OnSiteCheckoutModule",
+            "OnsiteClassSchedule",
+            "OnSiteClassList",
+            "OnSiteRegister",
+            "OnSiteAttendance",
+            "OnsitePaidItemsModule",
+        ]
+
     def _resolve_user(self, user):
         """Return the user to use for per-user module logic.
 
@@ -461,7 +586,7 @@ class ProgramModuleObj(ExpirableModel):
         """
         if user is not None:
             return user
-        if hasattr(self, 'user'):
+        if hasattr(self, "user"):
             return self.user
         return get_current_request().user
 
@@ -478,7 +603,7 @@ class ProgramModuleObj(ExpirableModel):
 
     def getTemplate(self):
         if self.module.inline_template:
-            return f'program/modules/{self.__class__.__name__.lower()}/{self.module.inline_template}'
+            return f"program/modules/{self.__class__.__name__.lower()}/{self.module.inline_template}"
         return None
 
     def teacherDesc(self):
@@ -587,10 +712,12 @@ class ProgramModuleObj(ExpirableModel):
                 props["seq"] = 200
             if not "choosable" in props:
                 props["choosable"] = 0
-                raise AttributeError(f"Module `{cls.__name__}` doesn't have choosable property.")
+                raise AttributeError(
+                    f"Module `{cls.__name__}` doesn't have choosable property."
+                )
 
         if isinstance(props, dict):
-            props = [ props ]
+            props = [props]
 
         for prop in props:
             update_props(prop)
@@ -598,35 +725,40 @@ class ProgramModuleObj(ExpirableModel):
         return props
 
     class Meta:
-        app_label = 'modules'
-        unique_together = ('program', 'module')
+        app_label = "modules"
+        unique_together = ("program", "module")
 
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
 def not_logged_in(request):
-    return (not request.user or not request.user.is_authenticated or not request.user.id)
+    return not request.user or not request.user.is_authenticated or not request.user.id
+
 
 def usercheck_usetl(method):
     """
     Check that the user has the correct role based on tl.
     Will error if used on json or volunteer modules.
     """
+
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
-        error_map = {'learn': 'notastudent.html',
-                     'teach': 'notateacher.html',
-                     'manage': 'notanadmin.html',
-                     'onsite': 'notonsite.html'
-                     }
-        errorpage = 'errors/program/' + error_map[tl]
+        error_map = {
+            "learn": "notastudent.html",
+            "teach": "notateacher.html",
+            "manage": "notanadmin.html",
+            "onsite": "notonsite.html",
+        }
+        errorpage = "errors/program/" + error_map[tl]
 
         if not_logged_in(request):
             return _login_redirect(request)
 
-        if request.user.isAdmin(moduleObj.program) or \
-           (tl == 'learn' and request.user.isStudent()) or \
-           (tl == 'teach' and request.user.isTeacher()) or \
-           (tl == 'onsite' and request.user.isOnsite()):
+        if (
+            request.user.isAdmin(moduleObj.program)
+            or (tl == "learn" and request.user.isStudent())
+            or (tl == "teach" and request.user.isTeacher())
+            or (tl == "onsite" and request.user.isOnsite())
+        ):
             return method(moduleObj, request, tl, *args, **kwargs)
         else:
             return render_to_response(errorpage, request, {})
@@ -634,17 +766,26 @@ def usercheck_usetl(method):
     _checkUser.has_auth_check = True
     return _checkUser
 
+
 def no_auth(method):
     method.has_auth_check = True
     return method
 
+
 def render_deadline_for_tl(tl, request, context):
-    errorpage = 'errors/program/deadline-%s.html' % tl
+    errorpage = "errors/program/deadline-%s.html" % tl
     return render_to_response(errorpage, request, context)
 
-def user_passes_test(test_func, error_message=None, error_template=None,
-                     error_context_var='extension', extra_context_func=None,
-                     require_login=True, call_tl=None):
+
+def user_passes_test(
+    test_func,
+    error_message=None,
+    error_template=None,
+    error_context_var="extension",
+    extra_context_func=None,
+    require_login=True,
+    call_tl=None,
+):
     """A method decorator for ProgramModuleObj view methods.
 
     Requests pass through only if test_func(moduleObj, request) returns True.
@@ -677,6 +818,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
         If provided, the wrapper function will have this as its call_tl
         attribute (e.g., 'learn', 'teach', 'manage', 'onsite').
     """
+
     def decorator(view_method):
         @wraps(view_method)
         def _check(moduleObj, request, tl, *args, **kwargs):
@@ -684,7 +826,7 @@ def user_passes_test(test_func, error_message=None, error_template=None,
                 return _login_redirect(request)
             if test_func(moduleObj, request):
                 return view_method(moduleObj, request, tl, *args, **kwargs)
-            context = {'moduleObj': moduleObj}
+            context = {"moduleObj": moduleObj}
             if error_message is not None:
                 context[error_context_var] = error_message
             if extra_context_func is not None:
@@ -692,36 +834,41 @@ def user_passes_test(test_func, error_message=None, error_template=None,
             if error_template is not None:
                 return render_to_response(error_template, request, context)
             return render_deadline_for_tl(tl, request, context)
+
         _check.has_auth_check = True
         _check.method = view_method
         if call_tl is not None:
             _check.call_tl = call_tl
         return _check
+
     return decorator
 
 
 def _meets_grade_test(moduleObj, request):
     """Return True if the user meets the program's grade range requirement."""
-    if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
+    if Permission.user_has_perm(request.user, "GradeOverride", moduleObj.program):
         return True
     cur_grade = request.user.getGrade(moduleObj.program)
-    return not (cur_grade != 0 and (
-        cur_grade < moduleObj.program.grade_min or
-        cur_grade > moduleObj.program.grade_max
-    ))
+    return not (
+        cur_grade != 0
+        and (
+            cur_grade < moduleObj.program.grade_min
+            or cur_grade > moduleObj.program.grade_max
+        )
+    )
 
 
 def _meets_grade_extra_context(moduleObj, request):
     """Extra template context for the wronggrade error page."""
     return {
-        'program': moduleObj.program,
-        'yog': request.user.getYOG(moduleObj.program),
+        "program": moduleObj.program,
+        "yog": request.user.getYOG(moduleObj.program),
     }
 
 
 meets_grade = user_passes_test(
     _meets_grade_test,
-    error_template='errors/program/wronggrade.html',
+    error_template="errors/program/wronggrade.html",
     extra_context_func=_meets_grade_extra_context,
     require_login=False,
 )
@@ -730,9 +877,10 @@ needs_student = user_passes_test(
     lambda moduleObj, request: (
         request.user.isStudent() or request.user.isAdmin(moduleObj.program)
     ),
-    error_template='errors/program/notastudent.html',
-    call_tl='learn',
+    error_template="errors/program/notastudent.html",
+    call_tl="learn",
 )
+
 
 def needs_student_in_grade(method):
     """Require that the user is a logged-in student within the program grade range.
@@ -749,72 +897,100 @@ def needs_student_in_grade(method):
     decorated.method = method
     return decorated
 
+
 needs_teacher = user_passes_test(
     lambda moduleObj, request: (
         request.user.isTeacher() or request.user.isAdmin(moduleObj.program)
     ),
-    error_template='errors/program/notateacher.html',
-    call_tl='teach',
+    error_template="errors/program/notateacher.html",
+    call_tl="teach",
 )
+
 
 def needs_admin(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if 'user_morph' in request.session:
-            morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
+        if "user_morph" in request.session:
+            morpheduser = ESPUser.objects.get(
+                id=request.session["user_morph"]["olduser_id"]
+            )
         else:
-            morpheduser=None
+            morpheduser = None
 
         if not_logged_in(request):
             return _login_redirect(request)
 
-        if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
-            if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
-                return render_to_response('errors/program/notanadmin.html', request, {})
+        if not (
+            request.user.isAdmin(moduleObj.program)
+            or (morpheduser and morpheduser.isAdmin(moduleObj.program))
+        ):
+            if not (
+                hasattr(request.user, "other_user")
+                and request.user.other_user
+                and request.user.other_user.isAdmin(moduleObj.program)
+            ):
+                return render_to_response("errors/program/notanadmin.html", request, {})
         return method(moduleObj, request, *args, **kwargs)
-    _checkAdmin.call_tl = 'manage'
+
+    _checkAdmin.call_tl = "manage"
     _checkAdmin.method = method
     _checkAdmin.has_auth_check = True
     return _checkAdmin
+
 
 def needs_onsite(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
             return _login_redirect(request)
 
-        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
+        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(
+            moduleObj.program
+        ):
             user = request.user
             user.updateOnsite(request)
             ouser = user.get_old(request)
-            if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, {})
+            if not user.other_user or (
+                not ouser.isOnsite(moduleObj.program)
+                and not ouser.isAdmin(moduleObj.program)
+            ):
+                return render_to_response("errors/program/notonsite.html", request, {})
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
-    _checkAdmin.call_tl = 'onsite'
+
+    _checkAdmin.call_tl = "onsite"
     _checkAdmin.method = method
     _checkAdmin.has_auth_check = True
     return _checkAdmin
+
 
 def needs_onsite_no_switchback(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
             return _login_redirect(request)
 
-        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
+        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(
+            moduleObj.program
+        ):
             user = request.user
             user.updateOnsite(request)
             ouser = user.get_old(request)
-            if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, {})
+            if not user.other_user or (
+                not ouser.isOnsite(moduleObj.program)
+                and not ouser.isAdmin(moduleObj.program)
+            ):
+                return render_to_response("errors/program/notonsite.html", request, {})
         return method(moduleObj, request, *args, **kwargs)
-    _checkAdmin.call_tl = 'onsite'
+
+    _checkAdmin.call_tl = "onsite"
     _checkAdmin.method = method
     _checkAdmin.has_auth_check = True
     return _checkAdmin
+
 
 needs_account = user_passes_test(
     lambda moduleObj, request: True,
     require_login=True,
 )
+
 
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     """
@@ -827,11 +1003,15 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     If the user is an administrator, annotate the request with information
     about what roles have permission to view the requested page.
     """
-    if tl != 'learn' and tl != 'teach' and tl != 'volunteer':
+    if tl != "learn" and tl != "teach" and tl != "volunteer":
         return (True, None)
-    perm_name = {'learn':'Student','teach':'Teacher','volunteer':'Volunteer'}[tl]+extension
+    perm_name = {"learn": "Student", "teach": "Teacher", "volunteer": "Volunteer"}[
+        tl
+    ] + extension
     if not_logged_in(request):
-        if not moduleObj.require_auth() and Permission.null_user_has_perm(permission_type=perm_name, program=request.program):
+        if not moduleObj.require_auth() and Permission.null_user_has_perm(
+            permission_type=perm_name, program=request.program
+        ):
             return (True, None)
         else:
             return (False, _login_redirect(request))
@@ -842,12 +1022,15 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
         request.mod_required = moduleObj.isRequired()
         request.tl = tl
         if not canView:
-            canView = Permission.user_has_perm(user,
-                                               perm_name,
-                                               program=program)
+            canView = Permission.user_has_perm(user, perm_name, program=program)
             #   For now, allow an exception if the user is of the wrong type
             #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
-            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=program, user__isnull=True).exists():
+            if (
+                not canView
+                and Permission.valid_objects()
+                .filter(permission_type=perm_name, program=program, user__isnull=True)
+                .exists()
+            ):
                 canView = True
 
             #   Give administrators additional information
@@ -855,31 +1038,52 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
                 request.show_perm_info = True
                 request.one = program.program_type
                 request.two = program.program_instance
-                if getattr(request, 'perm_names', None) is not None:
+                if getattr(request, "perm_names", None) is not None:
                     request.perm_names.append(perm_name)
                 else:
                     request.perm_names = [perm_name]
 
                 roles_with_perm = Permission.list_roles_with_perm(perm_name, program)
-                if getattr(request, 'roles_with_perm', None) is not None:
+                if getattr(request, "roles_with_perm", None) is not None:
                     request.roles_with_perm += roles_with_perm
                 else:
                     request.roles_with_perm = roles_with_perm
 
         return (canView, None)
 
-def list_extensions(tl, extensions, andor=''):
-    nicetl={'teach':'Teacher','learn':'Student','volunteer':'Volunteer'}[tl]
-    if len(extensions)==0:
-        return 'no deadlines were'
-    elif len(extensions)==1:
-        return 'the deadline '+nicetl+extensions[0]+' was'
-    elif len(extensions)==2:
-        return 'the deadlines '+nicetl+extensions[0]+' '+andor+' '+nicetl+extensions[1]+' were'
-    else:
-        return 'the deadlines '+', '.join([nicetl+e for e in extensions[:-1]])+', '+andor+' '+nicetl+extensions[-1]+' were'
 
-def meets_deadline(extension=''):
+def list_extensions(tl, extensions, andor=""):
+    nicetl = {"teach": "Teacher", "learn": "Student", "volunteer": "Volunteer"}[tl]
+    if len(extensions) == 0:
+        return "no deadlines were"
+    elif len(extensions) == 1:
+        return "the deadline " + nicetl + extensions[0] + " was"
+    elif len(extensions) == 2:
+        return (
+            "the deadlines "
+            + nicetl
+            + extensions[0]
+            + " "
+            + andor
+            + " "
+            + nicetl
+            + extensions[1]
+            + " were"
+        )
+    else:
+        return (
+            "the deadlines "
+            + ", ".join([nicetl + e for e in extensions[:-1]])
+            + ", "
+            + andor
+            + " "
+            + nicetl
+            + extensions[-1]
+            + " were"
+        )
+
+
+def meets_deadline(extension=""):
     """
     Decorate a function to check if a deadline is met.
 
@@ -888,6 +1092,7 @@ def meets_deadline(extension=''):
     deadline is not met.
     """
     return meets_any_deadline([extension])
+
 
 def meets_any_deadline(extensions=None):
     """
@@ -900,7 +1105,7 @@ def meets_any_deadline(extensions=None):
     if extensions is None:
         extensions = []
 
-    _tl_prefixes = ('Student', 'Teacher', 'Volunteer')
+    _tl_prefixes = ("Student", "Teacher", "Volunteer")
     valid_perms = Permission.deadline_types
     invalid_exts = []
 
@@ -914,28 +1119,40 @@ def meets_any_deadline(extensions=None):
             "Invalid permission extensions: {invalid}. "
             "Valid deadline choices are: {valid}.".format(
                 invalid=", ".join(invalid_exts),
-                valid=", ".join(sorted(p for p in valid_perms
-                                       if p.startswith(_tl_prefixes))),
+                valid=", ".join(
+                    sorted(p for p in valid_perms if p.startswith(_tl_prefixes))
+                ),
             )
         )
 
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             for ext in extensions:
-                (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
+                (canView, response) = _checkDeadline_helper(
+                    method, ext, moduleObj, request, tl, *args, **kwargs
+                )
                 if canView:
                     return method(moduleObj, request, tl, *args, **kwargs)
             if response:
                 return response
             else:
-                return render_deadline_for_tl(tl, request,
-                        {'extension': list_extensions(tl, extensions, 'and') , 'moduleObj': moduleObj})
+                return render_deadline_for_tl(
+                    tl,
+                    request,
+                    {
+                        "extension": list_extensions(tl, extensions, "and"),
+                        "moduleObj": moduleObj,
+                    },
+                )
+
         return _checkDeadline
+
     return meets_deadline
+
 
 meets_cap = user_passes_test(
     lambda moduleObj, request: moduleObj.program.user_can_join(request.user),
-    error_template='errors/program/program_full.html',
+    error_template="errors/program/program_full.html",
     require_login=False,
 )
 
@@ -948,6 +1165,7 @@ def main_call(func):
     """
     func.call_tag = "Main Call"
     return func
+
 
 def aux_call(func):
     """

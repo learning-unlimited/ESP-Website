@@ -1,5 +1,3 @@
-
-
 from django import forms
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -7,45 +5,77 @@ from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
 
-__all__ = ['PasswordResetForm', 'UserPasswdForm']
+__all__ = ["PasswordResetForm", "UserPasswdForm"]
+
 
 class PasswordResetForm(forms.Form):
+    email = forms.EmailField(
+        max_length=75,
+        required=False,
+        help_text=mark_safe(
+            "(e.g. yourname@example.org)<br><br>---------- or ----------<br><br>"
+        ),
+    )
 
-    email     = forms.EmailField(max_length=75, required=False,
-                                 help_text=mark_safe("(e.g. yourname@example.org)<br><br>---------- or ----------<br><br>"))
-
-    username  = forms.CharField(max_length=30, required=False,
-                                help_text = '(Case sensitive)')
-
+    username = forms.CharField(
+        max_length=30, required=False, help_text="(Case sensitive)"
+    )
 
     def clean_username(self):
 
-        if self.cleaned_data.get('username', '').strip() == '' and \
-           self.cleaned_data.get('email', '').strip() == '':
+        if (
+            self.cleaned_data.get("username", "").strip() == ""
+            and self.cleaned_data.get("email", "").strip() == ""
+        ):
             raise forms.ValidationError("You need to specify something.")
 
-        if self.cleaned_data['username'].strip() == '': return ''
+        if self.cleaned_data["username"].strip() == "":
+            return ""
 
         try:
-            user = ESPUser.objects.get(username=self.cleaned_data['username'])
+            user = ESPUser.objects.get(username=self.cleaned_data["username"])
         except ESPUser.DoesNotExist:
-            raise forms.ValidationError(f"User '{self.cleaned_data['username']}' does not exist.")
+            raise forms.ValidationError(
+                f"User '{self.cleaned_data['username']}' does not exist."
+            )
 
-        return self.cleaned_data['username'].strip()
+        return self.cleaned_data["username"].strip()
 
     def clean_email(self):
-        if self.cleaned_data['email'].strip() == '':
-            return ''
+        if self.cleaned_data["email"].strip() == "":
+            return ""
 
-        if len(ESPUser.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
-            return self.cleaned_data['email'].strip()
+        if (
+            len(
+                ESPUser.objects.filter(email__iexact=self.cleaned_data["email"]).values(
+                    "id"
+                )[:1]
+            )
+            > 0
+        ):
+            return self.cleaned_data["email"].strip()
 
-        raise forms.ValidationError(f'No user has email {self.cleaned_data["email"]}')
+        raise forms.ValidationError(f"No user has email {self.cleaned_data['email']}")
+
 
 class UserPasswdForm(FormWithRequiredCss):
-    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput(), label="Current password")
-    newpasswd = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="New password")
-    newpasswdconfirm = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="Confirm new password")
+    password = SizedCharField(
+        length=12, max_length=32, widget=forms.PasswordInput(), label="Current password"
+    )
+    newpasswd = SizedCharField(
+        length=12,
+        min_length=8,
+        max_length=32,
+        widget=forms.PasswordInput(),
+        label="New password",
+    )
+    newpasswdconfirm = SizedCharField(
+        length=12,
+        min_length=8,
+        max_length=32,
+        widget=forms.PasswordInput(),
+        label="Confirm new password",
+    )
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -53,20 +83,24 @@ class UserPasswdForm(FormWithRequiredCss):
 
     def clean_password(self):
         if self.user is None:
-            raise forms.ValidationError('Error: Not logged in.')
-        current_passwd = self.cleaned_data['password']
+            raise forms.ValidationError("Error: Not logged in.")
+        current_passwd = self.cleaned_data["password"]
         if not self.user.check_password(current_passwd):
-            raise forms.ValidationError(mark_safe('As a security measure, please enter your <strong>current</strong> password.'))
+            raise forms.ValidationError(
+                mark_safe(
+                    "As a security measure, please enter your <strong>current</strong> password."
+                )
+            )
         return current_passwd
 
     def clean_newpasswdconfirm(self):
-        new_passwd = self.cleaned_data['newpasswdconfirm'].strip()
+        new_passwd = self.cleaned_data["newpasswdconfirm"].strip()
 
-        if not 'newpasswd' in self.cleaned_data:
-            raise forms.ValidationError('Invalid password; confirmation failed')
+        if not "newpasswd" in self.cleaned_data:
+            raise forms.ValidationError("Invalid password; confirmation failed")
 
-        if self.cleaned_data['newpasswd'] != new_passwd:
-            raise forms.ValidationError('Password and confirmation are not equal.')
+        if self.cleaned_data["newpasswd"] != new_passwd:
+            raise forms.ValidationError("Password and confirmation are not equal.")
         try:
             validate_password(new_passwd, self.user)
         except ValidationError as e:

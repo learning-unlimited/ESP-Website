@@ -20,9 +20,8 @@ def reverse_backfill(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cal', '0004_eventtype_is_teacher_type'),
+        ("cal", "0004_eventtype_is_teacher_type"),
     ]
 
     operations = [

@@ -15,14 +15,13 @@ csvfile = csv.writer(rawfile, dialect="excel")
 
 students = prog.students()["enrolled"]
 
+
 def process_user(csv, user):
     cell = user.getLastProfile().contact_user.phone_cell
     if cell and not re.match(r"\d{3}-\d{3}-\d{4}", cell):
         raise ValueError("Cell for %s not formatted properly!" % user.name())
-    csv.writerow([
-            user.name(),
-            user.email,
-            cell])
+    csv.writerow([user.name(), user.email, cell])
+
 
 count = 1
 for student in students:

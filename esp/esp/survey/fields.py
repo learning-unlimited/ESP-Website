@@ -13,15 +13,15 @@ class ListField(object):
     Allows packing lists/tuples into a delimited string stored in another field.
     """
 
-    field_name = ''
-    separator = '|'
+    field_name = ""
+    separator = "|"
 
-    def __init__(self, field_name, separator='|'):
+    def __init__(self, field_name, separator="|"):
         self.field_name = field_name
         self.separator = separator
 
     def __get__(self, instance, class_):
-        data = str(getattr(instance, self.field_name) or '').strip()
+        data = str(getattr(instance, self.field_name) or "").strip()
         if not data:
             return ()
         return tuple(data.split(self.separator))
@@ -29,4 +29,3 @@ class ListField(object):
     def __set__(self, instance, value):
         data = self.separator.join(map(str, value))
         setattr(instance, self.field_name, data)
-

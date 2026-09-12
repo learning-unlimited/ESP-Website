@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -38,8 +37,8 @@ from esp.accounting.views import summary, user_summary
 from esp.accounting.refund_views import refund, process_refund
 
 urlpatterns = [
-    re_path(r'^$', summary, name='accounting_summary'),
-    re_path(r'^user$', user_summary, name='accounting_user_summary'),
-    re_path(r'^refund/?$', refund, name='accounting_refund'),
-    re_path(r'^refund/process/?$', process_refund, name='accounting_refund_process'),
+    re_path(r"^$", summary, name="accounting_summary"),
+    re_path(r"^user$", user_summary, name="accounting_user_summary"),
+    re_path(r"^refund/?$", refund, name="accounting_refund"),
+    re_path(r"^refund/process/?$", process_refund, name="accounting_refund_process"),
 ]

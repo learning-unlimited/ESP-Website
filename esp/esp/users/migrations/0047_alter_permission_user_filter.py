@@ -5,15 +5,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0046_permission_user_filter'),
+        ("users", "0046_permission_user_filter"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='permission',
-            name='user_filter',
-            field=models.ForeignKey(blank=True, help_text='Apply this permission to all users matching this saved filter.', null=True, on_delete=django.db.models.deletion.PROTECT, to='users.persistentqueryfilter'),
+            model_name="permission",
+            name="user_filter",
+            field=models.ForeignKey(
+                blank=True,
+                help_text="Apply this permission to all users matching this saved filter.",
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                to="users.persistentqueryfilter",
+            ),
         ),
     ]

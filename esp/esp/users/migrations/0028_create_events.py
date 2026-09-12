@@ -3,7 +3,7 @@
 
 from django.db import migrations
 
-EVENT_CHOICES=(
+EVENT_CHOICES = (
     ("student_survey", "Completed student survey"),
     ("teacher_survey", "Completed teacher survey"),
     ("reg_confirmed", "Confirmed registration"),
@@ -31,20 +31,22 @@ EVENT_CHOICES=(
     ("twophase_reg_done", "Completed two-phase registration"),
 )
 
+
 def create_events(apps, schema_editor):
-    RecordType = apps.get_model('users', 'RecordType')
+    RecordType = apps.get_model("users", "RecordType")
     for event in EVENT_CHOICES:
-        RecordType.objects.create(name = event[0], description = event[1])
+        RecordType.objects.create(name=event[0], description=event[1])
+
 
 def delete_events(apps, schema_editor):
-    RecordType = apps.get_model('users', 'RecordType')
+    RecordType = apps.get_model("users", "RecordType")
     for event in EVENT_CHOICES:
-        RecordType.objects.get(name = event[0], description = event[1]).delete()
+        RecordType.objects.get(name=event[0], description=event[1]).delete()
+
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0027_auto_20220726_2027'),
+        ("users", "0027_auto_20220726_2027"),
     ]
 
     operations = [

@@ -2,10 +2,12 @@ import datetime
 import traceback
 import unittest
 
-from esp.program.controllers.autoscheduler import \
-        consistency_checks, testutils, data_model
-from esp.program.controllers.autoscheduler.consistency_checks import \
-        ConsistencyError
+from esp.program.controllers.autoscheduler import (
+    consistency_checks,
+    testutils,
+    data_model,
+)
+from esp.program.controllers.autoscheduler.consistency_checks import ConsistencyError
 
 
 class ConsistencyCheckerTest(unittest.TestCase):
@@ -15,19 +17,25 @@ class ConsistencyCheckerTest(unittest.TestCase):
         try:
             checker.run_all_consistency_checks(sched)
         except ConsistencyError:
-            self.fail(f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}")
+            self.fail(
+                f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}"
+            )
 
         sched = testutils.create_test_schedule_2()
         try:
             checker.run_all_consistency_checks(sched)
         except ConsistencyError:
-            self.fail(f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}")
+            self.fail(
+                f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}"
+            )
 
         sched = testutils.create_test_schedule_3()
         try:
             checker.run_all_consistency_checks(sched)
         except ConsistencyError:
-            self.fail(f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}")
+            self.fail(
+                f"Unexpectedly failed consistency check with error: \n{traceback.format_exc()}"
+            )
 
     def test_availability_dict_consistency(self):
         checker = consistency_checks.ConsistencyChecker()
@@ -37,34 +45,32 @@ class ConsistencyCheckerTest(unittest.TestCase):
         except ConsistencyError:
             self.fail(
                 "Unexpectedly failed availability dict consistency "
-                f"with error: \n{traceback.format_exc()}")
+                f"with error: \n{traceback.format_exc()}"
+            )
 
         room = sched.classrooms["10-250"]
         roomslot = room.availability[0]
         timeslot = roomslot.timeslot
-        del room.availability_dict[
-                (timeslot.start, timeslot.end)]
+        del room.availability_dict[(timeslot.start, timeslot.end)]
         with self.assertRaises(ConsistencyError):
             # Extra value in availability list
             checker.check_availability_dict_consistency(sched)
 
-        room.availability_dict[(timeslot.end, timeslot.start)] = \
-            roomslot
+        room.availability_dict[(timeslot.end, timeslot.start)] = roomslot
         with self.assertRaises(ConsistencyError):
             # Key mismatch
             checker.check_availability_dict_consistency(sched)
 
-        del room.availability_dict[
-                (timeslot.end, timeslot.start)]
-        room.availability_dict[(timeslot.start, timeslot.end)] = \
-            roomslot
+        del room.availability_dict[(timeslot.end, timeslot.start)]
+        room.availability_dict[(timeslot.start, timeslot.end)] = roomslot
 
         try:
             checker.check_availability_dict_consistency(sched)
         except ConsistencyError:
             self.fail(
                 "Unexpectedly failed availability dict consistency "
-                f"with error: \n{traceback.format_exc()}")
+                f"with error: \n{traceback.format_exc()}"
+            )
 
         room.availability.pop()
         with self.assertRaises(ConsistencyError):
@@ -79,7 +85,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
         except ConsistencyError:
             self.fail(
                 "Unexpectedly failed lunch consistency "
-                f"with error: \n{traceback.format_exc()}")
+                f"with error: \n{traceback.format_exc()}"
+            )
 
         day = next(iter(sched.lunch_timeslots.keys()))
         sched.lunch_timeslots[day].reverse()
@@ -94,10 +101,13 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_lunch_consistency(sched)
         sched.lunch_timeslots[day].pop()
 
-        sched.lunch_timeslots[day].append(data_model.AS_Timeslot(
-            datetime.datetime(2017, 2, 2, 14, 5),
-            datetime.datetime(2017, 2, 2, 14, 55),
-            event_id=5))
+        sched.lunch_timeslots[day].append(
+            data_model.AS_Timeslot(
+                datetime.datetime(2017, 2, 2, 14, 5),
+                datetime.datetime(2017, 2, 2, 14, 55),
+                event_id=5,
+            )
+        )
         with self.assertRaises(ConsistencyError):
             # Unregistered timeslot
             checker.check_lunch_consistency(sched)
@@ -116,7 +126,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
         except ConsistencyError:
             self.fail(
                 "Unexpectedly failed resource dict consistency "
-                f"with error: \n{traceback.format_exc()}")
+                f"with error: \n{traceback.format_exc()}"
+            )
 
         requests = sched.class_sections[1].resource_requests
         requests["Foo"] = requests["Projector"]
@@ -138,18 +149,22 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
         except ConsistencyError:
             self.fail(
-                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}")
+                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}"
+            )
 
         sched.classrooms["10-250"].availability.insert(
-            0, sched.classrooms["26-100"].availability[2])
+            0, sched.classrooms["26-100"].availability[2]
+        )
         with self.assertRaises(ConsistencyError):
             # Room and roomslot were inconsistent
             checker.check_roomslots_consistency(sched)
         sched.classrooms["10-250"].availability.remove(
-            sched.classrooms["26-100"].availability[2])
+            sched.classrooms["26-100"].availability[2]
+        )
 
         sched.class_sections[1].assigned_roomslots.append(
-            sched.class_sections[2].assigned_roomslots[0])
+            sched.class_sections[2].assigned_roomslots[0]
+        )
         with self.assertRaises(ConsistencyError):
             # Section and roomslot were inconsistent
             checker.check_roomslots_consistency(sched)
@@ -163,9 +178,10 @@ class ConsistencyCheckerTest(unittest.TestCase):
         sched.timeslots[1].associated_roomslots.remove(roomslot)
 
         new_timeslot = data_model.AS_Timeslot(
-                datetime.datetime(2017, 2, 2, 16, 5),
-                datetime.datetime(2017, 2, 2, 16, 55),
-                7)
+            datetime.datetime(2017, 2, 2, 16, 5),
+            datetime.datetime(2017, 2, 2, 16, 55),
+            7,
+        )
         new_roomslot = data_model.AS_RoomSlot(new_timeslot, None)
         # This should be okay, because we made a "rogue" roomslot but it's
         # orphaned.
@@ -173,7 +189,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
         except ConsistencyError:
             self.fail(
-                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}")
+                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}"
+            )
 
         sched.class_sections[1].assigned_roomslots.append(new_roomslot)
         new_roomslot.assigned_section = sched.class_sections[1]
@@ -211,7 +228,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
 
         sched.classrooms["10-250"].availability.append(new_roomslot)
         new_section = data_model.AS_ClassSection(
-                [sched.teachers[1]], 0.83, 20, 0, [new_roomslot], 3, 0)
+            [sched.teachers[1]], 0.83, 20, 0, [new_roomslot], 3, 0
+        )
         new_roomslot.assigned_section = new_section
         with self.assertRaises(ConsistencyError):
             # Section isn't registered
@@ -229,7 +247,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslots_consistency(sched)
         except ConsistencyError:
             self.fail(
-                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}")
+                f"Unexpectedly failed roomslots consistency with error: \n{traceback.format_exc()}"
+            )
 
     def test_roomslot_next_and_index_consistency(self):
         checker = consistency_checks.ConsistencyChecker()
@@ -240,8 +259,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslot_next_and_index_consistency(sched)
         except ConsistencyError:
             self.fail(
-                        "Unexpectedly failed roomslot next/index "
-                        f"consistency with error: \n{traceback.format_exc()}")
+                "Unexpectedly failed roomslot next/index "
+                f"consistency with error: \n{traceback.format_exc()}"
+            )
 
         room.load_roomslot_caches()
         last_roomslot = room.availability.pop()
@@ -264,8 +284,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_roomslot_next_and_index_consistency(sched)
         except ConsistencyError:
             self.fail(
-                        "Unexpectedly failed roomslot next/index "
-                        f"consistency with error: \n{traceback.format_exc()}")
+                "Unexpectedly failed roomslot next/index "
+                f"consistency with error: \n{traceback.format_exc()}"
+            )
 
         room.availability.pop()
         room.flush_roomslot_caches()
@@ -283,8 +304,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_schedule_dicts_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed schedule dicts consistency with "
-                    f"error: \n{traceback.format_exc()}")
+                "Unexpectedly failed schedule dicts consistency with "
+                f"error: \n{traceback.format_exc()}"
+            )
 
         sec = sched.class_sections[1]
         del sched.class_sections[1]
@@ -317,8 +339,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_schedule_dicts_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed schedule dicts consistency with "
-                    f"error: \n{traceback.format_exc()}")
+                "Unexpectedly failed schedule dicts consistency with "
+                f"error: \n{traceback.format_exc()}"
+            )
 
     def test_sorting_consistency(self):
         checker = consistency_checks.ConsistencyChecker()
@@ -327,7 +350,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_sorting_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    f"Unexpectedly failed sorting consistency with error: \n{traceback.format_exc()}")
+                f"Unexpectedly failed sorting consistency with error: \n{traceback.format_exc()}"
+            )
 
         sched.class_sections[2].assigned_roomslots.reverse()
         with self.assertRaises(ConsistencyError):
@@ -354,8 +378,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_teacher_taught_sections_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed taught sections consistency with "
-                    f"error: \n{traceback.format_exc()}")
+                "Unexpectedly failed taught sections consistency with "
+                f"error: \n{traceback.format_exc()}"
+            )
 
         teacher = sched.teachers[1]
         sec = teacher.taught_sections[1]
@@ -383,8 +408,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_teacher_taught_sections_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed taught sections consistency with "
-                    f"error: \n{traceback.format_exc()}")
+                "Unexpectedly failed taught sections consistency with "
+                f"error: \n{traceback.format_exc()}"
+            )
 
     def test_timeslot_consistency(self):
         checker = consistency_checks.ConsistencyChecker()
@@ -393,7 +419,8 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_timeslot_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    f"Unexpectedly failed timeslot consistency with error: \n{traceback.format_exc()}")
+                f"Unexpectedly failed timeslot consistency with error: \n{traceback.format_exc()}"
+            )
 
         sched.timeslots.reverse()
         with self.assertRaises(ConsistencyError):
@@ -422,8 +449,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_timeslot_duration_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed timeslot duration consistency "
-                    f"with error: \n{traceback.format_exc()}")
+                "Unexpectedly failed timeslot duration consistency "
+                f"with error: \n{traceback.format_exc()}"
+            )
 
         sched.timeslots[0].duration = 0
         with self.assertRaises(ConsistencyError):
@@ -437,13 +465,17 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_timeslot_span_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed timeslot span consistency "
-                    f"with error: \n{traceback.format_exc()}")
+                "Unexpectedly failed timeslot span consistency "
+                f"with error: \n{traceback.format_exc()}"
+            )
 
-        sched.timeslots.append(data_model.AS_Timeslot(
-            datetime.datetime(2017, 2, 2, 23, 30),
-            datetime.datetime(2017, 2, 3, 0, 30),
-            event_id=7))
+        sched.timeslots.append(
+            data_model.AS_Timeslot(
+                datetime.datetime(2017, 2, 2, 23, 30),
+                datetime.datetime(2017, 2, 3, 0, 30),
+                event_id=7,
+            )
+        )
         sched.timeslot_dict = sched.build_timeslot_dict()
         with self.assertRaises(ConsistencyError):
             checker.check_timeslot_span_consistency(sched)
@@ -455,8 +487,9 @@ class ConsistencyCheckerTest(unittest.TestCase):
             checker.check_timeslots_list_and_dict_consistency(sched)
         except ConsistencyError:
             self.fail(
-                    "Unexpectedly failed timeslot list/dict consistency " +
-                    f"with error: \n{traceback.format_exc()}")
+                "Unexpectedly failed timeslot list/dict consistency "
+                + f"with error: \n{traceback.format_exc()}"
+            )
 
         last_timeslot = sched.timeslots[-1]
         timeslot_key = (last_timeslot.start, last_timeslot.end)

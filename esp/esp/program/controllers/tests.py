@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2026 by the individual contributors
@@ -68,6 +68,7 @@ from esp.program.controllers.studentregsanity import StudentRegSanityController
 # Base fixture helper
 # ---------------------------------------------------------------------------
 
+
 class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
     """
     Extends ProgramFrameworkTest with helpers to create Walk-in and Lunch
@@ -76,13 +77,13 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
     """
 
     def setUp(self, *args, **kwargs):
-        kwargs.setdefault('num_timeslots', 2)
-        kwargs.setdefault('timeslot_length', 50)
-        kwargs.setdefault('timeslot_gap', 10)
-        kwargs.setdefault('num_teachers', 2)
-        kwargs.setdefault('classes_per_teacher', 1)
-        kwargs.setdefault('sections_per_class', 1)
-        kwargs.setdefault('num_rooms', 2)
+        kwargs.setdefault("num_timeslots", 2)
+        kwargs.setdefault("timeslot_length", 50)
+        kwargs.setdefault("timeslot_gap", 10)
+        kwargs.setdefault("num_teachers", 2)
+        kwargs.setdefault("classes_per_teacher", 1)
+        kwargs.setdefault("sections_per_class", 1)
+        kwargs.setdefault("num_rooms", 2)
         super().setUp(*args, **kwargs)
         self.schedule_randomly()
         self.controller = StudentRegSanityController(self.program)
@@ -94,13 +95,14 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
     def _get_or_create_category(self, name):
         category, _ = ClassCategories.objects.get_or_create(
             category=name,
-            is_lunch=(name.lower() == 'lunch'),
+            is_lunch=(name.lower() == "lunch"),
         )
         return category
 
     def _create_special_class(self, category_name):
         """Create a one-section class belonging to *category_name*."""
         from esp.program.models.class_ import ClassSubject
+
         category = self._get_or_create_category(category_name)
         teacher = self.teachers[0]
         cls = ClassSubject.objects.create(
@@ -140,6 +142,7 @@ class StudentRegSanityFrameworkTest(ProgramFrameworkTest):
 # 1.  Constructor tests
 # ---------------------------------------------------------------------------
 
+
 class StudentRegSanityControllerInitTest(StudentRegSanityFrameworkTest):
     """Verify that the controller initialises correctly."""
 
@@ -150,29 +153,32 @@ class StudentRegSanityControllerInitTest(StudentRegSanityFrameworkTest):
     def test_init_default_options(self):
         """Default options are applied when none are passed."""
         ctrl = StudentRegSanityController(self.program)
-        self.assertEqual(ctrl.options['directory'], os.getenv('HOME'))
+        self.assertEqual(ctrl.options["directory"], os.getenv("HOME"))
 
     def test_init_custom_option_override(self):
         """Custom kwargs override the defaults."""
-        ctrl = StudentRegSanityController(self.program, directory='/tmp/test')
-        self.assertEqual(ctrl.options['directory'], '/tmp/test')
+        ctrl = StudentRegSanityController(self.program, directory="/tmp/test")
+        self.assertEqual(ctrl.options["directory"], "/tmp/test")
 
     def test_init_extra_options_preserved(self):
         """Arbitrary extra kwargs are stored in options without error."""
-        ctrl = StudentRegSanityController(self.program, my_custom_key='hello')
-        self.assertEqual(ctrl.options['my_custom_key'], 'hello')
+        ctrl = StudentRegSanityController(self.program, my_custom_key="hello")
+        self.assertEqual(ctrl.options["my_custom_key"], "hello")
 
 
 # ---------------------------------------------------------------------------
 # 2.  sanitize_walkin tests
 # ---------------------------------------------------------------------------
 
+
 class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
     """Tests for StudentRegSanityController.sanitize_walkin()."""
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
-        self.walkin_cls, self.walkin_section = self._create_special_class("Walk-in Activity")
+        self.walkin_cls, self.walkin_section = self._create_special_class(
+            "Walk-in Activity"
+        )
 
     # --- happy-path: no walk-in registrations ---
 
@@ -186,7 +192,8 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         section_counts = [count for _, count in report]
         self.assertTrue(
             all(c == 0 for c in section_counts),
-            "Expected all walk-in section counts to be 0 with no enrolments, got: %s" % report,
+            "Expected all walk-in section counts to be 0 with no enrolments, got: %s"
+            % report,
         )
 
     # --- happy-path: with walk-in registrations present ---
@@ -200,13 +207,17 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         self._enrol_student(student, self.walkin_section)
 
         report = self.controller.sanitize_walkin(fake=True)
-        walkin_counts = {sec.id: count for sec, count in report if sec.id == self.walkin_section.id}
+        walkin_counts = {
+            sec.id: count for sec, count in report if sec.id == self.walkin_section.id
+        }
         self.assertIn(
-            self.walkin_section.id, walkin_counts,
+            self.walkin_section.id,
+            walkin_counts,
             "Walk-in section not present in report",
         )
         self.assertEqual(
-            walkin_counts[self.walkin_section.id], 1,
+            walkin_counts[self.walkin_section.id],
+            1,
             "Expected 1 walk-in registration, report shows different count",
         )
 
@@ -218,7 +229,8 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         report = self.controller.sanitize_walkin(fake=True)
         walkin_counts = {sec.id: count for sec, count in report}
         self.assertEqual(
-            walkin_counts.get(self.walkin_section.id, 0), 3,
+            walkin_counts.get(self.walkin_section.id, 0),
+            3,
             "Walk-in count mismatch: expected 3",
         )
 
@@ -267,9 +279,11 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         """
         # Exclude only the Walk-in Activity category; do not assume any
         # particular default category name (e.g. "Core") exists in fixtures.
-        regular_section = self.program.sections().exclude(
-            parent_class__category__category="Walk-in Activity"
-        ).first()
+        regular_section = (
+            self.program.sections()
+            .exclude(parent_class__category__category="Walk-in Activity")
+            .first()
+        )
         if regular_section is None:
             self.skipTest("No non-walk-in section available in test program")
 
@@ -315,11 +329,13 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
         counts_by_id = {sec.id: count for sec, count in report}
 
         self.assertEqual(
-            counts_by_id.get(self.walkin_section.id, 0), 2,
+            counts_by_id.get(self.walkin_section.id, 0),
+            2,
             "First walk-in section should have 2 enrolments",
         )
         self.assertEqual(
-            counts_by_id.get(walkin_section_2.id, 0), 1,
+            counts_by_id.get(walkin_section_2.id, 0),
+            1,
             "Second walk-in section should have 1 enrolment",
         )
 
@@ -347,6 +363,7 @@ class SanitizeWalkinTest(StudentRegSanityFrameworkTest):
 # ---------------------------------------------------------------------------
 # 3.  sanitize_lunch tests
 # ---------------------------------------------------------------------------
+
 
 class SanitizeLunchTest(StudentRegSanityFrameworkTest):
     """Tests for StudentRegSanityController.sanitize_lunch()."""
@@ -376,11 +393,13 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
         report = self.controller.sanitize_lunch(fake=True)
         lunch_counts = {cls.id: count for cls, count in report}
         self.assertIn(
-            self.lunch_cls.id, lunch_counts,
+            self.lunch_cls.id,
+            lunch_counts,
             "Lunch class not found in report",
         )
         self.assertEqual(
-            lunch_counts[self.lunch_cls.id], 1,
+            lunch_counts[self.lunch_cls.id],
+            1,
             "Expected exactly 1 lunch registration in report",
         )
 
@@ -392,7 +411,8 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
         report = self.controller.sanitize_lunch(fake=True)
         lunch_counts = {cls.id: count for cls, count in report}
         self.assertEqual(
-            lunch_counts.get(self.lunch_cls.id, 0), 2,
+            lunch_counts.get(self.lunch_cls.id, 0),
+            2,
             "Lunch count mismatch: expected 2",
         )
 
@@ -446,6 +466,7 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
     def test_report_entries_are_class_and_int(self):
         """Each entry is a (ClassSubject, int) pair."""
         from esp.program.models.class_ import ClassSubject
+
         self._enrol_student(self.students[0], self.lunch_section)
         report = self.controller.sanitize_lunch(fake=True)
         for entry in report:
@@ -459,12 +480,15 @@ class SanitizeLunchTest(StudentRegSanityFrameworkTest):
 # 4.  sanitize() dispatcher tests
 # ---------------------------------------------------------------------------
 
+
 class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
     """Tests for the sanitize() top-level dispatcher method."""
 
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
-        self.walkin_cls, self.walkin_section = self._create_special_class("Walk-in Activity")
+        self.walkin_cls, self.walkin_section = self._create_special_class(
+            "Walk-in Activity"
+        )
         self.lunch_cls, self.lunch_section = self._create_special_class("Lunch")
 
     # --- None / missing checks argument ---
@@ -478,7 +502,7 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
 
     def test_help_returns_none(self):
         """sanitize('--help') is informational and must return None."""
-        result = self.controller.sanitize(checks='--help', fake=True, csvlog=False)
+        result = self.controller.sanitize(checks="--help", fake=True, csvlog=False)
         self.assertIsNone(result, "sanitize('--help') must return None")
 
     # --- antiwalk-in check ---
@@ -489,11 +513,13 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         under 'walkin' in the returned dict.
         """
         result = self.controller.sanitize(
-            checks=['antiwalk-in'], fake=True, csvlog=False
+            checks=["antiwalk-in"], fake=True, csvlog=False
         )
-        self.assertIsNotNone(result, "sanitize must return a dict when checks are provided")
-        self.assertIn('walkin', result, "Result dict must contain 'walkin' key")
-        self.assertIsInstance(result['walkin'], list)
+        self.assertIsNotNone(
+            result, "sanitize must return a dict when checks are provided"
+        )
+        self.assertIn("walkin", result, "Result dict must contain 'walkin' key")
+        self.assertIsInstance(result["walkin"], list)
 
     # --- antilunch check ---
 
@@ -502,22 +528,20 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         Passing 'antilunch' must call sanitize_lunch and place its result
         under 'antilunch' in the returned dict.
         """
-        result = self.controller.sanitize(
-            checks=['antilunch'], fake=True, csvlog=False
-        )
+        result = self.controller.sanitize(checks=["antilunch"], fake=True, csvlog=False)
         self.assertIsNotNone(result)
-        self.assertIn('antilunch', result, "Result dict must contain 'antilunch' key")
-        self.assertIsInstance(result['antilunch'], list)
+        self.assertIn("antilunch", result, "Result dict must contain 'antilunch' key")
+        self.assertIsInstance(result["antilunch"], list)
 
     # --- both checks together ---
 
     def test_multiple_checks_run_all(self):
         """Both antiwalk-in and antilunch run when both are specified."""
         result = self.controller.sanitize(
-            checks=['antiwalk-in', 'antilunch'], fake=True, csvlog=False
+            checks=["antiwalk-in", "antilunch"], fake=True, csvlog=False
         )
-        self.assertIn('walkin', result)
-        self.assertIn('antilunch', result)
+        self.assertIn("walkin", result)
+        self.assertIn("antilunch", result)
 
     # --- string shorthand (not a list) ---
 
@@ -526,10 +550,8 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         A bare string 'antiwalk-in' must be treated the same as ['antiwalk-in']
         (the method wraps it internally).
         """
-        result = self.controller.sanitize(
-            checks='antiwalk-in', fake=True, csvlog=False
-        )
-        self.assertIn('walkin', result)
+        result = self.controller.sanitize(checks="antiwalk-in", fake=True, csvlog=False)
+        self.assertIn("walkin", result)
 
     # --- unknown check name is silently ignored ---
 
@@ -537,12 +559,14 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         """An unrecognised check name must not raise an exception."""
         try:
             result = self.controller.sanitize(
-                checks=['nonexistent_check'], fake=True, csvlog=False
+                checks=["nonexistent_check"], fake=True, csvlog=False
             )
             # Result dict should be empty (no matching handlers)
             self.assertIsNotNone(result)
         except Exception as exc:
-            self.fail("sanitize() raised an unexpected exception for unknown check: %s" % exc)
+            self.fail(
+                "sanitize() raised an unexpected exception for unknown check: %s" % exc
+            )
 
     # --- end-to-end: fake=False actually removes records ---
 
@@ -554,7 +578,7 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         student = self.students[0]
         sr = self._enrol_student(student, self.walkin_section)
 
-        self.controller.sanitize(checks=['antiwalk-in'], fake=False, csvlog=False)
+        self.controller.sanitize(checks=["antiwalk-in"], fake=False, csvlog=False)
 
         sr.refresh_from_db()
         self.assertFalse(
@@ -570,7 +594,7 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         student = self.students[0]
         sr = self._enrol_student(student, self.lunch_section)
 
-        self.controller.sanitize(checks=['antilunch'], fake=False, csvlog=False)
+        self.controller.sanitize(checks=["antilunch"], fake=False, csvlog=False)
 
         sr.refresh_from_db()
         self.assertFalse(
@@ -582,7 +606,7 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
 
     def test_returned_dict_is_dict(self):
         result = self.controller.sanitize(
-            checks=['antiwalk-in', 'antilunch'], fake=True, csvlog=False
+            checks=["antiwalk-in", "antilunch"], fake=True, csvlog=False
         )
         self.assertIsInstance(result, dict)
 
@@ -591,14 +615,12 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         The dispatcher must also store the result on self.reports so callers
         can still access it after the method returns.
         """
-        self.controller.sanitize(
-            checks=['antiwalk-in'], fake=True, csvlog=False
-        )
+        self.controller.sanitize(checks=["antiwalk-in"], fake=True, csvlog=False)
         self.assertTrue(
-            hasattr(self.controller, 'reports'),
+            hasattr(self.controller, "reports"),
             "sanitize() must set self.reports",
         )
-        self.assertIn('walkin', self.controller.reports)
+        self.assertIn("walkin", self.controller.reports)
 
     # --- csvlog=True: exercise the logging dispatch path ---
 
@@ -612,12 +634,14 @@ class SanitizeDispatcherTest(StudentRegSanityFrameworkTest):
         file I/O occurs during the test.
         """
         fake_file = io.StringIO()
-        with patch('esp.program.controllers.studentregsanity.open', return_value=fake_file):
+        with patch(
+            "esp.program.controllers.studentregsanity.open", return_value=fake_file
+        ):
             result = self.controller.sanitize(
-                checks=['antiwalk-in', 'antilunch'],
+                checks=["antiwalk-in", "antilunch"],
                 fake=True,
                 csvlog=True,
             )
         self.assertIsInstance(result, dict)
-        self.assertIn('walkin', result)
-        self.assertIn('antilunch', result)
+        self.assertIn("walkin", result)
+        self.assertIn("antilunch", result)

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -34,13 +33,32 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
+from esp.program.models import (
+    Program,
+    ClassSection,
+    ClassSubject,
+    BooleanExpression,
+    ScheduleConstraint,
+    ScheduleTestOccupied,
+    ScheduleTestCategory,
+    ClassCategories,
+)
 
 import datetime
 
+
 class LunchConstraintGenerator(object):
-    """ A class for finding issues with the scheduling of a program. """
-    def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+    """A class for finding issues with the scheduling of a program."""
+
+    def __init__(
+        self,
+        program,
+        lunch_timeslots=[],
+        generate_constraints=True,
+        include_conditions=True,
+        autocorrect=True,
+        **kwargs,
+    ):
         self.program = program
         self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
@@ -54,35 +72,46 @@ class LunchConstraintGenerator(object):
         lunch_timeslots = list(lunch_timeslots)
         lunch_timeslots.sort(key=lambda x: x.start)
         for timeslot in all_timeslots:
-            day = datetime.date(timeslot.start.year, timeslot.start.month, timeslot.start.day)
+            day = datetime.date(
+                timeslot.start.year, timeslot.start.month, timeslot.start.day
+            )
             if day not in self.days:
                 past_lunch = False
-                self.days[day] = {'before': [], 'lunch': [], 'after': []}
+                self.days[day] = {"before": [], "lunch": [], "after": []}
             if timeslot in lunch_timeslots:
-                self.days[day]['lunch'].append(timeslot)
+                self.days[day]["lunch"].append(timeslot)
                 past_lunch = True
             else:
                 if past_lunch:
-                    self.days[day]['after'].append(timeslot)
+                    self.days[day]["after"].append(timeslot)
                 else:
-                    self.days[day]['before'].append(timeslot)
+                    self.days[day]["before"].append(timeslot)
 
     def clear_existing_constraints(self):
         # Delete any sections that we don't need anymore
-        for lunch_section in ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category=self.get_lunch_category()).exclude(meeting_times__in=self.lunch_timeslots):
+        for lunch_section in ClassSection.objects.filter(
+            parent_class__parent_program=self.program,
+            parent_class__category=self.get_lunch_category(),
+        ).exclude(meeting_times__in=self.lunch_timeslots):
             lunch_section.delete()
         # Delete any classes that no longer have sections
-        for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
+        for lunch_subject in ClassSubject.objects.filter(
+            parent_program=self.program,
+            category=self.get_lunch_category(),
+            sections__isnull=True,
+        ):
             lunch_subject.delete()
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
             constraint.delete()
 
-    def apply_binary_op_to_list(self, expression, operator_text, identity_value, tokens):
-        """ Add the appropriate boolean tokens to 'expression' so
-            that the operator in 'operator_text' is applied over all
-            items in 'tokens'
+    def apply_binary_op_to_list(
+        self, expression, operator_text, identity_value, tokens
+    ):
+        """Add the appropriate boolean tokens to 'expression' so
+        that the operator in 'operator_text' is applied over all
+        items in 'tokens'
         """
 
         #   If there are 0 tokens in the list, do nothing
@@ -103,8 +132,12 @@ class LunchConstraintGenerator(object):
             midpoint = len(tokens) // 2
             first_half = tokens[:midpoint]
             second_half = tokens[midpoint:]
-            self.apply_binary_op_to_list(expression, operator_text, identity_value, first_half)
-            self.apply_binary_op_to_list(expression, operator_text, identity_value, second_half)
+            self.apply_binary_op_to_list(
+                expression, operator_text, identity_value, first_half
+            )
+            self.apply_binary_op_to_list(
+                expression, operator_text, identity_value, second_half
+            )
             expression.add_token(operator_text)
 
         return expression
@@ -112,17 +145,23 @@ class LunchConstraintGenerator(object):
     def get_lunch_category(self):
         lunch_category = ClassCategories.get_lunch()
         if lunch_category is None:
-            lunch_category = ClassCategories.objects.create(category='Lunch', is_lunch=True, symbol='L')
+            lunch_category = ClassCategories.objects.create(
+                category="Lunch", is_lunch=True, symbol="L"
+            )
         self.program.class_categories.add(lunch_category)
         return lunch_category
 
     def get_lunch_subject(self, day):
-        """ Locate lunch subject with the appropriate day in the 'message for directors' field. """
+        """Locate lunch subject with the appropriate day in the 'message for directors' field."""
 
         category = self.get_lunch_category()
-        lunch_subjects = ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category(), message_for_directors=day.isoformat())
+        lunch_subjects = ClassSubject.objects.filter(
+            parent_program__id=self.program.id,
+            category=self.get_lunch_category(),
+            message_for_directors=day.isoformat(),
+        )
         lunch_subject = None
-        example_timeslot = self.days[day]['lunch'][0]
+        example_timeslot = self.days[day]["lunch"][0]
         timeslot_length = (example_timeslot.duration()).total_seconds() / 3600.0
 
         if lunch_subjects.count() == 0:
@@ -132,16 +171,16 @@ class LunchConstraintGenerator(object):
             new_subject.grade_max = 12
             new_subject.parent_program = self.program
             new_subject.category = category
-            new_subject.class_info = 'Enjoy a break for lunch with your friends!  Please register for at least one lunch period on each day of the program.'
+            new_subject.class_info = "Enjoy a break for lunch with your friends!  Please register for at least one lunch period on each day of the program."
             new_subject.class_size_min = 0
             # If the program doesn't have a max size, we unfortunately still
             # need one here.  Set a really big one.
             new_subject.class_size_max = self.program.program_size_max or 10**6
             new_subject.status = ClassStatus.ACCEPTED
-            new_subject.duration = '%.4f' % timeslot_length
+            new_subject.duration = "%.4f" % timeslot_length
             new_subject.message_for_directors = day.isoformat()
             new_subject.save()
-            new_subject.title = 'Lunch Period'
+            new_subject.title = "Lunch Period"
             new_subject.save()
             lunch_subject = new_subject
         else:
@@ -152,8 +191,10 @@ class LunchConstraintGenerator(object):
     def get_lunch_sections(self, day):
 
         lunch_subject = self.get_lunch_subject(day)
-        for timeslot in self.days[day]['lunch']:
-            lunch_sections = lunch_subject.sections.filter(meeting_times__id=timeslot.id)
+        for timeslot in self.days[day]["lunch"]:
+            lunch_sections = lunch_subject.sections.filter(
+                meeting_times__id=timeslot.id
+            )
             if lunch_sections.count() == 0:
                 new_section = lunch_subject.add_section(status=ClassStatus.ACCEPTED)
                 new_section.meeting_times.add(timeslot)
@@ -197,17 +238,19 @@ else:
     schedule_map.add_section(dest_sec)
     data = str(schedule_map.map)
     return (schedule_map, data)
-""" % [x.id for x in self.days[day]['lunch']]
+""" % [x.id for x in self.days[day]["lunch"]]
         return on_failure_code
 
     def generate_constraint(self, day):
         #   Prepare empty expression objects
         exp_requirement = BooleanExpression()
-        exp_requirement.label = f'choose a lunch period on {day.strftime("%A")}'
+        exp_requirement.label = f"choose a lunch period on {day.strftime('%A')}"
         exp_requirement.save()
 
         exp_check = BooleanExpression()
-        exp_check.label = f'{self.program.niceName()} lunch constraint check for {day.isoformat()}'
+        exp_check.label = (
+            f"{self.program.niceName()} lunch constraint check for {day.isoformat()}"
+        )
         exp_check.save()
 
         constraint = ScheduleConstraint()
@@ -222,49 +265,48 @@ else:
         seq_id = 0
 
         lunch_tests = []
-        for timeslot in self.days[day]['lunch']:
+        for timeslot in self.days[day]["lunch"]:
             new_test = ScheduleTestCategory()
             new_test.timeblock_id = timeslot.id
             new_test.exp_id = exp_requirement.id
             new_test.category = self.get_lunch_category()
             lunch_tests.append(new_test)
             seq_id += 1
-        self.apply_binary_op_to_list(exp_requirement, 'OR', '0', lunch_tests)
+        self.apply_binary_op_to_list(exp_requirement, "OR", "0", lunch_tests)
 
         if self.include_conditions:
             #   Add conditions so the students are only required to have lunch if they have
             #   classes both before and after lunch
             morning_tests = []
-            for timeslot in self.days[day]['before']:
+            for timeslot in self.days[day]["before"]:
                 new_test = ScheduleTestOccupied()
                 new_test.timeblock_id = timeslot.id
                 new_test.exp_id = exp_check.id
                 morning_tests.append(new_test)
                 seq_id += 1
-            self.apply_binary_op_to_list(exp_check, 'OR', '0', morning_tests)
+            self.apply_binary_op_to_list(exp_check, "OR", "0", morning_tests)
 
             afternoon_tests = []
-            for timeslot in self.days[day]['after']:
+            for timeslot in self.days[day]["after"]:
                 new_test = ScheduleTestOccupied()
                 new_test.timeblock_id = timeslot.id
                 new_test.exp_id = exp_check.id
                 afternoon_tests.append(new_test)
                 seq_id += 1
-            self.apply_binary_op_to_list(exp_check, 'OR', '0', afternoon_tests)
+            self.apply_binary_op_to_list(exp_check, "OR", "0", afternoon_tests)
 
             #   Add an AND to the exp_check so that it requires both a morning class and an afternoon class
-            exp_check.add_token('AND')
+            exp_check.add_token("AND")
         else:
             #   Make the check always true (e.g. students must always have a lunch period)
-            exp_check.add_token('1')
+            exp_check.add_token("1")
 
     def generate_all_constraints(self):
         self.clear_existing_constraints()
         for day in self.days:
-            if not self.days[day]['lunch']: # no lunch timeblocks
+            if not self.days[day]["lunch"]:  # no lunch timeblocks
                 continue
             self.get_lunch_subject(day)
             self.get_lunch_sections(day)
             if self.generate_constraints:
                 self.generate_constraint(day)
-

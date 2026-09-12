@@ -7,7 +7,6 @@ from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 
 
-
 class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
@@ -18,8 +17,18 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
         self.program.program_modules.clear()
 
         # Create two specific modules linked to the program
-        self.mod1 = ProgramModule.objects.create(admin_title="Test Mod 1", module_type="learn", handler="StudentClassRegModule", seq=1)
-        self.mod2 = ProgramModule.objects.create(admin_title="Test Mod 2", module_type="teach", handler="TeacherClassRegModule", seq=2)
+        self.mod1 = ProgramModule.objects.create(
+            admin_title="Test Mod 1",
+            module_type="learn",
+            handler="StudentClassRegModule",
+            seq=1,
+        )
+        self.mod2 = ProgramModule.objects.create(
+            admin_title="Test Mod 2",
+            module_type="teach",
+            handler="TeacherClassRegModule",
+            seq=2,
+        )
 
         self.program.program_modules.add(self.mod1)
         self.program.program_modules.add(self.mod2)
@@ -38,17 +47,14 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
         # Mock the handler class of pmo1 to be locked
         original_class = self.pmo1.__class__
 
-        with mock.patch.object(original_class, 'seq_locked', True):
+        with mock.patch.object(original_class, "seq_locked", True):
             self.client.force_login(self.admin)
-            payload = {
-                "module_id": self.pmo1.id,
-                "seq": 999
-            }
+            payload = {"module_id": self.pmo1.id, "seq": 999}
 
             response = self.client.post(
                 self.base_url + "/update/",
                 data=json.dumps(payload),
-                content_type="application/json"
+                content_type="application/json",
             )
             self.assertEqual(response.status_code, 403)
             data = json.loads(response.content)
@@ -61,7 +67,9 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
 
         original_class = self.pmo1.__class__
 
-        with mock.patch.object(original_class, 'conflicts_with', [self.pmo2.module.handler]):
+        with mock.patch.object(
+            original_class, "conflicts_with", [self.pmo2.module.handler]
+        ):
             # No time overlap
             self.pmo1.start_date = self.past
             self.pmo1.end_date = self.now
@@ -83,7 +91,9 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
 
         original_class = self.pmo1.__class__
 
-        with mock.patch.object(original_class, 'conflicts_with', [self.pmo2.module.handler]):
+        with mock.patch.object(
+            original_class, "conflicts_with", [self.pmo2.module.handler]
+        ):
             # Time overlap
             self.pmo1.start_date = self.past
             self.pmo1.end_date = self.future

@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2024 by the individual contributors
@@ -56,7 +56,7 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
 
     def _make_request(self, tl=None, with_program=True):
         rf = RequestFactory()
-        request = rf.get('/')
+        request = rf.get("/")
         request.user = self.students[0]
         if with_program:
             request.program = self.program
@@ -71,69 +71,69 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
 
     def test_returns_empty_without_program_on_request(self):
         """Tag returns empty dict when request has no program attribute."""
-        request = self._make_request(with_program=False, tl='learn')
-        result = registration_progress({'request': request})
+        request = self._make_request(with_program=False, tl="learn")
+        result = registration_progress({"request": request})
         self.assertEqual(result, {})
 
     def test_returns_empty_without_tl_on_request(self):
         """Tag returns empty dict when request.tl is not set."""
         request = self._make_request()  # no tl
-        result = registration_progress({'request': request})
+        result = registration_progress({"request": request})
         self.assertEqual(result, {})
 
     def test_returns_empty_for_manage_tl(self):
         """Tag returns empty dict for admin/manage tl (not a registration flow)."""
-        request = self._make_request(tl='manage')
-        result = registration_progress({'request': request})
+        request = self._make_request(tl="manage")
+        result = registration_progress({"request": request})
         self.assertEqual(result, {})
 
     def test_returns_empty_when_progress_mode_disabled(self):
         """Tag returns empty dict when progress_mode is 0 (none)."""
         self.scrmi.progress_mode = 0
         self.scrmi.save()
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
+        request = self._make_request(tl="learn")
+        result = registration_progress({"request": request})
         self.assertEqual(result, {})
 
     def test_returns_context_for_learn_tl(self):
         """Tag returns the expected context keys for a student (learn) tl."""
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
-        self.assertIn('modules', result)
-        self.assertIn('scrmi', result)
-        self.assertIn('completedAll', result)
-        self.assertIn('program', result)
-        self.assertIn('extra_steps', result)
-        self.assertEqual(result['extra_steps'], 'learn:extra_steps')
-        self.assertEqual(result['program'], self.program)
-        self.assertEqual(result['scrmi'], self.scrmi)
+        request = self._make_request(tl="learn")
+        result = registration_progress({"request": request})
+        self.assertIn("modules", result)
+        self.assertIn("scrmi", result)
+        self.assertIn("completedAll", result)
+        self.assertIn("program", result)
+        self.assertIn("extra_steps", result)
+        self.assertEqual(result["extra_steps"], "learn:extra_steps")
+        self.assertEqual(result["program"], self.program)
+        self.assertEqual(result["scrmi"], self.scrmi)
 
     def test_returns_correct_extra_steps_for_teach_tl(self):
         """Tag uses 'teach:extra_steps' for the teacher registration tl."""
         crmi = self.program.classregmoduleinfo
         crmi.progress_mode = 1
         crmi.save()
-        request = self._make_request(tl='teach')
-        result = registration_progress({'request': request})
+        request = self._make_request(tl="teach")
+        result = registration_progress({"request": request})
         self.assertNotEqual(result, {})
-        self.assertIn('extra_steps', result)
-        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
+        self.assertIn("extra_steps", result)
+        self.assertEqual(result["extra_steps"], "teach:extra_steps")
 
     def test_completedAll_false_when_required_module_incomplete(self):
         """completedAll is False when a required module has not been completed."""
         # Make StudentAcknowledgementModule required for this program
-        pm = ProgramModule.objects.get(handler='StudentAcknowledgementModule')
+        pm = ProgramModule.objects.get(handler="StudentAcknowledgementModule")
         pmo = ProgramModuleObj.getFromProgModule(self.program, pm)
         pmo.__class__ = ProgramModuleObj
         pmo.required = True
         pmo.save()
 
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
+        request = self._make_request(tl="learn")
+        result = registration_progress({"request": request})
 
-        self.assertIn('completedAll', result)
+        self.assertIn("completedAll", result)
         # student0 has not submitted the acknowledgement, so completedAll should be False
-        self.assertFalse(result['completedAll'])
+        self.assertFalse(result["completedAll"])
 
     def test_completedAll_true_when_no_required_modules(self):
         """completedAll is True when no required modules exist for the program."""
@@ -143,11 +143,11 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
             pmo.required = False
             pmo.save()
 
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
+        request = self._make_request(tl="learn")
+        result = registration_progress({"request": request})
 
-        self.assertIn('completedAll', result)
-        self.assertTrue(result['completedAll'])
+        self.assertIn("completedAll", result)
+        self.assertTrue(result["completedAll"])
 
 
 class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
@@ -163,17 +163,17 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
     """
 
     # Text that appears in the checklist table header (checkboxes.html)
-    CHECKLIST_MARKER = 'Steps for Registration'
+    CHECKLIST_MARKER = "Steps for Registration"
 
     def setUp(self):
         super().setUp()
         self.add_user_profiles()
 
         # Make only StudentAcknowledgementModule required; silence all others
-        ack_pm = ProgramModule.objects.get(handler='StudentAcknowledgementModule')
+        ack_pm = ProgramModule.objects.get(handler="StudentAcknowledgementModule")
         for pmo in self.program.getModules():
             pmo.__class__ = ProgramModuleObj
-            pmo.required = (pmo.module == ack_pm)
+            pmo.required = pmo.module == ack_pm
             pmo.save()
 
         # Enable the required-module redirect flow with the checkboxes UI
@@ -184,12 +184,12 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
 
         # Log in as the first test student
         self.student = self.students[0]
-        self.client.login(username=self.student.username, password='password')
+        self.client.login(username=self.student.username, password="password")
 
     def test_required_module_page_shows_progress_checklist(self):
         """Visiting studentreg with an incomplete required module should
         serve the required module page including the registration checklist."""
-        response = self.client.get('/learn/%s/studentreg' % self.program.url)
+        response = self.client.get("/learn/%s/studentreg" % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.CHECKLIST_MARKER)
 
@@ -197,7 +197,7 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         """When progress_mode is 0, the acknowledgement page has no checklist."""
         self.scrmi.progress_mode = 0
         self.scrmi.save()
-        response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
+        response = self.client.get("/learn/%s/acknowledgement" % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.CHECKLIST_MARKER)
 
@@ -209,12 +209,12 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.scrmi.force_show_required_modules = False
         self.scrmi.save()
         # Direct visit to studentreg now shows the mainpage (no redirect)
-        response = self.client.get('/learn/%s/studentreg' % self.program.url)
+        response = self.client.get("/learn/%s/studentreg" % self.program.url)
         self.assertEqual(response.status_code, 200)
         # The mainpage has its own checkboxes section (not from module_base.html)
         self.assertContains(response, self.CHECKLIST_MARKER)
         # Direct visit to the required module page also shows the checklist
-        ack_response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
+        ack_response = self.client.get("/learn/%s/acknowledgement" % self.program.url)
         self.assertEqual(ack_response.status_code, 200)
         self.assertContains(ack_response, self.CHECKLIST_MARKER)
 
@@ -222,7 +222,7 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         """When progress_mode is 2 (progress bar), the checkbox table is absent."""
         self.scrmi.progress_mode = 2
         self.scrmi.save()
-        response = self.client.get('/learn/%s/studentreg' % self.program.url)
+        response = self.client.get("/learn/%s/studentreg" % self.program.url)
         self.assertEqual(response.status_code, 200)
         # Progress bar mode: no "Steps for Registration" table header
         self.assertNotContains(response, self.CHECKLIST_MARKER)

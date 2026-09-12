@@ -5,7 +5,6 @@ from esp.users.models import ESPUser
 
 
 class UserGroupModuleTests(TestCase):
-
     def test_create_new_group_and_add_users(self):
         user1 = ESPUser.objects.create(username="user1")
         user2 = ESPUser.objects.create(username="user2")

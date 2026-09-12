@@ -20,41 +20,44 @@ import sys
 import subprocess
 from io import open
 
-endings = {'lf': '\n', 'cr': '\r', 'crlf': '\r\n'}
+endings = {"lf": "\n", "cr": "\r", "crlf": "\r\n"}
+
 
 def detect_line_ending(path):
     crlf, lf, cr = 0, 0, 0
     file = open(path, "r")
     for line in file:
-        if line.endswith('\r\n'):
+        if line.endswith("\r\n"):
             crlf += 1
-        elif line.endswith('\r'):
+        elif line.endswith("\r"):
             cr += 1
-        elif line.endswith('\n'):
+        elif line.endswith("\n"):
             lf += 1
     file.close()
     biggest = max(crlf, lf, cr)
     if lf == biggest:
-        return 'lf'
+        return "lf"
     if crlf == biggest:
-        return 'crlf'
-    return 'cr'
+        return "crlf"
+    return "cr"
+
 
 def convert_line_ending(path, ending):
-    data = ''
+    data = ""
     file = open(path, "r")
     for line in file:
-        if line.endswith('\r\n'):
+        if line.endswith("\r\n"):
             line = line[:-2]
-        elif line.endswith('\r'):
+        elif line.endswith("\r"):
             line = line[:-1]
-        elif line.endswith('\n'):
+        elif line.endswith("\n"):
             line = line[:-1]
         data += line + endings[ending]
     file.close()
     file = open(path, "w")
     file.write(data)
     file.close()
+
 
 local_path = sys.argv[1]
 base_path = sys.argv[2]

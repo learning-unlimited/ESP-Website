@@ -10,7 +10,7 @@ def migrate_file_extensions(apps, schema_editor):
     Run the lowercase_file_extensions management command to rename
     existing files with uppercase extensions to lowercase.
     """
-    call_command('lowercase_file_extensions')
+    call_command("lowercase_file_extensions")
 
 
 def reverse_migration(apps, schema_editor):
@@ -23,10 +23,12 @@ def reverse_migration(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tagdict', '0001_initial'),  # command iterates all models; Tag table must exist
-        ('web', '0002_auto_20210526_1921'),
+        (
+            "tagdict",
+            "0001_initial",
+        ),  # command iterates all models; Tag table must exist
+        ("web", "0002_auto_20210526_1921"),
     ]
 
     operations = [

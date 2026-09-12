@@ -2,38 +2,44 @@
 
 Mostly reflects the database on the rest of the website, but having separate
 models should be a bit more robust to changes in website structure and should
-also be more performant.  """
+also be more performant."""
 
 import bisect
 from functools import total_ordering
 import json
 
 import esp.program.controllers.autoscheduler.config as config
-from esp.program.controllers.autoscheduler.consistency_checks import \
-        ConsistencyChecker
-from esp.program.controllers.autoscheduler.constraints import \
-        CompositeConstraint
+from esp.program.controllers.autoscheduler.consistency_checks import ConsistencyChecker
+from esp.program.controllers.autoscheduler.constraints import CompositeConstraint
 from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 
 
 class AS_Schedule(object):
-    def __init__(self, program=None, timeslots=None, class_sections=None,
-                 teachers=None, classrooms=None, lunch_timeslots=None,
-                 required_resource_criteria=None,
-                 optional_resource_criteria=None, constraints=None,
-                 exclude_locked=True):
+    def __init__(
+        self,
+        program=None,
+        timeslots=None,
+        class_sections=None,
+        teachers=None,
+        classrooms=None,
+        lunch_timeslots=None,
+        required_resource_criteria=None,
+        optional_resource_criteria=None,
+        constraints=None,
+        exclude_locked=True,
+    ):
         """Argument types:
-         - program is a Program object
-         - timeslots is a sorted list of AS_Timeslots
-         - class_sections is a dict of {section_id: AS_ClassSection}
-         - teachers is a dict of {teacher_id: AS_Teacher}
-         - classrooms is a dict of {classroom_name: AS_Classroom}
-         - lunch_timeslots is a list of (lunch_start, lunch_end).
-         - constraints is a subclass of BaseConstraint (e.g.
-           CompositeConstraint)
-         - exclude_locked is a boolean; it doesn't do anything here,
-                and is only for use in db_interface.save().
+        - program is a Program object
+        - timeslots is a sorted list of AS_Timeslots
+        - class_sections is a dict of {section_id: AS_ClassSection}
+        - teachers is a dict of {teacher_id: AS_Teacher}
+        - classrooms is a dict of {classroom_name: AS_Classroom}
+        - lunch_timeslots is a list of (lunch_start, lunch_end).
+        - constraints is a subclass of BaseConstraint (e.g.
+          CompositeConstraint)
+        - exclude_locked is a boolean; it doesn't do anything here,
+               and is only for use in db_interface.save().
         """
         self.program = program
         self.timeslots = timeslots if timeslots is not None else []
@@ -41,8 +47,7 @@ class AS_Schedule(object):
         # Maps from start and end times to a timeslot.
         self.timeslot_dict = self.build_timeslot_dict()
         # Dict of class sections by ID
-        self.class_sections = class_sections if class_sections is not None \
-            else {}
+        self.class_sections = class_sections if class_sections is not None else {}
         # Dict of teachers by ID
         self.teachers = teachers if teachers is not None else {}
         # Dict of classrooms by name
@@ -50,11 +55,13 @@ class AS_Schedule(object):
         # A dict of lunch timeslots by day, i.e maps from (year, month, day)
         # to a list of timeslots. Timeslots should also be in timeslot_dict.
         self.lunch_timeslots = self.build_lunch_timeslots(
-                lunch_timeslots if lunch_timeslots is not None else [])
+            lunch_timeslots if lunch_timeslots is not None else []
+        )
         # We have constraints here more or less as an extra set of consistency
         # checks.
-        self.constraints = constraints if constraints is not None else \
-            CompositeConstraint([])
+        self.constraints = (
+            constraints if constraints is not None else CompositeConstraint([])
+        )
 
         self.exclude_locked = exclude_locked
 
@@ -66,14 +73,13 @@ class AS_Schedule(object):
 
     def build_lunch_timeslots(self, lunch_timeslots):
         timeslots_by_day = {}
-        for (start, end) in sorted(lunch_timeslots):
+        for start, end in sorted(lunch_timeslots):
             if (start, end) not in self.timeslot_dict:
                 continue
             day = (start.year, start.month, start.day)
             if day not in timeslots_by_day:
                 timeslots_by_day[day] = []
-            assert (end.year, end.month, end.day) == day, \
-                "Timeslot spans multiple days"
+            assert (end.year, end.month, end.day) == day, "Timeslot spans multiple days"
             timeslots_by_day[day].append(self.timeslot_dict[(start, end)])
         return timeslots_by_day
 
@@ -84,16 +90,27 @@ class AS_Schedule(object):
         violation = self.constraints.check_schedule(self)
         if violation is not None:
             raise SchedulingError(
-                (f"Schedule violated constraints: {violation}. If this is intended, "
-                 "consider locking the offending class(es)."))
+                (
+                    f"Schedule violated constraints: {violation}. If this is intended, "
+                    "consider locking the offending class(es)."
+                )
+            )
 
 
 class AS_ClassSection(object):
-    def __init__(self, teachers, duration, capacity,
-                 category, assigned_roomslots,
-                 section_id, parent_class_id,
-                 grade_min=7, grade_max=12,
-                 resource_requests=None):
+    def __init__(
+        self,
+        teachers,
+        duration,
+        capacity,
+        category,
+        assigned_roomslots,
+        section_id,
+        parent_class_id,
+        grade_min=7,
+        grade_max=12,
+        resource_requests=None,
+    ):
         self.id = section_id
         self.parent_class = parent_class_id
         # Duration, in hours.
@@ -114,8 +131,9 @@ class AS_ClassSection(object):
             for teacher in self.teachers:
                 teacher.add_availability(roomslot.timeslot)
         # Dict from restype names to AS_Restypes requested
-        self.resource_requests = resource_requests \
-            if resource_requests is not None else {}
+        self.resource_requests = (
+            resource_requests if resource_requests is not None else {}
+        )
 
         # A hash of the initial state.
         self.recompute_hash()
@@ -129,14 +147,12 @@ class AS_ClassSection(object):
 
     def assign_roomslots(self, roomslots, clear_existing=False):
         if not clear_existing:
-            assert self.assigned_roomslots == [], \
-                    "Already assigned to roomslots"
+            assert self.assigned_roomslots == [], "Already assigned to roomslots"
         else:
             self.clear_roomslots()
         self.assigned_roomslots = sorted(roomslots, key=lambda r: r.timeslot)
         for roomslot in self.assigned_roomslots:
-            assert roomslot.assigned_section is None, \
-                    "Roomslot is occupied"
+            assert roomslot.assigned_section is None, "Roomslot is occupied"
             roomslot.assigned_section = self
 
     def clear_roomslots(self):
@@ -154,23 +170,24 @@ class AS_ClassSection(object):
         """Creates a unique string based on the timeslots and rooms assigned to
         this section. It's not actually a hash anymore, but renaming sounds
         like a pain"""
-        meeting_times = sorted([(str(e.timeslot.start), str(e.timeslot.end))
-                                for e in self.assigned_roomslots])
-        rooms = sorted(list(set(r.room.name for r in
-                                self.assigned_roomslots)))
+        meeting_times = sorted(
+            [
+                (str(e.timeslot.start), str(e.timeslot.end))
+                for e in self.assigned_roomslots
+            ]
+        )
+        rooms = sorted(list(set(r.room.name for r in self.assigned_roomslots)))
         return json.dumps([meeting_times, rooms])
 
 
 class AS_Teacher(object):
     def __init__(self, availability, teacher_id, is_admin=False):
         self.id = teacher_id
-        self.availability = availability if availability is not None \
-            else []
+        self.availability = availability if availability is not None else []
         # Dict from section ID to section
         self.taught_sections = {}
         self.is_admin = is_admin
-        self.availability_dict = {
-            (t.start, t.end): t for t in self.availability}
+        self.availability_dict = {(t.start, t.end): t for t in self.availability}
 
     def add_availability(self, timeslot):
         if (timeslot.start, timeslot.end) not in self.availability_dict:
@@ -179,24 +196,24 @@ class AS_Teacher(object):
 
 
 class AS_Classroom(object):
-    def __init__(self, name, capacity, available_timeslots,
-                 furnishings=None):
+    def __init__(self, name, capacity, available_timeslots, furnishings=None):
         self.name = name
         self.capacity = capacity
         # Availabilities as roomslots, sorted by the associated timeslot.
         # Does not account for sections the scheduler knows are scheduled.
         # Note that if you modify this, you need to invalidate roomslot
         # next-roomslot caching.
-        self.availability = [AS_RoomSlot(timeslot, self) for timeslot in
-                             sorted(available_timeslots)]
+        self.availability = [
+            AS_RoomSlot(timeslot, self) for timeslot in sorted(available_timeslots)
+        ]
         # Dict of resources available in the classroom, mapping from the
         # resource name to AS_Restype.
         self.furnishings = furnishings if furnishings is not None else {}
-        self.availability_dict = {(r.timeslot.start, r.timeslot.end): r
-                                  for r in self.availability}
+        self.availability_dict = {
+            (r.timeslot.start, r.timeslot.end): r for r in self.availability
+        }
         if len(self.availability_dict) != len(self.availability):
-            raise SchedulingError(
-                f"Room {name} has duplicate resources")
+            raise SchedulingError(f"Room {name} has duplicate resources")
 
     @util.timed_func("AS_Classroom_get_roomslots_by_duration")
     @util.memoize
@@ -211,8 +228,9 @@ class AS_Classroom(object):
         index_of_roomslot = start_roomslot.index()
         start_time = start_roomslot.timeslot.start
         end_time = start_roomslot.timeslot.end
-        while duration - util.hours_difference(start_time, end_time)\
-                > config.DELTA_TIME:
+        while (
+            duration - util.hours_difference(start_time, end_time) > config.DELTA_TIME
+        ):
             index_of_roomslot += 1
             if index_of_roomslot >= len(classroom_availability):
                 break
@@ -239,17 +257,18 @@ class AS_Classroom(object):
 @total_ordering
 class AS_Timeslot(object):
     """A timeslot, not specific to any teacher or class or room."""
+
     def __init__(self, start, end, event_id, associated_roomslots=None):
         self.id = event_id
         self.start = start
         self.end = end
         self.duration = util.hours_difference(start, end)
         # AS_RoomSlots during this timeslot
-        self.associated_roomslots = associated_roomslots \
-            if associated_roomslots is not None else set()
+        self.associated_roomslots = (
+            associated_roomslots if associated_roomslots is not None else set()
+        )
         if self.duration < config.DELTA_TIME:
-            raise SchedulingError(
-                f"Timeslot duration {self.duration} is too short")
+            raise SchedulingError(f"Timeslot duration {self.duration} is too short")
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
@@ -262,12 +281,12 @@ class AS_Timeslot(object):
 
     @staticmethod
     def overlaps(timeslot1, timeslot2):
-        return (timeslot1.start < timeslot2.end) \
-                and (timeslot2.start < timeslot1.end)
+        return (timeslot1.start < timeslot2.end) and (timeslot2.start < timeslot1.end)
 
 
 class AS_RoomSlot(object):
     """A specific timeslot where a specific room is available."""
+
     def __init__(self, timeslot, room):
         self.timeslot = timeslot
         timeslot.associated_roomslots.add(self)
@@ -296,8 +315,7 @@ class AS_RoomSlot(object):
             if idx == len(self.room.availability) - 1:
                 self.next_roomslot = None
             else:
-                self.next_roomslot = \
-                    self.room.availability[idx + 1]
+                self.next_roomslot = self.room.availability[idx + 1]
             self._next_is_cached = True
         return self.next_roomslot
 

@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2024 by the individual contributors
@@ -50,41 +50,45 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
     form-based event_signup GET/POST view."""
 
     def setUp(self, *args, **kwargs):
-        kwargs.update({
-            'num_timeslots': 3,
-            'timeslot_length': 50,
-            'timeslot_gap': 10,
-            'num_teachers': 2,
-            'classes_per_teacher': 1,
-            'sections_per_class': 1,
-        })
+        kwargs.update(
+            {
+                "num_timeslots": 3,
+                "timeslot_length": 50,
+                "timeslot_gap": 10,
+                "num_teachers": 2,
+                "classes_per_teacher": 1,
+                "sections_per_class": 1,
+            }
+        )
         super().setUp(*args, **kwargs)
 
-        pm = ProgramModule.objects.get(handler='TeacherEventsModule', module_type='teach')
+        pm = ProgramModule.objects.get(
+            handler="TeacherEventsModule", module_type="teach"
+        )
         self.module = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.module.user = self.teachers[0]
 
         self.training_type = EventType.objects.create(
-            description='Teacher Training',
+            description="Teacher Training",
             is_teacher_type=True,
         )
 
         self.interview_type = EventType.objects.create(
-            description='Teacher Interview',
+            description="Teacher Interview",
             is_teacher_type=True,
         )
 
-        self.teacher_group, _ = Group.objects.get_or_create(name='Teacher')
+        self.teacher_group, _ = Group.objects.get_or_create(name="Teacher")
 
         start = datetime.datetime.now() + datetime.timedelta(days=7)
-        end   = start + datetime.timedelta(hours=1)
+        end = start + datetime.timedelta(hours=1)
         self.training_event = Event.objects.create(
             program=self.program,
             event_type=self.training_type,
             start=start,
             end=end,
-            short_description='Training slot 1',
-            description='Training slot 1',
+            short_description="Training slot 1",
+            description="Training slot 1",
         )
 
         self.interview_event = Event.objects.create(
@@ -92,17 +96,18 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             event_type=self.interview_type,
             start=start + datetime.timedelta(hours=2),
             end=start + datetime.timedelta(hours=3),
-            short_description='Interview slot 1',
-            description='Interview slot 1',
+            short_description="Interview slot 1",
+            description="Interview slot 1",
         )
 
-        self.teacher  = self.teachers[0]
+        self.teacher = self.teachers[0]
         self.teacher2 = self.teachers[1]
 
     def tearDown(self):
         UserAvailability.objects.filter(event__program=self.program).delete()
-        Event.objects.filter(program=self.program,
-                              event_type__is_teacher_type=True).delete()
+        Event.objects.filter(
+            program=self.program, event_type__is_teacher_type=True
+        ).delete()
         EventType.objects.filter(is_teacher_type=True).delete()
         super().tearDown()
 
@@ -110,12 +115,13 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         self.assertTrue(self.module.isStep())
 
     def test_isStep_false_when_no_events(self):
-        Event.objects.filter(program=self.program,
-                              event_type__is_teacher_type=True).delete()
+        Event.objects.filter(
+            program=self.program, event_type__is_teacher_type=True
+        ).delete()
         self.assertFalse(self.module.isStep())
 
     def test_getTimes_returns_correct_events(self):
-        training_times  = self.module.getTimes(self.training_type)
+        training_times = self.module.getTimes(self.training_type)
         interview_times = self.module.getTimes(self.interview_type)
         self.assertIn(self.training_event, training_times)
         self.assertNotIn(self.interview_event, training_times)
@@ -124,7 +130,7 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
 
     def test_getTimes_empty_when_no_events_of_type(self):
         other_type = EventType.objects.create(
-            description='Other Type',
+            description="Other Type",
             is_teacher_type=True,
         )
         self.assertFalse(self.module.getTimes(other_type).exists())
@@ -190,27 +196,28 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         self.assertTrue(self.module.isCompleted(self.teacher))
 
     def test_isCompleted_true_when_no_events_exist(self):
-        Event.objects.filter(program=self.program,
-                              event_type__is_teacher_type=True).delete()
+        Event.objects.filter(
+            program=self.program, event_type__is_teacher_type=True
+        ).delete()
         self.assertTrue(self.module.isCompleted(self.teacher))
 
     def test_event_signup_get_renders_for_eligible_teacher(self):
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
+            self.client.login(username=self.teacher.username, password="password"),
             "Couldn't log in as teacher %s" % self.teacher.username,
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(
             response,
-            'program/modules/teachereventsmodule/event_signup.html',
+            "program/modules/teachereventsmodule/event_signup.html",
         )
         self.assertIn(
-            ('event_type_%d' % self.training_type.id).encode(),
+            ("event_type_%d" % self.training_type.id).encode(),
             response.content,
         )
         self.assertIn(
-            ('event_type_%d' % self.interview_type.id).encode(),
+            ("event_type_%d" % self.interview_type.id).encode(),
             response.content,
         )
 
@@ -218,38 +225,40 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
         self.client.logout()
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 302)
-        self.assertIn('next=', response['Location'])
+        self.assertIn("next=", response["Location"])
 
     def test_event_signup_get_blocked_for_student(self):
         student = self.students[0]
         self.assertTrue(
-            self.client.login(username=student.username, password='password'),
+            self.client.login(username=student.username, password="password"),
             "Couldn't log in as student %s" % student.username,
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'errors/program/notateacher.html')
+        self.assertTemplateUsed(response, "errors/program/notateacher.html")
 
     def test_event_signup_post_creates_useravailability(self):
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
+            self.client.login(username=self.teacher.username, password="password"),
             "Couldn't log in as teacher %s" % self.teacher.username,
         )
         post_data = {
-            'event_type_%d' % self.training_type.id:  self.training_event.id,
-            'event_type_%d' % self.interview_type.id: self.interview_event.id,
+            "event_type_%d" % self.training_type.id: self.training_event.id,
+            "event_type_%d" % self.interview_type.id: self.interview_event.id,
         }
         response = self.client.post(self.module.get_full_path(), data=post_data)
         self.assertEqual(response.status_code, 302)
         self.assertTrue(
             UserAvailability.objects.filter(
-                user=self.teacher, event=self.training_event,
+                user=self.teacher,
+                event=self.training_event,
             ).exists(),
             "Expected UserAvailability for training event after POST",
         )
         self.assertTrue(
             UserAvailability.objects.filter(
-                user=self.teacher, event=self.interview_event,
+                user=self.teacher,
+                event=self.interview_event,
             ).exists(),
             "Expected UserAvailability for interview event after POST",
         )
@@ -261,34 +270,43 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             event_type=self.training_type,
             start=start2,
             end=start2 + datetime.timedelta(hours=1),
-            short_description='Training slot 2',
-            description='Training slot 2',
+            short_description="Training slot 2",
+            description="Training slot 2",
         )
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
+            self.client.login(username=self.teacher.username, password="password"),
         )
-        self.client.post(self.module.get_full_path(), data={
-            'event_type_%d' % self.training_type.id:  self.training_event.id,
-            'event_type_%d' % self.interview_type.id: '',
-        })
+        self.client.post(
+            self.module.get_full_path(),
+            data={
+                "event_type_%d" % self.training_type.id: self.training_event.id,
+                "event_type_%d" % self.interview_type.id: "",
+            },
+        )
         self.assertTrue(
             UserAvailability.objects.filter(
-                user=self.teacher, event=self.training_event,
+                user=self.teacher,
+                event=self.training_event,
             ).exists()
         )
-        self.client.post(self.module.get_full_path(), data={
-            'event_type_%d' % self.training_type.id:  training_event_2.id,
-            'event_type_%d' % self.interview_type.id: '',
-        })
+        self.client.post(
+            self.module.get_full_path(),
+            data={
+                "event_type_%d" % self.training_type.id: training_event_2.id,
+                "event_type_%d" % self.interview_type.id: "",
+            },
+        )
         self.assertFalse(
             UserAvailability.objects.filter(
-                user=self.teacher, event=self.training_event,
+                user=self.teacher,
+                event=self.training_event,
             ).exists(),
             "Old training signup should have been removed on re-signup",
         )
         self.assertTrue(
             UserAvailability.objects.filter(
-                user=self.teacher, event=training_event_2,
+                user=self.teacher,
+                event=training_event_2,
             ).exists(),
             "New training signup should exist after re-signup",
         )
@@ -301,11 +319,11 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             role=self.teacher_group,
         )
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
+            self.client.login(username=self.teacher.username, password="password"),
         )
         post_data = {
-            'event_type_%d' % self.training_type.id:  '',
-            'event_type_%d' % self.interview_type.id: '',
+            "event_type_%d" % self.training_type.id: "",
+            "event_type_%d" % self.interview_type.id: "",
         }
         response = self.client.post(self.module.get_full_path(), data=post_data)
         self.assertEqual(response.status_code, 302)
@@ -324,7 +342,7 @@ class TeacherEventsModuleTest(ProgramFrameworkTest):
             role=self.teacher_group,
         )
         self.assertTrue(
-            self.client.login(username=self.teacher.username, password='password'),
+            self.client.login(username=self.teacher.username, password="password"),
         )
         response = self.client.get(self.module.get_full_path())
         self.assertEqual(response.status_code, 200)
@@ -344,26 +362,24 @@ class TeacherEventsCalendarDataTest(ProgramFrameworkTest):
 
         # Get or create the ProgramModule backing record
         self.module_model, _ = ProgramModule.objects.get_or_create(
-            handler='TeacherEventsModule',
+            handler="TeacherEventsModule",
             defaults={
-                'link_title': 'Teacher Events',
-                'admin_title': 'Teacher Events Admin',
-                'module_type': 'teach',
-                'seq': 20
-            }
+                "link_title": "Teacher Events",
+                "admin_title": "Teacher Events Admin",
+                "module_type": "teach",
+                "seq": 20,
+            },
         )
         # Create the concrete module instance attached to this program
         self.te_module = TeacherEventsModule.objects.create(
-            program=self.program,
-            module=self.module_model,
-            seq=20
+            program=self.program, module=self.module_model, seq=20
         )
 
         self.teacher = self.teachers[0]
         self.event_types = EventType.teacher_event_types()
 
     def _url(self):
-        return '/teach/%s/calendar_data' % self.program.getUrlBase()
+        return "/teach/%s/calendar_data" % self.program.getUrlBase()
 
     def test_calendar_data_anonymous_gets_401(self):
         """Anonymous users should receive a 401 JSON error (not an HTML redirect)."""
@@ -371,59 +387,59 @@ class TeacherEventsCalendarDataTest(ProgramFrameworkTest):
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 401)
         data = response.json()
-        self.assertIn('error', data)
+        self.assertIn("error", data)
 
     def test_calendar_data_student_gets_403(self):
         """Non-teacher authenticated users should receive a 403 JSON error."""
-        self.client.login(username=self.students[0].username, password='password')
+        self.client.login(username=self.students[0].username, password="password")
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 403)
         data = response.json()
-        self.assertIn('error', data)
+        self.assertIn("error", data)
 
     def test_calendar_data_content(self):
         """Test the JSON structure and event status flags."""
-        self.client.login(username=self.teacher.username, password='password')
+        self.client.login(username=self.teacher.username, password="password")
 
         now = timezone.now()
 
         # 1. Past training event
         past_event = Event.objects.create(
-            name='Past Training',
+            name="Past Training",
             start=now - timedelta(days=1),
             end=now - timedelta(hours=23),
-            short_description='Past',
-            description='Past Training',
-            event_type=self.event_types['training'],
-            program=self.program
+            short_description="Past",
+            description="Past Training",
+            event_type=self.event_types["training"],
+            program=self.program,
         )
 
         # 2. Future available interview slot
         future_event = Event.objects.create(
-            name='Future Interview',
+            name="Future Interview",
             start=now + timedelta(days=1),
             end=now + timedelta(days=1, hours=1),
-            short_description='Future',
-            description='Future Interview',
-            event_type=self.event_types['interview'],
-            program=self.program
+            short_description="Future",
+            description="Future Interview",
+            event_type=self.event_types["interview"],
+            program=self.program,
         )
 
         # 3. Full interview slot (taken by another teacher)
         other_teacher = self.teachers[1]
         full_event = Event.objects.create(
-            name='Full Interview',
+            name="Full Interview",
             start=now + timedelta(days=2),
             end=now + timedelta(days=2, hours=1),
-            short_description='Full',
-            description='Full Interview',
-            event_type=self.event_types['interview'],
-            program=self.program
+            short_description="Full",
+            description="Full Interview",
+            event_type=self.event_types["interview"],
+            program=self.program,
         )
         UserAvailability.objects.create(
             user=other_teacher,
             event=full_event,
-            role=self.te_module.availability_role()
+            role=self.te_module.availability_role(),
         )
 
         response = self.client.get(self._url())
@@ -433,62 +449,63 @@ class TeacherEventsCalendarDataTest(ProgramFrameworkTest):
         self.assertIsInstance(data, list)
 
         # Map by id for easy lookup
-        items_by_id = {item['id']: item for item in data}
+        items_by_id = {item["id"]: item for item in data}
 
         self.assertIn(past_event.id, items_by_id)
         self.assertIn(future_event.id, items_by_id)
         self.assertIn(full_event.id, items_by_id)
 
-        self.assertEqual(items_by_id[past_event.id]['extendedProps']['status'], 'past')
-        self.assertEqual(items_by_id[future_event.id]['extendedProps']['status'], 'available')
-        self.assertEqual(items_by_id[full_event.id]['extendedProps']['status'], 'full')
+        self.assertEqual(items_by_id[past_event.id]["extendedProps"]["status"], "past")
+        self.assertEqual(
+            items_by_id[future_event.id]["extendedProps"]["status"], "available"
+        )
+        self.assertEqual(items_by_id[full_event.id]["extendedProps"]["status"], "full")
 
         # Check required keys are present in each event
         for item in data:
-            self.assertIn('id', item)
-            self.assertIn('title', item)
-            self.assertIn('start', item)
-            self.assertIn('end', item)
-            self.assertIn('color', item)
-            self.assertIn('extendedProps', item)
-            self.assertIn('event_type_id', item['extendedProps'])
+            self.assertIn("id", item)
+            self.assertIn("title", item)
+            self.assertIn("start", item)
+            self.assertIn("end", item)
+            self.assertIn("color", item)
+            self.assertIn("extendedProps", item)
+            self.assertIn("event_type_id", item["extendedProps"])
 
     def test_calendar_data_is_mine(self):
         """Events the current teacher has signed up for should be marked 'mine'."""
-        self.client.login(username=self.teacher.username, password='password')
+        self.client.login(username=self.teacher.username, password="password")
 
         now = timezone.now()
         my_event = Event.objects.create(
-            name='My Training',
+            name="My Training",
             start=now + timedelta(days=3),
             end=now + timedelta(days=3, hours=1),
-            short_description='Mine',
-            description='My Training',
-            event_type=self.event_types['training'],
-            program=self.program
+            short_description="Mine",
+            description="My Training",
+            event_type=self.event_types["training"],
+            program=self.program,
         )
         UserAvailability.objects.create(
-            user=self.teacher,
-            event=my_event,
-            role=self.te_module.availability_role()
+            user=self.teacher, event=my_event, role=self.te_module.availability_role()
         )
 
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 200)
         data = response.json()
 
-        my_item = next((item for item in data if item['id'] == my_event.id), None)
-        self.assertIsNotNone(my_item, 'Event signed up for by teacher not found in response')
-        self.assertEqual(my_item['extendedProps']['status'], 'mine')
-        self.assertEqual(my_item['color'], '#28a745')
+        my_item = next((item for item in data if item["id"] == my_event.id), None)
+        self.assertIsNotNone(
+            my_item, "Event signed up for by teacher not found in response"
+        )
+        self.assertEqual(my_item["extendedProps"]["status"], "mine")
+        self.assertEqual(my_item["color"], "#28a745")
 
     def test_calendar_data_empty(self):
         """When no teacher events exist, the response should be an empty list."""
         Event.objects.filter(
-            program=self.program,
-            event_type__is_teacher_type=True
+            program=self.program, event_type__is_teacher_type=True
         ).delete()
-        self.client.login(username=self.teacher.username, password='password')
+        self.client.login(username=self.teacher.username, password="password")
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 200)
         data = response.json()

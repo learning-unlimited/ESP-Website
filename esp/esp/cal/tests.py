@@ -5,6 +5,7 @@ Source: esp/esp/cal/models.py
 Tests EventType and Event models including duration, comparison operators,
 and static utility methods (total_length, contiguous, collapse, group_contiguous).
 """
+
 from datetime import datetime, timedelta
 
 from django.contrib.auth.models import Group
@@ -14,7 +15,14 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 
 
 def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -25,18 +33,18 @@ class EventTypeTest(TestCase):
         install()
 
     def test_str(self):
-        et = EventType.objects.get(description='Class Time Block')
-        self.assertEqual(str(et), 'Class Time Block')
+        et = EventType.objects.get(description="Class Time Block")
+        self.assertEqual(str(et), "Class Time Block")
 
     def test_get_from_desc(self):
-        et = EventType.get_from_desc('Teacher Interview')
-        self.assertEqual(et.description, 'Teacher Interview')
+        et = EventType.get_from_desc("Teacher Interview")
+        self.assertEqual(et.description, "Teacher Interview")
 
     def test_teacher_event_types(self):
         result = EventType.teacher_event_types()
-        self.assertIn('interview', result)
-        self.assertIn('training', result)
-        self.assertEqual(result['interview'].description, 'Teacher Interview')
+        self.assertIn("interview", result)
+        self.assertIn("training", result)
+        self.assertEqual(result["interview"].description, "Teacher Interview")
 
     def test_install_idempotent(self):
         count_before = EventType.objects.count()
@@ -50,20 +58,20 @@ class EventTest(TestCase):
         super().setUp()
         _setup_roles()
         install()
-        self.event_type = EventType.objects.get(description='Class Time Block')
+        self.event_type = EventType.objects.get(description="Class Time Block")
         self.start = datetime(2025, 6, 15, 9, 0)
         self.end = datetime(2025, 6, 15, 10, 30)
         self.event = Event.objects.create(
             start=self.start,
             end=self.end,
-            short_description='Test class',
-            description='A test class event',
-            name='Test Event',
+            short_description="Test class",
+            description="A test class event",
+            name="Test Event",
             event_type=self.event_type,
         )
 
     def test_title(self):
-        self.assertEqual(self.event.title(), 'Test Event')
+        self.assertEqual(self.event.title(), "Test Event")
 
     def test_duration(self):
         dur = self.event.duration()
@@ -83,33 +91,33 @@ class EventTest(TestCase):
 
     def test_duration_str(self):
         result = self.event.duration_str()
-        self.assertEqual(result, '1 hr 30 min')
+        self.assertEqual(result, "1 hr 30 min")
 
     def test_str(self):
         result = str(self.event)
-        self.assertIn('Sun', result)  # June 15, 2025 is a Sunday
+        self.assertIn("Sun", result)  # June 15, 2025 is a Sunday
 
     def test_short_time(self):
         result = self.event.short_time()
-        self.assertIn('9', result)
-        self.assertIn('AM', result)
+        self.assertIn("9", result)
+        self.assertIn("AM", result)
 
     def test_pretty_time(self):
         result = self.event.pretty_time()
-        self.assertIn('Sun', result)
+        self.assertIn("Sun", result)
 
     def test_pretty_time_with_date(self):
         result = self.event.pretty_time_with_date()
-        self.assertIn('Jun', result)
+        self.assertIn("Jun", result)
 
     def test_pretty_date(self):
         result = self.event.pretty_date()
-        self.assertIn('Sunday', result)
-        self.assertIn('June', result)
+        self.assertIn("Sunday", result)
+        self.assertIn("June", result)
 
     def test_pretty_start_time(self):
         result = self.event.pretty_start_time()
-        self.assertIn('Sun', result)
+        self.assertIn("Sun", result)
 
     def test_parent_program_none(self):
         self.assertIsNone(self.event.parent_program())
@@ -120,21 +128,21 @@ class EventComparisonTest(TestCase):
         super().setUp()
         _setup_roles()
         install()
-        self.event_type = EventType.objects.get(description='Class Time Block')
+        self.event_type = EventType.objects.get(description="Class Time Block")
         self.early = Event.objects.create(
             start=datetime(2025, 6, 15, 9, 0),
             end=datetime(2025, 6, 15, 10, 0),
-            short_description='Early',
-            description='',
-            name='Early',
+            short_description="Early",
+            description="",
+            name="Early",
             event_type=self.event_type,
         )
         self.late = Event.objects.create(
             start=datetime(2025, 6, 15, 11, 0),
             end=datetime(2025, 6, 15, 12, 0),
-            short_description='Late',
-            description='',
-            name='Late',
+            short_description="Late",
+            description="",
+            name="Late",
             event_type=self.event_type,
         )
 
@@ -148,9 +156,9 @@ class EventComparisonTest(TestCase):
         same = Event.objects.create(
             start=self.early.start,
             end=datetime(2025, 6, 15, 10, 30),
-            short_description='Same start',
-            description='',
-            name='Same',
+            short_description="Same start",
+            description="",
+            name="Same",
             event_type=self.event_type,
         )
         self.assertEqual(self.early, same)
@@ -173,15 +181,15 @@ class EventStaticMethodsTest(TestCase):
         super().setUp()
         _setup_roles()
         install()
-        self.event_type = EventType.objects.get(description='Class Time Block')
+        self.event_type = EventType.objects.get(description="Class Time Block")
         self.events = []
         for hour in [9, 10, 11, 14]:
             ev = Event.objects.create(
                 start=datetime(2025, 6, 15, hour, 0),
                 end=datetime(2025, 6, 15, hour, 50),
-                short_description='',
-                description='',
-                name=f'Event {hour}',
+                short_description="",
+                description="",
+                name=f"Event {hour}",
                 event_type=self.event_type,
             )
             self.events.append(ev)
@@ -215,19 +223,31 @@ class EventStaticMethodsTest(TestCase):
 
     def test_collapse(self):
         # Create two overlapping events
-        e1 = Event(start=datetime(2025, 6, 15, 9, 0), end=datetime(2025, 6, 15, 10, 0),
-                   event_type=self.event_type)
-        e2 = Event(start=datetime(2025, 6, 15, 10, 0), end=datetime(2025, 6, 15, 11, 0),
-                   event_type=self.event_type)
+        e1 = Event(
+            start=datetime(2025, 6, 15, 9, 0),
+            end=datetime(2025, 6, 15, 10, 0),
+            event_type=self.event_type,
+        )
+        e2 = Event(
+            start=datetime(2025, 6, 15, 10, 0),
+            end=datetime(2025, 6, 15, 11, 0),
+            event_type=self.event_type,
+        )
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 1)
         self.assertEqual(collapsed[0].start, e1.start)
         self.assertEqual(collapsed[0].end, e2.end)
 
     def test_collapse_non_overlapping(self):
-        e1 = Event(start=datetime(2025, 6, 15, 9, 0), end=datetime(2025, 6, 15, 10, 0),
-                   event_type=self.event_type)
-        e2 = Event(start=datetime(2025, 6, 15, 14, 0), end=datetime(2025, 6, 15, 15, 0),
-                   event_type=self.event_type)
+        e1 = Event(
+            start=datetime(2025, 6, 15, 9, 0),
+            end=datetime(2025, 6, 15, 10, 0),
+            event_type=self.event_type,
+        )
+        e2 = Event(
+            start=datetime(2025, 6, 15, 14, 0),
+            end=datetime(2025, 6, 15, 15, 0),
+            event_type=self.event_type,
+        )
         collapsed = Event.collapse([e1, e2])
         self.assertEqual(len(collapsed), 2)

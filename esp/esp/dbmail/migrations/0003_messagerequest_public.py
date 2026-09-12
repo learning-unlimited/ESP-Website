@@ -5,15 +5,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0002_auto_20151004_1715'),
+        ("dbmail", "0002_auto_20151004_1715"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='messagerequest',
-            name='public',
+            model_name="messagerequest",
+            name="public",
             field=models.BooleanField(default=False),
         ),
     ]

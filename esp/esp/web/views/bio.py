@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,34 +31,38 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.users.models     import ESPUser
-from esp.program.models   import TeacherBio, Program, ArchiveClass
-from esp.utils.web        import get_from_id, render_to_response
-from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
+from esp.users.models import ESPUser
+from esp.program.models import TeacherBio, Program, ArchiveClass
+from esp.utils.web import get_from_id, render_to_response
+from django.http import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
-from datetime             import datetime
+from datetime import datetime
 from django.conf import settings
 import os
 
+
 @login_required
-def bio_edit(request, tl='', username='', progid=None):
-    """ Edits a teacher bio, given user and program identification information """
+def bio_edit(request, tl="", username="", progid=None):
+    """Edits a teacher bio, given user and program identification information"""
 
     try:
-        if tl == '':
+        if tl == "":
             founduser = request.user
         else:
             founduser = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
-    foundprogram = get_from_id(progid, Program, 'program', False)
+    foundprogram = get_from_id(progid, Program, "program", False)
 
     return bio_edit_user_program(request, founduser, foundprogram)
 
+
 @login_required
-def bio_edit_user_program(request, founduser, foundprogram, external=False, old_url=False):
-    """ Edits a teacher bio, given user and program """
+def bio_edit_user_program(
+    request, founduser, foundprogram, external=False, old_url=False
+):
+    """Edits a teacher bio, given user and program"""
 
     if founduser is None or not founduser.isTeacher():
         return bio_not_found(request)
@@ -69,15 +72,15 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
         # here as well.
         return bio_not_found(request)
 
-    lastbio      = TeacherBio.getLastBio(founduser)
+    lastbio = TeacherBio.getLastBio(founduser)
 
     if old_url:
         return HttpResponsePermanentRedirect(lastbio.edit_url())
 
-
     # if we submitted a newly edited bio...
     from esp.web.forms.bioedit_form import BioEditForm
-    if request.method == 'POST' and 'remove_picture_btn' in request.POST:
+
+    if request.method == "POST" and "remove_picture_btn" in request.POST:
         if foundprogram is not None:
             progbio = TeacherBio.getLastForProgram(founduser, foundprogram)
         else:
@@ -90,9 +93,9 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
 
         return HttpResponseRedirect(request.path)
 
-    if request.method == 'POST' and 'bio_submitted' in request.POST:
+    if request.method == "POST" and "bio_submitted" in request.POST:
         # Check for removal button first
-        if 'remove_picture_btn' in request.POST:
+        if "remove_picture_btn" in request.POST:
             if lastbio.picture:
                 old_path = os.path.join(settings.MEDIA_ROOT, lastbio.picture.name)
                 if os.path.isfile(old_path):
@@ -113,15 +116,15 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
             else:
                 progbio = lastbio
 
-            progbio.hidden = form.cleaned_data['hidden']
+            progbio.hidden = form.cleaned_data["hidden"]
             # the slug bio and bio
-            progbio.slugbio  = form.cleaned_data['slugbio']
-            progbio.bio      = form.cleaned_data['bio']
+            progbio.slugbio = form.cleaned_data["slugbio"]
+            progbio.bio = form.cleaned_data["bio"]
 
             progbio.save()
 
             # Handle picture updates
-            new_picture = form.cleaned_data.get('picture')
+            new_picture = form.cleaned_data.get("picture")
 
             if new_picture is not None:
                 # Delete old file if it exists
@@ -131,7 +134,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
                         try:
                             os.remove(old_path)
                         except OSError:
-                            pass # File might be already gone or permission error
+                            pass  # File might be already gone or permission error
 
                 progbio.picture = new_picture
             else:
@@ -143,37 +146,51 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False, old_
             return HttpResponseRedirect(progbio.url())
 
     else:
-        formdata = {'hidden': lastbio.hidden, 'slugbio': lastbio.slugbio,
-                    'bio': lastbio.bio, 'picture': lastbio.picture}
+        formdata = {
+            "hidden": lastbio.hidden,
+            "slugbio": lastbio.slugbio,
+            "bio": lastbio.bio,
+            "picture": lastbio.picture,
+        }
         form = BioEditForm(formdata)
 
-    return render_to_response('users/teacherbioedit.html', request, {'form':    form,
-                                                   'institution': settings.INSTITUTION_NAME,
-                                                   'user':    founduser,
-                                                   'picture_file': lastbio.picture})
+    return render_to_response(
+        "users/teacherbioedit.html",
+        request,
+        {
+            "form": form,
+            "institution": settings.INSTITUTION_NAME,
+            "user": founduser,
+            "picture_file": lastbio.picture,
+        },
+    )
 
 
 def bio_not_found(request, user=None, edit_url=None):
-    response = render_to_response('users/teacherbionotfound.html', request,
-                                  {'biouser': user,
-                                   'edit_url': edit_url})
+    response = render_to_response(
+        "users/teacherbionotfound.html",
+        request,
+        {"biouser": user, "edit_url": edit_url},
+    )
     response.status_code = 404
     return response
 
-def bio(request, tl, username=''):
-    """ Displays a teacher bio """
+
+def bio(request, tl, username=""):
+    """Displays a teacher bio"""
 
     try:
         founduser = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
-    return bio_user(request, founduser, old_url=(tl != 'teach'))
+    return bio_user(request, founduser, old_url=(tl != "teach"))
+
 
 def bio_user(request, founduser, old_url=False):
-    """ Display a teacher bio for a given user """
+    """Display a teacher bio for a given user"""
 
-    if (not founduser or not founduser.is_active or not founduser.isTeacher()):
+    if not founduser or not founduser.is_active or not founduser.isTeacher():
         return bio_not_found(request)
 
     teacherbio = TeacherBio.getLastBio(founduser)
@@ -185,12 +202,12 @@ def bio_user(request, founduser, old_url=False):
         return bio_not_found(request, founduser, teacherbio.edit_url())
 
     if not teacherbio.picture:
-        teacherbio.picture = 'images/not-available.jpg'
+        teacherbio.picture = "images/not-available.jpg"
 
     if teacherbio.slugbio is None or len(teacherbio.slugbio.strip()) == 0:
-        teacherbio.slugbio = 'ESP Teacher'
+        teacherbio.slugbio = "ESP Teacher"
     if teacherbio.bio is None or len(teacherbio.bio.strip()) == 0:
-        teacherbio.bio     = 'Not Available.'
+        teacherbio.bio = "Not Available."
 
     now = datetime.now()
 
@@ -201,19 +218,31 @@ def bio_user(request, founduser, old_url=False):
     # Also, sort by the order of the corresponding program's id.
     # This should roughly order by program date; at the least, it will
     # cluster listed classes by program.
-    recent_classes = founduser.getTaughtClassesAll().filter(status__gte=10, sections__resourceassignment__resource__res_type__name="Classroom").exclude(meeting_times__end__gte=now).exclude(sections__meeting_times__end__gte=now).distinct().order_by('-parent_program__id')
+    recent_classes = (
+        founduser.getTaughtClassesAll()
+        .filter(
+            status__gte=10,
+            sections__resourceassignment__resource__res_type__name="Classroom",
+        )
+        .exclude(meeting_times__end__gte=now)
+        .exclude(sections__meeting_times__end__gte=now)
+        .distinct()
+        .order_by("-parent_program__id")
+    )
 
     # Ignore archived classes where we still have a log of the original class
     # Archives lose information; so, display the original form if we still have it
     cls_ids = [x.id for x in recent_classes]
     classes = ArchiveClass.getForUser(founduser).exclude(original_id__in=cls_ids)
 
-    return render_to_response('users/teacherbio.html', request,
-                              {'biouser': founduser,
-                               'bio': teacherbio,
-                               'classes': classes,
-                               'recent_classes': recent_classes,
-                               'institution': settings.INSTITUTION_NAME})
-
-
-
+    return render_to_response(
+        "users/teacherbio.html",
+        request,
+        {
+            "biouser": founduser,
+            "bio": teacherbio,
+            "classes": classes,
+            "recent_classes": recent_classes,
+            "institution": settings.INSTITUTION_NAME,
+        },
+    )

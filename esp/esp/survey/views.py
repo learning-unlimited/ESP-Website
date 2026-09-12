@@ -1,10 +1,10 @@
-" A view to show surveys. "
+"A view to show surveys."
 
-__author__    = "$LastChangedBy$"
-__date__      = "$LastChangedDate$"
-__rev__       = "$LastChangedRevision$"
-__headurl__   = "$HeadURL$"
-__license__   = "AGPL v.3"
+__author__ = "$LastChangedBy$"
+__date__ = "$LastChangedDate$"
+__rev__ = "$LastChangedRevision$"
+__headurl__ = "$HeadURL$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -43,7 +43,14 @@ from django.db import models
 from django.db.models import Count, Min, Q
 from django.contrib.contenttypes.models import ContentType
 from esp.users.models import ESPUser, Record, RecordType, admin_required
-from esp.program.models import Program, ClassCategories, ClassSubject, StudentRegistration, RegistrationType, ClassSection
+from esp.program.models import (
+    Program,
+    ClassCategories,
+    ClassSubject,
+    StudentRegistration,
+    RegistrationType,
+    ClassSection,
+)
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.utils.web import render_to_response
 from esp.utils.latex import render_to_latex
@@ -55,8 +62,11 @@ from django.http import Http404, HttpResponse
 from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 
+
 @login_required
-def survey_view(request, tl, program, instance, template = 'survey/survey.html', context = {}):
+def survey_view(
+    request, tl, program, instance, template="survey/survey.html", context={}
+):
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
@@ -65,32 +75,56 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     user = request.user
     view_list = True
 
-    context['tl'] = tl
-    if tl in ['teach', 'learn']:
-        filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog).split(",") if x.strip()]
+    context["tl"] = tl
+    if tl in ["teach", "learn"]:
+        filters = [
+            x.strip()
+            for x in Tag.getProgramTag(
+                "survey_" + {"learn": "student", "teach": "teacher"}[tl] + "_filter",
+                prog,
+            ).split(",")
+            if x.strip()
+        ]
         if len(filters) > 0:
-            if tl == 'learn':
+            if tl == "learn":
                 users = prog.students()
             else:
                 users = prog.teachers()
-            if not user.isAdmin() and user not in {item for sublist in [users[filter] for filter in filters if filter in users] for item in sublist}:
+            if not user.isAdmin() and user not in {
+                item
+                for sublist in [users[filter] for filter in filters if filter in users]
+                for item in sublist
+            }:
                 descs = prog.getListDescriptions()
-                raise ESPError('Only ' + " or ".join([descs[filter].lower() for filter in filters if filter in descs]) + ' may participate in this survey.  Please contact the directors directly if you have additional feedback.', log=False)
+                raise ESPError(
+                    "Only "
+                    + " or ".join(
+                        [descs[filter].lower() for filter in filters if filter in descs]
+                    )
+                    + " may participate in this survey.  Please contact the directors directly if you have additional feedback.",
+                    log=False,
+                )
 
     student_results = False
-    if tl == 'learn':
+    if tl == "learn":
         event = "student_survey"
     else:
         event = "teacher_survey"
-        student_results = prog.getSurveys().filter(category = "learn", questions__per_class=True).exists()
+        student_results = (
+            prog.getSurveys()
+            .filter(category="learn", questions__per_class=True)
+            .exists()
+        )
 
-    surveys = prog.getSurveys().filter(category = tl).select_related()
+    surveys = prog.getSurveys().filter(category=tl).select_related()
 
-    context['survey_id'] = request.GET.get('survey_id', None)
-    if 'survey_id' in request.GET:
+    context["survey_id"] = request.GET.get("survey_id", None)
+    if "survey_id" in request.GET:
         try:
-            s_id = int( request.GET['survey_id'] )
-            surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
+            s_id = int(request.GET["survey_id"])
+            surveys = surveys.filter(
+                id=s_id
+            )  # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
 
@@ -100,19 +134,33 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         else:
             raise ESPError("Sorry, no such survey exists for this program!", log=False)
     elif len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'student_results': student_results, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        return render_to_response(
+            "survey/choose_survey.html",
+            request,
+            {
+                "surveys": surveys,
+                "student_results": student_results,
+                "error": request.POST,
+            },
+        )  # if request.POST, then we shouldn't have more than one survey any more...
     else:
         survey = surveys[0]
 
     # Section-specific survey
     section = None
     questions = perclass_questions = classes = []
-    submitted = general = general_available = completed = section_surveys = general_survey = False
-    if 'sec' in request.GET:
-        sections = ClassSection.objects.filter(id=request.GET['sec'], parent_class__parent_program=prog)
+    submitted = general = general_available = completed = section_surveys = (
+        general_survey
+    ) = False
+    if "sec" in request.GET:
+        sections = ClassSection.objects.filter(
+            id=request.GET["sec"], parent_class__parent_program=prog
+        )
         if len(sections) == 1:
             section = sections[0]
-            if StudentRegistration.objects.filter(section=section, user=user, relationship__name="SurveyCompleted").exists():
+            if StudentRegistration.objects.filter(
+                section=section, user=user, relationship__name="SurveyCompleted"
+            ).exists():
                 completed = True
             else:
                 if request.POST:
@@ -121,18 +169,22 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                     response.save()
 
                     # Set Student Registration to mark section survey as completed
-                    survey_completed = RegistrationType.objects.get_or_create(name = 'SurveyCompleted', category = "student")[0]
-                    sr = StudentRegistration(user = user, section = section, relationship = survey_completed)
+                    survey_completed = RegistrationType.objects.get_or_create(
+                        name="SurveyCompleted", category="student"
+                    )[0]
+                    sr = StudentRegistration(
+                        user=user, section=section, relationship=survey_completed
+                    )
                     sr.save()
 
                     response.set_answers(request.POST, save=True)
                     submitted = True
                 else:
-                    perclass_questions = survey.questions.filter(per_class = True)
+                    perclass_questions = survey.questions.filter(per_class=True)
                     view_list = False
 
     # General program survey
-    elif 'general' in request.GET:
+    elif "general" in request.GET:
         general = True
         if Record.user_completed(user, event, prog):
             completed = True
@@ -144,57 +196,79 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
 
                 # Set record to mark general survey as completed
                 rt = RecordType.objects.get(name=event)
-                r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
+                r = Record(
+                    user=user, event=rt, program=prog, time=datetime.datetime.now()
+                )
                 r.save()
 
                 response.set_answers(request.POST, save=True)
                 submitted = True
             else:
-                questions = survey.questions.filter(per_class = False).order_by('seq')
-                if tl == 'learn':
+                questions = survey.questions.filter(per_class=False).order_by("seq")
+                if tl == "learn":
                     classes = user.getEnrolledClasses(prog)
-                elif tl == 'teach':
+                elif tl == "teach":
                     classes = user.getTaughtClasses(prog)
                 view_list = False
 
     sections = []
     if view_list and survey:
-        completed_sections = ClassSection.objects.filter(parent_class__parent_program=prog, studentregistration__user=user, studentregistration__relationship__name="SurveyCompleted")
-        if tl == 'learn':
+        completed_sections = ClassSection.objects.filter(
+            parent_class__parent_program=prog,
+            studentregistration__user=user,
+            studentregistration__relationship__name="SurveyCompleted",
+        )
+        if tl == "learn":
             # Get a student's enrolled sections
-            sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0, meeting_times__isnull=False).annotate(start=Min('meeting_times__start')).order_by('start')
+            sections = (
+                ClassSection.objects.filter(
+                    id__in=[sec.id for sec in user.getEnrolledSections(prog)],
+                    status__gt=0,
+                    meeting_times__isnull=False,
+                )
+                .annotate(start=Min("meeting_times__start"))
+                .order_by("start")
+            )
         else:
             # Get a teacher's taught sections
-            sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
+            sections = (
+                user.getTaughtSections(prog)
+                .filter(status__gt=0)
+                .annotate(start=Min("meeting_times__start"))
+                .order_by("start")
+            )
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
         # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet
         for sec in sections:
             sec.started = sec.start < datetime.datetime.now()
             sec.completed = sec in completed_sections
 
-        context['general_done'] = Record.user_completed(user, event, prog)
+        context["general_done"] = Record.user_completed(user, event, prog)
         # Is this the best way to trigger the availability of the general program survey?
         general_available = any([sec.started for sec in sections])
-        general_survey = survey.questions.filter(per_class = False).exists()
-        section_surveys = survey.questions.filter(per_class = True).exists()
+        general_survey = survey.questions.filter(per_class=False).exists()
+        section_surveys = survey.questions.filter(per_class=True).exists()
 
-    context.update({
-        'program': prog,
-        'questions': questions,
-        'perclass_questions': perclass_questions,
-        'section': section,
-        'sections': sections,
-        'view_list': view_list,
-        'submitted': submitted,
-        'general': general,
-        'general_available': general_available,
-        'completed': completed,
-        'classes': classes,
-        'section_surveys': section_surveys,
-        'general_survey': general_survey,
-        'student_results': student_results
-        })
+    context.update(
+        {
+            "program": prog,
+            "questions": questions,
+            "perclass_questions": perclass_questions,
+            "section": section,
+            "sections": sections,
+            "view_list": view_list,
+            "submitted": submitted,
+            "general": general,
+            "general_available": general_available,
+            "completed": completed,
+            "classes": classes,
+            "section_surveys": section_surveys,
+            "general_survey": general_survey,
+            "student_results": student_results,
+        }
+    )
     return render_to_response(template, request, context)
+
 
 def get_survey_info(request, tl, program, instance):
     try:
@@ -204,35 +278,42 @@ def get_survey_info(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'teach' and (user.isTeacher() or user.isAdmin(prog))):
-        surveys = prog.getSurveys().filter(category = 'learn').select_related()
-    elif (tl == 'manage' and user.isAdmin(prog)):
+    if tl == "teach" and (user.isTeacher() or user.isAdmin(prog)):
+        surveys = prog.getSurveys().filter(category="learn").select_related()
+    elif tl == "manage" and user.isAdmin(prog):
         #   Meerp, no problem... I took care of it.   -Michael
-        surveys = prog.getSurveys().order_by('category').select_related()
+        surveys = prog.getSurveys().order_by("category").select_related()
         t_id = None
-        if 'teacher_id' in request.GET:
-            t_id = int( request.GET['teacher_id'] )
-        elif 'teacher_id' in request.POST:
-            t_id = int( request.POST['teacher_id'] )
-        elif 'target_user' in request.POST:
+        if "teacher_id" in request.GET:
+            t_id = int(request.GET["teacher_id"])
+        elif "teacher_id" in request.POST:
+            t_id = int(request.POST["teacher_id"])
+        elif "target_user" in request.POST:
             form = ApprovedTeacherSearchForm(request.POST)
             if form.is_valid():
-                t_id = form.cleaned_data['target_user'].id
+                t_id = form.cleaned_data["target_user"].id
         if t_id:
             teachers = ESPUser.objects.filter(id=t_id)
             if len(teachers) > 0:
                 user = teachers[0]
                 if user.isTeacher():
-                    surveys = prog.getSurveys().filter(category = 'learn').select_related()
+                    surveys = (
+                        prog.getSurveys().filter(category="learn").select_related()
+                    )
                 else:
                     user = request.user
     else:
-        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
+        raise ESPError(
+            "You need to be a teacher or administrator of this program to review survey responses.",
+            log=False,
+        )
 
-    if 'survey_id' in request.GET:
+    if "survey_id" in request.GET:
         try:
-            s_id = int( request.GET['survey_id'] )
-            surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
+            s_id = int(request.GET["survey_id"])
+            surveys = surveys.filter(
+                id=s_id
+            )  # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
 
@@ -241,70 +322,90 @@ def get_survey_info(request, tl, program, instance):
 
     return (user, prog, surveys)
 
-def display_survey(user, prog, surveys, request, tl, format, template = 'survey/review.html', context = {}):
-    """ Wrapper doing the necessary work for the survey output. """
+
+def display_survey(
+    user, prog, surveys, request, tl, format, template="survey/review.html", context={}
+):
+    """Wrapper doing the necessary work for the survey output."""
     from esp.program.models import ClassSubject, ClassSection
 
     def getByIdOrNone(model, key):
-        q = model.objects.filter(id = request.GET.get(key, None))[:1]
+        q = model.objects.filter(id=request.GET.get(key, None))[:1]
         if q:
             return q[0]
-        q = model.objects.filter(id = request.POST.get(key, None))[:1]
+        q = model.objects.filter(id=request.POST.get(key, None))[:1]
         if q:
             return q[0]
         return None
 
     teacher_form = None
-    sec = getByIdOrNone(ClassSection, 'classsection_id')
-    cls = getByIdOrNone(ClassSubject, 'classsubject_id')
-    if tl == 'manage' and 'target_user' in request.POST:
-        teacher_form = ApprovedTeacherSearchForm(request.POST, prog = prog)
+    sec = getByIdOrNone(ClassSection, "classsection_id")
+    cls = getByIdOrNone(ClassSubject, "classsubject_id")
+    if tl == "manage" and "target_user" in request.POST:
+        teacher_form = ApprovedTeacherSearchForm(request.POST, prog=prog)
         if teacher_form.is_valid():
-            teacher = teacher_form.cleaned_data['target_user']
+            teacher = teacher_form.cleaned_data["target_user"]
         else:
             teacher = None
     else:
-        teacher = getByIdOrNone(ESPUser, 'teacher_id')
+        teacher = getByIdOrNone(ESPUser, "teacher_id")
 
-    context.update({'user': user, 'teacher': teacher, 'program': prog, 'tl': tl})
+    context.update({"user": user, "teacher": teacher, "program": prog, "tl": tl})
     # since this requires a lot of processing/rendering, we cache the display with inclusion_tags in the template
     # therefore, all we need is a list of surveys and a list of sections
-    if tl == 'manage' and teacher is None and sec is None and cls is None:
-        context.update({'surveys': list(surveys), 'sections': prog.sections().order_by('parent_class', 'id'), 'survey': None})
+    if tl == "manage" and teacher is None and sec is None and cls is None:
+        context.update(
+            {
+                "surveys": list(surveys),
+                "sections": prog.sections().order_by("parent_class", "id"),
+                "survey": None,
+            }
+        )
     else:
         if sec is not None:
-            section_list = [ sec ]
+            section_list = [sec]
         elif cls is not None:
             section_list = cls.get_sections()
         elif teacher is not None:
-            section_list = teacher.getTaughtSections(prog).order_by('parent_class', 'id')
-        elif tl == 'teach':
+            section_list = teacher.getTaughtSections(prog).order_by(
+                "parent_class", "id"
+            )
+        elif tl == "teach":
             #   In the teach category, show only class-specific questions
-            section_list = user.getTaughtSections(prog).order_by('parent_class', 'id')
-        context.update({'surveys': [], 'sections': section_list, 'survey': surveys[0]})
-    if tl == 'manage':
+            section_list = user.getTaughtSections(prog).order_by("parent_class", "id")
+        context.update({"surveys": [], "sections": section_list, "survey": surveys[0]})
+    if tl == "manage":
         if teacher:
-            teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id}, prog = prog)
+            teacher_form = ApprovedTeacherSearchForm(
+                initial={"target_user": teacher.id}, prog=prog
+            )
         elif teacher_form is None:
-            teacher_form = ApprovedTeacherSearchForm(prog = prog)
-    context['teacher_form'] = teacher_form
+            teacher_form = ApprovedTeacherSearchForm(prog=prog)
+    context["teacher_form"] = teacher_form
 
     #   Choose+use appropriate output format
-    if format == 'html':
+    if format == "html":
         return render_to_response(template, request, context)
-    elif format == 'tex':
-        return render_to_latex(template, context, 'pdf')
+    elif format == "tex":
+        return render_to_latex(template, context, "pdf")
+
 
 def delist(x):
     if isinstance(x, list):
-        return ', '.join(x)
+        return ", ".join(x)
     else:
         return x
 
 
 def dump_survey_xlsx(user, prog, surveys, request, tl):
     from esp.program.models import ClassSubject, ClassSection
-    if tl == 'manage' and not 'teacher_id' in request.GET and not 'classsection_id' in request.GET and not 'classsubject_id' in request.GET:
+
+    if (
+        tl == "manage"
+        and not "teacher_id" in request.GET
+        and not "classsection_id" in request.GET
+        and not "classsubject_id" in request.GET
+    ):
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         survey_index = 0
@@ -315,14 +416,16 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
             # The length of sheet names is limited to 31 characters
             survey_index += 1
             if len(s.name) > 31:
-                ws = wb.create_sheet(f"{survey_index} {s.name[:17]}... ({s.category[:5]})")
+                ws = wb.create_sheet(
+                    f"{survey_index} {s.name[:17]}... ({s.category[:5]})"
+                )
             else:
                 ws = wb.create_sheet(s.name)
 
-            ws.cell(row=1, column=1, value='Response ID')
-            ws.cell(row=1, column=2, value='Timestamp')
-            qs = list(s.questions.filter(per_class=False).order_by('seq', 'id'))
-            srs = list(s.surveyresponse_set.all().order_by('id'))
+            ws.cell(row=1, column=1, value="Response ID")
+            ws.cell(row=1, column=2, value="Timestamp")
+            qs = list(s.questions.filter(per_class=False).order_by("seq", "id"))
+            srs = list(s.surveyresponse_set.all().order_by("id"))
             i = 3
             q_dict = {}
             for q in qs:
@@ -335,23 +438,31 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                 sr_dict[sr.id] = i
                 ws.cell(row=i, column=1, value=sr.id)
                 if sr.time_filled:
-                    cell = ws.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
-                    cell.number_format = 'yyyy-mm-dd hh:mm:ss'
+                    cell = ws.cell(
+                        row=i, column=2, value=sr.time_filled.replace(tzinfo=None)
+                    )
+                    cell.number_format = "yyyy-mm-dd hh:mm:ss"
                 i += 1
-            for a in Answer.objects.filter(question__in=qs).order_by('id'):
+            for a in Answer.objects.filter(question__in=qs).order_by("id"):
                 if a.survey_response_id in sr_dict and a.question_id in q_dict:
-                    ws.cell(row=sr_dict[a.survey_response_id], column=q_dict[a.question_id], value=delist(a.answer))
+                    ws.cell(
+                        row=sr_dict[a.survey_response_id],
+                        column=q_dict[a.question_id],
+                        value=delist(a.answer),
+                    )
 
             # PER-CLASS QUESTIONS
             if len(s.name) > 19:
-                ws_perclass = wb.create_sheet(f"{survey_index} {s.name[:5]}... ({s.category[:5]}, per-class)")
+                ws_perclass = wb.create_sheet(
+                    f"{survey_index} {s.name[:5]}... ({s.category[:5]}, per-class)"
+                )
             else:
                 ws_perclass = wb.create_sheet(s.name + " (per-class)")
             ws_perclass.cell(row=1, column=1, value="Response ID")
             ws_perclass.cell(row=1, column=2, value="Timestamp")
             ws_perclass.cell(row=1, column=3, value="Class Code")
             ws_perclass.cell(row=1, column=4, value="Class Title")
-            qs_perclass = list(s.questions.filter(per_class=True).order_by('seq', 'id'))
+            qs_perclass = list(s.questions.filter(per_class=True).order_by("seq", "id"))
             i = 5
             q_dict_perclass = {}
             for q in qs_perclass:
@@ -360,7 +471,11 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                 i += 1
             i = 2
             src_dict_perclass = {}
-            for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
+            for a in (
+                Answer.objects.filter(question__in=qs_perclass)
+                .order_by("id")
+                .select_related("survey_response")
+            ):
                 sr = a.survey_response
                 cs = a.target
                 if isinstance(cs, ClassSection):
@@ -374,14 +489,20 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
                     src_dict_perclass[key] = i
                     ws_perclass.cell(row=i, column=1, value=sr.id)
                     if sr.time_filled:
-                        cell = ws_perclass.cell(row=i, column=2, value=sr.time_filled.replace(tzinfo=None))
-                        cell.number_format = 'yyyy-mm-dd hh:mm:ss'
+                        cell = ws_perclass.cell(
+                            row=i, column=2, value=sr.time_filled.replace(tzinfo=None)
+                        )
+                        cell.number_format = "yyyy-mm-dd hh:mm:ss"
                     if cs:
                         ws_perclass.cell(row=i, column=3, value=cs.emailcode())
                         ws_perclass.cell(row=i, column=4, value=cs.title())
                     i += 1
                 if a.question_id in q_dict_perclass:
-                    ws_perclass.cell(row=row, column=q_dict_perclass[a.question_id], value=delist(a.answer))
+                    ws_perclass.cell(
+                        row=row,
+                        column=q_dict_perclass[a.question_id],
+                        value=delist(a.answer),
+                    )
 
         # Ensure at least one sheet exists
         if len(wb.sheetnames) == 0:
@@ -390,19 +511,26 @@ def dump_survey_xlsx(user, prog, surveys, request, tl):
         out = BytesIO()
         wb.save(out)
         wb.close()
-        response = HttpResponse(out.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response = HttpResponse(
+            out.getvalue(),
+            content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
         out.close()
-        response['Content-Disposition'] = f'attachment; filename=dump-{prog.name}.xlsx'
+        response["Content-Disposition"] = f"attachment; filename=dump-{prog.name}.xlsx"
         return response
     else:
-        raise ESPError("You need to be an administrator to dump survey results.", log=False)
+        raise ESPError(
+            "You need to be an administrator to dump survey results.", log=False
+        )
+
 
 @admin_required
 def survey_dump(request, tl, program, instance):
-    """ A dump of all survey results in the given program. """
+    """A dump of all survey results in the given program."""
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
     return dump_survey_xlsx(user, prog, surveys, request, tl)
+
 
 @login_required
 def teacher_survey_all(request):
@@ -416,15 +544,15 @@ def teacher_survey_all(request):
 
     if user.isAdmin():
         # Admin can search for a specific teacher
-        if 'target_user' in request.POST:
+        if "target_user" in request.POST:
             teacher_form = ApprovedTeacherSearchForm(request.POST)
             if teacher_form.is_valid():
-                teacher = teacher_form.cleaned_data['target_user']
+                teacher = teacher_form.cleaned_data["target_user"]
             else:
                 teacher = None
-        elif 'teacher_id' in request.GET:
+        elif "teacher_id" in request.GET:
             try:
-                t_id = int(request.GET['teacher_id'])
+                t_id = int(request.GET["teacher_id"])
             except (ValueError, TypeError):
                 t_id = None
             if t_id is not None:
@@ -435,39 +563,46 @@ def teacher_survey_all(request):
             teacher = user
         if teacher_form is None:
             if teacher and teacher != user:
-                teacher_form = ApprovedTeacherSearchForm(initial={'target_user': teacher.id})
+                teacher_form = ApprovedTeacherSearchForm(
+                    initial={"target_user": teacher.id}
+                )
             else:
                 teacher_form = ApprovedTeacherSearchForm()
     elif user.isTeacher():
         teacher = user
     else:
-        raise ESPError('You need to be a teacher or administrator to view survey responses.', log=False)
+        raise ESPError(
+            "You need to be a teacher or administrator to view survey responses.",
+            log=False,
+        )
 
     programs_data = []
     if teacher is not None:
         # Fetch ALL taught sections at once with related objects to avoid
         # N+1 queries on parent_class, category, and parent_program FKs.
         all_sections = list(
-            teacher.getTaughtSections().select_related(
-                'parent_class__category',
-                'parent_class__parent_program',
-            ).order_by('parent_class__parent_program_id', 'parent_class', 'id')
+            teacher.getTaughtSections()
+            .select_related(
+                "parent_class__category",
+                "parent_class__parent_program",
+            )
+            .order_by("parent_class__parent_program_id", "parent_class", "id")
         )
         if not all_sections:
             pass  # programs_data stays empty
         else:
-            program_ids = list(set(
-                s.parent_class.parent_program_id for s in all_sections
-            ))
+            program_ids = list(
+                set(s.parent_class.parent_program_id for s in all_sections)
+            )
 
             # 1 query: all programs, ordered newest-first
-            programs = Program.objects.filter(id__in=program_ids).order_by('-id')
+            programs = Program.objects.filter(id__in=program_ids).order_by("-id")
 
             # 1 query: all student surveys across all programs
             all_surveys = list(
                 Survey.objects.filter(
-                    program_id__in=program_ids, category='learn'
-                ).select_related('program')
+                    program_id__in=program_ids, category="learn"
+                ).select_related("program")
             )
             if all_surveys:
                 surveys_by_program = {}
@@ -492,28 +627,36 @@ def teacher_survey_all(request):
 
                 # 1 query: response counts for ALL sections across ALL surveys
                 response_count_map = {}
-                for row in Answer.objects.filter(
-                    question__survey_id__in=all_survey_ids,
-                    question__per_class=True,
-                    content_type=section_ct,
-                    object_id__in=all_section_ids,
-                ).values('question__survey_id', 'object_id').annotate(
-                    count=Count('survey_response', distinct=True)
+                for row in (
+                    Answer.objects.filter(
+                        question__survey_id__in=all_survey_ids,
+                        question__per_class=True,
+                        content_type=section_ct,
+                        object_id__in=all_section_ids,
+                    )
+                    .values("question__survey_id", "object_id")
+                    .annotate(count=Count("survey_response", distinct=True))
                 ):
-                    response_count_map[(row['question__survey_id'], row['object_id'])] = row['count']
+                    response_count_map[
+                        (row["question__survey_id"], row["object_id"])
+                    ] = row["count"]
 
                 # 1 query: response counts for answers stored against ClassSubject
                 subject_response_count = {}
                 if all_subject_ids:
-                    for row in Answer.objects.filter(
-                        question__survey_id__in=all_survey_ids,
-                        question__per_class=True,
-                        content_type=subject_ct,
-                        object_id__in=all_subject_ids,
-                    ).values('question__survey_id', 'object_id').annotate(
-                        count=Count('survey_response', distinct=True)
+                    for row in (
+                        Answer.objects.filter(
+                            question__survey_id__in=all_survey_ids,
+                            question__per_class=True,
+                            content_type=subject_ct,
+                            object_id__in=all_subject_ids,
+                        )
+                        .values("question__survey_id", "object_id")
+                        .annotate(count=Count("survey_response", distinct=True))
                     ):
-                        subject_response_count[(row['question__survey_id'], row['object_id'])] = row['count']
+                        subject_response_count[
+                            (row["question__survey_id"], row["object_id"])
+                        ] = row["count"]
 
                 # 1 query: find the first numeric per-class question per survey
                 first_numeric_qs = {}
@@ -521,7 +664,7 @@ def teacher_survey_all(request):
                     survey_id__in=all_survey_ids,
                     question_type__is_numeric=True,
                     per_class=True,
-                ).order_by('survey_id', 'seq'):
+                ).order_by("survey_id", "seq"):
                     if q.survey_id not in first_numeric_qs:
                         first_numeric_qs[q.survey_id] = q
 
@@ -533,9 +676,11 @@ def teacher_survey_all(request):
                         question_id__in=numeric_q_ids,
                         content_type=section_ct,
                         object_id__in=all_section_ids,
-                    ).values_list('question__survey_id', 'object_id', 'value'):
+                    ).values_list("question__survey_id", "object_id", "value"):
                         try:
-                            rating_map.setdefault((survey_id, obj_id), []).append(float(val))
+                            rating_map.setdefault((survey_id, obj_id), []).append(
+                                float(val)
+                            )
                         except (ValueError, TypeError):
                             pass
 
@@ -546,9 +691,11 @@ def teacher_survey_all(request):
                         question_id__in=numeric_q_ids,
                         content_type=subject_ct,
                         object_id__in=all_subject_ids,
-                    ).values_list('question__survey_id', 'object_id', 'value'):
+                    ).values_list("question__survey_id", "object_id", "value"):
                         try:
-                            subject_rating_map.setdefault((survey_id, obj_id), []).append(float(val))
+                            subject_rating_map.setdefault(
+                                (survey_id, obj_id), []
+                            ).append(float(val))
                         except (ValueError, TypeError):
                             pass
 
@@ -565,75 +712,94 @@ def teacher_survey_all(request):
                             cid = sec.parent_class_id
                             if cid not in class_data:
                                 class_data[cid] = {
-                                    'class': sec.parent_class,
-                                    'emailcode': sec.parent_class.emailcode(),
-                                    'title': sec.title,
-                                    'total_responses': 0,
-                                    'rating_vals': [],
-                                    '_has_section_data': False,
+                                    "class": sec.parent_class,
+                                    "emailcode": sec.parent_class.emailcode(),
+                                    "title": sec.title,
+                                    "total_responses": 0,
+                                    "rating_vals": [],
+                                    "_has_section_data": False,
                                 }
                             key = (survey.id, sec.id)
                             sec_count = response_count_map.get(key, 0)
                             sec_ratings = rating_map.get(key, [])
                             if sec_count or sec_ratings:
-                                class_data[cid]['_has_section_data'] = True
-                            class_data[cid]['total_responses'] += sec_count
-                            class_data[cid]['rating_vals'].extend(sec_ratings)
+                                class_data[cid]["_has_section_data"] = True
+                            class_data[cid]["total_responses"] += sec_count
+                            class_data[cid]["rating_vals"].extend(sec_ratings)
 
                         # Merge subject-level data for classes without section-level data
                         for cid, cd in class_data.items():
-                            if not cd['_has_section_data']:
+                            if not cd["_has_section_data"]:
                                 subj_key = (survey.id, cid)
-                                cd['total_responses'] += subject_response_count.get(subj_key, 0)
-                                cd['rating_vals'].extend(subject_rating_map.get(subj_key, []))
+                                cd["total_responses"] += subject_response_count.get(
+                                    subj_key, 0
+                                )
+                                cd["rating_vals"].extend(
+                                    subject_rating_map.get(subj_key, [])
+                                )
 
                         classes_summary = []
                         for cid, cd in class_data.items():
-                            vals = cd['rating_vals']
-                            classes_summary.append({
-                                'class': cd['class'],
-                                'emailcode': cd['emailcode'],
-                                'title': cd['title'],
-                                'total_responses': cd['total_responses'],
-                                'avg_rating': round(sum(vals) / len(vals), 1) if vals else None,
-                            })
+                            vals = cd["rating_vals"]
+                            classes_summary.append(
+                                {
+                                    "class": cd["class"],
+                                    "emailcode": cd["emailcode"],
+                                    "title": cd["title"],
+                                    "total_responses": cd["total_responses"],
+                                    "avg_rating": round(sum(vals) / len(vals), 1)
+                                    if vals
+                                    else None,
+                                }
+                            )
 
-                        programs_data.append({
-                            'program': prog,
-                            'survey': survey,
-                            'sections': prog_sections,
-                            'classes_summary': classes_summary,
-                        })
+                        programs_data.append(
+                            {
+                                "program": prog,
+                                "survey": survey,
+                                "sections": prog_sections,
+                                "classes_summary": classes_summary,
+                            }
+                        )
 
     context = {
-        'teacher': teacher,
-        'programs_data': programs_data,
-        'teacher_form': teacher_form,
-        'is_admin': user.isAdmin(),
+        "teacher": teacher,
+        "programs_data": programs_data,
+        "teacher_form": teacher_form,
+        "is_admin": user.isAdmin(),
     }
-    return render_to_response('survey/teacher_all_reviews.html', request, context)
+    return render_to_response("survey/teacher_all_reviews.html", request, context)
+
 
 @login_required
-def survey_review(request, tl, program, instance, template = 'survey/review.html', context = {}):
-    """ A view of all the survey results pertaining to a particular user in the given program. """
+def survey_review(
+    request, tl, program, instance, template="survey/review.html", context={}
+):
+    """A view of all the survey results pertaining to a particular user in the given program."""
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl, 'html', template, context)
+    return display_survey(user, prog, surveys, request, tl, "html", template, context)
+
 
 @login_required
-def survey_graphical(request, tl, program, instance, template = 'survey/review.tex', context = {}):
-    """ A PDF view of the survey results with histograms. """
+def survey_graphical(
+    request, tl, program, instance, template="survey/review.tex", context={}
+):
+    """A PDF view of the survey results with histograms."""
 
     (user, prog, surveys) = get_survey_info(request, tl, program, instance)
-    return display_survey(user, prog, surveys, request, tl, 'tex', template, context)
+    return display_survey(user, prog, surveys, request, tl, "tex", template, context)
+
 
 @login_required
-def survey_review_single(request, tl, program, instance, template = 'survey/review_single.html', context = {}):
-    """ View a single survey response. """
+def survey_review_single(
+    request, tl, program, instance, template="survey/review_single.html", context={}
+):
+    """View a single survey response."""
     try:
         prog = Program.by_prog_inst(program, instance)
     except Program.DoesNotExist:
-        #raise Http404
+        # raise Http404
         raise ESPError(f"Can't find the program {program}/{instance}")
 
     user = request.user
@@ -645,26 +811,53 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
         if len(srs) == 1:
             survey_response = srs[0]
     if survey_response is None:
-        raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
+        raise ESPError(
+            'Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.',
+            log=False,
+        )
 
-    if tl == 'manage' and user.isAdmin(prog):
-        answers = survey_response.answers.order_by('content_type', 'object_id', 'question')
+    if tl == "manage" and user.isAdmin(prog):
+        answers = survey_response.answers.order_by(
+            "content_type", "object_id", "question"
+        )
         classes_only = False
         other_responses = None
-    elif tl == 'teach':
-        subject_ct=ContentType.objects.get(app_label="program", model="classsubject")
-        section_ct=ContentType.objects.get(app_label="program", model="classsection")
-        class_ids = [x["id"] for x in user.getTaughtClasses().values('id')]
-        section_ids = [x["id"] for x in user.getTaughtSections().values('id')]
-        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids)).order_by('content_type', 'object_id', 'question')
+    elif tl == "teach":
+        subject_ct = ContentType.objects.get(app_label="program", model="classsubject")
+        section_ct = ContentType.objects.get(app_label="program", model="classsection")
+        class_ids = [x["id"] for x in user.getTaughtClasses().values("id")]
+        section_ids = [x["id"] for x in user.getTaughtSections().values("id")]
+        answers = survey_response.answers.filter(
+            content_type__in=[subject_ct, section_ct],
+            object_id__in=(class_ids + section_ids),
+        ).order_by("content_type", "object_id", "question")
         classes_only = True
-        other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
+        other_responses = (
+            SurveyResponse.objects.filter(
+                answers__content_type=subject_ct, answers__object_id__in=class_ids
+            )
+            .order_by("id")
+            .distinct()
+        )
     else:
-        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
+        raise ESPError(
+            "You need to be a teacher or administrator of this program to review survey responses.",
+            log=False,
+        )
 
-    context.update({'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses })
+    context.update(
+        {
+            "user": user,
+            "program": prog,
+            "response": survey_response,
+            "answers": answers,
+            "classes_only": classes_only,
+            "other_responses": other_responses,
+        }
+    )
 
     return render_to_response(template, request, context)
+
 
 # To be replaced with something more useful, eventually.
 @login_required
@@ -676,37 +869,45 @@ def top_classes(request, tl, program, instance):
 
     user = request.user
 
-    if (tl == 'manage' and user.isAdmin(prog)):
-        surveys = prog.getSurveys().filter(category = 'learn').select_related()
+    if tl == "manage" and user.isAdmin(prog):
+        surveys = prog.getSurveys().filter(category="learn").select_related()
     else:
-        raise ESPError('You need to be a teacher or administrator of this program to review survey responses.', log=False)
+        raise ESPError(
+            "You need to be a teacher or administrator of this program to review survey responses.",
+            log=False,
+        )
 
-    if 'survey_id' in request.GET:
+    if "survey_id" in request.GET:
         try:
-            s_id = int(request.GET['survey_id'])
-            surveys = surveys.filter(id=s_id) # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
+            s_id = int(request.GET["survey_id"])
+            surveys = surveys.filter(
+                id=s_id
+            )  # We want to filter, not get: ID could point to a survey that doesn't exist for this program, or at all
         except ValueError:
             pass
 
     if len(surveys) < 1:
-        raise ESPError(f'Sorry, no student survey {"with any of the following IDs [" + ",".join(str(x) for x in [s_id]) + "] " if "s_id" in locals() else ""}exists for this program!', log=False)
+        raise ESPError(
+            f"Sorry, no student survey {'with any of the following IDs [' + ','.join(str(x) for x in [s_id]) + '] ' if 's_id' in locals() else ''}exists for this program!",
+            log=False,
+        )
 
     if len(surveys) > 1:
         # if request.POST, then we shouldn't have more than one survey
         return render_to_response(
-            'survey/choose_survey.html',
+            "survey/choose_survey.html",
             request,
-            {'surveys': surveys, 'error': request.POST}
+            {"surveys": surveys, "error": request.POST},
         )
 
     survey = surveys[0]
 
-    if tl == 'manage':
+    if tl == "manage":
         classes = prog.classes()
 
         # Try to find an "overall rating" question first
         rating_question = survey.questions.filter(
-            name__icontains='overall rating'
+            name__icontains="overall rating"
         ).first()
 
         # Determine which type of question we're working with
@@ -715,36 +916,32 @@ def top_classes(request, tl, program, instance):
         if use_favorite_class:
             # If no rating question, try to find a "Favorite Class" question
             favorite_question = survey.questions.filter(
-                question_type__name='Favorite Class'
+                question_type__name="Favorite Class"
             ).first()
 
             if favorite_question is None:
                 raise ESPError(
                     'Couldn\'t find an "overall rating" or "Favorite Class" '
-                    'question in this survey. To compute top classes, the '
-                    'survey must include either (a) a rating question whose '
+                    "question in this survey. To compute top classes, the "
+                    "survey must include either (a) a rating question whose "
                     'name contains "overall rating", or (b) a question '
                     'whose type is "Favorite Class".',
-                    log=False
+                    log=False,
                 )
 
             # Handle Favorite Class questions
             num_cut = 1
-            if 'num_cut' in request.GET:
+            if "num_cut" in request.GET:
                 try:
-                    num_cut = int(request.GET['num_cut'])
+                    num_cut = int(request.GET["num_cut"])
                 except ValueError:
                     pass
 
-            categories = prog.class_categories.all().order_by(
-                'category'
-            )
+            categories = prog.class_categories.all().order_by("category")
 
             # Count votes for each class
             class_votes = {}
-            for answer in Answer.objects.filter(
-                question=favorite_question
-            ):
+            for answer in Answer.objects.filter(question=favorite_question):
                 # Favorite Class answers store class IDs
                 if isinstance(answer.answer, list):
                     class_ids = answer.answer
@@ -769,112 +966,98 @@ def top_classes(request, tl, program, instance):
                     continue
 
                 teachers = list(cls.get_teachers())
-                enrollment = sum(
-                    sec.num_students() for sec in cls.get_sections()
-                )
+                enrollment = sum(sec.num_students() for sec in cls.get_sections())
                 class_data = {
-                    'class': cls,
-                    'numratings': votes,
+                    "class": cls,
+                    "numratings": votes,
                     # For favorite class, "avg" is the vote count
-                    'avg': votes,
-                    'enrollment': enrollment,
-                    'teacher': (
-                        teachers[0] if len(teachers) > 0 else None
-                    ),
-                    'numteachers': max(len(teachers), 1)
+                    "avg": votes,
+                    "enrollment": enrollment,
+                    "teacher": (teachers[0] if len(teachers) > 0 else None),
+                    "numteachers": max(len(teachers), 1),
                 }
                 if len(teachers) > 1:
-                    class_data['coteachers'] = teachers[1:]
+                    class_data["coteachers"] = teachers[1:]
                 perclass_data.append(class_data)
 
             context = {
-                'survey': survey,
-                'program': prog,
-                'perclass_data': perclass_data,
+                "survey": survey,
+                "program": prog,
+                "perclass_data": perclass_data,
                 # Not applicable for favorite class
-                'rating_cut': 0,
-                'num_cut': num_cut,
-                'categories': categories,
-                'is_favorite_class': True
+                "rating_cut": 0,
+                "num_cut": num_cut,
+                "categories": categories,
+                "is_favorite_class": True,
             }
         else:
             # Handle overall rating questions (original logic)
             rating_cut = 0.0
             try:
-                rating_cut = float(
-                    rating_question.get_params()['number_of_ratings']
-                ) - 1
+                rating_cut = (
+                    float(rating_question.get_params()["number_of_ratings"]) - 1
+                )
             except ValueError:
                 pass
-            if 'rating_cut' in request.GET:
+            if "rating_cut" in request.GET:
                 try:
-                    rating_cut = float(request.GET['rating_cut'])
+                    rating_cut = float(request.GET["rating_cut"])
                 except ValueError:
                     pass
 
             num_cut = 1
-            if 'num_cut' in request.GET:
+            if "num_cut" in request.GET:
                 try:
-                    num_cut = int(request.GET['num_cut'])
+                    num_cut = int(request.GET["num_cut"])
                 except ValueError:
                     pass
 
-            categories = prog.class_categories.all().order_by(
-                'category'
-            )
+            categories = prog.class_categories.all().order_by("category")
 
             section_ct = ContentType.objects.get(
-                app_label="program",
-                model="classsection"
+                app_label="program", model="classsection"
             )
 
             perclass_data = []
             initclass_data = [
                 {
-                    'class': cls,
-                    'ratings': [
+                    "class": cls,
+                    "ratings": [
                         float(x.answer)
                         for sec in cls.get_sections()
                         for x in Answer.objects.filter(
                             object_id=sec.id,
                             content_type=section_ct,
-                            question=rating_question
+                            question=rating_question,
                         )
-                    ]
+                    ],
                 }
                 for cls in classes
             ]
             for c in initclass_data:
-                c['numratings'] = len(c['ratings'])
-                if c['numratings'] < num_cut:
+                c["numratings"] = len(c["ratings"])
+                if c["numratings"] < num_cut:
                     continue
-                c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
-                if c['avg'] < rating_cut:
+                c["avg"] = sum(c["ratings"]) * 1.0 / c["numratings"]
+                if c["avg"] < rating_cut:
                     continue
-                teachers = list(c['class'].get_teachers())
-                c['teacher'] = (
-                    teachers[0] if len(teachers) > 0 else None
-                )
+                teachers = list(c["class"].get_teachers())
+                c["teacher"] = teachers[0] if len(teachers) > 0 else None
                 # in case there are no teachers
-                c['numteachers'] = max(len(teachers), 1)
-                if c['numteachers'] > 1:
-                    c['coteachers'] = teachers[1:]
-                del c['ratings']
+                c["numteachers"] = max(len(teachers), 1)
+                if c["numteachers"] > 1:
+                    c["coteachers"] = teachers[1:]
+                del c["ratings"]
                 perclass_data.append(c)
 
             context = {
-                'survey': survey,
-                'program': prog,
-                'perclass_data': perclass_data,
-                'rating_cut': rating_cut,
-                'num_cut': num_cut,
-                'categories': categories,
-                'is_favorite_class': False
+                "survey": survey,
+                "program": prog,
+                "perclass_data": perclass_data,
+                "rating_cut": rating_cut,
+                "num_cut": num_cut,
+                "categories": categories,
+                "is_favorite_class": False,
             }
 
-    return render_to_response(
-        'survey/top_classes.html',
-        request,
-        context
-    )
-
+    return render_to_response("survey/top_classes.html", request, context)

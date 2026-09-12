@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2010 by the individual contributors
@@ -36,17 +36,24 @@ from datetime import datetime, timedelta
 from esp.program.tests import ProgramFrameworkTest
 from esp.middleware.threadlocalrequest import get_current_request
 
+
 class StudentRegProfileModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update({'num_students': 3,})
+        kwargs.update(
+            {
+                "num_students": 3,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         # Get and remember the instance of this module
-        m = ProgramModule.objects.get(handler='StudentRegProfileModule', module_type='learn')
+        m = ProgramModule.objects.get(
+            handler="StudentRegProfileModule", module_type="learn"
+        )
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
     def runTest(self):
@@ -54,7 +61,7 @@ class StudentRegProfileModuleTest(ProgramFrameworkTest):
 
         #   Check that the profile page does not cause an error when not logged in
         #   (it should redirect to a login page)
-        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
+        response = self.client.get("/learn/%s/profile" % self.program.getUrlBase())
         self.assertEqual(response.status_code, 302)
 
         # Check that the people start out without profiles
@@ -62,19 +69,35 @@ class StudentRegProfileModuleTest(ProgramFrameworkTest):
         # the ProgramModuleObj's user if we ever cache isCompleted().
         for student in self.students:
             get_current_request().user = student
-            self.assertTrue( not self.moduleobj.isCompleted(student), "The profile should be incomplete at first." )
+            self.assertTrue(
+                not self.moduleobj.isCompleted(student),
+                "The profile should be incomplete at first.",
+            )
 
         # First student: getLastForProgram should not save a profile
         get_current_request().user = self.students[0]
         prof = RegistrationProfile.getLastForProgram(self.students[0], self.program)
-        self.assertTrue( self.students[0].registrationprofile_set.count() <= 0, "Profile was saved when it shouldn't have been." )
+        self.assertTrue(
+            self.students[0].registrationprofile_set.count() <= 0,
+            "Profile was saved when it shouldn't have been.",
+        )
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
-        self.assertTrue( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertFalse( self.moduleobj.isCompleted(self.students[0]), "Profile should not be complete until explicitly saved with program." )
-        self.assertTrue( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
+        self.assertTrue(
+            self.students[0].registrationprofile_set.count() >= 1,
+            "Profile failed to save.",
+        )
+        self.assertTrue(
+            self.students[0].registrationprofile_set.count() <= 1, "Too many profiles."
+        )
+        self.assertFalse(
+            self.moduleobj.isCompleted(self.students[0]),
+            "Profile should not be complete until explicitly saved with program.",
+        )
+        self.assertTrue(
+            self.students[0].registrationprofile_set.count() <= 1, "Too many profiles."
+        )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
         get_current_request().user = self.students[1]
@@ -86,38 +109,58 @@ class StudentRegProfileModuleTest(ProgramFrameworkTest):
         prof.last_ts = datetime.now() - timedelta(10)
         super(RegistrationProfile, prof).save()
         # Continue testing
-        self.assertTrue( self.students[1].registrationprofile_set.count() >= 1, "Profile failed to save." )
-        self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
-        self.assertTrue( not self.moduleobj.isCompleted(self.students[1]), "Profile too old but accepted anyway." )
-        self.assertTrue( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
+        self.assertTrue(
+            self.students[1].registrationprofile_set.count() >= 1,
+            "Profile failed to save.",
+        )
+        self.assertTrue(
+            self.students[1].registrationprofile_set.count() <= 1, "Too many profiles."
+        )
+        self.assertTrue(
+            not self.moduleobj.isCompleted(self.students[1]),
+            "Profile too old but accepted anyway.",
+        )
+        self.assertTrue(
+            self.students[1].registrationprofile_set.count() <= 1, "Too many profiles."
+        )
 
         get_current_request().user = self.students[2]
         for r in RegistrationProfile.objects.filter(user=self.students[2]):
             r.delete()
         # Test to see whether the graduation year is required
-        self.client.login(username=self.students[2].username, password='password')
-        response = self.client.post('%sprofile' % self.program.get_learn_url(), {'graduation_year': '', 'profile_page': ''})
-        lines = response.content.decode('UTF-8').split('\n')
+        self.client.login(username=self.students[2].username, password="password")
+        response = self.client.post(
+            "%sprofile" % self.program.get_learn_url(),
+            {"graduation_year": "", "profile_page": ""},
+        )
+        lines = response.content.decode("UTF-8").split("\n")
 
         ## Find the line for the start of the graduation-year form field
         for i, line in enumerate(lines):
             if 'id="id_graduation_year"' in line:
                 break
-        self.assertTrue(i < len(lines)-1) ## Found the relevant line
+        self.assertTrue(i < len(lines) - 1)  ## Found the relevant line
 
         ## Find the line for the end of the graduation-year form field
         for j, line in enumerate(lines[i:]):
-            if '</select>' in line:
+            if "</select>" in line:
                 break
-        self.assertTrue(j < len(lines) - 2) ## Found the line, need to also find the error message on the next line
+        self.assertTrue(
+            j < len(lines) - 2
+        )  ## Found the line, need to also find the error message on the next line
 
         ## Find the error message
-        self.assertTrue('<span class="form_error" role="alert">This field is required.</span>' in lines[i+j+1])
+        self.assertTrue(
+            '<span class="form_error" role="alert">This field is required.</span>'
+            in lines[i + j + 1]
+        )
 
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
-        for line in lines[i:i+j]:
-            found_default = found_default or ('<option value="" selected></option>' in line)
+        for line in lines[i : i + j]:
+            found_default = found_default or (
+                '<option value="" selected></option>' in line
+            )
         self.assertTrue(found_default)
 
 
@@ -135,10 +178,10 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
     """
 
     def setUp(self, *args, **kwargs):
-        kwargs.update({'num_students': 3, 'num_teachers': 2})
+        kwargs.update({"num_students": 3, "num_teachers": 2})
         super().setUp(*args, **kwargs)
-        self.student_profile_url = '%sprofile' % self.program.get_learn_url()
-        self.teacher_profile_url = '%sprofile' % self.program.get_teach_url()
+        self.student_profile_url = "%sprofile" % self.program.get_learn_url()
+        self.teacher_profile_url = "%sprofile" % self.program.get_teach_url()
 
     # ------------------------------------------------------------------
     # Helpers
@@ -147,51 +190,52 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
     def _valid_student_post(self, grade=9):
         """Return a minimal valid POST dict for StudentProfileForm."""
         from esp.users.models import ESPUser
+
         yog = str(ESPUser.YOGFromGrade(grade))
         return {
-            'profile_page':       '',
+            "profile_page": "",
             # UserContactForm
-            'first_name':         'Test',
-            'last_name':          'Student',
-            'e_mail':             'teststudent@example.com',
+            "first_name": "Test",
+            "last_name": "Student",
+            "e_mail": "teststudent@example.com",
             # phone_cell satisfies the require_student_phonenum check when enabled
-            'phone_cell':         '+16175559999',
-            'address_street':     '123 Test St',
-            'address_city':       'Cambridge',
-            'address_state':      'MA',
-            'address_zip':        '02139',
+            "phone_cell": "+16175559999",
+            "address_street": "123 Test St",
+            "address_city": "Cambridge",
+            "address_state": "MA",
+            "address_zip": "02139",
             # StudentInfoForm
-            'graduation_year':    yog,
-            'dob_0':              '5',     # month (SplitDateWidget: 0=month)
-            'dob_1':              '15',    # day
-            'dob_2':              '2010',  # year
+            "graduation_year": yog,
+            "dob_0": "5",  # month (SplitDateWidget: 0=month)
+            "dob_1": "15",  # day
+            "dob_2": "2010",  # year
             # EmergContactForm
-            'emerg_first_name':   'Emerg',
-            'emerg_last_name':    'Contact',
-            'emerg_phone_day':    '+16175551234',
-            'emerg_address_street': '123 Test St',
-            'emerg_address_city': 'Cambridge',
-            'emerg_address_state': 'MA',
-            'emerg_address_zip':  '02139',
+            "emerg_first_name": "Emerg",
+            "emerg_last_name": "Contact",
+            "emerg_phone_day": "+16175551234",
+            "emerg_address_street": "123 Test St",
+            "emerg_address_city": "Cambridge",
+            "emerg_address_state": "MA",
+            "emerg_address_zip": "02139",
             # GuardContactForm
-            'guard_first_name':   'Guard',
-            'guard_last_name':    'Ian',
-            'guard_phone_day':    '+16175555678',
+            "guard_first_name": "Guard",
+            "guard_last_name": "Ian",
+            "guard_phone_day": "+16175555678",
         }
 
     def _valid_teacher_post(self):
         """Return a minimal valid POST dict for TeacherProfileForm."""
         return {
-            'profile_page':   '',
+            "profile_page": "",
             # UserContactForm (address fields are optional for teachers)
-            'first_name':     'Test',
-            'last_name':      'Teacher',
-            'e_mail':         'testteacher@example.com',
+            "first_name": "Test",
+            "last_name": "Teacher",
+            "e_mail": "testteacher@example.com",
             # Teachers always require at least one phone (isTeacher() branch in clean())
-            'phone_cell':     '+16175558888',
+            "phone_cell": "+16175558888",
             # TeacherInfoForm – affiliation is a DropdownOtherField (MultiWidget)
-            'affiliation_0':  'Undergrad',
-            'affiliation_1':  '',
+            "affiliation_0": "Undergrad",
+            "affiliation_1": "",
         }
 
     # ------------------------------------------------------------------
@@ -210,7 +254,7 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
 
     def test_get_profile_page_student(self):
         """A logged-in student can load the profile page and sees the grade field."""
-        self.client.login(username=self.students[0].username, password='password')
+        self.client.login(username=self.students[0].username, password="password")
         response = self.client.get(self.student_profile_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'id="id_graduation_year"')
@@ -227,23 +271,32 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         student = self.students[0]
         RegistrationProfile.objects.filter(user=student).delete()
 
-        self.client.login(username=student.username, password='password')
-        response = self.client.post(self.student_profile_url, self._valid_student_post(grade=9))
+        self.client.login(username=student.username, password="password")
+        response = self.client.post(
+            self.student_profile_url, self._valid_student_post(grade=9)
+        )
 
         # Redirect on success
         self.assertEqual(response.status_code, 302)
 
         # A profile with student_info must now exist
-        profiles = RegistrationProfile.objects.filter(user=student, student_info__isnull=False)
-        self.assertTrue(profiles.exists(),
-                        "A RegistrationProfile with student_info should be created")
+        profiles = RegistrationProfile.objects.filter(
+            user=student, student_info__isnull=False
+        )
+        self.assertTrue(
+            profiles.exists(),
+            "A RegistrationProfile with student_info should be created",
+        )
 
         # grade must match the submitted value, not be forced to the smallest grade
         expected_yog = ESPUser.YOGFromGrade(9)
-        prof = profiles.order_by('-last_ts').first()
+        prof = profiles.order_by("-last_ts").first()
         self.assertIsNotNone(prof.student_info.graduation_year)
-        self.assertEqual(int(prof.student_info.graduation_year), expected_yog,
-                         "graduation_year should equal the POSTed value, not the smallest grade")
+        self.assertEqual(
+            int(prof.student_info.graduation_year),
+            expected_yog,
+            "graduation_year should equal the POSTed value, not the smallest grade",
+        )
 
     # ------------------------------------------------------------------
     # 4. Invalid data – graduation_year omitted
@@ -256,17 +309,20 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         student = self.students[1]
         RegistrationProfile.objects.filter(user=student).delete()
 
-        self.client.login(username=student.username, password='password')
-        response = self.client.post(self.student_profile_url,
-                                    {'graduation_year': '', 'profile_page': ''})
+        self.client.login(username=student.username, password="password")
+        response = self.client.post(
+            self.student_profile_url, {"graduation_year": "", "profile_page": ""}
+        )
 
         # Form must be re-rendered with an error, not redirected
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'This field is required.')
+        self.assertContains(response, "This field is required.")
 
         # No completed profile should have been written
         self.assertFalse(
-            RegistrationProfile.objects.filter(user=student, student_info__isnull=False).exists(),
+            RegistrationProfile.objects.filter(
+                user=student, student_info__isnull=False
+            ).exists(),
             "No profile with student_info should be created when graduation_year is missing",
         )
 
@@ -281,29 +337,33 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         student = self.students[2]
         RegistrationProfile.objects.filter(user=student).delete()
 
-        self.client.login(username=student.username, password='password')
+        self.client.login(username=student.username, password="password")
 
         # Create the initial profile
         initial = self._valid_student_post(grade=9)
-        initial.update({'first_name': 'Original', 'address_city': 'Boston'})
+        initial.update({"first_name": "Original", "address_city": "Boston"})
         self.client.post(self.student_profile_url, initial)
 
         # Edit: change first_name and city (grade unchanged – allow_change_grade_level is False)
         updated = self._valid_student_post(grade=9)
-        updated.update({'first_name': 'Updated', 'address_city': 'Somerville'})
+        updated.update({"first_name": "Updated", "address_city": "Somerville"})
         response = self.client.post(self.student_profile_url, updated)
 
         self.assertEqual(response.status_code, 302)
 
         # User's first_name should reflect the edited submission
         student.refresh_from_db()
-        self.assertEqual(student.first_name, 'Updated',
-                         "User first_name should be updated after editing the profile")
+        self.assertEqual(
+            student.first_name,
+            "Updated",
+            "User first_name should be updated after editing the profile",
+        )
 
         # Profile count should not grow when editing
         profile_count = RegistrationProfile.objects.filter(user=student).count()
-        self.assertEqual(profile_count, 1,
-                 "Editing a profile must not create duplicate profiles")
+        self.assertEqual(
+            profile_count, 1, "Editing a profile must not create duplicate profiles"
+        )
 
     # ------------------------------------------------------------------
     # 6. GET profile page – teacher
@@ -311,7 +371,7 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
 
     def test_get_profile_page_teacher(self):
         """A logged-in teacher can load the teacher profile page (200)."""
-        self.client.login(username=self.teachers[0].username, password='password')
+        self.client.login(username=self.teachers[0].username, password="password")
         response = self.client.get(self.teacher_profile_url)
         self.assertEqual(response.status_code, 200)
 
@@ -326,12 +386,16 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         teacher = self.teachers[1]
         RegistrationProfile.objects.filter(user=teacher).delete()
 
-        self.client.login(username=teacher.username, password='password')
-        response = self.client.post(self.teacher_profile_url, self._valid_teacher_post())
+        self.client.login(username=teacher.username, password="password")
+        response = self.client.post(
+            self.teacher_profile_url, self._valid_teacher_post()
+        )
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(
-            RegistrationProfile.objects.filter(user=teacher, teacher_info__isnull=False).exists(),
+            RegistrationProfile.objects.filter(
+                user=teacher, teacher_info__isnull=False
+            ).exists(),
             "A RegistrationProfile with teacher_info should be created after valid teacher POST",
         )
 
@@ -350,12 +414,12 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         student = self.students[0]
         RegistrationProfile.objects.filter(user=student).delete()
 
-        self.client.login(username=student.username, password='password')
+        self.client.login(username=student.username, password="password")
         response = self.client.get(self.student_profile_url)
         self.assertEqual(response.status_code, 200)
 
-        content = response.content.decode('utf-8')
-        lines = content.split('\n')
+        content = response.content.decode("utf-8")
+        lines = content.split("\n")
 
         # Locate the graduation_year <select>
         start_idx = None
@@ -363,30 +427,32 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
             if 'id="id_graduation_year"' in line:
                 start_idx = i
                 break
-        self.assertIsNotNone(start_idx,
-                             "graduation_year select not found in profile page HTML")
+        self.assertIsNotNone(
+            start_idx, "graduation_year select not found in profile page HTML"
+        )
 
         # Locate its closing </select>
         end_offset = None
         for j, line in enumerate(lines[start_idx:]):
-            if '</select>' in line:
+            if "</select>" in line:
                 end_offset = j
                 break
-        self.assertIsNotNone(end_offset,
-                             "Closing </select> for graduation_year not found")
+        self.assertIsNotNone(
+            end_offset, "Closing </select> for graduation_year not found"
+        )
 
-        select_html = '\n'.join(lines[start_idx: start_idx + end_offset + 1])
+        select_html = "\n".join(lines[start_idx : start_idx + end_offset + 1])
 
         # The empty/blank option must be the selected one
         self.assertTrue(
-            '<option value="" selected>' in select_html or
-            '<option value="" selected></option>' in select_html,
+            '<option value="" selected>' in select_html
+            or '<option value="" selected></option>' in select_html,
             "The empty option must be pre-selected for graduation_year on a new profile",
         )
 
         # The smallest grade option must NOT be shown as selected
         smallest_grade = min(ESPUser.grade_options())
-        smallest_yog   = str(ESPUser.YOGFromGrade(smallest_grade))
+        smallest_yog = str(ESPUser.YOGFromGrade(smallest_grade))
         self.assertNotIn(
             'value="%s" selected' % smallest_yog,
             select_html,
@@ -409,14 +475,17 @@ class RegistrationProfileFlowTest(ProgramFrameworkTest):
         student = self.students[1]
         RegistrationProfile.objects.filter(user=student).delete()
 
-        self.client.login(username=student.username, password='password')
-        response = self.client.post(self.student_profile_url,
-                                    {'graduation_year': '', 'profile_page': ''})
+        self.client.login(username=student.username, password="password")
+        response = self.client.post(
+            self.student_profile_url, {"graduation_year": "", "profile_page": ""}
+        )
 
         # Expected path: 200 with a form error, nothing persisted
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'This field is required.')
+        self.assertContains(response, "This field is required.")
         self.assertFalse(
-            RegistrationProfile.objects.filter(user=student, student_info__isnull=False).exists(),
+            RegistrationProfile.objects.filter(
+                user=student, student_info__isnull=False
+            ).exists(),
             "No profile with student_info should be created when graduation_year is missing",
         )

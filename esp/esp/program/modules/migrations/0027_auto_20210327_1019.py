@@ -5,25 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0026_teachermoderatormodule'),
+        ("modules", "0026_teachermoderatormodule"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ajaxchangelogentry',
-            name='assigned',
+            model_name="ajaxchangelogentry",
+            name="assigned",
             field=models.NullBooleanField(),
         ),
         migrations.AddField(
-            model_name='ajaxchangelogentry',
-            name='is_moderator',
+            model_name="ajaxchangelogentry",
+            name="is_moderator",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='ajaxchangelogentry',
-            name='moderator',
+            model_name="ajaxchangelogentry",
+            name="moderator",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

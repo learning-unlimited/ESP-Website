@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -40,14 +40,21 @@ from esp.users.models import Record
 import random
 import re
 
+
 class SurveyTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update( {
-            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
-            'num_rooms': 6,
-            } )
+        kwargs.update(
+            {
+                "num_timeslots": 3,
+                "timeslot_length": 50,
+                "timeslot_gap": 10,
+                "num_teachers": 6,
+                "classes_per_teacher": 1,
+                "sections_per_class": 2,
+                "num_rooms": 6,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
@@ -64,117 +71,158 @@ class SurveyTest(ProgramFrameworkTest):
         student = random.choice(self.students)
         sec = random.choice(self.program.sections())
         sec.preregister_student(student)
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
 
         #   Access the survey page - there should be no surveys and we should get an error
-        response = self.client.get('/learn/%s/survey' % self.program.url)
-        self.assertContains(response, 'no such survey', status_code=500)
+        response = self.client.get("/learn/%s/survey" % self.program.url)
+        self.assertContains(response, "no such survey", status_code=500)
 
         #   Create a survey
-        (survey, created) = Survey.objects.get_or_create(name='Test Survey', program=self.program, category='learn')
-        (text_qtype, created) = QuestionType.objects.get_or_create(name='yes-no response')
-        (number_qtype, created) = QuestionType.objects.get_or_create(name='numeric rating', is_numeric=True, is_countable=True,
-                                                                     _param_names = "Number of ratings|Lower text|Middle text|Upper text")
-        (question_base, created) = Question.objects.get_or_create(survey=survey, name='Question1', question_type=text_qtype, per_class=False, seq=0)
-        (question_perclass, created) = Question.objects.get_or_create(survey=survey, name='Question2', question_type=text_qtype, per_class=True, seq=1)
-        (question_number, created) = Question.objects.get_or_create(survey=survey, name='Question3', question_type=number_qtype, per_class=True, seq=2,
-                                                                    _param_values="5|Terrible|Okay|Awesome")
+        (survey, created) = Survey.objects.get_or_create(
+            name="Test Survey", program=self.program, category="learn"
+        )
+        (text_qtype, created) = QuestionType.objects.get_or_create(
+            name="yes-no response"
+        )
+        (number_qtype, created) = QuestionType.objects.get_or_create(
+            name="numeric rating",
+            is_numeric=True,
+            is_countable=True,
+            _param_names="Number of ratings|Lower text|Middle text|Upper text",
+        )
+        (question_base, created) = Question.objects.get_or_create(
+            survey=survey,
+            name="Question1",
+            question_type=text_qtype,
+            per_class=False,
+            seq=0,
+        )
+        (question_perclass, created) = Question.objects.get_or_create(
+            survey=survey,
+            name="Question2",
+            question_type=text_qtype,
+            per_class=True,
+            seq=1,
+        )
+        (question_number, created) = Question.objects.get_or_create(
+            survey=survey,
+            name="Question3",
+            question_type=number_qtype,
+            per_class=True,
+            seq=2,
+            _param_values="5|Terrible|Okay|Awesome",
+        )
 
         #   Make sure the user is marked as not having completed it
-        self.assertFalse(Record.user_completed(student, 'student_survey', self.program))
+        self.assertFalse(Record.user_completed(student, "student_survey", self.program))
 
         #   Now we should be able to access the survey
         #   Check the general survey
-        response = self.client.get('/learn/%s/survey?general' % self.program.url)
+        response = self.client.get("/learn/%s/survey?general" % self.program.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Question1', str(response.content, encoding='UTF-8'))
+        self.assertIn("Question1", str(response.content, encoding="UTF-8"))
         #   Check the section-specific survey
-        response = self.client.get(f'/learn/{self.program.url}/survey?sec={sec.id}')
+        response = self.client.get(f"/learn/{self.program.url}/survey?sec={sec.id}")
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Question2', str(response.content, encoding='UTF-8'))
-        self.assertIn('Question3', str(response.content, encoding='UTF-8'))
+        self.assertIn("Question2", str(response.content, encoding="UTF-8"))
+        self.assertIn("Question3", str(response.content, encoding="UTF-8"))
 
         #   Fill out the survey with some arbitrary answers
         sec_timeslot = sec.get_meeting_times()[0]
         form_settings = {
-            'attendance_%d' % sec_timeslot.id: '%s' % sec.id,
-            'question_%d' % question_base.id: 'Yes',
-            f'question_{question_perclass.id}_{sec_timeslot.id}': 'No',
-            f'question_{question_number.id}_{sec_timeslot.id}': '3',
+            "attendance_%d" % sec_timeslot.id: "%s" % sec.id,
+            "question_%d" % question_base.id: "Yes",
+            f"question_{question_perclass.id}_{sec_timeslot.id}": "No",
+            f"question_{question_number.id}_{sec_timeslot.id}": "3",
         }
 
         #   Submit the survey
-        response = self.client.post('/learn/%s/survey?general' % self.program.url, form_settings, follow=True)
+        response = self.client.post(
+            "/learn/%s/survey?general" % self.program.url, form_settings, follow=True
+        )
         self.assertEqual(response.status_code, 200)
-        self.assertIn('have been saved', str(response.content, encoding='UTF-8'))
+        self.assertIn("have been saved", str(response.content, encoding="UTF-8"))
 
         #   Check that we have a SurveyRecord with the right answers associated with it
         self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
         record = SurveyResponse.objects.filter(survey=survey)[0]
         self.assertEqual(Answer.objects.filter(question=question_base).count(), 1)
         answer_base = Answer.objects.filter(question=question_base)[0]
-        self.assertEqual(answer_base.answer, 'Yes')
+        self.assertEqual(answer_base.answer, "Yes")
         self.assertEqual(answer_base.target, self.program)
         self.assertEqual(Answer.objects.filter(question=question_perclass).count(), 1)
         answer_perclass = Answer.objects.filter(question=question_perclass)[0]
-        self.assertEqual(answer_perclass.answer, 'No')
+        self.assertEqual(answer_perclass.answer, "No")
         self.assertEqual(answer_perclass.target, sec)
         answer_number = Answer.objects.filter(question=question_number)[0]
-        self.assertEqual(answer_number.answer, '3')
+        self.assertEqual(answer_number.answer, "3")
         self.assertEqual(answer_number.target, sec)
 
         #   Check that the student is marked as having filled out the survey
-        self.assertTrue(Record.user_completed(student, 'student_survey', self.program))
+        self.assertTrue(Record.user_completed(student, "student_survey", self.program))
 
         #   Check that we get an error if we try to visit the survey again
-        response = self.client.get('/learn/%s/survey?general' % self.program.url)
-        self.assertIn('already completed the', str(response.content, encoding='UTF-8'))
+        response = self.client.get("/learn/%s/survey?general" % self.program.url)
+        self.assertIn("already completed the", str(response.content, encoding="UTF-8"))
 
         # student logs out, teacher logs in
         self.client.logout()
         teacher = sec.parent_class.get_teachers()[0]
-        self.client.login(username=teacher.username, password='password')
+        self.client.login(username=teacher.username, password="password")
 
         # teacher should see per-class questions only
-        response = self.client.get('/teach/%s/survey/review' % self.program.url)
-        self.assertContains(response, 'Question2')
-        self.assertContains(response, 'Question3')
-        self.assertNotContains(response, 'Question1')
+        response = self.client.get("/teach/%s/survey/review" % self.program.url)
+        self.assertContains(response, "Question2")
+        self.assertContains(response, "Question3")
+        self.assertNotContains(response, "Question1")
 
     def test_csv_template_download(self):
         # Create various question types to cover all cases
-        QuestionType.objects.get_or_create(name='rating', is_numeric=True, is_countable=True)
-        QuestionType.objects.get_or_create(name='yes-no response')
-        QuestionType.objects.get_or_create(name='checkboxes')
-        QuestionType.objects.get_or_create(name='multiple choice')
-        QuestionType.objects.get_or_create(name='open response')
+        QuestionType.objects.get_or_create(
+            name="rating", is_numeric=True, is_countable=True
+        )
+        QuestionType.objects.get_or_create(name="yes-no response")
+        QuestionType.objects.get_or_create(name="checkboxes")
+        QuestionType.objects.get_or_create(name="multiple choice")
+        QuestionType.objects.get_or_create(name="open response")
 
         # Login as admin
         admin = self.admins[0]
-        self.assertTrue(self.client.login(username=admin.username, password='password'))
+        self.assertTrue(self.client.login(username=admin.username, password="password"))
 
         # Download the template
-        response = self.client.get(f'/manage/{self.program.url}/surveys/csv_template')
+        response = self.client.get(f"/manage/{self.program.url}/surveys/csv_template")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertEqual(response["Content-Type"], "text/csv")
 
-        content = response.content.decode('utf-8')
+        content = response.content.decode("utf-8")
         lines = content.strip().splitlines()
         self.assertGreater(len(lines), 1)
 
         # Check headers
-        self.assertEqual(lines[0], 'question_text,question_type,per_class,seq,param_values')
+        self.assertEqual(
+            lines[0], "question_text,question_type,per_class,seq,param_values"
+        )
 
         # Check content and make sure no "(example for" remains
-        self.assertNotIn('(example for', content)
-        self.assertNotIn('Sample question for', content)
+        self.assertNotIn("(example for", content)
+        self.assertNotIn("Sample question for", content)
 
         # Check checkboxes and multiple choice have option values
         for line in lines[1:]:
-            parts = line.split(',')
+            parts = line.split(",")
             if len(parts) < 5:
                 continue
-            q_text, q_type, _, _, param_val = parts[0], parts[1], parts[2], parts[3], parts[4]
-            if q_type in ('checkboxes', 'multiple choice'):
-                self.assertEqual(param_val, 'Option 1|Option 2|Option 3')
-                self.assertEqual(q_text, 'Select from the options')
+            q_text, q_type, _, _, param_val = (
+                parts[0],
+                parts[1],
+                parts[2],
+                parts[3],
+                parts[4],
+            )
+            if q_type in ("checkboxes", "multiple choice"):
+                self.assertEqual(param_val, "Option 1|Option 2|Option 3")
+                self.assertEqual(q_text, "Select from the options")

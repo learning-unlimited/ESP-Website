@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -47,52 +46,90 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 # The folder that Media files are saved to
 root_file_path = "uploaded"
 
+
 class Media(models.Model):
-    """ A generic container for 'media': videos, pictures, papers, etc. """
-    friendly_name = models.TextField() # Human-readable description of the media
-    target_file = models.FileField(upload_to=root_file_path) # Target media file
-    size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
-    format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
+    """A generic container for 'media': videos, pictures, papers, etc."""
+
+    friendly_name = models.TextField()  # Human-readable description of the media
+    target_file = models.FileField(upload_to=root_file_path)  # Target media file
+    size = models.IntegerField(
+        blank=True, null=True, editable=False
+    )  # Size of the file, in bytes
+    format = models.TextField(
+        blank=True, null=True
+    )  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
-    file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
-    file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
-    hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # randomized filename
+    file_extension = models.TextField(
+        blank=True, null=True, max_length=16, editable=False
+    )  # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    file_name = models.TextField(
+        blank=True, null=True, max_length=256, editable=False
+    )  # original filename that this file should be downloaded as
+    hashed_name = models.TextField(
+        blank=True, null=True, max_length=256, editable=False
+    )  # randomized filename
 
     #   Generic Foreign Key to object this media is associated with.
     #   Currently limited to be either a ClassSubject or Program.
-    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to={'model__in': ['classsubject', 'program']}, on_delete=models.CASCADE)
+    owner_type = models.ForeignKey(
+        ContentType,
+        blank=True,
+        null=True,
+        limit_choices_to={"model__in": ["classsubject", "program"]},
+        on_delete=models.CASCADE,
+    )
     owner_id = models.PositiveIntegerField(blank=True, null=True)
-    owner = GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
+    owner = GenericForeignKey(ct_field="owner_type", fk_field="owner_id")
 
     def clean(self):
         super().clean()
         if (self.owner_type_id is None) != (self.owner_id is None):
             from django.core.exceptions import ValidationError
-            raise ValidationError("Both parts of the GenericForeignKey (owner_type and owner_id) must be either both null or both set.")
+
+            raise ValidationError(
+                "Both parts of the GenericForeignKey (owner_type and owner_id) must be either both null or both set."
+            )
 
     def save(self, *args, **kwargs):
         self.clean()
         return super().save(*args, **kwargs)
 
     def handle_file(self, file, filename):
-        """ Saves a file from request.FILES. """
+        """Saves a file from request.FILES."""
         import uuid
 
         # Do we actually need this?
-        splitname = os.path.basename(filename).split('.')
+        splitname = os.path.basename(filename).split(".")
         if len(splitname) > 1:
             self.file_extension = splitname[-1]
         else:
-            self.file_extension = ''
+            self.file_extension = ""
 
         # get list of allowed file extensions
-        if hasattr(settings, 'ALLOWED_EXTENSIONS'):
+        if hasattr(settings, "ALLOWED_EXTENSIONS"):
             allowed_extensions = [x.lower() for x in settings.ALLOWED_EXTENSIONS]
         else:
-            allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
+            allowed_extensions = [
+                "pdf",
+                "odt",
+                "odp",
+                "jpg",
+                "jpeg",
+                "gif",
+                "png",
+                "doc",
+                "docx",
+                "ppt",
+                "pptx",
+                "zip",
+                "txt",
+            ]
 
         if not self.file_extension.lower() in allowed_extensions:
-            raise ESPError(f"The file extension provided is not allowed. Allowed extensions: {', '.join(allowed_extensions)}.", log=False)
+            raise ESPError(
+                f"The file extension provided is not allowed. Allowed extensions: {', '.join(allowed_extensions)}.",
+                log=False,
+            )
 
         self.mime_type = file.content_type
         self.size = file.size
@@ -113,19 +150,23 @@ class Media(models.Model):
         if not self.hashed_name or not self.file_name:
             return ""
         return "/download/" + self.hashed_name + "/" + self.file_name
+
     download_path = property(get_download_path)
 
     # returns an absolute path to this file
     def get_uploaded_filename(self):
-        return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip('/'))
+        return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip("/"))
 
     # returns an absolute path to this file
     def test_upload_filename(self):
-        return not os.path.isfile(os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name))
+        return not os.path.isfile(
+            os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name)
+        )
 
     def delete(self, *args, **kwargs):
-        """ Delete entry; provide hack to fix old absolute-path-storing. """
+        """Delete entry; provide hack to fix old absolute-path-storing."""
         import os
+
         # If no file is associated, FileField.url can raise ValueError.
         try:
             uploaded = self.get_uploaded_filename()

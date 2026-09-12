@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0041_remove_passwordrecoveryticket'),
+        ("users", "0041_remove_passwordrecoveryticket"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='gradechangerequest',
-            name='approved',
+            model_name="gradechangerequest",
+            name="approved",
             field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='teacherinfo',
-            name='from_here',
+            model_name="teacherinfo",
+            name="from_here",
             field=models.BooleanField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='teacherinfo',
-            name='is_graduate_student',
+            model_name="teacherinfo",
+            name="is_graduate_student",
             field=models.BooleanField(blank=True, null=True),
         ),
     ]

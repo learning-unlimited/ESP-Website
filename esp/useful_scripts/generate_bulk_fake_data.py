@@ -46,22 +46,25 @@ if not getattr(settings, "DEBUG", False):
 
 fake = Faker()
 
+
 def try_get_phone():
-    phone = ''
+    phone = ""
     # generate a 555 number, because it's never a real phone number, but is accepted by Django's phone number validator
     # https://en.wikipedia.org/wiki/Fictitious_telephone_number
     for i in range(10):
         if i not in [3, 4, 5]:
             phone += str(random.randint(0, 9))
         else:
-            phone += '5'
+            phone += "5"
     return phone
+
 
 def get_clean_phone():
     phone = try_get_phone()
     while not PhoneNumber.from_string(phone).is_valid():
         phone = try_get_phone()
     return phone
+
 
 def generate_user(role, group, program=None):
     """
@@ -75,7 +78,7 @@ def generate_user(role, group, program=None):
     `program`: `Program`, the program to put this registration profile into (if any)
     """
 
-    if role not in ['Student', 'Teacher']:
+    if role not in ["Student", "Teacher"]:
         raise ValueError("Only Student and Teacher roles are supported.")
 
     # basic User information
@@ -96,7 +99,7 @@ def generate_user(role, group, program=None):
 
     # user contact info
     phone_day = get_clean_phone()
-    street = fake.address().split('\n')[0]
+    street = fake.address().split("\n")[0]
     city = fake.city()
     state = fake.state_abbr()
     zip_code = fake.zipcode_in_state(state)
@@ -110,10 +113,10 @@ def generate_user(role, group, program=None):
         address_city=city,
         address_state=state,
         address_zip=zip_code,
-        address_country='US'
+        address_country="US",
     )
 
-    if role == 'Student':
+    if role == "Student":
         # registration profile
         guardian_email = fake.email()
         guardian_first_name = fake.first_name()
@@ -128,7 +131,7 @@ def generate_user(role, group, program=None):
             address_city=city,
             address_state=state,
             address_zip=zip_code,
-            address_country='US'
+            address_country="US",
         )
 
         RegistrationProfile.objects.create(
@@ -136,9 +139,9 @@ def generate_user(role, group, program=None):
             program=program,
             contact_user=contact_info,
             contact_guardian=contact_guardian,
-            contact_emergency=contact_guardian
+            contact_emergency=contact_guardian,
         )
-    elif role == 'Teacher':
+    elif role == "Teacher":
         RegistrationProfile.objects.create(
             user=user,
             program=program,
@@ -147,16 +150,16 @@ def generate_user(role, group, program=None):
 
     return user
 
+
 def generate_k12school():
     """
     Generates a random `K12School`. You need at least one of these before calling `generate_student_info`.
     """
 
-    name = ' '.join(fake.text().split(' ',3)[:3])
-    k12school = K12School.objects.create(
-        name=name
-    )
+    name = " ".join(fake.text().split(" ", 3)[:3])
+    k12school = K12School.objects.create(name=name)
     return k12school
+
 
 def generate_student_info(student, min_grade, max_grade, schools):
     """
@@ -171,9 +174,10 @@ def generate_student_info(student, min_grade, max_grade, schools):
     """
 
     if not schools:
-        raise ValueError("generate_student_info requires a list of at least one `K12School` in `schools` parameter. " +
-                         "Use `generate_k12school` to generate a random `K12School`."
-                         )
+        raise ValueError(
+            "generate_student_info requires a list of at least one `K12School` in `schools` parameter. "
+            + "Use `generate_k12school` to generate a random `K12School`."
+        )
 
     student_info = StudentInfo()
     student_info.user = student
@@ -183,7 +187,7 @@ def generate_student_info(student, min_grade, max_grade, schools):
     student_info.graduation_year = ESPUser.YOGFromGrade(grade)
 
     # generate a random K12School
-    random_school_index = random.randint(0, len(schools)-1)
+    random_school_index = random.randint(0, len(schools) - 1)
     student_info.k12school = schools[random_school_index]
 
     # generate a random date of birth based on the grade
@@ -191,20 +195,31 @@ def generate_student_info(student, min_grade, max_grade, schools):
     month_of_birth = random.randint(1, 12)
 
     # https://en.wikipedia.org/wiki/Thirty_Days_Hath_September
-    day_of_birth = random.randint(1,
-                                  30 if month_of_birth in [4, 6, 9, 11] else  # Thirty days hath September / April, June, and November
-                                  28 if month_of_birth == 2 and year_of_birth % 4 != 0 else  # Save February at twenty-eight
-                                  29 if month_of_birth == 2 else  # But leap year, coming once in four / February then has one day more
-                                  31  # All the rest have thirty-one
-                                 )
+    day_of_birth = random.randint(
+        1,
+        30
+        if month_of_birth in [4, 6, 9, 11]
+        # Thirty days hath September / April, June, and November
+        else 28
+        if month_of_birth == 2 and year_of_birth % 4 != 0
+        # Save February at twenty-eight
+        else 29
+        if month_of_birth == 2
+        # But leap year, coming once in four / February then has one day more
+        else 31,  # All the rest have thirty-one
+    )
 
     student_info.dob = datetime(year_of_birth, month_of_birth, day_of_birth)
 
     # generate random "heard about"
-    random_heardabout_index = random.randint(1, len(HEARD_ABOUT_ESP_CHOICES)-1)  # skip blank
-    student_info.heard_about = HEARD_ABOUT_ESP_CHOICES[random_heardabout_index] + ':'
+    random_heardabout_index = random.randint(
+        1, len(HEARD_ABOUT_ESP_CHOICES) - 1
+    )  # skip blank
+    student_info.heard_about = HEARD_ABOUT_ESP_CHOICES[random_heardabout_index] + ":"
     if random_heardabout_index == 1:  # Other...
-        student_info.heard_about += fake.text().split('\n')[0].split('.')[0]  # random "sentence"
+        student_info.heard_about += (
+            fake.text().split("\n")[0].split(".")[0]
+        )  # random "sentence"
 
     student_info.save()
 
@@ -214,6 +229,7 @@ def generate_student_info(student, min_grade, max_grade, schools):
     last_profile.save()
 
     return student_info
+
 
 def fill_teacher_availability(teachers, program):
     """
@@ -226,12 +242,14 @@ def fill_teacher_availability(teachers, program):
         for timeslot in timeslots:
             teacher.addAvailableTime(program, timeslot)
 
+
 def enroll_student_in_section(student, class_section):
     """
     Enrolls a `Student` into a `ClassSection`.
     """
 
     class_section.preregister_student(student, overridefull=True)
+
 
 def remove_student_from_section(student, class_section):
     """

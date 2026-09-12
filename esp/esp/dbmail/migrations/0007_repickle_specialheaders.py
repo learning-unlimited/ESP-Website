@@ -5,16 +5,18 @@ import pickle
 
 
 def resave_special_headers(apps, schema_editor):
-    MessageRequest = apps.get_model('dbmail', 'MessageRequest')
+    MessageRequest = apps.get_model("dbmail", "MessageRequest")
     for mr in MessageRequest.objects.all():
-        if mr.special_headers != None and mr.special_headers != '':
-            special_headers = pickle.loads(mr.special_headers.replace('\r\n', '\n').encode('latin1'))
+        if mr.special_headers != None and mr.special_headers != "":
+            special_headers = pickle.loads(
+                mr.special_headers.replace("\r\n", "\n").encode("latin1")
+            )
             mr.special_headers = json.dumps(special_headers)
             mr.save()
 
 
 def revert_special_headers(apps, schema_editor):
-    MessageRequest = apps.get_model('dbmail', 'MessageRequest')
+    MessageRequest = apps.get_model("dbmail", "MessageRequest")
     for mr in MessageRequest.objects.all():
         special_headers = json.loads(mr.special_headers)
         mr.special_headers = pickle.dumps(special_headers)
@@ -23,7 +25,7 @@ def revert_special_headers(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('dbmail', '0006_auto_20240309_1411'),
+        ("dbmail", "0006_auto_20240309_1411"),
     ]
     operations = [
         migrations.RunPython(resave_special_headers, revert_special_headers),

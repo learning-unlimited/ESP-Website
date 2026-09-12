@@ -6,13 +6,12 @@
 
 from script_setup import *
 
-ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
-RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
+ETYPE_CLASSBLOCK = EventType.objects.get(description="Class Time Block")
+RTYPE_CLASSROOM = ResourceType.get_or_create("Classroom")
 
 PROGRAM = Program.objects.get(name=input("Program name: "))
 
-classrooms = Resource.objects.filter(res_type=RTYPE_CLASSROOM,
-                                     event__program=PROGRAM)
+classrooms = Resource.objects.filter(res_type=RTYPE_CLASSROOM, event__program=PROGRAM)
 history = set()
 
 for classroom in classrooms:

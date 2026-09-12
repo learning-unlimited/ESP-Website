@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -27,17 +27,25 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call, aux_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_teacher,
+    meets_deadline,
+    CoreModule,
+    main_call,
+    aux_call,
+)
 from esp.program.modules.admin_search import AdminSearchEntry
-from esp.program.models  import ClassSection
+from esp.program.models import ClassSection
 from esp.utils.web import render_to_response
-from esp.users.models    import Record
-from esp.survey.views   import survey_view, survey_review
-from esp.tagdict.models  import Tag
+from esp.users.models import Record
+from esp.survey.views import survey_view, survey_review
+from esp.tagdict.models import Tag
 from django.conf import settings
 from datetime import datetime
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from django.db.models import Count
+
 
 class TeacherOnsite(ProgramModuleObj, CoreModule):
     doc = """Provides a mobile-friendly interface for common onsite functions for teachers."""
@@ -49,19 +57,39 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             "admin_title": "Teacher Onsite Webapp",
             "module_type": "teach",
             "seq": 9999,
-            "choosable": 1
-            }
+            "choosable": 1,
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         # Only list human-readable pages; no JSON/AJAX endpoints.
         base = program.getUrlBase()
         entries = {
-            "teacheronsite": ("Teacher Onsite", "Other", ["teacher", "onsite", "schedule", "webapp"]),
-            "onsitemap": ("Teacher Onsite (Map)", "Other", ["teacher", "onsite", "map"]),
-            "onsitedetails": ("Teacher Onsite (Details)", "Other", ["teacher", "onsite", "details", "class info"]),
-            "onsiteroster": ("Teacher Onsite (Roster)", "Other", ["teacher", "onsite", "roster", "attendance"]),
-            "onsitesurvey": ("Teacher Onsite (Survey)", "Other", ["teacher", "onsite", "survey"]),
+            "teacheronsite": (
+                "Teacher Onsite",
+                "Other",
+                ["teacher", "onsite", "schedule", "webapp"],
+            ),
+            "onsitemap": (
+                "Teacher Onsite (Map)",
+                "Other",
+                ["teacher", "onsite", "map"],
+            ),
+            "onsitedetails": (
+                "Teacher Onsite (Details)",
+                "Other",
+                ["teacher", "onsite", "details", "class info"],
+            ),
+            "onsiteroster": (
+                "Teacher Onsite (Roster)",
+                "Other",
+                ["teacher", "onsite", "roster", "attendance"],
+            ),
+            "onsitesurvey": (
+                "Teacher Onsite (Survey)",
+                "Other",
+                ["teacher", "onsite", "survey"],
+            ),
         }
         if view_name not in entries:
             return None
@@ -72,130 +100,179 @@ class TeacherOnsite(ProgramModuleObj, CoreModule):
             title=title,
             category=category,
             keywords=keywords,
-            disambiguation_label=title.replace("Teacher Onsite ", "").strip("()") if "(" in title else None,
+            disambiguation_label=title.replace("Teacher Onsite ", "").strip("()")
+            if "(" in title
+            else None,
         )
 
     @main_call
     @needs_teacher
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def teacheronsite(self, request, tl, one, two, module, extra, prog):
-        """ Display the landing page for the teacher onsite webapp """
+        """Display the landing page for the teacher onsite webapp"""
         user = request.user
         now = datetime.now()
 
         context = self.onsitecontext(request, tl, one, two, prog)
 
-        sections_qs = user.getTaughtOrModeratingSectionsFromProgram(program = prog).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
-        classes = [cls for cls in sections_qs
-                if cls.meeting_times.all()
-                   and cls.resourceassignment_set.all()
-                   and cls.status > 0]
+        sections_qs = (
+            user.getTaughtOrModeratingSectionsFromProgram(program=prog)
+            .select_related("parent_class")
+            .prefetch_related("meeting_times", "resourceassignment_set")
+        )
+        classes = [
+            cls
+            for cls in sections_qs
+            if cls.meeting_times.all()
+            and cls.resourceassignment_set.all()
+            and cls.status > 0
+        ]
         classes.sort(key=lambda s: s._sort_key())
         # now we sort them by time/title
 
-        context['checkin_note'] = Tag.getProgramTag('teacher_onsite_checkin_note', program = prog)
-        context['webapp_page'] = 'schedule'
-        context['crmi'] = prog.classregmoduleinfo
-        context['classes'] = classes
-        context['checked_in'] = Record.objects.filter(program=prog, event__name='teacher_checked_in', user=user, time__year=now.year, time__month=now.month, time__day=now.day).exists()
+        context["checkin_note"] = Tag.getProgramTag(
+            "teacher_onsite_checkin_note", program=prog
+        )
+        context["webapp_page"] = "schedule"
+        context["crmi"] = prog.classregmoduleinfo
+        context["classes"] = classes
+        context["checked_in"] = Record.objects.filter(
+            program=prog,
+            event__name="teacher_checked_in",
+            user=user,
+            time__year=now.year,
+            time__month=now.month,
+            time__day=now.day,
+        ).exists()
 
-        return render_to_response(self.baseDir()+'schedule.html', request, context)
+        return render_to_response(self.baseDir() + "schedule.html", request, context)
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsitemap(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        context['webapp_page'] = 'map'
-        context['center'] = Tag.getProgramTag('program_center', program = prog)
-        context['zoom'] = Tag.getProgramTag('program_center_zoom', program = prog)
-        context['API_key'] = settings.GOOGLE_MAPS_EMBED_KEY
+        context["webapp_page"] = "map"
+        context["center"] = Tag.getProgramTag("program_center", program=prog)
+        context["zoom"] = Tag.getProgramTag("program_center_zoom", program=prog)
+        context["API_key"] = settings.GOOGLE_MAPS_EMBED_KEY
 
-        return render_to_response(self.baseDir()+'map.html', request, context)
+        return render_to_response(self.baseDir() + "map.html", request, context)
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsitedetails(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['webapp_page'] = 'details'
-        context['section_page'] = 'info'
+        context["webapp_page"] = "details"
+        context["section_page"] = "info"
         secid = 0
         if extra:
             secid = extra
-            sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
-                return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
+            sections = ClassSection.objects.filter(id=secid)
+            if len(sections) != 1 or not (
+                request.user.canEdit(sections[0].parent_class)
+                or request.user.canMod(sections[0])
+            ):
+                return render_to_response(
+                    "program/modules/teacherclassregmodule/cannoteditclass.html",
+                    request,
+                    {},
+                )
         else:
-            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
-                num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
-        context['sections'] = sections
+            sections = (
+                user.getTaughtOrModeratingSectionsFromProgram(program=prog)
+                .annotate(num_meeting_times=Count("meeting_times"))
+                .filter(num_meeting_times__gt=0, status__gt=0)
+            )
+        context["sections"] = sections
 
-        return render_to_response(self.baseDir()+'sectioninfo.html', request, context)
+        return render_to_response(self.baseDir() + "sectioninfo.html", request, context)
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsiteroster(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
         user = request.user
-        context['webapp_page'] = 'details'
-        context['section_page'] = 'roster'
-        context['not_found'] = []
+        context["webapp_page"] = "details"
+        context["section_page"] = "roster"
+        context["not_found"] = []
         secid = 0
         if extra:
             secid = extra
-            sections = ClassSection.objects.filter(id = secid)
-            if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
-                return render_to_response('program/modules/teacherclassregmodule/cannoteditclass.html', request, {})
+            sections = ClassSection.objects.filter(id=secid)
+            if len(sections) != 1 or not (
+                request.user.canEdit(sections[0].parent_class)
+                or request.user.canMod(sections[0])
+            ):
+                return render_to_response(
+                    "program/modules/teacherclassregmodule/cannoteditclass.html",
+                    request,
+                    {},
+                )
         else:
-            sections = user.getTaughtOrModeratingSectionsFromProgram(program = prog).annotate(
-                num_meeting_times=Count("meeting_times")).filter(
-                num_meeting_times__gt=0, status__gt=0)
+            sections = (
+                user.getTaughtOrModeratingSectionsFromProgram(program=prog)
+                .annotate(num_meeting_times=Count("meeting_times"))
+                .filter(num_meeting_times__gt=0, status__gt=0)
+            )
         section_list = []
         for section in sections:
-            sec, not_found = TeacherClassRegModule.process_attendance(section, request, prog)
+            sec, not_found = TeacherClassRegModule.process_attendance(
+                section, request, prog
+            )
             section_list.append(sec)
-            context['not_found'].extend(not_found)
-        context['sections'] = section_list
+            context["not_found"].extend(not_found)
+        context["sections"] = section_list
 
-        return render_to_response(self.baseDir()+'sectionroster.html', request, context)
+        return render_to_response(
+            self.baseDir() + "sectionroster.html", request, context
+        )
 
     @aux_call
     @needs_teacher
-    @meets_deadline('/Webapp')
+    @meets_deadline("/Webapp")
     def onsitesurvey(self, request, tl, one, two, module, extra, prog):
         context = self.onsitecontext(request, tl, one, two, prog)
-        context['webapp_page'] = 'survey'
-        surveys = prog.getSurveys().filter(category = tl).select_related()
-        if extra == 'review':
-            context['survey_page'] = 'review'
+        context["webapp_page"] = "survey"
+        surveys = prog.getSurveys().filter(category=tl).select_related()
+        if extra == "review":
+            context["survey_page"] = "review"
             if len(surveys):
-                return survey_review(request, tl, one, two, self.baseDir()+'survey.html', context)
+                return survey_review(
+                    request, tl, one, two, self.baseDir() + "survey.html", context
+                )
             else:
-                return render_to_response(self.baseDir()+'survey.html', request, context)
+                return render_to_response(
+                    self.baseDir() + "survey.html", request, context
+                )
         else:
-            context['survey_page'] = 'survey'
-            return survey_view(request, tl, one, two, self.baseDir()+'survey.html', context)
+            context["survey_page"] = "survey"
+            return survey_view(
+                request, tl, one, two, self.baseDir() + "survey.html", context
+            )
 
     @staticmethod
     def onsitecontext(request, tl, one, two, prog):
         context = {}
-        surveys = prog.getSurveys().filter(category = tl).select_related()
+        surveys = prog.getSurveys().filter(category=tl).select_related()
         if len(surveys) == 0:
-            context['survey_status'] = 'none'
-        context['user'] = request.user
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
-        context['map_tab'] = bool(settings.GOOGLE_MAPS_EMBED_KEY and Tag.getProgramTag('program_center', program = prog))
+            context["survey_status"] = "none"
+        context["user"] = request.user
+        context["program"] = prog
+        context["one"] = one
+        context["two"] = two
+        context["map_tab"] = bool(
+            settings.GOOGLE_MAPS_EMBED_KEY
+            and Tag.getProgramTag("program_center", program=prog)
+        )
         return context
 
     def isStep(self):
-        return Tag.getBooleanTag('teacher_webapp_isstep', program=self.program)
+        return Tag.getBooleanTag("teacher_webapp_isstep", program=self.program)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

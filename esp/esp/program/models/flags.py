@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -39,24 +39,45 @@ from esp.middleware.threadlocalrequest import get_current_request
 from argcache import cache_function
 
 from esp.users.models import ESPUser
+
+
 class ClassFlagType(models.Model):
-    name = models.CharField(max_length=255, unique=True, help_text='The name of the flag type')
-    show_in_scheduler = models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?')
-    show_in_dashboard = models.BooleanField(default=False, help_text='Should this flag type be shown in the dashboard?')
-    show_to_teacher = models.BooleanField(default=False, help_text='Should this flag type be visible to teachers of the flagged class?')
-    notify_teacher_by_email = models.BooleanField(default=False, help_text='Should teachers be emailed when a flag of this type is added to their class?')
-    seq = models.SmallIntegerField(default=0, help_text='Flag types will be ordered by this.  Smaller is earlier; the default is 0.')
-    color = models.CharField(blank=True, max_length=20, help_text='A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.')
+    name = models.CharField(
+        max_length=255, unique=True, help_text="The name of the flag type"
+    )
+    show_in_scheduler = models.BooleanField(
+        default=False, help_text="Should this flag type be shown in the scheduler?"
+    )
+    show_in_dashboard = models.BooleanField(
+        default=False, help_text="Should this flag type be shown in the dashboard?"
+    )
+    show_to_teacher = models.BooleanField(
+        default=False,
+        help_text="Should this flag type be visible to teachers of the flagged class?",
+    )
+    notify_teacher_by_email = models.BooleanField(
+        default=False,
+        help_text="Should teachers be emailed when a flag of this type is added to their class?",
+    )
+    seq = models.SmallIntegerField(
+        default=0,
+        help_text="Flag types will be ordered by this.  Smaller is earlier; the default is 0.",
+    )
+    color = models.CharField(
+        blank=True,
+        max_length=20,
+        help_text='A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.',
+    )
 
     class Meta:
-        app_label='program'
-        ordering=['seq']
+        app_label = "program"
+        ordering = ["seq"]
 
     def __str__(self):
         return self.name
 
     def getColor(self):
-        '''Get the display color for the flag type.'''
+        """Get the display color for the flag type."""
         if self.color:
             return self.color
         else:
@@ -65,11 +86,13 @@ class ClassFlagType(models.Model):
             g = 128 + (h // 128) % 16384
             b = 128 + (h // 16384) % 2097152
             # Choose a random one from the hash.
-            return "#"+hex(r)[-2:]+hex(g)[-2:]+hex(b)[-2:]
+            return "#" + hex(r)[-2:] + hex(g)[-2:] + hex(b)[-2:]
 
     @cache_function
-    def get_flag_types(cls, program=None, scheduler=False, dashboard=False, teacher=False):
-        '''Gets all flag types associated with a given program, in a cached fashion.  If program is None, gets all flag types.  scheduler=True, dashboard=True, and teacher=True return only flag types that should be shown in those interfaces.'''
+    def get_flag_types(
+        cls, program=None, scheduler=False, dashboard=False, teacher=False
+    ):
+        """Gets all flag types associated with a given program, in a cached fashion.  If program is None, gets all flag types.  scheduler=True, dashboard=True, and teacher=True return only flag types that should be shown in those interfaces."""
         if program is None:
             base = cls.objects.all()
         else:
@@ -81,39 +104,61 @@ class ClassFlagType(models.Model):
         if teacher:
             base = base.filter(show_to_teacher=True)
         return base
-    get_flag_types.get_or_create_token(('program',))
-    get_flag_types.depend_on_model('program.ClassFlagType')
-    get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
+
+    get_flag_types.get_or_create_token(("program",))
+    get_flag_types.depend_on_model("program.ClassFlagType")
+    get_flag_types.depend_on_m2m(
+        "program.Program", "flag_types", lambda prog, flag_type: {"program": prog}
+    )
     get_flag_types = classmethod(get_flag_types)
 
     def used_by_flags(self):
         return ClassFlag.objects.filter(flag_type=self).exists()
 
+
 class ClassFlag(models.Model):
-    subject = AjaxForeignKey('ClassSubject', related_name='flags', on_delete=models.CASCADE)
+    subject = AjaxForeignKey(
+        "ClassSubject", related_name="flags", on_delete=models.CASCADE
+    )
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
     comment = models.TextField(blank=True)
 
     resolved = models.BooleanField(default=False)
-    resolved_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_resolved', on_delete=models.SET_NULL)
+    resolved_by = AjaxForeignKey(
+        ESPUser,
+        blank=True,
+        null=True,
+        related_name="classflags_resolved",
+        on_delete=models.SET_NULL,
+    )
     resolved_time = models.DateTimeField(blank=True, null=True)
 
-    #The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
-    modified_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_modified', on_delete=models.SET_NULL)
+    # The following will normally be set automagically, but if you create a Flag via the shell or a script, you will need to set them manually.
+    modified_by = AjaxForeignKey(
+        ESPUser,
+        blank=True,
+        null=True,
+        related_name="classflags_modified",
+        on_delete=models.SET_NULL,
+    )
     modified_time = models.DateTimeField(auto_now=True)
-    created_by = AjaxForeignKey(ESPUser, blank=True, null=True,
-        related_name='classflags_created', on_delete=models.SET_NULL)
+    created_by = AjaxForeignKey(
+        ESPUser,
+        blank=True,
+        null=True,
+        related_name="classflags_created",
+        on_delete=models.SET_NULL,
+    )
     created_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label='program'
-        ordering=['flag_type']
-
+        app_label = "program"
+        ordering = ["flag_type"]
 
     def __str__(self):
-        return f"{self.flag_type} flag on {self.subject.emailcode()}: {self.subject.title}"
+        return (
+            f"{self.flag_type} flag on {self.subject.emailcode()}: {self.subject.title}"
+        )
 
     def save(self, *args, **kwargs):
         # Overridden to populate created_by and modified_by.  I'm not crazy about this method as it mixes models and requests, but I think it's worth it to save having to pass it around manually everywhere the thing gets touched.  Note that the creation and modification times already get autocreated by django.  If you're saving ClassFlags outside of a request somehow, make sure you manually populate this stuff.
@@ -121,12 +166,13 @@ class ClassFlag(models.Model):
         if request is not None:
             self.modified_by = request.user
             if self.id is None:
-                #We are creating, rather than modifying, so we don't yet have an id.
+                # We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
         # Ensure audit fields are always persisted when update_fields is used
-        if 'update_fields' in kwargs and kwargs['update_fields'] is not None:
-            kwargs['update_fields'] = list(
-                set(kwargs['update_fields']) | {'modified_by', 'modified_time'})
+        if "update_fields" in kwargs and kwargs["update_fields"] is not None:
+            kwargs["update_fields"] = list(
+                set(kwargs["update_fields"]) | {"modified_by", "modified_time"}
+            )
         super().save(*args, **kwargs)
 
     def send_teacher_notification(self):
@@ -143,39 +189,57 @@ class ClassFlag(models.Model):
 
         from_email = ESPUser.email_sendto_address(
             program.director_email,
-            '%s at %s' % (program.program_type, settings.INSTITUTION_NAME)
+            "%s at %s" % (program.program_type, settings.INSTITUTION_NAME),
         )
         failures = []
         for teacher in teachers:
             try:
                 context = {
-                    'flag': self,
-                    'cls': cls,
-                    'program': program,
-                    'teacher': teacher,
+                    "flag": self,
+                    "cls": cls,
+                    "program": program,
+                    "teacher": teacher,
                 }
-                email_content = render_to_string('email/class_flag_teacher.txt', context)
+                email_content = render_to_string(
+                    "email/class_flag_teacher.txt", context
+                )
                 to_email = [teacher.get_email_sendto_address()]
                 send_mail(
-                    'Class Flag Added - %s: %s' % (cls.emailcode(), cls.title),
-                    email_content, from_email, to_email
+                    "Class Flag Added - %s: %s" % (cls.emailcode(), cls.title),
+                    email_content,
+                    from_email,
+                    to_email,
                 )
             except Exception:
-                logger.error("Failed to email teacher %s for flag %s on class %s",
-                             teacher.username, self.id, cls.id, exc_info=True)
+                logger.error(
+                    "Failed to email teacher %s for flag %s on class %s",
+                    teacher.username,
+                    self.id,
+                    cls.id,
+                    exc_info=True,
+                )
                 failures.append(teacher.username)
         if failures:
-            raise RuntimeError("Failed to email %d teacher(s): %s" % (len(failures), ', '.join(failures)))
+            raise RuntimeError(
+                "Failed to email %d teacher(s): %s"
+                % (len(failures), ", ".join(failures))
+            )
 
 
 class AutoClassFlagRule(models.Model):
-    program = models.ForeignKey('Program', on_delete=models.CASCADE, related_name='autoflag_rules')
+    program = models.ForeignKey(
+        "Program", on_delete=models.CASCADE, related_name="autoflag_rules"
+    )
     flag_type = models.ForeignKey(ClassFlagType, on_delete=models.CASCADE)
-    rule_data = models.TextField(help_text='JSON representation of the QueryBuilder rule')
-    comment = models.TextField(blank=True, help_text='Annotation/comment to add to the flag')
+    rule_data = models.TextField(
+        help_text="JSON representation of the QueryBuilder rule"
+    )
+    comment = models.TextField(
+        blank=True, help_text="Annotation/comment to add to the flag"
+    )
 
     class Meta:
-        app_label = 'program'
+        app_label = "program"
 
     def __str__(self):
         return "Auto-flag rule for %s in %s" % (self.flag_type, self.program)
@@ -190,6 +254,7 @@ class AutoClassFlagRule(models.Model):
         determined.
         """
         import logging
+
         logger = logging.getLogger(__name__)
 
         defaults = {
@@ -204,6 +269,7 @@ class AutoClassFlagRule(models.Model):
             request = get_current_request()
             if request is None:
                 from esp.users.models import ESPUser as _ESPUser
+
                 system_user = (
                     _ESPUser.objects.filter(is_superuser=True).first()
                     or _ESPUser.objects.filter(is_staff=True).first()
@@ -214,7 +280,8 @@ class AutoClassFlagRule(models.Model):
                 else:
                     logger.warning(
                         "AutoClassFlagRule: Could not find a system user to "
-                        "attribute flag creation for class %s", cls.id
+                        "attribute flag creation for class %s",
+                        cls.id,
                     )
                     return None
 
@@ -231,7 +298,9 @@ class AutoClassFlagRule(models.Model):
                 logger.error(
                     "AutoClassFlagRule: Failed to send teacher notification "
                     "for flag %s on class %s: %s",
-                    flag.id, cls.id, e
+                    flag.id,
+                    cls.id,
+                    e,
                 )
 
         return flag, created

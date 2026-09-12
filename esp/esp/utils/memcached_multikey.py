@@ -1,6 +1,7 @@
 "Memcached cache backend"
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.core.cache.backends.base import BaseCache, DEFAULT_TIMEOUT
@@ -26,25 +27,32 @@ MULTIKEY_META_SEPARATOR = ":"
 
 _MISSING = object()
 
+
 class CacheClass(BaseCache):
     def __init__(self, server, params):
         BaseCache.__init__(self, params)
         self._wrapped_cache = PymemcacheCacheClass(server, params)
-        if not hasattr(settings, 'CACHE_PREFIX'):
-            settings.CACHE_PREFIX = ''
-        self._value_chunk_size = getattr(settings, 'MEMCACHED_MULTIKEY_CHUNK_SIZE', DEFAULT_VALUE_CHUNK_SIZE)
-        self._max_chunks = getattr(settings, 'MEMCACHED_MULTIKEY_MAX_CHUNKS', DEFAULT_MAX_CHUNKS)
-        self._chunk_orphan_ttl = getattr(settings, 'MEMCACHED_MULTIKEY_CHUNK_TTL', DEFAULT_CHUNK_ORPHAN_TTL)
+        if not hasattr(settings, "CACHE_PREFIX"):
+            settings.CACHE_PREFIX = ""
+        self._value_chunk_size = getattr(
+            settings, "MEMCACHED_MULTIKEY_CHUNK_SIZE", DEFAULT_VALUE_CHUNK_SIZE
+        )
+        self._max_chunks = getattr(
+            settings, "MEMCACHED_MULTIKEY_MAX_CHUNKS", DEFAULT_MAX_CHUNKS
+        )
+        self._chunk_orphan_ttl = getattr(
+            settings, "MEMCACHED_MULTIKEY_CHUNK_TTL", DEFAULT_CHUNK_ORPHAN_TTL
+        )
 
     def make_key(self, key, version=None):
-        rawkey = ascii( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
-        django_prefix = super().make_key('', version=version)
+        rawkey = ascii(NO_HASH_PREFIX + settings.CACHE_PREFIX + key)
+        django_prefix = super().make_key("", version=version)
         real_max_length = MAX_KEY_LENGTH - len(django_prefix)
         if len(rawkey) <= real_max_length:
             return rawkey
-        else: # We have an oversized key; hash it
+        else:  # We have an oversized key; hash it
             hashkey = HASH_PREFIX + hashlib.sha256(key.encode("UTF-8")).hexdigest()
-            return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
+            return hashkey + "_" + rawkey[: real_max_length - len(hashkey) - 1]
 
     def _failfast_test(self, key, value):
         if settings.DEBUG:
@@ -54,9 +62,17 @@ class CacheClass(BaseCache):
             try:
                 data_size = len(pickle.dumps(value))
                 if data_size > CACHE_WARNING_SIZE:
-                    logger.warning("Data size for key '%s' is dangerously large: %d bytes", key, data_size)
+                    logger.warning(
+                        "Data size for key '%s' is dangerously large: %d bytes",
+                        key,
+                        data_size,
+                    )
             except TypeError as e:
-                logger.warning("Got a TypeError (likely because value `{}` is not picklable):\n\n{}".format(value, e))
+                logger.warning(
+                    "Got a TypeError (likely because value `{}` is not picklable):\n\n{}".format(
+                        value, e
+                    )
+                )
 
     def _chunk_prefix(self, cache_key):
         """
@@ -83,7 +99,10 @@ class CacheClass(BaseCache):
         if len(serialized) <= self._value_chunk_size:
             return serialized, None
 
-        chunks = [serialized[i:i + self._value_chunk_size] for i in range(0, len(serialized), self._value_chunk_size)]
+        chunks = [
+            serialized[i : i + self._value_chunk_size]
+            for i in range(0, len(serialized), self._value_chunk_size)
+        ]
         return serialized, chunks
 
     def _encode_multikey_metadata(self, chunk_count, digest):
@@ -96,7 +115,9 @@ class CacheClass(BaseCache):
         )
 
     def _is_multikey_metadata(self, value):
-        return isinstance(value, str) and value.startswith(MULTIKEY_SENTINEL + MULTIKEY_META_SEPARATOR)
+        return isinstance(value, str) and value.startswith(
+            MULTIKEY_SENTINEL + MULTIKEY_META_SEPARATOR
+        )
 
     def _decode_multikey_metadata(self, value):
         if not self._is_multikey_metadata(value):
@@ -119,42 +140,66 @@ class CacheClass(BaseCache):
         """
         parsed = self._decode_multikey_metadata(value)
         if parsed is None:
-            logger.warning("Cache key '%s' holds unparseable multikey metadata; treating as a cache miss.", cache_key)
+            logger.warning(
+                "Cache key '%s' holds unparseable multikey metadata; treating as a cache miss.",
+                cache_key,
+            )
             return default
 
         chunk_count, digest = parsed
         chunk_keys = self._chunk_keys(self._chunk_prefix(cache_key), chunk_count)
         chunk_map = self._wrapped_get_many(chunk_keys, version=version)
-        return self._deserialize_chunk_map(cache_key, chunk_keys, digest, chunk_map, default=default)
+        return self._deserialize_chunk_map(
+            cache_key, chunk_keys, digest, chunk_map, default=default
+        )
 
-    def _deserialize_chunk_map(self, cache_key, chunk_keys, digest, chunk_map, default=_MISSING):
-        missing_keys = [chunk_key for chunk_key in chunk_keys if chunk_key not in chunk_map]
+    def _deserialize_chunk_map(
+        self, cache_key, chunk_keys, digest, chunk_map, default=_MISSING
+    ):
+        missing_keys = [
+            chunk_key for chunk_key in chunk_keys if chunk_key not in chunk_map
+        ]
         if missing_keys:
             # Memcached evicts items independently, so a large value survives
             # only as long as all of its chunks do.
-            logger.warning("Cache key '%s' resolved to %d chunks but %d are missing (likely evicted); "
-                           "treating as a cache miss.", cache_key, len(chunk_keys), len(missing_keys))
+            logger.warning(
+                "Cache key '%s' resolved to %d chunks but %d are missing (likely evicted); "
+                "treating as a cache miss.",
+                cache_key,
+                len(chunk_keys),
+                len(missing_keys),
+            )
             return default
 
         try:
             serialized = b"".join(chunk_map[chunk_key] for chunk_key in chunk_keys)
         except TypeError:
-            logger.warning("Cache key '%s' has non-bytes chunk data; treating as a cache miss.", cache_key)
+            logger.warning(
+                "Cache key '%s' has non-bytes chunk data; treating as a cache miss.",
+                cache_key,
+            )
             return default
 
         if self._digest(serialized) != digest:
             # Either a concurrent writer replaced some chunks while we were
             # reading, or a partially-failed write left a mix of old and new
             # chunks behind.  Either way the payload is not trustworthy.
-            logger.warning("Cache key '%s' failed its chunk digest check (torn read or partial write); "
-                           "treating as a cache miss.", cache_key)
+            logger.warning(
+                "Cache key '%s' failed its chunk digest check (torn read or partial write); "
+                "treating as a cache miss.",
+                cache_key,
+            )
             return default
 
         try:
             return pickle.loads(serialized)
         except Exception:
-            logger.warning("Cache key '%s' could not be unpickled from %d chunks; treating as a cache miss.",
-                           cache_key, len(chunk_keys), exc_info=True)
+            logger.warning(
+                "Cache key '%s' could not be unpickled from %d chunks; treating as a cache miss.",
+                cache_key,
+                len(chunk_keys),
+                exc_info=True,
+            )
             return default
 
     def _chunk_timeout(self, timeout):
@@ -185,9 +230,14 @@ class CacheClass(BaseCache):
             # Refuse rather than let one runaway value evict the whole cache.
             # This restores the pre-chunking behaviour ("too big to cache") for
             # pathological values only.
-            logger.warning("Refusing to cache key '%s': %d bytes would need %d chunks (max %d). "
-                           "Raise MEMCACHED_MULTIKEY_MAX_CHUNKS if this is expected.",
-                           cache_key, len(serialized), len(chunks), self._max_chunks)
+            logger.warning(
+                "Refusing to cache key '%s': %d bytes would need %d chunks (max %d). "
+                "Raise MEMCACHED_MULTIKEY_MAX_CHUNKS if this is expected.",
+                cache_key,
+                len(serialized),
+                len(chunks),
+                self._max_chunks,
+            )
             return False
 
         # Chunks always get a bounded expiry, even when the caller asked for
@@ -196,8 +246,12 @@ class CacheClass(BaseCache):
 
         chunk_prefix = self._chunk_prefix(cache_key)
         for index, chunk in enumerate(chunks):
-            self._wrapped_cache.set(self._chunk_key(chunk_prefix, index), chunk,
-                                    timeout=chunk_timeout, version=version)
+            self._wrapped_cache.set(
+                self._chunk_key(chunk_prefix, index),
+                chunk,
+                timeout=chunk_timeout,
+                version=version,
+            )
 
         # If this write fails, Django has already deleted the key, so the key is
         # left empty rather than holding either the new or the previous value.
@@ -211,7 +265,9 @@ class CacheClass(BaseCache):
         cache_key = self.make_key(key, version)
         _, chunks = self._split_value(value)
         if chunks is None:
-            return self._wrapped_cache.add(cache_key, value, timeout=timeout, version=version)
+            return self._wrapped_cache.add(
+                cache_key, value, timeout=timeout, version=version
+            )
 
         # add() is only atomic for single keys. For multikey payloads we do a
         # best-effort equivalent: if key exists, fail; otherwise store via set().
@@ -231,8 +287,12 @@ class CacheClass(BaseCache):
         try:
             return self._wrapped_cache.get(cache_key, default=default, version=version)
         except Exception:
-            logger.warning("Cache key '%s' could not be read (unreadable stored value); "
-                           "treating as a cache miss.", cache_key, exc_info=True)
+            logger.warning(
+                "Cache key '%s' could not be read (unreadable stored value); "
+                "treating as a cache miss.",
+                cache_key,
+                exc_info=True,
+            )
             return default
 
     def _wrapped_get_many(self, cache_keys, version=None):
@@ -240,8 +300,12 @@ class CacheClass(BaseCache):
         try:
             return self._wrapped_cache.get_many(cache_keys, version=version)
         except Exception:
-            logger.warning("Bulk cache read of %d keys failed (unreadable stored value); "
-                           "treating all as cache misses.", len(cache_keys), exc_info=True)
+            logger.warning(
+                "Bulk cache read of %d keys failed (unreadable stored value); "
+                "treating all as cache misses.",
+                len(cache_keys),
+                exc_info=True,
+            )
             return {}
 
     @try_multi(8)
@@ -250,12 +314,16 @@ class CacheClass(BaseCache):
         value = self._wrapped_get(cache_key, default=default, version=version)
         if not self._is_multikey_metadata(value):
             return value
-        return self._resolve_metadata(cache_key, value, default=default, version=version)
+        return self._resolve_metadata(
+            cache_key, value, default=default, version=version
+        )
 
     @try_multi(8)
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         self._failfast_test(key, value)
-        return self._set_large_value(self.make_key(key, version), value, timeout=timeout, version=version)
+        return self._set_large_value(
+            self.make_key(key, version), value, timeout=timeout, version=version
+        )
 
     @try_multi(8)
     def delete(self, key, version=None):
@@ -282,8 +350,10 @@ class CacheClass(BaseCache):
 
             parsed = self._decode_multikey_metadata(value)
             if parsed is None:
-                logger.warning("Cache key '%s' holds unparseable multikey metadata; treating as a cache miss.",
-                               cache_key)
+                logger.warning(
+                    "Cache key '%s' holds unparseable multikey metadata; treating as a cache miss.",
+                    cache_key,
+                )
                 continue
 
             chunk_count, digest = parsed
@@ -294,7 +364,9 @@ class CacheClass(BaseCache):
         if chunk_requests:
             chunk_map = self._wrapped_get_many(all_chunk_keys, version=version)
             for key, (cache_key, chunk_keys, digest) in chunk_requests.items():
-                value = self._deserialize_chunk_map(cache_key, chunk_keys, digest, chunk_map, default=_MISSING)
+                value = self._deserialize_chunk_map(
+                    cache_key, chunk_keys, digest, chunk_map, default=_MISSING
+                )
                 if value is not _MISSING:
                     ans[key] = value
 
@@ -303,12 +375,16 @@ class CacheClass(BaseCache):
     # Django 1.1 feature
     # Don't try_multi, that could be all kinds of bad...
     def incr(self, key, delta=1, version=None):
-        return self._wrapped_cache.incr(self.make_key(key, version), delta, version=version)
+        return self._wrapped_cache.incr(
+            self.make_key(key, version), delta, version=version
+        )
 
     # Django 1.1 feature
     # Don't try_multi, that could be all kinds of bad...
     def decr(self, key, delta=1, version=None):
-        return self._wrapped_cache.decr(self.make_key(key, version), delta, version=version)
+        return self._wrapped_cache.decr(
+            self.make_key(key, version), delta, version=version
+        )
 
     def close(self, **kwargs):
         self._wrapped_cache.close()

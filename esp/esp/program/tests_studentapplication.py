@@ -7,18 +7,18 @@ from esp.program.tests import ProgramFrameworkTest
 
 
 class StudentApplicationInstantiationTest(ProgramFrameworkTest):
-    """ Regression tests for #4554.
+    """Regression tests for #4554.
 
     StudentApplication.__init__() used to call save() and set_questions(),
     which meant merely constructing an instance wrote to the database.
     """
 
     def setUp(self, *args, **kwargs):
-        kwargs.update({'num_students': 2, 'num_teachers': 1, 'num_admins': 1})
+        kwargs.update({"num_students": 2, "num_teachers": 1, "num_admins": 1})
         super().setUp(*args, **kwargs)
         self.question = StudentAppQuestion.objects.create(
             program=self.program,
-            question='Why do you want to attend?',
+            question="Why do you want to attend?",
         )
 
     def test_blank_instance_is_not_saved(self):
@@ -61,13 +61,12 @@ class StudentApplicationInstantiationTest(ProgramFrameworkTest):
 
 
 class StudentAppAdminTest(ProgramFrameworkTest):
-
     def setUp(self, *args, **kwargs):
-        kwargs.update({'num_students': 1, 'num_teachers': 1, 'num_admins': 1})
+        kwargs.update({"num_students": 1, "num_teachers": 1, "num_admins": 1})
         super().setUp(*args, **kwargs)
 
     def test_add_is_not_offered(self):
         #   program and user are editable=False, so the add form could never
         #   populate them and submitting it could only fail.
         admin = StudentAppAdmin(StudentApplication, admin_site)
-        self.assertFalse(admin.has_add_permission(RequestFactory().get('/')))
+        self.assertFalse(admin.has_add_permission(RequestFactory().get("/")))

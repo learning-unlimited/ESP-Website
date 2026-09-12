@@ -5,25 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0037_merge_20240509_2131'),
+        ("users", "0037_merge_20240509_2131"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='persistentqueryfilter',
-            name='q_filter_migration2024',
+            model_name="persistentqueryfilter",
+            name="q_filter_migration2024",
         ),
         migrations.AddField(
-            model_name='contactinfo',
-            name='address_postal',
+            model_name="contactinfo",
+            name="address_postal",
             field=models.TextField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='persistentqueryfilter',
-            name='q_filter',
-            field=models.BinaryField(default=b''),
+            model_name="persistentqueryfilter",
+            name="q_filter",
+            field=models.BinaryField(default=b""),
             preserve_default=False,
         ),
     ]

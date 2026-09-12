@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0050_merge_20260307_0349'),
+        ("modules", "0050_merge_20260307_0349"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='ajaxchangelogentry',
-            name='assigned',
+            model_name="ajaxchangelogentry",
+            name="assigned",
             field=models.BooleanField(null=True),
         ),
         migrations.AlterField(
-            model_name='ajaxchangelogentry',
-            name='locked',
+            model_name="ajaxchangelogentry",
+            name="locked",
             field=models.BooleanField(null=True),
         ),
     ]

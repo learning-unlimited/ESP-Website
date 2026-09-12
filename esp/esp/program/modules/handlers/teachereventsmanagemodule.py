@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -33,12 +32,16 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_REGISTRATION,
+)
 from esp.utils.web import render_to_response
 from esp.cal.models import Event, EventType
 from esp.users.models import UserAvailability
 from esp.program.modules.forms.teacherevents import TimeslotForm
 from django.contrib.auth.models import Group
+
 
 class TeacherEventsManageModule(ProgramModuleObj):
     doc = """Set up events (e.g. interviews, training) for teachers to sign up for. """
@@ -48,18 +51,18 @@ class TeacherEventsManageModule(ProgramModuleObj):
         super().__init__(*args, **kwargs)
 
     def availability_role(self):
-        return Group.objects.get(name='Teacher')
+        return Group.objects.get(name="Teacher")
 
     # General Info functions
     @classmethod
     def module_properties(cls):
         return {
             "module_type": "manage",
-            'required': False,
-            'admin_title': 'Manage Teacher Training and Interviews',
-            'link_title': 'Teacher Training and Interviews',
-            'seq': 5,
-            'choosable': 0,
+            "required": False,
+            "admin_title": "Manage Teacher Training and Interviews",
+            "link_title": "Teacher Training and Interviews",
+            "seq": 5,
+            "choosable": 0,
         }
 
     @classmethod
@@ -80,32 +83,32 @@ class TeacherEventsManageModule(ProgramModuleObj):
     def teacher_events(self, request, tl, one, two, module, extra, prog):
         context = {}
 
-        if request.method == 'POST':
+        if request.method == "POST":
             data = request.POST
 
-            if data['command'] == 'delete':
+            if data["command"] == "delete":
                 #   delete timeslot
-                ts = Event.objects.get(id=data['id'])
+                ts = Event.objects.get(id=data["id"])
                 ts.delete()
 
-            elif data['command'] == 'load':
+            elif data["command"] == "load":
                 #   load timeslot for editing
-                ts = Event.objects.get(id=data['id'])
+                ts = Event.objects.get(id=data["id"])
                 form = TimeslotForm()
                 form.load_timeslot(ts)
-                context['timeslot_form'] = form
-                context['editing_timeslot'] = ts
+                context["timeslot_form"] = form
+                context["editing_timeslot"] = ts
 
-            elif data['command'] == 'edit':
+            elif data["command"] == "edit":
                 #   edit timeslot
-                ts = Event.objects.get(id=data['id'])
+                ts = Event.objects.get(id=data["id"])
                 form = TimeslotForm(data)
                 if form.is_valid():
                     form.save_timeslot(self.program, ts, ts.event_type)
                 else:
-                    context['timeslot_form'] = form
+                    context["timeslot_form"] = form
 
-            elif data['command'] == 'add':
+            elif data["command"] == "add":
                 #   add timeslot
                 form = TimeslotForm(data)
                 if form.is_valid():
@@ -113,32 +116,38 @@ class TeacherEventsManageModule(ProgramModuleObj):
 
                     # decide type
                     try:
-                        event_type_id = int(data.get('event_type_id',0))
-                        event_type = EventType.objects.get(id=event_type_id, is_teacher_type=True)
+                        event_type_id = int(data.get("event_type_id", 0))
+                        event_type = EventType.objects.get(
+                            id=event_type_id, is_teacher_type=True
+                        )
                         form.save_timeslot(self.program, new_timeslot, event_type)
                     except (ValueError, EventType.DoesNotExist):
-                        form.add_error(None, "Please select a valid teacher event type.")
-                        context['timeslot_form'] = form
+                        form.add_error(
+                            None, "Please select a valid teacher event type."
+                        )
+                        context["timeslot_form"] = form
                 else:
-                    context['timeslot_form'] = form
+                    context["timeslot_form"] = form
 
-        if 'timeslot_form' not in context:
-            context['timeslot_form'] = TimeslotForm()
+        if "timeslot_form" not in context:
+            context["timeslot_form"] = TimeslotForm()
 
         teacher_event_types = EventType.objects.filter(is_teacher_type=True)
-        context['teacher_event_types'] = teacher_event_types
+        context["teacher_event_types"] = teacher_event_types
         teacher_event_times = {}
 
         for et in teacher_event_types:
             times = self.program.get_teacher_event_times(et)
             for ts in list(times):
-                ts.teachers = UserAvailability.entriesBySlot( ts )
+                ts.teachers = UserAvailability.entriesBySlot(ts)
             teacher_event_times[et] = times
 
-        context['prog'] = prog
-        context['teacher_event_times'] = teacher_event_times
+        context["prog"] = prog
+        context["teacher_event_times"] = teacher_event_times
 
-        return render_to_response( self.baseDir()+'teacher_events.html', request, context )
+        return render_to_response(
+            self.baseDir() + "teacher_events.html", request, context
+        )
 
     def isStep(self):
         return True
@@ -146,8 +155,10 @@ class TeacherEventsManageModule(ProgramModuleObj):
     setup_title = "Set up events for teachers to attend before the program"
 
     def isCompleted(self, user=None):
-        return Event.objects.filter(program=self.program, event_type__is_teacher_type=True).exists()
+        return Event.objects.filter(
+            program=self.program, event_type__is_teacher_type=True
+        ).exists()
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

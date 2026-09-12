@@ -14,34 +14,35 @@ from esp.tagdict.validators import (
 from esp.program.tests import ProgramFrameworkTest
 
 # Make test-only tags not raise warnings
-all_global_tags['test'] = {
-    'is_boolean': False,
-    'help_text': '',
-    'default': None,
-    'category': 'manage',
-    'is_setting': True,
+all_global_tags["test"] = {
+    "is_boolean": False,
+    "help_text": "",
+    "default": None,
+    "category": "manage",
+    "is_setting": True,
 }
-all_program_tags['test'] = {
-    'is_boolean': False,
-    'help_text': '',
-    'default': None,
-    'category': 'manage',
-    'is_setting': True,
+all_program_tags["test"] = {
+    "is_boolean": False,
+    "help_text": "",
+    "default": None,
+    "category": "manage",
+    "is_setting": True,
 }
-all_global_tags['test_bool'] = {
-    'is_boolean': True,
-    'help_text': '',
-    'default': False,
-    'category': 'manage',
-    'is_setting': True,
+all_global_tags["test_bool"] = {
+    "is_boolean": True,
+    "help_text": "",
+    "default": False,
+    "category": "manage",
+    "is_setting": True,
 }
-all_program_tags['test_bool'] = {
-    'is_boolean': True,
-    'help_text': '',
-    'default': False,
-    'category': 'manage',
-    'is_setting': True,
+all_program_tags["test_bool"] = {
+    "is_boolean": True,
+    "help_text": "",
+    "default": False,
+    "category": "manage",
+    "is_setting": True,
 }
+
 
 class TagTest(TestCase):
     def testTagGetSet(self):
@@ -53,35 +54,68 @@ class TagTest(TestCase):
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        self.assertFalse(bool(Tag.getTag("test")), "Retrieved a tag for key 'test' but we haven't set one yet!")
-        self.assertFalse(Tag.getTag("test"), "getTag() created a retrievable value for key 'test'!")
+        self.assertFalse(
+            bool(Tag.getTag("test")),
+            "Retrieved a tag for key 'test' but we haven't set one yet!",
+        )
+        self.assertFalse(
+            Tag.getTag("test"), "getTag() created a retrievable value for key 'test'!"
+        )
         self.assertEqual(Tag.getTag("test", default="the default"), "the default")
         self.assertEqual(Tag.getTag("test", default="the default"), "the default")
 
         Tag.setTag("test", value="frobbed")
-        self.assertEqual(Tag.getTag("test"), "frobbed", "Failed to set tag 'test' to value 'frobbed'!")
-        self.assertEqual(Tag.getTag("test"), "frobbed", "Tag was created, but didn't stick!")
-        self.assertEqual(Tag.getTag("test", default="the default"), "frobbed", "Defaulting is borked!")
-        self.assertEqual(Tag.getTag("test", default="the default"), "frobbed", "Defaulting is borked!")
+        self.assertEqual(
+            Tag.getTag("test"),
+            "frobbed",
+            "Failed to set tag 'test' to value 'frobbed'!",
+        )
+        self.assertEqual(
+            Tag.getTag("test"), "frobbed", "Tag was created, but didn't stick!"
+        )
+        self.assertEqual(
+            Tag.getTag("test", default="the default"),
+            "frobbed",
+            "Defaulting is borked!",
+        )
+        self.assertEqual(
+            Tag.getTag("test", default="the default"),
+            "frobbed",
+            "Defaulting is borked!",
+        )
 
         Tag.unSetTag("test")
 
-        self.assertFalse(Tag.getTag("test"), "Retrieved a tag for key 'test' but we just deleted it!")
-        self.assertFalse(Tag.getTag("test"), "unSetTag() deletes don't appear to be persistent!")
+        self.assertFalse(
+            Tag.getTag("test"), "Retrieved a tag for key 'test' but we just deleted it!"
+        )
+        self.assertFalse(
+            Tag.getTag("test"), "unSetTag() deletes don't appear to be persistent!"
+        )
         self.assertEqual(Tag.getTag("test", default="the default"), "the default")
         self.assertEqual(Tag.getTag("test", default="the default"), "the default")
 
         Tag.setTag("test")
-        self.assertTrue(Tag.getTag("test"), "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!")
-        self.assertNotEqual(Tag.getTag("test", default="the default"), "the default", "If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
+        self.assertTrue(
+            Tag.getTag("test"),
+            "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!",
+        )
+        self.assertNotEqual(
+            Tag.getTag("test", default="the default"),
+            "the default",
+            "If the tag is set, even to EMPTY_TAG, we shouldn't return the default.",
+        )
 
     def testTagCleanValidation(self):
-        '''Test that Tag.save() raises ValidationError if GenericForeignKey is partial.'''
+        """Test that Tag.save() raises ValidationError if GenericForeignKey is partial."""
         from django.core.exceptions import ValidationError
 
         # Both set -> OK
-        user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
+        user, created = User.objects.get_or_create(
+            username="TestUser123", email="test@example.com", password=""
+        )
         from django.contrib.contenttypes.models import ContentType
+
         ct = ContentType.objects.get_for_model(user)
         t1 = Tag(key="test1", value="val1", content_type=ct, object_id=user.id)
         t1.clean()  # Should not raise
@@ -92,40 +126,55 @@ class TagTest(TestCase):
 
         # content_type set, object_id null -> ValidationError on save()
         t3 = Tag(key="test3", value="val3", content_type=ct, object_id=None)
-        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+        with self.assertRaisesMessage(
+            ValidationError, "Both parts of the GenericForeignKey"
+        ):
             t3.save()
 
         # content_type null, object_id set -> ValidationError on save()
         t4 = Tag(key="test4", value="val4", content_type=None, object_id=user.id)
-        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+        with self.assertRaisesMessage(
+            ValidationError, "Both parts of the GenericForeignKey"
+        ):
             t4.save()
 
     def testTagWithTarget(self):
-        '''Test getting and setting of tags with targets.'''
+        """Test getting and setting of tags with targets."""
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
+        user, created = User.objects.get_or_create(
+            username="TestUser123", email="test@example.com", password=""
+        )
 
-        self.assertFalse(Tag.getTag("test", user), f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!")
+        self.assertFalse(
+            Tag.getTag("test", user),
+            f"Retrieved a tag for key 'test' target '{user}', but we haven't set one yet!",
+        )
         Tag.setTag("test", user, "frobbed again")
         self.assertEqual(Tag.getTag("test", user), "frobbed again")
         Tag.setTag("test", user)
         self.assertEqual(Tag.getTag("test", user), Tag.EMPTY_TAG)
         Tag.unSetTag("test", user)
-        self.assertFalse(Tag.getTag("test", user), "unSetTag() didn't work for per-row tags!")
+        self.assertFalse(
+            Tag.getTag("test", user), "unSetTag() didn't work for per-row tags!"
+        )
 
     def testTagCaching(self):
-        '''Test that tag values are being cached.'''
+        """Test that tag values are being cached."""
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        user1, created = User.objects.get_or_create(username="TestUser1", email="test1@example.com", password="")
-        user2, created = User.objects.get_or_create(username="TestUser2", email="test2@example.com", password="")
+        user1, created = User.objects.get_or_create(
+            username="TestUser1", email="test1@example.com", password=""
+        )
+        user2, created = User.objects.get_or_create(
+            username="TestUser2", email="test2@example.com", password=""
+        )
 
         for target in [None, user1, user2]:
             self.assertFalse(Tag.getTag("test", target=target))
@@ -133,11 +182,12 @@ class TagTest(TestCase):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
 
-
         Tag.setTag("test", value="tag value")
 
         for target in [user1, user2]:
-            self.assertFalse(Tag.getTag("test", target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(
+                Tag.getTag("test", target=target)
+            )  # remove after Issue #866 is fixed
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
@@ -148,16 +198,19 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test"), "tag value")
 
         for target in [user1, user2]:
-            self.assertFalse(Tag.getTag("test", target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(
+                Tag.getTag("test", target=target)
+            )  # remove after Issue #866 is fixed
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
 
-
         Tag.setTag("test", value="tag value 2")
 
         for target in [user1, user2]:
-            self.assertFalse(Tag.getTag("test", target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(
+                Tag.getTag("test", target=target)
+            )  # remove after Issue #866 is fixed
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
@@ -168,20 +221,25 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test"), "tag value 2")
 
         for target in [user1, user2]:
-            self.assertFalse(Tag.getTag("test", target=target)) #remove after Issue #866 is fixed
+            self.assertFalse(
+                Tag.getTag("test", target=target)
+            )  # remove after Issue #866 is fixed
             with self.assertNumQueries(0):
                 self.assertFalse(Tag.getTag("test", target=target))
                 self.assertFalse(Tag.getTag("test", target=target))
 
-
         Tag.setTag("test", target=user1, value="tag value user1")
 
-        self.assertFalse(Tag.getTag("test", target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(
+            Tag.getTag("test", target=user2)
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
 
-        self.assertEqual(Tag.getTag("test"), "tag value 2") #remove after Issue #866 is fixed
+        self.assertEqual(
+            Tag.getTag("test"), "tag value 2"
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertEqual(Tag.getTag("test"), "tag value 2")
             self.assertEqual(Tag.getTag("test"), "tag value 2")
@@ -191,25 +249,32 @@ class TagTest(TestCase):
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
 
-        self.assertEqual(Tag.getTag("test"), "tag value 2") #remove after Issue #866 is fixed
+        self.assertEqual(
+            Tag.getTag("test"), "tag value 2"
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertEqual(Tag.getTag("test"), "tag value 2")
             self.assertEqual(Tag.getTag("test"), "tag value 2")
 
-        self.assertFalse(Tag.getTag("test", target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(
+            Tag.getTag("test", target=user2)
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
-
 
         Tag.unSetTag("test")
 
-        self.assertEqual(Tag.getTag("test", target=user1), "tag value user1") #remove after Issue #866 is fixed
+        self.assertEqual(
+            Tag.getTag("test", target=user1), "tag value user1"
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
 
-        self.assertFalse(Tag.getTag("test", target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(
+            Tag.getTag("test", target=user2)
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
@@ -219,88 +284,162 @@ class TagTest(TestCase):
             self.assertFalse(Tag.getTag("test"))
             self.assertFalse(Tag.getTag("test"))
 
-        self.assertEqual(Tag.getTag("test", target=user1), "tag value user1") #remove after Issue #866 is fixed
+        self.assertEqual(
+            Tag.getTag("test", target=user1), "tag value user1"
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
             self.assertEqual(Tag.getTag("test", target=user1), "tag value user1")
 
-        self.assertFalse(Tag.getTag("test", target=user2)) #remove after Issue #866 is fixed
+        self.assertFalse(
+            Tag.getTag("test", target=user2)
+        )  # remove after Issue #866 is fixed
         with self.assertNumQueries(0):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
+
 
 class ProgramTagTest(ProgramFrameworkTest):
     def testProgramTag(self):
-        '''Test the logic of getProgramTag in a bunch of different conditions.'''
+        """Test the logic of getProgramTag in a bunch of different conditions."""
 
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
-        #Caching is hard, so what the hell, let's run every assertion twice.
+        # Caching is hard, so what the hell, let's run every assertion twice.
         self.assertFalse(Tag.getProgramTag("test", program=self.program))
         self.assertFalse(Tag.getProgramTag("test", program=self.program))
         self.assertFalse(Tag.getProgramTag("test", program=None))
         self.assertFalse(Tag.getProgramTag("test", program=None))
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
-
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
 
         # Set the program-specific tag
         Tag.setTag("test", target=self.program, value="program tag value")
 
         self.assertFalse(Tag.getProgramTag("test", program=None))
         self.assertFalse(Tag.getProgramTag("test", program=None))
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "program tag value")
-
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "program tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "program tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "program tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "program tag value",
+        )
 
         # Now set the general tag
         Tag.setTag("test", target=None, value="general tag value")
 
         self.assertEqual(Tag.getProgramTag("test", program=None), "general tag value")
         self.assertEqual(Tag.getProgramTag("test", program=None), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "program tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "program tag value")
-
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "general tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "general tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "program tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "program tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "program tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "program tag value",
+        )
 
         # Now unset the program-specific tag
         Tag.unSetTag("test", target=self.program)
 
         self.assertEqual(Tag.getProgramTag("test", program=None), "general tag value")
         self.assertEqual(Tag.getProgramTag("test", program=None), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "general tag value")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "general tag value")
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "general tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "general tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "general tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program), "general tag value"
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "general tag value",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "general tag value",
+        )
 
-        #just to clean up
+        # just to clean up
         Tag.unSetTag("test", target=None)
 
         self.assertFalse(Tag.getProgramTag("test", program=self.program))
         self.assertFalse(Tag.getProgramTag("test", program=self.program))
         self.assertFalse(Tag.getProgramTag("test", program=None))
         self.assertFalse(Tag.getProgramTag("test", program=None))
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=self.program, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
-        self.assertEqual(Tag.getProgramTag("test", program=None, default="the default"), "the default")
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=self.program, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
+        self.assertEqual(
+            Tag.getProgramTag("test", program=None, default="the default"),
+            "the default",
+        )
 
     def testBooleanTag(self):
-        '''Test the logic of getBooleanTag in a bunch of different conditions, assuming that the underlying getProgramTag works.'''
+        """Test the logic of getBooleanTag in a bunch of different conditions, assuming that the underlying getProgramTag works."""
         # Dump any existing Tag cache
         Tag._getTag.delete_all()
 
@@ -315,8 +454,12 @@ class ProgramTagTest(ProgramFrameworkTest):
             self.assertEqual(Tag.getBooleanTag("test_bool", default=b), b)
             self.assertEqual(Tag.getBooleanTag("test_bool", program=None, default=b), b)
             self.assertEqual(Tag.getBooleanTag("test_bool", program=None, default=b), b)
-            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), b)
-            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), b)
+            self.assertEqual(
+                Tag.getBooleanTag("test_bool", program=self.program, default=b), b
+            )
+            self.assertEqual(
+                Tag.getBooleanTag("test_bool", program=self.program, default=b), b
+            )
 
         for true_val in [True, "True", "true", "1", 1]:
             Tag.setTag("test_bool", target=self.program, value=true_val)
@@ -324,17 +467,33 @@ class ProgramTagTest(ProgramFrameworkTest):
             self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), True)
             self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), True)
             for b in [True, False]:
-                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), True)
-                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), True)
+                self.assertEqual(
+                    Tag.getBooleanTag("test_bool", program=self.program, default=b),
+                    True,
+                )
+                self.assertEqual(
+                    Tag.getBooleanTag("test_bool", program=self.program, default=b),
+                    True,
+                )
 
         for false_val in [False, "False", "false", "0", 0]:
             Tag.setTag("test_bool", target=self.program, value=false_val)
 
-            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), False)
-            self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program), False)
+            self.assertEqual(
+                Tag.getBooleanTag("test_bool", program=self.program), False
+            )
+            self.assertEqual(
+                Tag.getBooleanTag("test_bool", program=self.program), False
+            )
             for b in [True, False]:
-                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
-                self.assertEqual(Tag.getBooleanTag("test_bool", program=self.program, default=b), False)
+                self.assertEqual(
+                    Tag.getBooleanTag("test_bool", program=self.program, default=b),
+                    False,
+                )
+                self.assertEqual(
+                    Tag.getBooleanTag("test_bool", program=self.program, default=b),
+                    False,
+                )
 
 
 class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
@@ -344,57 +503,57 @@ class GetNondefaultProgramTagsTest(ProgramFrameworkTest):
         Tag.objects.filter(key__in=["test", "test_bool"]).delete()
 
     def test_no_tags_set(self):
-        '''When no program-specific tags exist, result should be empty.'''
+        """When no program-specific tags exist, result should be empty."""
         result = Tag.get_nondefault_program_tags(self.program)
         self.assertEqual(result, [])
 
     def test_program_tag_returned(self):
-        '''A tag set for the program with is_setting=True appears in the result.'''
+        """A tag set for the program with is_setting=True appears in the result."""
         Tag.setTag("test", target=self.program, value="hello")
         result = Tag.get_nondefault_program_tags(self.program)
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertIn("test", keys)
-        entry = next(d for d in result if d['key'] == "test")
-        self.assertEqual(entry['value'], "hello")
+        entry = next(d for d in result if d["key"] == "test")
+        self.assertEqual(entry["value"], "hello")
 
     def test_global_tag_not_returned(self):
-        '''A global tag (no target) is not included in program tag results.'''
+        """A global tag (no target) is not included in program tag results."""
         Tag.setTag("test", target=None, value="global")
         result = Tag.get_nondefault_program_tags(self.program)
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("test", keys)
 
     def test_non_setting_tag_excluded(self):
-        '''A tag with is_setting=False is excluded from the result.'''
+        """A tag with is_setting=False is excluded from the result."""
         # 'student_lottery_run' is in all_program_tags with is_setting=False
         Tag.setTag("student_lottery_run", target=self.program, value="True")
         result = Tag.get_nondefault_program_tags(self.program)
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("student_lottery_run", keys)
 
     def test_result_contains_help_text(self):
-        '''Each entry in the result includes the help_text from the tag definition.'''
+        """Each entry in the result includes the help_text from the tag definition."""
         Tag.setTag("test", target=self.program, value="x")
         result = Tag.get_nondefault_program_tags(self.program)
-        entry = next((d for d in result if d['key'] == "test"), None)
+        entry = next((d for d in result if d["key"] == "test"), None)
         self.assertIsNotNone(entry)
-        self.assertIn('help_text', entry)
+        self.assertIn("help_text", entry)
 
     def test_tag_at_default_value_excluded(self):
-        '''A tag stored in the DB but set to its default value is not shown in the banner.'''
+        """A tag stored in the DB but set to its default value is not shown in the banner."""
         # 'test_bool' has default=False; setting it to its default should hide it
-        all_program_tags['test_bool']['default'] = False
+        all_program_tags["test_bool"]["default"] = False
         Tag.setTag("test_bool", target=self.program, value="False")
         result = Tag.get_nondefault_program_tags(self.program)
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("test_bool", keys)
 
     def test_tag_at_nondefault_value_included(self):
-        '''A tag stored with a value different from the default is shown in the banner.'''
-        all_program_tags['test_bool']['default'] = False
+        """A tag stored with a value different from the default is shown in the banner."""
+        all_program_tags["test_bool"]["default"] = False
         Tag.setTag("test_bool", target=self.program, value="True")
         result = Tag.get_nondefault_program_tags(self.program)
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertIn("test_bool", keys)
 
 
@@ -413,8 +572,9 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
     def _make_mock_request(self, with_tracking=True):
         """Return a minimal mock request object."""
         from unittest.mock import MagicMock
+
         req = MagicMock()
-        req.path = '/manage/%s/main' % self.program.url
+        req.path = "/manage/%s/main" % self.program.url
         req.user = self.admins[0]
         if with_tracking:
             req._active_program_tag_keys = set()
@@ -436,10 +596,11 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         req._active_program_tag_keys.add("test")
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        shown_keys = [t["key"] for t in context.get("active_program_tags", [])]
         self.assertIn("test", shown_keys)
         self.assertNotIn("test_bool", shown_keys)
 
@@ -451,10 +612,11 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         # _active_program_tag_keys is empty — no tags consulted
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        self.assertNotIn('active_program_tags', context)
+        self.assertNotIn("active_program_tags", context)
 
     def test_fallback_when_tracking_not_initialized(self):
         """Without tracking, all non-default tags are shown as a fallback."""
@@ -463,17 +625,23 @@ class PageSpecificTagBannerTest(ProgramFrameworkTest):
         req = self._make_mock_request(with_tracking=False)
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        shown_keys = [t['key'] for t in context.get('active_program_tags', [])]
+        shown_keys = [t["key"] for t in context.get("active_program_tags", [])]
         self.assertIn("test", shown_keys)
 
     def test_get_program_tag_records_access(self):
         """Calling getProgramTag with a program populates _active_program_tag_keys."""
-        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from esp.middleware.threadlocalrequest import (
+            _threading_local,
+            clear_current_request,
+        )
+
         # Simulate middleware having set up the request
         from unittest.mock import MagicMock
+
         req = MagicMock()
         req._active_program_tag_keys = set()
         req._active_global_tag_keys = set()
@@ -494,7 +662,7 @@ class GetNondefaultGlobalTagsTest(TestCase):
     def test_no_tags_set(self):
         """When no global tags exist, the result is empty."""
         result = Tag.get_nondefault_global_tags()
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("test", keys)
         self.assertNotIn("test_bool", keys)
 
@@ -502,21 +670,22 @@ class GetNondefaultGlobalTagsTest(TestCase):
         """A global tag (no target) with is_setting=True appears in the result."""
         Tag.setTag("test", target=None, value="hello")
         result = Tag.get_nondefault_global_tags()
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertIn("test", keys)
-        entry = next(d for d in result if d['key'] == "test")
-        self.assertEqual(entry['value'], "hello")
-        self.assertIn('help_text', entry)
+        entry = next(d for d in result if d["key"] == "test")
+        self.assertEqual(entry["value"], "hello")
+        self.assertIn("help_text", entry)
 
     def test_targeted_tag_not_returned(self):
         """A tag with a non-null target is not included in global results."""
         # Setting a tag with any target row should be excluded by the
         # content_type__isnull / object_id__isnull filter on the query.
         user, _ = User.objects.get_or_create(
-            username="GlobalTagTestUser", email="gtt@example.com", password="")
+            username="GlobalTagTestUser", email="gtt@example.com", password=""
+        )
         Tag.setTag("test", target=user, value="targeted")
         result = Tag.get_nondefault_global_tags()
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("test", keys)
 
     def test_non_setting_tag_excluded(self):
@@ -524,30 +693,30 @@ class GetNondefaultGlobalTagsTest(TestCase):
         # Pick a real global key registered with is_setting=False, if any.
         # Fall back to flipping our test tag's is_setting for the duration of
         # this test if no such key exists.
-        original = all_global_tags['test'].get('is_setting', True)
-        all_global_tags['test']['is_setting'] = False
+        original = all_global_tags["test"].get("is_setting", True)
+        all_global_tags["test"]["is_setting"] = False
         try:
             Tag.setTag("test", target=None, value="something")
             result = Tag.get_nondefault_global_tags()
-            keys = [d['key'] for d in result]
+            keys = [d["key"] for d in result]
             self.assertNotIn("test", keys)
         finally:
-            all_global_tags['test']['is_setting'] = original
+            all_global_tags["test"]["is_setting"] = original
 
     def test_tag_at_default_value_excluded(self):
         """A global tag stored at its default value is hidden from the banner."""
-        all_global_tags['test_bool']['default'] = False
+        all_global_tags["test_bool"]["default"] = False
         Tag.setTag("test_bool", target=None, value="False")
         result = Tag.get_nondefault_global_tags()
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertNotIn("test_bool", keys)
 
     def test_tag_at_nondefault_value_included(self):
         """A global tag stored with a non-default value is shown."""
-        all_global_tags['test_bool']['default'] = False
+        all_global_tags["test_bool"]["default"] = False
         Tag.setTag("test_bool", target=None, value="True")
         result = Tag.get_nondefault_global_tags()
-        keys = [d['key'] for d in result]
+        keys = [d["key"] for d in result]
         self.assertIn("test_bool", keys)
 
 
@@ -565,8 +734,9 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
 
     def _make_mock_request(self, with_tracking=True):
         from unittest.mock import MagicMock
+
         req = MagicMock()
-        req.path = '/manage/%s/main' % self.program.url
+        req.path = "/manage/%s/main" % self.program.url
         req.user = self.admins[0]
         if with_tracking:
             req._active_program_tag_keys = set()
@@ -586,14 +756,15 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
         req._active_global_tag_keys.add("test")
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        shown_keys = [t["key"] for t in context.get("active_global_tags", [])]
         self.assertIn("test", shown_keys)
         self.assertNotIn("test_bool", shown_keys)
         # Settings link should point to the global tag management page.
-        self.assertEqual(context.get('active_global_tags_url'), '/manage/tags/')
+        self.assertEqual(context.get("active_global_tags_url"), "/manage/tags/")
 
     def test_no_accessed_global_tags_shows_nothing(self):
         """If the view accessed no global tags, the global banner is empty."""
@@ -603,10 +774,11 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
         # _active_global_tag_keys stays empty.
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        self.assertNotIn('active_global_tags', context)
+        self.assertNotIn("active_global_tags", context)
 
     def test_fallback_when_tracking_not_initialized(self):
         """Without tracking, all non-default global tags are shown as a fallback."""
@@ -615,16 +787,21 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
         req = self._make_mock_request(with_tracking=False)
 
         from esp.utils.web import _inject_active_program_tags
+
         context = {}
         _inject_active_program_tags(req, context)
 
-        shown_keys = [t['key'] for t in context.get('active_global_tags', [])]
+        shown_keys = [t["key"] for t in context.get("active_global_tags", [])]
         self.assertIn("test", shown_keys)
 
     def test_get_tag_records_global_access(self):
         """Calling Tag.getTag (no target) populates _active_global_tag_keys."""
-        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from esp.middleware.threadlocalrequest import (
+            _threading_local,
+            clear_current_request,
+        )
         from unittest.mock import MagicMock
+
         req = MagicMock()
         req._active_program_tag_keys = set()
         req._active_global_tag_keys = set()
@@ -642,8 +819,12 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
         _active_global_tag_keys, so global non-default values can show up in
         the banner even when accessed through getProgramTag.
         """
-        from esp.middleware.threadlocalrequest import _threading_local, clear_current_request
+        from esp.middleware.threadlocalrequest import (
+            _threading_local,
+            clear_current_request,
+        )
         from unittest.mock import MagicMock
+
         req = MagicMock()
         req._active_program_tag_keys = set()
         req._active_global_tag_keys = set()
@@ -658,7 +839,6 @@ class PageSpecificGlobalTagBannerTest(ProgramFrameworkTest):
             clear_current_request()
 
 
-
 class TagRegistrationTest(SimpleTestCase):
     """
     Statically scan the codebase for Tag.getTag(), Tag.getProgramTag(), and
@@ -669,13 +849,13 @@ class TagRegistrationTest(SimpleTestCase):
     # Paths (relative to the esp/ root) to skip when scanning, because they
     # use test-only tags that are registered in the test module itself.
     _skip_paths = [
-        os.path.join('esp', 'tagdict', 'tests.py'),
+        os.path.join("esp", "tagdict", "tests.py"),
     ]
 
     # The set of all valid tag names from tagdict/__init__.py
     _all_known_tags = (set(all_global_tags.keys()) | set(all_program_tags.keys())) - {
-        'test',
-        'test_bool',
+        "test",
+        "test_bool",
     }
 
     # ---- helpers for scanning Python files ----
@@ -684,7 +864,7 @@ class TagRegistrationTest(SimpleTestCase):
         """AST visitor that collects string-literal first arguments to
         Tag.getTag(), Tag.getProgramTag(), and Tag.getBooleanTag()."""
 
-        TARGET_METHODS = {'getTag', 'getProgramTag', 'getBooleanTag'}
+        TARGET_METHODS = {"getTag", "getProgramTag", "getBooleanTag"}
 
         def __init__(self):
             self.found = []  # list of (tag_key, lineno)
@@ -695,7 +875,9 @@ class TagRegistrationTest(SimpleTestCase):
                 tag_key = None
                 if isinstance(first_arg, ast.Str):  # legacy AST node compat
                     tag_key = first_arg.s
-                elif isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):  # modern AST node compat
+                elif isinstance(first_arg, ast.Constant) and isinstance(
+                    first_arg.value, str
+                ):  # modern AST node compat
                     tag_key = first_arg.value
                 if tag_key is not None:
                     self.found.append((tag_key, node.lineno))
@@ -706,14 +888,14 @@ class TagRegistrationTest(SimpleTestCase):
             """Return True if *node* looks like Tag.<method>(...)."""
             func = node.func
             if isinstance(func, ast.Attribute) and func.attr in cls.TARGET_METHODS:
-                if isinstance(func.value, ast.Name) and func.value.id == 'Tag':
+                if isinstance(func.value, ast.Name) and func.value.id == "Tag":
                     return True
             return False
 
     @classmethod
     def _scan_python_file(cls, filepath):
         """Return [(tag_key, lineno), ...] found in *filepath*."""
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+        with open(filepath, "r", encoding="utf-8", errors="replace") as fh:
             source = fh.read()
         try:
             tree = ast.parse(source, filename=filepath)
@@ -739,7 +921,7 @@ class TagRegistrationTest(SimpleTestCase):
     def _scan_template_file(cls, filepath):
         """Return [(tag_key, lineno), ...] found in *filepath*."""
         results = []
-        with open(filepath, 'r', encoding='utf-8', errors='replace') as fh:
+        with open(filepath, "r", encoding="utf-8", errors="replace") as fh:
             for lineno, line in enumerate(fh, start=1):
                 for m in cls._TEMPLATE_FILTER_RE.finditer(line):
                     results.append((m.group(1), lineno))
@@ -751,9 +933,9 @@ class TagRegistrationTest(SimpleTestCase):
 
     def test_all_tags_are_registered(self):
         """Every tag key used in the codebase must exist in tagdict."""
-        esp_root = os.path.dirname(os.path.dirname(os.path.dirname(
-            os.path.abspath(__file__)
-        )))  # …/esp
+        esp_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        )  # …/esp
 
         undefined_tags = []  # [(filepath, lineno, tag_key), ...]
 
@@ -766,12 +948,12 @@ class TagRegistrationTest(SimpleTestCase):
                 if relpath in self._skip_paths:
                     continue
 
-                if fname.endswith('.py'):
+                if fname.endswith(".py"):
                     for tag_key, lineno in self._scan_python_file(filepath):
                         if tag_key not in self._all_known_tags:
                             undefined_tags.append((relpath, lineno, tag_key))
 
-                elif fname.endswith('.html'):
+                elif fname.endswith(".html"):
                     for tag_key, lineno in self._scan_template_file(filepath):
                         if tag_key not in self._all_known_tags:
                             undefined_tags.append((relpath, lineno, tag_key))
@@ -793,8 +975,8 @@ class HideFieldsValidatorTest(SimpleTestCase):
 
     def test_non_hide_fields_tag_returns_none(self):
         """Tags that are not hide_fields tags should return None."""
-        self.assertIsNone(validate_hide_fields_value('some_other_tag', 'value'))
-        self.assertIsNone(get_valid_field_names_for_tag('some_other_tag'))
+        self.assertIsNone(validate_hide_fields_value("some_other_tag", "value"))
+        self.assertIsNone(get_valid_field_names_for_tag("some_other_tag"))
 
     def test_all_hide_fields_tags_return_valid_fields(self):
         """Every recognised hide_fields tag key should return a non-empty set of valid field names."""
@@ -802,19 +984,21 @@ class HideFieldsValidatorTest(SimpleTestCase):
             valid_fields = get_valid_field_names_for_tag(tag_key)
             self.assertIsNotNone(valid_fields, f"{tag_key} should be recognised")
             self.assertIsInstance(valid_fields, set)
-            self.assertTrue(len(valid_fields) > 0, f"{tag_key} should have at least one valid field")
+            self.assertTrue(
+                len(valid_fields) > 0, f"{tag_key} should have at least one valid field"
+            )
 
     def test_empty_value_is_valid(self):
         """An empty tag value should be accepted without errors."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '')
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, "")
             self.assertEqual(valid, [])
             self.assertEqual(invalid, [])
 
     def test_whitespace_only_value_is_valid(self):
         """A whitespace-only tag value should be accepted without errors."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, '   ')
+            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, "   ")
             self.assertEqual(valid, [])
             self.assertEqual(invalid, [])
 
@@ -824,43 +1008,49 @@ class HideFieldsValidatorTest(SimpleTestCase):
             all_fields = get_valid_field_names_for_tag(tag_key)
             # Pick one field to test
             sample_field = sorted(all_fields)[0]
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field)
+            valid, invalid, _valid_set = validate_hide_fields_value(
+                tag_key, sample_field
+            )
             self.assertIn(sample_field, valid)
             self.assertEqual(invalid, [])
 
     def test_invalid_field_names_are_rejected(self):
         """Non-existent field names should appear in the invalid list."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, 'not_a_real_field')
+            valid, invalid, _valid_set = validate_hide_fields_value(
+                tag_key, "not_a_real_field"
+            )
             self.assertEqual(valid, [])
-            self.assertIn('not_a_real_field', invalid)
+            self.assertIn("not_a_real_field", invalid)
 
     def test_mixed_valid_and_invalid_fields(self):
         """A mix of valid and invalid field names should be split correctly."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
             all_fields = get_valid_field_names_for_tag(tag_key)
             sample_field = sorted(all_fields)[0]
-            value = '%s,not_a_real_field' % sample_field
+            value = "%s,not_a_real_field" % sample_field
             valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
             self.assertIn(sample_field, valid)
-            self.assertIn('not_a_real_field', invalid)
+            self.assertIn("not_a_real_field", invalid)
 
     def test_whitespace_around_field_names_is_stripped(self):
         """Leading/trailing whitespace around field names should be ignored."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
             all_fields = get_valid_field_names_for_tag(tag_key)
             sample_field = sorted(all_fields)[0]
-            value = '  %s , not_a_real_field  ' % sample_field
+            value = "  %s , not_a_real_field  " % sample_field
             valid, invalid, _valid_set = validate_hide_fields_value(tag_key, value)
             self.assertIn(sample_field, valid)
-            self.assertIn('not_a_real_field', invalid)
+            self.assertIn("not_a_real_field", invalid)
 
     def test_trailing_comma_does_not_create_empty_entry(self):
         """A trailing comma should not produce an empty invalid field name."""
         for tag_key in ALL_HIDE_FIELDS_TAG_KEYS:
             all_fields = get_valid_field_names_for_tag(tag_key)
             sample_field = sorted(all_fields)[0]
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field + ',')
+            valid, invalid, _valid_set = validate_hide_fields_value(
+                tag_key, sample_field + ","
+            )
             self.assertIn(sample_field, valid)
             self.assertEqual(invalid, [])
 
@@ -872,7 +1062,9 @@ class HideFieldsValidatorTest(SimpleTestCase):
             # All declared field names are already lowercase in Django,
             # so an uppercased version should still resolve correctly
             # after the value is lowered by the validator.
-            valid, invalid, _valid_set = validate_hide_fields_value(tag_key, sample_field.upper())
+            valid, invalid, _valid_set = validate_hide_fields_value(
+                tag_key, sample_field.upper()
+            )
             self.assertIn(sample_field, valid)
             self.assertEqual(invalid, [])
 
@@ -884,14 +1076,16 @@ class TagAdminFormValidationTest(TestCase):
         """Submitting an invalid field name via the admin form should fail validation."""
         from esp.tagdict.admin import TagAdminForm
 
-        form = TagAdminForm(data={
-            'key': 'student_profile_hide_fields',
-            'value': 'not_a_real_field',
-        })
+        form = TagAdminForm(
+            data={
+                "key": "student_profile_hide_fields",
+                "value": "not_a_real_field",
+            }
+        )
         self.assertFalse(form.is_valid())
         # The error should mention the invalid field name
         error_text = str(form.errors)
-        self.assertIn('not_a_real_field', error_text)
+        self.assertIn("not_a_real_field", error_text)
 
     def test_admin_form_accepts_valid_hide_fields(self):
         """Submitting valid field names via the admin form should pass validation."""
@@ -899,30 +1093,36 @@ class TagAdminFormValidationTest(TestCase):
         from esp.users.forms.user_profile import StudentProfileForm
 
         sample_field = sorted(StudentProfileForm.declared_fields.keys())[0]
-        form = TagAdminForm(data={
-            'key': 'student_profile_hide_fields',
-            'value': sample_field,
-        })
+        form = TagAdminForm(
+            data={
+                "key": "student_profile_hide_fields",
+                "value": sample_field,
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_admin_form_accepts_empty_hide_fields(self):
         """An empty value for a hide_fields tag should be accepted."""
         from esp.tagdict.admin import TagAdminForm
 
-        form = TagAdminForm(data={
-            'key': 'student_profile_hide_fields',
-            'value': '',
-        })
+        form = TagAdminForm(
+            data={
+                "key": "student_profile_hide_fields",
+                "value": "",
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_admin_form_accepts_non_hide_fields_tags(self):
         """Non-hide-fields tags should not be affected by the validation."""
         from esp.tagdict.admin import TagAdminForm
 
-        form = TagAdminForm(data={
-            'key': 'some_random_tag',
-            'value': 'any_value',
-        })
+        form = TagAdminForm(
+            data={
+                "key": "some_random_tag",
+                "value": "any_value",
+            }
+        )
         self.assertTrue(form.is_valid(), form.errors)
 
     def test_admin_form_error_lists_valid_options(self):
@@ -930,13 +1130,15 @@ class TagAdminFormValidationTest(TestCase):
         from esp.tagdict.admin import TagAdminForm
         from esp.users.forms.user_profile import TeacherProfileForm
 
-        form = TagAdminForm(data={
-            'key': 'teacher_profile_hide_fields',
-            'value': 'bogus_field',
-        })
+        form = TagAdminForm(
+            data={
+                "key": "teacher_profile_hide_fields",
+                "value": "bogus_field",
+            }
+        )
         self.assertFalse(form.is_valid())
         error_text = str(form.errors)
-        self.assertIn('bogus_field', error_text)
+        self.assertIn("bogus_field", error_text)
         # Should mention at least one valid field
         any_valid = sorted(TeacherProfileForm.declared_fields.keys())[0]
         self.assertIn(any_valid, error_text)

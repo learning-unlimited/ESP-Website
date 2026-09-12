@@ -4,13 +4,15 @@ from django.db.models.constants import LOOKUP_SEP
 
 from copy import deepcopy
 
+
 def shallow_copy_Q(q_object):
     obj = Node(connector=q_object.connector, negated=q_object.negated)
     obj.__class__ = q_object.__class__
     obj.children = q_object.children
     return obj
 
-def nest_Q(q_object, root=''):
+
+def nest_Q(q_object, root=""):
     """
     Takes a Q object and a root, and prepends the root recursively to all conditions.
 
@@ -26,11 +28,16 @@ def nest_Q(q_object, root=''):
     obj.children = [_append_to_child(child, root) for child in q_object.children]
     return obj
 
+
 def _append_to_child(child, root):
-    if root and isinstance(child, tuple) and len(child)==2 and isinstance(child[0], str):
+    if (
+        root
+        and isinstance(child, tuple)
+        and len(child) == 2
+        and isinstance(child[0], str)
+    ):
         return (root + LOOKUP_SEP + child[0], child[1])
     elif isinstance(child, Q):
         return nest_Q(child, root)
     else:
         return deepcopy(child)
-

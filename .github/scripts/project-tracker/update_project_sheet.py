@@ -43,7 +43,9 @@ GRAPHQL_URL = "https://api.github.com/graphql"
 import urllib.request
 
 
-def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = False) -> dict:
+def graphql(
+    query: str, variables: dict | None = None, *, allow_partial: bool = False
+) -> dict:
     """Execute a GitHub GraphQL query and return the JSON response.
 
     If *allow_partial* is True, errors are logged but execution continues
@@ -66,7 +68,9 @@ def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = 
             # Log but continue — some entries (e.g. bots) may not resolve
             pass
         else:
-            print("GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr)
+            print(
+                "GraphQL errors:", json.dumps(data["errors"], indent=2), file=sys.stderr
+            )
             sys.exit(1)
     return data["data"]
 
@@ -191,9 +195,7 @@ def fetch_privileged_logins() -> set[str]:
         else:
             break
     return {
-        edge["node"]["login"]
-        for edge in all_edges
-        if edge["permission"] in TRIAGE_PLUS
+        edge["node"]["login"] for edge in all_edges if edge["permission"] in TRIAGE_PLUS
     }
 
 
@@ -244,6 +246,7 @@ def fetch_issues() -> list[dict]:
 # Data transformation helpers
 # ---------------------------------------------------------------------------
 
+
 def fmt_time(iso: str | None) -> str:
     """Convert an ISO-8601 timestamp to a readable string."""
     if not iso:
@@ -281,11 +284,19 @@ def link_profile(login: str) -> str:
 def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
-        "PR #", "Title", "Author", "Opened", "Last Updated",
-        "Files Changed", "Lines Changed",
-        "Review State", "Days Since Author Activity",
+        "PR #",
+        "Title",
+        "Author",
+        "Opened",
+        "Last Updated",
+        "Files Changed",
+        "Lines Changed",
+        "Review State",
+        "Days Since Author Activity",
         "Unresolved Review Threads",
-        "Reviewers", "Linked Issues", "Labels",
+        "Reviewers",
+        "Linked Issues",
+        "Labels",
     ]
     rows = [header]
 
@@ -304,15 +315,15 @@ def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
         reviewers.discard("")
 
         linked_issues = [
-            f"#{n['number']}"
-            for n in pr["closingIssuesReferences"]["nodes"]
+            f"#{n['number']}" for n in pr["closingIssuesReferences"]["nodes"]
         ]
         labels = [l["name"] for l in pr["labels"]["nodes"]]
         author = (pr["author"] or {}).get("login", "ghost")
 
         # Count unresolved review threads (includes Copilot comments)
         unresolved = sum(
-            1 for t in (pr.get("reviewThreads") or {}).get("nodes", [])
+            1
+            for t in (pr.get("reviewThreads") or {}).get("nodes", [])
             if not t.get("isResolved")
         )
 
@@ -343,9 +354,7 @@ def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
         author_last = pr["createdAt"]  # fallback to PR open date
         for commit_node in (pr.get("commits") or {}).get("nodes", []):
             commit = commit_node.get("commit") or {}
-            commit_login = (
-                (commit.get("author") or {}).get("user") or {}
-            ).get("login")
+            commit_login = ((commit.get("author") or {}).get("user") or {}).get("login")
             if commit_login == author:
                 committed = commit.get("committedDate", "")
                 if committed > author_last:
@@ -356,21 +365,23 @@ def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
                 if comment["createdAt"] > author_last:
                     author_last = comment["createdAt"]
 
-        rows.append([
-            link_pr(pr["number"]),
-            pr["title"],
-            link_profile(author),
-            fmt_time(pr["createdAt"]),
-            fmt_time(pr["updatedAt"]),
-            pr.get("changedFiles", 0),
-            f"'+{pr.get('additions', 0)} / -{pr.get('deletions', 0)}",
-            review_state,
-            days_since(author_last),
-            unresolved,
-            ", ".join(sorted(reviewers)),
-            ", ".join(linked_issues),
-            ", ".join(labels),
-        ])
+        rows.append(
+            [
+                link_pr(pr["number"]),
+                pr["title"],
+                link_profile(author),
+                fmt_time(pr["createdAt"]),
+                fmt_time(pr["updatedAt"]),
+                pr.get("changedFiles", 0),
+                f"'+{pr.get('additions', 0)} / -{pr.get('deletions', 0)}",
+                review_state,
+                days_since(author_last),
+                unresolved,
+                ", ".join(sorted(reviewers)),
+                ", ".join(linked_issues),
+                ", ".join(labels),
+            ]
+        )
 
     return rows
 
@@ -378,9 +389,16 @@ def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
 def build_issue_rows(issues: list[dict]) -> list[list[str]]:
     """Build the rows for the Issues sheet."""
     header = [
-        "Issue #", "Title", "Author", "Opened", "Assignee(s)",
-        "Assigned Date", "Days Since Assigned",
-        "Last Updated", "Linked PRs", "Labels",
+        "Issue #",
+        "Title",
+        "Author",
+        "Opened",
+        "Assignee(s)",
+        "Assigned Date",
+        "Days Since Assigned",
+        "Last Updated",
+        "Linked PRs",
+        "Labels",
     ]
     rows = [header]
 
@@ -413,18 +431,20 @@ def build_issue_rows(issues: list[dict]) -> list[list[str]]:
         author = (issue["author"] or {}).get("login", "ghost")
         labels = [l["name"] for l in issue["labels"]["nodes"]]
 
-        rows.append([
-            link_issue(issue["number"]),
-            issue["title"],
-            link_profile(author),
-            fmt_time(issue["createdAt"]),
-            ", ".join(assignees),
-            fmt_time(earliest_assign_raw),
-            days_since(earliest_assign_raw),
-            fmt_time(issue["updatedAt"]),
-            ", ".join(linked_prs),
-            ", ".join(labels),
-        ])
+        rows.append(
+            [
+                link_issue(issue["number"]),
+                issue["title"],
+                link_profile(author),
+                fmt_time(issue["createdAt"]),
+                ", ".join(assignees),
+                fmt_time(earliest_assign_raw),
+                days_since(earliest_assign_raw),
+                fmt_time(issue["updatedAt"]),
+                ", ".join(linked_prs),
+                ", ".join(labels),
+            ]
+        )
 
     return rows
 
@@ -444,10 +464,7 @@ def fetch_pr_counts(logins: list[str], search_filter: str) -> dict[str, int]:
         batch = logins[i : i + batch_size]
         fragments = []
         for j, login in enumerate(batch):
-            q = (
-                f"repo:{REPO_OWNER}/{REPO_NAME} is:pr "
-                f"author:{login} {search_filter}"
-            )
+            q = f"repo:{REPO_OWNER}/{REPO_NAME} is:pr author:{login} {search_filter}"
             fragments.append(
                 f'u{j}: search(query: "{q}", type: ISSUE) {{ issueCount }}'
             )
@@ -510,9 +527,7 @@ def fetch_pr_authors_since(since: str) -> set[str]:
     Return the set of all PR author logins since the given date
     (ISO date string like '2026-01-01').
     """
-    search_query = (
-        f"repo:{REPO_OWNER}/{REPO_NAME} is:pr created:>={since}"
-    )
+    search_query = f"repo:{REPO_OWNER}/{REPO_NAME} is:pr created:>={since}"
     variables = {"searchQuery": search_query}
     nodes = paginate(ALL_PR_AUTHORS_QUERY, ["search"], variables)
     logins: set[str] = set()
@@ -544,12 +559,10 @@ def fetch_last_activity_dates(logins: list[str]) -> dict[str, str]:
         fragments = []
         for j, login in enumerate(batch):
             authored_q = (
-                f"repo:{REPO_OWNER}/{REPO_NAME} "
-                f"author:{login} sort:created-desc"
+                f"repo:{REPO_OWNER}/{REPO_NAME} author:{login} sort:created-desc"
             )
             comment_q = (
-                f"repo:{REPO_OWNER}/{REPO_NAME} "
-                f"commenter:{login} sort:updated-desc"
+                f"repo:{REPO_OWNER}/{REPO_NAME} commenter:{login} sort:updated-desc"
             )
             fragments.append(
                 f'authored_{j}: search(query: "{authored_q}", type: ISSUE, first: 1) {{\n'
@@ -596,14 +609,22 @@ def build_contributor_rows(
 ) -> list[list[str]]:
     """Build the rows for the Contributor Activity sheet."""
     header = [
-        "Contributor", "Name", "Open PRs", "Merged PRs", "Closed PRs",
-        "Assigned Open Issues", "Oldest Open PR",
-        "Last Activity", "Days Since Last Activity",
+        "Contributor",
+        "Name",
+        "Open PRs",
+        "Merged PRs",
+        "Closed PRs",
+        "Assigned Open Issues",
+        "Oldest Open PR",
+        "Last Activity",
+        "Days Since Last Activity",
     ]
 
     activity: dict[str, dict] = defaultdict(
         lambda: {
-            "open_prs": 0, "assigned_issues": 0, "oldest_open_pr": "",
+            "open_prs": 0,
+            "assigned_issues": 0,
+            "oldest_open_pr": "",
         }
     )
 
@@ -616,7 +637,10 @@ def build_contributor_rows(
         login = (pr["author"] or {}).get("login", "ghost")
         activity[login]["open_prs"] += 1
         created = pr["createdAt"]
-        if not activity[login]["oldest_open_pr"] or created < activity[login]["oldest_open_pr"]:
+        if (
+            not activity[login]["oldest_open_pr"]
+            or created < activity[login]["oldest_open_pr"]
+        ):
             activity[login]["oldest_open_pr"] = created
 
     # Track the most recent commit per contributor from open PRs
@@ -624,9 +648,7 @@ def build_contributor_rows(
     for pr in prs:
         for commit_node in (pr.get("commits") or {}).get("nodes", []):
             commit = commit_node.get("commit") or {}
-            commit_login = (
-                (commit.get("author") or {}).get("user") or {}
-            ).get("login")
+            commit_login = ((commit.get("author") or {}).get("user") or {}).get("login")
             if commit_login:
                 committed = commit.get("committedDate", "")
                 if committed > latest_commit.get(commit_login, ""):
@@ -653,26 +675,26 @@ def build_contributor_rows(
     for login in sorted(activity, key=lambda k: activity[k]["open_prs"], reverse=True):
         info = activity[login]
         open_pr_url = f"{REPO_URL}/pulls/{login}"
-        merged_pr_url = (
-            f"{REPO_URL}/pulls?q=is%3Apr+is%3Amerged+author%3A{login}"
-        )
+        merged_pr_url = f"{REPO_URL}/pulls?q=is%3Apr+is%3Amerged+author%3A{login}"
         closed_pr_url = (
             f"{REPO_URL}/pulls?q=is%3Apr+is%3Aclosed+is%3Aunmerged+author%3A{login}"
         )
         issues_url = (
             f"{REPO_URL}/issues?q=is%3Aissue%20state%3Aopen%20assignee%3A{login}"
         )
-        rows.append([
-            link_profile(login),
-            profile_names.get(login, ""),
-            link_count(open_pr_url, info["open_prs"]),
-            link_count(merged_pr_url, merged_counts.get(login, 0)),
-            link_count(closed_pr_url, closed_counts.get(login, 0)),
-            link_count(issues_url, info["assigned_issues"]),
-            fmt_time(info["oldest_open_pr"]),
-            fmt_time(last_activity.get(login, "")),
-            days_since(last_activity.get(login, "")),
-        ])
+        rows.append(
+            [
+                link_profile(login),
+                profile_names.get(login, ""),
+                link_count(open_pr_url, info["open_prs"]),
+                link_count(merged_pr_url, merged_counts.get(login, 0)),
+                link_count(closed_pr_url, closed_counts.get(login, 0)),
+                link_count(issues_url, info["assigned_issues"]),
+                fmt_time(info["oldest_open_pr"]),
+                fmt_time(last_activity.get(login, "")),
+                days_since(last_activity.get(login, "")),
+            ]
+        )
 
     return rows
 
@@ -753,38 +775,52 @@ def color_lines_changed(
         sep_start = len(additions_part)
         removals_start = sep_start + len(" / ")
 
-        cell_data.append({
-            "values": [{
-                "userEnteredValue": {"stringValue": text},
-                "textFormatRuns": [
-                    {"startIndex": 0,
-                     "format": {"foregroundColorStyle": {"rgbColor": GREEN}}},
-                    {"startIndex": sep_start,
-                     "format": {"foregroundColorStyle": {"rgbColor": GRAY}}},
-                    {"startIndex": removals_start,
-                     "format": {"foregroundColorStyle": {"rgbColor": RED}}},
-                ],
-            }]
-        })
+        cell_data.append(
+            {
+                "values": [
+                    {
+                        "userEnteredValue": {"stringValue": text},
+                        "textFormatRuns": [
+                            {
+                                "startIndex": 0,
+                                "format": {"foregroundColorStyle": {"rgbColor": GREEN}},
+                            },
+                            {
+                                "startIndex": sep_start,
+                                "format": {"foregroundColorStyle": {"rgbColor": GRAY}},
+                            },
+                            {
+                                "startIndex": removals_start,
+                                "format": {"foregroundColorStyle": {"rgbColor": RED}},
+                            },
+                        ],
+                    }
+                ]
+            }
+        )
 
     if not cell_data:
         return
 
-    spreadsheet.batch_update({
-        "requests": [{
-            "updateCells": {
-                "range": {
-                    "sheetId": sheet_id,
-                    "startRowIndex": 1,
-                    "endRowIndex": 1 + len(cell_data),
-                    "startColumnIndex": col,
-                    "endColumnIndex": col + 1,
-                },
-                "rows": cell_data,
-                "fields": "userEnteredValue,textFormatRuns",
-            }
-        }]
-    })
+    spreadsheet.batch_update(
+        {
+            "requests": [
+                {
+                    "updateCells": {
+                        "range": {
+                            "sheetId": sheet_id,
+                            "startRowIndex": 1,
+                            "endRowIndex": 1 + len(cell_data),
+                            "startColumnIndex": col,
+                            "endColumnIndex": col + 1,
+                        },
+                        "rows": cell_data,
+                        "fields": "userEnteredValue,textFormatRuns",
+                    }
+                }
+            ]
+        }
+    )
 
     print(f"  ✓ '{title}' – Lines Changed column colored")
 
@@ -792,6 +828,7 @@ def color_lines_changed(
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     print(f"Fetching data for {REPO_OWNER}/{REPO_NAME} ...")

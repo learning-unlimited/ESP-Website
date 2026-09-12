@@ -1,9 +1,9 @@
-""" ESP Custom Filters for template """
+"""ESP Custom Filters for template"""
 
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,41 +37,43 @@ Learning Unlimited, Inc.
 import re
 
 from django import template
+
 register = template.Library()
 
 # Logo commands that use \spacefactor internally and crash in math mode.
 # \LaTeXe is excluded — it wraps itself in \mbox in LaTeX core.
-_TEXT_MODE_CMD_RE = re.compile(
-    r'\\(?:XeLaTeX|LuaLaTeX|AmSTeX|LaTeX|TeX)(?![a-zA-Z])'
-)
+_TEXT_MODE_CMD_RE = re.compile(r"\\(?:XeLaTeX|LuaLaTeX|AmSTeX|LaTeX|TeX)(?![a-zA-Z])")
+
 
 @register.filter
 def texescape(value):
-    """ This will escape a string according to the rules of LaTeX """
+    """This will escape a string according to the rules of LaTeX"""
 
     value = str(value).strip()
 
     # we will make escape all the strings except those sandwiched between
     # $$ and $$. Thus you can write math symbols like $$\sqrt{3}$$ and
     # get away with it.
-    strings = value.split('$$')
+    strings = value.split("$$")
 
     # But not if we don't have something of the form "asdf $$ fghj $$ hjkl"; then someone's just messing with us
     if len(strings) % 2 == 0:
-        strings = [ value ]
+        strings = [value]
 
-    replacement_pairs=[
-            ('\\', r'!++ABCDEF++!'),
+    replacement_pairs = [
+        ("\\", r"!++ABCDEF++!"),
     ]
-    for char in '&$%#_{}':
-        replacement_pairs.append((char, '\\'+char))
-    replacement_pairs.extend([
-    ('^', r'\textasciicircum{}'),
-    ('>', r'\textgreater{}'),
-    ('<', r'\textless{}'),
-    ('~', r'\ensuremath{\sim}'),
-    (r'!++ABCDEF++!', r'\textbackslash{}'),
-    ])
+    for char in "&$%#_{}":
+        replacement_pairs.append((char, "\\" + char))
+    replacement_pairs.extend(
+        [
+            ("^", r"\textasciicircum{}"),
+            (">", r"\textgreater{}"),
+            ("<", r"\textless{}"),
+            ("~", r"\ensuremath{\sim}"),
+            (r"!++ABCDEF++!", r"\textbackslash{}"),
+        ]
+    )
 
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
@@ -84,10 +86,10 @@ def texescape(value):
     # Wrap in \mbox{} (base LaTeX, no package dependency).
     for i in range(1, len(strings) - 1, 2):
         strings[i] = _TEXT_MODE_CMD_RE.sub(
-            lambda m: r'\mbox{' + m.group(0) + '}', strings[i]
+            lambda m: r"\mbox{" + m.group(0) + "}", strings[i]
         )
 
-    value = '$'.join(strings)
+    value = "$".join(strings)
 
     # now we have to make quotes pretty...
     strings = value.split('"')
@@ -95,16 +97,15 @@ def texescape(value):
     value = strings[0]
     for i in range(1, len(strings)):
         if i % 2 == 1:
-            value += '``' + strings[i]
+            value += "``" + strings[i]
         else:
             value += "''" + strings[i]
 
     # deal with new-lines and a couple other oddities
-    value = value.replace('[', '(')
-    value = value.replace(']', ')')
-    value = value.replace('\r\n', '\n')
-    value = value.replace('\r',   '\n')
-    value = value.replace('\n',   '~\\\\\n')
+    value = value.replace("[", "(")
+    value = value.replace("]", ")")
+    value = value.replace("\r\n", "\n")
+    value = value.replace("\r", "\n")
+    value = value.replace("\n", "~\\\\\n")
 
     return value
-

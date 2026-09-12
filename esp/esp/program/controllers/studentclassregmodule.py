@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -41,14 +40,16 @@ from esp.program.models import RegistrationType, Program
 
 logger = logging.getLogger(__name__)
 
-class RegistrationTypeController(object):
 
-    key = 'display_registration_names'
-    default_names = ["Enrolled",]
+class RegistrationTypeController(object):
+    key = "display_registration_names"
+    default_names = [
+        "Enrolled",
+    ]
     default_rts = RegistrationType.objects.filter(name__in=default_names).distinct()
 
     @classmethod
-    def getVisibleRegistrationTypeNames(cls, prog, for_VRT_form = False):
+    def getVisibleRegistrationTypeNames(cls, prog, for_VRT_form=False):
         if not (prog and isinstance(prog, (Program, int))):
             return set(cls.default_names)
         if isinstance(prog, int):
@@ -62,7 +63,7 @@ class RegistrationTypeController(object):
                 display_names = json.loads(display_names) + cls.default_names
             except (TypeError, ValueError) as exc:
                 logger.warning(
-                    'Failed to parse JSON for registration type display names for program %r with raw tag value %r; falling back to defaults. Error: %s',
+                    "Failed to parse JSON for registration type display names for program %r with raw tag value %r; falling back to defaults. Error: %s",
                     prog,
                     display_names,
                     exc,
@@ -71,7 +72,12 @@ class RegistrationTypeController(object):
         else:
             display_names = cls.default_names
         if "All" in display_names:
-            display_names = list(RegistrationType.objects.all().values_list('name', flat=True).distinct().order_by('name'))
+            display_names = list(
+                RegistrationType.objects.all()
+                .values_list("name", flat=True)
+                .distinct()
+                .order_by("name")
+            )
             if for_VRT_form:
                 display_names.append("All")
         return display_names

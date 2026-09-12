@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -48,16 +48,16 @@ from selenium.webdriver.support import expected_conditions as EC
 
 
 @unittest.skipUnless(
-    shutil.which('firefox') or shutil.which('firefox-esr'),
-    'Firefox not installed')
+    shutil.which("firefox") or shutil.which("firefox-esr"), "Firefox not installed"
+)
 class TestQsdCachePurging(StaticLiveServerTestCase):
     """
-       This test verifies that QSD editing works correctly through the
-       browser interface.
+    This test verifies that QSD editing works correctly through the
+    browser interface.
     """
 
-    PASSWORD_STRING = 'password'
-    TEST_STRING = 'Hello there from a django test!'
+    PASSWORD_STRING = "password"
+    TEST_STRING = "Hello there from a django test!"
 
     def editQSD(self):
         elem = self.selenium.find_element(By.CLASS_NAME, "qsd_header")
@@ -74,28 +74,32 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
         super(TestQsdCachePurging, self).setUp()
 
         # Make our users
-        self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
+        self.admin_user, created = ESPUser.objects.get_or_create(
+            username="admin", first_name="Harry", last_name="Alborez"
+        )
         self.admin_user.set_password(self.PASSWORD_STRING)
         self.admin_user.makeAdmin()
-        self.qsd_user, created = ESPUser.objects.get_or_create(username='qsd', first_name='Aylik', last_name='Kewesd')
+        self.qsd_user, created = ESPUser.objects.get_or_create(
+            username="qsd", first_name="Aylik", last_name="Kewesd"
+        )
         self.qsd_user.set_password(self.PASSWORD_STRING)
         self.qsd_user.save()
 
         # Ensure a NavBarCategory exists and clear any stale cache
-        if hasattr(NavBarCategory, '_default'):
+        if hasattr(NavBarCategory, "_default"):
             del NavBarCategory._default
-        nav_category, created = NavBarCategory.objects.get_or_create(name='default')
+        nav_category, created = NavBarCategory.objects.get_or_create(name="default")
 
         # Make our test page
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.url = 'test'
-        qsd_rec_new.name = 'test'
+        qsd_rec_new.url = "test"
+        qsd_rec_new.name = "test"
         qsd_rec_new.author = self.admin_user
         qsd_rec_new.nav_category = nav_category
-        qsd_rec_new.content = ''
-        qsd_rec_new.title = 'Test page'
-        qsd_rec_new.description = ''
-        qsd_rec_new.keywords    = ''
+        qsd_rec_new.content = ""
+        qsd_rec_new.title = "Test page"
+        qsd_rec_new.description = ""
+        qsd_rec_new.keywords = ""
         qsd_rec_new.save()
 
         options = Options()
@@ -108,28 +112,38 @@ class TestQsdCachePurging(StaticLiveServerTestCase):
 
     def test_qsd_editing(self):
         for page in ["/", "/test.html"]:
-            self.selenium.get('%s%s' % (self.live_server_url, "/"))
-            try_normal_login(self.selenium, self.live_server_url, self.admin_user.username, self.PASSWORD_STRING)
-            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.selenium.get("%s%s" % (self.live_server_url, "/"))
+            try_normal_login(
+                self.selenium,
+                self.live_server_url,
+                self.admin_user.username,
+                self.PASSWORD_STRING,
+            )
+            self.selenium.get("%s%s" % (self.live_server_url, page))
             WebDriverWait(self.selenium, 10).until(
                 EC.visibility_of_element_located((By.CLASS_NAME, "qsd_header"))
             )
             self.editQSD()
 
             self.selenium.delete_all_cookies()
-            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.selenium.get("%s%s" % (self.live_server_url, page))
             self.assertTrue(self.TEST_STRING in self.selenium.page_source)
             logout(self.selenium, self.live_server_url)
 
-            self.selenium.get('%s%s' % (self.live_server_url, "/"))
-            try_normal_login(self.selenium, self.live_server_url, self.qsd_user.username, self.PASSWORD_STRING)
-            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.selenium.get("%s%s" % (self.live_server_url, "/"))
+            try_normal_login(
+                self.selenium,
+                self.live_server_url,
+                self.qsd_user.username,
+                self.PASSWORD_STRING,
+            )
+            self.selenium.get("%s%s" % (self.live_server_url, page))
             WebDriverWait(self.selenium, 10).until(
                 EC.invisibility_of_element_located((By.CLASS_NAME, "qsd_header"))
             )
 
             self.selenium.delete_all_cookies()
-            self.selenium.get('%s%s' % (self.live_server_url, page))
+            self.selenium.get("%s%s" % (self.live_server_url, page))
             self.assertTrue(self.TEST_STRING in self.selenium.page_source)
 
     def tearDown(self):

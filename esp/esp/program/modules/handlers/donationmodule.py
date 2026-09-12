@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2014 by the individual contributors
@@ -33,7 +32,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, meets_deadline, main_call, meets_cap
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    usercheck_usetl,
+    meets_deadline,
+    main_call,
+    meets_cap,
+)
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
@@ -52,30 +57,33 @@ from decimal import Decimal
 import json
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
 class DonationForm(forms.Form):
     amount_donation = forms.ChoiceField(widget=forms.RadioSelect())
-    custom_amount = forms.DecimalField(decimal_places=2, min_value=1, max_value=1000, required=False)
+    custom_amount = forms.DecimalField(
+        decimal_places=2, min_value=1, max_value=1000, required=False
+    )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.amount = None
 
     def load_donation(self, amount_donation_initial=None, custom_amount_initial=None):
-        self.fields['amount_donation'].initial = amount_donation_initial
-        self.fields['custom_amount'].initial = custom_amount_initial
+        self.fields["amount_donation"].initial = amount_donation_initial
+        self.fields["custom_amount"].initial = custom_amount_initial
 
     def clean_custom_amount(self):
-        amount_donation = self.cleaned_data.get('amount_donation', '')
-        custom_amount = self.cleaned_data.get('custom_amount', '')
+        amount_donation = self.cleaned_data.get("amount_donation", "")
+        custom_amount = self.cleaned_data.get("custom_amount", "")
 
         if amount_donation == "-1":
             if custom_amount:
                 self.amount = custom_amount
             else:
-                raise forms.ValidationError('Please enter a donation amount.')
+                raise forms.ValidationError("Please enter a donation amount.")
         else:
             self.amount = amount_donation
         return self.cleaned_data
@@ -94,26 +102,32 @@ class DonationModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 50,
             "choosable": 0,
-            }
+        }
 
     def apply_settings(self):
         #   Rather than using a model in module_ext.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
-            'donation_text': 'Donation to Learning Unlimited',
-            'donation_options': [10, 20, 50],
+            "donation_text": "Donation to Learning Unlimited",
+            "donation_options": [10, 20, 50],
         }
 
-        raw = Tag.getProgramTag('donation_settings', self.program, default='{}')
+        raw = Tag.getProgramTag("donation_settings", self.program, default="{}")
         try:
             tag_data = json.loads(raw) if raw else {}
         except (TypeError, ValueError):
-            logger.warning("Invalid donation_settings tag for program %s: %s", self.program, raw)
+            logger.warning(
+                "Invalid donation_settings tag for program %s: %s", self.program, raw
+            )
             tag_data = {}
 
         if not isinstance(tag_data, dict):
-            logger.warning("Non-dict donation_settings tag for program %s: %s", self.program, tag_data)
+            logger.warning(
+                "Non-dict donation_settings tag for program %s: %s",
+                self.program,
+                tag_data,
+            )
             tag_data = {}
 
         self.settings = DEFAULTS.copy()
@@ -124,33 +138,43 @@ class DonationModule(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
+        (donate_type, created) = LineItemType.objects.get_or_create(
+            program=self.program, text=self.get_setting("donation_text")
+        )
         return donate_type
 
     def isCompleted(self, user=None):
         """Whether the user made a decision about donating to LU."""
         user = self._resolve_user(user)
-        return Record.objects.filter(user=user, program=self.program, event__name=self.event).exists()
+        return Record.objects.filter(
+            user=user, program=self.program, event__name=self.event
+        ).exists()
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         QObj = Q(transfer__line_item=self.line_item_type())
 
         if QObject:
-            return {'donation': QObj}
+            return {"donation": QObj}
         else:
-            return {'donation': ESPUser.objects.filter(QObj).distinct()}
+            return {"donation": ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
-        return {'donation': """Students who have chosen to make an optional donation"""}
+        return {"donation": """Students who have chosen to make an optional donation"""}
 
     @staticmethod
     def get_form(settings, donation_initial=None, form_data=None):
         form = DonationForm(form_data)
-        form.fields['amount_donation'].choices = [(0, "I won't be making a donation at this time")] + \
-                                  [(option, '$%d'%option) for option in settings['donation_options']] + \
-                                  [(-1, "I would like to donate a different amount")]
+        form.fields["amount_donation"].choices = (
+            [(0, "I won't be making a donation at this time")]
+            + [(option, "$%d" % option) for option in settings["donation_options"]]
+            + [(-1, "I would like to donate a different amount")]
+        )
         if donation_initial:
-            if donation_initial == 0 or donation_initial % 1 == 0 and int(donation_initial) in settings['donation_options']:
+            if (
+                donation_initial == 0
+                or donation_initial % 1 == 0
+                and int(donation_initial) in settings["donation_options"]
+            ):
                 amount_donation_initial = int(donation_initial)
                 custom_amount_initial = None
             else:
@@ -159,13 +183,15 @@ class DonationModule(ProgramModuleObj):
         else:
             amount_donation_initial = None
             custom_amount_initial = None
-        form.load_donation(amount_donation_initial=amount_donation_initial, custom_amount_initial=custom_amount_initial)
+        form.load_donation(
+            amount_donation_initial=amount_donation_initial,
+            custom_amount_initial=custom_amount_initial,
+        )
         return form
-
 
     @main_call
     @usercheck_usetl
-    @meets_deadline('/ExtraCosts')
+    @meets_deadline("/ExtraCosts")
     @meets_cap
     def donation(self, request, tl, one, two, module, extra, prog):
 
@@ -174,36 +200,56 @@ class DonationModule(ProgramModuleObj):
         iac = IndividualAccountingController(self.program, user)
 
         context = {}
-        context['module'] = self
-        context['program'] = prog
-        context['user'] = user
+        context["module"] = self
+        context["program"] = prog
+        context["user"] = user
 
         # It's unclear if we support changing line item preferences after
         # credit card payment has occurred. For now, just do the same thing we
         # do in other accounting modules, and don't allow changes after payment
         # has occurred.
         if iac.has_paid():
-            raise ESPError("You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.", log=False)
+            raise ESPError(
+                "You've already paid for this program.  Please make any further changes onsite so that we can charge or refund you properly.",
+                log=False,
+            )
 
         form = None
 
-        if request.method == 'POST':
-
+        if request.method == "POST":
             self.apply_settings()
-            current_donation_prefs = iac.get_preferences([self.line_item_type(), ])
+            current_donation_prefs = iac.get_preferences(
+                [
+                    self.line_item_type(),
+                ]
+            )
             if current_donation_prefs:
-                current_donation = Decimal(iac.get_preferences([self.line_item_type(), ])[0][2])
+                current_donation = Decimal(
+                    iac.get_preferences(
+                        [
+                            self.line_item_type(),
+                        ]
+                    )[0][2]
+                )
             else:
                 current_donation = None
-            form = DonationModule.get_form(settings=self.settings, donation_initial=current_donation, form_data=request.POST)
+            form = DonationModule.get_form(
+                settings=self.settings,
+                donation_initial=current_donation,
+                form_data=request.POST,
+            )
 
             if form.is_valid():
                 #   Clear the Transfers by specifying quantity 0
-                iac.set_preference('Donation to Learning Unlimited', 0)
+                iac.set_preference("Donation to Learning Unlimited", 0)
                 if form.amount:
-                    iac.set_preference('Donation to Learning Unlimited', 1, amount=form.amount)
+                    iac.set_preference(
+                        "Donation to Learning Unlimited", 1, amount=form.amount
+                    )
 
-                return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+                return HttpResponseRedirect(
+                    "/learn/%s/studentreg" % self.program.getUrlBase()
+                )
 
         # Donations and non-donations go through different code paths. If a
         # user chooses to make a donation, set_donation_amount() is called via
@@ -219,23 +265,37 @@ class DonationModule(ProgramModuleObj):
         rt = RecordType.objects.get(name=self.event)
         Record.objects.get_or_create(user=user, program=self.program, event=rt)
 
-
         #   Load donation amount separately, since the client-side code needs to know about it separately.
-        donation_prefs = iac.get_preferences([self.line_item_type(),])
+        donation_prefs = iac.get_preferences(
+            [
+                self.line_item_type(),
+            ]
+        )
         if donation_prefs:
-            context['amount_donation'] = Decimal(donation_prefs[0][2])
-            context['has_donation'] = True
-            context['form'] = form and form or DonationModule.get_form(settings=self.settings, donation_initial=context['amount_donation'])
+            context["amount_donation"] = Decimal(donation_prefs[0][2])
+            context["has_donation"] = True
+            context["form"] = (
+                form
+                and form
+                or DonationModule.get_form(
+                    settings=self.settings, donation_initial=context["amount_donation"]
+                )
+            )
         else:
-            context['amount_donation'] = Decimal('0.00')
-            context['has_donation'] = False
-            context['form'] = form and form or DonationModule.get_form(settings=self.settings, donation_initial=None)
+            context["amount_donation"] = Decimal("0.00")
+            context["has_donation"] = False
+            context["form"] = (
+                form
+                and form
+                or DonationModule.get_form(
+                    settings=self.settings, donation_initial=None
+                )
+            )
 
-        context['institution'] = settings.INSTITUTION_NAME
+        context["institution"] = settings.INSTITUTION_NAME
 
-
-        return render_to_response(self.baseDir() + 'donation.html', request, context)
+        return render_to_response(self.baseDir() + "donation.html", request, context)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

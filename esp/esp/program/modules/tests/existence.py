@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -38,15 +38,22 @@ from esp.program.tests import ProgramFrameworkTest
 import random
 import re
 
+
 class ModuleExistenceTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
 
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update( {
-            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
-            'num_rooms': 6,
-            } )
+        kwargs.update(
+            {
+                "num_timeslots": 3,
+                "timeslot_length": 50,
+                "timeslot_gap": 10,
+                "num_teachers": 6,
+                "classes_per_teacher": 1,
+                "sections_per_class": 2,
+                "num_rooms": 6,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         #   Make all modules non-required for now, so we don't have to be shown required pages
@@ -86,13 +93,15 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         return modules_found
 
     def check_reg_modules(self, core_url, tl):
-        """ Check that the modules linked from the requested core registration page
-            are consistent with those associated with the program. """
+        """Check that the modules linked from the requested core registration page
+        are consistent with those associated with the program."""
 
         #   Fetch the registration page and the lists of desired/actual modules
-        response = self.client.get(f'/{tl}/{self.program.getUrlBase()}/{core_url}')
+        response = self.client.get(f"/{tl}/{self.program.getUrlBase()}/{core_url}")
         self.assertEqual(response.status_code, 200)
-        actual_modules = self.observed_module_list(tl, str(response.content, encoding='UTF-8'))
+        actual_modules = self.observed_module_list(
+            tl, str(response.content, encoding="UTF-8")
+        )
         target_modules = self.target_module_list(tl)
 
         #   Compare the module lists.
@@ -111,45 +120,57 @@ class ModuleExistenceTest(ProgramFrameworkTest):
                 extra_mods.append(actual_modules[i])
 
         #   Report any inconsistencies we detected.
-        self.assertTrue(len(missing_mods) == 0, 'Missing modules: %s' % [x.__class__.__name__ for x in missing_mods])
-        self.assertTrue(len(extra_mods) == 0, 'Extra modules: %s' % [x.__class__.__name__ for x in extra_mods])
+        self.assertTrue(
+            len(missing_mods) == 0,
+            "Missing modules: %s" % [x.__class__.__name__ for x in missing_mods],
+        )
+        self.assertTrue(
+            len(extra_mods) == 0,
+            "Extra modules: %s" % [x.__class__.__name__ for x in extra_mods],
+        )
 
     def test_studentreg(self):
-        """ Ensure that the list of modules on the student reg page is correct """
+        """Ensure that the list of modules on the student reg page is correct"""
 
         #   Pick a student and log on
         student = random.choice(self.students)
-        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        self.assertTrue(
+            self.client.login(username=student.username, password="password"),
+            "Couldn't log in as student %s" % student.username,
+        )
 
         #   Get student reg page and check list of modules
-        self.check_reg_modules('studentreg', 'learn')
+        self.check_reg_modules("studentreg", "learn")
 
         #   Remove a module and check list is still consistent
-        possible_modules = [x.module.id for x in self.target_module_list('learn')]
+        possible_modules = [x.module.id for x in self.target_module_list("learn")]
         module_to_remove = random.choice(possible_modules)
         self.program.program_modules.remove(module_to_remove)
-        self.check_reg_modules('studentreg', 'learn')
+        self.check_reg_modules("studentreg", "learn")
 
         #   Restore it and re-check
         self.program.program_modules.add(module_to_remove)
-        self.check_reg_modules('studentreg', 'learn')
+        self.check_reg_modules("studentreg", "learn")
 
     def test_teacherreg(self):
-        """ Ensure that the list of modules on the teacher reg page is correct """
+        """Ensure that the list of modules on the teacher reg page is correct"""
 
         #   Pick a teacher and log on
         teacher = random.choice(self.teachers)
-        self.assertTrue( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as teacher %s" % teacher.username )
+        self.assertTrue(
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
+        )
 
         #   Get teacher reg page and check list of modules
-        self.check_reg_modules('teacherreg', 'teach')
+        self.check_reg_modules("teacherreg", "teach")
 
         #   Remove a module and check list is still consistent
-        possible_modules = [x.module.id for x in self.target_module_list('teach')]
+        possible_modules = [x.module.id for x in self.target_module_list("teach")]
         module_to_remove = random.choice(possible_modules)
         self.program.program_modules.remove(module_to_remove)
-        self.check_reg_modules('teacherreg', 'teach')
+        self.check_reg_modules("teacherreg", "teach")
 
         #   Restore it and re-check
         self.program.program_modules.add(module_to_remove)
-        self.check_reg_modules('teacherreg', 'teach')
+        self.check_reg_modules("teacherreg", "teach")

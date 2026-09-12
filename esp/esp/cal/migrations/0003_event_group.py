@@ -5,15 +5,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cal', '0002_event_program'),
+        ("cal", "0002_event_program"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='event',
-            name='group',
+            model_name="event",
+            name="group",
             field=models.IntegerField(blank=True, null=True),
         ),
     ]

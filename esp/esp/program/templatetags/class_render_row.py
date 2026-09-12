@@ -9,30 +9,46 @@ from esp.tagdict.models import Tag
 register = template.Library()
 
 
-@cache_inclusion_tag(register, 'inclusion/program/class_teacher_list_row.html')
+@cache_inclusion_tag(register, "inclusion/program/class_teacher_list_row.html")
 def render_class_teacher_list_row(cls, can_req_cancel, survey_results, user=None):
     """Render a class for the teacher list of classes in teacherreg."""
-    return {'cls': cls,
-            'program': cls.parent_program,
-            'crmi': cls.parent_program.classregmoduleinfo,
-            'can_req_cancel': can_req_cancel,
-            'survey_results': survey_results,
-            'friendly_times_with_date': Tag.getBooleanTag(
-                'friendly_times_with_date', cls.parent_program),
-            'email_host_sender': settings.EMAIL_HOST_SENDER,
-            'user': user
-            }
-render_class_teacher_list_row.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
-render_class_teacher_list_row.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
-render_class_teacher_list_row.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'cls': self})
-render_class_teacher_list_row.cached_function.depend_on_m2m(ClassSection, 'moderators', lambda sec, moderator: {'cls': sec.parent_class})
-render_class_teacher_list_row.cached_function.depend_on_row('resources.ResourceAssignment', lambda ra: {'cls': ra.target.parent_class})
-render_class_teacher_list_row.cached_function.depend_on_row('program.ClassFlag', lambda flag: {'cls': flag.subject})
-render_class_teacher_list_row.cached_function.depend_on_model('program.ClassFlagType')
-render_class_teacher_list_row.cached_function.get_or_create_token(('user',))
+    return {
+        "cls": cls,
+        "program": cls.parent_program,
+        "crmi": cls.parent_program.classregmoduleinfo,
+        "can_req_cancel": can_req_cancel,
+        "survey_results": survey_results,
+        "friendly_times_with_date": Tag.getBooleanTag(
+            "friendly_times_with_date", cls.parent_program
+        ),
+        "email_host_sender": settings.EMAIL_HOST_SENDER,
+        "user": user,
+    }
 
 
-@cache_inclusion_tag(register, 'inclusion/program/class_copy_row.html')
+render_class_teacher_list_row.cached_function.depend_on_row(
+    ClassSubject, lambda cls: {"cls": cls}
+)
+render_class_teacher_list_row.cached_function.depend_on_row(
+    ClassSection, lambda sec: {"cls": sec.parent_class}
+)
+render_class_teacher_list_row.cached_function.depend_on_cache(
+    ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {"cls": self}
+)
+render_class_teacher_list_row.cached_function.depend_on_m2m(
+    ClassSection, "moderators", lambda sec, moderator: {"cls": sec.parent_class}
+)
+render_class_teacher_list_row.cached_function.depend_on_row(
+    "resources.ResourceAssignment", lambda ra: {"cls": ra.target.parent_class}
+)
+render_class_teacher_list_row.cached_function.depend_on_row(
+    "program.ClassFlag", lambda flag: {"cls": flag.subject}
+)
+render_class_teacher_list_row.cached_function.depend_on_model("program.ClassFlagType")
+render_class_teacher_list_row.cached_function.get_or_create_token(("user",))
+
+
+@cache_inclusion_tag(register, "inclusion/program/class_copy_row.html")
 def render_class_copy_row(cls, user=None, program=None):
     """Render a class for the list of classes that can be copied in teacherreg.
 
@@ -41,14 +57,21 @@ def render_class_copy_row(cls, user=None, program=None):
     user: the teacher that is copying the class
     program: the program that the teacher is copying the class _to_
     """
-    return {'cls': cls,
-            'program': cls.parent_program,
-            'crmi': cls.parent_program.classregmoduleinfo,
-            'email_host_sender': settings.EMAIL_HOST_SENDER,
-            'user': user,
-            'program': program}
+    return {
+        "cls": cls,
+        "program": cls.parent_program,
+        "crmi": cls.parent_program.classregmoduleinfo,
+        "email_host_sender": settings.EMAIL_HOST_SENDER,
+        "user": user,
+        "program": program,
+    }
+
+
 render_class_copy_row.cached_function.depend_on_cache(
     render_class_teacher_list_row.cached_function,
-    lambda cls=wildcard, **kwargs: {'cls': cls})
-render_class_copy_row.cached_function.depend_on_row('program.Program', lambda program: {'program': program})
-render_class_copy_row.cached_function.get_or_create_token(('user',))
+    lambda cls=wildcard, **kwargs: {"cls": cls},
+)
+render_class_copy_row.cached_function.depend_on_row(
+    "program.Program", lambda program: {"program": program}
+)
+render_class_copy_row.cached_function.get_or_create_token(("user",))

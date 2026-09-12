@@ -15,25 +15,32 @@ from esp.tests.factories import make_class, make_program
 
 class CatalogCacheScopeTest(ProgramFrameworkTest):
     def setUp(self):
-        super().setUp(num_students=0, num_teachers=2, classes_per_teacher=1,
-                      sections_per_class=1)
+        super().setUp(
+            num_students=0, num_teachers=2, classes_per_teacher=1, sections_per_class=1
+        )
         #   A second, independent program.  Writes to one must not disturb the
         #   other's cached catalog.
         self.other_program = make_program(
-            instance_name='2223_Summer', instance_label='Summer 2223',
-            categories=self.categories, admins=self.admins,
-            modules=self.settings['modules'],
+            instance_name="2223_Summer",
+            instance_label="Summer 2223",
+            categories=self.categories,
+            admins=self.admins,
+            modules=self.settings["modules"],
         )
-        self.other_class = make_class(program=self.other_program,
-                                      teacher=self.teachers[0],
-                                      title='Other program class',
-                                      category=self.categories[0],
-                                      sections=1, accept=True)
+        self.other_class = make_class(
+            program=self.other_program,
+            teacher=self.teachers[0],
+            title="Other program class",
+            category=self.categories[0],
+            sections=1,
+            accept=True,
+        )
 
     def cached_catalog(self, program):
         """The cached catalog for `program`, or None if it is not cached."""
         return ClassSubject.objects.catalog_cached(
-            program, None, False, None, cache_only=True, order_args_override=None)
+            program, None, False, None, cache_only=True, order_args_override=None
+        )
 
     def warm_both(self):
         ClassSubject.objects.catalog(self.program)
@@ -50,13 +57,17 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         self.warm_both()
 
         cls = self.a_class_in(self.program)
-        cls.title = 'Retitled'
+        cls.title = "Retitled"
         cls.save()
 
-        self.assertIsNone(self.cached_catalog(self.program),
-                          "the edited program's catalog should be invalidated")
-        self.assertIsNotNone(self.cached_catalog(self.other_program),
-                             "an unrelated program's catalog should survive")
+        self.assertIsNone(
+            self.cached_catalog(self.program),
+            "the edited program's catalog should be invalidated",
+        )
+        self.assertIsNotNone(
+            self.cached_catalog(self.other_program),
+            "an unrelated program's catalog should survive",
+        )
 
     def test_editing_a_section_spares_the_other_program(self):
         self.warm_both()
@@ -86,16 +97,21 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         depend_on_m2m hook rather than the row dependency.
         """
         event = Event.objects.create(
-            program=self.program, event_type=self.event_type,
+            program=self.program,
+            event_type=self.event_type,
             start=datetime(2222, 7, 8, 9, 0),
             end=datetime(2222, 7, 8, 9, 0) + timedelta(hours=1),
-            name='extra slot', short_description='extra',
-            description='extra slot for reschedule test')
+            name="extra slot",
+            short_description="extra",
+            description="extra slot for reschedule test",
+        )
 
         self.warm_both()
         self.a_class_in(self.program).sections.first().meeting_times.add(event)
-        self.assertIsNone(self.cached_catalog(self.program),
-                          "rescheduling must invalidate the catalog")
+        self.assertIsNone(
+            self.cached_catalog(self.program),
+            "rescheduling must invalidate the catalog",
+        )
 
     def test_adding_a_teacher_invalidates_at_all(self):
         """The catalog materialises each class's teacher list, so a teacher
@@ -103,16 +119,20 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         not fire post_save on ClassSubject."""
         self.warm_both()
         self.a_class_in(self.program).makeTeacher(self.teachers[1])
-        self.assertIsNone(self.cached_catalog(self.program),
-                          "adding a teacher must invalidate the catalog")
+        self.assertIsNone(
+            self.cached_catalog(self.program),
+            "adding a teacher must invalidate the catalog",
+        )
 
     def test_removing_a_teacher_invalidates_at_all(self):
         cls = self.a_class_in(self.program)
         cls.makeTeacher(self.teachers[1])
         self.warm_both()
         cls.removeTeacher(self.teachers[1])
-        self.assertIsNone(self.cached_catalog(self.program),
-                          "removing a teacher must invalidate the catalog")
+        self.assertIsNone(
+            self.cached_catalog(self.program),
+            "removing a teacher must invalidate the catalog",
+        )
 
     def test_adding_a_teacher_spares_the_other_program(self):
         self.warm_both()
@@ -125,22 +145,34 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         cls = self.a_class_in(self.program)
         self.warm_both()
 
-        before = {t.id for c in ClassSubject.objects.catalog(self.program)
-                  if c.id == cls.id for t in c.get_teachers()}
+        before = {
+            t.id
+            for c in ClassSubject.objects.catalog(self.program)
+            if c.id == cls.id
+            for t in c.get_teachers()
+        }
         self.assertNotIn(self.teachers[1].id, before)
 
         cls.makeTeacher(self.teachers[1])
 
-        after = {t.id for c in ClassSubject.objects.catalog(self.program)
-                 if c.id == cls.id for t in c.get_teachers()}
-        self.assertIn(self.teachers[1].id, after,
-                      "catalog served a stale teacher list")
+        after = {
+            t.id
+            for c in ClassSubject.objects.catalog(self.program)
+            if c.id == cls.id
+            for t in c.get_teachers()
+        }
+        self.assertIn(self.teachers[1].id, after, "catalog served a stale teacher list")
 
     def test_new_class_invalidates_its_own_program(self):
         self.warm_both()
-        make_class(program=self.program, teacher=self.teachers[0],
-                   title='Brand new class', category=self.categories[0],
-                   sections=1, accept=True)
+        make_class(
+            program=self.program,
+            teacher=self.teachers[0],
+            title="Brand new class",
+            category=self.categories[0],
+            sections=1,
+            accept=True,
+        )
         self.assertIsNone(self.cached_catalog(self.program))
         self.assertIsNotNone(self.cached_catalog(self.other_program))
 
@@ -149,27 +181,30 @@ class CatalogCacheScopeTest(ProgramFrameworkTest):
         self.a_class_in(self.program).delete()
         self.assertIsNone(self.cached_catalog(self.program))
         self.assertIsNotNone(self.cached_catalog(self.other_program))
+
     def test_catalog_contents_are_still_correct_after_invalidation(self):
         """Scoping must not cause a stale catalog to be served."""
         self.warm_both()
 
         titles_before = {c.title for c in ClassSubject.objects.catalog(self.program)}
         cls = self.a_class_in(self.program)
-        cls.title = 'Definitely Renamed'
+        cls.title = "Definitely Renamed"
         cls.save()
 
         titles_after = {c.title for c in ClassSubject.objects.catalog(self.program)}
         self.assertNotEqual(titles_before, titles_after)
-        self.assertIn('Definitely Renamed', titles_after)
+        self.assertIn("Definitely Renamed", titles_after)
 
     def test_the_other_program_catalog_is_still_correct(self):
         """A surviving cache entry must hold the right data, not just exist."""
         self.warm_both()
 
         cls = self.a_class_in(self.program)
-        cls.title = 'Renamed again'
+        cls.title = "Renamed again"
         cls.save()
 
-        other_titles = {c.title for c in ClassSubject.objects.catalog(self.other_program)}
-        self.assertIn('Other program class', other_titles)
-        self.assertNotIn('Renamed again', other_titles)
+        other_titles = {
+            c.title for c in ClassSubject.objects.catalog(self.other_program)
+        }
+        self.assertIn("Other program class", other_titles)
+        self.assertNotIn("Renamed again", other_titles)

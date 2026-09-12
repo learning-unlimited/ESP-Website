@@ -1,0 +1,5 @@
+[lint]
+extend-ignore = [
+    "UP", "RUF", "I", "F", "DTZ", "BLE", "C", "SIM", "B", "ISC", "RET", 
+    "FURB", "PLC", "TRY", "S", "PIE", "PLR", "E", "G", "PERF", "N", "LOG", "PLW", "FLY"
+]

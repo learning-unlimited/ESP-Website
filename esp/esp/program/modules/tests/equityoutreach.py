@@ -13,18 +13,26 @@ class EquityOutreachTest(ProgramFrameworkTest):
         modules = [
             ProgramModule.objects.get(handler="StudentRegProfileModule"),
         ]
-        super(EquityOutreachTest, self).setUp(modules=modules, num_students=3, num_teachers=1)
+        super(EquityOutreachTest, self).setUp(
+            modules=modules, num_students=3, num_teachers=1
+        )
         self.admin = self.admins[0]
         self.student = self.students[0]
 
     def _add_student_profile(self, user, transportation):
-        student_info = StudentInfo.objects.create(user=user, transportation=transportation)
-        profile = RegistrationProfile(user=user, program=self.program, student_info=student_info)
+        student_info = StudentInfo.objects.create(
+            user=user, transportation=transportation
+        )
+        profile = RegistrationProfile(
+            user=user, program=self.program, student_info=student_info
+        )
         profile.save()
 
     def test_cohort_queries(self):
         self._add_student_profile(self.student, "Public bus is difficult")
-        FinancialAidRequest.objects.create(program=self.program, user=self.student, done=False)
+        FinancialAidRequest.objects.create(
+            program=self.program, user=self.student, done=False
+        )
 
         transportation_users = EquityOutreachCohorts.users_for_cohort(
             self.program, EquityOutreachCohorts.COHORT_TRANSPORTATION_BARRIER

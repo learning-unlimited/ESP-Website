@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -31,9 +31,18 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, usercheck_usetl, main_call, meets_deadline
-from esp.program.models import FinancialAidRequest, RegistrationProfile, StudentRegistration
-from esp.users.models   import ESPUser
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    usercheck_usetl,
+    main_call,
+    meets_deadline,
+)
+from esp.program.models import (
+    FinancialAidRequest,
+    RegistrationProfile,
+    StudentRegistration,
+)
+from esp.users.models import ESPUser
 from django.db.models.query import Q
 
 
@@ -57,8 +66,15 @@ class _EquityOutreachCohorts(object):
     }
 
     TRANSPORTATION_SIGNAL_KEYWORDS = (
-        "bus", "train", "public", "ride", "carpool",
-        "cannot", "can't", "difficult", "hard",
+        "bus",
+        "train",
+        "public",
+        "ride",
+        "carpool",
+        "cannot",
+        "can't",
+        "difficult",
+        "hard",
     )
 
     @classmethod
@@ -99,17 +115,27 @@ class _EquityOutreachCohorts(object):
 
     @classmethod
     def _enrolled_student_ids(cls, program):
-        return StudentRegistration.valid_objects().filter(
-            section__parent_class__parent_program=program,
-            relationship__name="Enrolled",
-        ).values_list("user_id", flat=True).distinct()
+        return (
+            StudentRegistration.valid_objects()
+            .filter(
+                section__parent_class__parent_program=program,
+                relationship__name="Enrolled",
+            )
+            .values_list("user_id", flat=True)
+            .distinct()
+        )
 
     @classmethod
     def _waitlisted_student_ids(cls, program):
-        return StudentRegistration.valid_objects().filter(
-            section__parent_class__parent_program=program,
-            relationship__name__startswith="Waitlist",
-        ).values_list("user_id", flat=True).distinct()
+        return (
+            StudentRegistration.valid_objects()
+            .filter(
+                section__parent_class__parent_program=program,
+                relationship__name__startswith="Waitlist",
+            )
+            .values_list("user_id", flat=True)
+            .distinct()
+        )
 
     @classmethod
     def _program_students_with_profiles(cls, program):
@@ -121,31 +147,42 @@ class _EquityOutreachCohorts(object):
 
     @classmethod
     def _incomplete_registration_users(cls, program):
-        return cls._program_students_with_profiles(program).exclude(id__in=cls._confirmed_ids(program))
+        return cls._program_students_with_profiles(program).exclude(
+            id__in=cls._confirmed_ids(program)
+        )
 
     @classmethod
     def _unconfirmed_registration_users(cls, program):
-        return ESPUser.objects.filter(id__in=cls._enrolled_student_ids(program)).exclude(
-            id__in=cls._confirmed_ids(program)
-        ).distinct()
+        return (
+            ESPUser.objects.filter(id__in=cls._enrolled_student_ids(program))
+            .exclude(id__in=cls._confirmed_ids(program))
+            .distinct()
+        )
 
     @classmethod
     def _incomplete_finaid_users(cls, program):
-        pending_users = FinancialAidRequest.objects.filter(program=program, done=False).values_list("user_id", flat=True)
+        pending_users = FinancialAidRequest.objects.filter(
+            program=program, done=False
+        ).values_list("user_id", flat=True)
         return ESPUser.objects.filter(id__in=pending_users).distinct()
 
     @classmethod
     def _transportation_barrier_users(cls, program):
         signal_q = Q()
         for keyword in cls.TRANSPORTATION_SIGNAL_KEYWORDS:
-            signal_q |= Q(registrationprofile__student_info__transportation__icontains=keyword)
-        return ESPUser.objects.filter(
-            registrationprofile__program=program,
-            registrationprofile__student_info__isnull=False,
-            registrationprofile__most_recent_profile=True,
-        ).filter(signal_q).exclude(
-            registrationprofile__student_info__transportation=""
-        ).distinct()
+            signal_q |= Q(
+                registrationprofile__student_info__transportation__icontains=keyword
+            )
+        return (
+            ESPUser.objects.filter(
+                registrationprofile__program=program,
+                registrationprofile__student_info__isnull=False,
+                registrationprofile__most_recent_profile=True,
+            )
+            .filter(signal_q)
+            .exclude(registrationprofile__student_info__transportation="")
+            .distinct()
+        )
 
     @classmethod
     def _low_hours_users(cls, program):
@@ -176,7 +213,9 @@ class _EquityOutreachCohorts(object):
 
     @classmethod
     def _waitlisted_users(cls, program):
-        return ESPUser.objects.filter(id__in=cls._waitlisted_student_ids(program)).distinct()
+        return ESPUser.objects.filter(
+            id__in=cls._waitlisted_student_ids(program)
+        ).distinct()
 
 
 # Public alias for tests and any external use
@@ -185,25 +224,35 @@ EquityOutreachCohorts = _EquityOutreachCohorts
 
 class StudentRegProfileModule(ProgramModuleObj):
     doc = """Serves the profile editor during student registration."""
-    permission_types = ('Student/Profile',)
+    permission_types = ("Student/Profile",)
 
     @classmethod
     def module_properties(cls):
-        return [{
-            "admin_title": "Student Profile Editor",
-            "link_title": "Update Your Profile",
-            "module_type": "learn",
-            "seq": 0,
-            "required": True,
-            "choosable": 1
-        }]
+        return [
+            {
+                "admin_title": "Student Profile Editor",
+                "link_title": "Update Your Profile",
+                "module_type": "learn",
+                "seq": 0,
+                "required": True,
+                "choosable": 1,
+            }
+        ]
 
     def students(self, QObject=False):
         if QObject:
-            result = {'student_profile': Q(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False)}
+            result = {
+                "student_profile": Q(
+                    registrationprofile__program=self.program,
+                    registrationprofile__student_info__isnull=False,
+                )
+            }
         else:
-            students = ESPUser.objects.filter(registrationprofile__program=self.program, registrationprofile__student_info__isnull=False).distinct()
-            result = {'student_profile': students}
+            students = ESPUser.objects.filter(
+                registrationprofile__program=self.program,
+                registrationprofile__student_info__isnull=False,
+            ).distinct()
+            result = {"student_profile": students}
         for key in _EquityOutreachCohorts.all_cohort_keys():
             qs = _EquityOutreachCohorts.users_for_cohort(self.program, key)
             list_name = "equity_" + key
@@ -214,7 +263,7 @@ class StudentRegProfileModule(ProgramModuleObj):
         return result
 
     def studentDesc(self):
-        result = {'student_profile': """Students who have filled out a profile"""}
+        result = {"student_profile": """Students who have filled out a profile"""}
         for key in _EquityOutreachCohorts.all_cohort_keys():
             result["equity_" + key] = _EquityOutreachCohorts.cohort_label(key)
         return result
@@ -223,7 +272,7 @@ class StudentRegProfileModule(ProgramModuleObj):
     @usercheck_usetl
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog):
-        """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+        """Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program"""
 
         from esp.web.views.myesp import profile_editor
 
@@ -232,8 +281,8 @@ class StudentRegProfileModule(ProgramModuleObj):
         #   Otherwise, make a wild guess.
         user_roles = request.user.getUserTypes()
         user_roles = [x.lower() for x in user_roles]
-        if 'teacher' in user_roles or 'student' in user_roles:
-            role = {'teach': 'teacher','learn': 'student'}[tl]
+        if "teacher" in user_roles or "student" in user_roles:
+            role = {"teach": "teacher", "learn": "student"}[tl]
         else:
             role = user_roles[0]
 
@@ -246,8 +295,8 @@ class StudentRegProfileModule(ProgramModuleObj):
         # aseering 8/20/2007: It is possible for a user to not have a
         # contact_user associated with their registration profile.
         # Deal nicely with this.
-        if hasattr(regProf.contact_user, 'e_mail'):
-            regProf.contact_user.e_mail = ''
+        if hasattr(regProf.contact_user, "e_mail"):
+            regProf.contact_user.e_mail = ""
             regProf.contact_user.save()
 
         response = profile_editor(request, prog, False, role)
@@ -257,9 +306,11 @@ class StudentRegProfileModule(ProgramModuleObj):
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        regProf = RegistrationProfile.getLastForProgram(user, self.program, self.module.module_type)
+        regProf = RegistrationProfile.getLastForProgram(
+            user, self.program, self.module.module_type
+        )
         return regProf.id is not None
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

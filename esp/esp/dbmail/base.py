@@ -1,7 +1,4 @@
-
-
 class BaseHandler(object):
-
     send = False
     preserve_headers = False
 

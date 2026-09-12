@@ -11,10 +11,13 @@ sys.path.append(project)
 # If this has happened, then the VIRTUAL_ENV environment variable should be
 # defined.
 # If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
+if os.environ.get("VIRTUAL_ENV") is None:
     envroot = os.path.dirname(project)
-    activate_this = os.path.join(envroot, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+    activate_this = os.path.join(envroot, "env", "bin", "activate_this.py")
+    exec(
+        compile(open(activate_this, "rb").read(), activate_this, "exec"),
+        dict(__file__=activate_this),
+    )
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 

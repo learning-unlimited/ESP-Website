@@ -15,6 +15,7 @@ longer reflects how the site is configured.  The derivation in settings.py
 consumes the value local_settings.py supplies, so that is what the expected
 values are computed from here.
 """
+
 import unittest
 
 from django.conf import settings
@@ -24,12 +25,12 @@ from esp import django_settings, local_settings
 
 # The DEBUG value the derivation in esp/settings.py actually saw: whatever
 # local_settings.py set, falling back to django_settings.py's default.
-CONFIGURED_DEBUG = getattr(local_settings, 'DEBUG', django_settings.DEBUG)
+CONFIGURED_DEBUG = getattr(local_settings, "DEBUG", django_settings.DEBUG)
 
 DERIVED_FROM_DEBUG = (
-    'SESSION_COOKIE_SECURE',
-    'CSRF_COOKIE_SECURE',
-    'SECURE_SSL_REDIRECT',
+    "SESSION_COOKIE_SECURE",
+    "CSRF_COOKIE_SECURE",
+    "SECURE_SSL_REDIRECT",
 )
 
 
@@ -40,8 +41,9 @@ class SecuritySettingsTest(unittest.TestCase):
         redirect and HSTS header apply to every response, including those
         short-circuited by middleware further down the stack.
         """
-        self.assertEqual(settings.MIDDLEWARE[0],
-                         'django.middleware.security.SecurityMiddleware')
+        self.assertEqual(
+            settings.MIDDLEWARE[0], "django.middleware.security.SecurityMiddleware"
+        )
 
     def test_debug_derived_flags_follow_configured_debug(self):
         """
@@ -65,8 +67,8 @@ class SecuritySettingsTest(unittest.TestCase):
         development -- a stray HSTS header on localhost pins every other local
         project on that host to HTTPS for the lifetime of the max-age.
         """
-        if hasattr(local_settings, 'SECURE_HSTS_SECONDS'):
-            self.skipTest('SECURE_HSTS_SECONDS overridden in local_settings')
+        if hasattr(local_settings, "SECURE_HSTS_SECONDS"):
+            self.skipTest("SECURE_HSTS_SECONDS overridden in local_settings")
         if CONFIGURED_DEBUG:
             self.assertEqual(settings.SECURE_HSTS_SECONDS, 0)
         else:
@@ -78,7 +80,7 @@ class SecuritySettingsTest(unittest.TestCase):
         irreversible, so neither may be on by default; deployments opt in via
         local_settings.py.
         """
-        for name in ('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'SECURE_HSTS_PRELOAD'):
+        for name in ("SECURE_HSTS_INCLUDE_SUBDOMAINS", "SECURE_HSTS_PRELOAD"):
             if hasattr(local_settings, name):
                 continue
             with self.subTest(setting=name):
@@ -91,8 +93,8 @@ class SecuritySettingsTest(unittest.TestCase):
         has no such proxy, so this must not be a global default; deployments
         behind a TLS terminator set it in local_settings.py.
         """
-        if hasattr(local_settings, 'SECURE_PROXY_SSL_HEADER'):
-            self.skipTest('SECURE_PROXY_SSL_HEADER set in local_settings')
+        if hasattr(local_settings, "SECURE_PROXY_SSL_HEADER"):
+            self.skipTest("SECURE_PROXY_SSL_HEADER set in local_settings")
         self.assertIsNone(settings.SECURE_PROXY_SSL_HEADER)
 
     def test_csrf_cookie_readable_by_javascript(self):

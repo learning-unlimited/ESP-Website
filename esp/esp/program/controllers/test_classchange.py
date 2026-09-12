@@ -39,6 +39,7 @@ from esp.program.tests import ProgramFrameworkTest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_controller(program, **kwargs):
     """Instantiate ClassChangeController with ``input`` patched to 'y'."""
     with patch("builtins.input", return_value="y"):
@@ -75,9 +76,14 @@ class ClassChangeTestBase(ProgramFrameworkTest):
         self.schedule_randomly()
 
         # Grab the first *scheduled* section for registration fixtures.
-        self.first_section = self.program.sections().filter(
-            meeting_times__isnull=False,
-        ).order_by("id").first()
+        self.first_section = (
+            self.program.sections()
+            .filter(
+                meeting_times__isnull=False,
+            )
+            .order_by("id")
+            .first()
+        )
 
         # The controller's ``initialize()`` requires at least one student
         # with a 'Request' registration; otherwise the ``students`` queryset
@@ -103,8 +109,8 @@ class ClassChangeTestBase(ProgramFrameworkTest):
 # __init__ / constructor tests
 # ===========================================================================
 
-class ClassChangeControllerInitTest(ClassChangeTestBase):
 
+class ClassChangeControllerInitTest(ClassChangeTestBase):
     def test_stores_program_object(self):
         ctrl = _make_controller(self.program)
         self.assertEqual(ctrl.program, self.program)
@@ -150,11 +156,16 @@ class ClassChangeControllerInitTest(ClassChangeTestBase):
 
     def test_num_sections_matches_program(self):
         ctrl = _make_controller(self.program)
-        expected = self.program.sections().filter(
-            status__gt=0,
-            parent_class__status__gt=0,
-            meeting_times__isnull=False,
-        ).distinct().count()
+        expected = (
+            self.program.sections()
+            .filter(
+                status__gt=0,
+                parent_class__status__gt=0,
+                meeting_times__isnull=False,
+            )
+            .distinct()
+            .count()
+        )
         self.assertEqual(ctrl.num_sections, expected)
 
     def test_num_timeslots_matches_program(self):
@@ -175,8 +186,8 @@ class ClassChangeControllerInitTest(ClassChangeTestBase):
 # get_index_array()
 # ===========================================================================
 
-class GetIndexArrayTest(ClassChangeTestBase):
 
+class GetIndexArrayTest(ClassChangeTestBase):
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         self.ctrl = _make_controller(self.program)
@@ -225,8 +236,8 @@ class GetIndexArrayTest(ClassChangeTestBase):
 # get_ids() and get_ids_and_indices()
 # ===========================================================================
 
-class GetIdsTest(ClassChangeTestBase):
 
+class GetIdsTest(ClassChangeTestBase):
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         self.ctrl = _make_controller(self.program)
@@ -270,8 +281,8 @@ class GetIdsTest(ClassChangeTestBase):
 # clear_assignments()
 # ===========================================================================
 
-class ClearAssignmentsTest(ClassChangeTestBase):
 
+class ClearAssignmentsTest(ClassChangeTestBase):
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         self.ctrl = _make_controller(self.program)
@@ -304,8 +315,8 @@ class ClearAssignmentsTest(ClassChangeTestBase):
 # compute_assignments() — in-memory lottery, no DB writes
 # ===========================================================================
 
-class ComputeAssignmentsTest(ClassChangeTestBase):
 
+class ComputeAssignmentsTest(ClassChangeTestBase):
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         # Base setUp already creates a Request registration for students[0].
@@ -332,7 +343,8 @@ class ComputeAssignmentsTest(ClassChangeTestBase):
             for ts_idx in range(self.ctrl.num_timeslots):
                 enrolled_here = self.ctrl.enroll_final[student_idx, :, ts_idx]
                 self.assertLessEqual(
-                    enrolled_here.sum(), 1,
+                    enrolled_here.sum(),
+                    1,
                     msg="Student assigned to multiple sections in the same timeslot",
                 )
 
@@ -356,6 +368,7 @@ class ComputeAssignmentsTest(ClassChangeTestBase):
 # ===========================================================================
 # Email text generation
 # ===========================================================================
+
 
 class EmailTextTest(ClassChangeTestBase):
     """Tests for get_student_schedule, get_changed_student_email_text, and

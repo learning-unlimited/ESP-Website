@@ -7,15 +7,23 @@ import django.db.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0025_auto_20220719_2056'),
+        ("program", "0025_auto_20220719_2056"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classcategories',
-            name='symbol',
-            field=models.CharField(default='Z', help_text='A single letter to represent the category', max_length=1, validators=[django.core.validators.RegexValidator('^[A-Za-z]{1}', 'Must be a single letter.')]),
+            model_name="classcategories",
+            name="symbol",
+            field=models.CharField(
+                default="Z",
+                help_text="A single letter to represent the category",
+                max_length=1,
+                validators=[
+                    django.core.validators.RegexValidator(
+                        "^[A-Za-z]{1}", "Must be a single letter."
+                    )
+                ],
+            ),
         ),
     ]

@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2025 by the individual contributors
@@ -38,8 +37,13 @@ import logging
 from django.db import transaction
 
 from esp.program.models import (
-    StudentRegistration, StudentSubjectInterest, PhaseZeroRecord,
-    ModeratorRecord, VolunteerOffer, RegistrationProfile, FinancialAidRequest,
+    StudentRegistration,
+    StudentSubjectInterest,
+    PhaseZeroRecord,
+    ModeratorRecord,
+    VolunteerOffer,
+    RegistrationProfile,
+    FinancialAidRequest,
 )
 from esp.program.models.app_ import StudentApplication
 from esp.program.models.class_ import ClassSubject
@@ -63,17 +67,20 @@ class DataCleanupController(object):
     def __init__(self, program, user):
         self.program = program
         self.user = user
+
     # ------------------------------------------------------------------
     # Querysets — each scoped strictly to (program, user)
     # ------------------------------------------------------------------
 
     def _sr_qs(self):
         return StudentRegistration.objects.filter(
-            section__parent_class__parent_program=self.program, user=self.user)
+            section__parent_class__parent_program=self.program, user=self.user
+        )
 
     def _ssi_qs(self):
         return StudentSubjectInterest.objects.filter(
-            subject__parent_program=self.program, user=self.user)
+            subject__parent_program=self.program, user=self.user
+        )
 
     def _pzr_qs(self):
         return PhaseZeroRecord.objects.filter(program=self.program, user=self.user)
@@ -87,29 +94,28 @@ class DataCleanupController(object):
     def _taught_classes(self):
         """All ClassSubject records for this program where user is a teacher."""
         return ClassSubject.objects.filter(
-            parent_program=self.program, teachers=self.user)
+            parent_program=self.program, teachers=self.user
+        )
 
     def _sole_teacher_class_ids(self):
         """IDs of classes where the user is the *only* teacher."""
-        return [
-            cls.id for cls in self._taught_classes()
-            if cls.teachers.count() == 1
-        ]
+        return [cls.id for cls in self._taught_classes() if cls.teachers.count() == 1]
 
     def _moderator_qs(self):
         return ModeratorRecord.objects.filter(program=self.program, user=self.user)
 
     def _ua_qs(self):
         return UserAvailability.objects.filter(
-            event__program=self.program, user=self.user)
+            event__program=self.program, user=self.user
+        )
 
     def _vol_qs(self):
         return VolunteerOffer.objects.filter(
-            request__program=self.program, user=self.user)
+            request__program=self.program, user=self.user
+        )
 
     def _reg_profile_qs(self):
-        return RegistrationProfile.objects.filter(
-            program=self.program, user=self.user)
+        return RegistrationProfile.objects.filter(program=self.program, user=self.user)
 
     def _rec_qs(self):
         return Record.objects.filter(program=self.program, user=self.user)
@@ -124,12 +130,20 @@ class DataCleanupController(object):
         result = []
         try:
             from esp.customforms.DynamicModel import DynamicModelHandler  # noqa: E402
-            from esp.customforms.models import Form as CustomForm         # noqa: E402
-            for form in CustomForm.objects.filter(link_type='Program', link_id=self.program.id):
+            from esp.customforms.models import Form as CustomForm  # noqa: E402
+
+            for form in CustomForm.objects.filter(
+                link_type="Program", link_id=self.program.id
+            ):
                 try:
                     dyn_model = DynamicModelHandler(form).createDynModel()
                     if dyn_model is not None and not form.anonymous:
-                        result.append((dyn_model.objects.filter(user=self.user).count(), dyn_model))
+                        result.append(
+                            (
+                                dyn_model.objects.filter(user=self.user).count(),
+                                dyn_model,
+                            )
+                        )
                 except Exception:
                     pass
         except Exception:
@@ -149,19 +163,19 @@ class DataCleanupController(object):
         custom_count = sum(c for c, _ in self._custom_form_counts_and_models())
 
         return {
-            'student_registrations': self._sr_qs().count(),
-            'subject_interests': self._ssi_qs().count(),
-            'phase_zero_records': self._pzr_qs().count(),
-            'financial_aid_requests': self._fin_aid_qs().count(),
-            'student_applications': self._app_qs().count(),
-            'taught_classes_deleted': len(sole_ids),
-            'taught_classes_removed': taught.count() - len(sole_ids),
-            'moderator_records': self._moderator_qs().count(),
-            'availabilities': self._ua_qs().count(),
-            'volunteer_offers': self._vol_qs().count(),
-            'registration_profiles': self._reg_profile_qs().count(),
-            'records': self._rec_qs().count(),
-            'custom_form_responses': custom_count,
+            "student_registrations": self._sr_qs().count(),
+            "subject_interests": self._ssi_qs().count(),
+            "phase_zero_records": self._pzr_qs().count(),
+            "financial_aid_requests": self._fin_aid_qs().count(),
+            "student_applications": self._app_qs().count(),
+            "taught_classes_deleted": len(sole_ids),
+            "taught_classes_removed": taught.count() - len(sole_ids),
+            "moderator_records": self._moderator_qs().count(),
+            "availabilities": self._ua_qs().count(),
+            "volunteer_offers": self._vol_qs().count(),
+            "registration_profiles": self._reg_profile_qs().count(),
+            "records": self._rec_qs().count(),
+            "custom_form_responses": custom_count,
         }
 
     def execute(self):

@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounting', '0016_auto_20220719_2114'),
+        ("accounting", "0016_auto_20220719_2114"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='lineitemtype',
-            name='selection_type',
+            model_name="lineitemtype",
+            name="selection_type",
             field=models.CharField(
-                choices=[('single', 'Single'), ('multiple', 'Multiple')],
-                default='single',
-                help_text='For line items with options, whether students may select one option (single) or multiple options (multiple).',
+                choices=[("single", "Single"), ("multiple", "Multiple")],
+                default="single",
+                help_text="For line items with options, whether students may select one option (single) or multiple options (multiple).",
                 max_length=16,
             ),
         ),

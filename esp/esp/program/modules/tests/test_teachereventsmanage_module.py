@@ -2,6 +2,7 @@
 Tests for esp.program.modules.handlers.teachereventsmanagemodule
 Source: esp/esp/program/modules/handlers/teachereventsmanagemodule.py
 """
+
 import datetime
 from unittest.mock import MagicMock, patch
 
@@ -10,7 +11,9 @@ from django.contrib.auth.models import Group
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
-from esp.program.modules.handlers.teachereventsmanagemodule import TeacherEventsManageModule
+from esp.program.modules.handlers.teachereventsmanagemodule import (
+    TeacherEventsManageModule,
+)
 from esp.program.modules.admin_search import AdminSearchEntry
 from esp.cal.models import Event, EventType
 from esp.users.models import ESPUser
@@ -60,7 +63,7 @@ class TeacherEventsManageModulePropertiesTest(TestCase):
 
     def test_setup_title_exists(self):
         """TeacherEventsManageModule should have a setup_title defined."""
-        self.assertTrue(hasattr(TeacherEventsManageModule, 'setup_title'))
+        self.assertTrue(hasattr(TeacherEventsManageModule, "setup_title"))
         self.assertIsInstance(TeacherEventsManageModule.setup_title, str)
 
 
@@ -150,13 +153,14 @@ class TeacherEventsManageModuleAvailabilityRoleTest(TestCase):
     def setUp(self):
         super().setUp()
         from esp.tests.util import user_role_setup
+
         user_role_setup()
 
     def test_availability_role_returns_teacher_group(self):
         """availability_role should return the Teacher group."""
         module = TeacherEventsManageModule()
         role = module.availability_role()
-        self.assertEqual(role.name, 'Teacher')
+        self.assertEqual(role.name, "Teacher")
 
     def test_availability_role_returns_group_instance(self):
         """availability_role should return a Group instance."""
@@ -170,15 +174,19 @@ class TeacherEventsManageModuleIsCompletedTest(TestCase):
 
     def test_is_completed_false_when_no_events(self):
         """isCompleted should return False when no teacher events exist."""
-        with patch.object(Event.objects, 'filter') as mock_filter:
+        with patch.object(Event.objects, "filter") as mock_filter:
             mock_filter.return_value.exists.return_value = False
-            with patch('esp.program.modules.handlers.teachereventsmanagemodule.Event.objects.filter') as mock_f:
+            with patch(
+                "esp.program.modules.handlers.teachereventsmanagemodule.Event.objects.filter"
+            ) as mock_f:
                 mock_f.return_value.exists.return_value = False
                 self.assertFalse(mock_f.return_value.exists())
 
     def test_is_completed_true_when_events_exist(self):
         """isCompleted should return True when teacher events exist."""
-        with patch('esp.program.modules.handlers.teachereventsmanagemodule.Event.objects.filter') as mock_f:
+        with patch(
+            "esp.program.modules.handlers.teachereventsmanagemodule.Event.objects.filter"
+        ) as mock_f:
             mock_f.return_value.exists.return_value = True
             self.assertTrue(mock_f.return_value.exists())
 
@@ -188,26 +196,26 @@ class TeacherEventsManageModuleViewTest(ProgramFrameworkTest):
 
     def setUp(self):
         modules = [
-            ProgramModule.objects.get(handler='TeacherEventsManageModule'),
-            ProgramModule.objects.get(handler='AdminCore'),
+            ProgramModule.objects.get(handler="TeacherEventsManageModule"),
+            ProgramModule.objects.get(handler="AdminCore"),
         ]
         super().setUp(modules=modules)
 
         self.adminUser, created = ESPUser.objects.get_or_create(
-            username='teachereventsadmin'
+            username="teachereventsadmin"
         )
-        self.adminUser.set_password('password')
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
         self.student = self.students[0]
-        self.student.set_password('password')
+        self.student.set_password("password")
         self.student.save()
 
-        self.url = '/manage/' + self.program.url + '/teacher_events'
+        self.url = "/manage/" + self.program.url + "/teacher_events"
 
     def test_admin_can_access_teacher_events_view(self):
         """Admin users should get 200 response from teacher_events view."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
 
@@ -218,61 +226,58 @@ class TeacherEventsManageModuleViewTest(ProgramFrameworkTest):
 
     def test_view_contains_prog_in_context(self):
         """teacher_events view should include prog in context."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('prog', response.context)
+        self.assertIn("prog", response.context)
 
     def test_view_contains_teacher_event_types_in_context(self):
         """teacher_events view should include teacher_event_types in context."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('teacher_event_types', response.context)
+        self.assertIn("teacher_event_types", response.context)
 
     def test_view_contains_timeslot_form_in_context(self):
         """teacher_events view should include timeslot_form in context."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('timeslot_form', response.context)
+        self.assertIn("timeslot_form", response.context)
 
     def test_view_contains_teacher_event_times_in_context(self):
         """teacher_events view should include teacher_event_times in context."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('teacher_event_times', response.context)
+        self.assertIn("teacher_event_times", response.context)
 
     def test_non_admin_sees_not_admin_error(self):
         """Non-admin users should see the not-an-admin error page."""
-        self.client.login(
-            username=self.student.username,
-            password='password'
-        )
+        self.client.login(username=self.student.username, password="password")
         response = self.client.get(self.url)
-        self.assertTemplateUsed(response, 'errors/program/notanadmin.html')
+        self.assertTemplateUsed(response, "errors/program/notanadmin.html")
 
     def test_post_delete_removes_event(self):
         """POST with command=delete should delete the event."""
-        self.client.login(username='teachereventsadmin', password='password')
+        self.client.login(username="teachereventsadmin", password="password")
         event_type, _ = EventType.objects.get_or_create(
-            description='Interview',
-            defaults={'is_teacher_type': True}
+            description="Interview", defaults={"is_teacher_type": True}
         )
         event = Event.objects.create(
             program=self.program,
             event_type=event_type,
             start=datetime.datetime(2026, 6, 1, 9, 0),
             end=datetime.datetime(2026, 6, 1, 10, 0),
-            short_description='Test Event',
-            description='Test Event Description',
+            short_description="Test Event",
+            description="Test Event Description",
         )
         event_id = event.id
-        self.client.post(self.url, {
-            'command': 'delete',
-            'id': event_id,
-        })
-        self.assertFalse(
-            Event.objects.filter(id=event_id).exists()
+        self.client.post(
+            self.url,
+            {
+                "command": "delete",
+                "id": event_id,
+            },
         )
+        self.assertFalse(Event.objects.filter(id=event_id).exists())

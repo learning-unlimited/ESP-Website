@@ -5,15 +5,14 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('resources', '0007_auto_20200608_1929'),
+        ("resources", "0007_auto_20200608_1929"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='resourcetype',
-            old_name='attributes_pickled',
-            new_name='attributes_dumped',
+            model_name="resourcetype",
+            old_name="attributes_pickled",
+            new_name="attributes_dumped",
         ),
     ]

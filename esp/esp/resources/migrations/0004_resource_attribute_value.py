@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('resources', '0003_remove_resourcetype_distancefunc'),
+        ("resources", "0003_remove_resourcetype_distancefunc"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='resource',
-            name='attribute_value',
-            field=models.TextField(default='', blank=True),
+            model_name="resource",
+            name="attribute_value",
+            field=models.TextField(default="", blank=True),
         ),
     ]

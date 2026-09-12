@@ -1,5 +1,6 @@
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -15,15 +16,19 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # https://www.djangoproject.com/documentation/models/generic_relations/
 
+
 class Tag(models.Model):
     """A tag on an item."""
+
     key = models.SlugField(db_index=True)
     value = models.TextField()
 
     ## Generic ForeignKey ##
-    content_type = models.ForeignKey(ContentType, blank=True, null=True, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(
+        ContentType, blank=True, null=True, on_delete=models.CASCADE
+    )
     object_id = models.PositiveIntegerField(blank=True, null=True)
-    target = GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    target = GenericForeignKey(ct_field="content_type", fk_field="object_id")
     ## End Generic ForeignKey ##
 
     class Meta:
@@ -39,7 +44,10 @@ class Tag(models.Model):
         super().clean()
         if (self.content_type_id is None) != (self.object_id is None):
             from django.core.exceptions import ValidationError
-            raise ValidationError("Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set.")
+
+            raise ValidationError(
+                "Both parts of the GenericForeignKey (content_type and object_id) must be either both null or both set."
+            )
 
     def save(self, *args, **kwargs):
         self.clean()
@@ -59,10 +67,15 @@ class Tag(models.Model):
         """
         try:
             from esp.middleware.threadlocalrequest import get_current_request
+
             req = get_current_request()
             if req is None:
                 return
-            attr = '_active_program_tag_keys' if kind == 'program' else '_active_global_tag_keys'
+            attr = (
+                "_active_program_tag_keys"
+                if kind == "program"
+                else "_active_global_tag_keys"
+            )
             bucket = getattr(req, attr, None)
             if bucket is not None:
                 bucket.add(key)
@@ -76,31 +89,37 @@ class Tag(models.Model):
         """
         if key not in all_global_tags:
             logger.warning("Tag %s not in list of global tags", key)
-        elif all_global_tags[key].get('is_boolean', False):
+        elif all_global_tags[key].get("is_boolean", False):
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         if target is not None:
-            logger.warning("getTag() called for key %s with specific target; consider using getProgramTag()",
-                           key)
+            logger.warning(
+                "getTag() called for key %s with specific target; consider using getProgramTag()",
+                key,
+            )
         else:
             # Record global tag access (only for true global lookups, not
             # target-specific ones, which shouldn't happen via getTag anyway).
-            cls._record_tag_access(key, 'global')
+            cls._record_tag_access(key, "global")
 
         result = cls._getTag(key, target=target)
-        if result is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
+        if (
+            result is None
+        ):  # See the comment in getProgramTag for why we're using None rather than passing the default through.
             if default is not None:
                 result = default
             else:
                 if key in all_program_tags:
-                    result = all_program_tags[key].get('default')
+                    result = all_program_tags[key].get("default")
                 elif key in all_global_tags:
-                    result = all_global_tags[key].get('default')
+                    result = all_global_tags[key].get("default")
 
-        if isinstance(result, str) and (result.lower() == "false" or
-                                               result.lower() == "true"):
-            logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
-                           key)
+        if isinstance(result, str) and (
+            result.lower() == "false" or result.lower() == "true"
+        ):
+            logger.warning(
+                "Tag %s set to boolean value; consider using getBooleanTag()", key
+            )
         return result
 
     @cache_function
@@ -111,26 +130,37 @@ class Tag(models.Model):
         or the value specified by the 'default' argument if no such value exists.
         """
         if default is not None and not isinstance(default, str):
-            logger.warning("_getTag() called with non-string default for key %s",
-                           key)
+            logger.warning("_getTag() called with non-string default for key %s", key)
 
         try:
             if target is not None:
                 ct = ContentType.objects.get_for_model(target)
-                return cls.objects.get(key=key, content_type=ct, object_id=target.id).value
+                return cls.objects.get(
+                    key=key, content_type=ct, object_id=target.id
+                ).value
             else:
-                return cls.objects.get(key=key, content_type__isnull=True, object_id__isnull=True).value
+                return cls.objects.get(
+                    key=key, content_type__isnull=True, object_id__isnull=True
+                ).value
         except cls.DoesNotExist:
             return default
         except (ProgrammingError, OperationalError) as e:
             # Table may not exist yet (e.g. during migrations when another app's
             # migration runs code that touches Tag before tagdict has been migrated).
             err = str(e).lower()
-            if 'does not exist' in err or 'no such table' in err:
+            if "does not exist" in err or "no such table" in err:
                 return default
             raise
-    _getTag.get_or_create_token(('key', 'target',))
-    _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
+
+    _getTag.get_or_create_token(
+        (
+            "key",
+            "target",
+        )
+    )
+    _getTag.depend_on_row(
+        "tagdict.Tag", lambda tag: {"key": tag.key, "target": tag.target}
+    )
     _getTag = classmethod(_getTag)
 
     @classmethod
@@ -142,7 +172,7 @@ class Tag(models.Model):
         """
         if key not in all_program_tags:
             logger.warning("Tag %s not in list of program tags", key)
-        elif all_program_tags[key].get('is_boolean', False) and not boolean:
+        elif all_program_tags[key].get("is_boolean", False) and not boolean:
             logger.warning("Tag %s should be used with getBooleanTag", key)
 
         res = None
@@ -154,24 +184,28 @@ class Tag(models.Model):
             res = cls._getTag(key, target=program)
             # Record that this page consulted this tag key for this program,
             # so _inject_active_program_tags can filter to page-specific tags.
-            cls._record_tag_access(key, 'program')
+            cls._record_tag_access(key, "program")
         if res is None:
             res = cls._getTag(key)
             # Falling back to the global tag value also counts as a global
             # tag access for banner-filtering purposes.
-            cls._record_tag_access(key, 'global')
+            cls._record_tag_access(key, "global")
         if res is None:
             if default is not None:
                 res = default
             else:
                 if key in all_program_tags:
-                    res = all_program_tags[key].get('default')
+                    res = all_program_tags[key].get("default")
                 elif key in all_global_tags:
-                    res = all_global_tags[key].get('default')
-        if (not boolean) and isinstance(res, str) and \
-           (res.lower() == "false" or res.lower() == "true"):
-            logger.warning("Tag %s set to boolean value; consider using getBooleanTag()",
-                           key)
+                    res = all_global_tags[key].get("default")
+        if (
+            (not boolean)
+            and isinstance(res, str)
+            and (res.lower() == "false" or res.lower() == "true")
+        ):
+            logger.warning(
+                "Tag %s set to boolean value; consider using getBooleanTag()", key
+            )
         return res
 
     @classmethod
@@ -181,29 +215,36 @@ class Tag(models.Model):
         The default argument should also be boolean.
         Will pull the default from __init__.py unless the default argument is specified.
         """
-        if (key not in all_program_tags or not all_program_tags[key].get('is_boolean', False)) \
-           and (key not in all_global_tags or not all_global_tags[key].get('is_boolean', False)):
+        if (
+            key not in all_program_tags
+            or not all_program_tags[key].get("is_boolean", False)
+        ) and (
+            key not in all_global_tags
+            or not all_global_tags[key].get("is_boolean", False)
+        ):
             logger.warning("Tag %s not in list of boolean tags", key)
         if program:
             tag_val = Tag.getProgramTag(key, program, boolean=True, default=default)
         else:
             # Direct global lookup — record the access so the banner can pick
             # it up the same way the getTag()/getProgramTag() paths do.
-            cls._record_tag_access(key, 'global')
+            cls._record_tag_access(key, "global")
             tag_val = Tag._getTag(key)
-        if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
+        if (
+            tag_val is None
+        ):  # See the comment in getProgramTag for why we're using None rather than passing the default through.
             if default is not None:
                 return default
             else:
                 if key in all_program_tags:
-                    return all_program_tags[key].get('default')
+                    return all_program_tags[key].get("default")
                 elif key in all_global_tags:
-                    return all_global_tags[key].get('default')
+                    return all_global_tags[key].get("default")
                 else:
                     return None
         elif isinstance(tag_val, bool):
             return tag_val
-        elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
+        elif tag_val.strip().lower() == "true" or tag_val.strip() == "1":
             return True
         else:
             return False
@@ -222,9 +263,13 @@ class Tag(models.Model):
 
         if target is not None:
             ct = ContentType.objects.get_for_model(target)
-            tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
+            tag, created = cls.objects.get_or_create(
+                key=key, content_type=ct, object_id=target.id
+            )
         else:
-            tag, created = cls.objects.get_or_create(key=key, content_type=None, object_id=None)
+            tag, created = cls.objects.get_or_create(
+                key=key, content_type=None, object_id=None
+            )
 
         if created or (tag.value != value):
             tag.value = value
@@ -245,15 +290,19 @@ class Tag(models.Model):
         program_tag_rows = cls.objects.filter(content_type=ct, object_id=program.id)
         result = []
         for tag in program_tag_rows:
-            if tag.key in all_program_tags and all_program_tags[tag.key].get('is_setting', False):
-                default = all_program_tags[tag.key].get('default')
+            if tag.key in all_program_tags and all_program_tags[tag.key].get(
+                "is_setting", False
+            ):
+                default = all_program_tags[tag.key].get("default")
                 if default is not None and tag.value == str(default):
                     continue
-                result.append({
-                    'key': tag.key,
-                    'value': tag.value,
-                    'help_text': all_program_tags[tag.key].get('help_text', ''),
-                })
+                result.append(
+                    {
+                        "key": tag.key,
+                        "value": tag.value,
+                        "help_text": all_program_tags[tag.key].get("help_text", ""),
+                    }
+                )
         return result
 
     @classmethod
@@ -266,18 +315,24 @@ class Tag(models.Model):
 
         Each dict has keys: 'key', 'value', 'help_text'.
         """
-        global_tag_rows = cls.objects.filter(content_type__isnull=True, object_id__isnull=True)
+        global_tag_rows = cls.objects.filter(
+            content_type__isnull=True, object_id__isnull=True
+        )
         result = []
         for tag in global_tag_rows:
-            if tag.key in all_global_tags and all_global_tags[tag.key].get('is_setting', False):
-                default = all_global_tags[tag.key].get('default')
+            if tag.key in all_global_tags and all_global_tags[tag.key].get(
+                "is_setting", False
+            ):
+                default = all_global_tags[tag.key].get("default")
                 if default is not None and tag.value == str(default):
                     continue
-                result.append({
-                    'key': tag.key,
-                    'value': tag.value,
-                    'help_text': all_global_tags[tag.key].get('help_text', ''),
-                })
+                result.append(
+                    {
+                        "key": tag.key,
+                        "value": tag.value,
+                        "help_text": all_global_tags[tag.key].get("help_text", ""),
+                    }
+                )
         return result
 
     @classmethod
@@ -295,7 +350,9 @@ class Tag(models.Model):
             ct = ContentType.objects.get_for_model(target)
             items = cls.objects.filter(key=key, content_type=ct, object_id=target.id)
         else:
-            items = cls.objects.filter(key=key, content_type__isnull=True, object_id__isnull=True)
+            items = cls.objects.filter(
+                key=key, content_type__isnull=True, object_id__isnull=True
+            )
 
         for tag in items:
             tag.delete()
@@ -322,12 +379,11 @@ class Tag(models.Model):
         {key_string: description} dict for O(1) lookups.
         Returns an empty dict if the tag is not set or invalid.
         """
-        tag_val = cls.getTag('teacherreg_difficulty_choices')
+        tag_val = cls.getTag("teacherreg_difficulty_choices")
         if not tag_val or not tag_val.strip():
             return {}
         try:
             choices = json.loads(tag_val)
-            return {str(pair[0]): pair[1]
-                    for pair in choices if len(pair) >= 2}
+            return {str(pair[0]): pair[1] for pair in choices if len(pair) >= 2}
         except (ValueError, TypeError):
             return {}

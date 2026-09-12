@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -33,15 +32,19 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_PARTICIPANTS,
+)
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
-from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.models import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_list, get_user_checklist
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 
 import logging
+
 
 class DeactivationModule(ProgramModuleObj):
     doc = """Mass deactivate sets of users"""
@@ -73,37 +76,45 @@ class DeactivationModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def deactivatefinal(self, request, tl, one, two, module, extra, prog):
-        if request.method != 'POST' or 'filterid' not in request.GET:
-            raise ESPError()('Filter has not been properly set')
-        elif request.POST.get('confirm', '') == '':
-            raise ESPError()('You must confirm that you want to deactivate these users.')
+        if request.method != "POST" or "filterid" not in request.GET:
+            raise ESPError()("Filter has not been properly set")
+        elif request.POST.get("confirm", "") == "":
+            raise ESPError()(
+                "You must confirm that you want to deactivate these users."
+            )
 
         # Get the filter to use from the request; this is set earlier in the mass deactivation flow.
         try:
-            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET["filterid"])
         except (PersistentQueryFilter.DoesNotExist, ValueError):
-            raise ESPError()('The selected filter no longer exists or is invalid. Please restart the deactivation process.')
+            raise ESPError()(
+                "The selected filter no longer exists or is invalid. Please restart the deactivation process."
+            )
         users = filterObj.getList(ESPUser)
 
         if not users:
             raise ESPError()("Your query did not match any users")
 
         logger = logging.getLogger(__name__)
-        logger.info("Mass deactivated users: %s", ", ".join([str(user.id) for user in users]))
-        n_users = users.update(is_active = False)
+        logger.info(
+            "Mass deactivated users: %s", ", ".join([str(user.id) for user in users])
+        )
+        n_users = users.update(is_active=False)
 
-        return render_to_response(self.baseDir()+'finished.html', request, {'n_users': n_users})
+        return render_to_response(
+            self.baseDir() + "finished.html", request, {"n_users": n_users}
+        )
 
     @main_call
     @needs_admin
     def deactivate(self, request, tl, one, two, module, extra, prog):
         usc = UserSearchController()
         context = {}
-        context['program'] = prog
+        context["program"] = prog
 
         if request.method == "POST":
             selected = None
-            if request.POST.get('submit_checklist') == 'true':
+            if request.POST.get("submit_checklist") == "true":
                 filterObj, found = get_user_list(request, prog.getLists(True))
                 if not found:
                     return filterObj
@@ -113,25 +124,35 @@ class DeactivationModule(ProgramModuleObj):
                     filterObj = usc.filter_from_postdata(prog, data)
                 except (ESPError_Log, ESPError_NoLog) as e:
                     context.update(usc.prepare_context(prog, target_path=request.path))
-                    context['error'] = str(e)
-                    return render_to_response(self.baseDir()+'search.html', request, context)
+                    context["error"] = str(e)
+                    return render_to_response(
+                        self.baseDir() + "search.html", request, context
+                    )
                 selected = usc.selected_list_from_postdata(data)
 
-                if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/deactivate' % prog.getUrlBase(), extra_context = {'module': "Mass Deactivation Portal"})
+                if data["use_checklist"] == "1":
+                    (response, unused) = get_user_checklist(
+                        request,
+                        ESPUser.objects.filter(filterObj.get_Q()).distinct(),
+                        filterObj.id,
+                        "/manage/%s/deactivate" % prog.getUrlBase(),
+                        extra_context={"module": "Mass Deactivation Portal"},
+                    )
                     return response
 
-            context['filterid'] = filterObj.id
-            context['selected'] = selected
-            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-            return render_to_response(self.baseDir()+'options.html', request, context)
+            context["filterid"] = filterObj.id
+            context["selected"] = selected
+            context["num_users"] = (
+                ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            )
+            return render_to_response(self.baseDir() + "options.html", request, context)
 
         context.update(usc.prepare_context(prog, target_path=request.path))
-        return render_to_response(self.baseDir()+'search.html', request, context)
+        return render_to_response(self.baseDir() + "search.html", request, context)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

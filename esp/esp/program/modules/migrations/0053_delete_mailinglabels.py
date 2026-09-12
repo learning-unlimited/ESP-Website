@@ -4,13 +4,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0052_admintestingmodule_batchclassregmodule'),
+        ("modules", "0052_admintestingmodule_batchclassregmodule"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='MailingLabels',
+            name="MailingLabels",
         ),
     ]

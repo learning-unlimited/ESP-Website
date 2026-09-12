@@ -5,13 +5,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0031_deactivationmodule'),
+        ("modules", "0031_deactivationmodule"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='TextMessageModule',
+            name="TextMessageModule",
         ),
     ]

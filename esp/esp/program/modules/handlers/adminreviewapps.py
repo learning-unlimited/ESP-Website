@@ -1,9 +1,7 @@
-
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,10 +35,16 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
+from esp.program.models import (
+    ClassSubject,
+    StudentRegistration,
+    RegistrationType,
+    StudentApplication,
+)
 from django.db.models.query import Q
 
-__all__ = ['AdminReviewApps']
+__all__ = ["AdminReviewApps"]
+
 
 class AdminReviewApps(ProgramModuleObj):
     doc = """View student applications and select students to be admitted for the program."""
@@ -53,19 +57,19 @@ class AdminReviewApps(ProgramModuleObj):
             "module_type": "manage",
             "seq": 1000,
             "choosable": 0,
-            }
+        }
 
     @main_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
-        """ Show a roster of the students in the class, allowing the administrators
+        """Show a roster of the students in the class, allowing the administrators
         to accept students into the program based on the teachers' reviews and the
-        students' applications. """
+        students' applications."""
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = ClassSubject.objects.get(id=extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+            raise ESPError("Cannot find class.", log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
@@ -76,13 +80,19 @@ class AdminReviewApps(ProgramModuleObj):
         for key in students_dict:
             students += students_dict[key]
 
-        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
+        students = [
+            x
+            for x in students
+            if x.studentapplication_set.filter(program=self.program).count() > 0
+        ]
 
         for student in students:
-            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            reg = student.studentregistration_set.filter(
+                section__parent_class=cls
+            ).first()
             student.added_class = reg.start_date if reg else None
             try:
-                student.app = student.studentapplication_set.get(program = self.program)
+                student.app = student.studentapplication_set.get(program=self.program)
             except StudentApplication.DoesNotExist:
                 student.app = None
 
@@ -91,52 +101,66 @@ class AdminReviewApps(ProgramModuleObj):
             else:
                 reviews = []
 
-            if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
-                student.status = 'Accepted'
+            if (
+                StudentRegistration.valid_objects()
+                .filter(
+                    user=student,
+                    section__parent_class=cls,
+                    relationship__name="Accepted",
+                )
+                .count()
+                > 0
+            ):
+                student.status = "Accepted"
             else:
-                student.status = 'Not accepted'
+                student.status = "Not accepted"
 
         students = list(students)
         students.sort(key=lambda x: x.last_name)
 
-        return render_to_response(self.baseDir()+'roster.html',
-                                  request,
-                                  {'class': cls,
-                                   'students':students, 'program': prog})
+        return render_to_response(
+            self.baseDir() + "roster.html",
+            request,
+            {"class": cls, "students": students, "program": prog},
+        )
 
     @aux_call
     @needs_admin
     def accept_student(self, request, tl, one, two, module, extra, prog):
-        """ Accept a student into a class. """
+        """Accept a student into a class."""
 
         try:
-            cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
-            student = ESPUser.objects.get(id = request.GET.get('student', ''))
+            cls = ClassSubject.objects.get(id=request.GET.get("cls", ""))
+            student = ESPUser.objects.get(id=request.GET.get("student", ""))
         except (ValueError, TypeError, ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
-            raise ESPError('Student or class not found.', log=False)
+            raise ESPError("Student or class not found.", log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
-        (rtype, created) = RegistrationType.objects.get_or_create(name='Accepted')
-        StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=rtype)
+        (rtype, created) = RegistrationType.objects.get_or_create(name="Accepted")
+        StudentRegistration.objects.get_or_create(
+            user=student, section=sec, relationship=rtype
+        )
         return self.review_students(request, tl, one, two, module, extra, prog)
 
     @aux_call
     @needs_admin
     def reject_student(self, request, tl, one, two, module, extra, prog):
-        """ Reject a student from a class (does not affect their
-        registration). """
+        """Reject a student from a class (does not affect their
+        registration)."""
 
         try:
-            cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
-            student = ESPUser.objects.get(id = request.GET.get('student', ''))
+            cls = ClassSubject.objects.get(id=request.GET.get("cls", ""))
+            student = ESPUser.objects.get(id=request.GET.get("student", ""))
         except (ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
-            raise ESPError('Student or class not found.', log=False)
+            raise ESPError("Student or class not found.", log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
-        (rtype, created) = RegistrationType.objects.get_or_create(name='Accepted')
-        for reg in StudentRegistration.objects.filter(user=student, section=sec, relationship=rtype):
+        (rtype, created) = RegistrationType.objects.get_or_create(name="Accepted")
+        for reg in StudentRegistration.objects.filter(
+            user=student, section=sec, relationship=rtype
+        ):
             reg.expire()
 
         return self.review_students(request, tl, one, two, module, extra, prog)
@@ -148,38 +172,48 @@ class AdminReviewApps(ProgramModuleObj):
         reg_nodes = scrmi.reg_verbs()
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = ClassSubject.objects.get(id=extra)
             section = cls.default_section()
         except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+            raise ESPError("Cannot find class.", log=False)
 
-        student = request.GET.get('student', None)
+        student = request.GET.get("student", None)
         if not student:
-            student = request.POST.get('student', '')
+            student = request.POST.get("student", "")
 
         try:
-            student = ESPUser.objects.get(id = student)
+            student = ESPUser.objects.get(id=student)
         except ESPUser.DoesNotExist:
-            raise ESPError('Cannot find student, %s' % student, log=False)
+            raise ESPError("Cannot find student, %s" % student, log=False)
 
-        if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:
-            raise ESPError('Student not a student of this class.', log=False)
+        if (
+            student.studentregistration_set.filter(section__parent_class=cls).count()
+            == 0
+        ):
+            raise ESPError("Student not a student of this class.", log=False)
 
         try:
-            student.app = student.studentapplication_set.get(program = self.program)
+            student.app = student.studentapplication_set.get(program=self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
+            raise ESPError(
+                "Error: Student did not apply. Student is automatically rejected.",
+                log=False,
+            )
 
-        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
+        return render_to_response(
+            self.baseDir() + "app_popup.html",
+            request,
+            {"class": cls, "student": student, "program": prog},
+        )
 
     def prepare(self, context):
-        """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """
-        context['classes_to_review'] = self.program.classes()
+        """Sets the 'classes' template variable to contain the list of classes that the current user is teaching"""
+        context["classes_to_review"] = self.program.classes()
         return context
 
     def get_msg_vars(self, user, key):
-        if key == 'schedule_app':
+        if key == "schedule_app":
             return AdminReviewApps.getSchedule(self.program, user)
 
         return None
@@ -192,7 +226,16 @@ Student schedule for {student.name()}:
 
  Time               | Class                   | Room"""
 
-        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted').select_related('section__parent_class').prefetch_related('section__parent_class__sections__meeting_times')
+        regs = (
+            StudentRegistration.valid_objects()
+            .filter(
+                user=student,
+                section__parent_class__parent_program=program,
+                relationship__name="Accepted",
+            )
+            .select_related("section__parent_class")
+            .prefetch_related("section__parent_class__sections__meeting_times")
+        )
         classes = [x.section.parent_class for x in regs]
         classes.sort(key=lambda s: s._sort_key())
 
@@ -201,7 +244,7 @@ Student schedule for {student.name()}:
         for cls in classes:
             rooms = cls.prettyrooms()
             if len(rooms) == 0:
-                rooms = 'N/A'
+                rooms = "N/A"
             else:
                 rooms = ", ".join(rooms)
 
@@ -215,4 +258,4 @@ Student schedule for {student.name()}:
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

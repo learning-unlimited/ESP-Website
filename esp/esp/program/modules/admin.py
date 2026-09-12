@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,44 +34,65 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
+from esp.program.modules.module_ext import (
+    DBReceipt,
+    StudentClassRegModuleInfo,
+    ClassRegModuleInfo,
+)
 from esp.program.modules.base import ProgramModuleObj
+
 
 class Admin_DBReceipt(admin.ModelAdmin):
     list_display = (
-        'action',
-        'program',
+        "action",
+        "program",
     )
-    list_filter = ('action', 'program')
+    list_filter = ("action", "program")
+
+
 admin_site.register(DBReceipt, Admin_DBReceipt)
 
+
 class SCRMIAdmin(admin.ModelAdmin):
-    list_display = ('program',)
-    list_filter = ('program',)
-    search_fields = ('program__name',)
+    list_display = ("program",)
+    list_filter = ("program",)
+    search_fields = ("program__name",)
+
+
 admin_site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
+
 class CRMIAdmin(admin.ModelAdmin):
-    list_display = ('program',)
-    list_filter = ('program',)
-    search_fields = ('program__name',)
+    list_display = ("program",)
+    list_filter = ("program",)
+    search_fields = ("program__name",)
+
+
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
+
 
 class ProgramModelObjAdmin(admin.ModelAdmin):
     list_display = (
-        'program',
-        'module',
-        'seq',
-        'required',
-        'required_label',
-        'link_title',
+        "program",
+        "module",
+        "seq",
+        "required",
+        "required_label",
+        "link_title",
     )
-    list_filter = ('program', 'module')
-    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title', 'link_title')
+    list_filter = ("program", "module")
+    search_fields = (
+        "program__name",
+        "program__url",
+        "module__admin_title",
+        "module__link_title",
+        "link_title",
+    )
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
-            return self.readonly_fields + ('program', 'module')
+            return self.readonly_fields + ("program", "module")
         return self.readonly_fields
+
 
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)

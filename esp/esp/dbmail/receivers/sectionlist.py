@@ -1,17 +1,25 @@
 import logging
+
 logger = logging.getLogger(__name__)
 
 from esp.users.models import ESPUser
 from esp.dbmail.base import BaseHandler
 from esp.program.models import ClassSubject
-from esp.mailman import create_list, load_list_settings, add_list_member, add_list_members, set_list_moderator_password, apply_list_settings
+from esp.mailman import (
+    create_list,
+    load_list_settings,
+    add_list_member,
+    add_list_members,
+    set_list_moderator_password,
+    apply_list_settings,
+)
 from esp.dbmail.models import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.contrib.sites.models import Site
 
-class SectionList(BaseHandler):
 
+class SectionList(BaseHandler):
     def process(self, user, class_id, section_num, user_type):
         if settings.USE_MAILMAN:
             self.process_mailman(user, class_id, section_num, user_type)
@@ -21,24 +29,33 @@ class SectionList(BaseHandler):
     def process_nomailman(self, user, class_id, section_num, user_type):
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][
+                0
+            ]
         except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
         self.emailcode = section.emailcode()
 
         program = cls.parent_program
-        self.recipients = [ESPUser.email_sendto_address(program.director_email, f'{program.niceName()} Directors')]
+        self.recipients = [
+            ESPUser.email_sendto_address(
+                program.director_email, f"{program.niceName()} Directors"
+            )
+        ]
 
         user_type = user_type.strip().lower()
 
-        if user_type in ('teachers', 'class'):
-            self.recipients += [user.get_email_sendto_address()
-                                for user in section.parent_class.get_teachers()     ]
+        if user_type in ("teachers", "class"):
+            self.recipients += [
+                user.get_email_sendto_address()
+                for user in section.parent_class.get_teachers()
+            ]
 
-        if user_type in ('students', 'class'):
-            self.recipients += [user.get_email_sendto_address()
-                                for user in section.students()     ]
+        if user_type in ("students", "class"):
+            self.recipients += [
+                user.get_email_sendto_address() for user in section.students()
+            ]
 
         # Remove duplicate email addresses while preserving order
         self.recipients = list(dict.fromkeys(self.recipients))
@@ -47,11 +64,16 @@ class SectionList(BaseHandler):
             self.send = True
 
     def process_mailman(self, user, class_id, section_num, user_type):
-        if not (settings.USE_MAILMAN and 'mailman_moderator' in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())):
+        if not (
+            settings.USE_MAILMAN
+            and "mailman_moderator" in list(settings.DEFAULT_EMAIL_ADDRESSES.keys())
+        ):
             return
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
-            section = [s for s in cls.sections.all() if s.index() == int(section_num)][0]
+            section = [s for s in cls.sections.all() if s.index() == int(section_num)][
+                0
+            ]
         except (ClassSubject.DoesNotExist, IndexError, ValueError):
             return
 
@@ -60,43 +82,62 @@ class SectionList(BaseHandler):
 
         list_name = f"{section.emailcode()}-{user_type}"
 
-        create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+        create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES["mailman_moderator"])
         load_list_settings(list_name, "lists/class_mailman.config")
 
         if user_type != "teachers":
             add_list_members(list_name, section.students())
 
-            apply_list_settings(list_name, {
-                'moderator': [
-                    settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
-                    f'{cls.emailcode()}-teachers@{Site.objects.get_current().domain}',
-                    # In theory this is redundant, but it's included just in
-                    # case.
-                    cls.parent_program.director_email,
-                ],
-                'owner': [
-                    settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'],
-                    cls.parent_program.director_email,
-                ],
-                'subject_prefix': f"[{cls.parent_program.niceName()}]",
-            })
+            apply_list_settings(
+                list_name,
+                {
+                    "moderator": [
+                        settings.DEFAULT_EMAIL_ADDRESSES["mailman_moderator"],
+                        f"{cls.emailcode()}-teachers@{Site.objects.get_current().domain}",
+                        # In theory this is redundant, but it's included just in
+                        # case.
+                        cls.parent_program.director_email,
+                    ],
+                    "owner": [
+                        settings.DEFAULT_EMAIL_ADDRESSES["mailman_moderator"],
+                        cls.parent_program.director_email,
+                    ],
+                    "subject_prefix": f"[{cls.parent_program.niceName()}]",
+                },
+            )
             logger.info("Settings applied...")
-            send_mail(f"[ESP] Activated class mailing list: {list_name}@{Site.objects.get_current().domain}",
-                      render_to_string("mailman/new_list_intro_teachers.txt",
-                                       { 'classname': str(cls),
-                                         'mod_password': set_list_moderator_password(list_name) }),
-                      settings.DEFAULT_EMAIL_ADDRESSES['default'], [f"{cls.emailcode()}-teachers@{Site.objects.get_current().domain}", ])
+            send_mail(
+                f"[ESP] Activated class mailing list: {list_name}@{Site.objects.get_current().domain}",
+                render_to_string(
+                    "mailman/new_list_intro_teachers.txt",
+                    {
+                        "classname": str(cls),
+                        "mod_password": set_list_moderator_password(list_name),
+                    },
+                ),
+                settings.DEFAULT_EMAIL_ADDRESSES["default"],
+                [
+                    f"{cls.emailcode()}-teachers@{Site.objects.get_current().domain}",
+                ],
+            )
         else:
-            apply_list_settings(list_name, {'default_member_moderation': False})
-            apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': f"{cls.emailcode()}.*-(students|class)-.*@{Site.objects.get_current().domain}"})
-            apply_list_settings(list_name, {'subject_prefix': f"[{cls.parent_program.niceName()}]"})
+            apply_list_settings(list_name, {"default_member_moderation": False})
+            apply_list_settings(list_name, {"generic_nonmember_action": 0})
+            apply_list_settings(
+                list_name,
+                {
+                    "acceptable_aliases": f"{cls.emailcode()}.*-(students|class)-.*@{Site.objects.get_current().domain}"
+                },
+            )
+            apply_list_settings(
+                list_name, {"subject_prefix": f"[{cls.parent_program.niceName()}]"}
+            )
 
         logger.info("Settings applied still...")
         add_list_member(list_name, cls.parent_program.director_email)
         add_list_members(list_name, cls.get_teachers())
-        if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
-            add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
+        if "archive" in settings.DEFAULT_EMAIL_ADDRESSES:
+            add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES["archive"])
         logger.info("Members added")
 
         self.recipients = [f"{list_name}@{Site.objects.get_current().domain}"]

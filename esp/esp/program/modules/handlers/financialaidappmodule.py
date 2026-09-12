@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,18 +31,23 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    main_call,
+)
 from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
-from esp.middleware      import ESPError
-from esp.users.models    import ESPUser
-from django.db.models.query       import Q
+from esp.middleware import ESPError
+from esp.users.models import ESPUser
+from django.db.models.query import Q
 from django.utils.decorators import method_decorator
-from esp.program.models  import FinancialAidRequest
+from esp.program.models import FinancialAidRequest
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
-from django              import forms
+from django import forms
 
 
 class FinancialAidAppModule(ProgramModuleObj):
@@ -57,28 +61,39 @@ class FinancialAidAppModule(ProgramModuleObj):
             "module_type": "learn",
             "seq": 25,
             "choosable": 0,
-            }
+        }
 
-    def students(self, QObject = False):
-        Q_students = Q(financialaidrequest__program = self.program)
+    def students(self, QObject=False):
+        Q_students = Q(financialaidrequest__program=self.program)
 
-        Q_students_complete = Q(financialaidrequest__done = True)
-        Q_students_approved = Q(financialaidrequest__financialaidgrant__percent__isnull=False) | Q(financialaidrequest__financialaidgrant__amount_max_dec__isnull=False)
+        Q_students_complete = Q(financialaidrequest__done=True)
+        Q_students_approved = Q(
+            financialaidrequest__financialaidgrant__percent__isnull=False
+        ) | Q(financialaidrequest__financialaidgrant__amount_max_dec__isnull=False)
 
         if QObject:
-            return {'studentfinaid_complete': Q_students & Q_students_complete,
-                    'studentfinaid':          Q_students,
-                    'studentfinaid_approved': Q_students & Q_students_approved}
+            return {
+                "studentfinaid_complete": Q_students & Q_students_complete,
+                "studentfinaid": Q_students,
+                "studentfinaid_approved": Q_students & Q_students_approved,
+            }
         else:
-            return {'studentfinaid_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
-                    'studentfinaid':          ESPUser.objects.filter(Q_students),
-                    'studentfinaid_approved': ESPUser.objects.filter(Q_students & Q_students_approved)}
-
+            return {
+                "studentfinaid_complete": ESPUser.objects.filter(
+                    Q_students & Q_students_complete
+                ),
+                "studentfinaid": ESPUser.objects.filter(Q_students),
+                "studentfinaid_approved": ESPUser.objects.filter(
+                    Q_students & Q_students_approved
+                ),
+            }
 
     def studentDesc(self):
-        return {'studentfinaid_complete': """Students who have completed a financial aid application""",
-                'studentfinaid':          """Students who have started a financial aid application""",
-                'studentfinaid_approved': """Students who have been granted financial aid"""}
+        return {
+            "studentfinaid_complete": """Students who have completed a financial aid application""",
+            "studentfinaid": """Students who have started a financial aid application""",
+            "studentfinaid_approved": """Students who have been granted financial aid""",
+        }
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
@@ -86,7 +101,7 @@ class FinancialAidAppModule(ProgramModuleObj):
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/Finaid')
+    @meets_deadline("/Finaid")
     @method_decorator(secure_required)
     # I didn't set @meets_cap here, because I don't want a bug in that to be
     # misinterpreted as "we are out of financial aid".
@@ -97,39 +112,55 @@ class FinancialAidAppModule(ProgramModuleObj):
         from datetime import datetime
         from esp.dbmail.models import send_mail
 
-        app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
-                                                                program = self.program)
+        app, created = FinancialAidRequest.objects.get_or_create(
+            user=request.user, program=self.program
+        )
 
         class Form(forms.ModelForm):
             class Meta:
                 model = FinancialAidRequest
-                tag_data = Tag.getTag('finaid_form_fields')
+                tag_data = Tag.getTag("finaid_form_fields")
                 if tag_data:
-                    fields = tuple(field.strip() for field in tag_data.split(',') if hasattr(FinancialAidRequest(), field.strip()))
+                    fields = tuple(
+                        field.strip()
+                        for field in tag_data.split(",")
+                        if hasattr(FinancialAidRequest(), field.strip())
+                    )
                 else:
-                    fields = '__all__'
+                    fields = "__all__"
 
-        if request.method == 'POST':
-            form = Form(request.POST, initial = app.__dict__)
+        if request.method == "POST":
+            form = Form(request.POST, initial=app.__dict__)
             if form.is_valid():
                 for key, value in form.cleaned_data.items():
                     setattr(app, key, value)
 
-                if not 'submitform' in request.POST or request.POST['submitform'].lower() == 'complete':
+                if (
+                    not "submitform" in request.POST
+                    or request.POST["submitform"].lower() == "complete"
+                ):
                     app.done = True
-                elif request.POST['submitform'].lower() == 'mark as incomplete' or request.POST['submitform'].lower() == 'save progress':
+                elif (
+                    request.POST["submitform"].lower() == "mark as incomplete"
+                    or request.POST["submitform"].lower() == "save progress"
+                ):
                     app.done = False
                 else:
-                    raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
+                    raise ESPError(
+                        "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
+                    )
 
                 app.save()
 
                 # Send an email announcing the application
                 date_str = str(datetime.now())
-                subj_str = f'{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()}'
+                subj_str = f"{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()}"
                 msg_str = f"\n{request.user.first_name} {request.user.last_name} applied for Financial Aid for {prog.niceName()} on {date_str}."
-                send_mail(subj_str, (msg_str +
-                f"""
+                send_mail(
+                    subj_str,
+                    (
+                        msg_str
+                        + f"""
 
 Here is their form data:
 
@@ -146,29 +177,33 @@ Extra Explanation:
 ========================================
 
 This request can be (re)viewed at:
-<{'http' if settings.DEBUG else 'https'}://{settings.DEFAULT_HOST}/admin/program/financialaidrequest/{app.id}/>
+<{"http" if settings.DEBUG else "https"}://{settings.DEFAULT_HOST}/admin/program/financialaidrequest/{app.id}/>
 
 
-"""),
-                            settings.SERVER_EMAIL,
-                            [ prog.getDirectorConfidentialEmail() ] )
+"""
+                    ),
+                    settings.SERVER_EMAIL,
+                    [prog.getDirectorConfidentialEmail()],
+                )
                 # Automatically accept apps for people with subsidized lunches
                 if app.reduced_lunch:
                     app.approve()
                 return self.goToCore(tl)
 
         else:
-            form = Form(initial = app.__dict__)
+            form = Form(initial=app.__dict__)
 
-        return render_to_response(self.baseDir()+'application.html',
-                                  request,
-                                  {'form': form, 'app': app})
+        return render_to_response(
+            self.baseDir() + "application.html", request, {"form": form, "app": app}
+        )
 
     def isStep(self):
         # Only show this module if there are things (with costs) for financial aid to cover
         pac = ProgramAccountingController(self.program)
-        return pac.get_lineitemtypes().filter(for_finaid=True, amount_dec__gt=0).exists()
+        return (
+            pac.get_lineitemtypes().filter(for_finaid=True, amount_dec__gt=0).exists()
+        )
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

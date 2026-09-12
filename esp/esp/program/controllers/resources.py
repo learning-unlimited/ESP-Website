@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -40,8 +40,9 @@ from esp.middleware import ESPError
 from esp.resources.models import ResourceType, Resource
 from esp.program.models import ClassSection
 
+
 class ResourceController(object):
-    """ Controller for managing program resources.
+    """Controller for managing program resources.
 
     This is merely a framework, and most functionality will be added
     in the future when the resources schema is revised.
@@ -56,9 +57,9 @@ class ResourceController(object):
         ts.delete()
 
     def add_or_edit_timeslot(self, form):
-        """ form is a TimeslotForm object   """
-        if form.cleaned_data['id'] is not None:
-            new_timeslot = Event.objects.get(id=form.cleaned_data['id'])
+        """form is a TimeslotForm object"""
+        if form.cleaned_data["id"] is not None:
+            new_timeslot = Event.objects.get(id=form.cleaned_data["id"])
         else:
             new_timeslot = Event()
 
@@ -71,15 +72,17 @@ class ResourceController(object):
         try:
             rt.delete()
         except ProtectedError:
-            raise ESPError("This resource type can't be deleted because it has "
-                           "already been requested. If you really want to "
-                           "delete it, first go to the admin panel and delete "
-                           "all ResourceRequests for this resource type.",
-                           log=False)
+            raise ESPError(
+                "This resource type can't be deleted because it has "
+                "already been requested. If you really want to "
+                "delete it, first go to the admin panel and delete "
+                "all ResourceRequests for this resource type.",
+                log=False,
+            )
 
-    def add_or_edit_restype(self, form, choices = None):
-        if form.cleaned_data['id'] is not None:
-            new_restype = ResourceType.objects.get(id=form.cleaned_data['id'])
+    def add_or_edit_restype(self, form, choices=None):
+        if form.cleaned_data["id"] is not None:
+            new_restype = ResourceType.objects.get(id=form.cleaned_data["id"])
         else:
             new_restype = ResourceType()
 
@@ -91,7 +94,9 @@ class ResourceController(object):
         target_resource = Resource.objects.get(id=id)
         rooms = self.program.getClassrooms().filter(name=target_resource.name)
         #   unschedule sections scheduled in classroom
-        secs = ClassSection.objects.filter(resourceassignment__resource__in=rooms).distinct()
+        secs = ClassSection.objects.filter(
+            resourceassignment__resource__in=rooms
+        ).distinct()
         for sec in secs:
             sec.clearRooms()
             sec.clearFloatingResources()
@@ -101,11 +106,15 @@ class ResourceController(object):
             room.associated_resources().delete()
         rooms.delete()
 
-    def add_or_edit_classroom(self, form, furnishings = None):
-        form.save_classroom(self.program, furnishings = furnishings)
+    def add_or_edit_classroom(self, form, furnishings=None):
+        form.save_classroom(self.program, furnishings=furnishings)
 
     def delete_equipment(self, id):
         #   delete this resource for all time blocks within the program
-        rl = Resource.objects.get(id=id).identical_resources().filter(event__program=self.program)
+        rl = (
+            Resource.objects.get(id=id)
+            .identical_resources()
+            .filter(event__program=self.program)
+        )
         for r in rl:
             r.delete()

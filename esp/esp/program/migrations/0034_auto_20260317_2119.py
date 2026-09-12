@@ -6,25 +6,24 @@ import django.db.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0033_cleanup_duplicate_registration_profiles'),
+        ("program", "0033_cleanup_duplicate_registration_profiles"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='registrationprofile',
-            name='old_text_reminder',
-            field=models.BooleanField(db_column='text_reminder', null=True),
+            model_name="registrationprofile",
+            name="old_text_reminder",
+            field=models.BooleanField(db_column="text_reminder", null=True),
         ),
         migrations.AlterField(
-            model_name='splashinfo',
-            name='siblingdiscount',
+            model_name="splashinfo",
+            name="siblingdiscount",
             field=models.BooleanField(blank=True, default=False, null=True),
         ),
         migrations.AlterField(
-            model_name='splashinfo',
-            name='submitted',
+            model_name="splashinfo",
+            name="submitted",
             field=models.BooleanField(blank=True, default=False, null=True),
         ),
     ]

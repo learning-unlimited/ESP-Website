@@ -5,20 +5,19 @@ import django.db.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0031_classflagtype_teacher_visibility'),
+        ("program", "0031_classflagtype_teacher_visibility"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classsection',
-            name='attending_students',
+            model_name="classsection",
+            name="attending_students",
             field=django.db.models.fields.IntegerField(default=0),
         ),
         migrations.AlterField(
-            model_name='classsection',
-            name='enrolled_students',
+            model_name="classsection",
+            name="enrolled_students",
             field=django.db.models.fields.IntegerField(default=0),
         ),
     ]

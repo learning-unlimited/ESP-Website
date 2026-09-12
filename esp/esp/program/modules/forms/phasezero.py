@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2010 by the individual contributors
@@ -38,18 +38,18 @@ from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 
-class SubmitForm(forms.Form):
 
+class SubmitForm(forms.Form):
     def __init__(self, *args, **kwargs):
-        if 'program' in kwargs:
-            self.program = kwargs['program']
-            del kwargs['program']
+        if "program" in kwargs:
+            self.program = kwargs["program"]
+            del kwargs["program"]
         else:
-            raise KeyError('Need to supply program as named argument to SubmitForm')
+            raise KeyError("Need to supply program as named argument to SubmitForm")
         super().__init__(*args, **kwargs)
 
     def save(self, user, program):
-        #Create new lottery record and add user to record
+        # Create new lottery record and add user to record
         rec = PhaseZeroRecord()
         rec.program = program
         rec.save()

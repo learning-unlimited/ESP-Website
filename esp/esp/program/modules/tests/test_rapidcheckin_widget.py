@@ -1,6 +1,7 @@
 """
 Unit tests for RapidCheckinStudentWidget (esp/program/modules/forms/rapidcheckin.py).
 """
+
 from unittest.mock import patch
 
 from django.template.defaultfilters import addslashes
@@ -35,20 +36,20 @@ class RapidCheckinStudentWidgetNoDBTests(SimpleTestCase):
     """
 
     def test_none_value_renders_empty_inputs(self):
-        html = widget.render('target_user', None)
-        self.assertEqual(html, _expected_html('target_user', '', ''))
+        html = widget.render("target_user", None)
+        self.assertEqual(html, _expected_html("target_user", "", ""))
 
     def test_empty_string_value_renders_empty_inputs(self):
-        html = widget.render('target_user', '')
-        self.assertEqual(html, _expected_html('target_user', '', ''))
+        html = widget.render("target_user", "")
+        self.assertEqual(html, _expected_html("target_user", "", ""))
 
     def test_non_numeric_value_handled_gracefully(self):
         """
         A non-numeric value fails int() before any database lookup, so this
         must not raise and must fall back to empty inputs.
         """
-        html = widget.render('target_user', 'not-a-number')
-        self.assertEqual(html, _expected_html('target_user', '', ''))
+        html = widget.render("target_user", "not-a-number")
+        self.assertEqual(html, _expected_html("target_user", "", ""))
 
 
 class RapidCheckinStudentWidgetDBTests(TestCase):
@@ -60,7 +61,10 @@ class RapidCheckinStudentWidgetDBTests(TestCase):
 
     def setUp(self):
         self.user = ESPUser.objects.create_user(
-            username='rapidcheckin_test_student', password='password', email='student@test.org')
+            username="rapidcheckin_test_student",
+            password="password",
+            email="student@test.org",
+        )
 
     def test_nonexistent_pk_handled_gracefully(self):
         """
@@ -69,15 +73,16 @@ class RapidCheckinStudentWidgetDBTests(TestCase):
         not propagate the exception.
         """
         missing_pk = self.user.pk + 999999
-        html = widget.render('target_user', str(missing_pk))
-        self.assertEqual(html, _expected_html('target_user', '', ''))
+        html = widget.render("target_user", str(missing_pk))
+        self.assertEqual(html, _expected_html("target_user", "", ""))
 
     def test_existing_user_pk_renders_data(self):
-        with patch.object(ESPUser, 'ajax_str', return_value='Some User'):
-            html = widget.render('target_user', str(self.user.pk))
-        expected_text_value = addslashes('Some User (%s)' % self.user.pk)
+        with patch.object(ESPUser, "ajax_str", return_value="Some User"):
+            html = widget.render("target_user", str(self.user.pk))
+        expected_text_value = addslashes("Some User (%s)" % self.user.pk)
         self.assertEqual(
-            html, _expected_html('target_user', expected_text_value, str(self.user.pk)))
+            html, _expected_html("target_user", expected_text_value, str(self.user.pk))
+        )
 
     def test_special_characters_in_ajax_str_are_escaped(self):
         """
@@ -85,10 +90,11 @@ class RapidCheckinStudentWidgetDBTests(TestCase):
         If it contains quotes, they must be escaped via addslashes so the
         value="..." attribute isn't broken out of.
         """
-        with patch.object(ESPUser, 'ajax_str', return_value='Weird "Name"'):
-            html = widget.render('target_user', str(self.user.pk))
+        with patch.object(ESPUser, "ajax_str", return_value='Weird "Name"'):
+            html = widget.render("target_user", str(self.user.pk))
         expected_text_value = addslashes('Weird "Name" (%s)' % self.user.pk)
         self.assertEqual(
-            html, _expected_html('target_user', expected_text_value, str(self.user.pk)))
+            html, _expected_html("target_user", expected_text_value, str(self.user.pk))
+        )
         # The raw, unescaped quote must not appear in the attribute value.
         self.assertNotIn('value="Weird "Name" (%s)"' % self.user.pk, html)

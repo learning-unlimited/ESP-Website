@@ -5,20 +5,18 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0033_regprofile_availability_seq'),
+        ("modules", "0033_regprofile_availability_seq"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserRecordsModule',
-            fields=[
-            ],
+            name="UserRecordsModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

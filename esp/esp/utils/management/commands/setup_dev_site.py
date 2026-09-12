@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2025 by the individual contributors
@@ -36,12 +35,21 @@ Learning Unlimited, Inc.
 from django.core.management.base import BaseCommand
 from django.contrib.sites.models import Site
 
+
 class Command(BaseCommand):
     help = "Sets the Django Site domain and name to 'localhost' for local development."
 
     def handle(self, *args, **kwargs):
         if not Site.objects.filter(id=1).exists():
-            self.stdout.write(self.style.WARNING('No Site with id=1 found. Creating a default localhost Site with id=1.'))
-            Site.objects.create(id=1, domain='localhost:8000', name='localhost')
-        Site.objects.filter(id=1).update(domain='localhost:8000', name='localhost')
-        self.stdout.write(self.style.SUCCESS("Successfully updated Site domain and name to 'localhost'."))
+            self.stdout.write(
+                self.style.WARNING(
+                    "No Site with id=1 found. Creating a default localhost Site with id=1."
+                )
+            )
+            Site.objects.create(id=1, domain="localhost:8000", name="localhost")
+        Site.objects.filter(id=1).update(domain="localhost:8000", name="localhost")
+        self.stdout.write(
+            self.style.SUCCESS(
+                "Successfully updated Site domain and name to 'localhost'."
+            )
+        )

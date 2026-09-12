@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2014 by the individual contributors
@@ -36,13 +35,15 @@ Learning Unlimited, Inc.
 from django.core.management.base import BaseCommand
 from django.db.models import get_apps
 
+
 class Command(BaseCommand):
     """Install initial data on all apps.
 
     Call app.models.install() on all apps that have such a function.
     """
+
     def handle(self, *args, **options):
         # get_apps() returns a list of the app.models modules of all
         # installed apps.
-        for app in [app for app in get_apps() if hasattr(app, 'install')]:
+        for app in [app for app in get_apps() if hasattr(app, "install")]:
             app.install()

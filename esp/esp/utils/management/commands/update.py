@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2014 by the individual contributors
@@ -40,6 +39,7 @@ from pathlib import Path
 
 import os
 
+
 class Command(BaseCommand):
     """Update the site.
 
@@ -50,33 +50,43 @@ class Command(BaseCommand):
     - Recompile the theme.
     - Clear memcache
     """
+
     def handle(self, *args, **options):
         default_options = {
-            'verbosity': 1,
-            'interactive': False,
-            'clear': True,
-            'no_input': False
+            "verbosity": 1,
+            "interactive": False,
+            "clear": True,
+            "no_input": False,
         }
         default_options.update(options)
         options = default_options
 
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
-        file = os.path.join(root, 'esp.wsgi')
+        file = os.path.join(root, "esp.wsgi")
 
-        user = os.getenv('USER')
-        sudo_user = os.getenv('SUDO_USER')
+        user = os.getenv("USER")
+        sudo_user = os.getenv("SUDO_USER")
         # If sudo, we are probably on the live server,
         # so we always want to use www-data
         if sudo_user:
             if user != "www-data":
-                raise Exception("Looks like you tried to run this with sudo but without '-u www-data'. Please try again!")
+                raise Exception(
+                    "Looks like you tried to run this with sudo but without '-u www-data'. Please try again!"
+                )
             elif not os.access(file, os.W_OK):
-                raise Exception("www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!")
+                raise Exception(
+                    "www-data doesn't have write access for esp.wsgi. Please fix this with chown, then try again!"
+                )
         verbosity = options["verbosity"]
         interactive = options["interactive"]
-        call_command('clean_pyc', verbosity = verbosity)
-        call_command('migrate', verbosity = verbosity, interactive = interactive)
-        call_command('collectstatic', clear = options["clear"], no_input = options["no_input"], verbosity = verbosity)
-        call_command('recompile_theme', verbosity = verbosity)
-        call_command('flushcache', verbosity = verbosity)
+        call_command("clean_pyc", verbosity=verbosity)
+        call_command("migrate", verbosity=verbosity, interactive=interactive)
+        call_command(
+            "collectstatic",
+            clear=options["clear"],
+            no_input=options["no_input"],
+            verbosity=verbosity,
+        )
+        call_command("recompile_theme", verbosity=verbosity)
+        call_command("flushcache", verbosity=verbosity)
         Path(file).touch()

@@ -3,15 +3,19 @@
 
 from django.db import migrations
 
+
 def set_my_defaults(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
-    old_pm = ProgramModule.objects.filter(handler="FormstackMedliabModule", module_type="manage")
+    ProgramModule = apps.get_model("program", "ProgramModule")
+    old_pm = ProgramModule.objects.filter(
+        handler="FormstackMedliabModule", module_type="manage"
+    )
     if old_pm.exists():
         old_pm[0].handler = "MedicalBypassModule"
         old_pm[0].save()
 
+
 def reverse_func(apps, schema_editor):
-    ProgramModule = apps.get_model('program', 'ProgramModule')
+    ProgramModule = apps.get_model("program", "ProgramModule")
     new_pm = ProgramModule.objects.filter(handler="MedicalBypassModule")
     if new_pm.count() == 1:
         new_pm[0].handler = "FormstackMedliabModule"
@@ -19,21 +23,19 @@ def reverse_func(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0036_resources_seq'),
+        ("modules", "0036_resources_seq"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='MedicalBypassModule',
-            fields=[
-            ],
+            name="MedicalBypassModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.RunPython(set_my_defaults, reverse_func),
     ]

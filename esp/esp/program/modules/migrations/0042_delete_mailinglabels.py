@@ -5,13 +5,12 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0041_auto_20230525_2043'),
+        ("modules", "0041_auto_20230525_2043"),
     ]
 
     operations = [
         migrations.DeleteModel(
-            name='MailingLabels',
+            name="MailingLabels",
         ),
     ]

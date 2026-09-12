@@ -1,8 +1,9 @@
 from io import open
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -56,17 +57,18 @@ logger = logging.getLogger(__name__)
 
 try:
     from PIL import Image
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
 # Favicon variant sizes for modern browsers and mobile (see #4304, #4466)
 FAVICON_SIZES = [
-    (16, 'favicon-16x16.png'),
-    (32, 'favicon-32x32.png'),
-    (180, 'apple-touch-icon.png'),
-    (192, 'android-chrome-192x192.png'),
-    (512, 'android-chrome-512x512.png'),
+    (16, "favicon-16x16.png"),
+    (32, "favicon-32x32.png"),
+    (180, "apple-touch-icon.png"),
+    (192, "android-chrome-192x192.png"),
+    (512, "android-chrome-512x512.png"),
 ]
 
 
@@ -100,56 +102,71 @@ def _generate_favicon_variants(ico_path, images_dir):
         return
     try:
         with Image.open(ico_path) as img:
-            img = img.convert('RGBA')
+            img = img.convert("RGBA")
             # LANCZOS for quality; Pillow 10+ has Image.Resampling.LANCZOS, older versions have Image.LANCZOS
             try:
                 resample = Image.Resampling.LANCZOS  # type: ignore[attr-defined]
             except AttributeError:
                 resample = getattr(
                     Image,
-                    'LANCZOS',
-                    getattr(Image, 'BICUBIC', getattr(Image, 'BILINEAR', 0)),
+                    "LANCZOS",
+                    getattr(Image, "BICUBIC", getattr(Image, "BILINEAR", 0)),
                 )
             for size, filename in FAVICON_SIZES:
                 out_path = os.path.join(images_dir, filename)
                 resized = img.resize((size, size), resample)
-                resized.save(out_path, 'PNG')
-        name = Tag.getTag('full_group_name') or getattr(settings, 'INSTITUTION_NAME', 'ESP Website')
-        short_name = Tag.getTag('full_group_name') or getattr(settings, 'ORGANIZATION_SHORT_NAME', 'ESP')
+                resized.save(out_path, "PNG")
+        name = Tag.getTag("full_group_name") or getattr(
+            settings, "INSTITUTION_NAME", "ESP Website"
+        )
+        short_name = Tag.getTag("full_group_name") or getattr(
+            settings, "ORGANIZATION_SHORT_NAME", "ESP"
+        )
         if name is None:
-            name = 'ESP Website'
+            name = "ESP Website"
         elif not isinstance(name, str):
             name = str(name)
         if short_name is None:
-            short_name = 'ESP'
+            short_name = "ESP"
         elif not isinstance(short_name, str):
             short_name = str(short_name)
-        media_url = settings.MEDIA_URL.rstrip('/') + '/'
+        media_url = settings.MEDIA_URL.rstrip("/") + "/"
         manifest = {
             "name": name,
             "short_name": short_name,
             "icons": [
-                {"src": media_url + "images/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png"},
-                {"src": media_url + "images/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png"},
+                {
+                    "src": media_url + "images/android-chrome-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                },
+                {
+                    "src": media_url + "images/android-chrome-512x512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                },
             ],
             "theme_color": "#ffffff",
             "background_color": "#ffffff",
             "display": "standalone",
         }
-        manifest_path = os.path.join(images_dir, 'site.webmanifest')
-        with open(manifest_path, 'w') as f:
+        manifest_path = os.path.join(images_dir, "site.webmanifest")
+        with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
-            f.write('\n')
+            f.write("\n")
     except Exception as e:
         logger.exception(
             "Favicon variant generation failed for %s (corrupt image or permission issue?): %s",
-            ico_path, e
+            ico_path,
+            e,
         )
 
 
-THEME_ERROR_STRING = "Your site's theme is not in the generic templates system. " + \
-                     "If you want to switch to one of the standard themes, " + \
-                     "please contact the web team."
+THEME_ERROR_STRING = (
+    "Your site's theme is not in the generic templates system. "
+    + "If you want to switch to one of the standard themes, "
+    + "please contact the web team."
+)
 
 
 @admin_required
@@ -158,10 +175,12 @@ def landing(request):
         raise ESPError(THEME_ERROR_STRING, log=False)
     context = {}
     tc = ThemeController()
-    context['theme_name'] = tc.get_current_theme()
-    context['last_customization_name'] = tc.get_current_customization()
-    context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
-    return render_to_response('themes/landing.html', request, context)
+    context["theme_name"] = tc.get_current_theme()
+    context["last_customization_name"] = tc.get_current_customization()
+    context["has_header"] = os.path.exists(
+        settings.MEDIA_ROOT + "images/theme/header.png"
+    )
+    return render_to_response("themes/landing.html", request, context)
 
 
 @admin_required
@@ -172,121 +191,178 @@ def selector(request, keep_files=None):
     context = {}
     tc = ThemeController()
 
-    if request.method == 'POST' and 'action' in request.POST:
-        if request.POST['action'] == 'select':
-            theme_name = request.POST['theme'].replace(' (current)', '')
+    if request.method == "POST" and "action" in request.POST:
+        if request.POST["action"] == "select":
+            theme_name = request.POST["theme"].replace(" (current)", "")
 
             #   Check for differences between the theme's files and those in the working copy.
             #   If there are differences, require a confirmation from the user for each file.
             differences = tc.check_local_modifications(theme_name)
             if len(differences) > 0 and keep_files is None:
-                return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='selector')
+                return confirm_overwrite(
+                    request,
+                    current_theme=theme_name,
+                    differences=differences,
+                    orig_view="selector",
+                )
 
             #   Display configuration form if one is provided for the selected theme
             if tc.get_config_form_class(theme_name) is not None:
-                return configure(request, current_theme=theme_name, force_display=True, keep_files=keep_files)
+                return configure(
+                    request,
+                    current_theme=theme_name,
+                    force_display=True,
+                    keep_files=keep_files,
+                )
 
-            tc.save_customizations(f'{tc.get_current_theme()}-last')
+            tc.save_customizations(f"{tc.get_current_theme()}-last")
             backup_info = tc.clear_theme(keep_files=keep_files)
             tc.load_theme(theme_name, backup_info=backup_info)
 
-    context['theme_name'] = tc.get_current_theme()
-    context['themes'] = tc.get_theme_names()
-    return render_to_response('themes/selector.html', request, context)
+    context["theme_name"] = tc.get_current_theme()
+    context["themes"] = tc.get_theme_names()
+    return render_to_response("themes/selector.html", request, context)
 
 
 @admin_required
 def logos(request):
     context = {}
     tc = ThemeController()
-    if not os.path.exists(settings.MEDIA_ROOT + 'images/backups'):
-        os.makedirs(settings.MEDIA_ROOT + 'images/backups')
+    if not os.path.exists(settings.MEDIA_ROOT + "images/backups"):
+        os.makedirs(settings.MEDIA_ROOT + "images/backups")
 
     if request.POST:
-        if 'new_logo' in request.FILES:
-            f = request.FILES['new_logo']
+        if "new_logo" in request.FILES:
+            f = request.FILES["new_logo"]
             # Overwrite existing logo file
-            with open(settings.MEDIA_ROOT + 'images/theme/logo.png', 'wb+') as destination:
+            with open(
+                settings.MEDIA_ROOT + "images/theme/logo.png", "wb+"
+            ) as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
             # Update logo version
-            Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
+            Tag.setTag("current_logo_version", value=hex(random.getrandbits(16)))
             # Backup the new logo file
-            with open(settings.MEDIA_ROOT + 'images/backups/logo.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            with open(
+                settings.MEDIA_ROOT
+                + "images/backups/logo."
+                + datetime.now().strftime("%Y%m%d-%H%M%S")
+                + ".png",
+                "wb+",
+            ) as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-        elif 'new_header' in request.FILES:
-            f = request.FILES['new_header']
+        elif "new_header" in request.FILES:
+            f = request.FILES["new_header"]
             # Overwrite existing header file
-            with open(settings.MEDIA_ROOT + 'images/theme/header.png', 'wb+') as destination:
+            with open(
+                settings.MEDIA_ROOT + "images/theme/header.png", "wb+"
+            ) as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
             # Update header version
-            Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
+            Tag.setTag("current_header_version", value=hex(random.getrandbits(16)))
             # Backup the new header file
-            with open(settings.MEDIA_ROOT + 'images/backups/header.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.png', 'wb+') as destination:
+            with open(
+                settings.MEDIA_ROOT
+                + "images/backups/header."
+                + datetime.now().strftime("%Y%m%d-%H%M%S")
+                + ".png",
+                "wb+",
+            ) as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-        elif 'new_favicon' in request.FILES:
-            f = request.FILES['new_favicon']
+        elif "new_favicon" in request.FILES:
+            f = request.FILES["new_favicon"]
             # Overwrite existing logo file
-            with open(settings.MEDIA_ROOT + 'images/favicon.ico', 'wb+') as destination:
+            with open(settings.MEDIA_ROOT + "images/favicon.ico", "wb+") as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
             # Update favicon version
-            Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
+            Tag.setTag("current_favicon_version", value=hex(random.getrandbits(16)))
             # Backup the new favicon file
-            with open(settings.MEDIA_ROOT + 'images/backups/favicon.' + datetime.now().strftime("%Y%m%d-%H%M%S") + '.ico', 'wb+') as destination:
+            with open(
+                settings.MEDIA_ROOT
+                + "images/backups/favicon."
+                + datetime.now().strftime("%Y%m%d-%H%M%S")
+                + ".ico",
+                "wb+",
+            ) as destination:
                 for chunk in f.chunks():
                     destination.write(chunk)
-            _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
-        elif 'logo_select' in request.POST:
+            _generate_favicon_variants(
+                settings.MEDIA_ROOT + "images/favicon.ico",
+                settings.MEDIA_ROOT + "images",
+            )
+        elif "logo_select" in request.POST:
             # Overwrite existing logo file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['logo_select'], settings.MEDIA_ROOT + 'images/theme/logo.png')
+            shutil.copyfile(
+                settings.MEDIA_ROOT + "images/backups/" + request.POST["logo_select"],
+                settings.MEDIA_ROOT + "images/theme/logo.png",
+            )
             # Update logo version
-            Tag.setTag("current_logo_version", value = hex(random.getrandbits(16)))
-        elif 'header_select' in request.POST:
+            Tag.setTag("current_logo_version", value=hex(random.getrandbits(16)))
+        elif "header_select" in request.POST:
             # Overwrite existing header file
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['header_select'], settings.MEDIA_ROOT + 'images/theme/header.png')
+            shutil.copyfile(
+                settings.MEDIA_ROOT + "images/backups/" + request.POST["header_select"],
+                settings.MEDIA_ROOT + "images/theme/header.png",
+            )
             # Update header version
-            Tag.setTag("current_header_version", value = hex(random.getrandbits(16)))
-        elif 'favicon_select' in request.POST:
+            Tag.setTag("current_header_version", value=hex(random.getrandbits(16)))
+        elif "favicon_select" in request.POST:
             # Update favicon version
-            shutil.copyfile(settings.MEDIA_ROOT + 'images/backups/' + request.POST['favicon_select'], settings.MEDIA_ROOT + 'images/favicon.ico')
+            shutil.copyfile(
+                settings.MEDIA_ROOT
+                + "images/backups/"
+                + request.POST["favicon_select"],
+                settings.MEDIA_ROOT + "images/favicon.ico",
+            )
             # Update favicon version
-            Tag.setTag("current_favicon_version", value = hex(random.getrandbits(16)))
-            _generate_favicon_variants(settings.MEDIA_ROOT + 'images/favicon.ico', settings.MEDIA_ROOT + 'images')
+            Tag.setTag("current_favicon_version", value=hex(random.getrandbits(16)))
+            _generate_favicon_variants(
+                settings.MEDIA_ROOT + "images/favicon.ico",
+                settings.MEDIA_ROOT + "images",
+            )
 
-    context['logo_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"logo\..*\.png")]
-    context['header_files'] = [(path.split('public')[1], path.split('images/backups/')[1]) for path in tc.list_filenames(settings.MEDIA_ROOT + 'images/backups', r"header\..*\.png")]
+    context["logo_files"] = [
+        (path.split("public")[1], path.split("images/backups/")[1])
+        for path in tc.list_filenames(
+            settings.MEDIA_ROOT + "images/backups", r"logo\..*\.png"
+        )
+    ]
+    context["header_files"] = [
+        (path.split("public")[1], path.split("images/backups/")[1])
+        for path in tc.list_filenames(
+            settings.MEDIA_ROOT + "images/backups", r"header\..*\.png"
+        )
+    ]
     favicon_paths = tc.list_filenames(
-    settings.MEDIA_ROOT + 'images/backups',
-    r"favicon\..*\.ico"
+        settings.MEDIA_ROOT + "images/backups", r"favicon\..*\.ico"
     )
 
-    favicon_paths.sort(
-    key=lambda p: os.path.getmtime(p),
-    reverse=True
-    )
+    favicon_paths.sort(key=lambda p: os.path.getmtime(p), reverse=True)
 
-    context['favicon_files'] = [
-    (path.split('public')[1], path.split('images/backups/')[1])
-    for path in favicon_paths
+    context["favicon_files"] = [
+        (path.split("public")[1], path.split("images/backups/")[1])
+        for path in favicon_paths
     ]
 
-    context['has_header'] = os.path.exists(settings.MEDIA_ROOT + 'images/theme/header.png')
-    context['current_logo_version'] = Tag.getTag("current_logo_version")
-    context['current_header_version'] = Tag.getTag("current_header_version")
-    context['current_favicon_version'] = Tag.getTag("current_favicon_version")
+    context["has_header"] = os.path.exists(
+        settings.MEDIA_ROOT + "images/theme/header.png"
+    )
+    context["current_logo_version"] = Tag.getTag("current_logo_version")
+    context["current_header_version"] = Tag.getTag("current_header_version")
+    context["current_favicon_version"] = Tag.getTag("current_favicon_version")
 
-    return render_to_response('themes/logos.html', request, context)
+    return render_to_response("themes/logos.html", request, context)
 
 
 @admin_required
 def confirm_overwrite(request, current_theme=None, differences=None, orig_view=None):
-    """ Display a form asking the user which local modified files
-        they would like to keep, and which they would like to overwrite
-        with the ones from the theme data.  """
+    """Display a form asking the user which local modified files
+    they would like to keep, and which they would like to overwrite
+    with the ones from the theme data."""
 
     if settings.LOCAL_THEME:
         raise ESPError(THEME_ERROR_STRING, log=False)
@@ -295,23 +371,23 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     tc = ThemeController()
 
     if current_theme is None:
-        current_theme = request.POST.get('theme', '')
+        current_theme = request.POST.get("theme", "")
 
-    if request.method == 'POST' and request.POST.get('confirm_overwrite', '0') == '1':
+    if request.method == "POST" and request.POST.get("confirm_overwrite", "0") == "1":
         files_to_keep = []
         diffs_current = tc.check_local_modifications(current_theme)
 
         #   Build a list of filenames that we are not supposed to overwrite.
         for entry in diffs_current:
-            post_key = f'overwrite_{entry["filename_hash"]}'
+            post_key = f"overwrite_{entry['filename_hash']}"
             post_val = request.POST.get(post_key, None)
             if post_val is not None:
-                if post_val != 'overwrite':
-                    files_to_keep.append(entry['filename'])
+                if post_val != "overwrite":
+                    files_to_keep.append(entry["filename"])
 
         #   Continue with the original view (typically the theme selector).
         view_func = selector
-        if request.POST.get('orig_view', '') == 'recompile':
+        if request.POST.get("orig_view", "") == "recompile":
             view_func = recompile
         return view_func(request, keep_files=files_to_keep)
 
@@ -319,10 +395,10 @@ def confirm_overwrite(request, current_theme=None, differences=None, orig_view=N
     if differences is None:
         differences = tc.check_local_modifications(current_theme)
 
-    context['theme_name'] = current_theme
-    context['differences'] = differences
-    context['orig_view'] = orig_view
-    return render_to_response('themes/confirm_overwrite.html', request, context)
+    context["theme_name"] = current_theme
+    context["differences"] = differences
+    context["orig_view"] = orig_view
+    return render_to_response("themes/confirm_overwrite.html", request, context)
 
 
 @admin_required
@@ -333,39 +409,41 @@ def configure(request, current_theme=None, force_display=False, keep_files=None)
     context = {}
     tc = ThemeController()
     if current_theme is None:
-        current_theme = request.POST.get('theme', None) or tc.get_current_theme()
-    context['theme_name'] = current_theme
+        current_theme = request.POST.get("theme", None) or tc.get_current_theme()
+    context["theme_name"] = current_theme
 
     form_class = tc.get_config_form_class(current_theme)
     if form_class is None:
         form = None
-        return render_to_response('themes/configure_form.html', request, context)
+        return render_to_response("themes/configure_form.html", request, context)
 
-    if request.method == 'POST' and not force_display:
+    if request.method == "POST" and not force_display:
         form = form_class(request.POST.copy())
 
         if form.is_valid():
             #   Done; save results and go back to landing page.
-            if form.cleaned_data['theme'] != tc.get_current_theme():
-                tc.save_customizations('%s-last' % tc.get_current_theme())
+            if form.cleaned_data["theme"] != tc.get_current_theme():
+                tc.save_customizations("%s-last" % tc.get_current_theme())
 
-            if form.cleaned_data['just_selected']:
+            if form.cleaned_data["just_selected"]:
                 #   Detect which files (in the active media directories) are being preserved,
                 #   and use this information when reloading the theme.
-                keep_files = request.POST.getlist('keep_files', [])
+                keep_files = request.POST.getlist("keep_files", [])
                 backup_info = tc.clear_theme(keep_files=keep_files)
-                tc.load_theme(form.cleaned_data['theme'], backup_info=backup_info)
+                tc.load_theme(form.cleaned_data["theme"], backup_info=backup_info)
 
             form.save_to_tag()
-            return HttpResponseRedirect(reverse('themes_landing'))
+            return HttpResponseRedirect(reverse("themes_landing"))
     else:
-        form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
+        form = form_class.load_from_tag(
+            theme_name=current_theme, just_selected=force_display
+        )
 
-    context['form'] = form
-    context['keep_files'] = keep_files
-    context['confirm_overwrite'] = request.POST.get('confirm_overwrite', '0')
+    context["form"] = form
+    context["keep_files"] = keep_files
+    context["confirm_overwrite"] = request.POST.get("confirm_overwrite", "0")
 
-    return render_to_response('themes/configure_form.html', request, context)
+    return render_to_response("themes/configure_form.html", request, context)
 
 
 @admin_required
@@ -375,7 +453,7 @@ def editor(request):
 
     tc = ThemeController()
 
-    if request.method == 'POST':
+    if request.method == "POST":
         #   Handle form submission
         vars = None
         palette = None
@@ -386,57 +464,87 @@ def editor(request):
         #   customisation was saved (see ThemeController.load_customizations).
         bootswatch_theme = None
 
-        if 'save' in request.POST:
-            if request.POST['saveThemeName'] == '':
+        if "save" in request.POST:
+            if request.POST["saveThemeName"] == "":
                 theme_name = tc.get_current_customization()
-                if theme_name == 'None':
+                if theme_name == "None":
                     #   Generate a temporary theme name
-                    random_slug = ''.join(random.choice(string.ascii_lowercase) for i in range(4))
-                    theme_name = f'theme-{datetime.now().strftime("%Y%m%d")}-{random_slug}'
+                    random_slug = "".join(
+                        random.choice(string.ascii_lowercase) for i in range(4)
+                    )
+                    theme_name = (
+                        f"theme-{datetime.now().strftime('%Y%m%d')}-{random_slug}"
+                    )
             else:
-                theme_name = request.POST['saveThemeName']
+                theme_name = request.POST["saveThemeName"]
             vars = request.POST.dict()
-            palette = request.POST.getlist('palette')
-            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
-                bootswatch_theme = request.POST['bootswatch_theme']
-                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
-                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            palette = request.POST.getlist("palette")
+            if (
+                tc.has_scss(tc.get_current_theme())
+                and "bootswatch_theme" in request.POST
+            ):
+                bootswatch_theme = request.POST["bootswatch_theme"]
+                if (
+                    bootswatch_theme
+                    and bootswatch_theme not in tc.get_bootswatch_themes()
+                ):
+                    raise ESPError(
+                        f"Unknown Bootswatch theme: {bootswatch_theme!r}", log=False
+                    )
             #   Set the tag before saving/customizing so save_customizations()
             #   (which defaults bootswatch_theme from the tag) and
             #   customize_theme()'s override diffing both see this request's
             #   selection rather than the previous one.
             if bootswatch_theme is not None:
-                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
-            tc.save_customizations(theme_name, vars=vars, palette=palette, bootswatch_theme=bootswatch_theme)
+                Tag.setTag("bootswatch_theme", value=bootswatch_theme)
+            tc.save_customizations(
+                theme_name,
+                vars=vars,
+                palette=palette,
+                bootswatch_theme=bootswatch_theme,
+            )
             tc.set_current_customization(theme_name)
-        elif 'load' in request.POST:
-            (vars, palette, loaded_bootswatch) = tc.load_customizations(request.POST['loadThemeName'])
+        elif "load" in request.POST:
+            (vars, palette, loaded_bootswatch) = tc.load_customizations(
+                request.POST["loadThemeName"]
+            )
             #   loaded_bootswatch is None for customisations saved before this
             #   Bootswatch-aware format existed; leave the current tag as-is
             #   in that case rather than silently clearing it.
             if tc.has_scss(tc.get_current_theme()) and loaded_bootswatch is not None:
-                if loaded_bootswatch and loaded_bootswatch not in tc.get_bootswatch_themes():
+                if (
+                    loaded_bootswatch
+                    and loaded_bootswatch not in tc.get_bootswatch_themes()
+                ):
                     #   The saved theme is no longer available (e.g. removed
                     #   from the npm package) -- fall back to no Bootswatch
                     #   theme rather than raising on a routine Load.
-                    loaded_bootswatch = ''
+                    loaded_bootswatch = ""
                 bootswatch_theme = loaded_bootswatch
-                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
-        elif 'delete' in request.POST:
-            tc.delete_customizations(request.POST['loadThemeName'])
-        elif 'apply' in request.POST:
+                Tag.setTag("bootswatch_theme", value=bootswatch_theme)
+        elif "delete" in request.POST:
+            tc.delete_customizations(request.POST["loadThemeName"])
+        elif "apply" in request.POST:
             vars = request.POST.dict()
-            palette = request.POST.getlist('palette')
+            palette = request.POST.getlist("palette")
             #   Only touch the tag when the form actually submitted the field,
             #   so programmatic POSTs (e.g. scripts posting {'apply': ...}
             #   without the select) don't silently clear the site's skin.
             #   Validate before persisting: compile_css raises on unknown
             #   names, so a bad value saved here would break every subsequent
             #   recompile.
-            if tc.has_scss(tc.get_current_theme()) and 'bootswatch_theme' in request.POST:
-                bootswatch_theme = request.POST['bootswatch_theme']
-                if bootswatch_theme and bootswatch_theme not in tc.get_bootswatch_themes():
-                    raise ESPError(f'Unknown Bootswatch theme: {bootswatch_theme!r}', log=False)
+            if (
+                tc.has_scss(tc.get_current_theme())
+                and "bootswatch_theme" in request.POST
+            ):
+                bootswatch_theme = request.POST["bootswatch_theme"]
+                if (
+                    bootswatch_theme
+                    and bootswatch_theme not in tc.get_bootswatch_themes()
+                ):
+                    raise ESPError(
+                        f"Unknown Bootswatch theme: {bootswatch_theme!r}", log=False
+                    )
             #   Set the tag before customize_theme() below so its override
             #   diffing (customize_theme -> get_effective_defaults) is based
             #   on this request's Bootswatch selection.  This lets an Apply
@@ -445,7 +553,7 @@ def editor(request):
             #   the new theme's derived default are not recorded as
             #   overrides, while genuinely-changed fields are.
             if bootswatch_theme is not None:
-                Tag.setTag('bootswatch_theme', value=bootswatch_theme)
+                Tag.setTag("bootswatch_theme", value=bootswatch_theme)
 
         #   Re-generate the CSS for the current theme given the supplied settings.
         #   Use "vars is not None" (not "if vars") so that an empty dict from a
@@ -462,18 +570,22 @@ def editor(request):
         #   "pick up colours from the previous theme" on reload.  The GET below
         #   always rebuilds the pickers from the persisted state (Bootswatch tag +
         #   saved customisations), so the displayed values are now deterministic.
-        return HttpResponseRedirect(reverse('themes_editor'))
+        return HttpResponseRedirect(reverse("themes_editor"))
 
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
 
     #   Resolve Bootswatch selection early — needed to layer colours correctly.
-    current_bootswatch = ''
+    current_bootswatch = ""
     if tc.has_scss(current_theme):
-        current_bootswatch = Tag.getTag('bootswatch_theme', default='')
+        current_bootswatch = Tag.getTag("bootswatch_theme", default="")
 
     #   Bootswatch-derived ESP variable values (empty dict when no BW theme selected).
-    bw_vars = tc.get_bootswatch_esp_vars(current_bootswatch, esp_theme=current_theme) if current_bootswatch else {}
+    bw_vars = (
+        tc.get_bootswatch_esp_vars(current_bootswatch, esp_theme=current_theme)
+        if current_bootswatch
+        else {}
+    )
 
     #   Build editor context in priority order (lowest → highest):
     #     1. SCSS file defaults
@@ -482,20 +594,20 @@ def editor(request):
     context = tc.find_theme_variables(flat=True)
     context.update(bw_vars)
     context.update(tc.get_current_params())
-    context['palette'] = tc.get_palette()
-    context['theme_name'] = current_theme
+    context["palette"] = tc.get_palette()
+    context["theme_name"] = current_theme
 
     #   Get list of available customizations
-    context['available_themes'] = tc.get_customization_names()
-    context['last_used_setting'] = tc.get_current_customization()
+    context["available_themes"] = tc.get_customization_names()
+    context["last_used_setting"] = tc.get_current_customization()
 
     #   Load a bunch of preset fonts
-    context['sans_fonts'] = themes_settings.sans_serif_fonts.items()
+    context["sans_fonts"] = themes_settings.sans_serif_fonts.items()
 
     #   Bootswatch support for SCSS themes
     if tc.has_scss(current_theme):
-        context['bootswatch_themes'] = tc.get_bootswatch_themes()
-        context['current_bootswatch'] = current_bootswatch
+        context["bootswatch_themes"] = tc.get_bootswatch_themes()
+        context["current_bootswatch"] = current_bootswatch
         #   Pre-compute all Bootswatch themes' ESP variable maps for the
         #   client-side dropdown change handler.  This lets the pickers update
         #   immediately without a round-trip when the admin switches themes.
@@ -506,15 +618,17 @@ def editor(request):
         #   autoescaping applied to it (" -> &quot;), producing a JS syntax
         #   error that silently left `bootswatch_esp_vars` undefined, which
         #   broke every dropdown-driven colour update client-side.
-        context['bootswatch_vars'] = tc.get_all_bootswatch_esp_vars(esp_theme=current_theme)
+        context["bootswatch_vars"] = tc.get_all_bootswatch_esp_vars(
+            esp_theme=current_theme
+        )
         #   Raw ESP-default swatches (Bootswatch-unaware), so the dropdown
         #   change handler can rebuild the "Built-in Theme Palette" when the
         #   admin switches back to "None" without a server round-trip.
-        context['scss_base_palette'] = sorted(tc.get_scss_base_palette())
+        context["scss_base_palette"] = sorted(tc.get_scss_base_palette())
 
     #   Load the theme-specific options
     adv_vars = tc.find_theme_variables(current_theme, theme_only=True)
-    context['adv_vars'] = {}
+    context["adv_vars"] = {}
     for filename in adv_vars:
         category_name = os.path.splitext(os.path.basename(filename))[0]
         category_vars = []
@@ -524,32 +638,32 @@ def editor(request):
             initial_val = adv_vars[filename][key]
             if key in context:
                 initial_val = context[key]
-            if initial_val.startswith('#'):
-                category_vars.append((key, 'color', initial_val))
-            elif 'color' in key:
+            if initial_val.startswith("#"):
+                category_vars.append((key, "color", initial_val))
+            elif "color" in key:
                 #   This is a nontrivial color value.  However, we only allow overriding
                 #   these variables with specific colors.
-                category_vars.append((key, 'color', ''))
-            elif initial_val.endswith('px') or initial_val.endswith('em'):
-                category_vars.append((key, 'length', initial_val))
+                category_vars.append((key, "color", ""))
+            elif initial_val.endswith("px") or initial_val.endswith("em"):
+                category_vars.append((key, "length", initial_val))
             else:
-                category_vars.append((key, 'text', initial_val))
-        context['adv_vars'][category_name] = category_vars
+                category_vars.append((key, "text", initial_val))
+        context["adv_vars"][category_name] = category_vars
     variable_defaults = tc.get_variable_defaults(current_theme)
     #   Snapshot the raw SCSS defaults (Bootswatch-unaware) before overlaying
     #   bw_vars below, so the "no Bootswatch theme" JS fallback (data-scss-default)
     #   always has the true SCSS value to restore, even when a Bootswatch theme
     #   was already active when the page was rendered.
-    context['scss_variable_defaults'] = dict(variable_defaults)
+    context["scss_variable_defaults"] = dict(variable_defaults)
     #   When a Bootswatch theme is active the natural "reset-to" target for each
     #   colour picker is the Bootswatch-derived colour, not the raw SCSS default.
     variable_defaults.update(bw_vars)
-    context['variable_defaults'] = variable_defaults
+    context["variable_defaults"] = variable_defaults
     for key, val in variable_defaults.items():
         if key not in context:
             context[key] = val
 
-    return render_to_response('themes/editor.html', request, context)
+    return render_to_response("themes/editor.html", request, context)
 
 
 @admin_required
@@ -564,8 +678,12 @@ def recompile(request, keep_files=None):
     theme_name = tc.get_current_theme()
     differences = tc.check_local_modifications(theme_name)
     if len(differences) > 0 and keep_files is None:
-        return confirm_overwrite(request, current_theme=theme_name, differences=differences, orig_view='recompile')
+        return confirm_overwrite(
+            request,
+            current_theme=theme_name,
+            differences=differences,
+            orig_view="recompile",
+        )
 
     tc.recompile_theme(keep_files=keep_files)
-    return HttpResponseRedirect(reverse('themes_landing'))
-
+    return HttpResponseRedirect(reverse("themes_landing"))

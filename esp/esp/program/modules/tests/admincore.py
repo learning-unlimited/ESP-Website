@@ -6,18 +6,27 @@ from django.test import Client
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
-from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
+from esp.program.models import (
+    RegistrationType,
+    StudentRegistration,
+    RegistrationProfile,
+    ProgramModule,
+)
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm, NewPermissionForm
+from esp.program.modules.handlers.admincore import (
+    EditPermissionForm,
+    NewDeadlineForm,
+    NewPermissionForm,
+)
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='StudentRegCore'))
-        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+        modules.append(ProgramModule.objects.get(handler="TeacherClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="StudentClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="StudentRegCore"))
+        modules.append(ProgramModule.objects.get(handler="AdminCore"))
 
         super().setUp(modules=modules)
         self.schedule_randomly()
@@ -25,50 +34,70 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         # Create registration types
         self.testRT = "TestType"
         RegistrationType.objects.get_or_create(name=self.testRT)
-        RegistrationType.objects.get_or_create(name='Enrolled')
-
+        RegistrationType.objects.get_or_create(name="Enrolled")
 
         # Create an admin account
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin')
-        self.adminUser.set_password('password')
+        self.adminUser, created = ESPUser.objects.get_or_create(username="admin")
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
         scrmi = self.program.studentclassregmoduleinfo
         scrmi.force_show_required_modules = False
         scrmi.save()
 
-
     def testAdminInterface(self):
         # Login as admin
-        self.client.login(username='admin', password='password')
+        self.client.login(username="admin", password="password")
 
         # Try to set the values
-        r = self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
+        r = self.client.post(
+            "/manage/" + self.program.url + "/registrationtype_management/",
+            {"display_names": ["Enrolled", self.testRT]},
+        )
 
         # Check that the tag was created
-        self.assertTrue(len(Tag.objects.filter(key='display_registration_names')) > 0)
-        self.assertTrue(Tag.objects.filter(key='display_registration_names')[0].value == '["Enrolled", "'+self.testRT+'"]')
+        self.assertTrue(len(Tag.objects.filter(key="display_registration_names")) > 0)
+        self.assertTrue(
+            Tag.objects.filter(key="display_registration_names")[0].value
+            == '["Enrolled", "' + self.testRT + '"]'
+        )
 
     def testCorrectness(self):
         # Get a student and give them relationship of Enrolled and another with a class
         student = self.students[0]
         cls = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
-        StudentRegistration.objects.get_or_create(user=student, section=cls, relationship=RegistrationType.objects.get(name='Enrolled'))
-        StudentRegistration.objects.get_or_create(user=student, section=cls, relationship=RegistrationType.objects.get(name=self.testRT))
+        StudentRegistration.objects.get_or_create(
+            user=student,
+            section=cls,
+            relationship=RegistrationType.objects.get(name="Enrolled"),
+        )
+        StudentRegistration.objects.get_or_create(
+            user=student,
+            section=cls,
+            relationship=RegistrationType.objects.get(name=self.testRT),
+        )
         # Login with the student account
-        student.set_password('password')
-        self.client.login(username=student.username, password='password')
+        student.set_password("password")
+        self.client.login(username=student.username, password="password")
 
         # Initially, delete the tag
-        Tag.objects.filter(key='display_registration_names', content_type__isnull=True, object_id__isnull=True).delete()
+        Tag.objects.filter(
+            key="display_registration_names",
+            content_type__isnull=True,
+            object_id__isnull=True,
+        ).delete()
         # Check the displayed types
-        r = self.client.get("/learn/"+self.program.url+"/studentreg")
+        r = self.client.get("/learn/" + self.program.url + "/studentreg")
         self.assertNotContains(r, self.testRT, status_code=200)
 
         # Then set the tag
-        Tag.setTag(key='display_registration_names', target=None, value='["Enrolled", "'+self.testRT+'"]')
+        Tag.setTag(
+            key="display_registration_names",
+            target=None,
+            value='["Enrolled", "' + self.testRT + '"]',
+        )
         # Check the displayed types again
-        r = self.client.get("/learn/"+self.program.url+"/studentreg")
+        r = self.client.get("/learn/" + self.program.url + "/studentreg")
         self.assertContains(r, self.testRT, status_code=200)
 
 
@@ -77,19 +106,25 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
     and that the view exposes constraint metadata for the UI."""
 
     def setUp(self):
-        modules = [ProgramModule.objects.get(handler='AdminCore')]
-        modules += list(ProgramModule.objects.filter(handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']))
-        modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
-        modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
+        modules = [ProgramModule.objects.get(handler="AdminCore")]
+        modules += list(
+            ProgramModule.objects.filter(
+                handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"]
+            )
+        )
+        modules.append(ProgramModule.objects.get(handler="AvailabilityModule"))
+        modules.append(ProgramModule.objects.get(handler="StudentRegConfirm"))
 
         super().setUp(modules=modules)
 
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_constraints')
-        self.adminUser.set_password('password')
+        self.adminUser, created = ESPUser.objects.get_or_create(
+            username="admin_constraints"
+        )
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
     def _url(self):
-        return '/manage/' + self.program.url + '/modules/'
+        return "/manage/" + self.program.url + "/modules/"
 
     def _post_empty_order(self):
         """POST empty module lists to the modules view.
@@ -97,120 +132,149 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         The constraint-override block at the end of the POST branch fires
         unconditionally, so even an empty submission re-enforces constraints.
         """
-        self.client.login(username='admin_constraints', password='password')
-        r = self.client.post(self._url(), {
-            'learn_req': '', 'learn_not_req': '',
-            'teach_req': '', 'teach_not_req': '',
-        })
+        self.client.login(username="admin_constraints", password="password")
+        r = self.client.post(
+            self._url(),
+            {
+                "learn_req": "",
+                "learn_not_req": "",
+                "teach_req": "",
+                "teach_not_req": "",
+            },
+        )
         self.assertIn(r.status_code, [200, 302])
 
     def test_reg_profile_enforced_after_illegal_post(self):
         """RegProfile modules are always seq=0 and required=True after any save."""
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"],
+        ):
             pmo.seq = 500
             pmo.required = False
             pmo.save()
 
         self._post_empty_order()
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"],
+        ):
             self.assertEqual(pmo.seq, 0)
             self.assertTrue(pmo.required)
 
     def test_availability_always_required_after_illegal_post(self):
         """AvailabilityModule is always required=True after any save."""
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="AvailabilityModule"
+        ):
             pmo.required = False
             pmo.save()
 
         self._post_empty_order()
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="AvailabilityModule"
+        ):
             self.assertTrue(pmo.required)
 
     def test_confirm_reg_enforced_after_illegal_post(self):
         """StudentRegConfirm is always seq=99999 and required=False after any save."""
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="StudentRegConfirm"
+        ):
             pmo.seq = 1
             pmo.required = True
             pmo.save()
 
         self._post_empty_order()
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="StudentRegConfirm"
+        ):
             self.assertEqual(pmo.seq, 99999)
             self.assertFalse(pmo.required)
 
     def test_context_includes_module_constraints_dict(self):
         """The modules view includes a module_constraints dict in the template context."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        self.assertIn('module_constraints', r.context)
-        self.assertIsInstance(r.context['module_constraints'], dict)
+        self.assertIn("module_constraints", r.context)
+        self.assertIsInstance(r.context["module_constraints"], dict)
 
     def test_reg_profile_flagged_in_constraints(self):
         """RegProfile modules appear in module_constraints as required_locked and position_locked."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        constraints = r.context['module_constraints']
+        constraints = r.context["module_constraints"]
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"],
+        ):
             if pmo.inModulesList():
                 key = str(pmo.id)
                 self.assertIn(key, constraints)
-                self.assertTrue(constraints[key]['required_locked'])
-                self.assertTrue(constraints[key]['position_locked'])
+                self.assertTrue(constraints[key]["required_locked"])
+                self.assertTrue(constraints[key]["position_locked"])
 
     def test_confirm_reg_flagged_in_constraints(self):
         """StudentRegConfirm appears in module_constraints as not_required_locked and position_locked."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        constraints = r.context['module_constraints']
+        constraints = r.context["module_constraints"]
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='StudentRegConfirm'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="StudentRegConfirm"
+        ):
             if pmo.inModulesList():
                 key = str(pmo.id)
                 self.assertIn(key, constraints)
-                self.assertTrue(constraints[key]['not_required_locked'])
-                self.assertTrue(constraints[key]['position_locked'])
+                self.assertTrue(constraints[key]["not_required_locked"])
+                self.assertTrue(constraints[key]["position_locked"])
 
     def test_context_includes_position_locked_ids_set(self):
         """The modules view includes a position_locked_ids set in the template context."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        self.assertIn('position_locked_ids', r.context)
-        self.assertIsInstance(r.context['position_locked_ids'], (set, frozenset))
+        self.assertIn("position_locked_ids", r.context)
+        self.assertIsInstance(r.context["position_locked_ids"], (set, frozenset))
 
     def test_reg_profile_in_position_locked_ids(self):
         """RegProfile modules (position_locked) appear in position_locked_ids."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        position_locked_ids = r.context['position_locked_ids']
+        position_locked_ids = r.context["position_locked_ids"]
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program,
+            module__handler__in=["StudentRegProfileModule", "TeacherRegProfileModule"],
+        ):
             if pmo.inModulesList():
                 self.assertIn(pmo.id, position_locked_ids)
 
     def test_availability_not_in_position_locked_ids(self):
         """AvailabilityModule is required_locked only; it must NOT appear in position_locked_ids
         so admins can still reorder it within its list."""
-        self.client.login(username='admin_constraints', password='password')
+        self.client.login(username="admin_constraints", password="password")
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
-        constraints = r.context['module_constraints']
-        position_locked_ids = r.context['position_locked_ids']
+        constraints = r.context["module_constraints"]
+        position_locked_ids = r.context["position_locked_ids"]
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='AvailabilityModule'):
+        for pmo in ProgramModuleObj.objects.filter(
+            program=self.program, module__handler="AvailabilityModule"
+        ):
             if pmo.inModulesList():
                 # Should be in constraints (required_locked) but not position-frozen.
                 self.assertIn(str(pmo.id), constraints)
-                self.assertTrue(constraints[str(pmo.id)]['required_locked'])
-                self.assertFalse(constraints[str(pmo.id)]['position_locked'])
+                self.assertTrue(constraints[str(pmo.id)]["required_locked"])
+                self.assertFalse(constraints[str(pmo.id)]["position_locked"])
                 self.assertNotIn(pmo.id, position_locked_ids)
 
 
@@ -219,9 +283,9 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
 
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+        modules.append(ProgramModule.objects.get(handler="StudentClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="TeacherClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="AdminCore"))
 
         super().setUp(modules=modules)
 
@@ -229,12 +293,14 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         # before individual tests query for them.
         self.program.getModules()
 
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_modmgmt')
-        self.adminUser.set_password('password')
+        self.adminUser, created = ESPUser.objects.get_or_create(
+            username="admin_modmgmt"
+        )
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
     def _modules_url(self):
-        return '/manage/' + self.program.url + '/modules/'
+        return "/manage/" + self.program.url + "/modules/"
 
     def test_get_link_title_default_fallback(self):
         """get_link_title() returns the module's default title when link_title is blank."""
@@ -252,47 +318,55 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
 
     def test_module_management_saves_link_title(self):
         """Submitting the module management form saves link_title for each module."""
-        self.client.login(username='admin_modmgmt', password='password')
+        self.client.login(username="admin_modmgmt", password="password")
 
-        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
-        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+        learn_mods = [
+            m for m in self.program.getModules(tl="learn") if m.inModulesList()
+        ]
+        teach_mods = [
+            m for m in self.program.getModules(tl="teach") if m.inModulesList()
+        ]
 
-        learn_req_ids    = [str(m.id) for m in learn_mods if m.required]
+        learn_req_ids = [str(m.id) for m in learn_mods if m.required]
         learn_not_req_ids = [str(m.id) for m in learn_mods if not m.required]
-        teach_req_ids    = [str(m.id) for m in teach_mods if m.required]
+        teach_req_ids = [str(m.id) for m in teach_mods if m.required]
         teach_not_req_ids = [str(m.id) for m in teach_mods if not m.required]
 
         all_ids = learn_req_ids + learn_not_req_ids + teach_req_ids + teach_not_req_ids
 
         post_data = {
-            'learn_req':     ','.join(learn_req_ids),
-            'learn_not_req': ','.join(learn_not_req_ids),
-            'teach_req':     ','.join(teach_req_ids),
-            'teach_not_req': ','.join(teach_not_req_ids),
+            "learn_req": ",".join(learn_req_ids),
+            "learn_not_req": ",".join(learn_not_req_ids),
+            "teach_req": ",".join(teach_req_ids),
+            "teach_not_req": ",".join(teach_not_req_ids),
         }
         for mod_id in all_ids:
-            post_data['%s_label' % mod_id]      = ''
-            post_data['%s_link_title' % mod_id] = 'Custom Title for %s' % mod_id
+            post_data["%s_label" % mod_id] = ""
+            post_data["%s_link_title" % mod_id] = "Custom Title for %s" % mod_id
 
         r = self.client.post(self._modules_url(), post_data)
         self.assertIn(r.status_code, [200, 302])
 
         for mod_id in all_ids:
             pmo = ProgramModuleObj.objects.get(id=int(mod_id))
-            self.assertEqual(pmo.link_title, 'Custom Title for %s' % mod_id)
+            self.assertEqual(pmo.link_title, "Custom Title for %s" % mod_id)
 
     def _step_module_ids(self, tl=None):
         """Return the PMO IDs for learn/teach step modules, mirroring the handler's
         reset loop exactly: getModules(tl=...) filtered by inModulesList()."""
         if tl is None:
-            learn_ids = [m.id for m in self.program.getModules(tl='learn') if m.inModulesList()]
-            teach_ids = [m.id for m in self.program.getModules(tl='teach') if m.inModulesList()]
+            learn_ids = [
+                m.id for m in self.program.getModules(tl="learn") if m.inModulesList()
+            ]
+            teach_ids = [
+                m.id for m in self.program.getModules(tl="teach") if m.inModulesList()
+            ]
             return learn_ids + teach_ids
         return [m.id for m in self.program.getModules(tl=tl) if m.inModulesList()]
 
     def test_module_management_resets_link_title(self):
         """POSTing with default_link_title resets all link_title overrides to empty."""
-        self.client.login(username='admin_modmgmt', password='password')
+        self.client.login(username="admin_modmgmt", password="password")
 
         # Mirror the handler's reset loop: getModules filtered by inModulesList()
         step_ids = self._step_module_ids()
@@ -302,7 +376,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo.link_title = "Custom Title"
             pmo.save()
 
-        r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
+        r = self.client.post(self._modules_url(), {"default_link_title": "on"})
         self.assertIn(r.status_code, [200, 302])
 
         for mid in step_ids:
@@ -311,26 +385,36 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
 
     def test_module_management_link_title_reset_independent(self):
         """default_link_title alone triggers the reset without requiring other reset flags."""
-        self.client.login(username='admin_modmgmt', password='password')
+        self.client.login(username="admin_modmgmt", password="password")
 
         # Mirror the handler's reset loop: getModules filtered by inModulesList()
-        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
-        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+        learn_mods = [
+            m for m in self.program.getModules(tl="learn") if m.inModulesList()
+        ]
+        teach_mods = [
+            m for m in self.program.getModules(tl="teach") if m.inModulesList()
+        ]
         step_ids = [m.id for m in learn_mods + teach_mods]
 
         # The handler's override section always forces certain modules' seq/required
         # (e.g. RegProfile modules -> seq=0, CreditCard -> seq=10000, etc.) on every
         # POST regardless of which reset flags are sent.  Exclude those so we can
         # test seq independence on unaffected modules.
-        forced_override_names = frozenset({
-            'StudentRegProfileModule', 'TeacherRegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
-            'StudentRegTwoPhase',
-        })
+        forced_override_names = frozenset(
+            {
+                "StudentRegProfileModule",
+                "TeacherRegProfileModule",
+                "StudentRegConfirm",
+                "AvailabilityModule",
+                "StudentRegTwoPhase",
+            }
+        )
         non_override_ids = [
-            m.id for m in learn_mods + teach_mods
+            m.id
+            for m in learn_mods + teach_mods
             if type(m).__name__ not in forced_override_names
-            and 'CreditCardModule' not in type(m).__name__
-            and 'AcknowledgementModule' not in type(m).__name__
+            and "CreditCardModule" not in type(m).__name__
+            and "AcknowledgementModule" not in type(m).__name__
         ]
 
         for mid in step_ids:
@@ -344,7 +428,7 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             pmo.save()
 
         # Only send default_link_title — seq should NOT change for non-override modules
-        r = self.client.post(self._modules_url(), {'default_link_title': 'on'})
+        r = self.client.post(self._modules_url(), {"default_link_title": "on"})
         self.assertIn(r.status_code, [200, 302])
 
         for mid in step_ids:
@@ -360,105 +444,109 @@ class DeadlineDateValidationTest(ProgramFrameworkTest):
     """Tests that deadline forms reject end dates that are not after start dates."""
 
     def setUp(self):
-        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        modules = [ProgramModule.objects.get(handler="AdminCore")]
         super().setUp(modules=modules)
 
     def _deadline_data(self, start, end):
         return {
-            'deadline_type': 'Student/All',
-            'role': 'Student',
-            'start_date': start,
-            'end_date': end,
+            "deadline_type": "Student/All",
+            "role": "Student",
+            "start_date": start,
+            "end_date": end,
         }
 
     def test_new_deadline_form_end_before_start_invalid(self):
-        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        data = self._deadline_data("2026-04-20 10:00:00", "2026-04-01 10:00:00")
         form = NewDeadlineForm(data)
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertIn("__all__", form.errors)
 
     def test_new_deadline_form_end_equal_start_invalid(self):
-        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        data = self._deadline_data("2026-04-20 10:00:00", "2026-04-20 10:00:00")
         form = NewDeadlineForm(data)
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertIn("__all__", form.errors)
 
     def test_new_deadline_form_valid_range(self):
-        data = self._deadline_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        data = self._deadline_data("2026-04-01 10:00:00", "2026-04-20 10:00:00")
         form = NewDeadlineForm(data)
         self.assertTrue(form.is_valid())
 
     def test_new_deadline_form_no_end_date_valid(self):
-        data = self._deadline_data('2026-04-01 10:00:00', '')
+        data = self._deadline_data("2026-04-01 10:00:00", "")
         form = NewDeadlineForm(data)
         self.assertTrue(form.is_valid())
 
     def test_new_deadline_form_no_start_date_valid(self):
-        data = self._deadline_data('', '2026-04-20 10:00:00')
+        data = self._deadline_data("", "2026-04-20 10:00:00")
         form = NewDeadlineForm(data)
         self.assertTrue(form.is_valid())
 
     def test_edit_permission_form_end_before_start_invalid(self):
-        form = EditPermissionForm({
-            'start_date': '2026-04-20 10:00:00',
-            'end_date': '2026-04-01 10:00:00',
-            'id': 1,
-        })
+        form = EditPermissionForm(
+            {
+                "start_date": "2026-04-20 10:00:00",
+                "end_date": "2026-04-01 10:00:00",
+                "id": 1,
+            }
+        )
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
+        self.assertIn("__all__", form.errors)
 
     def test_edit_permission_form_valid_range(self):
-        form = EditPermissionForm({
-            'start_date': '2026-04-01 10:00:00',
-            'end_date': '2026-04-20 10:00:00',
-            'id': 1,
-        })
+        form = EditPermissionForm(
+            {
+                "start_date": "2026-04-01 10:00:00",
+                "end_date": "2026-04-20 10:00:00",
+                "id": 1,
+            }
+        )
         self.assertTrue(form.is_valid())
 
     def _new_permission_data(self, perm_start, perm_end, user_id=None):
         """Build a minimal NewPermissionForm data dict."""
         return {
-            'permission_type': 'Student/All',
-            'user': user_id or '',
-            'perm_start_date': perm_start,
-            'perm_end_date': perm_end,
+            "permission_type": "Student/All",
+            "user": user_id or "",
+            "perm_start_date": perm_start,
+            "perm_end_date": perm_end,
         }
 
     def test_new_permission_form_end_before_start_invalid(self):
         """NewPermissionForm rejects an end date that is before the start date."""
-        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        data = self._new_permission_data("2026-04-20 10:00:00", "2026-04-01 10:00:00")
         form = NewPermissionForm(data)
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
-        self.assertIn('End date must be after start date.', form.errors['__all__'])
+        self.assertIn("__all__", form.errors)
+        self.assertIn("End date must be after start date.", form.errors["__all__"])
 
     def test_new_permission_form_end_equal_start_invalid(self):
         """NewPermissionForm rejects an end date that equals the start date."""
-        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        data = self._new_permission_data("2026-04-20 10:00:00", "2026-04-20 10:00:00")
         form = NewPermissionForm(data)
         self.assertFalse(form.is_valid())
-        self.assertIn('__all__', form.errors)
-        self.assertIn('End date must be after start date.', form.errors['__all__'])
+        self.assertIn("__all__", form.errors)
+        self.assertIn("End date must be after start date.", form.errors["__all__"])
 
     def test_new_permission_form_valid_range(self):
         """NewPermissionForm accepts an end date strictly after the start date."""
-        data = self._new_permission_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        data = self._new_permission_data("2026-04-01 10:00:00", "2026-04-20 10:00:00")
         form = NewPermissionForm(data)
         # The form may still fail on the required 'user' field; we only care
         # that the date-range error is NOT present.
-        self.assertNotIn('__all__', form.errors)
+        self.assertNotIn("__all__", form.errors)
 
     def test_new_permission_form_no_end_date_valid(self):
         """NewPermissionForm allows an open-ended permission (no end date)."""
-        data = self._new_permission_data('2026-04-01 10:00:00', '')
+        data = self._new_permission_data("2026-04-01 10:00:00", "")
         form = NewPermissionForm(data)
-        self.assertNotIn('__all__', form.errors)
+        self.assertNotIn("__all__", form.errors)
 
     def test_new_permission_form_no_start_date_valid(self):
         """NewPermissionForm allows a permission with no start date."""
-        data = self._new_permission_data('', '2026-04-20 10:00:00')
+        data = self._new_permission_data("", "2026-04-20 10:00:00")
         form = NewPermissionForm(data)
-        self.assertNotIn('__all__', form.errors)
+        self.assertNotIn("__all__", form.errors)
 
 
 class ModuleManagementCsrfTest(ProgramFrameworkTest):
@@ -466,31 +554,37 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
 
     def setUp(self):
         modules = []
-        modules.append(ProgramModule.objects.get(handler='StudentClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='TeacherClassRegModule'))
-        modules.append(ProgramModule.objects.get(handler='AdminCore'))
+        modules.append(ProgramModule.objects.get(handler="StudentClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="TeacherClassRegModule"))
+        modules.append(ProgramModule.objects.get(handler="AdminCore"))
 
         super(ModuleManagementCsrfTest, self).setUp(modules=modules)
 
         # Ensure ProgramModuleObj rows exist before posting sequence data.
         self.program.getModules()
 
-        self.adminUser, created = ESPUser.objects.get_or_create(username='admin_modmgmt_csrf')
-        self.adminUser.set_password('password')
+        self.adminUser, created = ESPUser.objects.get_or_create(
+            username="admin_modmgmt_csrf"
+        )
+        self.adminUser.set_password("password")
         self.adminUser.makeAdmin()
 
         self.csrf_client = Client(enforce_csrf_checks=True)
         self.assertTrue(
-            self.csrf_client.login(username='admin_modmgmt_csrf', password='password'),
+            self.csrf_client.login(username="admin_modmgmt_csrf", password="password"),
             "Couldn't log in csrf-checking admin client",
         )
 
     def _modules_url(self):
-        return '/manage/' + self.program.url + '/modules/'
+        return "/manage/" + self.program.url + "/modules/"
 
     def _build_save_post_data(self):
-        learn_mods = [m for m in self.program.getModules(tl='learn') if m.inModulesList()]
-        teach_mods = [m for m in self.program.getModules(tl='teach') if m.inModulesList()]
+        learn_mods = [
+            m for m in self.program.getModules(tl="learn") if m.inModulesList()
+        ]
+        teach_mods = [
+            m for m in self.program.getModules(tl="teach") if m.inModulesList()
+        ]
 
         learn_req_ids = [str(m.id) for m in learn_mods if m.required]
         learn_not_req_ids = [str(m.id) for m in learn_mods if not m.required]
@@ -498,10 +592,10 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         teach_not_req_ids = [str(m.id) for m in teach_mods if not m.required]
 
         return {
-            'learn_req': ','.join(learn_req_ids),
-            'learn_not_req': ','.join(learn_not_req_ids),
-            'teach_req': ','.join(teach_req_ids),
-            'teach_not_req': ','.join(teach_not_req_ids),
+            "learn_req": ",".join(learn_req_ids),
+            "learn_not_req": ",".join(learn_not_req_ids),
+            "teach_req": ",".join(teach_req_ids),
+            "teach_not_req": ",".join(teach_not_req_ids),
         }
 
     def _get_csrf_token_from_modules_page(self):
@@ -509,7 +603,7 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertIn(settings.CSRF_COOKIE_NAME, self.csrf_client.cookies)
 
-        html = str(response.content, encoding='UTF-8')
+        html = str(response.content, encoding="UTF-8")
         token_match = re.search(
             r'name=["\']csrfmiddlewaretoken["\']\s+value=["\']([^"\']+)["\']',
             html,
@@ -518,7 +612,9 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         return token_match.group(1)
 
     def test_module_management_page_renders_two_csrf_inputs(self):
-        self.assertTrue(self.client.login(username='admin_modmgmt_csrf', password='password'))
+        self.assertTrue(
+            self.client.login(username="admin_modmgmt_csrf", password="password")
+        )
         response = self.client.get(self._modules_url())
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'name="csrfmiddlewaretoken"', count=1)
@@ -526,13 +622,15 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
     def test_module_management_save_post_without_csrf_is_rejected(self):
         # Prime CSRF cookie via GET, then POST without token.
         self._get_csrf_token_from_modules_page()
-        response = self.csrf_client.post(self._modules_url(), self._build_save_post_data())
+        response = self.csrf_client.post(
+            self._modules_url(), self._build_save_post_data()
+        )
         self.assertEqual(response.status_code, 403)
 
     def test_module_management_save_post_with_csrf_succeeds(self):
         token = self._get_csrf_token_from_modules_page()
         post_data = self._build_save_post_data()
-        post_data['csrfmiddlewaretoken'] = token
+        post_data["csrfmiddlewaretoken"] = token
 
         response = self.csrf_client.post(self._modules_url(), post_data)
         self.assertEqual(response.status_code, 200)
@@ -541,7 +639,6 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
         token = self._get_csrf_token_from_modules_page()
         response = self.csrf_client.post(
             self._modules_url(),
-            {'default_link_title': 'on', 'csrfmiddlewaretoken': token},
+            {"default_link_title": "on", "csrfmiddlewaretoken": token},
         )
         self.assertEqual(response.status_code, 200)
-

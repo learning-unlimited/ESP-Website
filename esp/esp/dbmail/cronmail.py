@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -33,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import logging
+
 logger = logging.getLogger(__name__)
 
 import math
@@ -45,6 +45,7 @@ from django.template.loader import render_to_string
 from django.conf import settings
 
 _ONE_WEEK = timedelta(weeks=1)
+
 
 def process_messages():
     """Go through all unprocessed messages and process them.
@@ -59,10 +60,10 @@ def process_messages():
     # not be processed by this run of the script. Any outstanding requests
     # which were created over one week ago are assumed to be out-of-date, and
     # are ignored.
-    messages = MessageRequest.objects.filter(Q(processed_by__lte=now) |
-                                             Q(processed_by__isnull=True),
-                                             created_at__gte=one_week_ago,
-                                             processed=False,
+    messages = MessageRequest.objects.filter(
+        Q(processed_by__lte=now) | Q(processed_by__isnull=True),
+        created_at__gte=one_week_ago,
+        processed=False,
     )
     messages = list(messages)
 
@@ -75,6 +76,7 @@ def process_messages():
         message.process()
     return messages
 
+
 # Deliberately uses transaction autocommitting -- we don't need this to be
 # atomic.
 def send_email_requests():
@@ -86,25 +88,26 @@ def send_email_requests():
     now = datetime.now()
     one_week_ago = now - _ONE_WEEK
 
-    retries = getattr(settings, 'EMAILRETRIES', None)
+    retries = getattr(settings, "EMAILRETRIES", None)
     if retries is None:
         # previous code thought that settings.EMAILRETRIES might be set to None
         # to be the default, rather than being undefined, so we keep that
         # behavior.
-        retries = 2 # i.e. 3 tries total
+        retries = 2  # i.e. 3 tries total
 
     # Choose a set of emails to process.  Anything which arrives later will
     # not be processed by this run of the script. Any outstanding requests
     # which were created over one week ago are assumed to be out-of-date, and
     # are ignored.
-    mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=now) |
-                                          Q(sent_by__isnull=True),
-                                          created_at__gte=one_week_ago,
-                                          sent__isnull=True,
-                                          tries__lte=retries)
+    mailtxts = TextOfEmail.objects.filter(
+        Q(sent_by__lte=now) | Q(sent_by__isnull=True),
+        created_at__gte=one_week_ago,
+        sent__isnull=True,
+        tries__lte=retries,
+    )
 
     num_sent = 0
-    errors = [] # if any messages failed to deliver
+    errors = []  # if any messages failed to deliver
 
     # We make two optimizations here to reduce memory usage.  First, mailtxts
     # is quite large, and by default even for iterating over a queryset django
@@ -127,30 +130,40 @@ def send_email_requests():
                 # the type (class name) of the exception.
                 exception_type_str = str(type(exception))
 
-                errors.append({'email': mailtxt, 'exception': exception_type_str})
+                errors.append({"email": mailtxt, "exception": exception_type_str})
 
                 # Do not use str(mailtxt.send_to) in the line below. If the mailtxt.send_to contains a non-ascii
                 # character, then the str() will cause a UnicodeEncodeError, but directly concatenating with +
                 # works fine.
-                logger.warning("Encountered error while sending to " + mailtxt.send_to + ": " + exception_type_str)
+                logger.warning(
+                    "Encountered error while sending to "
+                    + mailtxt.send_to
+                    + ": "
+                    + exception_type_str
+                )
             else:
                 num_sent += 1
 
     if num_sent > 0:
-        logger.info('Sent %d messages', num_sent)
+        logger.info("Sent %d messages", num_sent)
 
     #   Report any errors
     if errors:
         recipients = [mailtxt.send_from]
 
-        if 'bounces' in settings.DEFAULT_EMAIL_ADDRESSES:
-            recipients.append(settings.DEFAULT_EMAIL_ADDRESSES['bounces'])
+        if "bounces" in settings.DEFAULT_EMAIL_ADDRESSES:
+            recipients.append(settings.DEFAULT_EMAIL_ADDRESSES["bounces"])
 
-        mail_context = {'errors': errors}
-        delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
-        logger.warning('Mail delivery failure: %s', delivery_failed_string)
+        mail_context = {"errors": errors}
+        delivery_failed_string = render_to_string("email/delivery_failed", mail_context)
+        logger.warning("Mail delivery failure: %s", delivery_failed_string)
         # TODO(benkraft): this is probably redundant with the logging now?  (or
         # rather, it will be if we log at the right level?)
-        send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
+        send_mail(
+            "Mail delivery failure",
+            delivery_failed_string,
+            settings.SERVER_EMAIL,
+            recipients,
+        )
     elif num_sent > 0:
-        logger.info('No mail delivery failures')
+        logger.info("No mail delivery failures")

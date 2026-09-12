@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -37,17 +36,19 @@ from django.contrib import messages
 from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
 
+
 class NavBarEntryAdmin(admin.ModelAdmin):
-    list_display = ('category', 'sort_rank', 'text', 'link')
-    list_filter = ('category',)
+    list_display = ("category", "sort_rank", "text", "link")
+    list_filter = ("category",)
+
 
 class NavBarCategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'path')
-    search_fields = ['name', 'path']
+    list_display = ("name", "path")
+    search_fields = ["name", "path"]
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
-            return self.readonly_fields + ('name',)
+            return self.readonly_fields + ("name",)
         return self.readonly_fields
 
     def delete_model(self, request, obj):
@@ -55,7 +56,7 @@ class NavBarCategoryAdmin(admin.ModelAdmin):
             self.message_user(
                 request,
                 'The "default" nav category cannot be deleted because it is required by the system.',
-                level = messages.ERROR,
+                level=messages.ERROR,
             )
         return super().delete_model(request, obj)
 
@@ -63,6 +64,7 @@ class NavBarCategoryAdmin(admin.ModelAdmin):
         if obj and obj.name == "default":
             return False
         return super().has_delete_permission(request, obj)
+
 
 admin_site.register(NavBarEntry, NavBarEntryAdmin)
 admin_site.register(NavBarCategory, NavBarCategoryAdmin)

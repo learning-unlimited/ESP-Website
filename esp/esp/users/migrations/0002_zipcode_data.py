@@ -5,18 +5,18 @@ from django.db import models, migrations
 
 import os
 
+
 def import_zipcodes(apps, schema_editor):
-    fixture_label = os.path.join(os.path.dirname(__file__),
-                                 '..',
-                                 'fixtures',
-                                 'initial_zipcode_data.json')
+    fixture_label = os.path.join(
+        os.path.dirname(__file__), "..", "fixtures", "initial_zipcode_data.json"
+    )
     fixture_label = os.path.abspath(fixture_label)
-    call_command('loaddata', fixture_label, verbosity=1)
+    call_command("loaddata", fixture_label, verbosity=1)
+
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0001_initial'),
+        ("users", "0001_initial"),
     ]
 
     operations = [

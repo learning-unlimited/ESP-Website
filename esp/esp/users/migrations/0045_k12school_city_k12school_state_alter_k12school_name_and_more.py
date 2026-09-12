@@ -4,30 +4,47 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0044_alter_contactinfo_address_country'),
+        ("users", "0044_alter_contactinfo_address_country"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='k12school',
-            name='city',
-            field=models.CharField(blank=True, db_index=True, help_text='City. Used for display and filtering.', max_length=128, null=True),
+            model_name="k12school",
+            name="city",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="City. Used for display and filtering.",
+                max_length=128,
+                null=True,
+            ),
         ),
         migrations.AddField(
-            model_name='k12school',
-            name='state',
-            field=models.CharField(blank=True, db_index=True, help_text='Two-letter state code (e.g. MA). Used for filtering and NCES import.', max_length=2, null=True),
+            model_name="k12school",
+            name="state",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="Two-letter state code (e.g. MA). Used for filtering and NCES import.",
+                max_length=2,
+                null=True,
+            ),
         ),
         migrations.AlterField(
-            model_name='k12school',
-            name='name',
+            model_name="k12school",
+            name="name",
             field=models.TextField(blank=True, db_index=True, null=True),
         ),
         migrations.AlterField(
-            model_name='k12school',
-            name='school_id',
-            field=models.CharField(blank=True, db_index=True, help_text='An 8-digit ID number.', max_length=128, null=True),
+            model_name="k12school",
+            name="school_id",
+            field=models.CharField(
+                blank=True,
+                db_index=True,
+                help_text="An 8-digit ID number.",
+                max_length=128,
+                null=True,
+            ),
         ),
     ]

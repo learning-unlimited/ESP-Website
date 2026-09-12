@@ -28,10 +28,9 @@ def populate_program(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0005_auto_20151211_0306'),
-        ('program', '0004_auto_20151126_2220'),
+        ("modules", "0005_auto_20151211_0306"),
+        ("program", "0004_auto_20151126_2220"),
     ]
 
     operations = [

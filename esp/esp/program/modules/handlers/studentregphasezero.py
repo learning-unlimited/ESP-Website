@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2013 by the individual contributors
@@ -34,7 +34,12 @@ Learning Unlimited, Inc.
 
 from esp.utils.web import render_to_response
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.modules.base import ProgramModuleObj, main_call, needs_student_in_grade, aux_call
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    main_call,
+    needs_student_in_grade,
+    aux_call,
+)
 from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.forms.phasezero import SubmitForm
@@ -48,20 +53,21 @@ from django.db.models.query import Q
 
 import datetime
 
+
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
-    permission_types = ('Student/PhaseZero',)
+    permission_types = ("Student/PhaseZero",)
 
-    def students(self, QObject = False):
+    def students(self, QObject=False):
         q_phasezero = Q(phasezerorecord__program=self.program)
 
         if QObject:
-            return {'phasezero': q_phasezero}
+            return {"phasezero": q_phasezero}
 
-        return {'phasezero': ESPUser.objects.filter(q_phasezero).distinct()}
+        return {"phasezero": ESPUser.objects.filter(q_phasezero).distinct()}
 
     def studentDesc(self):
-        return {'phasezero': """Students who have entered the Student Lottery"""}
+        return {"phasezero": """Students who have entered the Student Lottery"""}
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
@@ -87,40 +93,50 @@ class StudentRegPhaseZero(ProgramModuleObj):
         served a confirmation page.
         """
         context = {}
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
+        context["program"] = prog
+        context["one"] = one
+        context["two"] = two
         user = request.user
 
         if user.can_skip_phase_zero(self.program):
-            #Student has permission to skip this module, redirect to main student reg page
-            #This includes students that won the lottery
-            return HttpResponseRedirect('/learn/%s/studentreg' % prog.getUrlBase())
+            # Student has permission to skip this module, redirect to main student reg page
+            # This includes students that won the lottery
+            return HttpResponseRedirect("/learn/%s/studentreg" % prog.getUrlBase())
         else:
-            #Student must win the lottery to progress
-            #Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
-            lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
-            in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-            lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
-            num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
-            context['lottery_perm'] = lottery_perm
-            context['lottery_run'] = lottery_run
-            context['num_allowed_users'] = num_allowed_users
+            # Student must win the lottery to progress
+            # Figure out if lottery is open/closed, if it has already been run, and if student has entered yet
+            lottery_perm = Permission.user_has_perm(
+                user, "Student/PhaseZero", program=prog
+            )
+            in_lottery = PhaseZeroRecord.objects.filter(
+                user=user, program=prog
+            ).exists()
+            lottery_run = Tag.getBooleanTag("student_lottery_run", prog)
+            num_allowed_users = int(
+                Tag.getProgramTag("student_lottery_group_max", prog)
+            )
+            context["lottery_perm"] = lottery_perm
+            context["lottery_run"] = lottery_run
+            context["num_allowed_users"] = num_allowed_users
 
             if not in_lottery:
                 if lottery_run:
-                    #Lottery has been run, student did not enter
-                    #Show generic phase zero closed page ("you didn't enter")
-                    return render_to_response('errors/program/phasezero_closed.html', request, context)
+                    # Lottery has been run, student did not enter
+                    # Show generic phase zero closed page ("you didn't enter")
+                    return render_to_response(
+                        "errors/program/phasezero_closed.html", request, context
+                    )
                 elif not lottery_perm:
-                    #Lottery hasn't opened yet
-                    #Show generic deadline error page
-                    context['moduleObj'] = self
-                    context['extension'] = ('the deadline Student/PhaseZero was')
-                    return render_to_response('errors/program/deadline-learn.html', request, context)
-                elif request.method == 'POST':
-                    #Lottery is open, student just entered
-                    #Send confirmation email, then show confirmation page below
+                    # Lottery hasn't opened yet
+                    # Show generic deadline error page
+                    context["moduleObj"] = self
+                    context["extension"] = "the deadline Student/PhaseZero was"
+                    return render_to_response(
+                        "errors/program/deadline-learn.html", request, context
+                    )
+                elif request.method == "POST":
+                    # Lottery is open, student just entered
+                    # Send confirmation email, then show confirmation page below
                     form = SubmitForm(request.POST, program=prog)
                     if form.is_valid():
                         form.save(user, prog)
@@ -128,53 +144,61 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         in_lottery = True
 
             if in_lottery:
-                #Lottery is open or closed, student has entered
-                #This includes students that didn't win after the lottery is run
-                #Show confirmation page with details about lottery group and lottery status
-                context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
-                context['lottery_size'] = context['lottery_group'].user.count()
-                return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+                # Lottery is open or closed, student has entered
+                # This includes students that didn't win after the lottery is run
+                # Show confirmation page with details about lottery group and lottery status
+                context["lottery_group"] = PhaseZeroRecord.objects.get(
+                    user=user, program=prog
+                )
+                context["lottery_size"] = context["lottery_group"].user.count()
+                return render_to_response(
+                    "program/modules/studentregphasezero/confirmation.html",
+                    request,
+                    context,
+                )
             else:
-                #Lottery is open, student has not entered
-                #Show lottery enrollment page
+                # Lottery is open, student has not entered
+                # Show lottery enrollment page
                 form = SubmitForm(program=prog)
-                context['form'] = form
-                return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+                context["form"] = form
+                return render_to_response(
+                    "program/modules/studentregphasezero/submit.html", request, context
+                )
 
     @aux_call
     @needs_student_in_grade
-    def joingroup(self, request, tl, one, two, module, extra, prog, newclass = None):
+    def joingroup(self, request, tl, one, two, module, extra, prog, newclass=None):
         context = {}
-        context['program'] = prog
-        context['one'] = one
-        context['two'] = two
+        context["program"] = prog
+        context["one"] = one
+        context["two"] = two
         user = request.user
-        lottery_perm = Permission.user_has_perm(user, 'Student/PhaseZero', program=prog)
+        lottery_perm = Permission.user_has_perm(user, "Student/PhaseZero", program=prog)
         in_lottery = PhaseZeroRecord.objects.filter(user=user, program=prog).exists()
-        lottery_run = Tag.getBooleanTag('student_lottery_run', prog)
+        lottery_run = Tag.getBooleanTag("student_lottery_run", prog)
         num_allowed_users = int(Tag.getProgramTag("student_lottery_group_max", prog))
-        context['lottery_perm'] = lottery_perm
-        context['lottery_run'] = lottery_run
-        context['num_allowed_users'] = num_allowed_users
+        context["lottery_perm"] = lottery_perm
+        context["lottery_run"] = lottery_run
+        context["num_allowed_users"] = num_allowed_users
 
         join_error = False
-        if len(request.POST.get('student_selected', '').strip()) == 0:
-            join_error = 'Error - You must select a student\'s username.'
+        if len(request.POST.get("student_selected", "").strip()) == 0:
+            join_error = "Error - You must select a student's username."
 
         else:
-            join_user = request.POST['student_selected']
+            join_user = request.POST["student_selected"]
             try:
                 group = PhaseZeroRecord.objects.get(user=join_user, program=prog)
             except PhaseZeroRecord.DoesNotExist:
-                join_error = 'Error - That student is not in a lottery group.'
+                join_error = "Error - That student is not in a lottery group."
             else:
                 if in_lottery:
                     old_group = PhaseZeroRecord.objects.get(user=user, program=prog)
                 num_users = group.user.count()
                 if join_user == str(user.id):
-                    join_error = 'Error - You can not select yourself.'
-                elif in_lottery and old_group==group:
-                    join_error = 'Error - You are already in this lottery group.'
+                    join_error = "Error - You can not select yourself."
+                elif in_lottery and old_group == group:
+                    join_error = "Error - You are already in this lottery group."
                 elif num_users < num_allowed_users:
                     group.user.add(user)
                     group.save()
@@ -185,63 +209,78 @@ class StudentRegPhaseZero(ProgramModuleObj):
                         if not old_group.user.exists():
                             old_group.delete()
                 else:
-                    join_error = f'Error - This group already contains the maximum number of students ({num_allowed_users}).'
+                    join_error = f"Error - This group already contains the maximum number of students ({num_allowed_users})."
 
-        context['join_error'] = join_error
+        context["join_error"] = join_error
         if join_error and not in_lottery:
             form = SubmitForm(program=prog)
-            context['form'] = form
-            return render_to_response('program/modules/studentregphasezero/submit.html', request, context)
+            context["form"] = form
+            return render_to_response(
+                "program/modules/studentregphasezero/submit.html", request, context
+            )
 
         else:
-            context['lottery_group'] = PhaseZeroRecord.objects.get(user=user, program=prog)
-            context['lottery_size'] = context['lottery_group'].user.count()
-            return render_to_response('program/modules/studentregphasezero/confirmation.html', request, context)
+            context["lottery_group"] = PhaseZeroRecord.objects.get(
+                user=user, program=prog
+            )
+            context["lottery_size"] = context["lottery_group"].user.count()
+            return render_to_response(
+                "program/modules/studentregphasezero/confirmation.html",
+                request,
+                context,
+            )
 
     @aux_call
     @needs_student_in_grade
     def studentlookup(self, request, tl, one, two, module, extra, prog):
 
         # Search for students with names that start with search string
-        if 'username' not in request.GET and 'username' not in request.POST:
+        if "username" not in request.GET and "username" not in request.POST:
             return self.goToCore(tl)
 
         limit = 10
 
         queryset = ESPUser.objects.filter(phasezerorecord__program=prog).distinct()
 
-        if not 'username' in request.GET:
-            startswith = request.POST['username']
+        if not "username" in request.GET:
+            startswith = request.POST["username"]
         else:
-            startswith = request.GET['username']
+            startswith = request.GET["username"]
 
         #   Don't return anything if there's no input.
         if len(startswith) > 0:
             Q_username = Q(username__istartswith=startswith)
 
             # Isolate user objects
-            queryset = queryset.filter(Q_username)[:(limit*10)]
+            queryset = queryset.filter(Q_username)[: (limit * 10)]
             user_dict = {}
             for user in queryset:
                 user_dict[user.id] = user
             users = list(user_dict.values())
 
             # Construct combo-box items
-            obj_list = [{'username': user.username, 'id': user.id, 'grade': user.getGrade(prog)} for user in users]
+            obj_list = [
+                {"username": user.username, "id": user.id, "grade": user.getGrade(prog)}
+                for user in users
+            ]
         else:
             obj_list = []
 
         return JsonResponse(obj_list, safe=False)
 
     def send_confirmation_email(self, student, note=None):
-        email_title = f'Student Lottery Confirmation for {self.program.niceName()}: {student.name()}'
-        email_from = f'{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>'
-        email_context = {'student': student,
-                         'program': self.program,
-                         'curtime': datetime.datetime.now(),
-                         'note': note,
-                         'DEFAULT_HOST': settings.DEFAULT_HOST}
-        email_contents = render_to_string('program/modules/studentregphasezero/confirmation_email.txt', email_context)
+        email_title = f"Student Lottery Confirmation for {self.program.niceName()}: {student.name()}"
+        email_from = f"{self.program.program_type} Registration System <server@{settings.EMAIL_HOST_SENDER}>"
+        email_context = {
+            "student": student,
+            "program": self.program,
+            "curtime": datetime.datetime.now(),
+            "note": note,
+            "DEFAULT_HOST": settings.DEFAULT_HOST,
+        }
+        email_contents = render_to_string(
+            "program/modules/studentregphasezero/confirmation_email.txt", email_context
+        )
         email_to = [student.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
@@ -253,4 +292,4 @@ class StudentRegPhaseZero(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

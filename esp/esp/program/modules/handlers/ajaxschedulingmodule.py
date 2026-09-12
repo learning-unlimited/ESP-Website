@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,23 +31,24 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
-from esp.program.modules         import module_ext
-from esp.program.models          import ClassSection
-from esp.utils.web               import render_to_response
-from django.http                 import HttpResponse
-from esp.cal.models              import Event
-from esp.users.models            import ESPUser
-from esp.middleware              import ESPError
-from esp.resources.models        import Resource, ResourceAssignment
-from esp.tagdict.models          import Tag
-from argcache                    import cache_function
-from uuid                        import uuid4 as get_uuid
-from esp.utils.decorators        import json_response
+from esp.program.modules import module_ext
+from esp.program.models import ClassSection
+from esp.utils.web import render_to_response
+from django.http import HttpResponse
+from esp.cal.models import Event
+from esp.users.models import ESPUser
+from esp.middleware import ESPError
+from esp.resources.models import Resource, ResourceAssignment
+from esp.tagdict.models import Tag
+from argcache import cache_function
+from uuid import uuid4 as get_uuid
+from esp.utils.decorators import json_response
 
 import json
 import time
+
 
 class AJAXSchedulingModule(ProgramModuleObj):
     doc = """Provides an application to use for scheduling classes."""
@@ -60,7 +60,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 7,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -76,9 +76,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
         )
 
     def prepare(self, context={}):
-        if context is None: context = {}
+        if context is None:
+            context = {}
 
-        context['schedulingmodule'] = self
+        context["schedulingmodule"] = self
         return context
 
     @main_call
@@ -91,20 +92,24 @@ class AJAXSchedulingModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
 
-        #trim the log here.
-        #Nothing special about right here, but putting it here makes sure it's done regularly, without
-        #doing it really really often, and without having an extra thread just for that.
+        # trim the log here.
+        # Nothing special about right here, but putting it here makes sure it's done regularly, without
+        # doing it really really often, and without having an extra thread just for that.
 
         self.get_change_log(prog).prune()
 
-        #actually return the page
+        # actually return the page
         context = {
             "has_autoscheduler_frontend": prog.hasModule("AutoschedulerFrontendModule"),
             "has_moderator_module": prog.hasModule("TeacherModeratorModule"),
-            "contiguous_tolerance": Tag.getProgramTag('timeblock_contiguous_tolerance', program = prog)
-            }
+            "contiguous_tolerance": Tag.getProgramTag(
+                "timeblock_contiguous_tolerance", program=prog
+            ),
+        }
 
-        return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
+        return render_to_response(
+            self.baseDir() + "ajax_scheduling.html", request, context
+        )
 
     @aux_call
     @needs_admin
@@ -112,16 +117,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
         lst = []
         for s in prog.sections():
             if s.resourceassignment_set.all().count() > 0:
-                ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
+                ra = s.resourceassignment_set.all().order_by("resource__event__id")[0]
                 lst.append((s.id, ra.resource.name, ra.resource.event.id))
 
-        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), content_type='text/csv')
+        return HttpResponse(
+            "\n".join([",".join(['"%s"' % v for v in x]) for x in lst]),
+            content_type="text/csv",
+        )
 
-    #helper functions for ajax_schedule_class
-    #separated out here to make code more readable and enable testing
+    # helper functions for ajax_schedule_class
+    # separated out here to make code more readable and enable testing
     def makeret(self, prog, **kwargs):
         last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
-        kwargs['val'] = last_changed['val']
+        kwargs["val"] = last_changed["val"]
         response = HttpResponse(content_type="application/json")
         json.dump(kwargs, response)
         return response
@@ -131,27 +139,47 @@ class AJAXSchedulingModule(ProgramModuleObj):
         cls.clear_meeting_times()
         self.get_change_log(prog).appendScheduling([], "", int(cls.id), user)
 
-        return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
+        return self.makeret(
+            prog,
+            ret=True,
+            msg="Schedule removed for Class Section '%s'" % cls.emailcode(),
+        )
 
-    def ajax_schedule_assignreg(self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False):
+    def ajax_schedule_assignreg(
+        self, prog, cls, timeslot_ids, classroom_ids, user=None, override=False
+    ):
         if len(timeslot_ids) < 1:
-            return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
+            return self.makeret(
+                prog, ret=False, msg="No times specified!, can't assign to a timeblock"
+            )
 
         if len(classroom_ids) < 1:
-            return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
+            return self.makeret(
+                prog,
+                ret=False,
+                msg="No classrooms specified!, can't assign to a timeblock",
+            )
 
         basic_cls = classroom_ids[0]
         for c in classroom_ids:
             if c != basic_cls:
-                return self.makeret(prog, ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
+                return self.makeret(
+                    prog,
+                    ret=False,
+                    msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.",
+                )
 
-        times = Event.objects.filter(id__in=timeslot_ids).order_by('start')
+        times = Event.objects.filter(id__in=timeslot_ids).order_by("start")
         if len(times) < 1:
-            return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
+            return self.makeret(
+                prog, ret=False, msg="Specified Events not found in the database"
+            )
 
         classrooms = Resource.objects.filter(id=basic_cls, res_type__name="Classroom")
         if len(classrooms) < 1:
-            return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
+            return self.makeret(
+                prog, ret=False, msg="Specified Classrooms not found in the database"
+            )
 
         classroom = classrooms[0]
 
@@ -164,30 +192,40 @@ class AJAXSchedulingModule(ProgramModuleObj):
         cls.assign_meeting_times(times)
         status, errors = cls.assign_room(classroom, clear_others=True)
 
-        if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+        if (
+            not status
+        ):  # If we failed any of the scheduling-constraints checks in assign_room()
             cls.clear_meeting_times()
             return self.makeret(prog, ret=False, msg=" | ".join(errors))
 
-        #add things to the change log here
-        self.get_change_log(prog).appendScheduling([int(t.id) for t in times], classroom_ids[0], int(cls.id), user)
+        # add things to the change log here
+        self.get_change_log(prog).appendScheduling(
+            [int(t.id) for t in times], classroom_ids[0], int(cls.id), user
+        )
 
-        return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
+        return self.makeret(
+            prog,
+            ret=True,
+            msg="Class Section '%s' successfully scheduled" % cls.emailcode(),
+        )
 
     def ajax_schedule_swap(self, prog, assignments, user=None, override=False):
         # assignments: the list of new assignments for the section(s) in json format
         # Unschedule all of the section(s)
         for asmt in assignments:
-            cls = ClassSection.objects.get(id=asmt['section'])
+            cls = ClassSection.objects.get(id=asmt["section"])
             retval = self.ajax_schedule_deletereg(prog, cls, user)
-            if not json.loads(retval.content)['ret']:
+            if not json.loads(retval.content)["ret"]:
                 return retval
 
         # Reschedule all of the section(s)
         for asmt in assignments:
-            if asmt['room_id']:
-                cls = ClassSection.objects.get(id=asmt['section'])
-                retval = self.ajax_schedule_assignreg(prog, cls, asmt['timeslots'], [asmt['room_id']], user, override)
-                if not json.loads(retval.content)['ret']:
+            if asmt["room_id"]:
+                cls = ClassSection.objects.get(id=asmt["section"])
+                retval = self.ajax_schedule_assignreg(
+                    prog, cls, asmt["timeslots"], [asmt["room_id"]], user, override
+                )
+                if not json.loads(retval.content)["ret"]:
                     return retval
 
         return self.makeret(prog, ret=True, msg="Class sections successfully swapped")
@@ -197,29 +235,47 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         cl = self.get_change_log(prog)
-        last_fetched_index = int(request.GET['last_fetched_index'])
+        last_fetched_index = int(request.GET["last_fetched_index"])
 
-        #check whether we have a log entry at least as old as the last fetched time
-        #if not, we return a command to reload instead of the log
-        #note: negative number implies we want to debug dump changelog
-        if cl.get_earliest_index() is not None and last_fetched_index !=0 and cl.get_earliest_index() > last_fetched_index:
-            return { "other" : [ { 'command' : "reload", 'earliest_index' : cl.get_earliest_index(), 'latest_index' : cl.get_latest_index(), 'time' : time.time() } ] }
+        # check whether we have a log entry at least as old as the last fetched time
+        # if not, we return a command to reload instead of the log
+        # note: negative number implies we want to debug dump changelog
+        if (
+            cl.get_earliest_index() is not None
+            and last_fetched_index != 0
+            and cl.get_earliest_index() > last_fetched_index
+        ):
+            return {
+                "other": [
+                    {
+                        "command": "reload",
+                        "earliest_index": cl.get_earliest_index(),
+                        "latest_index": cl.get_latest_index(),
+                        "time": time.time(),
+                    }
+                ]
+            }
 
-        return { "changelog" : cl.get_log(last_fetched_index), 'other' : [ { 'time': time.time() } ] }
+        return {
+            "changelog": cl.get_log(last_fetched_index),
+            "other": [{"time": time.time()}],
+        }
 
     @aux_call
     @needs_admin
     def ajax_clear_change_log(self, request, tl, one, two, module, extra, prog):
-        """ This call exists for debugging and testing purposes.  It's not a disaster if it's
+        """This call exists for debugging and testing purposes.  It's not a disaster if it's
         called in production, but it is annoying.
-        Clears the change log for this program. """
+        Clears the change log for this program."""
 
-        if request.method != 'POST':
-            return HttpResponse('Method not allowed. Use POST.', status=405)
+        if request.method != "POST":
+            return HttpResponse("Method not allowed. Use POST.", status=405)
 
         self.get_change_log(prog).entries.all().delete()
         context = {}
-        return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
+        return render_to_response(
+            self.baseDir() + "clear_cache_confirmation.html", request, context
+        )
 
     def get_change_log(self, prog):
         change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
@@ -239,7 +295,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_section_details(self, request, tl, one, two, module, extra, prog):
         sectionDetails = {}
         for sectionDetail in module_ext.AJAXSectionDetail.objects.filter(program=prog):
-            sectionDetails[sectionDetail.cls_id] = [{'comment': sectionDetail.comment, 'locked': sectionDetail.locked}]
+            sectionDetails[sectionDetail.cls_id] = [
+                {"comment": sectionDetail.comment, "locked": sectionDetail.locked}
+            ]
         return sectionDetails
 
     @aux_call
@@ -247,36 +305,43 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+        if not "action" in request.POST:
+            raise ESPError(
+                "This URL is intended to be used for client<->server communication; it's not for human-readable content.",
+                log=False,
+            )
 
         # Pull relevant data out of the JSON structure
-        action = request.POST['action']
+        action = request.POST["action"]
 
-        if action == 'deletereg':
-            cls_id = request.POST['cls']
+        if action == "deletereg":
+            cls_id = request.POST["cls"]
             cls = ClassSection.objects.get(id=cls_id)
             times = []
-            classrooms = [ None ]
-            retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
-        elif action == 'assignreg':
-            cls_id = request.POST['cls']
+            classrooms = [None]
+            retval = self.ajax_schedule_deletereg(prog, cls, request.user)
+        elif action == "assignreg":
+            cls_id = request.POST["cls"]
             cls = ClassSection.objects.get(id=cls_id)
-            blockrooms = request.POST['block_room_assignments'].split("\n")
+            blockrooms = request.POST["block_room_assignments"].split("\n")
             times = []
             classrooms = []
             for br in blockrooms:
                 timeslot, classroom = br.split(",", 1)
                 times.append(timeslot)
                 classrooms.append(classroom)
-            override = request.POST['override'] == "true"
-            retval = self.ajax_schedule_assignreg(prog, cls, times, classrooms, request.user, override)
-        elif action == 'swap':
-            assignments = json.loads(request.POST['assignments'])
-            override = request.POST['override'] == "true"
+            override = request.POST["override"] == "true"
+            retval = self.ajax_schedule_assignreg(
+                prog, cls, times, classrooms, request.user, override
+            )
+        elif action == "swap":
+            assignments = json.loads(request.POST["assignments"])
+            override = request.POST["override"] == "true"
             retval = self.ajax_schedule_swap(prog, assignments, request.user, override)
         else:
-            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+            return self.makeret(
+                prog, ret=False, msg="Unrecognized command: '%s'" % action
+            )
 
         return retval
 
@@ -285,53 +350,81 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_assign_moderator(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
-        if not 'action' in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+        if not "action" in request.POST:
+            raise ESPError(
+                "This URL is intended to be used for client<->server communication; it's not for human-readable content.",
+                log=False,
+            )
 
         # Pull relevant data out of the JSON structure
-        sec_id = request.POST['sec']
+        sec_id = request.POST["sec"]
         sec = ClassSection.objects.get(id=sec_id)
-        mod_id = request.POST['mod']
+        mod_id = request.POST["mod"]
         mod = ESPUser.objects.get(id=mod_id)
-        action = request.POST['action']
+        action = request.POST["action"]
 
-        if action == 'removemod':
+        if action == "removemod":
             sec.moderators.remove(mod)
-            self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
-            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'")
-        elif action == 'assignmod':
-            override = request.POST['override'] == "true"
+            self.get_change_log(prog).appendModerator(
+                mod_id, sec_id, False, request.user
+            )
+            return self.makeret(
+                prog,
+                ret=True,
+                msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'",
+            )
+        elif action == "assignmod":
+            override = request.POST["override"] == "true"
             if not override:
                 # check availability
                 avail_times = [time.id for time in mod.getAvailableTimes(prog)]
                 for time in sec.meeting_times.all():
                     if time.id not in avail_times:
-                        return self.makeret(prog, ret=False, msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'")
+                        return self.makeret(
+                            prog,
+                            ret=False,
+                            msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'",
+                        )
             sec.moderators.add(mod)
-            self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
-            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'")
+            self.get_change_log(prog).appendModerator(
+                mod_id, sec_id, True, request.user
+            )
+            return self.makeret(
+                prog,
+                ret=True,
+                msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'",
+            )
         else:
-            return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+            return self.makeret(
+                prog, ret=False, msg="Unrecognized command: '%s'" % action
+            )
 
     @aux_call
     @needs_admin
     def ajax_set_comment(self, request, tl, one, two, module, extra, prog):
-        if not 'comment' in request.POST:
-            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
+        if not "comment" in request.POST:
+            raise ESPError(
+                "This URL is intended to be used for client<->server communication; it's not for human-readable content.",
+                log=False,
+            )
 
         # Pull relevant data out of the JSON structure
-        cls_id = request.POST['cls']
-        comment = request.POST['comment']
-        locked = 'locked' in request.POST
+        cls_id = request.POST["cls"]
+        comment = request.POST["comment"]
+        locked = "locked" in request.POST
 
         try:
-            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(
+                comment, locked
+            )
         except module_ext.AJAXSectionDetail.DoesNotExist:
             sectionDetail = module_ext.AJAXSectionDetail()
             sectionDetail.initialize(prog, cls_id, comment, locked)
 
         self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
-        return self.makeret(prog, ret=True, msg="Class Section #%s successfully updated" % cls_id)
+        return self.makeret(
+            prog, ret=True, msg="Class Section #%s successfully updated" % cls_id
+        )
 
     @aux_call
     @needs_admin
@@ -339,10 +432,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return self.ajax_schedule_last_changed_helper(prog)
 
     def ajax_schedule_last_changed_helper(self, prog):
-        ret = { 'val': str(self.ajax_schedule_get_uuid(prog)),
-                'msg': 'UUID that changes every time the schedule is updated',
-                'time' : time.time(),
-                'latest_index' : self.get_change_log(prog).get_latest_index() }
+        ret = {
+            "val": str(self.ajax_schedule_get_uuid(prog)),
+            "msg": "UUID that changes every time the schedule is updated",
+            "time": time.time(),
+            "latest_index": self.get_change_log(prog).get_latest_index(),
+        }
 
         response = HttpResponse(content_type="application/json")
         json.dump(ret, response)
@@ -356,30 +451,38 @@ class AJAXSchedulingModule(ProgramModuleObj):
     # This function should be called iff the data returned by any of the other ajax_ JSON functions changes.
     # So, cache it; and have the cache expire whenever any of the relevant models changes.
     # Yeah, the cache will get expired quite often...; but, eh, it's a cheap function.
-    ajax_schedule_get_uuid.get_or_create_token(('prog',))
-    ajax_schedule_get_uuid.depend_on_model('resources.ResourceAssignment')
-    ajax_schedule_get_uuid.depend_on_model('resources.Resource')
-    ajax_schedule_get_uuid.depend_on_model('resources.ResourceRequest')
-    ajax_schedule_get_uuid.depend_on_model('cal.Event')
-    ajax_schedule_get_uuid.depend_on_model('program.ClassSection')
-    ajax_schedule_get_uuid.depend_on_model('program.ClassSubject')
-    ajax_schedule_get_uuid.depend_on_model('users.UserAvailability')
+    ajax_schedule_get_uuid.get_or_create_token(("prog",))
+    ajax_schedule_get_uuid.depend_on_model("resources.ResourceAssignment")
+    ajax_schedule_get_uuid.depend_on_model("resources.Resource")
+    ajax_schedule_get_uuid.depend_on_model("resources.ResourceRequest")
+    ajax_schedule_get_uuid.depend_on_model("cal.Event")
+    ajax_schedule_get_uuid.depend_on_model("program.ClassSection")
+    ajax_schedule_get_uuid.depend_on_model("program.ClassSubject")
+    ajax_schedule_get_uuid.depend_on_model("users.UserAvailability")
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(prog.lunch_timeslots().values_list('id', flat=True))
+        data = list(prog.lunch_timeslots().values_list("id", flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
-    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
-                                              lambda e: {'prog': e.program} if e.program_id else {})
-    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
-                                              lambda sec: {'prog': sec.parent_class.parent_program})
-    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
-                                              lambda cls: {'prog': cls.parent_program})
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
-    ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
+
+    ajax_lunch_timeslots_cached.get_or_create_token(("prog",))
+    ajax_lunch_timeslots_cached.depend_on_row(
+        "cal.Event", lambda e: {"prog": e.program} if e.program_id else {}
+    )
+    ajax_lunch_timeslots_cached.depend_on_row(
+        "program.ClassSection", lambda sec: {"prog": sec.parent_class.parent_program}
+    )
+    ajax_lunch_timeslots_cached.depend_on_row(
+        "program.ClassSubject", lambda cls: {"prog": cls.parent_program}
+    )
+    ajax_lunch_timeslots_cached.depend_on_model("program.ClassCategories")
+    ajax_lunch_timeslots_cached.depend_on_m2m(
+        "program.ClassSection",
+        "meeting_times",
+        lambda sec, event: {"prog": sec.parent_class.parent_program},
+    )
 
     @aux_call
     @needs_admin
@@ -389,25 +492,31 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):
-        """ A view that you can use to remove schedule assignments for all class
-            sections below a certain lock level.
-            Be very careful using this view since it can sometimes work quite well,
-            and there is currently no backup.
+        """A view that you can use to remove schedule assignments for all class
+        sections below a certain lock level.
+        Be very careful using this view since it can sometimes work quite well,
+        and there is currently no backup.
         """
         try:
-            lock_level = int(request.POST.get('lock_level', '0'))
+            lock_level = int(request.POST.get("lock_level", "0"))
         except (ValueError, TypeError):
             lock_level = 0
 
-        if request.method == 'POST':
+        if request.method == "POST":
             num_affected_sections = self.clear_schedule_logic(prog, lock_level)
-            data = {'message': f'Cleared schedule assignments for {num_affected_sections} sections.'}
+            data = {
+                "message": f"Cleared schedule assignments for {num_affected_sections} sections."
+            }
             response = HttpResponse(content_type="application/json")
             json.dump(data, response)
         else:
             context = {}
-            context['num_affected_sections'] = self._get_affected_sections(prog, lock_level).count()
-            response = render_to_response(self.baseDir()+'clear_schedule_confirmation.html', request, context)
+            context["num_affected_sections"] = self._get_affected_sections(
+                prog, lock_level
+            ).count()
+            response = render_to_response(
+                self.baseDir() + "clear_schedule_confirmation.html", request, context
+            )
 
         return response
 
@@ -415,13 +524,20 @@ class AJAXSchedulingModule(ProgramModuleObj):
         """
         Returns a QuerySet for ClassSection instances filtered  by parent_program and lock_level
         """
-        return ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
+        return ClassSection.objects.filter(
+            parent_class__parent_program=prog,
+            resourceassignment__lock_level__lte=lock_level,
+        )
 
     def clear_schedule_logic(self, prog, lock_level=0):
         affected_sections = self._get_affected_sections(prog, lock_level)
 
-        ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
-        ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
+        ResourceAssignment.objects.filter(
+            target__in=affected_sections, lock_level__lte=lock_level
+        ).delete()
+        ResourceAssignment.objects.filter(
+            target__isnull=True, target_subj__isnull=True
+        ).delete()
 
         num_affected_sections = 0
         for section in affected_sections:
@@ -435,4 +551,4 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

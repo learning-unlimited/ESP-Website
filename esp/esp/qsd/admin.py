@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -39,16 +38,26 @@ from esp.qsd.models import QuasiStaticData
 from reversion.admin import VersionAdmin
 from esp.utils.admin_user_search import default_user_search
 
-class QuasiStaticDataAdmin(VersionAdmin):
-    search_fields = default_user_search('author') + ['title', 'name', 'keywords', 'description', 'url']
-    list_display = ['nav_category', 'title', 'url', 'disabled', 'create_date', 'author']
-    list_filter = ['nav_category',]
-    date_hierarchy = 'create_date'
 
-    exclude = ['author']
+class QuasiStaticDataAdmin(VersionAdmin):
+    search_fields = default_user_search("author") + [
+        "title",
+        "name",
+        "keywords",
+        "description",
+        "url",
+    ]
+    list_display = ["nav_category", "title", "url", "disabled", "create_date", "author"]
+    list_filter = [
+        "nav_category",
+    ]
+    date_hierarchy = "create_date"
+
+    exclude = ["author"]
 
     def save_model(self, request, obj, form, change):
         obj.load_cur_user_time(request)
         super().save_model(request, obj, form, change)
+
 
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)

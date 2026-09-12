@@ -21,10 +21,11 @@ from esp.program.models import RegistrationProfile
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_user(username, role):
     """Create a minimal ESPUser with the given role."""
     user, _ = ESPUser.objects.get_or_create(username=username)
-    user.set_password('password')
+    user.set_password("password")
     user.save()
     user.makeRole(role)
     return user
@@ -32,43 +33,45 @@ def _make_user(username, role):
 
 def _setup_student_tags():
     """Set required Tag values so StudentInfoForm can initialise."""
-    Tag.setTag('student_shirt_sizes', value='S, M, L')
-    Tag.setTag('shirt_types', value='Straight cut, Fitted cut')
-    Tag.setTag('food_choices', value='Vegetarian, Non-vegetarian')
-    Tag.setTag('allow_change_grade_level', value='True')
-    Tag.setTag('show_student_tshirt_size_options', value='False')
-    Tag.setTag('studentinfo_shirt_type_selection', value='False')
-    Tag.setTag('show_student_vegetarianism_options', value='False')
-    Tag.setTag('show_studentrep_application', value='false')
-    Tag.setTag('student_profile_gender_field', value='False')
-    Tag.setTag('student_profile_pronoun_field', value='False')
-    Tag.setTag('ask_student_about_transportation_to_program', value='False')
-    Tag.setTag('student_medical_needs', value='False')
-    Tag.setTag('require_school_field', value='False')
-    Tag.setTag('request_student_phonenum', value='False')
-    Tag.setTag('text_messages_to_students', value='False')
+    Tag.setTag("student_shirt_sizes", value="S, M, L")
+    Tag.setTag("shirt_types", value="Straight cut, Fitted cut")
+    Tag.setTag("food_choices", value="Vegetarian, Non-vegetarian")
+    Tag.setTag("allow_change_grade_level", value="True")
+    Tag.setTag("show_student_tshirt_size_options", value="False")
+    Tag.setTag("studentinfo_shirt_type_selection", value="False")
+    Tag.setTag("show_student_vegetarianism_options", value="False")
+    Tag.setTag("show_studentrep_application", value="false")
+    Tag.setTag("student_profile_gender_field", value="False")
+    Tag.setTag("student_profile_pronoun_field", value="False")
+    Tag.setTag("ask_student_about_transportation_to_program", value="False")
+    Tag.setTag("student_medical_needs", value="False")
+    Tag.setTag("require_school_field", value="False")
+    Tag.setTag("request_student_phonenum", value="False")
+    Tag.setTag("text_messages_to_students", value="False")
 
 
 def _valid_student_data():
     """Return a minimal dict that makes StudentInfoForm valid."""
     import datetime
+
     valid_year = str(ESPUser.YOGFromGrade(9))
     return {
-        'graduation_year': valid_year,
-        'dob_0': '1',    # month  (SplitDateWidget fields)
-        'dob_1': '1',    # day
-        'dob_2': str(datetime.date.today().year - 16),  # year
-        'school': 'Test High School',
-        'heard_about_0': '',
-        'heard_about_1': '',
-        'transportation_0': '',
-        'transportation_1': '',
+        "graduation_year": valid_year,
+        "dob_0": "1",  # month  (SplitDateWidget fields)
+        "dob_1": "1",  # day
+        "dob_2": str(datetime.date.today().year - 16),  # year
+        "school": "Test High School",
+        "heard_about_0": "",
+        "heard_about_1": "",
+        "transportation_0": "",
+        "transportation_1": "",
     }
 
 
 # ---------------------------------------------------------------------------
 # Default Grade in Profile Creation
 # ---------------------------------------------------------------------------
+
 
 class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
     """
@@ -80,34 +83,35 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
     def setUp(self):
         user_role_setup()
         _setup_student_tags()
-        self.student = _make_user('grade_test_student', 'Student')
+        self.student = _make_user("grade_test_student", "Student")
 
     def tearDown(self):
         self.student.delete()
 
     def _make_form(self, data):
         from esp.users.forms.user_profile import StudentInfoForm
+
         return StudentInfoForm(user=self.student, data=data)
 
     def test_empty_graduation_year_is_invalid(self):
         """Form must reject an empty graduation_year."""
         data = _valid_student_data()
-        data['graduation_year'] = ''
+        data["graduation_year"] = ""
         form = self._make_form(data)
         self.assertFalse(
             form.is_valid(),
-            "StudentInfoForm should be invalid when graduation_year is empty."
+            "StudentInfoForm should be invalid when graduation_year is empty.",
         )
-        self.assertIn('graduation_year', form.errors)
+        self.assertIn("graduation_year", form.errors)
 
     def test_missing_graduation_year_is_invalid(self):
         """Form must reject a completely missing graduation_year key."""
         data = _valid_student_data()
-        del data['graduation_year']
+        del data["graduation_year"]
         form = self._make_form(data)
         self.assertFalse(
             form.is_valid(),
-            "StudentInfoForm should be invalid when graduation_year is absent."
+            "StudentInfoForm should be invalid when graduation_year is absent.",
         )
 
     def test_lowest_grade_explicitly_chosen_is_valid(self):
@@ -117,12 +121,12 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
         """
         lowest_grade = min(ESPUser.grade_options())
         data = _valid_student_data()
-        data['graduation_year'] = str(ESPUser.YOGFromGrade(lowest_grade))
+        data["graduation_year"] = str(ESPUser.YOGFromGrade(lowest_grade))
         form = self._make_form(data)
         self.assertTrue(
             form.is_valid(),
             f"StudentInfoForm should accept explicit lowest grade {lowest_grade}. "
-            f"Errors: {form.errors}"
+            f"Errors: {form.errors}",
         )
 
     def test_grade_9_is_valid(self):
@@ -131,17 +135,17 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
         form = self._make_form(data)
         self.assertTrue(
             form.is_valid(),
-            f"StudentInfoForm should be valid with grade 9. Errors: {form.errors}"
+            f"StudentInfoForm should be valid with grade 9. Errors: {form.errors}",
         )
 
     def test_grade_12_is_valid(self):
         """Grade 12 (senior) should pass validation."""
         data = _valid_student_data()
-        data['graduation_year'] = str(ESPUser.YOGFromGrade(12))
+        data["graduation_year"] = str(ESPUser.YOGFromGrade(12))
         form = self._make_form(data)
         self.assertTrue(
             form.is_valid(),
-            f"StudentInfoForm should be valid with grade 12. Errors: {form.errors}"
+            f"StudentInfoForm should be valid with grade 12. Errors: {form.errors}",
         )
 
 
@@ -149,16 +153,17 @@ class StudentInfoFormGradeValidationTest(CacheFlushTestCase):
 # Full Registration Profile Tests (all account types)
 # ---------------------------------------------------------------------------
 
+
 class UserContactFormTest(CacheFlushTestCase):
     """Test UserContactForm (shared base for student / teacher / guardian contact info)."""
 
     def setUp(self):
         user_role_setup()
-        Tag.setTag('request_student_phonenum', value='False')
-        Tag.setTag('text_messages_to_students', value='False')
-        Tag.setTag('teacher_address_required', value='False')
-        self.student = _make_user('contact_student', 'Student')
-        self.teacher = _make_user('contact_teacher', 'Teacher')
+        Tag.setTag("request_student_phonenum", value="False")
+        Tag.setTag("text_messages_to_students", value="False")
+        Tag.setTag("teacher_address_required", value="False")
+        self.student = _make_user("contact_student", "Student")
+        self.teacher = _make_user("contact_teacher", "Teacher")
 
     def tearDown(self):
         self.student.delete()
@@ -166,20 +171,21 @@ class UserContactFormTest(CacheFlushTestCase):
 
     def _make_form(self, user, data):
         from esp.users.forms.user_profile import UserContactForm
+
         return UserContactForm(user=user, data=data)
 
     def _valid_contact_data(self):
         return {
-            'first_name': 'Test',
-            'last_name': 'User',
-            'e_mail': 'testuser@example.com',
-            'phone_day': '',
-            'phone_cell': '+16175551234',
-            'address_street': '123 Main St',
-            'address_city': 'Springfield',
-            'address_state': 'MA',
-            'address_zip': '02134',
-            'address_country': '',
+            "first_name": "Test",
+            "last_name": "User",
+            "e_mail": "testuser@example.com",
+            "phone_day": "",
+            "phone_cell": "+16175551234",
+            "address_street": "123 Main St",
+            "address_city": "Springfield",
+            "address_state": "MA",
+            "address_zip": "02134",
+            "address_country": "",
         }
 
     def test_student_valid_contact(self):
@@ -195,32 +201,32 @@ class UserContactFormTest(CacheFlushTestCase):
 
     def test_missing_first_name_invalid(self):
         data = self._valid_contact_data()
-        del data['first_name']
+        del data["first_name"]
         form = self._make_form(self.student, data)
         self.assertFalse(form.is_valid())
-        self.assertIn('first_name', form.errors)
+        self.assertIn("first_name", form.errors)
 
     def test_invalid_email_rejected(self):
         data = self._valid_contact_data()
-        data['e_mail'] = 'not-an-email'
+        data["e_mail"] = "not-an-email"
         form = self._make_form(self.student, data)
         self.assertFalse(form.is_valid())
-        self.assertIn('e_mail', form.errors)
+        self.assertIn("e_mail", form.errors)
 
     def test_missing_required_address_for_student(self):
         data = self._valid_contact_data()
-        data['address_street'] = ''
+        data["address_street"] = ""
         form = self._make_form(self.student, data)
         self.assertFalse(form.is_valid())
-        self.assertIn('address_street', form.errors)
+        self.assertIn("address_street", form.errors)
 
     def test_missing_address_for_teacher_is_ok_when_not_required(self):
         """Teachers don't require address when teacher_address_required=False."""
         data = self._valid_contact_data()
-        data['address_street'] = ''
-        data['address_city'] = ''
-        data['address_state'] = 'MA'
-        data['address_zip'] = ''
+        data["address_street"] = ""
+        data["address_city"] = ""
+        data["address_state"] = "MA"
+        data["address_zip"] = ""
         form = self._make_form(self.teacher, data)
         self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
 
@@ -230,27 +236,28 @@ class EmergContactFormTest(CacheFlushTestCase):
 
     def setUp(self):
         user_role_setup()
-        self.student = _make_user('emerg_student', 'Student')
+        self.student = _make_user("emerg_student", "Student")
 
     def tearDown(self):
         self.student.delete()
 
     def _make_form(self, data):
         from esp.users.forms.user_profile import EmergContactForm
+
         return EmergContactForm(user=self.student, data=data)
 
     def _valid_emerg_data(self):
         return {
-            'emerg_first_name': 'Parent',
-            'emerg_last_name': 'Name',
-            'emerg_e_mail': '',
-            'emerg_phone_day': '+16175551234',
-            'emerg_phone_cell': '',
-            'emerg_address_street': '123 Main St',
-            'emerg_address_city': 'Springfield',
-            'emerg_address_state': 'MA',
-            'emerg_address_zip': '02134',
-            'emerg_address_country': '',
+            "emerg_first_name": "Parent",
+            "emerg_last_name": "Name",
+            "emerg_e_mail": "",
+            "emerg_phone_day": "+16175551234",
+            "emerg_phone_cell": "",
+            "emerg_address_street": "123 Main St",
+            "emerg_address_city": "Springfield",
+            "emerg_address_state": "MA",
+            "emerg_address_zip": "02134",
+            "emerg_address_country": "",
         }
 
     def test_valid_emergency_contact(self):
@@ -259,16 +266,16 @@ class EmergContactFormTest(CacheFlushTestCase):
 
     def test_missing_emerg_first_name_invalid(self):
         data = self._valid_emerg_data()
-        data['emerg_first_name'] = ''
+        data["emerg_first_name"] = ""
         form = self._make_form(data)
         self.assertFalse(form.is_valid())
-        self.assertIn('emerg_first_name', form.errors)
+        self.assertIn("emerg_first_name", form.errors)
 
     def test_no_phone_number_invalid(self):
         """Both day and cell blank should fail validation."""
         data = self._valid_emerg_data()
-        data['emerg_phone_day'] = ''
-        data['emerg_phone_cell'] = ''
+        data["emerg_phone_day"] = ""
+        data["emerg_phone_cell"] = ""
         form = self._make_form(data)
         self.assertFalse(form.is_valid())
 
@@ -282,13 +289,14 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
     def setUp(self):
         user_role_setup()
         _setup_student_tags()
-        self.student = _make_user('profile_student', 'Student')
+        self.student = _make_user("profile_student", "Student")
 
     def tearDown(self):
         self.student.delete()
 
     def _make_form(self, data):
         from esp.users.forms.user_profile import StudentInfoForm
+
         return StudentInfoForm(user=self.student, data=data)
 
     def test_first_time_profile_creation(self):
@@ -315,7 +323,7 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
         StudentInfo.addOrUpdate(self.student, profile, form.cleaned_data)
 
         # Now edit it - change grade from 9 to 11
-        data['graduation_year'] = str(ESPUser.YOGFromGrade(11))
+        data["graduation_year"] = str(ESPUser.YOGFromGrade(11))
         form2 = self._make_form(data)
         self.assertTrue(form2.is_valid(), f"Errors: {form2.errors}")
         profile2 = self.student.getLastProfile()
@@ -328,7 +336,7 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
     def test_profile_get_grade_after_creation(self):
         """getGrade() should return correct integer grade after profile creation."""
         data = _valid_student_data()
-        data['graduation_year'] = str(ESPUser.YOGFromGrade(10))
+        data["graduation_year"] = str(ESPUser.YOGFromGrade(10))
         form = self._make_form(data)
         self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
         profile = self.student.getLastProfile()
@@ -345,16 +353,18 @@ class StudentInfoFormProfileTest(CacheFlushTestCase):
     def test_form_grade_range_covers_all_allowed_grades(self):
         """graduation_year choices should include all grades from grade_options()."""
         from esp.users.forms.user_profile import StudentInfoForm
+
         form = StudentInfoForm(user=self.student)
         choice_grades = {
             ESPUser.gradeFromYOG(int(yog))
-            for yog, label in form.fields['graduation_year'].choices
+            for yog, label in form.fields["graduation_year"].choices
             if yog  # skip the blank first entry
         }
         for grade in ESPUser.grade_options():
             self.assertIn(
-                grade, choice_grades,
-                f"Grade {grade} missing from StudentInfoForm choices."
+                grade,
+                choice_grades,
+                f"Grade {grade} missing from StudentInfoForm choices.",
             )
 
 
@@ -368,20 +378,20 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def setUp(self):
         user_role_setup()
         _setup_student_tags()
-        Tag.setTag('teacher_shirt_sizes', value='S, M, L')
-        Tag.setTag('teacherinfo_shirt_options', value='False')
-        Tag.setTag('teacher_profile_pronoun_field', value='False')
-        Tag.setTag('teacher_address_required', value='False')
-        Tag.setTag('require_email_validation', value='False')
+        Tag.setTag("teacher_shirt_sizes", value="S, M, L")
+        Tag.setTag("teacherinfo_shirt_options", value="False")
+        Tag.setTag("teacher_profile_pronoun_field", value="False")
+        Tag.setTag("teacher_address_required", value="False")
+        Tag.setTag("require_email_validation", value="False")
 
-        self.admin = _make_user('profile_admin', 'Administrator')
+        self.admin = _make_user("profile_admin", "Administrator")
         self.admin.makeAdmin()
 
-        self.student = _make_user('profile_test_student', 'Student')
-        self.teacher = _make_user('profile_test_teacher', 'Teacher')
-        self.guardian = _make_user('profile_test_guardian', 'Guardian')
-        self.educator = _make_user('profile_test_educator', 'Educator')
-        self.volunteer = _make_user('profile_test_volunteer', 'Volunteer')
+        self.student = _make_user("profile_test_student", "Student")
+        self.teacher = _make_user("profile_test_teacher", "Teacher")
+        self.guardian = _make_user("profile_test_guardian", "Guardian")
+        self.educator = _make_user("profile_test_educator", "Educator")
+        self.volunteer = _make_user("profile_test_volunteer", "Volunteer")
 
     def tearDown(self):
         self.admin.delete()
@@ -393,8 +403,8 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
 
     def _login(self, user):
         self.assertTrue(
-            self.client.login(username=user.username, password='password'),
-            f"Could not log in as {user.username}"
+            self.client.login(username=user.username, password="password"),
+            f"Could not log in as {user.username}",
         )
 
     # --- Student profile view ---------------------------------------------------
@@ -402,7 +412,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_student_profile_page_loads(self):
         """GET /myesp/profile/ for a student should return 200."""
         self._login(self.student)
-        response = self.client.get('/myesp/profile/')
+        response = self.client.get("/myesp/profile/")
         self.assertEqual(response.status_code, 200)
 
     # --- Teacher profile view ---------------------------------------------------
@@ -410,7 +420,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_teacher_profile_page_loads(self):
         """GET /myesp/profile/ for a teacher should return 200."""
         self._login(self.teacher)
-        response = self.client.get('/myesp/profile/')
+        response = self.client.get("/myesp/profile/")
         self.assertEqual(response.status_code, 200)
 
     # --- Guardian profile view ------------------------------------------
@@ -418,7 +428,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_guardian_profile_page_loads(self):
         """GET /myesp/profile/ for a guardian should return 200."""
         self._login(self.guardian)
-        response = self.client.get('/myesp/profile/')
+        response = self.client.get("/myesp/profile/")
         self.assertEqual(response.status_code, 200)
 
     # --- Educator profile view -------------------------------------------------
@@ -426,7 +436,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_educator_profile_page_loads(self):
         """GET /myesp/profile/ for an educator should return 200."""
         self._login(self.educator)
-        response = self.client.get('/myesp/profile/')
+        response = self.client.get("/myesp/profile/")
         self.assertEqual(response.status_code, 200)
 
     # --- Volunteer profile view ------------------------------------------------
@@ -434,7 +444,7 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
     def test_volunteer_profile_page_loads(self):
         """GET /myesp/profile/ for a volunteer should return 200."""
         self._login(self.volunteer)
-        response = self.client.get('/myesp/profile/')
+        response = self.client.get("/myesp/profile/")
         self.assertEqual(response.status_code, 200)
 
     # --- Admin grade-change -----------------------------------------
@@ -463,21 +473,20 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         target_grade = 11
         yog = ESPUser.current_schoolyear() + (12 - target_grade)
         self.client.get(
-            f'/manage/userview?username={self.student.username}&graduation_year={yog}'
+            f"/manage/userview?username={self.student.username}&graduation_year={yog}"
         )
         # Refresh student from DB
         student_fresh = ESPUser.objects.get(pk=self.student.pk)
         self.assertEqual(
-            student_fresh.getGrade(), target_grade,
-            f"Expected grade {target_grade}, got {student_fresh.getGrade()}"
+            student_fresh.getGrade(),
+            target_grade,
+            f"Expected grade {target_grade}, got {student_fresh.getGrade()}",
         )
 
     def test_unauthenticated_userview_redirects(self):
         """Unauthenticated access to userview should redirect to login."""
         self.client.logout()
-        response = self.client.get(
-            f'/manage/userview?username={self.student.username}'
-        )
+        response = self.client.get(f"/manage/userview?username={self.student.username}")
         self.assertIn(response.status_code, [302, 403])
 
     def test_non_admin_cannot_change_grade(self):
@@ -496,13 +505,13 @@ class RegistrationProfileViewTest(CacheFlushTestCase):
         rp.save()
 
         # Non-admin tries to change grade
-        other_student = _make_user('other_profile_student', 'Student')
+        other_student = _make_user("other_profile_student", "Student")
         try:
             self._login(other_student)
             target_yog = ESPUser.current_schoolyear() + (12 - 11)
             response = self.client.get(
-                f'/manage/userview?username={self.student.username}'
-                f'&graduation_year={target_yog}'
+                f"/manage/userview?username={self.student.username}"
+                f"&graduation_year={target_yog}"
             )
             # Should be 302 redirect to login or 403 forbidden, never 200 + change
             self.assertIn(response.status_code, [302, 403])

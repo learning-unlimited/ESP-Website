@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,12 +31,20 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_student_in_grade,
+    meets_deadline,
+    main_call,
+    aux_call,
+    meets_cap,
+)
 from esp.utils.web import render_to_response
 from esp.users.models import ESPUser, Record, RecordType
 from esp.tagdict.models import Tag
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
+
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
@@ -46,30 +53,23 @@ class FormstackMedliabModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
-                "admin_title": "Formstack Med-liab Module",
-                "link_title": "Medical and Emergency Contact Information",
-                "module_type": "learn",
-                "seq": 3,
-                "required": True,
-                "choosable": 2,
-                }
+            "admin_title": "Formstack Med-liab Module",
+            "link_title": "Medical and Emergency Contact Information",
+            "module_type": "learn",
+            "seq": 3,
+            "required": True,
+            "choosable": 2,
+        }
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
         return Record.user_completed(
-                user=user,
-                event="med",
-                program=self.program) \
-            or Record.user_completed(
-                user=user,
-                event="med_bypass",
-                program=self.program)
+            user=user, event="med", program=self.program
+        ) or Record.user_completed(user=user, event="med_bypass", program=self.program)
 
     def students(self, QObject=False):
-        Q_students = Q(record__event__name="med",
-                       record__program=self.program)
-        Q_bypass = Q(record__event__name="med_bypass",
-                     record__program=self.program)
+        Q_students = Q(record__event__name="med", record__program=self.program)
+        Q_bypass = Q(record__event__name="med_bypass", record__program=self.program)
 
         if QObject:
             students = Q_students
@@ -78,28 +78,28 @@ class FormstackMedliabModule(ProgramModuleObj):
             students = ESPUser.objects.filter(Q_students).distinct()
             bypass = ESPUser.objects.filter(Q_bypass).distinct()
 
-        return {
-            'studentmedliab': students,
-            'studentmedbypass': bypass
-            }
+        return {"studentmedliab": students, "studentmedbypass": bypass}
 
     def studentDesc(self):
         return {
-            'studentmedliab': """Students who have completed their medliab online""",
-            'studentmedbypass': """Students who have been granted a medliab bypass"""
-            }
+            "studentmedliab": """Students who have completed their medliab online""",
+            "studentmedbypass": """Students who have been granted a medliab bypass""",
+        }
 
     @main_call
     @needs_student_in_grade
-    @meets_deadline('/FormstackMedliab')
+    @meets_deadline("/FormstackMedliab")
     @meets_cap
     def medliab(self, request, tl, one, two, module, extra, prog):
         """Landing page redirecting to med-liab form on Formstack."""
         t = Tag.getProgramTag("formstack_id", self.program)
         v = Tag.getProgramTag("formstack_viewkey", self.program)
-        context = {"formstack_id": t, "formstack_viewkey": v, "completed": self.isCompleted()}
-        return render_to_response(self.baseDir()+'medliab.html',
-                                  request, context)
+        context = {
+            "formstack_id": t,
+            "formstack_viewkey": v,
+            "completed": self.isCompleted(),
+        }
+        return render_to_response(self.baseDir() + "medliab.html", request, context)
 
     @aux_call
     @needs_student_in_grade
@@ -110,8 +110,11 @@ class FormstackMedliabModule(ProgramModuleObj):
         return self.goToCore(tl)
 
     def isStep(self):
-        return bool(Tag.getProgramTag("formstack_id", self.program) and Tag.getProgramTag("formstack_viewkey", self.program))
+        return bool(
+            Tag.getProgramTag("formstack_id", self.program)
+            and Tag.getProgramTag("formstack_viewkey", self.program)
+        )
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

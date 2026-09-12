@@ -26,6 +26,7 @@ Notes on xdist compatibility:
 - Tests that share global state or write to the filesystem may need
   the @pytest.mark.xdist_group decorator to pin them to one worker
 """
+
 import django
 import pytest
 
@@ -41,8 +42,10 @@ def pytest_configure(config):
     (e.g. test_db_interface.py) raises AppRegistryNotReady during collection.
     """
     from django.apps import apps
+
     if not apps.ready:
         django.setup()
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -51,6 +54,7 @@ def pytest_addoption(parser):
         default=False,
         help="Run selenium integration tests",
     )
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -64,4 +68,3 @@ def pytest_collection_modifyitems(config, items):
         if "seltests" in str(item.fspath):
             if not run_selenium:
                 item.add_marker(skip_selenium)
-

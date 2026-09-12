@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -33,12 +32,13 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 import json
-from django.http      import HttpResponse
+from django.http import HttpResponse
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
-from datetime         import datetime
-from esp.utils.web    import render_to_response
+from datetime import datetime
+from esp.utils.web import render_to_response
 from esp.utils.models import Printer, PrintRequest
+
 
 class OnsitePrintSchedules(ProgramModuleObj):
     doc = """Automatically print student schedules at onsite registration."""
@@ -51,25 +51,27 @@ class OnsitePrintSchedules(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 10000,
             "choosable": 1,
-            }
+        }
 
     @main_call
     @needs_onsite
     def printschedules(self, request, tl, one, two, module, extra, prog):
-        " A link to print a schedule. "
-        sure_requested = ('sure' in request.GET) or (request.POST.get('sure', '').lower() in ('1', 'true'))
+        "A link to print a schedule."
+        sure_requested = ("sure" in request.GET) or (
+            request.POST.get("sure", "").lower() in ("1", "true")
+        )
 
-        if not sure_requested and not 'gen_img' in request.GET:
-            printers = Printer.objects.all().values_list('name', flat=True)
+        if not sure_requested and not "gen_img" in request.GET:
+            printers = Printer.objects.all().values_list("name", flat=True)
 
-            return render_to_response(self.baseDir()+'instructions.html',
-                                    request, {'printers': printers})
+            return render_to_response(
+                self.baseDir() + "instructions.html", request, {"printers": printers}
+            )
 
         if sure_requested:
-            expire_old_requested = (
-                request.method == 'POST' and
-                request.POST.get('expire_old', '').lower() in ('1', 'true')
-            )
+            expire_old_requested = request.method == "POST" and request.POST.get(
+                "expire_old", ""
+            ).lower() in ("1", "true")
             if expire_old_requested:
                 # Clear all pending (unexecuted) print requests for this session.
                 # Scoped to the selected printer when a printer name is in the URL.
@@ -80,8 +82,9 @@ class OnsitePrintSchedules(ProgramModuleObj):
                     else:
                         old_requests = PrintRequest.objects.none()
                 old_requests.delete()
-            return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
-                            request, {})
+            return render_to_response(
+                self.baseDir() + "studentschedulesrenderer.html", request, {}
+            )
 
         requests = PrintRequest.objects.filter(time_executed__isnull=True)
         if extra and Printer.objects.filter(name=extra).exists():
@@ -91,26 +94,29 @@ class OnsitePrintSchedules(ProgramModuleObj):
             req = requests[0]
             req.time_executed = datetime.now()
             req.save()
-            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
-            if request.GET['gen_img'] == 'json':
+            response = ProgramPrintables.get_student_schedules(
+                request, [req.user], prog, onsite=True
+            )
+            if request.GET["gen_img"] == "json":
                 import base64
+
                 src = f"data:image/png;base64,{base64.b64encode(response.content).decode('ascii')}"
                 data = {
-                    'src': src,
-                    'id': req.id,
-                    'user': req.user.username,
-                    'time_requested': str(req.time_requested),
-                    'time_executed': str(req.time_executed),
+                    "src": src,
+                    "id": req.id,
+                    "user": req.user.username,
+                    "time_requested": str(req.time_requested),
+                    "time_executed": str(req.time_executed),
                 }
-                resp = HttpResponse(content_type='application/json')
+                resp = HttpResponse(content_type="application/json")
                 json.dump(data, resp)
                 return resp
             else:
                 return response
         else:
             # No response if no users
-            return HttpResponse('')
+            return HttpResponse("")
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -44,6 +44,7 @@ from esp.users.models import ESPUser
 
 from esp.utils.templatetags.markup import markdown
 
+
 def qsd_cache_key(url):
     """Build a cache key for QSD default content, hashing long URLs.
 
@@ -51,26 +52,26 @@ def qsd_cache_key(url):
     within Memcached's 250-char key limit.
     """
     if len(url) < 180:
-        return 'qsd_default_content:%s' % url
-    return 'qsd_default_content:%s' % hashlib.md5(url.encode('utf-8')).hexdigest()
+        return "qsd_default_content:%s" % url
+    return "qsd_default_content:%s" % hashlib.md5(url.encode("utf-8")).hexdigest()
 
 
 class QSDManager(models.Manager):
-
     @cache_function
     def get_by_url(self, url):
-        #Besides caching, this also handles finding the latest easily,
+        # Besides caching, this also handles finding the latest easily,
         # and returning none when there isn't any such QSD
-        #comment from an older version of this function:
+        # comment from an older version of this function:
         #    aseering 11-15-2009 -- Punt FileDB for this purpose;
         #    it has consistency issues in multi-computer load-balanced setups,
         #    and memcached doesn't have a clear performance disadvantage.
         try:
-            return self.filter(url=url).select_related().latest('create_date')
+            return self.filter(url=url).select_related().latest("create_date")
         except QuasiStaticData.DoesNotExist:
             return None
-    get_by_url.get_or_create_token(('url',))
-    get_by_url.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
+
+    get_by_url.get_or_create_token(("url",))
+    get_by_url.depend_on_row("qsd.QuasiStaticData", lambda qsd: {"url": qsd.url})
 
     @cache_function
     def get_by_url_else_init(self, url, defaults={}):
@@ -90,13 +91,16 @@ class QSDManager(models.Manager):
             # that the default content will never purposely use Markdown code
             # blocks, and we strip this unintended space.
             content = str(qsd_obj.content.lstrip())
-            content = content.split('\n')
+            content = content.split("\n")
             content = list(map(str.lstrip, content))
-            content = '\n'.join(content)
+            content = "\n".join(content)
             qsd_obj.content = content
         return qsd_obj
-    get_by_url_else_init.get_or_create_token(('url',))
-    get_by_url_else_init.depend_on_row('qsd.QuasiStaticData', lambda qsd: {'url': qsd.url})
+
+    get_by_url_else_init.get_or_create_token(("url",))
+    get_by_url_else_init.depend_on_row(
+        "qsd.QuasiStaticData", lambda qsd: {"url": qsd.url}
+    )
 
     def __str__(self):
         return "QSDManager()"
@@ -104,24 +108,34 @@ class QSDManager(models.Manager):
     def __repr__(self):
         return "QSDManager()"
 
+
 def qsd_edit_id(val):
-    """ A short hex string summarizing the QSD's URL. """
+    """A short hex string summarizing the QSD's URL."""
     return hashlib.sha256(val.encode("UTF-8")).hexdigest()[:8]
 
+
 class QuasiStaticData(models.Model):
-    """ A Markdown-encoded web page """
+    """A Markdown-encoded web page"""
 
     objects = QSDManager()
 
-    url = models.CharField(max_length=256, help_text="Full url, without the trailing .html")
+    url = models.CharField(
+        max_length=256, help_text="Full url, without the trailing .html"
+    )
     name = models.SlugField(blank=True)
     title = models.CharField(max_length=256)
     content = models.TextField()
 
-    nav_category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
+    nav_category = models.ForeignKey(
+        NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE
+    )
 
-    create_date = models.DateTimeField(default=datetime.now, editable=False, verbose_name="last edited")
-    author = AjaxForeignKey(ESPUser, verbose_name="last modified by", on_delete=models.CASCADE) #I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
+    create_date = models.DateTimeField(
+        default=datetime.now, editable=False, verbose_name="last edited"
+    )
+    author = AjaxForeignKey(
+        ESPUser, verbose_name="last modified by", on_delete=models.CASCADE
+    )  # I believe that these are,uh, no longer descriptive names. This is silly, but the verbose names should fit better.
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
@@ -129,7 +143,9 @@ class QuasiStaticData(models.Model):
     def edit_id(self):
         return qsd_edit_id(self.url)
 
-    def copy(self,):
+    def copy(
+        self,
+    ):
         """Returns a copy of the current QSD.
 
         This could be used for versioning QSDs, for example. It will not be
@@ -139,21 +155,23 @@ class QuasiStaticData(models.Model):
         Client code should probably reset the author to request.user
         and date to datetime.now (possibly with load_cur_user_time)"""
         qsd_new = QuasiStaticData()
-        qsd_new.url    = self.url
-        qsd_new.author  = self.author
+        qsd_new.url = self.url
+        qsd_new.author = self.author
         qsd_new.content = self.content
-        qsd_new.title   = self.title
-        qsd_new.description  = self.description
+        qsd_new.title = self.title
+        qsd_new.description = self.description
         qsd_new.nav_category = self.nav_category
-        qsd_new.keywords     = self.keywords
-        qsd_new.disabled     = self.disabled
-        qsd_new.create_date  = self.create_date
+        qsd_new.keywords = self.keywords
+        qsd_new.disabled = self.disabled
+        qsd_new.create_date = self.create_date
         return qsd_new
 
-    def load_cur_user_time(self, request, ):
+    def load_cur_user_time(
+        self,
+        request,
+    ):
         self.author = request.user
         self.create_date = datetime.now()
-
 
     def __str__(self):
         return self.url
@@ -161,7 +179,8 @@ class QuasiStaticData(models.Model):
     @cache_function
     def html(self):
         return markdown(self.content)
-    html.depend_on_row('qsd.QuasiStaticData', 'self')
+
+    html.depend_on_row("qsd.QuasiStaticData", "self")
 
     @staticmethod
     def prog_qsd_url(prog, name):
@@ -169,37 +188,37 @@ class QuasiStaticData(models.Model):
 
         Will have .html at the end iff name does"""
         parts = name.split(":")
-        if len(parts)>1:
+        if len(parts) > 1:
             return "/".join([parts[0], prog.url, ":".join(parts[1:])])
         else:
             return "/".join(["programs", prog.url, name])
 
     @staticmethod
     def program_from_url(url):
-        """ If the QSD pertains to a program, figure out which one,
-            and return a tuple of the Program object and the QSD name.
-            Otherwise return None.  """
+        """If the QSD pertains to a program, figure out which one,
+        and return a tuple of the Program object and the QSD name.
+        Otherwise return None."""
         from esp.program.models import Program
 
-        url_parts = url.split('/')
+        url_parts = url.split("/")
         #   The first part url_parts[0] could be anything, since prog_qsd_url()
         #   takes whatever was specified in the old qsd name
         #   (e.g. 'learn:extrasteps' results in a URL starting with 'learn/',
         #   but you could also have 'foo:extrasteps' etc.)
         #   So, allow any QSD with a program URL in the right place to match.
         if len(url_parts) > 3 and len(url_parts[3]) > 0:
-            prog_url = '/'.join(url_parts[1:3])
+            prog_url = "/".join(url_parts[1:3])
             progs = Program.objects.filter(url=prog_url)
             if progs.count() == 1:
-                if url_parts[0] == 'programs':
-                    return (progs[0], '/'.join(url_parts[3:]))
+                if url_parts[0] == "programs":
+                    return (progs[0], "/".join(url_parts[3:]))
                 else:
-                    return (progs[0], f'{url_parts[0]}:' + '/'.join(url_parts[3:]))
+                    return (progs[0], f"{url_parts[0]}:" + "/".join(url_parts[3:]))
 
         return None
 
     def get_absolute_url(self):
-        return reverse('qsd_page', kwargs={'url': self.url})
+        return reverse("qsd_page", kwargs={"url": self.url})
 
     class Meta:
-        verbose_name = 'Editable'
+        verbose_name = "Editable"

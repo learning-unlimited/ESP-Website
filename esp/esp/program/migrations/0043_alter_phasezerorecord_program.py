@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0042_classcategories_is_lunch'),
+        ("program", "0042_classcategories_is_lunch"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='phasezerorecord',
-            name='program',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='program.program'),
+            model_name="phasezerorecord",
+            name="program",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE, to="program.program"
+            ),
         ),
     ]

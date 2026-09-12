@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -35,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.utils.web import render_to_response
-from esp.users.views    import search_for_user
+from esp.users.views import search_for_user
 from esp.accounting.controllers import IndividualAccountingController
 
 
@@ -50,30 +49,31 @@ class OnsitePaidItemsModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 31,
             "choosable": 1,
-            }
+        }
 
     @main_call
     @needs_onsite
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
         #   Get a user
-        user, found = search_for_user(request, add_to_context = {'tl': 'onsite', 'module': self.module.link_title})
+        user, found = search_for_user(
+            request, add_to_context={"tl": "onsite", "module": self.module.link_title}
+        )
         if not found:
             return user
 
         #   Get the optional purchases for that user
         iac = IndividualAccountingController(prog, user)
         context = {}
-        context['student'] = user
-        context['requireditems'] = iac.get_transfers(required_only=True)
-        context['reserveditems'] = iac.get_transfers(optional_only=True)
-        context['amount_requested'] = iac.amount_requested()
-        context['amount_finaid'] = iac.amount_finaid()
-        context['amount_due'] = iac.amount_due()
+        context["student"] = user
+        context["requireditems"] = iac.get_transfers(required_only=True)
+        context["reserveditems"] = iac.get_transfers(optional_only=True)
+        context["amount_requested"] = iac.amount_requested()
+        context["amount_finaid"] = iac.amount_finaid()
+        context["amount_due"] = iac.amount_due()
 
-        return render_to_response(self.baseDir()+'paiditems.html', request, context)
-
+        return render_to_response(self.baseDir() + "paiditems.html", request, context)
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

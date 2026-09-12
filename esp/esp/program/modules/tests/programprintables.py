@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 from django.test.client import RequestFactory
 
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.models  import ClassSubject
+from esp.program.models import ClassSubject
 from ..handlers.programprintables import *
+
 
 class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -43,7 +44,11 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update({'num_students': 3,})
+        kwargs.update(
+            {
+                "num_students": 3,
+            }
+        )
         super().setUp(*args, **kwargs)
 
         self.add_student_profiles()
@@ -51,34 +56,44 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.classreg_students()
 
         # Get and remember the instance of this module
-        m = ProgramModule.objects.get(handler='ProgramPrintables', module_type='manage')
+        m = ProgramModule.objects.get(handler="ProgramPrintables", module_type="manage")
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
         self.factory = RequestFactory()
 
-        self.all_classes_csv_url = f'/manage/{self.program.getUrlBase()}/all_classes_spreadsheet'
+        self.all_classes_csv_url = (
+            f"/manage/{self.program.getUrlBase()}/all_classes_spreadsheet"
+        )
 
     def _login_admin(self):
         """
         Login admin user
         """
-        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password="password"),
+            "Failed to log in admin user.",
+        )
 
     def get_response(self, view_name, user_type, list_name, allow_redirect=False):
         #   Log in an administrator
         self._login_admin()
 
-        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password="password"),
+            "Failed to log in admin user.",
+        )
 
         #   Select users to fetch
-        response = self.client.get(f'/manage/{self.program.getUrlBase()}/{view_name}')
+        response = self.client.get(f"/manage/{self.program.getUrlBase()}/{view_name}")
         self.assertEqual(response.status_code, 200)
         post_data = {
-            'recipient_type': user_type,
-            'base_list': list_name,
-            'use_checklist': 0,
+            "recipient_type": user_type,
+            "base_list": list_name,
+            "use_checklist": 0,
         }
-        response = self.client.post(f'/manage/{self.program.getUrlBase()}/{view_name}', post_data)
+        response = self.client.post(
+            f"/manage/{self.program.getUrlBase()}/{view_name}", post_data
+        )
         if allow_redirect:
             self.assertEqual(response.status_code, 302)
         else:
@@ -88,13 +103,19 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def get_userlist_views(self):
         #   Hard-code some views that can be tested using simple teacher/student lists.
         #   Exclude those tested by specialized functions below.
-        teacher_views = ['teacherlist', 'teachersbytime', 'teacherschedules']
-        student_views = ['studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
+        teacher_views = ["teacherlist", "teachersbytime", "teacherschedules"]
+        student_views = [
+            "studentsbyname",
+            "emergencycontacts",
+            "flatstudentschedules",
+            "studentchecklist",
+            "student_tickets",
+        ]
         result = []
         for v in teacher_views:
-            result.append((v, 'teachers', 'class_approved'))
+            result.append((v, "teachers", "class_approved"))
         for v in student_views:
-            result.append((v, 'students', 'enrolled'))
+            result.append((v, "students", "enrolled"))
         return result
 
     def testAllViewsWithUserList(self):
@@ -103,64 +124,81 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         #   Test each view in sequence with the appropriate list of users.
         #   Doesn't check correctness; please add separate test functions for that.
-        for (view_name, user_type, list_name) in view_pairs:
+        for view_name, user_type, list_name in view_pairs:
             self.get_response(view_name, user_type, list_name)
 
     def testClassRosters(self):
         #   Check that all classes show up on the rosters.
-        response = self.get_response('classrosters', 'teachers', 'class_approved')
-        self.assertContains(response, '<div class="classtitle">', count=len(self.program.classes()))
+        response = self.get_response("classrosters", "teachers", "class_approved")
+        self.assertContains(
+            response, '<div class="classtitle">', count=len(self.program.classes())
+        )
 
     def testSchedules(self):
-        response = self.get_response('studentschedules/log', 'students', 'enrolled')
+        response = self.get_response("studentschedules/log", "students", "enrolled")
         #   Check that our view returns successfully (or redirects to job status for batch PDF)
-        response = self.get_response('studentschedules', 'students', 'enrolled', allow_redirect=True)
+        response = self.get_response(
+            "studentschedules", "students", "enrolled", allow_redirect=True
+        )
         self.assertEqual(response.status_code, 302)
         from esp.program.models import PrintableJob
-        job = PrintableJob.objects.filter(program=self.program, job_type='student schedules').first()
+
+        job = PrintableJob.objects.filter(
+            program=self.program, job_type="student schedules"
+        ).first()
         self.assertIsNotNone(job)
-        self.assertEqual(response['Location'], f'/manage/{self.program.getUrlBase()}/printable_job_status/{job.id}/')
+        self.assertEqual(
+            response["Location"],
+            f"/manage/{self.program.getUrlBase()}/printable_job_status/{job.id}/",
+        )
         #   Check that the actual Latex->PDF schedule generation code runs without error
-        students = getattr(self, 'students', [])
+        students = getattr(self, "students", [])
         if students:
             from django.test.client import RequestFactory
-            req = RequestFactory().get('/')
+
+            req = RequestFactory().get("/")
             req.user = self.admins[0]
             req.session = {}
-            pdf_resp = ProgramPrintables.get_student_schedules(req, students, self.program, 'pdf', False)
+            pdf_resp = ProgramPrintables.get_student_schedules(
+                req, students, self.program, "pdf", False
+            )
             self.assertEqual(pdf_resp.status_code, 200)
-            self.assertTrue(pdf_resp['Content-Type'].startswith('application/pdf'))
+            self.assertTrue(pdf_resp["Content-Type"].startswith("application/pdf"))
 
     def testCatalogHandlesUnicode(self):
         self._login_admin()
 
         cls = self.program.classes()[0]
-        cls.class_info = 'Description with unicode: caf\u00e9, pi\u00f1ata, and \u03c0!'
+        cls.class_info = "Description with unicode: caf\u00e9, pi\u00f1ata, and \u03c0!"
         cls.save()
 
         tex_request = self.factory.get(
-            '/learn/%s/catalog/tex' % self.program.getUrlBase(),
-            {'sort_name_list': 'timeblock'},
+            "/learn/%s/catalog/tex" % self.program.getUrlBase(),
+            {"sort_name_list": "timeblock"},
         )
         tex_request.user = self.admins[0]
         tex_request.session = self.client.session
-        tex_response = self.moduleobj.coursecatalog(tex_request, None, None, None, self.moduleobj, 'tex', self.program)
+        tex_response = self.moduleobj.coursecatalog(
+            tex_request, None, None, None, self.moduleobj, "tex", self.program
+        )
         self.assertEqual(tex_response.status_code, 200)
 
-        tex_content = tex_response.content.decode('utf-8')
-        self.assertIn('caf\u00e9', tex_content)
-        self.assertIn('pi\u00f1ata', tex_content)
-        self.assertIn('\u03c0', tex_content)
+        tex_content = tex_response.content.decode("utf-8")
+        self.assertIn("caf\u00e9", tex_content)
+        self.assertIn("pi\u00f1ata", tex_content)
+        self.assertIn("\u03c0", tex_content)
 
         pdf_request = self.factory.get(
-            '/learn/%s/catalog/pdf' % self.program.getUrlBase(),
-            {'sort_name_list': 'timeblock'},
+            "/learn/%s/catalog/pdf" % self.program.getUrlBase(),
+            {"sort_name_list": "timeblock"},
         )
         pdf_request.user = self.admins[0]
         pdf_request.session = self.client.session
-        pdf_response = self.moduleobj.coursecatalog(pdf_request, None, None, None, self.moduleobj, 'pdf', self.program)
+        pdf_response = self.moduleobj.coursecatalog(
+            pdf_request, None, None, None, self.moduleobj, "pdf", self.program
+        )
         self.assertEqual(pdf_response.status_code, 200)
-        self.assertTrue(pdf_response['Content-Type'].startswith('application/pdf'))
+        self.assertTrue(pdf_response["Content-Type"].startswith("application/pdf"))
 
     def test_all_classes_spreadsheet_loads(self):
         """
@@ -170,7 +208,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self._login_admin()
         response = self.client.get(self.all_classes_csv_url)
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'program/modules/programprintables/all_classes_select_fields.html')
+        self.assertTemplateUsed(
+            response, "program/modules/programprintables/all_classes_select_fields.html"
+        )
 
     def test_all_classes_spreadsheet_invalid_post(self):
         """
@@ -178,17 +218,21 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         """
         self._login_admin()
 
-        #Test empty form
+        # Test empty form
         response = self.client.post(self.all_classes_csv_url)
         self.assertEqual(response.status_code, 200)
-        self.assertFormError(response.context['form'], 'subject_fields', 'This field is required.')
-
-        #Test invalid fieldname
-        response = self.client.post(self.all_classes_csv_url, {'subject_fields':['invalid_field']})
         self.assertFormError(
-            response.context['form'],
-            'subject_fields',
-            'Select a valid choice. invalid_field is not one of the available choices.',
+            response.context["form"], "subject_fields", "This field is required."
+        )
+
+        # Test invalid fieldname
+        response = self.client.post(
+            self.all_classes_csv_url, {"subject_fields": ["invalid_field"]}
+        )
+        self.assertFormError(
+            response.context["form"],
+            "subject_fields",
+            "Select a valid choice. invalid_field is not one of the available choices.",
         )
 
     def test_all_classes_spreadsheet_valid_post(self):
@@ -196,21 +240,25 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         User must be admin to POST to all_classes_spreadsheet. Responses mimetype must be text/csv
         """
         self._login_admin()
-        exclude_fields = ['session_count']
-        #select all valid fields
-        post_data = {'subject_fields':[field.name for field in ClassSubject._meta.fields if field.name not in exclude_fields]}
+        exclude_fields = ["session_count"]
+        # select all valid fields
+        post_data = {
+            "subject_fields": [
+                field.name
+                for field in ClassSubject._meta.fields
+                if field.name not in exclude_fields
+            ]
+        }
 
         response = self.client.post(self.all_classes_csv_url, post_data)
         self.assertEqual(response.status_code, 200)
 
         self.assertEqual(
-            response.get('Content-Disposition'),
-            "attachment; filename=all_classes.csv"
+            response.get("Content-Disposition"), "attachment; filename=all_classes.csv"
         )
 
 
 class TestAllClassesSelectionForm(ProgramFrameworkTest):
-
     def test_empty_field_selection(self):
         """Ensure that at least one selection is required"""
         form = AllClassesSelectionForm(program=self.program)
@@ -218,24 +266,30 @@ class TestAllClassesSelectionForm(ProgramFrameworkTest):
 
     def test_invalid_field_selection(self):
         """Ensure that form does not accept invalid field names"""
-        params = {'subject_fields':['an_invalid_field_name']}
+        params = {"subject_fields": ["an_invalid_field_name"]}
         form = AllClassesSelectionForm(self.program, params)
         self.assertFalse(form.is_valid())
 
     def test_class_subject_fields_accepted(self):
         """Ensure that field names of ClassSubject are accepted (excluding intentionally excluded fields)"""
-        params = {'subject_fields': [field.name for field in ClassSubject._meta.fields
-                                     if field.name not in AllClassesFieldConverter.exclude_fields]}
+        params = {
+            "subject_fields": [
+                field.name
+                for field in ClassSubject._meta.fields
+                if field.name not in AllClassesFieldConverter.exclude_fields
+            ]
+        }
         form = AllClassesSelectionForm(self.program, params)
         self.assertTrue(form.is_valid())
 
 
 class TestAllClassesFieldConverter(ProgramFrameworkTest):
-
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
         self.class_subjects = ClassSubject.objects.all()
-        self.class_subject_fieldnames = [field.name for field in ClassSubject._meta.fields]
+        self.class_subject_fieldnames = [
+            field.name for field in ClassSubject._meta.fields
+        ]
         self.converter = AllClassesFieldConverter(self.program)
 
     def test_fieldvalue_fakefield(self):
@@ -243,7 +297,9 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         An invalid field should raise a ValueError
         """
         class_subject = self.class_subjects[0]
-        self.assertRaises(ValueError, self.converter.fieldvalue, *[class_subject, 'fake_field'])
+        self.assertRaises(
+            ValueError, self.converter.fieldvalue, *[class_subject, "fake_field"]
+        )
 
     def test_class_subject_fields_accepted(self):
         """
@@ -252,27 +308,31 @@ class TestAllClassesFieldConverter(ProgramFrameworkTest):
         """
         class_subject = self.class_subjects[0]
         for fieldname in self.class_subject_fieldnames:
-            self.assertEqual(self.converter.fieldvalue(class_subject, fieldname), \
-                             getattr(class_subject, fieldname))
+            self.assertEqual(
+                self.converter.fieldvalue(class_subject, fieldname),
+                getattr(class_subject, fieldname),
+            )
 
     def test_class_subject_teachers_format(self):
         class_subject = self.class_subjects[0]
 
         teacher_names = [t.name() for t in class_subject.get_teachers()]
-        formatted_teachers = [t.strip() for t in self.converter. \
-                              fieldvalue(class_subject, 'teachers').split(',')]
+        formatted_teachers = [
+            t.strip()
+            for t in self.converter.fieldvalue(class_subject, "teachers").split(",")
+        ]
         self.assertEqual(set(formatted_teachers), set(teacher_names))
 
     def test_class_times_format(self):
         class_subject = self.class_subjects[0]
-        formatted_times = self.converter.fieldvalue(class_subject, 'times')
+        formatted_times = self.converter.fieldvalue(class_subject, "times")
 
         for t in class_subject.friendly_times():
             self.assertIn(t, formatted_times)
 
     def test_class_rooms_format(self):
         class_subject = self.class_subjects[0]
-        formatted_rooms = self.converter.fieldvalue(class_subject, 'rooms')
+        formatted_rooms = self.converter.fieldvalue(class_subject, "rooms")
 
         for t in class_subject.prettyrooms():
             self.assertIn(t, formatted_rooms)

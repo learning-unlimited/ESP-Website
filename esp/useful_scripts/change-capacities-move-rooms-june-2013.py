@@ -17,7 +17,8 @@ from esp.program.models.class_ import ClassSubject
 from esp.resources.models import Resource
 from io import open
 
-def makeChanges(filename,override=False):
+
+def makeChanges(filename, override=False):
 
     secs = []
 
@@ -25,11 +26,11 @@ def makeChanges(filename,override=False):
         c = csv.reader(f)
         for row in c:
             emailcode, capacity, room = row
-            class_id, sec_id = list(map(int, emailcode[1:].split('s')))
+            class_id, sec_id = list(map(int, emailcode[1:].split("s")))
             cls = ClassSubject.objects.get(id=class_id)
             for s in cls.sections.all():
-                if s.index()==sec_id:
-                    sec=s
+                if s.index() == sec_id:
+                    sec = s
             try:
                 secs.append((cls, sec, capacity, room))
             except NameError:
@@ -39,7 +40,10 @@ def makeChanges(filename,override=False):
     for cls, sec, capacity, room in secs:
         if room is not "":
             cas = sec.classroomassignments()
-            print("Removing %s from %s" % (sec.emailcode(), ', '.join([x.resource.name for x in cas])))
+            print(
+                "Removing %s from %s"
+                % (sec.emailcode(), ", ".join([x.resource.name for x in cas]))
+            )
             cas.delete()
 
     for cls, sec, capacity, room in secs:

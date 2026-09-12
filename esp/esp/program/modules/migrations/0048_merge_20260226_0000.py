@@ -5,11 +5,9 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0047_add_admintestingmodule'),
-        ('modules', '0047_programmoduleobj_link_title'),
+        ("modules", "0047_add_admintestingmodule"),
+        ("modules", "0047_programmoduleobj_link_title"),
     ]
 
-    operations = [
-    ]
+    operations = []

@@ -7,15 +7,18 @@ import esp.db.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0020_contactinfo_cleanup'),
+        ("users", "0020_contactinfo_cleanup"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contactinfo',
-            name='user',
-            field=esp.db.fields.AjaxForeignKey(blank=True, on_delete=django.db.models.deletion.CASCADE, to='users.ESPUser'),
+            model_name="contactinfo",
+            name="user",
+            field=esp.db.fields.AjaxForeignKey(
+                blank=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                to="users.ESPUser",
+            ),
         ),
     ]

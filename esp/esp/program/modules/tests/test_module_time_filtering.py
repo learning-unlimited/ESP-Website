@@ -28,13 +28,9 @@ class TestModuleTimeFiltering(ProgramFrameworkTest):
         # lazily by getFromProgModule().  Mirror the pattern used by
         # test_expirable_module.py to force creation.
         mod = ProgramModule.objects.filter(
-            id__in=self.program.program_modules.values_list(
-                'id', flat=True
-            )
+            id__in=self.program.program_modules.values_list("id", flat=True)
         ).first()
-        self.pmo = ProgramModuleObj.getFromProgModule(
-            self.program, mod
-        )
+        self.pmo = ProgramModuleObj.getFromProgModule(self.program, mod)
 
     # -- helpers -----------------------------------------------------------
 

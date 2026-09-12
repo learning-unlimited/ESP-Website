@@ -4,28 +4,25 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0013_auto_20160709_2038'),
+        ("modules", "0013_auto_20160709_2038"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='StudentRegPhaseZero',
-            fields=[
-            ],
+            name="StudentRegPhaseZero",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='StudentRegPhaseZeroManage',
-            fields=[
-            ],
+            name="StudentRegPhaseZeroManage",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

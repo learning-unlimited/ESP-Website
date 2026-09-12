@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2008 by the individual contributors
@@ -35,37 +35,77 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.resources.models import ResourceType, ResourceRequest, Resource, ResourceAssignment
+from esp.resources.models import (
+    ResourceType,
+    ResourceRequest,
+    Resource,
+    ResourceAssignment,
+)
+
 
 class ResourceTypeAdmin(admin.ModelAdmin):
     def rt_choices(self, obj):
         return str(obj.choices)
-    rt_choices.short_description = 'Choices'
 
-    list_display = ('name', 'description', 'only_one', 'consumable', 'autocreated', 'hidden', 'priority_default', 'rt_choices', 'program')
-    search_fields = ['name', 'description', 'consumable', 'priority_default',
-            'attributes_dumped', 'program__name']
+    rt_choices.short_description = "Choices"
+
+    list_display = (
+        "name",
+        "description",
+        "only_one",
+        "consumable",
+        "autocreated",
+        "hidden",
+        "priority_default",
+        "rt_choices",
+        "program",
+    )
+    search_fields = [
+        "name",
+        "description",
+        "consumable",
+        "priority_default",
+        "attributes_dumped",
+        "program__name",
+    ]
+
 
 class ResourceRequestAdmin(admin.ModelAdmin):
-    list_display = ('target', 'res_type', 'desired_value')
-    list_filter = ('res_type__program',)
-    search_fields = ['target__parent_class__title', '=target__parent_class__id', 'res_type__name',
-            'res_type__description', 'res_type__program__name',
-            'desired_value']
+    list_display = ("target", "res_type", "desired_value")
+    list_filter = ("res_type__program",)
+    search_fields = [
+        "target__parent_class__title",
+        "=target__parent_class__id",
+        "res_type__name",
+        "res_type__description",
+        "res_type__program__name",
+        "desired_value",
+    ]
+
 
 class ResourceAdmin(admin.ModelAdmin):
     def program(obj):
         return obj.event.program.name
-    list_display = ('name', 'res_type', 'num_students', 'event', 'res_group', program)
-    list_filter = ('event__program',)
-    search_fields = ('name', 'res_type__name', 'res_type__description',
-            'res_type__attributes_dumped', 'event__program__name',
-            'num_students', 'event__name', 'event__short_description',
-            '=res_group__id')
+
+    list_display = ("name", "res_type", "num_students", "event", "res_group", program)
+    list_filter = ("event__program",)
+    search_fields = (
+        "name",
+        "res_type__name",
+        "res_type__description",
+        "res_type__attributes_dumped",
+        "event__program__name",
+        "num_students",
+        "event__name",
+        "event__short_description",
+        "=res_group__id",
+    )
+
 
 class ResourceAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('id', 'resource', 'target', 'assignment_group', 'returned')
-    search_fields = ('=id', 'resource__name', 'target__parent_class__title')
+    list_display = ("id", "resource", "target", "assignment_group", "returned")
+    search_fields = ("=id", "resource__name", "target__parent_class__title")
+
 
 admin_site.register(ResourceType, ResourceTypeAdmin)
 admin_site.register(ResourceRequest, ResourceRequestAdmin)

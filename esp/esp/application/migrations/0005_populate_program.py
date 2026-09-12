@@ -7,8 +7,7 @@ from django.db import migrations, models
 # things is a bit fragile.
 def populate_program(apps, schema_editor):
     Program = apps.get_model("program", "Program")
-    FormstackAppSettings = apps.get_model("application",
-                                          "FormstackAppSettings")
+    FormstackAppSettings = apps.get_model("application", "FormstackAppSettings")
     for program in Program.objects.all():
         fsass = FormstackAppSettings.objects.filter(module__program=program)
         if fsass:
@@ -24,12 +23,9 @@ def populate_program(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('application', '0004_formstackappsettings_program'),
-        ('program', '0004_auto_20151126_2220'),
+        ("application", "0004_formstackappsettings_program"),
+        ("program", "0004_auto_20151126_2220"),
     ]
 
-    operations = [
-        migrations.RunPython(populate_program, migrations.RunPython.noop)
-    ]
+    operations = [migrations.RunPython(populate_program, migrations.RunPython.noop)]

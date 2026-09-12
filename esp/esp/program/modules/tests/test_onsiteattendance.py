@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2014 by the individual contributors
@@ -57,9 +57,9 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
 
     def setUp(self):
         super().setUp(
-            num_timeslots=4,       # 09:00, 10:00, 11:00, 12:00
-            timeslot_length=60,    # 60-minute slots → hour-aligned boundaries
-            timeslot_gap=0,        # no gap → consecutive hours
+            num_timeslots=4,  # 09:00, 10:00, 11:00, 12:00
+            timeslot_length=60,  # 60-minute slots → hour-aligned boundaries
+            timeslot_gap=0,  # no gap → consecutive hours
             num_rooms=1,
             room_capacity=30,
             num_categories=1,
@@ -124,10 +124,13 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
             time=when,
         )
 
-    def _make_other_program(self, program_type="OtherProgram",
-                            instance_name="2222_Fall",
-                            instance_label="Fall 2222",
-                            num_timeslots=2):
+    def _make_other_program(
+        self,
+        program_type="OtherProgram",
+        instance_name="2222_Fall",
+        instance_label="Fall 2222",
+        num_timeslots=2,
+    ):
         """Spin up a minimal second program and return it."""
         other = ProgramFrameworkTest()
         other.setUp(
@@ -174,14 +177,17 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
     def assertBucketsOrdered(self, result):
         """Assert that result dict keys are in ascending chronological order."""
         keys = list(result.keys())
-        self.assertEqual(keys, sorted(keys), "Bucket keys must be chronologically ordered.")
+        self.assertEqual(
+            keys, sorted(keys), "Bucket keys must be chronologically ordered."
+        )
 
     def assertNoDuplicatesInBuckets(self, result):
         """Assert that no user appears more than once in any single bucket."""
         for bucket, users in result.items():
             user_ids = [u.id for u in users]
             self.assertEqual(
-                len(user_ids), len(set(user_ids)),
+                len(user_ids),
+                len(set(user_ids)),
                 f"Duplicate user in bucket {bucket!r}: {user_ids}",
             )
 
@@ -195,7 +201,8 @@ class _OnSiteAttendanceBase(ProgramFrameworkTest):
         """Assert that `user` does not appear in any bucket of `result`."""
         for bucket, users in result.items():
             self.assertNotIn(
-                user, users,
+                user,
+                users,
                 f"User unexpectedly present in bucket {bucket!r}.",
             )
 
@@ -261,11 +268,11 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         result = self.module.times_attending_class(self.program)
         self.assertBucketsOrdered(result)
 
-        b9  = datetime.datetime(2026, 3, 20, 9, 0, 0)
+        b9 = datetime.datetime(2026, 3, 20, 9, 0, 0)
         b10 = datetime.datetime(2026, 3, 20, 10, 0, 0)
         b11 = datetime.datetime(2026, 3, 20, 11, 0, 0)
 
-        self.assertEqual({u.id for u in result[b9]},  {s0.id, s1.id})
+        self.assertEqual({u.id for u in result[b9]}, {s0.id, s1.id})
         self.assertEqual({u.id for u in result[b10]}, {s0.id, s1.id, s2.id})
         self.assertEqual({u.id for u in result[b11]}, {s0.id, s1.id, s2.id})
 
@@ -278,9 +285,11 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
         # Student must still appear — dedup must not silently drop them.
-        self.assertUserInBuckets(student, self._expected_buckets(
-            datetime.datetime(2026, 3, 20, 9, 10, 0)
-        ), result)
+        self.assertUserInBuckets(
+            student,
+            self._expected_buckets(datetime.datetime(2026, 3, 20, 9, 10, 0)),
+            result,
+        )
 
     def test_deduplicates_same_student_across_different_hours(self):
         """Two SRs in different hours → carry-forward, but still once per bucket."""
@@ -291,9 +300,11 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         result = self.module.times_attending_class(self.program)
         self.assertNoDuplicatesInBuckets(result)
         # Student must appear from their earliest SR onward.
-        self.assertUserInBuckets(student, self._expected_buckets(
-            datetime.datetime(2026, 3, 20, 9, 5, 0)
-        ), result)
+        self.assertUserInBuckets(
+            student,
+            self._expected_buckets(datetime.datetime(2026, 3, 20, 9, 5, 0)),
+            result,
+        )
 
     def test_excludes_sr_for_unscheduled_section(self):
         """SR whose section has no meeting_times must not appear (meeting_times__isnull=False filter)."""
@@ -311,8 +322,9 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         unscheduled.clear_meeting_times()
 
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 9, 0, 0),
-                      section=unscheduled)
+        self._make_sr(
+            student, datetime.datetime(2026, 3, 20, 9, 0, 0), section=unscheduled
+        )
 
         self.assertUserNotInResult(
             student, self.module.times_attending_class(self.program)
@@ -323,7 +335,8 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         other = self._make_other_program()
         other_section = (
             ClassSection.objects.filter(parent_class__parent_program=other.program)
-            .order_by("id").first()
+            .order_by("id")
+            .first()
         )
         other_section.assign_meeting_times(
             list(other.program.getTimeSlots().order_by("start"))[:2]
@@ -338,7 +351,8 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
 
         # self.program has no SRs of its own → must be empty.
         self.assertEqual(
-            self.module.times_attending_class(self.program), {},
+            self.module.times_attending_class(self.program),
+            {},
             "SR from a different program leaked into times_attending_class().",
         )
 
@@ -370,16 +384,21 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
         night_section.assign_meeting_times([late_slot])
 
         student = self.students[0]
-        self._make_sr(student, datetime.datetime(2026, 3, 20, 23, 30, 0),
-                      section=night_section)
+        self._make_sr(
+            student, datetime.datetime(2026, 3, 20, 23, 30, 0), section=night_section
+        )
 
         result = self.module.times_attending_class(self.program)
 
-        self.assertUserInBuckets(student, [
-            datetime.datetime(2026, 3, 20, 23, 0, 0),
-            datetime.datetime(2026, 3, 21, 0, 0, 0),
-            datetime.datetime(2026, 3, 21, 1, 0, 0),
-        ], result)
+        self.assertUserInBuckets(
+            student,
+            [
+                datetime.datetime(2026, 3, 20, 23, 0, 0),
+                datetime.datetime(2026, 3, 21, 0, 0, 0),
+                datetime.datetime(2026, 3, 21, 1, 0, 0),
+            ],
+            result,
+        )
 
     def test_normal_same_day_sr_produces_correct_buckets(self):
         """
@@ -399,11 +418,15 @@ class TestTimesAttendingClass(_OnSiteAttendanceBase):
 
         result = self.module.times_attending_class(self.program)
 
-        self.assertUserInBuckets(student, [
-            datetime.datetime(2026, 3, 20, 9, 0, 0),
-            datetime.datetime(2026, 3, 20, 10, 0, 0),
-            datetime.datetime(2026, 3, 20, 11, 0, 0),
-        ], result)
+        self.assertUserInBuckets(
+            student,
+            [
+                datetime.datetime(2026, 3, 20, 9, 0, 0),
+                datetime.datetime(2026, 3, 20, 10, 0, 0),
+                datetime.datetime(2026, 3, 20, 11, 0, 0),
+            ],
+            result,
+        )
 
 
 class TestTimesCheckedIn(_OnSiteAttendanceBase):
@@ -434,7 +457,7 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
         """Multiple records for one user → only the minimum time is kept."""
         student = self.students[0]
         earlier = datetime.datetime(2026, 3, 20, 9, 5, 0)
-        later   = datetime.datetime(2026, 3, 20, 9, 30, 0)
+        later = datetime.datetime(2026, 3, 20, 9, 30, 0)
         self._make_record(student, later)
         self._make_record(student, earlier)
 
@@ -455,13 +478,17 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
     def test_one_entry_per_user_regardless_of_record_count(self):
         """s0×2, s1×1, s2×3 records → exactly 3 entries in result."""
         s0, s1, s2 = self.students
-        for t in [datetime.datetime(2026, 3, 20, 9, 5, 0),
-                  datetime.datetime(2026, 3, 20, 9, 20, 0)]:
+        for t in [
+            datetime.datetime(2026, 3, 20, 9, 5, 0),
+            datetime.datetime(2026, 3, 20, 9, 20, 0),
+        ]:
             self._make_record(s0, t)
         self._make_record(s1, datetime.datetime(2026, 3, 20, 10, 0, 0))
-        for t in [datetime.datetime(2026, 3, 20, 10, 30, 0),
-                  datetime.datetime(2026, 3, 20, 10, 45, 0),
-                  datetime.datetime(2026, 3, 20, 11, 0, 0)]:
+        for t in [
+            datetime.datetime(2026, 3, 20, 10, 30, 0),
+            datetime.datetime(2026, 3, 20, 10, 45, 0),
+            datetime.datetime(2026, 3, 20, 11, 0, 0),
+        ]:
             self._make_record(s2, t)
 
         self.assertEqual(len(self.module.times_checked_in(self.program)), 3)
@@ -470,11 +497,15 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
         """End-to-end: each user's minimum time, sorted ascending."""
         s0, s1, s2 = self.students
         records = {
-            s0: [datetime.datetime(2026, 3, 20, 9, 12, 30),
-                 datetime.datetime(2026, 3, 20, 9, 5, 10)],
+            s0: [
+                datetime.datetime(2026, 3, 20, 9, 12, 30),
+                datetime.datetime(2026, 3, 20, 9, 5, 10),
+            ],
             s1: [datetime.datetime(2026, 3, 20, 10, 0, 5)],
-            s2: [datetime.datetime(2026, 3, 20, 10, 59, 59),
-                 datetime.datetime(2026, 3, 20, 11, 0, 0)],
+            s2: [
+                datetime.datetime(2026, 3, 20, 10, 59, 59),
+                datetime.datetime(2026, 3, 20, 11, 0, 0),
+            ],
         }
         for user, times in records.items():
             for t in times:
@@ -494,6 +525,7 @@ class TestTimesCheckedIn(_OnSiteAttendanceBase):
         )
 
         self.assertEqual(
-            self.module.times_checked_in(self.program), [],
+            self.module.times_checked_in(self.program),
+            [],
             "Record from a different program leaked into times_checked_in().",
         )

@@ -4,22 +4,21 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('customforms', '0003_auto_20260306_0336'),
+        ("customforms", "0003_auto_20260306_0336"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='field',
-            options={'ordering': ['seq']},
+            name="field",
+            options={"ordering": ["seq"]},
         ),
         migrations.AlterModelOptions(
-            name='page',
-            options={'ordering': ['seq']},
+            name="page",
+            options={"ordering": ["seq"]},
         ),
         migrations.AlterModelOptions(
-            name='section',
-            options={'ordering': ['seq']},
+            name="section",
+            options={"ordering": ["seq"]},
         ),
     ]

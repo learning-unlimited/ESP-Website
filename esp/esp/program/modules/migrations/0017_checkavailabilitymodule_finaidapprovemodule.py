@@ -4,28 +4,25 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0016_merge'),
+        ("modules", "0016_merge"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CheckAvailabilityModule',
-            fields=[
-            ],
+            name="CheckAvailabilityModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='FinAidApproveModule',
-            fields=[
-            ],
+            name="FinAidApproveModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

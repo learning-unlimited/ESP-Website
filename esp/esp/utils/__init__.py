@@ -11,6 +11,7 @@ The functions in this file are globally relevant, too annoying to inline,
 import sys
 from urllib.parse import quote_plus
 
+
 def force_str(x):
     """
     Forces x to a str, encoding via utf8 if needed.
@@ -23,7 +24,8 @@ def force_str(x):
     """
     if isinstance(x, str) or isinstance(x, str):
         return x
-    return str(x).encode('utf8')
+    return str(x).encode("utf8")
+
 
 def ascii(x):
     """
@@ -40,6 +42,7 @@ def ascii(x):
 
     """
     return quote_plus(force_str(x))
+
 
 # copied from: https://portingguide.readthedocs.io/en/latest/comparisons.html
 def cmp(x, y):

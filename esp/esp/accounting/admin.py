@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2012 by the individual contributors
@@ -33,59 +33,131 @@ Learning Unlimited, Inc.
 """
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.accounting.models import Transfer, Account, FinancialAidGrant, \
-    LineItemType, LineItemOptions, CybersourcePostback
+from esp.accounting.models import (
+    Transfer,
+    Account,
+    FinancialAidGrant,
+    LineItemType,
+    LineItemOptions,
+    CybersourcePostback,
+)
 from esp.utils.admin_user_search import default_user_search
+
 
 class LIOInline(admin.TabularInline):
     model = LineItemOptions
 
+
 class LITAdmin(admin.ModelAdmin):
-    list_display = ['text', 'amount_dec', 'program', 'required', 'for_finaid', 'num_options', 'max_quantity']
-    search_fields = ['text', 'amount_dec', 'program__url', 'program__name']
-    list_filter = ['program']
-    inlines = [LIOInline,]
+    list_display = [
+        "text",
+        "amount_dec",
+        "program",
+        "required",
+        "for_finaid",
+        "num_options",
+        "max_quantity",
+    ]
+    search_fields = ["text", "amount_dec", "program__url", "program__name"]
+    list_filter = ["program"]
+    inlines = [
+        LIOInline,
+    ]
+
+
 admin_site.register(LineItemType, LITAdmin)
+
 
 class TransferAdmin(admin.ModelAdmin):
     def option_description(self, obj):
         if obj.option:
             return obj.option.description
         else:
-            return '--'
+            return "--"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "line_item":
-            kwargs["queryset"] = LineItemType.objects.all().select_related('program')
+            kwargs["queryset"] = LineItemType.objects.all().select_related("program")
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-    list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'option_description']
-    list_filter = ['source', 'destination', 'line_item__program']
-    list_select_related = ['source', 'destination', 'line_item', 'option', 'user', 'line_item__program']
-    search_fields = default_user_search() +['source__name', 'destination__name', 'line_item__text', '=transaction_id']
-    raw_id_fields = ['paid_in']  # it's too expensive to iterate over all Transfers to create the dropdown menu
+    list_display = [
+        "id",
+        "line_item",
+        "user",
+        "timestamp",
+        "source",
+        "destination",
+        "amount_dec",
+        "option_description",
+    ]
+    list_filter = ["source", "destination", "line_item__program"]
+    list_select_related = [
+        "source",
+        "destination",
+        "line_item",
+        "option",
+        "user",
+        "line_item__program",
+    ]
+    search_fields = default_user_search() + [
+        "source__name",
+        "destination__name",
+        "line_item__text",
+        "=transaction_id",
+    ]
+    raw_id_fields = [
+        "paid_in"
+    ]  # it's too expensive to iterate over all Transfers to create the dropdown menu
+
+
 admin_site.register(Transfer, TransferAdmin)
 
+
 class AccountAdmin(admin.ModelAdmin):
-    list_display = ['name', 'program', 'balance']
+    list_display = ["name", "program", "balance"]
+
+
 admin_site.register(Account, AccountAdmin)
+
 
 def finalize_finaid_grants(modeladmin, request, queryset):
     for grant in queryset:
         grant.finalize()
+
+
 class FinancialAidGrantAdmin(admin.ModelAdmin):
-    list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
-    readonly_fields=('finalized',)
-    list_filter = ['request__program']
-    search_fields = default_user_search('request__user')
-    actions = [ finalize_finaid_grants, ]
+    list_display = [
+        "id",
+        "request",
+        "user",
+        "program",
+        "finalized",
+        "amount_max_dec",
+        "percent",
+    ]
+    readonly_fields = ("finalized",)
+    list_filter = ["request__program"]
+    search_fields = default_user_search("request__user")
+    actions = [
+        finalize_finaid_grants,
+    ]
+
+
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
+
 class CybersourcePostbackAdmin(admin.ModelAdmin):
-    readonly_fields = ['timestamp']
-    list_display = ['timestamp', 'transfer']
-    search_fields = ['post_data', '=transfer__id', '=transfer__user__id',
-                     '=transfer__user__username', '=transfer__transaction_id']
-    list_filter = ['timestamp']
-    raw_id_fields = ['transfer']
+    readonly_fields = ["timestamp"]
+    list_display = ["timestamp", "transfer"]
+    search_fields = [
+        "post_data",
+        "=transfer__id",
+        "=transfer__user__id",
+        "=transfer__user__username",
+        "=transfer__transaction_id",
+    ]
+    list_filter = ["timestamp"]
+    raw_id_fields = ["transfer"]
+
+
 admin_site.register(CybersourcePostback, CybersourcePostbackAdmin)

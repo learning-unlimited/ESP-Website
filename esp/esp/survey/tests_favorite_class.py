@@ -17,10 +17,7 @@ class FavoriteClassSurveyTestCase(TestCase):
         Test that the Favorite Class question type exists
         in the database.
         """
-        favorite_class_type = QuestionType.objects.filter(
-            name='Favorite Class'
-        )
+        favorite_class_type = QuestionType.objects.filter(name="Favorite Class")
         self.assertGreater(
-            favorite_class_type.count(), 0,
-            "Favorite Class question type should exist"
+            favorite_class_type.count(), 0, "Favorite Class question type should exist"
         )

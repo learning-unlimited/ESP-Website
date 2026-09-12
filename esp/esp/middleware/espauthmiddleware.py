@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -42,10 +42,11 @@ from django.utils.functional import SimpleLazyObject
 
 from esp.users.models import AnonymousESPUser, ESPUser
 
-__all__ = ('ESPAuthMiddleware',)
+__all__ = ("ESPAuthMiddleware",)
+
 
 def get_user(request):
-    """ Code modified from django.contrib.auth.middleware.get_user
+    """Code modified from django.contrib.auth.middleware.get_user
     in order to replace the AnonymousUser with our own which has
     all the ESPUser methods. This mirrors Django's structure, where
     the auth backend only returns either a User or None, and
@@ -53,8 +54,8 @@ def get_user(request):
     backend returns either an ESPUser or None, but auth.get_user() is less
     convenient to override since I'd still have to override this and the
     middleware's process_request() to use it, so I replace its AnonymousUser
-    with an AnonymousESPUser here instead. """
-    if not hasattr(request, '_cached_user'):
+    with an AnonymousESPUser here instead."""
+    if not hasattr(request, "_cached_user"):
         user = auth.get_user(request)
         if user.is_authenticated:
             request._cached_user = user
@@ -62,13 +63,16 @@ def get_user(request):
             request._cached_user = AnonymousESPUser()
     return request._cached_user
 
+
 class ESPAuthMiddleware(AuthenticationMiddleware):
-    """ Much like the auth middleware except that this messes with cookie settings and such. """
+    """Much like the auth middleware except that this messes with cookie settings and such."""
 
     # Yes, it's necessary to override this, the get_user() is different
     # from Django's (see above).
     def process_request(self, request):
-        assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
+        assert hasattr(request, "session"), (
+            "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
+        )
 
         request.user = SimpleLazyObject(lambda: get_user(request))
 
@@ -82,15 +86,15 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
         request.session.accessed = request.session.modified
 
         ## This gets set if we're not supposed to modify the cookie
-        if getattr(response, 'no_set_cookies', False):
+        if getattr(response, "no_set_cookies", False):
             return response
 
         modified_cookies = False
 
-        user = getattr(request, '_cached_user', None)
+        user = getattr(request, "_cached_user", None)
         #   Allow a view to set a newly logged-in user via the response
         if not user or not user.is_authenticated:
-            new_user = getattr(response, '_new_user', None)
+            new_user = getattr(response, "_new_user", None)
             if isinstance(new_user, ESPUser):
                 user = new_user
 
@@ -101,12 +105,13 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             else:
                 max_age = settings.SESSION_COOKIE_AGE
                 expires = datetime.datetime.strftime(
-                    datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE),
-                    "%a, %d-%b-%Y %H:%M:%S GMT"
+                    datetime.datetime.now(datetime.timezone.utc)
+                    + datetime.timedelta(seconds=settings.SESSION_COOKIE_AGE),
+                    "%a, %d-%b-%Y %H:%M:%S GMT",
                 )
-            ret_title = ''
+            ret_title = ""
             try:
-                ret_title = request.session['user_morph']['retTitle']
+                ret_title = request.session["user_morph"]["retTitle"]
             except KeyError:
                 pass
 
@@ -114,48 +119,67 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
             # make the chocolate chips nervous.
             # : see public/media/scripts/content/user_data.js
             import urllib.request, urllib.parse, urllib.error
+
             encoding = request.encoding
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
 
             has_qsd_bits = user.isAdministrator()
 
-            new_values = {'cur_username': user.username,
-                          'cur_userid': user.id,
-                          'cur_email': urllib.parse.quote(user.email.encode(encoding)),
-                          'cur_first_name': urllib.parse.quote(user.first_name.encode(encoding)),
-                          'cur_last_name': urllib.parse.quote(user.last_name.encode(encoding)),
-                          'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
-                          'cur_retTitle': urllib.parse.quote(ret_title.encode(encoding)),
-                          'cur_admin': user.isAdministrator() and '1' or '0',
-                          'cur_qsd_bits': has_qsd_bits and '1' or '0',
-                          'cur_yog': user.getYOG(),
-                          'cur_grade': user.getGrade(),
-                          'cur_roles': urllib.parse.quote(",".join(user.getUserTypes())),
-                          }
+            new_values = {
+                "cur_username": user.username,
+                "cur_userid": user.id,
+                "cur_email": urllib.parse.quote(user.email.encode(encoding)),
+                "cur_first_name": urllib.parse.quote(user.first_name.encode(encoding)),
+                "cur_last_name": urllib.parse.quote(user.last_name.encode(encoding)),
+                "cur_other_user": getattr(user, "other_user", False) and "1" or "0",
+                "cur_retTitle": urllib.parse.quote(ret_title.encode(encoding)),
+                "cur_admin": user.isAdministrator() and "1" or "0",
+                "cur_qsd_bits": has_qsd_bits and "1" or "0",
+                "cur_yog": user.getYOG(),
+                "cur_grade": user.getGrade(),
+                "cur_roles": urllib.parse.quote(",".join(user.getUserTypes())),
+            }
 
             for key, value in new_values.items():
                 if request.COOKIES.get(key, "") != str(value if value else ""):
-                    response.set_cookie(key, value, max_age=max_age, expires=expires,
-                                        domain=settings.SESSION_COOKIE_DOMAIN,
-                                        secure=settings.SESSION_COOKIE_SECURE or None)
+                    response.set_cookie(
+                        key,
+                        value,
+                        max_age=max_age,
+                        expires=expires,
+                        domain=settings.SESSION_COOKIE_DOMAIN,
+                        secure=settings.SESSION_COOKIE_SECURE or None,
+                    )
                     modified_cookies = True
-                if str(value) == '':
+                if str(value) == "":
                     response.delete_cookie(key, domain=settings.SESSION_COOKIE_DOMAIN)
                     modified_cookies = True
 
         if user and not user.is_authenticated:
-            cookies_to_delete = [x for x in ('cur_username', 'cur_userid', 'cur_email',
-                                         'cur_first_name', 'cur_last_name',
-                                         'cur_other_user', 'cur_retTitle',
-                                         'cur_admin', 'cur_roles',
-                                         'cur_yog', 'cur_grade',
-                                         'cur_qsd_bits') if request.COOKIES.get(x, False)]
+            cookies_to_delete = [
+                x
+                for x in (
+                    "cur_username",
+                    "cur_userid",
+                    "cur_email",
+                    "cur_first_name",
+                    "cur_last_name",
+                    "cur_other_user",
+                    "cur_retTitle",
+                    "cur_admin",
+                    "cur_roles",
+                    "cur_yog",
+                    "cur_grade",
+                    "cur_qsd_bits",
+                )
+                if request.COOKIES.get(x, False)
+            ]
 
             list(map(response.delete_cookie, cookies_to_delete))
-            modified_cookies = (len(cookies_to_delete) > 0)
+            modified_cookies = len(cookies_to_delete) > 0
 
         if modified_cookies:
-            patch_vary_headers(response, ('Cookie',))
+            patch_vary_headers(response, ("Cookie",))
 
         return response

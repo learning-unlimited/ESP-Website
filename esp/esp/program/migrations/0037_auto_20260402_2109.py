@@ -6,29 +6,41 @@ import django.db.models.expressions
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0036_auto_20260402_1001'),
+        ("program", "0036_auto_20260402_1001"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='program',
-            name='grade_max',
-            field=models.IntegerField(validators=[django.core.validators.MinValueValidator(0)]),
+            model_name="program",
+            name="grade_max",
+            field=models.IntegerField(
+                validators=[django.core.validators.MinValueValidator(0)]
+            ),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='grade_min',
-            field=models.IntegerField(validators=[django.core.validators.MinValueValidator(0)]),
+            model_name="program",
+            name="grade_min",
+            field=models.IntegerField(
+                validators=[django.core.validators.MinValueValidator(0)]
+            ),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='program_size_max',
-            field=models.IntegerField(help_text='Set to 0 for no cap. Student registration performance is best when no cap is set.', null=True, validators=[django.core.validators.MinValueValidator(0)]),
+            model_name="program",
+            name="program_size_max",
+            field=models.IntegerField(
+                help_text="Set to 0 for no cap. Student registration performance is best when no cap is set.",
+                null=True,
+                validators=[django.core.validators.MinValueValidator(0)],
+            ),
         ),
         migrations.AddConstraint(
-            model_name='program',
-            constraint=models.CheckConstraint(check=models.Q(grade_min__lte=django.db.models.expressions.F('grade_max')), name='program_grade_min_lte_grade_max'),
+            model_name="program",
+            constraint=models.CheckConstraint(
+                check=models.Q(
+                    grade_min__lte=django.db.models.expressions.F("grade_max")
+                ),
+                name="program_grade_min_lte_grade_max",
+            ),
         ),
     ]

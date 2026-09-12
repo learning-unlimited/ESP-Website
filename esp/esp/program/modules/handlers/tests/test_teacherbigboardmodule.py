@@ -5,7 +5,10 @@ from django.utils import timezone
 from django.core.cache import cache
 
 from esp.program.models import ClassSubject, ClassSection
-from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule, get_filter
+from esp.program.modules.handlers.teacherbigboardmodule import (
+    TeacherBigBoardModule,
+    get_filter,
+)
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
 
@@ -79,7 +82,7 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
 
         self.teacher_checked_in_type, _ = RecordType.objects.get_or_create(
             name="teacher_checked_in",
-            defaults={"description": "Teacher checked in for teaching"}
+            defaults={"description": "Teacher checked in for teaching"},
         )
 
     def test_get_filter(self):
@@ -90,35 +93,53 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
 
         # just the approved ones
         filt_approved = get_filter(self.program, approved=True)
-        self.assertEqual(ClassSubject.objects.filter(filt_approved).distinct().count(), 2)
+        self.assertEqual(
+            ClassSubject.objects.filter(filt_approved).distinct().count(), 2
+        )
 
         # just the scheduled ones
         filt_scheduled = get_filter(self.program, scheduled=True)
         # class 0, 2, and 3 were scheduled by schedule_randomly
-        self.assertEqual(ClassSubject.objects.filter(filt_scheduled).distinct().count(), 3)
+        self.assertEqual(
+            ClassSubject.objects.filter(filt_scheduled).distinct().count(), 3
+        )
 
         # filter by specific teachers
         filt_teachers = get_filter(self.program, teachers=[self.teachers[0]])
-        self.assertEqual(ClassSubject.objects.filter(filt_teachers).distinct().count(), 2)
+        self.assertEqual(
+            ClassSubject.objects.filter(filt_teachers).distinct().count(), 2
+        )
 
         # combine all filters
-        filt_combined = get_filter(self.program, approved=True, scheduled=True, teachers=[self.teachers[0]])
-        self.assertEqual(ClassSubject.objects.filter(filt_combined).distinct().count(), 1)
+        filt_combined = get_filter(
+            self.program, approved=True, scheduled=True, teachers=[self.teachers[0]]
+        )
+        self.assertEqual(
+            ClassSubject.objects.filter(filt_combined).distinct().count(), 1
+        )
 
     def test_num_teachers_teaching(self):
         # count teachers with active classes (teacher 0 has approved, teacher 1 doesn't)
         self.assertEqual(TeacherBigBoardModule.num_teachers_teaching(self.program), 2)
-        self.assertEqual(TeacherBigBoardModule.num_teachers_teaching(self.program, approved=True), 1)
-        self.assertEqual(TeacherBigBoardModule.num_teachers_teaching(self.program, scheduled=True), 2)
+        self.assertEqual(
+            TeacherBigBoardModule.num_teachers_teaching(self.program, approved=True), 1
+        )
+        self.assertEqual(
+            TeacherBigBoardModule.num_teachers_teaching(self.program, scheduled=True), 2
+        )
 
     def test_num_class_reg(self):
         # test the registration count metrics
         # total classes should be 4
         self.assertEqual(TeacherBigBoardModule.num_class_reg(self.program), 4)
         # only 2 are approved
-        self.assertEqual(TeacherBigBoardModule.num_class_reg(self.program, approved=True), 2)
+        self.assertEqual(
+            TeacherBigBoardModule.num_class_reg(self.program, approved=True), 2
+        )
         # 3 are scheduled
-        self.assertEqual(TeacherBigBoardModule.num_class_reg(self.program, scheduled=True), 3)
+        self.assertEqual(
+            TeacherBigBoardModule.num_class_reg(self.program, scheduled=True), 3
+        )
 
     def test_reg_classes_and_teach_times(self):
         # test the graph timestamp arrays
@@ -156,14 +177,14 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
             program=self.program,
             user=self.teachers[0],
             event=self.teacher_checked_in_type,
-            time=timezone.now()
+            time=timezone.now(),
         )
         # this yesterday checkin shouldn't count for today's metrics
         Record.objects.create(
             program=self.program,
             user=self.teachers[1],
             event=self.teacher_checked_in_type,
-            time=timezone.now() - datetime.timedelta(days=1)
+            time=timezone.now() - datetime.timedelta(days=1),
         )
 
         self.assertEqual(self.module.num_checked_in_teachers(self.program), 1)
@@ -187,20 +208,24 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
 
     def test_teacherbigboard_view(self):
         # test the actual dashboard view rendering
-        request = self.factory.get('/manage/teacherbigboard')
+        request = self.factory.get("/manage/teacherbigboard")
         request.user = self.admin
         request.program = self.program
         request.prog = self.program
 
         # pull the raw method out of the decorator to call it directly
-        fn = getattr(TeacherBigBoardModule.teacherbigboard, 'method', TeacherBigBoardModule.teacherbigboard)
-
-        response = fn(
-            self.module, request, 'manage', None, None, None, None, self.program
+        fn = getattr(
+            TeacherBigBoardModule.teacherbigboard,
+            "method",
+            TeacherBigBoardModule.teacherbigboard,
         )
 
-        response.context_data['prog'] = self.program
-        response.context_data['popular_classes'] = None
+        response = fn(
+            self.module, request, "manage", None, None, None, None, self.program
+        )
+
+        response.context_data["prog"] = self.program
+        response.context_data["popular_classes"] = None
         response.render()
         self.assertEqual(response.status_code, 200)
 
@@ -215,16 +240,20 @@ class TeacherBigBoardModuleTests(ProgramFrameworkTest):
         ClassSubject.objects.filter(parent_program=self.program).delete()
         self._flush_cache()
 
-        request = self.factory.get('/manage/teacherbigboard')
+        request = self.factory.get("/manage/teacherbigboard")
         request.user = self.admin
         request.program = self.program
         request.prog = self.program
-        fn = getattr(TeacherBigBoardModule.teacherbigboard, 'method', TeacherBigBoardModule.teacherbigboard)
+        fn = getattr(
+            TeacherBigBoardModule.teacherbigboard,
+            "method",
+            TeacherBigBoardModule.teacherbigboard,
+        )
         response = fn(
-            self.module, request, 'manage', None, None, None, None, self.program
+            self.module, request, "manage", None, None, None, None, self.program
         )
 
-        response.context_data['prog'] = self.program
-        response.context_data['popular_classes'] = None
+        response.context_data["prog"] = self.program
+        response.context_data["popular_classes"] = None
         response.render()
         self.assertEqual(response.status_code, 200)

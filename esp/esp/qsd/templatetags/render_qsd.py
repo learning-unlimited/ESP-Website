@@ -6,69 +6,95 @@ from esp.tagdict.models import Tag
 
 register = template.Library()
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
+
+@cache_inclusion_tag(register, "inclusion/qsd/render_qsd.html")
 def render_qsd(qsd):
     # check whether we should display the date and author footer (only affects non-administrator users)
-    display_date_author_tag = Tag.getTag('qsd_display_date_author')
-    display_date_author = 2 # display date and author
+    display_date_author_tag = Tag.getTag("qsd_display_date_author")
+    display_date_author = 2  # display date and author
 
-    if display_date_author_tag == 'Date':
-        display_date_author = 1 # display date only
-    elif display_date_author_tag == 'None':
-        display_date_author = 0 # hide footer
+    if display_date_author_tag == "Date":
+        display_date_author = 1  # display date only
+    elif display_date_author_tag == "None":
+        display_date_author = 0  # hide footer
 
-    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
-render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+    return {"qsdrec": qsd, "display_date_author": display_date_author}
+
+
+render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {"qsd": qsd})
 render_qsd.cached_function.depend_on_model(Tag)
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd_md.html')
+
+@cache_inclusion_tag(register, "inclusion/qsd/render_qsd_md.html")
 def render_qsd_md(qsd):
     # check whether we should display the date and author footer (only affects non-administrator users)
-    display_date_author_tag = Tag.getTag('qsd_display_date_author')
-    display_date_author = 2 # display date and author
+    display_date_author_tag = Tag.getTag("qsd_display_date_author")
+    display_date_author = 2  # display date and author
 
-    if display_date_author_tag == 'Date':
-        display_date_author = 1 # display date only
-    elif display_date_author_tag == 'None':
-        display_date_author = 0 # hide footer
+    if display_date_author_tag == "Date":
+        display_date_author = 1  # display date only
+    elif display_date_author_tag == "None":
+        display_date_author = 0  # hide footer
 
-    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
-render_qsd_md.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+    return {"qsdrec": qsd, "display_date_author": display_date_author}
+
+
+render_qsd_md.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {"qsd": qsd})
 render_qsd_md.cached_function.depend_on_model(Tag)
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
+
+@cache_inclusion_tag(register, "inclusion/qsd/render_qsd.html")
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj, 'inline': True}
-render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
+    return {"qsdrec": qsd_obj, "inline": True}
 
-@cache_inclusion_tag(register, 'inclusion/qsd/render_qsd.html')
+
+render_inline_qsd.cached_function.depend_on_row(
+    QuasiStaticData, lambda qsd: {"url": qsd.url}
+)
+
+
+@cache_inclusion_tag(register, "inclusion/qsd/render_qsd.html")
 def render_inline_program_qsd(program, name):
-    #unlike the above method, we don't know the url, just a program object
-    #we could attempt to construct the url in the template
-    #or just do this
+    # unlike the above method, we don't know the url, just a program object
+    # we could attempt to construct the url in the template
+    # or just do this
     url = QuasiStaticData.prog_qsd_url(program, name)
     qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
-    return {'qsdrec': qsd_obj, 'inline': True}
+    return {"qsdrec": qsd_obj, "inline": True}
+
+
 def program_qsd_key_set(qsd):
     prog_and_name = QuasiStaticData.program_from_url(qsd.url)
     if prog_and_name is None:
         return None
     else:
         (program, name) = prog_and_name
-        return {'program': program, 'name': name}
-render_inline_program_qsd.cached_function.depend_on_row(QuasiStaticData, program_qsd_key_set)
+        return {"program": program, "name": name}
+
+
+render_inline_program_qsd.cached_function.depend_on_row(
+    QuasiStaticData, program_qsd_key_set
+)
 
 
 class InlineQSDNode(template.Node):
     def __init__(self, nodelist, url, program_variable):
         self.nodelist = nodelist
         self.url = url
-        self.program_variable = template.Variable(program_variable) if program_variable is not None else None
+        self.program_variable = (
+            template.Variable(program_variable)
+            if program_variable is not None
+            else None
+        )
 
     def render(self, context):
         try:
-            program = self.program_variable.resolve(context) if self.program_variable is not None else None
+            program = (
+                self.program_variable.resolve(context)
+                if self.program_variable is not None
+                else None
+            )
         except template.VariableDoesNotExist:
             program = None
         #   Accept literal string url argument if it is quoted; otherwise expect a template variable.
@@ -78,23 +104,32 @@ class InlineQSDNode(template.Node):
             url = QuasiStaticData.prog_qsd_url(program, url_resolved)
         else:
             url = url_resolved
-        #probably should have an error message if variable was not None and prog was
+        # probably should have an error message if variable was not None and prog was
 
         title = self.url
         if program is not None:
-            title += ' - ' + str(program)
+            title += " - " + str(program)
 
-        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
+        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(
+            url, {"name": "", "title": title, "content": self.nodelist.render(context)}
+        )
 
         # Cache default content so the .edit view can find it
         if not qsd_obj.pk:
-            cache.set(qsd_cache_key(url), {
-                'content': qsd_obj.content,
-                'title': qsd_obj.title or title,
-            }, timeout=86400 * 7)
+            cache.set(
+                qsd_cache_key(url),
+                {
+                    "content": qsd_obj.content,
+                    "title": qsd_obj.title or title,
+                },
+                timeout=86400 * 7,
+            )
 
-        context.update({'qsdrec': qsd_obj, 'inline': True})
-        return template.loader.render_to_string("inclusion/qsd/render_qsd.html", context.flatten())
+        context.update({"qsdrec": qsd_obj, "inline": True})
+        return template.loader.render_to_string(
+            "inclusion/qsd/render_qsd.html", context.flatten()
+        )
+
 
 @register.tag
 def inline_qsd_block(parser, token):
@@ -122,4 +157,3 @@ def inline_program_qsd_block(parser, token):
     parser.delete_first_token()
 
     return InlineQSDNode(nodelist, url, program)
-

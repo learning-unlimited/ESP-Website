@@ -16,12 +16,12 @@ class TagAdminForm(forms.ModelForm):
 
     class Meta:
         model = Tag
-        fields = '__all__'
+        fields = "__all__"
 
     def clean(self):
         cleaned_data = super().clean()
-        key = cleaned_data.get('key', '')
-        value = cleaned_data.get('value', '')
+        key = cleaned_data.get("key", "")
+        value = cleaned_data.get("value", "")
 
         if key in ALL_HIDE_FIELDS_TAG_KEYS and value:
             result = validate_hide_fields_value(key, value)
@@ -33,25 +33,31 @@ class TagAdminForm(forms.ModelForm):
                         "'%(tag_key)s': %(invalid)s. "
                         "Valid field names are: %(valid)s",
                         params={
-                            'tag_key': key,
-                            'invalid': ', '.join(invalid_fields),
-                            'valid': ', '.join(sorted(valid_set)),
+                            "tag_key": key,
+                            "invalid": ", ".join(invalid_fields),
+                            "valid": ", ".join(sorted(valid_set)),
                         },
-                        code='invalid_field_names',
+                        code="invalid_field_names",
                     )
 
         return cleaned_data
 
 
-
 class TagAdmin(admin.ModelAdmin):
     form = TagAdminForm
-    list_display = ('key', 'value', 'target', )
-    list_filter = ('key', 'object_id', 'content_type__model', )
+    list_display = (
+        "key",
+        "value",
+        "target",
+    )
+    list_filter = (
+        "key",
+        "object_id",
+        "content_type__model",
+    )
 
     class Media:
-        css = {
-            'all': ('admin/css/tag_fix.css',)
-        }
+        css = {"all": ("admin/css/tag_fix.css",)}
+
 
 admin_site.register(Tag, TagAdmin)

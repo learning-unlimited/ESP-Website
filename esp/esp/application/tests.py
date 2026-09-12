@@ -4,6 +4,7 @@ Source: esp/esp/application/models.py
 
 Tests StudentProgramApp, StudentClassApp models and their status methods.
 """
+
 from django.contrib.auth.models import Group
 
 from esp.application.models import StudentClassApp, StudentProgramApp
@@ -14,7 +15,14 @@ from esp.users.models import ESPUser
 
 
 def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -24,7 +32,8 @@ class StudentProgramAppTest(TestCase):
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.student = ESPUser.objects.create_user(
-            username='appstudent', password='password',
+            username="appstudent",
+            password="password",
         )
         self.app = StudentProgramApp.objects.create(
             user=self.student,
@@ -33,7 +42,7 @@ class StudentProgramAppTest(TestCase):
 
     def test_str(self):
         result = str(self.app)
-        self.assertIn('appstudent', result)
+        self.assertIn("appstudent", result)
 
     def test_default_status_unreviewed(self):
         self.assertEqual(self.app.admin_status, StudentProgramApp.UNREVIEWED)
@@ -56,14 +65,16 @@ class StudentClassAppTest(TestCase):
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.student = ESPUser.objects.create_user(
-            username='classstudent', password='password',
+            username="classstudent",
+            password="password",
         )
         self.teacher = ESPUser.objects.create_user(
-            username='classteacher', password='password',
+            username="classteacher",
+            password="password",
         )
         self.category = ClassCategories.objects.create(
-            category='Test Category',
-            symbol='T',
+            category="Test Category",
+            symbol="T",
             seq=0,
         )
         self.subject = ClassSubject.objects.create(
@@ -84,8 +95,8 @@ class StudentClassAppTest(TestCase):
 
     def test_str(self):
         result = str(self.class_app)
-        self.assertIn('classstudent', result)
-        self.assertIn('app for', result)
+        self.assertIn("classstudent", result)
+        self.assertIn("app for", result)
 
     def test_default_status(self):
         self.assertEqual(self.class_app.admission_status, StudentClassApp.UNASSIGNED)

@@ -3,6 +3,7 @@ Tests for /manage/statistics bug fixes and query optimizations (#3798).
 
 Each test class proves a specific bug exists (would fail before) and is fixed (passes after).
 """
+
 import json
 import re
 from collections import defaultdict
@@ -17,7 +18,14 @@ from esp.users.models import ContactInfo, ESPUser, K12School, StudentInfo
 
 
 def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
+    for name in [
+        "Student",
+        "Teacher",
+        "Educator",
+        "Guardian",
+        "Volunteer",
+        "Administrator",
+    ]:
         Group.objects.get_or_create(name=name)
 
 
@@ -34,46 +42,49 @@ class HeardAboutNormalizationTest(CacheFlushTestCase):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(
-            url='heardtest', name='Heard Test', grade_min=7, grade_max=12)
+            url="heardtest", name="Heard Test", grade_min=7, grade_max=12
+        )
 
         self.student1 = ESPUser.objects.create_user(
-            username='heard_s1', password='password', email='h1@test.org')
-        self.student1.makeRole('Student')
+            username="heard_s1", password="password", email="h1@test.org"
+        )
+        self.student1.makeRole("Student")
         self.student2 = ESPUser.objects.create_user(
-            username='heard_s2', password='password', email='h2@test.org')
-        self.student2.makeRole('Student')
+            username="heard_s2", password="password", email="h2@test.org"
+        )
+        self.student2.makeRole("Student")
 
         # Two students heard about program via "my friend" vs "my-friend"
         si1 = StudentInfo.objects.create(
-            user=self.student1, graduation_year=2028, heard_about='my friend')
+            user=self.student1, graduation_year=2028, heard_about="my friend"
+        )
         si2 = StudentInfo.objects.create(
-            user=self.student2, graduation_year=2028, heard_about='my-friend')
+            user=self.student2, graduation_year=2028, heard_about="my-friend"
+        )
 
-        p1 = RegistrationProfile.objects.create(
-            user=self.student1, student_info=si1)
-        p2 = RegistrationProfile.objects.create(
-            user=self.student2, student_info=si2)
+        p1 = RegistrationProfile.objects.create(user=self.student1, student_info=si1)
+        p2 = RegistrationProfile.objects.create(user=self.student2, student_info=si2)
         self.profiles = [p1, p2]
         self.students = ESPUser.objects.filter(
-            id__in=[self.student1.id, self.student2.id])
+            id__in=[self.student1.id, self.student2.id]
+        )
         self.programs = Program.objects.filter(id=self.program.id)
 
     def test_normalization_collapses_variants(self):
         """'my friend' and 'my-friend' should normalize to the same key."""
         form = MagicMock()
-        form.cleaned_data = {'limit': None}
-        result_html = heardabout(
-            form, self.programs, self.students, self.profiles, {})
+        form.cleaned_data = {"limit": None}
+        result_html = heardabout(form, self.programs, self.students, self.profiles, {})
         # After fix: both variants collapse to one entry with count=2.
         # Before fix: they'd be two separate entries with count=1 each.
         # Exactly one of the two variants should appear as a row label
         # (whichever was seen first — the other gets merged into it).
-        my_friend_present = 'my friend' in result_html
-        my_hyphen_friend_present = 'my-friend' in result_html
+        my_friend_present = "my friend" in result_html
+        my_hyphen_friend_present = "my-friend" in result_html
         self.assertNotEqual(my_friend_present, my_hyphen_friend_present)
         # The count cell should render as >2< (inside <td>2</td>).
         # Using >2< avoids false positives from <h2> in the template.
-        self.assertIn('>2<', result_html)
+        self.assertIn(">2<", result_html)
 
 
 class DemographicsNoneGradYearTest(CacheFlushTestCase):
@@ -89,17 +100,17 @@ class DemographicsNoneGradYearTest(CacheFlushTestCase):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(
-            url='demogtest', name='Demog Test', grade_min=7, grade_max=12)
+            url="demogtest", name="Demog Test", grade_min=7, grade_max=12
+        )
 
         self.student = ESPUser.objects.create_user(
-            username='demog_s1', password='password', email='d1@test.org')
-        self.student.makeRole('Student')
+            username="demog_s1", password="password", email="d1@test.org"
+        )
+        self.student.makeRole("Student")
 
         # Student with graduation_year=None (e.g. incomplete profile)
-        si = StudentInfo.objects.create(
-            user=self.student, graduation_year=None)
-        profile = RegistrationProfile.objects.create(
-            user=self.student, student_info=si)
+        si = StudentInfo.objects.create(user=self.student, graduation_year=None)
+        profile = RegistrationProfile.objects.create(user=self.student, student_info=si)
         self.profiles = [profile]
         self.students = ESPUser.objects.filter(id=self.student.id)
         self.programs = Program.objects.filter(id=self.program.id)
@@ -111,7 +122,8 @@ class DemographicsNoneGradYearTest(CacheFlushTestCase):
         # Before fix: KeyError: None
         # After fix: runs without error, None is simply skipped
         result_html = demographics(
-            form, self.programs, self.students, self.profiles, {})
+            form, self.programs, self.students, self.profiles, {}
+        )
         self.assertIsInstance(result_html, str)
 
     def test_none_gradyear_not_in_results(self):
@@ -119,8 +131,9 @@ class DemographicsNoneGradYearTest(CacheFlushTestCase):
         form = MagicMock()
         form.cleaned_data = {}
         result_html = demographics(
-            form, self.programs, self.students, self.profiles, {})
-        self.assertNotIn('None', result_html)
+            form, self.programs, self.students, self.profiles, {}
+        )
+        self.assertNotIn("None", result_html)
 
 
 class SelectRelatedProfileTest(CacheFlushTestCase):
@@ -137,27 +150,34 @@ class SelectRelatedProfileTest(CacheFlushTestCase):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(
-            url='selreltest', name='SelRel Test', grade_min=7, grade_max=12)
+            url="selreltest", name="SelRel Test", grade_min=7, grade_max=12
+        )
 
         self.students = []
         for i in range(5):
             student = ESPUser.objects.create_user(
-                username='selrel_s%d' % i, password='password',
-                email='sr%d@test.org' % i)
-            student.makeRole('Student')
-            school = K12School.objects.create(name='School %d' % i)
+                username="selrel_s%d" % i,
+                password="password",
+                email="sr%d@test.org" % i,
+            )
+            student.makeRole("Student")
+            school = K12School.objects.create(name="School %d" % i)
             si = StudentInfo.objects.create(
-                user=student, graduation_year=2028, k12school=school)
+                user=student, graduation_year=2028, k12school=school
+            )
             ci = ContactInfo.objects.create(
-                user=student, first_name=student.first_name,
-                last_name=student.last_name, e_mail=student.email,
-                address_zip='0210%d' % i)
+                user=student,
+                first_name=student.first_name,
+                last_name=student.last_name,
+                e_mail=student.email,
+                address_zip="0210%d" % i,
+            )
             RegistrationProfile.objects.create(
-                user=student, student_info=si, contact_user=ci)
+                user=student, student_info=si, contact_user=ci
+            )
             self.students.append(student)
 
-        self.user_qs = ESPUser.objects.filter(
-            id__in=[s.id for s in self.students])
+        self.user_qs = ESPUser.objects.filter(id__in=[s.id for s in self.students])
 
     def test_select_related_reduces_queries(self):
         """Batch-fetching profiles with full select_related should use fewer queries
@@ -166,9 +186,10 @@ class SelectRelatedProfileTest(CacheFlushTestCase):
         with self.assertNumQueries(1):
             profiles = list(
                 RegistrationProfile.objects.filter(user__in=self.user_qs)
-                .select_related('user', 'contact_user', 'student_info',
-                                'student_info__k12school')
-                .order_by('user_id', '-last_ts')
+                .select_related(
+                    "user", "contact_user", "student_info", "student_info__k12school"
+                )
+                .order_by("user_id", "-last_ts")
             )
 
         # Access related fields — should NOT trigger additional queries
@@ -194,33 +215,34 @@ class AjaxInvalidFormTest(CacheFlushTestCase):
         super().setUp()
         _setup_roles()
         self.admin = ESPUser.objects.create_user(
-            username='stats_admin', password='password',
-            email='admin@test.org')
-        self.admin.makeRole('Administrator')
+            username="stats_admin", password="password", email="admin@test.org"
+        )
+        self.admin.makeRole("Administrator")
         self.admin.is_staff = True
         self.admin.is_superuser = True
         self.admin.save()
         # Create at least one program so the form can initialize
         Program.objects.create(
-            url='ajaxtest', name='Ajax Test', grade_min=7, grade_max=12)
+            url="ajaxtest", name="Ajax Test", grade_min=7, grade_max=12
+        )
 
     def test_ajax_invalid_form_no_crash(self):
         """AJAX POST with invalid form data should return JSON, not crash."""
-        self.client.login(username='stats_admin', password='password')
+        self.client.login(username="stats_admin", password="password")
 
         # Submit form with missing required fields to trigger validation error
         response = self.client.post(
-            '/manage/statistics/',
-            data={'query': 'demographics'},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+            "/manage/statistics/",
+            data={"query": "demographics"},
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
         )
 
         # Before fix: NameError: name 'result' is not defined
         # After fix: returns valid JSON response
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response['Content-Type'], 'application/json')
+        self.assertEqual(response["Content-Type"], "application/json")
         data = json.loads(response.content)
-        self.assertIn('statistics_form_contents_html', data)
+        self.assertIn("statistics_form_contents_html", data)
 
 
 class StudentRegBulkFetchTest(CacheFlushTestCase):
@@ -239,16 +261,20 @@ class StudentRegBulkFetchTest(CacheFlushTestCase):
         super().setUp()
         _setup_roles()
         self.program1 = Program.objects.create(
-            url='srbulk1', name='SRBulk 1', grade_min=7, grade_max=12)
+            url="srbulk1", name="SRBulk 1", grade_min=7, grade_max=12
+        )
         self.program2 = Program.objects.create(
-            url='srbulk2', name='SRBulk 2', grade_min=7, grade_max=12)
+            url="srbulk2", name="SRBulk 2", grade_min=7, grade_max=12
+        )
 
         self.student1 = ESPUser.objects.create_user(
-            username='srbulk_s1', password='password', email='srb1@test.org')
-        self.student1.makeRole('Student')
+            username="srbulk_s1", password="password", email="srb1@test.org"
+        )
+        self.student1.makeRole("Student")
         self.student2 = ESPUser.objects.create_user(
-            username='srbulk_s2', password='password', email='srb2@test.org')
-        self.student2.makeRole('Student')
+            username="srbulk_s2", password="password", email="srb2@test.org"
+        )
+        self.student2.makeRole("Student")
 
         # student1 entered lottery for both programs; student2 only program1.
         pzr1 = PhaseZeroRecord.objects.create(program=self.program1)
@@ -256,28 +282,25 @@ class StudentRegBulkFetchTest(CacheFlushTestCase):
         pzr2 = PhaseZeroRecord.objects.create(program=self.program2)
         pzr2.user.add(self.student1)
 
-        si1 = StudentInfo.objects.create(
-            user=self.student1, graduation_year=2028)
-        si2 = StudentInfo.objects.create(
-            user=self.student2, graduation_year=2028)
-        p1 = RegistrationProfile.objects.create(
-            user=self.student1, student_info=si1)
-        p2 = RegistrationProfile.objects.create(
-            user=self.student2, student_info=si2)
+        si1 = StudentInfo.objects.create(user=self.student1, graduation_year=2028)
+        si2 = StudentInfo.objects.create(user=self.student2, graduation_year=2028)
+        p1 = RegistrationProfile.objects.create(user=self.student1, student_info=si1)
+        p2 = RegistrationProfile.objects.create(user=self.student2, student_info=si2)
 
         self.profiles = [p1, p2]
         self.students = ESPUser.objects.filter(
-            id__in=[self.student1.id, self.student2.id])
+            id__in=[self.student1.id, self.student2.id]
+        )
         self.programs = Program.objects.filter(
-            id__in=[self.program1.id, self.program2.id]).order_by('id')
+            id__in=[self.program1.id, self.program2.id]
+        ).order_by("id")
 
     def test_student_id_set_from_profiles_zero_queries(self):
         """Building student_id_set from profiles must not hit the DB."""
         # The comprehension iterates an in-memory list — zero queries.
         with self.assertNumQueries(0):
             student_id_set = {p.user_id for p in self.profiles if p.user_id}
-        self.assertEqual(
-            student_id_set, {self.student1.id, self.student2.id})
+        self.assertEqual(student_id_set, {self.student1.id, self.student2.id})
 
     def test_phasezero_bulk_fetched_in_one_query(self):
         """Bulk phase-zero fetch: 1 query for N programs (not N queries)."""
@@ -286,33 +309,28 @@ class StudentRegBulkFetchTest(CacheFlushTestCase):
         with self.assertNumQueries(1):
             pz_by_program = defaultdict(set)
             for program_id, user_id in (
-                ESPUser.objects
-                .filter(phasezerorecord__program__in=self.programs)
-                .values_list('phasezerorecord__program_id', 'id')
+                ESPUser.objects.filter(phasezerorecord__program__in=self.programs)
+                .values_list("phasezerorecord__program_id", "id")
                 .distinct()
             ):
                 pz_by_program[program_id].add(user_id)
         # Correctness: each program sees the right users.
         self.assertEqual(
-            pz_by_program[self.program1.id],
-            {self.student1.id, self.student2.id})
-        self.assertEqual(
-            pz_by_program[self.program2.id], {self.student1.id})
+            pz_by_program[self.program1.id], {self.student1.id, self.student2.id}
+        )
+        self.assertEqual(pz_by_program[self.program2.id], {self.student1.id})
 
     def test_student_reg_lottery_counts_per_program(self):
         """End-to-end: student_reg renders correct Student Lottery counts."""
         form = MagicMock()
         form.cleaned_data = {}
-        result_html = student_reg(
-            form, self.programs, self.students, self.profiles, {})
+        result_html = student_reg(form, self.programs, self.students, self.profiles, {})
         self.assertIsInstance(result_html, str)
         # Template renders rows like <td>SRBulk 1</td><td>2</td>... where the
         # first stat column is Student Lottery.
-        row1 = re.search(
-            r'<td>SRBulk 1</td>\s*<td>(\d+)</td>', result_html)
-        row2 = re.search(
-            r'<td>SRBulk 2</td>\s*<td>(\d+)</td>', result_html)
+        row1 = re.search(r"<td>SRBulk 1</td>\s*<td>(\d+)</td>", result_html)
+        row2 = re.search(r"<td>SRBulk 2</td>\s*<td>(\d+)</td>", result_html)
         self.assertIsNotNone(row1)
         self.assertIsNotNone(row2)
-        self.assertEqual(row1.group(1), '2')
-        self.assertEqual(row2.group(1), '1')
+        self.assertEqual(row1.group(1), "2")
+        self.assertEqual(row2.group(1), "1")

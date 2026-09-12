@@ -1,8 +1,6 @@
 from esp.program.tests import ProgramFrameworkTest
 
 
-
-
 class ClassReplacementTest(ProgramFrameworkTest):
     def setUp(self):
         super().setUp()
@@ -30,8 +28,7 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.sec2.meeting_times.add(ts)
 
         self.student = self.students[0]
-        self.client.login(username=self.student.username, password='password')
-
+        self.client.login(username=self.student.username, password="password")
 
     def test_desktop_addclass_conflict_resolution(self):
         # 1. Enroll in class 1
@@ -39,10 +36,10 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.assertEqual(len(list(self.student.getEnrolledSections(self.program))), 1)
 
         # 2. Attempt to enroll in class 2 via Desktop addclass (should render conflict confirm page)
-        url = '%saddclass' % self.program.get_learn_url()
+        url = "%saddclass" % self.program.get_learn_url()
         data = {
-            'class_id': self.class2.id,
-            'section_id': self.sec2.id,
+            "class_id": self.class2.id,
+            "section_id": self.sec2.id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
@@ -50,7 +47,7 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.assertContains(response, str(self.class1.title))
 
         # 3. Simulate confirmation by sending force_replace=true
-        data['force_replace'] = 'true'
+        data["force_replace"] = "true"
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect on success
 
@@ -65,10 +62,10 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.assertEqual(len(list(self.student.getEnrolledSections(self.program))), 1)
 
         # 2. Attempt to enroll in class 2 via Onsite addclass (should render conflict confirm page)
-        url = '%sonsiteaddclass' % self.program.get_learn_url()
+        url = "%sonsiteaddclass" % self.program.get_learn_url()
         data = {
-            'class_id': self.class2.id,
-            'section_id': self.sec2.id,
+            "class_id": self.class2.id,
+            "section_id": self.sec2.id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
@@ -76,7 +73,7 @@ class ClassReplacementTest(ProgramFrameworkTest):
         self.assertContains(response, str(self.class1.title))
 
         # 3. Simulate confirmation by sending force_replace=true
-        data['force_replace'] = 'true'
+        data["force_replace"] = "true"
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect on success
 
@@ -84,5 +81,3 @@ class ClassReplacementTest(ProgramFrameworkTest):
         enrolled_sections = list(self.student.getEnrolledSections(self.program))
         self.assertEqual(len(enrolled_sections), 1)
         self.assertEqual(enrolled_sections[0].id, self.sec2.id)
-
-

@@ -3,6 +3,7 @@
 The template ajaxcheckin.html initializes jQuery UI autocomplete with filter-aware
 source (grade, last_name_range, prog) so the widget must not inject its own script.
 """
+
 from django import forms
 from django.utils.safestring import mark_safe
 from django.template.defaultfilters import addslashes

@@ -21,7 +21,11 @@ class UpdateScheduleJsonTests(SimpleTestCase):
 
     def _call(self, params):
         request = self.factory.get("/onsite/update", params)
-        fn = getattr(OnSiteClassList.update_schedule_json, "method", OnSiteClassList.update_schedule_json)
+        fn = getattr(
+            OnSiteClassList.update_schedule_json,
+            "method",
+            OnSiteClassList.update_schedule_json,
+        )
         return fn(self.module, request, None, None, None, None, None, None)
 
     def _assert_user_not_found(self, resp):
@@ -53,7 +57,11 @@ class PrintScheduleStatusTests(SimpleTestCase):
 
     def _call(self, params):
         request = self.factory.get("/onsite/printschedule", params)
-        fn = getattr(OnSiteClassList.printschedule_status, "method", OnSiteClassList.printschedule_status)
+        fn = getattr(
+            OnSiteClassList.printschedule_status,
+            "method",
+            OnSiteClassList.printschedule_status,
+        )
         return fn(self.module, request, None, None, None, None, None, None)
 
     def _assert_user_not_found(self, resp):
@@ -92,32 +100,36 @@ class SectionDataTests(ProgramFrameworkTest):
 
     def test_section_data_has_required_keys(self):
         """Returned dict must contain exactly the five expected keys."""
-        self.assertEqual(set(self.result.keys()), {'id', 'emailcode', 'title', 'teachers', 'rooms'})
+        self.assertEqual(
+            set(self.result.keys()), {"id", "emailcode", "title", "teachers", "rooms"}
+        )
 
     def test_section_data_id_matches(self):
         """result['id'] must equal the section's pk."""
-        self.assertEqual(self.result['id'], self.section.id)
+        self.assertEqual(self.result["id"], self.section.id)
 
     def test_section_data_title_matches(self):
         """result['title'] must equal section.title()."""
-        self.assertEqual(self.result['title'], self.section.title())
+        self.assertEqual(self.result["title"], self.section.title())
 
     def test_section_data_teachers_is_string(self):
         """result['teachers'] must be a string containing at least one teacher's name."""
-        self.assertIsInstance(self.result['teachers'], str)
+        self.assertIsInstance(self.result["teachers"], str)
         # section_data builds the string from list(sec.teachers)
         teachers = list(self.section.teachers)
-        self.assertTrue(len(teachers) > 0, "Expected at least one teacher on this section")
-        self.assertIn(teachers[0].name(), self.result['teachers'])
+        self.assertTrue(
+            len(teachers) > 0, "Expected at least one teacher on this section"
+        )
+        self.assertIn(teachers[0].name(), self.result["teachers"])
 
     def test_section_data_rooms_is_string(self):
         """result['rooms'] must be a string (may be empty if the section has no room assigned)."""
-        self.assertIsInstance(self.result['rooms'], str)
+        self.assertIsInstance(self.result["rooms"], str)
 
     def test_section_data_emailcode_is_string(self):
         """result['emailcode'] must be a non-empty string."""
-        self.assertIsInstance(self.result['emailcode'], str)
-        self.assertTrue(len(self.result['emailcode']) > 0)
+        self.assertIsInstance(self.result["emailcode"], str)
+        self.assertTrue(len(self.result["emailcode"]) > 0)
 
 
 class CatalogStatusTests(ProgramFrameworkTest):
@@ -136,9 +148,11 @@ class CatalogStatusTests(ProgramFrameworkTest):
         self.admin = self.admins[0]
 
     def _call(self):
-        request = self.factory.get('/onsite/catalog')
+        request = self.factory.get("/onsite/catalog")
         request.user = self.admin
-        fn = getattr(OnSiteClassList.catalog_status, 'method', OnSiteClassList.catalog_status)
+        fn = getattr(
+            OnSiteClassList.catalog_status, "method", OnSiteClassList.catalog_status
+        )
         module = SimpleNamespace()
         return fn(module, request, None, None, None, None, None, self.program)
 
@@ -150,49 +164,51 @@ class CatalogStatusTests(ProgramFrameworkTest):
     def test_content_type_is_json(self):
         """Response Content-Type must include application/json."""
         resp = self._call()
-        self.assertIn('application/json', resp['Content-Type'])
+        self.assertIn("application/json", resp["Content-Type"])
 
     def test_top_level_keys(self):
         """Parsed JSON body must have exactly classes, sections, timeslots, categories."""
         resp = self._call()
         data = json.loads(resp.content)
-        self.assertEqual(set(data.keys()), {'classes', 'sections', 'timeslots', 'categories'})
+        self.assertEqual(
+            set(data.keys()), {"classes", "sections", "timeslots", "categories"}
+        )
 
     def test_classes_structure(self):
         """data['classes'] must be a list and first entry must have id, title, grade_min, grade_max, teacher_names."""
         resp = self._call()
         data = json.loads(resp.content)
-        self.assertIsInstance(data['classes'], list)
-        if data['classes']:
-            entry = data['classes'][0]
-            for key in ('id', 'title', 'grade_min', 'grade_max', 'teacher_names'):
+        self.assertIsInstance(data["classes"], list)
+        if data["classes"]:
+            entry = data["classes"][0]
+            for key in ("id", "title", "grade_min", "grade_max", "teacher_names"):
                 self.assertIn(key, entry)
 
     def test_sections_structure(self):
         """data['sections'] must be a list and first entry must have id, parent_class__id, enrolled_students, capacity."""
         resp = self._call()
         data = json.loads(resp.content)
-        self.assertIsInstance(data['sections'], list)
-        if data['sections']:
-            entry = data['sections'][0]
-            for key in ('id', 'parent_class__id', 'enrolled_students', 'capacity'):
+        self.assertIsInstance(data["sections"], list)
+        if data["sections"]:
+            entry = data["sections"][0]
+            for key in ("id", "parent_class__id", "enrolled_students", "capacity"):
                 self.assertIn(key, entry)
 
     def test_timeslots_structure(self):
         """data['timeslots'] must be a list of 3-element entries; program has 2 timeslots so index 0 is safe."""
         resp = self._call()
         data = json.loads(resp.content)
-        self.assertIsInstance(data['timeslots'], list)
-        self.assertEqual(len(data['timeslots']), 2)
-        self.assertEqual(len(data['timeslots'][0]), 3)
+        self.assertIsInstance(data["timeslots"], list)
+        self.assertEqual(len(data["timeslots"]), 2)
+        self.assertEqual(len(data["timeslots"][0]), 3)
 
     def test_categories_non_empty(self):
         """data['categories'] must be non-empty; first entry must have id, symbol, category."""
         resp = self._call()
         data = json.loads(resp.content)
-        self.assertGreater(len(data['categories']), 0)
-        entry = data['categories'][0]
-        for key in ('id', 'symbol', 'category'):
+        self.assertGreater(len(data["categories"]), 0)
+        entry = data["categories"][0]
+        for key in ("id", "symbol", "category"):
             self.assertIn(key, entry)
 
     def test_status_filter_excludes_rejected_class(self):
@@ -201,11 +217,13 @@ class CatalogStatusTests(ProgramFrameworkTest):
         original_status = cls.status
         cls.status = -10
         cls.save()
-        self.addCleanup(cls.__class__.objects.filter(pk=cls.pk).update, status=original_status)
+        self.addCleanup(
+            cls.__class__.objects.filter(pk=cls.pk).update, status=original_status
+        )
 
         resp = self._call()
         data = json.loads(resp.content)
-        class_ids = [c['id'] for c in data['classes']]
+        class_ids = [c["id"] for c in data["classes"]]
         self.assertNotIn(cls.id, class_ids)
 
 
@@ -232,9 +250,13 @@ class EnrollmentStatusTests(ProgramFrameworkTest):
         self.enrolled_section = self.program.sections()[0]
 
     def _call(self):
-        request = self.factory.get('/onsite/enrollment_status')
+        request = self.factory.get("/onsite/enrollment_status")
         request.user = self.admin
-        fn = getattr(OnSiteClassList.enrollment_status, 'method', OnSiteClassList.enrollment_status)
+        fn = getattr(
+            OnSiteClassList.enrollment_status,
+            "method",
+            OnSiteClassList.enrollment_status,
+        )
         module = SimpleNamespace()
         return fn(module, request, None, None, None, None, None, self.program)
 
@@ -246,7 +268,7 @@ class EnrollmentStatusTests(ProgramFrameworkTest):
     def test_content_type_is_json(self):
         """Response Content-Type must include application/json."""
         resp = self._call()
-        self.assertIn('application/json', resp['Content-Type'])
+        self.assertIn("application/json", resp["Content-Type"])
 
     def test_returns_list(self):
         """Parsed JSON body must be a list."""
@@ -266,7 +288,7 @@ class EnrollmentStatusTests(ProgramFrameworkTest):
         """A non-Enrolled registration must not duplicate the enrolled pair."""
         # Created a Waitlisted registration for students[0] on the same section
         waitlisted_rt, _ = RegistrationType.objects.get_or_create(
-            name='Waitlisted', category='student'
+            name="Waitlisted", category="student"
         )
         StudentRegistration.objects.create(
             user=self.students[0],
@@ -287,7 +309,9 @@ class EnrollmentStatusTests(ProgramFrameworkTest):
         self.enrolled_section.status = -10
         self.enrolled_section.save()
         self.addCleanup(
-            self.enrolled_section.__class__.objects.filter(pk=self.enrolled_section.pk).update,
+            self.enrolled_section.__class__.objects.filter(
+                pk=self.enrolled_section.pk
+            ).update,
             status=original_status,
         )
         resp = self._call()
@@ -319,9 +343,11 @@ class CountsStatusTests(ProgramFrameworkTest):
         self.enrolled_section = self.program.sections()[0]
 
     def _call(self):
-        request = self.factory.get('/onsite/counts_status')
+        request = self.factory.get("/onsite/counts_status")
         request.user = self.admin
-        fn = getattr(OnSiteClassList.counts_status, 'method', OnSiteClassList.counts_status)
+        fn = getattr(
+            OnSiteClassList.counts_status, "method", OnSiteClassList.counts_status
+        )
         module = SimpleNamespace()
         return fn(module, request, None, None, None, None, None, self.program)
 
@@ -333,7 +359,7 @@ class CountsStatusTests(ProgramFrameworkTest):
     def test_content_type_is_json(self):
         """Response Content-Type must include application/json."""
         resp = self._call()
-        self.assertIn('application/json', resp['Content-Type'])
+        self.assertIn("application/json", resp["Content-Type"])
 
     def test_returns_list_of_triples(self):
         """Parsed JSON body must be a list; each entry must have exactly 3 elements."""
@@ -359,7 +385,9 @@ class CountsStatusTests(ProgramFrameworkTest):
         section_entry = next(
             (entry for entry in data if entry[0] == self.enrolled_section.id), None
         )
-        self.assertIsNotNone(section_entry, "enrolled_section not found in counts_status result")
+        self.assertIsNotNone(
+            section_entry, "enrolled_section not found in counts_status result"
+        )
         self.assertGreaterEqual(section_entry[1], len(self.students))
 
     def test_status_filter(self):
@@ -368,7 +396,9 @@ class CountsStatusTests(ProgramFrameworkTest):
         self.enrolled_section.status = -10
         self.enrolled_section.save()
         self.addCleanup(
-            self.enrolled_section.__class__.objects.filter(pk=self.enrolled_section.pk).update,
+            self.enrolled_section.__class__.objects.filter(
+                pk=self.enrolled_section.pk
+            ).update,
             status=original_status,
         )
         resp = self._call()
@@ -394,9 +424,9 @@ class FullStatusTests(ProgramFrameworkTest):
         self.admin = self.admins[0]
 
     def _call(self):
-        request = self.factory.get('/onsite/full_status')
+        request = self.factory.get("/onsite/full_status")
         request.user = self.admin
-        fn = getattr(OnSiteClassList.full_status, 'method', OnSiteClassList.full_status)
+        fn = getattr(OnSiteClassList.full_status, "method", OnSiteClassList.full_status)
         module = SimpleNamespace()
         return fn(module, request, None, None, None, None, None, self.program)
 
@@ -408,7 +438,7 @@ class FullStatusTests(ProgramFrameworkTest):
     def test_content_type_is_json(self):
         """Response Content-Type must include application/json."""
         resp = self._call()
-        self.assertIn('application/json', resp['Content-Type'])
+        self.assertIn("application/json", resp["Content-Type"])
 
     def test_returns_list_of_pairs(self):
         """Parsed JSON body must be a list; each entry must have exactly 2 elements."""
@@ -469,23 +499,25 @@ class StudentsStatusTests(ProgramFrameworkTest):
         # It makes sure that a q='student' search always returns both has_profile=True and
         # has_profile=False rows so the sort assertion is never skipped.
         no_profile_student, _ = ESPUser.objects.get_or_create(
-            username='student_noprofile',
+            username="student_noprofile",
             defaults={
-                'first_name': 'student_noprofile',
-                'last_name': 'student_noprofile',
-                'email': 'student_noprofile@learningu.org',
+                "first_name": "student_noprofile",
+                "last_name": "student_noprofile",
+                "email": "student_noprofile@learningu.org",
             },
         )
-        no_profile_student.makeRole('Student')
+        no_profile_student.makeRole("Student")
         self.no_profile_student = no_profile_student
 
         self.factory = RequestFactory()
         self.admin = self.admins[0]
 
     def _call(self, params=None):
-        request = self.factory.get('/onsite/students', params or {})
+        request = self.factory.get("/onsite/students", params or {})
         request.user = self.admin
-        fn = getattr(OnSiteClassList.students_status, 'method', OnSiteClassList.students_status)
+        fn = getattr(
+            OnSiteClassList.students_status, "method", OnSiteClassList.students_status
+        )
         module = SimpleNamespace(program=self.program)
         return fn(module, request, None, None, None, None, None, self.program)
 
@@ -497,7 +529,7 @@ class StudentsStatusTests(ProgramFrameworkTest):
     def test_content_type_is_json(self):
         """Response Content-Type must include application/json."""
         resp = self._call()
-        self.assertIn('application/json', resp['Content-Type'])
+        self.assertIn("application/json", resp["Content-Type"])
 
     def test_returns_list(self):
         """Parsed JSON body must be a list."""
@@ -523,7 +555,7 @@ class StudentsStatusTests(ProgramFrameworkTest):
 
     def test_profile_students_sorted_first(self):
         """Entries with has_profile == True must all come before entries with has_profile == False."""
-        resp = self._call({'q': 'student'})
+        resp = self._call({"q": "student"})
         data = json.loads(resp.content)
         # Find the index of the first False entry
         false_indices = [i for i, e in enumerate(data) if e[3] is False]
@@ -539,7 +571,7 @@ class StudentsStatusTests(ProgramFrameworkTest):
         """Searching by a student's first name prefix must return that student."""
         student = self.students[0]
         query = student.first_name[:4]
-        resp = self._call({'q': query})
+        resp = self._call({"q": query})
         data = json.loads(resp.content)
         ids = [e[0] for e in data]
         self.assertIn(student.id, ids)
@@ -550,14 +582,16 @@ class StudentsStatusTests(ProgramFrameworkTest):
         """
         bulk_users = []
         for i in range(21):
-            bulk_users.append(ESPUser(
-                username=f'student_bulk_{i}',
-                first_name=f'student_bulk_{i}',
-                last_name='Bulk',
-                email=f'student_bulk_{i}@learningu.org',
-            ))
+            bulk_users.append(
+                ESPUser(
+                    username=f"student_bulk_{i}",
+                    first_name=f"student_bulk_{i}",
+                    last_name="Bulk",
+                    email=f"student_bulk_{i}@learningu.org",
+                )
+            )
         ESPUser.objects.bulk_create(bulk_users)
-        resp = self._call({'q': 'student'})
+        resp = self._call({"q": "student"})
         data = json.loads(resp.content)
         self.assertLessEqual(len(data), 20)
 
@@ -565,7 +599,7 @@ class StudentsStatusTests(ProgramFrameworkTest):
         """A student with a profile must have entry[3] == True when found via search."""
         student = self.students[0]
         query = student.first_name[:4]
-        resp = self._call({'q': query})
+        resp = self._call({"q": query})
         data = json.loads(resp.content)
         entry = next((e for e in data if e[0] == student.id), None)
         self.assertIsNotNone(entry, "Student not found in search results")
@@ -591,52 +625,51 @@ class ClassListReloadTests(ProgramFrameworkTest):
         self.admin = self.admins[0]
 
     def _render(self, options):
-        request = self.factory.get('/onsite/classlist', options)
+        request = self.factory.get("/onsite/classlist", options)
         request.user = self.admin
         module = SimpleNamespace(
-            program=self.program,
-            baseDir=lambda: 'program/modules/onsiteclasslist/'
+            program=self.program, baseDir=lambda: "program/modules/onsiteclasslist/"
         )
         resp = OnSiteClassList.classList_base(
             module,
             request,
-            'onsite',
+            "onsite",
             None,
             None,
             None,
             None,
             self.program,
             options=options,
-            template_name='classlist.html',
+            template_name="classlist.html",
         )
         resp.render()
         return resp.content.decode()
 
     def test_no_meta_refresh_tag(self):
         """The page must not use a blind <meta http-equiv="refresh"> reload."""
-        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        content = self._render({"refresh": "30", "scrollspeed": "1"})
         self.assertNotIn('http-equiv="refresh"', content)
 
     def test_refresh_interval_reflects_option(self):
         """Refresh option should be passed to JS as milliseconds."""
-        content = self._render({'refresh': '30', 'scrollspeed': '1'})
-        self.assertIn('refresh_interval_ms = 30 * 1000', content)
+        content = self._render({"refresh": "30", "scrollspeed": "1"})
+        self.assertIn("refresh_interval_ms = 30 * 1000", content)
 
     def test_refresh_option_respects_server_minimum(self):
         """Refresh values below the configured minimum should be clamped."""
-        content = self._render({'refresh': '1', 'scrollspeed': '1'})
-        self.assertNotIn('refresh_interval_ms = 1 * 1000', content)
+        content = self._render({"refresh": "1", "scrollspeed": "1"})
+        self.assertNotIn("refresh_interval_ms = 1 * 1000", content)
 
     def test_scroll_checks_elapsed_time_before_reloading(self):
         """Reload should happen only after checking elapsed time when the
         scroll wraps around."""
-        content = self._render({'refresh': '30', 'scrollspeed': '1'})
+        content = self._render({"refresh": "30", "scrollspeed": "1"})
 
-        wrap_index = content.index('elt1.offsetHeight + scroll_offset < 0')
+        wrap_index = content.index("elt1.offsetHeight + scroll_offset < 0")
         check_index = content.index(
-            'Date.now() - page_load_time >= refresh_interval_ms'
+            "Date.now() - page_load_time >= refresh_interval_ms"
         )
-        reload_index = content.index('location.reload()')
+        reload_index = content.index("location.reload()")
 
         self.assertLess(wrap_index, check_index)
         self.assertLess(check_index, reload_index)
@@ -653,28 +686,28 @@ class OnsiteAuthorizationTests(CacheFlushTestCase):
 
         # create a student (no onsite/admin access)
         self.student = ESPUser.objects.create_user(
-            username='auth_test_student',
-            password='password',
-            email='auth_student@test.com',
-            first_name='Auth',
-            last_name='Student',
+            username="auth_test_student",
+            password="password",
+            email="auth_student@test.com",
+            first_name="Auth",
+            last_name="Student",
         )
-        self.student.makeRole('Student')
+        self.student.makeRole("Student")
 
         # create an admin user.
         self.admin = ESPUser.objects.create_user(
-            username='auth_test_admin',
-            password='password',
-            email='auth_admin@test.com',
-            first_name='Auth',
-            last_name='Admin',
+            username="auth_test_admin",
+            password="password",
+            email="auth_admin@test.com",
+            first_name="Auth",
+            last_name="Admin",
         )
-        self.admin.makeRole('Administrator')
+        self.admin.makeRole("Administrator")
 
         # create a minimal program.
         self.program = Program.objects.create(
-            name='Auth Test Program',
-            url='authtest/2222',
+            name="Auth Test Program",
+            url="authtest/2222",
             grade_min=7,
             grade_max=12,
         )
@@ -685,21 +718,24 @@ class OnsiteAuthorizationTests(CacheFlushTestCase):
         """Call the needs_onsite-wrapped catalog_status with the given user.
         Returns the HttpResponse produced by the decorator or the view itself.
         """
-        request = self.factory.get('/onsite/%s/catalog_status' % self.program.url)
+        request = self.factory.get("/onsite/%s/catalog_status" % self.program.url)
         request.user = user
         request.session = self.client.session
         wrapped_fn = OnSiteClassList.catalog_status
         module = SimpleNamespace(program=self.program)
-        return wrapped_fn(module, request, 'onsite', None, None, None, None, self.program)
+        return wrapped_fn(
+            module, request, "onsite", None, None, None, None, self.program
+        )
 
     def test_anonymous_user_redirected(self):
         """An unauthenticated request must be redirected to the login page."""
         from django.contrib.auth.models import AnonymousUser
+
         anonymous = AnonymousUser()
         resp = self._call_catalog_status(anonymous)
         self.assertEqual(resp.status_code, 302)
-        location = resp.get('Location', '')
-        self.assertIn('login', location)
+        location = resp.get("Location", "")
+        self.assertIn("login", location)
 
     def test_student_denied(self):
         """A student must not receive a successful JSON response.
@@ -707,13 +743,15 @@ class OnsiteAuthorizationTests(CacheFlushTestCase):
         so the response is not valid JSON.
         """
         resp = self._call_catalog_status(self.student)
-        self.assertNotIn('application/json', resp.get('Content-Type', ''))
+        self.assertNotIn("application/json", resp.get("Content-Type", ""))
 
     def test_admin_gets_200(self):
         """A user in the Administrator group must pass the guard and get JSON."""
         resp = self._call_catalog_status(self.admin)
         self.assertEqual(resp.status_code, 200)
-        self.assertIn('application/json', resp.get('Content-Type', ''))
+        self.assertIn("application/json", resp.get("Content-Type", ""))
+
+
 class SchedulePdfTests(SimpleTestCase):
     """Regression tests for schedule_pdf early failure cases and success path."""
 
@@ -724,7 +762,9 @@ class SchedulePdfTests(SimpleTestCase):
     def _call(self, params, prog=None):
         request = self.factory.get("/onsite/schedule_pdf", params)
         self.last_request = request
-        fn = getattr(OnSiteClassList.schedule_pdf, "method", OnSiteClassList.schedule_pdf)
+        fn = getattr(
+            OnSiteClassList.schedule_pdf, "method", OnSiteClassList.schedule_pdf
+        )
         return fn(self.module, request, None, None, None, None, None, prog)
 
     def _assert_user_not_found(self, resp):
@@ -748,11 +788,16 @@ class SchedulePdfTests(SimpleTestCase):
         user = SimpleNamespace(id=123)
         program = SimpleNamespace()
         response = HttpResponse("ok")
-        with patch.object(ESPUser.objects, "get", return_value=user), patch(
-            "esp.program.modules.handlers.onsiteclasslist.ProgramPrintables.get_student_schedules",
-            return_value=response,
-        ) as mocked_get:
+        with (
+            patch.object(ESPUser.objects, "get", return_value=user),
+            patch(
+                "esp.program.modules.handlers.onsiteclasslist.ProgramPrintables.get_student_schedules",
+                return_value=response,
+            ) as mocked_get,
+        ):
             resp = self._call({"user": "123"}, prog=program)
 
         self.assertIs(resp, response)
-        mocked_get.assert_called_once_with(self.last_request, [user], program, onsite=False)
+        mocked_get.assert_called_once_with(
+            self.last_request, [user], program, onsite=False
+        )

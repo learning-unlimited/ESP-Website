@@ -1,11 +1,14 @@
 from django import template
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
+
 register = template.Library()
 
-@cache_inclusion_tag(register, 'inclusion/web/navbar_left.html')
+
+@cache_inclusion_tag(register, "inclusion/web/navbar_left.html")
 def navbar_gen(request_path, user, navbar_list):
 
-    return {'navbar_list': navbar_list,
-            'request_path': request_path,
-            'user': user,
-            }
+    return {
+        "navbar_list": navbar_list,
+        "request_path": request_path,
+        "user": user,
+    }

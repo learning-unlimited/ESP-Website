@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0047_programmoduleobj_link_title'),
+        ("modules", "0047_programmoduleobj_link_title"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='studentclassregmoduleinfo',
-            name='apply_multiplier_to_room_cap',
-            field=models.BooleanField(default=False, help_text='Apply class cap multiplier and offset to room capacity instead of class capacity.'),
+            model_name="studentclassregmoduleinfo",
+            name="apply_multiplier_to_room_cap",
+            field=models.BooleanField(
+                default=False,
+                help_text="Apply class cap multiplier and offset to room capacity instead of class capacity.",
+            ),
         ),
     ]

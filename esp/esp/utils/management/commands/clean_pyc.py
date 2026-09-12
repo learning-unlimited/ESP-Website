@@ -2,8 +2,10 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 import logging
+
 logger = logging.getLogger(__name__)
 import os
+
 
 class Command(BaseCommand):
     """
@@ -17,11 +19,12 @@ class Command(BaseCommand):
     optimization over Django's original clean_pyc, which deletes all *pyc's in
     the source tree.
     """
+
     def handle(self, *args, **options):
         root = os.path.dirname(os.path.abspath(settings.BASE_DIR))
         for dirpath, dirnames, filenames in os.walk(root):
             for filename in filenames:
-                if filename.endswith('.pyc'):
+                if filename.endswith(".pyc"):
                     pyc_path = os.path.join(dirpath, filename)
                     py_path = pyc_path[:-1]  # Remove trailing 'c' to get .py path
                     if not os.path.isfile(py_path):

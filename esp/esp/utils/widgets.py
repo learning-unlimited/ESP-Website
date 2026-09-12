@@ -16,23 +16,22 @@ import datetime
 import time
 import json
 import logging
+
 logger = logging.getLogger(__name__)
 
+
 class DateTimeWidget(forms.widgets.DateTimeInput):
-    template_name = 'django/forms/widgets/datetimepicker.html'
-    dformat = 'mm/dd/yy'
-    tformat = 'hh:mm'
-    pythondformat = '%m/%d/%Y %H:%M'
-    jquerywidget = 'datetimepicker'
+    template_name = "django/forms/widgets/datetimepicker.html"
+    dformat = "mm/dd/yy"
+    tformat = "hh:mm"
+    pythondformat = "%m/%d/%Y %H:%M"
+    jquerywidget = "datetimepicker"
 
     # Note -- these are not actually used in the deadlines template, since we don't include
     # the entire form, just use variables from. They're here now mainly for responsibility
     class Media:
-        css = {
-            'all':  ('styles/jquery-ui/jquery-ui.css',)
-        }
-        js = ('scripts/jquery-ui.js',
-              'scripts/jquery-ui.timepicker.js')
+        css = {"all": ("styles/jquery-ui/jquery-ui.css",)}
+        js = ("scripts/jquery-ui.js", "scripts/jquery-ui.timepicker.js")
 
     def __init__(self, attrs=None):
         super().__init__(attrs)
@@ -40,17 +39,19 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
 
     def get_context(self, name, value, attrs):
         context = super().get_context(name, value, attrs)
-        context.update({
-            'id': attrs['id'] if 'id' in attrs else f'{name}_id',
-            'jquerywidget': self.jquerywidget,
-            'media_url': settings.MEDIA_URL,
-            'date_format': self.dformat,
-            'time_format': self.tformat,
-        })
+        context.update(
+            {
+                "id": attrs["id"] if "id" in attrs else f"{name}_id",
+                "jquerywidget": self.jquerywidget,
+                "media_url": settings.MEDIA_URL,
+                "date_format": self.dformat,
+                "time_format": self.tformat,
+            }
+        )
         return context
 
     def value_from_datadict(self, data, files, name):
-        dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
+        dtf = django.utils.formats.get_format("DATETIME_INPUT_FORMATS")
         empty_values = EMPTY_VALUES
 
         value = data.get(name, None)
@@ -67,11 +68,13 @@ class DateTimeWidget(forms.widgets.DateTimeInput):
                 continue
         return None
 
+
 class DateWidget(DateTimeWidget):
-    """ A stripped down version of the DateTimeWidget that uses jQuery UI's
-        built in datepicker. """
-    pythondformat = '%m/%d/%Y'
-    jquerywidget = 'datepicker'
+    """A stripped down version of the DateTimeWidget that uses jQuery UI's
+    built in datepicker."""
+
+    pythondformat = "%m/%d/%Y"
+    jquerywidget = "datepicker"
 
     def value_from_datadict(self, data, files, name):
         value = data.get(name, None)
@@ -81,29 +84,33 @@ class DateWidget(DateTimeWidget):
             return value.date()
         if isinstance(value, datetime.date):
             return value
-        for format in django.utils.formats.get_format('DATE_INPUT_FORMATS'):
+        for format in django.utils.formats.get_format("DATE_INPUT_FORMATS"):
             try:
                 return datetime.date(*(time.strptime(value, format)[:3]))
             except ValueError:
                 continue
         return None
 
-class ClassAttrMergingSelect(forms.Select):
 
+class ClassAttrMergingSelect(forms.Select):
     def build_attrs(self, base_attrs, extra_attrs=None):
         attrs = base_attrs.copy()
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
-            if 'class' in attrs and 'class' in extra_attrs \
-                    and isinstance(extra_attrs['class'], str):
-                attrs['class'] += ' ' + extra_attrs['class']
-                del extra_attrs['class']
+            if (
+                "class" in attrs
+                and "class" in extra_attrs
+                and isinstance(extra_attrs["class"], str)
+            ):
+                attrs["class"] += " " + extra_attrs["class"]
+                del extra_attrs["class"]
             attrs.update(extra_attrs)
         return attrs
 
+
 # TODO: Make this not suck
 class SplitDateWidget(forms.MultiWidget):
-    """ A date widget that separates days, etc. """
+    """A date widget that separates days, etc."""
 
     def __init__(self, attrs=None, min_year=None, max_year=None):
         from datetime import datetime
@@ -113,32 +120,52 @@ class SplitDateWidget(forms.MultiWidget):
         if max_year is None:
             max_year = datetime.now().year - 10
 
-        year_choices = list(range(min_year,
-                             max_year+1))
+        year_choices = list(range(min_year, max_year + 1))
         year_choices.reverse()
-        month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-        day_choices   = ['%02d' % x for x in range(1, 32)]
-        choices = {'year' : [('', ' ')] + list(zip(year_choices, year_choices)),
-                   'month': [('', ' ')] + list(zip(list(range(1, 13)), month_choices)),
-                   'day'  : [('', ' ')] + list(zip(list(range(1, 32)), day_choices))
-                   }
+        month_choices = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ]
+        day_choices = ["%02d" % x for x in range(1, 32)]
+        choices = {
+            "year": [("", " ")] + list(zip(year_choices, year_choices)),
+            "month": [("", " ")] + list(zip(list(range(1, 13)), month_choices)),
+            "day": [("", " ")] + list(zip(list(range(1, 32)), day_choices)),
+        }
 
-        year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
-        month_widget = ClassAttrMergingSelect(choices=choices['month'], attrs={'class': 'input-medium'})
-        day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
+        year_widget = ClassAttrMergingSelect(
+            choices=choices["year"], attrs={"class": "input-small"}
+        )
+        month_widget = ClassAttrMergingSelect(
+            choices=choices["month"], attrs={"class": "input-medium"}
+        )
+        day_widget = ClassAttrMergingSelect(
+            choices=choices["day"], attrs={"class": "input-mini"}
+        )
 
         widgets = (month_widget, day_widget, year_widget)
         super().__init__(widgets, attrs)
 
     def decompress(self, value):
-        """ Splits datetime.date object into separate fields. """
+        """Splits datetime.date object into separate fields."""
         if value:
             return [value.month, value.day, value.year]
         return [None, None, None]
 
     def value_from_datadict(self, data, files, name):
-        """ Given a dict, extracts datetime.date object. Appears to require handling of both versions. """
+        """Given a dict, extracts datetime.date object. Appears to require handling of both versions."""
         from datetime import date
+
         val = data.get(name, None)
         if val is not None:
             return val
@@ -152,48 +179,54 @@ class SplitDateWidget(forms.MultiWidget):
     #   Format output
     #   (labels are now aggregated at beginning of line, as if this is a single control)
     def format_output(self, rendered_widgets):
-        return '\n'.join(rendered_widgets)
+        return "\n".join(rendered_widgets)
+
 
 class BlankSelectWidget(forms.Select):
-    """ A <select> widget whose first entry is blank. """
-    template_name = 'django/forms/widgets/blankselect.html'
+    """A <select> widget whose first entry is blank."""
 
-    def __init__(self, blank_choice=('', ''), *args, **kwargs):
+    template_name = "django/forms/widgets/blankselect.html"
+
+    def __init__(self, blank_choice=("", ""), *args, **kwargs):
         super(forms.Select, self).__init__(*args, **kwargs)
         self.blank_value = blank_choice[0]
         self.blank_label = blank_choice[1]
 
+
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
-        kwargs['choices'] = ((True, 'Yes'), (False, 'No'))
+        kwargs["choices"] = ((True, "Yes"), (False, "No"))
         super().__init__(*args, **kwargs)
+
 
 class NullCheckboxSelect(forms.CheckboxInput):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     def value_from_datadict(self, data, files, name):
-        """ Slightly modified from Django's version to accept "on" as True. """
+        """Slightly modified from Django's version to accept "on" as True."""
         if name not in data:
             return False
         value = data.get(name)
-        values =  {'on': True, 'true': True, 'false': False}
+        values = {"on": True, "true": True, "false": False}
         if isinstance(value, str):
             value = values.get(value.lower(), value)
-        logger.info('NullCheckboxSelect converted %s to %s', data.get(name), value)
+        logger.info("NullCheckboxSelect converted %s to %s", data.get(name), value)
         return value
 
+
 class DummyWidget(widgets.Input):
-    input_type = 'text'
+    input_type = "text"
 
     def value_from_datadict(self, data, files, name):
         return True
 
     def render(self, name, value, attrs=None, choices=(), renderer=None):
-        output = ''
-        if attrs and 'text' in attrs:
-            output += attrs['text']
+        output = ""
+        if attrs and "text" in attrs:
+            output += attrs["text"]
         return mark_safe(output)
+
 
 class ContactFieldsWidget(forms.Widget):
     template_text = """
@@ -297,18 +330,19 @@ $j(document).ready(function() {
     """
 
     def render(self, name, value, attrs=None, renderer=None):
-        if value is None: value = ''
+        if value is None:
+            value = ""
         self.build_attrs(attrs)
         context = {}
-        context['name'] = name
-        context['value'] = json.dumps(value)
-        template = Template(self.template_text % {
-            'add_link_body': self.add_link_body})
+        context["name"] = name
+        context["value"] = json.dumps(value)
+        template = Template(self.template_text % {"add_link_body": self.add_link_body})
         return template.render(Context(context))
 
     def value_from_datadict(self, data, files, name):
         result = json.loads(data[name])
         return result
+
 
 class NavStructureWidget(forms.Widget):
     # TODO(benkraft): Convert this to an actual static script so we don't have
@@ -469,35 +503,38 @@ $j(document).ready(function() {
     """
 
     def render(self, name, value, attrs=None, renderer=None):
-        if value is None: value = ''
+        if value is None:
+            value = ""
         self.build_attrs(attrs)
         context = {}
-        context['name'] = name
-        context['value'] = json.dumps(value)
-        template = Template(self.template_text % {
-            'add_link_body': self.add_link_body})
+        context["name"] = name
+        context["value"] = json.dumps(value)
+        template = Template(self.template_text % {"add_link_body": self.add_link_body})
         return template.render(Context(context))
 
     def value_from_datadict(self, data, files, name):
         result = json.loads(data[name])
         return result
 
+
 class WithOptionDataMixin(object):
-    """ Mixin for choice widgets that renders extra ``data-`` attributes on each
-        of the individual choice inputs.  ``option_data`` maps a choice value to
-        a dict of attribute names (without the ``data-`` prefix) and values.  """
+    """Mixin for choice widgets that renders extra ``data-`` attributes on each
+    of the individual choice inputs.  ``option_data`` maps a choice value to
+    a dict of attribute names (without the ``data-`` prefix) and values."""
 
     def __init__(self, *args, **kwargs):
         #   Choice values are frequently model IDs, so normalize the keys to
         #   strings to avoid int/str mismatches at lookup time.
-        self.option_data = {str(key): data for key, data in kwargs.pop('option_data', {}).items()}
+        self.option_data = {
+            str(key): data for key, data in kwargs.pop("option_data", {}).items()
+        }
         super().__init__(*args, **kwargs)
 
     #   create_option() is the hook shared by every rendering path
     def create_option(self, name, value, *args, **kwargs):
         option = super().create_option(name, value, *args, **kwargs)
         for key, data in self.option_data.get(str(value), {}).items():
-            option['attrs']['data-' + key] = data
+            option["attrs"]["data-" + key] = data
         return option
 
 
@@ -508,14 +545,16 @@ class RadioSelectWithData(WithOptionDataMixin, forms.RadioSelect):
 class CheckboxSelectMultipleWithData(WithOptionDataMixin, forms.CheckboxSelectMultiple):
     pass
 
+
 class ChoiceWithOtherWidget(forms.MultiWidget):
     """MultiWidget for use with ChoiceWithOtherField."""
-    template_name = 'django/forms/widgets/choicewithother.html'
+
+    template_name = "django/forms/widgets/choicewithother.html"
 
     def __init__(self, choices, option_data):
         widgets = [
             RadioSelectWithData(choices=choices, option_data=option_data),
-            forms.TextInput
+            forms.TextInput,
         ]
         super().__init__(widgets)
 
@@ -524,302 +563,309 @@ class ChoiceWithOtherWidget(forms.MultiWidget):
             return [None, None]
         return value
 
+
 class ChoiceWithOtherField(forms.MultiValueField):
     def __init__(self, *args, **kwargs):
-        option_data = kwargs.pop('option_data', {})
+        option_data = kwargs.pop("option_data", {})
         fields = [
             forms.ChoiceField(widget=forms.RadioSelect(), *args, **kwargs),
-            forms.CharField(required=False)
+            forms.CharField(required=False),
         ]
 
         self.choices = []
 
-        if 'choices' in kwargs:
-            self.choices = kwargs['choices']
-            widget = ChoiceWithOtherWidget(choices=kwargs['choices'], option_data=option_data)
-            kwargs.pop('choices')
-            self._was_required = kwargs.pop('required', True)
-            kwargs['required'] = False
+        if "choices" in kwargs:
+            self.choices = kwargs["choices"]
+            widget = ChoiceWithOtherWidget(
+                choices=kwargs["choices"], option_data=option_data
+            )
+            kwargs.pop("choices")
+            self._was_required = kwargs.pop("required", True)
+            kwargs["required"] = False
             super().__init__(widget=widget, fields=fields, *args, **kwargs)
         else:
             super().__init__(*args, **kwargs)
 
     def compress(self, value):
         if not value:
-            return [None, '']
+            return [None, ""]
 
         option_value, other_value = value
-        if self._was_required and not value or option_value in (None, ''):
-            raise forms.ValidationError(self.error_messages['required'])
+        if self._was_required and not value or option_value in (None, ""):
+            raise forms.ValidationError(self.error_messages["required"])
 
         return option_value, other_value
 
+
 # copied from esp/public/media/theme_editor/less/glyphicons.less
 # TODO(benkraft): avoid the duplication
-_ICONS = OrderedDict([
-    ("asterisk", "&#x002a"),
-    ("plus", "&#x002b"),
-    ("euro", "&#x20ac"),
-    ("minus", "&#x2212"),
-    ("cloud", "&#x2601"),
-    ("envelope", "&#x2709"),
-    ("pencil", "&#x270f"),
-    ("glass", "&#xe001"),
-    ("music", "&#xe002"),
-    ("search", "&#xe003"),
-    ("heart", "&#xe005"),
-    ("star", "&#xe006"),
-    ("star-empty", "&#xe007"),
-    ("user", "&#xe008"),
-    ("film", "&#xe009"),
-    ("th-large", "&#xe010"),
-    ("th", "&#xe011"),
-    ("th-list", "&#xe012"),
-    ("ok", "&#xe013"),
-    ("remove", "&#xe014"),
-    ("zoom-in", "&#xe015"),
-    ("zoom-out", "&#xe016"),
-    ("off", "&#xe017"),
-    ("signal", "&#xe018"),
-    ("cog", "&#xe019"),
-    ("trash", "&#xe020"),
-    ("home", "&#xe021"),
-    ("file", "&#xe022"),
-    ("time", "&#xe023"),
-    ("road", "&#xe024"),
-    ("download-alt", "&#xe025"),
-    ("download", "&#xe026"),
-    ("upload", "&#xe027"),
-    ("inbox", "&#xe028"),
-    ("play-circle", "&#xe029"),
-    ("repeat", "&#xe030"),
-    ("refresh", "&#xe031"),
-    ("list-alt", "&#xe032"),
-    ("lock", "&#xe033"),
-    ("flag", "&#xe034"),
-    ("headphones", "&#xe035"),
-    ("volume-off", "&#xe036"),
-    ("volume-down", "&#xe037"),
-    ("volume-up", "&#xe038"),
-    ("qrcode", "&#xe039"),
-    ("barcode", "&#xe040"),
-    ("tag", "&#xe041"),
-    ("tags", "&#xe042"),
-    ("book", "&#xe043"),
-    ("bookmark", "&#xe044"),
-    ("print", "&#xe045"),
-    ("camera", "&#xe046"),
-    ("font", "&#xe047"),
-    ("bold", "&#xe048"),
-    ("italic", "&#xe049"),
-    ("text-height", "&#xe050"),
-    ("text-width", "&#xe051"),
-    ("align-left", "&#xe052"),
-    ("align-center", "&#xe053"),
-    ("align-right", "&#xe054"),
-    ("align-justify", "&#xe055"),
-    ("list", "&#xe056"),
-    ("indent-left", "&#xe057"),
-    ("indent-right", "&#xe058"),
-    ("facetime-video", "&#xe059"),
-    ("picture", "&#xe060"),
-    ("map-marker", "&#xe062"),
-    ("adjust", "&#xe063"),
-    ("tint", "&#xe064"),
-    ("edit", "&#xe065"),
-    ("share", "&#xe066"),
-    ("check", "&#xe067"),
-    ("move", "&#xe068"),
-    ("step-backward", "&#xe069"),
-    ("fast-backward", "&#xe070"),
-    ("backward", "&#xe071"),
-    ("play", "&#xe072"),
-    ("pause", "&#xe073"),
-    ("stop", "&#xe074"),
-    ("forward", "&#xe075"),
-    ("fast-forward", "&#xe076"),
-    ("step-forward", "&#xe077"),
-    ("eject", "&#xe078"),
-    ("chevron-left", "&#xe079"),
-    ("chevron-right", "&#xe080"),
-    ("plus-sign", "&#xe081"),
-    ("minus-sign", "&#xe082"),
-    ("remove-sign", "&#xe083"),
-    ("ok-sign", "&#xe084"),
-    ("question-sign", "&#xe085"),
-    ("info-sign", "&#xe086"),
-    ("screenshot", "&#xe087"),
-    ("remove-circle", "&#xe088"),
-    ("ok-circle", "&#xe089"),
-    ("ban-circle", "&#xe090"),
-    ("arrow-left", "&#xe091"),
-    ("arrow-right", "&#xe092"),
-    ("arrow-up", "&#xe093"),
-    ("arrow-down", "&#xe094"),
-    ("share-alt", "&#xe095"),
-    ("resize-full", "&#xe096"),
-    ("resize-small", "&#xe097"),
-    ("exclamation-sign", "&#xe101"),
-    ("gift", "&#xe102"),
-    ("leaf", "&#xe103"),
-    ("fire", "&#xe104"),
-    ("eye-open", "&#xe105"),
-    ("eye-close", "&#xe106"),
-    ("warning-sign", "&#xe107"),
-    ("plane", "&#xe108"),
-    ("calendar", "&#xe109"),
-    ("random", "&#xe110"),
-    ("comment", "&#xe111"),
-    ("magnet", "&#xe112"),
-    ("chevron-up", "&#xe113"),
-    ("chevron-down", "&#xe114"),
-    ("retweet", "&#xe115"),
-    ("shopping-cart", "&#xe116"),
-    ("folder-close", "&#xe117"),
-    ("folder-open", "&#xe118"),
-    ("resize-vertical", "&#xe119"),
-    ("resize-horizontal", "&#xe120"),
-    ("hdd", "&#xe121"),
-    ("bullhorn", "&#xe122"),
-    ("bell", "&#xe123"),
-    ("certificate", "&#xe124"),
-    ("thumbs-up", "&#xe125"),
-    ("thumbs-down", "&#xe126"),
-    ("hand-right", "&#xe127"),
-    ("hand-left", "&#xe128"),
-    ("hand-up", "&#xe129"),
-    ("hand-down", "&#xe130"),
-    ("circle-arrow-right", "&#xe131"),
-    ("circle-arrow-left", "&#xe132"),
-    ("circle-arrow-up", "&#xe133"),
-    ("circle-arrow-down", "&#xe134"),
-    ("globe", "&#xe135"),
-    ("wrench", "&#xe136"),
-    ("tasks", "&#xe137"),
-    ("filter", "&#xe138"),
-    ("briefcase", "&#xe139"),
-    ("fullscreen", "&#xe140"),
-    ("dashboard", "&#xe141"),
-    ("paperclip", "&#xe142"),
-    ("heart-empty", "&#xe143"),
-    ("link", "&#xe144"),
-    ("phone", "&#xe145"),
-    ("pushpin", "&#xe146"),
-    ("usd", "&#xe148"),
-    ("gbp", "&#xe149"),
-    ("sort", "&#xe150"),
-    ("sort-by-alphabet", "&#xe151"),
-    ("sort-by-alphabet-alt", "&#xe152"),
-    ("sort-by-order", "&#xe153"),
-    ("sort-by-order-alt", "&#xe154"),
-    ("sort-by-attributes", "&#xe155"),
-    ("sort-by-attributes-alt", "&#xe156"),
-    ("unchecked", "&#xe157"),
-    ("expand", "&#xe158"),
-    ("collapse-down", "&#xe159"),
-    ("collapse-up", "&#xe160"),
-    ("log-in", "&#xe161"),
-    ("flash", "&#xe162"),
-    ("log-out", "&#xe163"),
-    ("new-window", "&#xe164"),
-    ("record", "&#xe165"),
-    ("save", "&#xe166"),
-    ("open", "&#xe167"),
-    ("saved", "&#xe168"),
-    ("import", "&#xe169"),
-    ("export", "&#xe170"),
-    ("send", "&#xe171"),
-    ("floppy-disk", "&#xe172"),
-    ("floppy-saved", "&#xe173"),
-    ("floppy-remove", "&#xe174"),
-    ("floppy-save", "&#xe175"),
-    ("floppy-open", "&#xe176"),
-    ("credit-card", "&#xe177"),
-    ("transfer", "&#xe178"),
-    ("cutlery", "&#xe179"),
-    ("header", "&#xe180"),
-    ("compressed", "&#xe181"),
-    ("earphone", "&#xe182"),
-    ("phone-alt", "&#xe183"),
-    ("tower", "&#xe184"),
-    ("stats", "&#xe185"),
-    ("sd-video", "&#xe186"),
-    ("hd-video", "&#xe187"),
-    ("subtitles", "&#xe188"),
-    ("sound-stereo", "&#xe189"),
-    ("sound-dolby", "&#xe190"),
-    ("sound-5-1", "&#xe191"),
-    ("sound-6-1", "&#xe192"),
-    ("sound-7-1", "&#xe193"),
-    ("copyright-mark", "&#xe194"),
-    ("registration-mark", "&#xe195"),
-    ("cloud-download", "&#xe197"),
-    ("cloud-upload", "&#xe198"),
-    ("tree-conifer", "&#xe199"),
-    ("tree-deciduous", "&#xe200"),
-    ("cd", "&#xe201"),
-    ("save-file", "&#xe202"),
-    ("open-file", "&#xe203"),
-    ("level-up", "&#xe204"),
-    ("copy", "&#xe205"),
-    ("paste", "&#xe206"),
-    ("alert", "&#xe209"),
-    ("equalizer", "&#xe210"),
-    ("king", "&#xe211"),
-    ("queen", "&#xe212"),
-    ("pawn", "&#xe213"),
-    ("bishop", "&#xe214"),
-    ("knight", "&#xe215"),
-    ("baby-formula", "&#xe216"),
-    ("tent", "&#x26fa"),
-    ("blackboard", "&#xe218"),
-    ("bed", "&#xe219"),
-    ("apple", "&#xf8ff"),
-    ("erase", "&#xe221"),
-    ("hourglass", "&#x231b"),
-    ("lamp", "&#xe223"),
-    ("duplicate", "&#xe224"),
-    ("piggy-bank", "&#xe225"),
-    ("scissors", "&#xe226"),
-    ("bitcoin", "&#xe227"),
-    ("btc", "&#xe227"),
-    ("xbt", "&#xe227"),
-    ("yen", "&#x00a5"),
-    ("jpy", "&#x00a5"),
-    ("ruble", "&#x20bd"),
-    ("rub", "&#x20bd"),
-    ("scale", "&#xe230"),
-    ("ice-lolly", "&#xe231"),
-    ("ice-lolly-tasted", "&#xe232"),
-    ("education", "&#xe233"),
-    ("option-horizontal", "&#xe234"),
-    ("option-vertical", "&#xe235"),
-    ("menu-hamburger", "&#xe236"),
-    ("modal-window", "&#xe237"),
-    ("oil", "&#xe238"),
-    ("grain", "&#xe239"),
-    ("sunglasses", "&#xe240"),
-    ("text-size", "&#xe241"),
-    ("text-color", "&#xe242"),
-    ("text-background", "&#xe243"),
-    ("object-align-top", "&#xe244"),
-    ("object-align-bottom", "&#xe245"),
-    ("object-align-horizontal", "&#xe246"),
-    ("object-align-left", "&#xe247"),
-    ("object-align-vertical", "&#xe248"),
-    ("object-align-right", "&#xe249"),
-    ("triangle-right", "&#xe250"),
-    ("triangle-left", "&#xe251"),
-    ("triangle-bottom", "&#xe252"),
-    ("triangle-top", "&#xe253"),
-    ("console", "&#xe254"),
-    ("superscript", "&#xe255"),
-    ("subscript", "&#xe256"),
-    ("menu-left", "&#xe257"),
-    ("menu-right", "&#xe258"),
-    ("menu-down", "&#xe259"),
-    ("menu-up", "&#xe260"),
-])
+_ICONS = OrderedDict(
+    [
+        ("asterisk", "&#x002a"),
+        ("plus", "&#x002b"),
+        ("euro", "&#x20ac"),
+        ("minus", "&#x2212"),
+        ("cloud", "&#x2601"),
+        ("envelope", "&#x2709"),
+        ("pencil", "&#x270f"),
+        ("glass", "&#xe001"),
+        ("music", "&#xe002"),
+        ("search", "&#xe003"),
+        ("heart", "&#xe005"),
+        ("star", "&#xe006"),
+        ("star-empty", "&#xe007"),
+        ("user", "&#xe008"),
+        ("film", "&#xe009"),
+        ("th-large", "&#xe010"),
+        ("th", "&#xe011"),
+        ("th-list", "&#xe012"),
+        ("ok", "&#xe013"),
+        ("remove", "&#xe014"),
+        ("zoom-in", "&#xe015"),
+        ("zoom-out", "&#xe016"),
+        ("off", "&#xe017"),
+        ("signal", "&#xe018"),
+        ("cog", "&#xe019"),
+        ("trash", "&#xe020"),
+        ("home", "&#xe021"),
+        ("file", "&#xe022"),
+        ("time", "&#xe023"),
+        ("road", "&#xe024"),
+        ("download-alt", "&#xe025"),
+        ("download", "&#xe026"),
+        ("upload", "&#xe027"),
+        ("inbox", "&#xe028"),
+        ("play-circle", "&#xe029"),
+        ("repeat", "&#xe030"),
+        ("refresh", "&#xe031"),
+        ("list-alt", "&#xe032"),
+        ("lock", "&#xe033"),
+        ("flag", "&#xe034"),
+        ("headphones", "&#xe035"),
+        ("volume-off", "&#xe036"),
+        ("volume-down", "&#xe037"),
+        ("volume-up", "&#xe038"),
+        ("qrcode", "&#xe039"),
+        ("barcode", "&#xe040"),
+        ("tag", "&#xe041"),
+        ("tags", "&#xe042"),
+        ("book", "&#xe043"),
+        ("bookmark", "&#xe044"),
+        ("print", "&#xe045"),
+        ("camera", "&#xe046"),
+        ("font", "&#xe047"),
+        ("bold", "&#xe048"),
+        ("italic", "&#xe049"),
+        ("text-height", "&#xe050"),
+        ("text-width", "&#xe051"),
+        ("align-left", "&#xe052"),
+        ("align-center", "&#xe053"),
+        ("align-right", "&#xe054"),
+        ("align-justify", "&#xe055"),
+        ("list", "&#xe056"),
+        ("indent-left", "&#xe057"),
+        ("indent-right", "&#xe058"),
+        ("facetime-video", "&#xe059"),
+        ("picture", "&#xe060"),
+        ("map-marker", "&#xe062"),
+        ("adjust", "&#xe063"),
+        ("tint", "&#xe064"),
+        ("edit", "&#xe065"),
+        ("share", "&#xe066"),
+        ("check", "&#xe067"),
+        ("move", "&#xe068"),
+        ("step-backward", "&#xe069"),
+        ("fast-backward", "&#xe070"),
+        ("backward", "&#xe071"),
+        ("play", "&#xe072"),
+        ("pause", "&#xe073"),
+        ("stop", "&#xe074"),
+        ("forward", "&#xe075"),
+        ("fast-forward", "&#xe076"),
+        ("step-forward", "&#xe077"),
+        ("eject", "&#xe078"),
+        ("chevron-left", "&#xe079"),
+        ("chevron-right", "&#xe080"),
+        ("plus-sign", "&#xe081"),
+        ("minus-sign", "&#xe082"),
+        ("remove-sign", "&#xe083"),
+        ("ok-sign", "&#xe084"),
+        ("question-sign", "&#xe085"),
+        ("info-sign", "&#xe086"),
+        ("screenshot", "&#xe087"),
+        ("remove-circle", "&#xe088"),
+        ("ok-circle", "&#xe089"),
+        ("ban-circle", "&#xe090"),
+        ("arrow-left", "&#xe091"),
+        ("arrow-right", "&#xe092"),
+        ("arrow-up", "&#xe093"),
+        ("arrow-down", "&#xe094"),
+        ("share-alt", "&#xe095"),
+        ("resize-full", "&#xe096"),
+        ("resize-small", "&#xe097"),
+        ("exclamation-sign", "&#xe101"),
+        ("gift", "&#xe102"),
+        ("leaf", "&#xe103"),
+        ("fire", "&#xe104"),
+        ("eye-open", "&#xe105"),
+        ("eye-close", "&#xe106"),
+        ("warning-sign", "&#xe107"),
+        ("plane", "&#xe108"),
+        ("calendar", "&#xe109"),
+        ("random", "&#xe110"),
+        ("comment", "&#xe111"),
+        ("magnet", "&#xe112"),
+        ("chevron-up", "&#xe113"),
+        ("chevron-down", "&#xe114"),
+        ("retweet", "&#xe115"),
+        ("shopping-cart", "&#xe116"),
+        ("folder-close", "&#xe117"),
+        ("folder-open", "&#xe118"),
+        ("resize-vertical", "&#xe119"),
+        ("resize-horizontal", "&#xe120"),
+        ("hdd", "&#xe121"),
+        ("bullhorn", "&#xe122"),
+        ("bell", "&#xe123"),
+        ("certificate", "&#xe124"),
+        ("thumbs-up", "&#xe125"),
+        ("thumbs-down", "&#xe126"),
+        ("hand-right", "&#xe127"),
+        ("hand-left", "&#xe128"),
+        ("hand-up", "&#xe129"),
+        ("hand-down", "&#xe130"),
+        ("circle-arrow-right", "&#xe131"),
+        ("circle-arrow-left", "&#xe132"),
+        ("circle-arrow-up", "&#xe133"),
+        ("circle-arrow-down", "&#xe134"),
+        ("globe", "&#xe135"),
+        ("wrench", "&#xe136"),
+        ("tasks", "&#xe137"),
+        ("filter", "&#xe138"),
+        ("briefcase", "&#xe139"),
+        ("fullscreen", "&#xe140"),
+        ("dashboard", "&#xe141"),
+        ("paperclip", "&#xe142"),
+        ("heart-empty", "&#xe143"),
+        ("link", "&#xe144"),
+        ("phone", "&#xe145"),
+        ("pushpin", "&#xe146"),
+        ("usd", "&#xe148"),
+        ("gbp", "&#xe149"),
+        ("sort", "&#xe150"),
+        ("sort-by-alphabet", "&#xe151"),
+        ("sort-by-alphabet-alt", "&#xe152"),
+        ("sort-by-order", "&#xe153"),
+        ("sort-by-order-alt", "&#xe154"),
+        ("sort-by-attributes", "&#xe155"),
+        ("sort-by-attributes-alt", "&#xe156"),
+        ("unchecked", "&#xe157"),
+        ("expand", "&#xe158"),
+        ("collapse-down", "&#xe159"),
+        ("collapse-up", "&#xe160"),
+        ("log-in", "&#xe161"),
+        ("flash", "&#xe162"),
+        ("log-out", "&#xe163"),
+        ("new-window", "&#xe164"),
+        ("record", "&#xe165"),
+        ("save", "&#xe166"),
+        ("open", "&#xe167"),
+        ("saved", "&#xe168"),
+        ("import", "&#xe169"),
+        ("export", "&#xe170"),
+        ("send", "&#xe171"),
+        ("floppy-disk", "&#xe172"),
+        ("floppy-saved", "&#xe173"),
+        ("floppy-remove", "&#xe174"),
+        ("floppy-save", "&#xe175"),
+        ("floppy-open", "&#xe176"),
+        ("credit-card", "&#xe177"),
+        ("transfer", "&#xe178"),
+        ("cutlery", "&#xe179"),
+        ("header", "&#xe180"),
+        ("compressed", "&#xe181"),
+        ("earphone", "&#xe182"),
+        ("phone-alt", "&#xe183"),
+        ("tower", "&#xe184"),
+        ("stats", "&#xe185"),
+        ("sd-video", "&#xe186"),
+        ("hd-video", "&#xe187"),
+        ("subtitles", "&#xe188"),
+        ("sound-stereo", "&#xe189"),
+        ("sound-dolby", "&#xe190"),
+        ("sound-5-1", "&#xe191"),
+        ("sound-6-1", "&#xe192"),
+        ("sound-7-1", "&#xe193"),
+        ("copyright-mark", "&#xe194"),
+        ("registration-mark", "&#xe195"),
+        ("cloud-download", "&#xe197"),
+        ("cloud-upload", "&#xe198"),
+        ("tree-conifer", "&#xe199"),
+        ("tree-deciduous", "&#xe200"),
+        ("cd", "&#xe201"),
+        ("save-file", "&#xe202"),
+        ("open-file", "&#xe203"),
+        ("level-up", "&#xe204"),
+        ("copy", "&#xe205"),
+        ("paste", "&#xe206"),
+        ("alert", "&#xe209"),
+        ("equalizer", "&#xe210"),
+        ("king", "&#xe211"),
+        ("queen", "&#xe212"),
+        ("pawn", "&#xe213"),
+        ("bishop", "&#xe214"),
+        ("knight", "&#xe215"),
+        ("baby-formula", "&#xe216"),
+        ("tent", "&#x26fa"),
+        ("blackboard", "&#xe218"),
+        ("bed", "&#xe219"),
+        ("apple", "&#xf8ff"),
+        ("erase", "&#xe221"),
+        ("hourglass", "&#x231b"),
+        ("lamp", "&#xe223"),
+        ("duplicate", "&#xe224"),
+        ("piggy-bank", "&#xe225"),
+        ("scissors", "&#xe226"),
+        ("bitcoin", "&#xe227"),
+        ("btc", "&#xe227"),
+        ("xbt", "&#xe227"),
+        ("yen", "&#x00a5"),
+        ("jpy", "&#x00a5"),
+        ("ruble", "&#x20bd"),
+        ("rub", "&#x20bd"),
+        ("scale", "&#xe230"),
+        ("ice-lolly", "&#xe231"),
+        ("ice-lolly-tasted", "&#xe232"),
+        ("education", "&#xe233"),
+        ("option-horizontal", "&#xe234"),
+        ("option-vertical", "&#xe235"),
+        ("menu-hamburger", "&#xe236"),
+        ("modal-window", "&#xe237"),
+        ("oil", "&#xe238"),
+        ("grain", "&#xe239"),
+        ("sunglasses", "&#xe240"),
+        ("text-size", "&#xe241"),
+        ("text-color", "&#xe242"),
+        ("text-background", "&#xe243"),
+        ("object-align-top", "&#xe244"),
+        ("object-align-bottom", "&#xe245"),
+        ("object-align-horizontal", "&#xe246"),
+        ("object-align-left", "&#xe247"),
+        ("object-align-vertical", "&#xe248"),
+        ("object-align-right", "&#xe249"),
+        ("triangle-right", "&#xe250"),
+        ("triangle-left", "&#xe251"),
+        ("triangle-bottom", "&#xe252"),
+        ("triangle-top", "&#xe253"),
+        ("console", "&#xe254"),
+        ("superscript", "&#xe255"),
+        ("subscript", "&#xe256"),
+        ("menu-left", "&#xe257"),
+        ("menu-right", "&#xe258"),
+        ("menu-down", "&#xe259"),
+        ("menu-up", "&#xe260"),
+    ]
+)
+
 
 class NavStructureWidgetWithIcons(NavStructureWidget):
     add_link_body = """
@@ -833,11 +879,13 @@ class NavStructureWidgetWithIcons(NavStructureWidget):
         entry.append(select);
         %(super_add_link_body)s
     """ % {
-        'super_add_link_body': NavStructureWidget.add_link_body,
-        'entries': '\n'.join('''
+        "super_add_link_body": NavStructureWidget.add_link_body,
+        "entries": "\n".join(
+            """
             select.append($j("<option style='font-family: Glyphicons Halflings' value='%(icon)s'" +
                              (data.icon === "%(icon)s" ? " selected" : "") +
-                             ">%(unicode)s (%(icon)s)</option>"));'''
-            % {'icon': icon, 'unicode': text_unicode}
-            for icon, text_unicode in _ICONS.items()),
+                             ">%(unicode)s (%(icon)s)</option>"));"""
+            % {"icon": icon, "unicode": text_unicode}
+            for icon, text_unicode in _ICONS.items()
+        ),
     }

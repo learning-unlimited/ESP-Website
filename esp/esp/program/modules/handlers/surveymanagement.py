@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -36,14 +35,27 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.program.models import ClassSubject, ClassSection
 from esp.utils.web import render_to_response
-from esp.survey.models  import QuestionType, Question, Survey
-from esp.survey.views   import survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
-from esp.program.modules.forms.surveys import SurveyForm, QuestionForm, SurveyImportForm, CSVQuestionImportForm, parse_csv
+from esp.survey.models import QuestionType, Question, Survey
+from esp.survey.views import (
+    survey_review,
+    survey_graphical,
+    survey_review_single,
+    top_classes,
+    survey_dump,
+)
+from esp.program.modules.forms.surveys import (
+    SurveyForm,
+    QuestionForm,
+    SurveyImportForm,
+    CSVQuestionImportForm,
+    parse_csv,
+)
 
 import csv
 import json
 
 from django.http import HttpResponse
+
 
 class SurveyManagement(ProgramModuleObj):
     doc = """Manage the post-program/class surveys that are served to students/teachers during registration."""
@@ -55,8 +67,8 @@ class SurveyManagement(ProgramModuleObj):
             "link_title": "Surveys",
             "module_type": "manage",
             "seq": 25,
-            'choosable': 1,
-            }
+            "choosable": 1,
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -69,47 +81,73 @@ class SurveyManagement(ProgramModuleObj):
             url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
             title="Surveys",
             category=SEARCH_CATEGORY_SETTINGS,
-            keywords=["survey", "surveys", "feedback", "student survey", "teacher survey"],
+            keywords=[
+                "survey",
+                "surveys",
+                "feedback",
+                "student survey",
+                "teacher survey",
+            ],
         )
 
     @needs_admin
-    def survey_manage(self, request, tl, one, two, module, extra, prog, extra_context=None):
-        context = {'program': prog}
+    def survey_manage(
+        self, request, tl, one, two, module, extra, prog, extra_context=None
+    ):
+        context = {"program": prog}
         # Make some dummy data for survey questions that need it
-        classes = [ClassSubject(id = i, title="Test %s" %i, parent_program = prog, category = prog.class_categories.all()[0],
-                   grade_min = prog.grade_min, grade_max = prog.grade_max) for i in range(1, 4)]
-        context['classes'] = classes
-        context['section'] = ClassSection(parent_class=classes[0])
-        context['question_types'] = json.dumps({str(qt.id): qt.param_names for qt in QuestionType.objects.all()})
+        classes = [
+            ClassSubject(
+                id=i,
+                title="Test %s" % i,
+                parent_program=prog,
+                category=prog.class_categories.all()[0],
+                grade_min=prog.grade_min,
+                grade_max=prog.grade_max,
+            )
+            for i in range(1, 4)
+        ]
+        context["classes"] = classes
+        context["section"] = ClassSection(parent_class=classes[0])
+        context["question_types"] = json.dumps(
+            {str(qt.id): qt.param_names for qt in QuestionType.objects.all()}
+        )
         if request.GET:
             obj = request.GET.get("obj", None)
             op = request.GET.get("op", None)
-            id = request.GET.get("id", None) or request.POST.get("survey_id", None) or request.POST.get("question_id", None)
+            id = (
+                request.GET.get("id", None)
+                or request.POST.get("survey_id", None)
+                or request.POST.get("question_id", None)
+            )
             if obj == "survey":
-                context['open_section'] = 'survey'
+                context["open_section"] = "survey"
                 survey = None
-                surveys = Survey.objects.filter(id = id)
+                surveys = Survey.objects.filter(id=id)
                 if request.POST and not op:
                     if len(surveys) == 1:
                         # submitted question form to edit an existing question
-                        form = SurveyForm(request.POST, instance = surveys[0])
+                        form = SurveyForm(request.POST, instance=surveys[0])
                         form.id = id
                     else:
                         # submitted question form to create new question
                         form = SurveyForm(request.POST)
                     if form.is_valid():
-                        form.save(program = prog)
+                        form.save(program=prog)
                     else:
-                        context['survey_form'] = form
+                        context["survey_form"] = form
                 elif len(surveys) == 1:
                     survey = surveys[0]
                     if op == "edit":
                         # clicked edit link
-                        form = SurveyForm(instance = survey)
+                        form = SurveyForm(instance=survey)
                         form.id = id
-                        context['survey_form'] = form
+                        context["survey_form"] = form
                     elif op == "delete":
-                        if 'delete_confirm' in request.POST and request.POST['delete_confirm'] == 'yes':
+                        if (
+                            "delete_confirm" in request.POST
+                            and request.POST["delete_confirm"] == "yes"
+                        ):
                             # confirmed deletion
                             # delete questions
                             survey.questions.all().delete()
@@ -117,75 +155,108 @@ class SurveyManagement(ProgramModuleObj):
                             survey.delete()
                         else:
                             # clicked delete link
-                            context['survey'] = survey
-                            context['questions'] = survey.questions.order_by('seq')
-                            return render_to_response('program/modules/surveymanagement/survey_delete.html', request, context)
+                            context["survey"] = survey
+                            context["questions"] = survey.questions.order_by("seq")
+                            return render_to_response(
+                                "program/modules/surveymanagement/survey_delete.html",
+                                request,
+                                context,
+                            )
                     elif op == "import":
-                        if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
+                        if (
+                            "import_confirm" in request.POST
+                            and request.POST["import_confirm"] == "yes"
+                        ):
                             # confirmed import
-                            to_import = request.POST.getlist('to_import')
+                            to_import = request.POST.getlist("to_import")
 
                             # Create new survey
-                            newsurvey, created = Survey.objects.get_or_create(name=survey.name, program=prog, category=survey.category)
+                            newsurvey, created = Survey.objects.get_or_create(
+                                name=survey.name, program=prog, category=survey.category
+                            )
 
                             # Create new questions for the new survey, if they were selected
-                            questions = survey.questions.order_by('id')
+                            questions = survey.questions.order_by("id")
                             for q in questions:
                                 if str(q.id) in to_import:
-                                    Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
+                                    Question.objects.get_or_create(
+                                        survey=newsurvey,
+                                        name=q.name,
+                                        question_type=q.question_type,
+                                        _param_values=q._param_values,
+                                        per_class=q.per_class,
+                                        seq=q.seq,
+                                    )
                         else:
                             # submitted import form
-                            context['survey'] = survey
-                            context['questions'] = survey.questions.order_by('seq')
-                            return render_to_response('program/modules/surveymanagement/import.html', request, context)
+                            context["survey"] = survey
+                            context["questions"] = survey.questions.order_by("seq")
+                            return render_to_response(
+                                "program/modules/surveymanagement/import.html",
+                                request,
+                                context,
+                            )
             elif obj == "question":
-                context['open_section'] = 'question'
+                context["open_section"] = "question"
                 question = None
-                questions = Question.objects.filter(id = id)
+                questions = Question.objects.filter(id=id)
                 if request.POST and not op:
                     if len(questions) == 1:
                         # submitted question form to edit an existing question
-                        form = QuestionForm(request.POST, instance = questions[0], cur_prog = prog)
+                        form = QuestionForm(
+                            request.POST, instance=questions[0], cur_prog=prog
+                        )
                         form.id = id
                     else:
                         # submitted question form to create new question
-                        form = QuestionForm(request.POST, cur_prog = prog)
+                        form = QuestionForm(request.POST, cur_prog=prog)
                     if form.is_valid():
                         form.save()
                     else:
-                        context['question_form'] = form
+                        context["question_form"] = form
                 elif len(questions) == 1:
                     question = questions[0]
                     if op == "edit":
                         # clicked edit link
-                        form = QuestionForm(instance = question, cur_prog = prog)
+                        form = QuestionForm(instance=question, cur_prog=prog)
                         form.id = id
-                        context['question_form'] = form
+                        context["question_form"] = form
                     elif op == "delete":
-                        if 'delete_confirm' in request.POST and request.POST['delete_confirm'] == 'yes':
+                        if (
+                            "delete_confirm" in request.POST
+                            and request.POST["delete_confirm"] == "yes"
+                        ):
                             # confirmed deletion
                             question.delete()
                         else:
                             # clicked delete link
-                            context['question'] = question
-                            return render_to_response('program/modules/surveymanagement/question_delete.html', request, context)
-        if 'survey_form' not in context:
-            context['survey_form'] = SurveyForm()
-        if 'question_form' not in context:
-            context['question_form'] = QuestionForm(cur_prog = prog)
-        if 'import_survey_form' not in context:
-            context['import_survey_form'] = SurveyImportForm(cur_prog = prog)
-        if 'csv_import_form' not in context:
-            context['csv_import_form'] = CSVQuestionImportForm(cur_prog = prog)
-        context['surveys'] = Survey.objects.filter(program = prog)
-        context['questions'] = Question.objects.filter(survey__program = prog).order_by('survey__category', 'survey', 'per_class', 'seq')
+                            context["question"] = question
+                            return render_to_response(
+                                "program/modules/surveymanagement/question_delete.html",
+                                request,
+                                context,
+                            )
+        if "survey_form" not in context:
+            context["survey_form"] = SurveyForm()
+        if "question_form" not in context:
+            context["question_form"] = QuestionForm(cur_prog=prog)
+        if "import_survey_form" not in context:
+            context["import_survey_form"] = SurveyImportForm(cur_prog=prog)
+        if "csv_import_form" not in context:
+            context["csv_import_form"] = CSVQuestionImportForm(cur_prog=prog)
+        context["surveys"] = Survey.objects.filter(program=prog)
+        context["questions"] = Question.objects.filter(survey__program=prog).order_by(
+            "survey__category", "survey", "per_class", "seq"
+        )
 
-        return render_to_response('program/modules/surveymanagement/manage.html', request, context)
+        return render_to_response(
+            "program/modules/surveymanagement/manage.html", request, context
+        )
 
     @main_call
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
-        if extra is None or extra == '':
+        if extra is None or extra == "":
             surveys = prog.getSurveys()
             counts = {}
             for s in surveys:
@@ -193,105 +264,126 @@ class SurveyManagement(ProgramModuleObj):
                     counts[s.category] = 1
                 else:
                     counts[s.category] += 1
-            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': surveys, 'counts': counts})
-        elif extra == 'manage':
+            return render_to_response(
+                "program/modules/surveymanagement/main.html",
+                request,
+                {"program": prog, "surveys": surveys, "counts": counts},
+            )
+        elif extra == "manage":
             return self.survey_manage(request, tl, one, two, module, extra, prog)
-        elif extra == 'review':
+        elif extra == "review":
             return survey_review(request, tl, one, two)
-        elif extra == 'dump':
+        elif extra == "dump":
             return survey_dump(request, tl, one, two)
-        elif extra == 'review_pdf':
+        elif extra == "review_pdf":
             return survey_graphical(request, tl, one, two)
-        elif extra == 'review_single':
+        elif extra == "review_single":
             return survey_review_single(request, tl, one, two)
-        elif extra == 'top_classes':
+        elif extra == "top_classes":
             return top_classes(request, tl, one, two)
-        elif extra == 'csv_template':
-            return self.csv_template_download(request, tl, one, two, module, extra, prog)
-        elif extra == 'csv_import':
+        elif extra == "csv_template":
+            return self.csv_template_download(
+                request, tl, one, two, module, extra, prog
+            )
+        elif extra == "csv_import":
             return self.csv_import(request, tl, one, two, module, extra, prog)
-        elif extra == 'csv_export':
+        elif extra == "csv_export":
             return self.csv_export(request, tl, one, two, module, extra, prog)
 
     @needs_admin
     def csv_export(self, request, tl, one, two, module, extra, prog):
         """Export an existing survey's questions to CSV format."""
-        survey_id = request.GET.get('survey_id')
+        survey_id = request.GET.get("survey_id")
 
         try:
             survey = Survey.objects.get(id=survey_id, program=prog)
         except (Survey.DoesNotExist, ValueError, TypeError):
             from esp.middleware import ESPError
-            raise ESPError('Survey not found for this program.', log=False)
+
+            raise ESPError("Survey not found for this program.", log=False)
 
         # Create CSV response
-        response = HttpResponse(content_type='text/csv')
-        filename = f'survey_{survey.id}_{survey.name.replace(" ", "_")}.csv'
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response = HttpResponse(content_type="text/csv")
+        filename = f"survey_{survey.id}_{survey.name.replace(' ', '_')}.csv"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
 
         writer = csv.writer(response)
-        writer.writerow(['question_text', 'question_type', 'per_class', 'seq', 'param_values'])
+        writer.writerow(
+            ["question_text", "question_type", "per_class", "seq", "param_values"]
+        )
 
         # Export all questions from the survey
-        questions = Question.objects.filter(survey=survey).order_by('per_class', 'seq')
+        questions = Question.objects.filter(survey=survey).order_by("per_class", "seq")
         for question in questions:
-            writer.writerow([
-                question.name,
-                question.question_type.name,
-                'true' if question.per_class else 'false',
-                question.seq,
-                question._param_values or '',
-            ])
+            writer.writerow(
+                [
+                    question.name,
+                    question.question_type.name,
+                    "true" if question.per_class else "false",
+                    question.seq,
+                    question._param_values or "",
+                ]
+            )
 
         return response
 
     @needs_admin
     def csv_template_download(self, request, tl, one, two, module, extra, prog):
         """Generate and return a CSV template file with one example of each question type."""
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="survey_questions_template.csv"'
+        response = HttpResponse(content_type="text/csv")
+        response["Content-Disposition"] = (
+            'attachment; filename="survey_questions_template.csv"'
+        )
 
         writer = csv.writer(response)
-        writer.writerow(['question_text', 'question_type', 'per_class', 'seq', 'param_values'])
+        writer.writerow(
+            ["question_text", "question_type", "per_class", "seq", "param_values"]
+        )
 
         # Get all question types and create one example for each
-        question_types = QuestionType.objects.all().order_by('name')
+        question_types = QuestionType.objects.all().order_by("name")
         seq = 1
 
         for qt in question_types:
             # Create appropriate example based on question type characteristics
             if qt.is_numeric and qt.is_countable:
                 # Numeric rating type
-                question_text = 'Rate this on a scale'
-                param_values = '5|Poor|Fair|Good|Very Good|Excellent'
-            elif 'checkbox' in qt.name.lower() or 'choice' in qt.name.lower():
+                question_text = "Rate this on a scale"
+                param_values = "5|Poor|Fair|Good|Very Good|Excellent"
+            elif "checkbox" in qt.name.lower() or "choice" in qt.name.lower():
                 # Checkbox or multiple choice type
-                question_text = 'Select from the options'
-                param_values = 'Option 1|Option 2|Option 3'
-            elif 'yes' in qt.name.lower() or 'no' in qt.name.lower():
+                question_text = "Select from the options"
+                param_values = "Option 1|Option 2|Option 3"
+            elif "yes" in qt.name.lower() or "no" in qt.name.lower():
                 # Yes/No type
-                question_text = 'Did you enjoy this?'
-                param_values = ''
-            elif 'text' in qt.name.lower() or 'answer' in qt.name.lower():
+                question_text = "Did you enjoy this?"
+                param_values = ""
+            elif "text" in qt.name.lower() or "answer" in qt.name.lower():
                 # Text answer type
-                question_text = 'Please provide your feedback'
-                param_values = ''
-            elif 'instruction' in qt.name.lower():
+                question_text = "Please provide your feedback"
+                param_values = ""
+            elif "instruction" in qt.name.lower():
                 # Instruction type
-                question_text = 'Instructions: Please answer the following questions honestly'
-                param_values = ''
+                question_text = (
+                    "Instructions: Please answer the following questions honestly"
+                )
+                param_values = ""
             else:
                 # Generic example
-                question_text = 'Sample question'
-                param_values = qt._param_names.replace('|', ' ') if qt._param_names else ''
+                question_text = "Sample question"
+                param_values = (
+                    qt._param_names.replace("|", " ") if qt._param_names else ""
+                )
 
-            writer.writerow([
-                question_text,
-                qt.name,
-                'false',
-                seq,
-                param_values,
-            ])
+            writer.writerow(
+                [
+                    question_text,
+                    qt.name,
+                    "false",
+                    seq,
+                    param_values,
+                ]
+            )
             seq += 1
 
         return response
@@ -299,97 +391,125 @@ class SurveyManagement(ProgramModuleObj):
     @needs_admin
     def csv_import(self, request, tl, one, two, module, extra, prog):
         """Handle CSV file upload, preview, and import of survey questions."""
-        context = {'program': prog}
+        context = {"program": prog}
 
-        if request.method == 'POST' and 'import_confirm' in request.POST:
+        if request.method == "POST" and "import_confirm" in request.POST:
             # Step 2: Confirmed import — create Question objects
-            survey_id_raw = request.POST.get('survey_id')
+            survey_id_raw = request.POST.get("survey_id")
             try:
                 survey_id = int(survey_id_raw)
             except (TypeError, ValueError):
                 from esp.middleware import ESPError
-                raise ESPError('Invalid survey selection for import.', log=False)
+
+                raise ESPError("Invalid survey selection for import.", log=False)
 
             try:
                 survey = Survey.objects.get(id=survey_id, program=prog)
             except Survey.DoesNotExist:
                 from esp.middleware import ESPError
-                raise ESPError('Selected survey does not exist for this program.', log=False)
+
+                raise ESPError(
+                    "Selected survey does not exist for this program.", log=False
+                )
 
             imported_count = 0
-            rows_data = request.POST.getlist('row_data')
+            rows_data = request.POST.getlist("row_data")
 
             try:
                 for row_json in rows_data:
                     row = json.loads(row_json)
                     try:
-                        question_type = QuestionType.objects.get(id=row['question_type_id'])
+                        question_type = QuestionType.objects.get(
+                            id=row["question_type_id"]
+                        )
                     except QuestionType.DoesNotExist:
                         continue
                     Question.objects.create(
                         survey=survey,
-                        name=row['question_text'],
+                        name=row["question_text"],
                         question_type=question_type,
-                        _param_values=row.get('param_values', ''),
-                        per_class=row['per_class'],
-                        seq=row['seq'],
+                        _param_values=row.get("param_values", ""),
+                        per_class=row["per_class"],
+                        seq=row["seq"],
                     )
                     imported_count += 1
 
             except (ValueError, KeyError, json.JSONDecodeError):
                 from esp.middleware import ESPError
-                raise ESPError('There was a problem with the submitted import data. Please restart the CSV import process.', log=False)
 
-            context['imported_count'] = imported_count
-            context['survey'] = survey
-            return render_to_response('program/modules/surveymanagement/csv_import_done.html', request, context)
+                raise ESPError(
+                    "There was a problem with the submitted import data. Please restart the CSV import process.",
+                    log=False,
+                )
 
-        elif request.method == 'POST':
+            context["imported_count"] = imported_count
+            context["survey"] = survey
+            return render_to_response(
+                "program/modules/surveymanagement/csv_import_done.html",
+                request,
+                context,
+            )
+
+        elif request.method == "POST":
             # Step 1: Parse and validate CSV, show preview
             form = CSVQuestionImportForm(request.POST, request.FILES, cur_prog=prog)
             if form.is_valid():
-                csv_file = form.cleaned_data['csv_file']
-                survey = form.cleaned_data['survey']
+                csv_file = form.cleaned_data["csv_file"]
+                survey = form.cleaned_data["survey"]
                 parsed_rows, errors = parse_csv(csv_file)
 
                 # Prepare row data for the confirmation form
                 rows_for_template = []
                 for row in parsed_rows:
                     row_data = {
-                        'question_text': row['question_text'],
-                        'question_type_id': row['question_type'].id,
-                        'per_class': row['per_class'],
-                        'seq': row['seq'],
-                        'param_values': row['param_values'],
+                        "question_text": row["question_text"],
+                        "question_type_id": row["question_type"].id,
+                        "per_class": row["per_class"],
+                        "seq": row["seq"],
+                        "param_values": row["param_values"],
                     }
-                    rows_for_template.append({
-                        'question_text': row['question_text'],
-                        'question_type_name': row['question_type'].name,
-                        'question_type_id': row['question_type'].id,
-                        'per_class': row['per_class'],
-                        'seq': row['seq'],
-                        'param_values': row['param_values'],
-                        'row_number': row['row_number'],
-                        'json_data': json.dumps(row_data),
-                    })
+                    rows_for_template.append(
+                        {
+                            "question_text": row["question_text"],
+                            "question_type_name": row["question_type"].name,
+                            "question_type_id": row["question_type"].id,
+                            "per_class": row["per_class"],
+                            "seq": row["seq"],
+                            "param_values": row["param_values"],
+                            "row_number": row["row_number"],
+                            "json_data": json.dumps(row_data),
+                        }
+                    )
 
-                context.update({
-                    'parsed_rows': rows_for_template,
-                    'errors': errors,
-                    'survey': survey,
-                    'csv_import_form': form,
-                })
-                return render_to_response('program/modules/surveymanagement/csv_import.html', request, context)
+                context.update(
+                    {
+                        "parsed_rows": rows_for_template,
+                        "errors": errors,
+                        "survey": survey,
+                        "csv_import_form": form,
+                    }
+                )
+                return render_to_response(
+                    "program/modules/surveymanagement/csv_import.html", request, context
+                )
             else:
                 # Form is invalid: preserve the bound form so errors are displayed
-                return self.survey_manage(request, tl, one, two, module, 'manage', prog, extra_context={'csv_import_form': form})
+                return self.survey_manage(
+                    request,
+                    tl,
+                    one,
+                    two,
+                    module,
+                    "manage",
+                    prog,
+                    extra_context={"csv_import_form": form},
+                )
         else:
-            return self.survey_manage(request, tl, one, two, module, 'manage', prog)
+            return self.survey_manage(request, tl, one, two, module, "manage", prog)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
-
+        app_label = "modules"

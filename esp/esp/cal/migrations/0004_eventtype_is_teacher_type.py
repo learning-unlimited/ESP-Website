@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('cal', '0003_event_group'),
+        ("cal", "0003_event_group"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='eventtype',
-            name='is_teacher_type',
+            model_name="eventtype",
+            name="is_teacher_type",
             field=models.BooleanField(default=False),
         ),
     ]

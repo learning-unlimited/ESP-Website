@@ -1,8 +1,7 @@
-
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -32,10 +31,20 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, CoreModule, main_call
-from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
+from esp.program.modules.base import (
+    ProgramModuleObj,
+    needs_teacher,
+    meets_deadline,
+    CoreModule,
+    main_call,
+)
+from esp.program.modules.admin_search import (
+    AdminSearchEntry,
+    SEARCH_CATEGORY_REGISTRATION,
+)
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.utils.web import render_to_response
+
 
 class TeacherRegCore(ProgramModuleObj, CoreModule):
     doc = """Serves the main teacher registration page."""
@@ -48,7 +57,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             "module_type": "teach",
             "seq": -9999,
             "choosable": 1,
-            }
+        }
 
     @classmethod
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
@@ -68,30 +77,30 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     @needs_teacher
     @meets_deadline("/MainPage")
     def teacherreg(self, request, tl, one, two, module, extra, prog):
-        """ Display a teacher reg page """
+        """Display a teacher reg page"""
         context = {}
-        modules = self.program.getModules(request.user, 'teach')
+        modules = self.program.getModules(request.user, "teach")
 
-        context['completedAll'] = True
+        context["completedAll"] = True
         for module in modules:
             if not module.isCompleted(request.user) and module.isRequired():
-                context['completedAll'] = False
+                context["completedAll"] = False
 
             context = module.prepare(context)
 
-        records = StudentRegCore.get_reg_records(request.user, prog, 'teach')
+        records = StudentRegCore.get_reg_records(request.user, prog, "teach")
 
-        context['modules'] = modules
-        context['records'] = records
-        context['options'] = prog.classregmoduleinfo
-        context['one'] = one
-        context['two'] = two
-        context['extra_steps'] = "teach:extra_steps"
-        return render_to_response(self.baseDir()+'mainpage.html', request, context)
+        context["modules"] = modules
+        context["records"] = records
+        context["options"] = prog.classregmoduleinfo
+        context["one"] = one
+        context["two"] = two
+        context["extra_steps"] = "teach:extra_steps"
+        return render_to_response(self.baseDir() + "mainpage.html", request, context)
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"

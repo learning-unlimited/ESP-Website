@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('dbmail', '0012_auto_20260224_0619'),
+        ("dbmail", "0012_auto_20260224_0619"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='plainredirect',
-            name='destination',
-            field=models.CharField(help_text='A comma-separated list of one or more real email address(es) that will receive the redirected email(s)', max_length=512),
+            model_name="plainredirect",
+            name="destination",
+            field=models.CharField(
+                help_text="A comma-separated list of one or more real email address(es) that will receive the redirected email(s)",
+                max_length=512,
+            ),
         ),
     ]

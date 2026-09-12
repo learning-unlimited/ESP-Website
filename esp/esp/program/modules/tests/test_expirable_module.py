@@ -84,15 +84,20 @@ class ProgramModuleObjExpirableTest(ProgramFrameworkTest):
         valid_ids = set(
             ProgramModuleObj.valid_objects()
             .filter(program=self.program)
-            .values_list('id', flat=True)
+            .values_list("id", flat=True)
         )
 
-        self.assertNotIn(expired.id, valid_ids,
-                         "Expired module should not appear in valid_objects()")
-        self.assertNotIn(future.id, valid_ids,
-                         "Future module should not appear in valid_objects()")
+        self.assertNotIn(
+            expired.id, valid_ids, "Expired module should not appear in valid_objects()"
+        )
+        self.assertNotIn(
+            future.id, valid_ids, "Future module should not appear in valid_objects()"
+        )
 
         # All remaining modules should be valid
         for pmo in all_pmos[2:]:
-            self.assertIn(pmo.id, valid_ids,
-                          f"Module {pmo.id} with null dates should be in valid_objects()")
+            self.assertIn(
+                pmo.id,
+                valid_ids,
+                f"Module {pmo.id} with null dates should be in valid_objects()",
+            )

@@ -17,38 +17,40 @@ from esp.program.models.class_ import ClassSubject
 # URL helper
 # ---------------------------------------------------------------------------
 
+
 def _build_url(program, extra):
     """
     Build a teach-tl URL using the same pattern as other module tests:
         program.get_teach_url() -> '/teach/TestProgram/2222_Summer/'
     So the full URL is e.g. '/teach/TestProgram/2222_Summer/makeaclass'
     """
-    return '{}{}'.format(program.get_teach_url(), extra)
+    return "{}{}".format(program.get_teach_url(), extra)
 
 
 # ---------------------------------------------------------------------------
 # Shared settings mixin
 # ---------------------------------------------------------------------------
 
+
 class ClassCreationTestMixin(object):
     """Shared setUp settings — mixed in before ProgramFrameworkTest."""
 
     DEFAULT_SETTINGS = {
-        'num_timeslots': 3,
-        'timeslot_length': 50,
-        'timeslot_gap': 10,
-        'room_capacity': 30,
-        'num_categories': 2,
-        'num_rooms': 2,
-        'num_teachers': 3,
-        'classes_per_teacher': 1,
-        'sections_per_class': 1,
-        'num_students': 2,
-        'num_admins': 1,
-        'program_type': 'TestProgram',
-        'program_instance_name': '2222_Summer',
-        'program_instance_label': 'Summer 2222',
-        'start_time': datetime.datetime(2222, 7, 7, 7, 5),
+        "num_timeslots": 3,
+        "timeslot_length": 50,
+        "timeslot_gap": 10,
+        "room_capacity": 30,
+        "num_categories": 2,
+        "num_rooms": 2,
+        "num_teachers": 3,
+        "classes_per_teacher": 1,
+        "sections_per_class": 1,
+        "num_students": 2,
+        "num_admins": 1,
+        "program_type": "TestProgram",
+        "program_instance_name": "2222_Summer",
+        "program_instance_label": "Summer 2222",
+        "start_time": datetime.datetime(2222, 7, 7, 7, 5),
     }
 
     def setUp(self):
@@ -74,26 +76,26 @@ class ClassCreationTestMixin(object):
     def _make_valid_class_form_data(self, teacher):
         """Returns valid POST data for class creation (mirrors ProgramHappenTest)."""
         return {
-            'title': 'Test Class Title',
-            'category': self.categories[0].id,
-            'class_info': 'A description of this class.',
-            'prereqs': '',
-            'duration': self.program.getDurations()[0][0],
-            'num_sections': '1',
-            'session_count': '1',
-            'grade_min': self.program.grade_min,
-            'grade_max': self.program.grade_max,
-            'class_size_max': '20',
-            'allow_lateness': 'False',
-            'message_for_directors': '',
-            'class_reg_page': '1',
-            'hardness_rating': '**',
-            'request-TOTAL_FORMS': '0',
-            'request-INITIAL_FORMS': '0',
-            'request-MAX_NUM_FORMS': '1000',
-            'restype-TOTAL_FORMS': '0',
-            'restype-INITIAL_FORMS': '0',
-            'restype-MAX_NUM_FORMS': '1000',
+            "title": "Test Class Title",
+            "category": self.categories[0].id,
+            "class_info": "A description of this class.",
+            "prereqs": "",
+            "duration": self.program.getDurations()[0][0],
+            "num_sections": "1",
+            "session_count": "1",
+            "grade_min": self.program.grade_min,
+            "grade_max": self.program.grade_max,
+            "class_size_max": "20",
+            "allow_lateness": "False",
+            "message_for_directors": "",
+            "class_reg_page": "1",
+            "hardness_rating": "**",
+            "request-TOTAL_FORMS": "0",
+            "request-INITIAL_FORMS": "0",
+            "request-MAX_NUM_FORMS": "1000",
+            "restype-TOTAL_FORMS": "0",
+            "restype-INITIAL_FORMS": "0",
+            "restype-MAX_NUM_FORMS": "1000",
         }
 
     def _make_edit_form_data(self, subject):
@@ -102,26 +104,26 @@ class ClassCreationTestMixin(object):
         duration comes from the program (subject.duration is None on ClassSubject).
         """
         return {
-            'title': subject.title or '',
-            'category': subject.category.id,
-            'class_info': subject.class_info or '',
-            'prereqs': '',
-            'duration': self.program.getDurations()[0][0],
-            'num_sections': str(subject.get_sections().count() or 1),
-            'session_count': '1',
-            'grade_min': subject.grade_min or self.program.grade_min,
-            'grade_max': subject.grade_max or self.program.grade_max,
-            'class_size_max': str(subject.class_size_max or 20),
-            'allow_lateness': 'False',
-            'message_for_directors': '',
-            'class_reg_page': '1',
-            'hardness_rating': '**',
-            'request-TOTAL_FORMS': '0',
-            'request-INITIAL_FORMS': '0',
-            'request-MAX_NUM_FORMS': '1000',
-            'restype-TOTAL_FORMS': '0',
-            'restype-INITIAL_FORMS': '0',
-            'restype-MAX_NUM_FORMS': '1000',
+            "title": subject.title or "",
+            "category": subject.category.id,
+            "class_info": subject.class_info or "",
+            "prereqs": "",
+            "duration": self.program.getDurations()[0][0],
+            "num_sections": str(subject.get_sections().count() or 1),
+            "session_count": "1",
+            "grade_min": subject.grade_min or self.program.grade_min,
+            "grade_max": subject.grade_max or self.program.grade_max,
+            "class_size_max": str(subject.class_size_max or 20),
+            "allow_lateness": "False",
+            "message_for_directors": "",
+            "class_reg_page": "1",
+            "hardness_rating": "**",
+            "request-TOTAL_FORMS": "0",
+            "request-INITIAL_FORMS": "0",
+            "request-MAX_NUM_FORMS": "1000",
+            "restype-TOTAL_FORMS": "0",
+            "restype-INITIAL_FORMS": "0",
+            "restype-MAX_NUM_FORMS": "1000",
         }
 
 
@@ -129,131 +131,129 @@ class ClassCreationTestMixin(object):
 # 1. MakeAClass tests
 # ---------------------------------------------------------------------------
 
+
 class MakeAClassViewTest(ClassCreationTestMixin, ProgramFrameworkTest):
     """Tests for the makeaclass view (class creation form)."""
 
     def _makeaclass_url(self):
-        return _build_url(self.program, 'makeaclass')
+        return _build_url(self.program, "makeaclass")
 
     def test_makeaclass_get_as_teacher_returns_200(self):
         """A logged-in teacher should be able to GET the makeaclass form."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         response = self.client.get(self._makeaclass_url())
-        self.assertEqual(response.status_code, 200,
-                         "Expected 200 for authenticated teacher accessing makeaclass")
+        self.assertEqual(
+            response.status_code,
+            200,
+            "Expected 200 for authenticated teacher accessing makeaclass",
+        )
 
     def test_makeaclass_get_unauthenticated_redirects(self):
         """An unauthenticated user should be redirected or forbidden."""
         response = self.client.get(self._makeaclass_url())
         self.assertIn(
-            response.status_code, [302, 403],
-            "Unauthenticated user should not access makeaclass"
+            response.status_code,
+            [302, 403],
+            "Unauthenticated user should not access makeaclass",
         )
 
     def test_makeaclass_post_valid_creates_class(self):
         """A valid POST should create a new ClassSubject."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        before = ClassSubject.objects.filter(
-            parent_program=self.program).count()
+        before = ClassSubject.objects.filter(parent_program=self.program).count()
         self.client.post(
-            self._makeaclass_url(),
-            self._make_valid_class_form_data(teacher)
+            self._makeaclass_url(), self._make_valid_class_form_data(teacher)
         )
-        after = ClassSubject.objects.filter(
-            parent_program=self.program).count()
-        self.assertEqual(after, before + 1,
-                         "Expected one new ClassSubject after valid POST")
+        after = ClassSubject.objects.filter(parent_program=self.program).count()
+        self.assertEqual(
+            after, before + 1, "Expected one new ClassSubject after valid POST"
+        )
 
     def test_makeaclass_teacher_set_as_owner(self):
         """The submitting teacher should be listed as a teacher of the new class."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         self.client.post(
-            self._makeaclass_url(),
-            self._make_valid_class_form_data(teacher)
+            self._makeaclass_url(), self._make_valid_class_form_data(teacher)
         )
         new_class = ClassSubject.objects.filter(
-            parent_program=self.program,
-            title='Test Class Title'
+            parent_program=self.program, title="Test Class Title"
         ).last()
         self.assertIsNotNone(new_class, "Class should have been created")
         self.assertIn(
             teacher.id,
             [t.id for t in new_class.get_teachers()],
-            "Creating teacher should be listed as owner"
+            "Creating teacher should be listed as owner",
         )
 
     def test_new_class_is_unreviewed(self):
         """A newly created class should start as unreviewed/unapproved."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         self.client.post(
-            self._makeaclass_url(),
-            self._make_valid_class_form_data(teacher)
+            self._makeaclass_url(), self._make_valid_class_form_data(teacher)
         )
         new_class = ClassSubject.objects.filter(
-            parent_program=self.program,
-            title='Test Class Title'
+            parent_program=self.program, title="Test Class Title"
         ).last()
         self.assertIsNotNone(new_class, "Class should have been created")
         self.assertFalse(
             new_class.isAccepted(),
-            "Newly created class should not be accepted immediately"
+            "Newly created class should not be accepted immediately",
         )
 
     def test_makeaclass_missing_title_does_not_create(self):
         """A POST missing the title should not create a class."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        before = ClassSubject.objects.filter(
-            parent_program=self.program).count()
+        before = ClassSubject.objects.filter(parent_program=self.program).count()
         data = self._make_valid_class_form_data(teacher)
-        data.pop('title')
+        data.pop("title")
         self.client.post(self._makeaclass_url(), data)
-        after = ClassSubject.objects.filter(
-            parent_program=self.program).count()
-        self.assertEqual(after, before,
-                         "No class should be created when title is missing")
+        after = ClassSubject.objects.filter(parent_program=self.program).count()
+        self.assertEqual(
+            after, before, "No class should be created when title is missing"
+        )
 
     def test_makeaclass_invalid_grade_range_does_not_create(self):
         """grade_min > grade_max should fail form validation."""
         teacher = self.teachers[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        before = ClassSubject.objects.filter(
-            parent_program=self.program).count()
+        before = ClassSubject.objects.filter(parent_program=self.program).count()
         data = self._make_valid_class_form_data(teacher)
-        data['grade_min'] = 12
-        data['grade_max'] = 7
+        data["grade_min"] = 12
+        data["grade_max"] = 7
         self.client.post(self._makeaclass_url(), data)
-        after = ClassSubject.objects.filter(
-            parent_program=self.program).count()
-        self.assertEqual(after, before,
-                         "Class with invalid grade range should not be created")
+        after = ClassSubject.objects.filter(parent_program=self.program).count()
+        self.assertEqual(
+            after, before, "Class with invalid grade range should not be created"
+        )
 
 
 # ---------------------------------------------------------------------------
 # 2. EditClass base — NO test_ methods so Django won't run it directly
 # ---------------------------------------------------------------------------
+
 
 class EditClassBaseTest(ClassCreationTestMixin, ProgramFrameworkTest):
     """
@@ -274,22 +274,22 @@ class EditClassBaseTest(ClassCreationTestMixin, ProgramFrameworkTest):
         for teacher in self.teachers:
             for ts in self.program.getTimeSlots():
                 teacher.addAvailableTime(self.program, ts)
-        self.subject = ClassSubject.objects.filter(
-            parent_program=self.program
-        ).first()
-        self.assertIsNotNone(self.subject,
-                             "ProgramFrameworkTest must create at least one class")
+        self.subject = ClassSubject.objects.filter(parent_program=self.program).first()
+        self.assertIsNotNone(
+            self.subject, "ProgramFrameworkTest must create at least one class"
+        )
         self._ensure_subject_duration(self.subject)
         self.subject.accept()
 
     def _editclass_url(self, class_id=None):
         cid = class_id or self.subject.id
-        return _build_url(self.program, 'editclass/{}'.format(cid))
+        return _build_url(self.program, "editclass/{}".format(cid))
 
 
 # ---------------------------------------------------------------------------
 # 3. Class status (reviewed / unreviewed)
 # ---------------------------------------------------------------------------
+
 
 class ClassStatusOnEditTest(EditClassBaseTest):
     """Tests for reviewed/unreviewed status after edits."""
@@ -300,19 +300,17 @@ class ClassStatusOnEditTest(EditClassBaseTest):
         """
         self.subject.accept()
         admin = self.admins[0]
-        self.assertTrue(admin.isAdministrator(),
-                        "Need an admin user for this test")
+        self.assertTrue(admin.isAdministrator(), "Need an admin user for this test")
         self.assertTrue(
-            self.client.login(username=admin.username, password='password'),
-            "Couldn't log in as admin %s" % admin.username
+            self.client.login(username=admin.username, password="password"),
+            "Couldn't log in as admin %s" % admin.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data['title'] = 'Modified By Admin'
+        data["title"] = "Modified By Admin"
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
         self.assertTrue(
-            self.subject.isAccepted(),
-            "Class should remain accepted after admin edit"
+            self.subject.isAccepted(), "Class should remain accepted after admin edit"
         )
 
 
@@ -320,31 +318,29 @@ class ClassStatusOnEditTest(EditClassBaseTest):
 # 4. Teacher list management
 # ---------------------------------------------------------------------------
 
+
 class ClassTeacherListTest(EditClassBaseTest):
     """Tests for teacher list updates when editing a class."""
 
     def _get_other_teacher(self):
         """Return a teacher NOT currently teaching self.subject."""
         subject_ids = {t.id for t in self.subject.get_teachers()}
-        return next((t for t in self.teachers
-                     if t.id not in subject_ids), None)
+        return next((t for t in self.teachers if t.id not in subject_ids), None)
 
     def test_teacher_list_unchanged_on_trivial_edit(self):
         """Teacher list should be unchanged after a trivial (no-op) edit."""
         original_ids = {t.id for t in self.subject.get_teachers()}
         teacher = self.subject.get_teachers()[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        self.client.post(
-            self._editclass_url(),
-            self._make_edit_form_data(self.subject)
-        )
+        self.client.post(self._editclass_url(), self._make_edit_form_data(self.subject))
         self.subject.refresh_from_db()
         new_ids = {t.id for t in self.subject.get_teachers()}
-        self.assertEqual(original_ids, new_ids,
-                         "Teacher list should be unchanged after trivial edit")
+        self.assertEqual(
+            original_ids, new_ids, "Teacher list should be unchanged after trivial edit"
+        )
 
     def test_add_coteacher(self):
         """
@@ -356,23 +352,28 @@ class ClassTeacherListTest(EditClassBaseTest):
         if coteacher is None:
             self.skipTest("No spare teacher available")
         self.assertTrue(
-            self.client.login(username=original_teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % original_teacher.username
+            self.client.login(username=original_teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % original_teacher.username,
         )
-        url = _build_url(self.program, 'coteachers')
+        url = _build_url(self.program, "coteachers")
         # op='add' persists the coteacher directly via associate_teacher_with_class
-        self.client.post(url, {
-            'op': 'add',
-            'clsid': self.subject.id,
-            'teacher_selected': coteacher.id,
-            'coteachers': '',
-        })
+        self.client.post(
+            url,
+            {
+                "op": "add",
+                "clsid": self.subject.id,
+                "teacher_selected": coteacher.id,
+                "coteachers": "",
+            },
+        )
         self.subject.refresh_from_db()
         new_ids = {t.id for t in self.subject.get_teachers()}
-        self.assertIn(coteacher.id, new_ids,
-                      "New coteacher should appear in teacher list")
-        self.assertIn(original_teacher.id, new_ids,
-                      "Original teacher should still be in list")
+        self.assertIn(
+            coteacher.id, new_ids, "New coteacher should appear in teacher list"
+        )
+        self.assertIn(
+            original_teacher.id, new_ids, "Original teacher should still be in list"
+        )
 
     def test_remove_coteacher(self):
         """
@@ -385,25 +386,31 @@ class ClassTeacherListTest(EditClassBaseTest):
             self.skipTest("No spare teacher available")
         # Set up: add the coteacher directly on the model first
         self.subject.makeTeacher(coteacher)
-        self.assertIn(coteacher.id,
-                      [t.id for t in self.subject.get_teachers()],
-                      "Coteacher must be set up before the test")
-        self.assertTrue(
-            self.client.login(username=original_teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % original_teacher.username
+        self.assertIn(
+            coteacher.id,
+            [t.id for t in self.subject.get_teachers()],
+            "Coteacher must be set up before the test",
         )
-        url = _build_url(self.program, 'coteachers')
+        self.assertTrue(
+            self.client.login(username=original_teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % original_teacher.username,
+        )
+        url = _build_url(self.program, "coteachers")
         # op='del' persists the removal directly via removeTeacher
-        self.client.post(url, {
-            'op': 'del',
-            'clsid': self.subject.id,
-            'delete_coteachers': coteacher.id,
-            'coteachers': str(coteacher.id),
-        })
+        self.client.post(
+            url,
+            {
+                "op": "del",
+                "clsid": self.subject.id,
+                "delete_coteachers": coteacher.id,
+                "coteachers": str(coteacher.id),
+            },
+        )
         self.subject.refresh_from_db()
         new_ids = {t.id for t in self.subject.get_teachers()}
-        self.assertNotIn(coteacher.id, new_ids,
-                         "Removed coteacher should not be in teacher list")
+        self.assertNotIn(
+            coteacher.id, new_ids, "Removed coteacher should not be in teacher list"
+        )
 
     def test_non_owner_teacher_cannot_edit_class(self):
         """A teacher not on the class should not be able to edit it."""
@@ -411,22 +418,26 @@ class ClassTeacherListTest(EditClassBaseTest):
         if non_owner is None:
             self.skipTest("Could not find a non-owner teacher")
         self.assertTrue(
-            self.client.login(username=non_owner.username, password='password'),
-            "Couldn't log in as teacher %s" % non_owner.username
+            self.client.login(username=non_owner.username, password="password"),
+            "Couldn't log in as teacher %s" % non_owner.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data['title'] = 'Unauthorized Modification'
+        data["title"] = "Unauthorized Modification"
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
         # The app may return 200 (error page) rather than redirect/403.
         # The key assertion is that the title was NOT changed.
-        self.assertNotEqual(self.subject.title, 'Unauthorized Modification',
-                            "Non-owner teacher must not modify the class")
+        self.assertNotEqual(
+            self.subject.title,
+            "Unauthorized Modification",
+            "Non-owner teacher must not modify the class",
+        )
 
 
 # ---------------------------------------------------------------------------
 # 5. Form validation
 # ---------------------------------------------------------------------------
+
 
 class ClassFormValidationTest(EditClassBaseTest):
     """Tests for valid and invalid edit form submissions."""
@@ -435,84 +446,99 @@ class ClassFormValidationTest(EditClassBaseTest):
         """A valid POST should update the class."""
         teacher = self.subject.get_teachers()[0]
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data['title'] = 'Updated Valid Title'
+        data["title"] = "Updated Valid Title"
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
-        self.assertEqual(self.subject.title, 'Updated Valid Title',
-                         "Title should be updated after valid submission")
+        self.assertEqual(
+            self.subject.title,
+            "Updated Valid Title",
+            "Title should be updated after valid submission",
+        )
 
     def test_missing_title_does_not_update(self):
         """POST missing title should not update the class."""
         teacher = self.subject.get_teachers()[0]
         original_title = self.subject.title
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data.pop('title')
+        data.pop("title")
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
-        self.assertEqual(self.subject.title, original_title,
-                         "Title should be unchanged after invalid submission")
+        self.assertEqual(
+            self.subject.title,
+            original_title,
+            "Title should be unchanged after invalid submission",
+        )
 
     def test_missing_category_does_not_update(self):
         """POST missing category should fail validation."""
         teacher = self.subject.get_teachers()[0]
         original_title = self.subject.title
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data.pop('category')
+        data.pop("category")
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
-        self.assertEqual(self.subject.title, original_title,
-                         "Class should be unchanged when category is missing")
+        self.assertEqual(
+            self.subject.title,
+            original_title,
+            "Class should be unchanged when category is missing",
+        )
 
     def test_negative_duration_does_not_update(self):
         """POST with negative duration should fail validation."""
         teacher = self.subject.get_teachers()[0]
         original_duration = self.subject.duration
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data['duration'] = -1
+        data["duration"] = -1
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
-        self.assertEqual(self.subject.duration, original_duration,
-                         "Duration should be unchanged after invalid submission")
+        self.assertEqual(
+            self.subject.duration,
+            original_duration,
+            "Duration should be unchanged after invalid submission",
+        )
 
     def test_invalid_grade_range_does_not_update(self):
         """grade_min > grade_max should fail validation on edit too."""
         teacher = self.subject.get_teachers()[0]
         original_min = self.subject.grade_min
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
         data = self._make_edit_form_data(self.subject)
-        data['grade_min'] = 12
-        data['grade_max'] = 7
+        data["grade_min"] = 12
+        data["grade_max"] = 7
         self.client.post(self._editclass_url(), data)
         self.subject.refresh_from_db()
-        self.assertEqual(self.subject.grade_min, original_min,
-                         "Grade range should be unchanged after invalid submission")
+        self.assertEqual(
+            self.subject.grade_min,
+            original_min,
+            "Grade range should be unchanged after invalid submission",
+        )
 
 
 # ---------------------------------------------------------------------------
 # 6. Teacher availability consistency
 # ---------------------------------------------------------------------------
 
-class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,
-                                         ProgramFrameworkTest):
+
+class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin, ProgramFrameworkTest):
     """
     Tests that teacher availability is unchanged after class creation/editing.
     """
@@ -526,37 +552,33 @@ class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,
 
     def test_availability_unchanged_after_class_edit(self):
         """Editing a class should not alter the teacher's available times."""
-        subject = ClassSubject.objects.filter(
-            parent_program=self.program).first()
+        subject = ClassSubject.objects.filter(parent_program=self.program).first()
         self._ensure_subject_duration(subject)
         teacher = subject.get_teachers()[0]
         self._set_all_timeslots_available(teacher)
         before = self._get_availability(teacher)
 
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        url = _build_url(self.program,
-                         'editclass/{}'.format(subject.id))
+        url = _build_url(self.program, "editclass/{}".format(subject.id))
         self.client.post(url, self._make_edit_form_data(subject))
 
         after = self._get_availability(teacher)
-        self.assertEqual(before, after,
-                         "Availability should not change after class edit")
+        self.assertEqual(
+            before, after, "Availability should not change after class edit"
+        )
 
     def test_adding_coteacher_does_not_change_availability(self):
         """Adding a coteacher must not mutate the original teacher's availability."""
-        subject = ClassSubject.objects.filter(
-            parent_program=self.program).first()
+        subject = ClassSubject.objects.filter(parent_program=self.program).first()
         self._ensure_subject_duration(subject)
         teacher = subject.get_teachers()[0]
         self._set_all_timeslots_available(teacher)
 
         subject_ids = {t.id for t in subject.get_teachers()}
-        coteacher = next(
-            (t for t in self.teachers if t.id not in subject_ids), None
-        )
+        coteacher = next((t for t in self.teachers if t.id not in subject_ids), None)
         if coteacher is None:
             self.skipTest("No available coteacher to add")
 
@@ -565,34 +587,39 @@ class TeacherAvailabilityConsistencyTest(ClassCreationTestMixin,
 
         before = self._get_availability(teacher)
         self.assertTrue(
-            self.client.login(username=teacher.username, password='password'),
-            "Couldn't log in as teacher %s" % teacher.username
+            self.client.login(username=teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % teacher.username,
         )
-        url = _build_url(self.program, 'coteachers')
+        url = _build_url(self.program, "coteachers")
         # op='add' persists the coteacher directly via associate_teacher_with_class
-        self.client.post(url, {
-            'op': 'add',
-            'clsid': subject.id,
-            'teacher_selected': coteacher.id,
-            'coteachers': '',
-        })
+        self.client.post(
+            url,
+            {
+                "op": "add",
+                "clsid": subject.id,
+                "teacher_selected": coteacher.id,
+                "coteachers": "",
+            },
+        )
 
         # Verify the coteacher was actually added before checking availability
         subject.refresh_from_db()
         self.assertIn(
             coteacher.id,
             [t.id for t in subject.get_teachers()],
-            "Coteacher should have been added to the subject"
+            "Coteacher should have been added to the subject",
         )
 
         after = self._get_availability(teacher)
-        self.assertEqual(before, after,
-                         "Availability should be unchanged after adding coteacher")
+        self.assertEqual(
+            before, after, "Availability should be unchanged after adding coteacher"
+        )
 
 
 # ---------------------------------------------------------------------------
 # 7. Direct unit tests for ClassCreationController methods
 # ---------------------------------------------------------------------------
+
 
 class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTest):
     """
@@ -612,11 +639,10 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         self.controller = ClassCreationController(self.program)
         # Pick a pre-created subject and ensure its duration is populated so
         # that set_class_data / update_class_sections work without errors.
-        self.subject = ClassSubject.objects.filter(
-            parent_program=self.program
-        ).first()
-        self.assertIsNotNone(self.subject,
-                             "ProgramFrameworkTest must create at least one class")
+        self.subject = ClassSubject.objects.filter(parent_program=self.program).first()
+        self.assertIsNotNone(
+            self.subject, "ProgramFrameworkTest must create at least one class"
+        )
         self._ensure_subject_duration(self.subject)
 
     # ------------------------------------------------------------------
@@ -637,23 +663,23 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         # Build a minimal cleaned_data dict — only the keys that
         # set_class_data actually reads are required.
         cleaned_data = {
-            'title': 'Direct Controller Test Title',
-            'category': category.id,
-            'class_info': 'Set by unit test.',
-            'prereqs': '',
-            'duration': self.subject.duration,
-            'grade_min': 7,
-            'grade_max': 12,
-            'class_size_max': 20,
-            'allow_lateness': False,
-            'message_for_directors': '',
-            'class_reg_page': '1',
-            'hardness_rating': '**',
-            'session_count': 1,
+            "title": "Direct Controller Test Title",
+            "category": category.id,
+            "class_info": "Set by unit test.",
+            "prereqs": "",
+            "duration": self.subject.duration,
+            "grade_min": 7,
+            "grade_max": 12,
+            "class_size_max": 20,
+            "allow_lateness": False,
+            "message_for_directors": "",
+            "class_reg_page": "1",
+            "hardness_rating": "**",
+            "session_count": 1,
             # no 'section_*' keys, no custom fields
         }
 
-        mock_form = type('MockForm', (), {'cleaned_data': cleaned_data})()
+        mock_form = type("MockForm", (), {"cleaned_data": cleaned_data})()
 
         self.controller.set_class_data(self.subject, mock_form)
 
@@ -661,7 +687,7 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         self.subject.refresh_from_db()
         self.assertEqual(
             self.subject.title,
-            'Direct Controller Test Title',
+            "Direct Controller Test Title",
             "set_class_data must write cleaned_data['title'] to ClassSubject.title",
         )
         self.assertEqual(
@@ -684,28 +710,28 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         original_grade_min = self.subject.grade_min
 
         cleaned_data = {
-            'title': self.subject.title or 'Unchanged Title',
-            'category': category.id,
-            'class_info': '',
-            'prereqs': '',
-            'duration': self.subject.duration,
-            'grade_min': original_grade_min,
-            'grade_max': self.subject.grade_max,
-            'class_size_max': self.subject.class_size_max or 20,
-            'allow_lateness': False,
-            'message_for_directors': '',
-            'class_reg_page': '1',
-            'hardness_rating': '**',
-            'session_count': 1,
+            "title": self.subject.title or "Unchanged Title",
+            "category": category.id,
+            "class_info": "",
+            "prereqs": "",
+            "duration": self.subject.duration,
+            "grade_min": original_grade_min,
+            "grade_max": self.subject.grade_max,
+            "class_size_max": self.subject.class_size_max or 20,
+            "allow_lateness": False,
+            "message_for_directors": "",
+            "class_reg_page": "1",
+            "hardness_rating": "**",
+            "session_count": 1,
             # This key starts with 'section_' — must be skipped entirely.
-            'section_grade_min': 999,
+            "section_grade_min": 999,
         }
 
-        mock_form = type('MockForm', (), {'cleaned_data': cleaned_data})()
+        mock_form = type("MockForm", (), {"cleaned_data": cleaned_data})()
 
         self.controller.set_class_data(self.subject, mock_form)
 
-        self.assertFalse(hasattr(self.subject, 'section_grade_min'))
+        self.assertFalse(hasattr(self.subject, "section_grade_min"))
 
     # ------------------------------------------------------------------
     # update_class_sections
@@ -755,20 +781,22 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         so every section ends up with the same duration as the parent class.
         """
         # Force the parent duration to a known value.
-        self.subject.duration = Decimal('1.50')
+        self.subject.duration = Decimal("1.50")
         self.subject.save()
 
         # Give the existing section a different duration to prove it gets overwritten.
         first_sec = self.subject.sections.first()
-        first_sec.duration = Decimal('0.25')
+        first_sec.duration = Decimal("0.25")
         first_sec.save()
 
-        self.controller.update_class_sections(self.subject, self.subject.sections.count())
+        self.controller.update_class_sections(
+            self.subject, self.subject.sections.count()
+        )
 
         for sec in self.subject.sections.all():
             self.assertEqual(
                 sec.duration,
-                Decimal('1.50'),
+                Decimal("1.50"),
                 "update_class_sections must sync all section durations to cls.duration",
             )
 
@@ -795,19 +823,18 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         )
 
         expected_slot_ids = set(
-            self.program.getTimeSlots().values_list('id', flat=True)
+            self.program.getTimeSlots().values_list("id", flat=True)
         )
         self.assertGreater(
-            len(expected_slot_ids), 0,
+            len(expected_slot_ids),
+            0,
             "Pre-condition: program must have at least one timeslot",
         )
 
-        with patch.object(self.controller, 'send_availability_email'):
+        with patch.object(self.controller, "send_availability_email"):
             self.controller.force_availability(teacher)
 
-        granted_slot_ids = {
-            ts.id for ts in teacher.getAvailableTimes(self.program)
-        }
+        granted_slot_ids = {ts.id for ts in teacher.getAvailableTimes(self.program)}
         self.assertEqual(
             granted_slot_ids,
             expected_slot_ids,
@@ -830,7 +857,7 @@ class ClassCreationControllerUnitTest(ClassCreationTestMixin, ProgramFrameworkTe
         before = {ts.id for ts in teacher.getAvailableTimes(self.program)}
         self.assertEqual(len(before), 1, "Pre-condition: teacher has exactly one slot")
 
-        with patch.object(self.controller, 'send_availability_email') as mock_email:
+        with patch.object(self.controller, "send_availability_email") as mock_email:
             self.controller.force_availability(teacher)
 
         after = {ts.id for ts in teacher.getAvailableTimes(self.program)}

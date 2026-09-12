@@ -4,8 +4,9 @@ from esp.tagdict.models import Tag
 
 register = template.Library()
 
+
 class GetProgramTagNode(Node):
-    """ Gives access to the getProgramTag function """
+    """Gives access to the getProgramTag function"""
 
     def __init__(self, key, program, default, boolean=False):
         self.key = key
@@ -15,7 +16,7 @@ class GetProgramTagNode(Node):
 
     @classmethod
     def handle_token(cls, parser, token, boolean=False):
-        """ Class method to handle the tokens received """
+        """Class method to handle the tokens received"""
         tokens = token.contents.split()
         if len(tokens) < 2:
             raise template.TemplateSyntaxError("At least 2 arguments required")
@@ -28,7 +29,6 @@ class GetProgramTagNode(Node):
             default = parser.compile_filter(tokens[3])
 
         return cls(key, program, default, boolean=boolean)
-
 
     def render(self, context):
         key = self.key.resolve(context)
@@ -45,7 +45,7 @@ class GetProgramTagNode(Node):
             if isinstance(result, bool):
                 return str(result).lower()
             else:
-                return 'false'
+                return "false"
         else:
             return str(Tag.getProgramTag(key, program, default))
 
@@ -53,8 +53,10 @@ class GetProgramTagNode(Node):
 def doGetProgramTag(parser, token):
     return GetProgramTagNode.handle_token(parser, token)
 
+
 def doGetBooleanTag(parser, token):
     return GetProgramTagNode.handle_token(parser, token, boolean=True)
 
-register.tag('getProgramTag', doGetProgramTag)
-register.tag('getBooleanTag', doGetBooleanTag)
+
+register.tag("getProgramTag", doGetProgramTag)
+register.tag("getBooleanTag", doGetBooleanTag)

@@ -3,9 +3,10 @@
 
 from django.db import migrations
 
+
 def link_event(apps, schema_editor):
-    Record = apps.get_model('users', 'Record')
-    RecordType = apps.get_model('users', 'RecordType')
+    Record = apps.get_model("users", "Record")
+    RecordType = apps.get_model("users", "RecordType")
     for rec in Record.objects.all():
         if rec.event not in [None, ""]:
             if rec.event == "medical":
@@ -18,18 +19,19 @@ def link_event(apps, schema_editor):
             rec.event_link = event
             rec.save()
 
+
 def unlink_event(apps, schema_editor):
-    Record = apps.get_model('users', 'Record')
-    RecordType = apps.get_model('users', 'RecordType')
+    Record = apps.get_model("users", "Record")
+    RecordType = apps.get_model("users", "RecordType")
     for rec in Record.objects.all():
         if rec.event_link is not None:
             rec.event = rec.event_link.name
             rec.save()
 
-class Migration(migrations.Migration):
 
+class Migration(migrations.Migration):
     dependencies = [
-        ('users', '0028_create_events'),
+        ("users", "0028_create_events"),
     ]
 
     operations = [

@@ -27,12 +27,11 @@ from esp.web.views.csrf import csrf_failure
 
 
 class CsrfFailureViewTest(CacheFlushTestCase):
-
     def setUp(self):
         super().setUp()
         self.factory = RequestFactory()
 
-    def _request(self, path='/', user=None):
+    def _request(self, path="/", user=None):
         """Build a request shaped like one that reached the CSRF middleware.
 
         ESPAuthMiddleware replaces Django's AnonymousUser with AnonymousESPUser,
@@ -52,9 +51,9 @@ class CsrfFailureViewTest(CacheFlushTestCase):
 
     def test_page_states_the_csrf_failure(self):
         response = csrf_failure(self._request())
-        content = response.content.decode('utf-8')
-        self.assertIn('CSRF verification failed', content)
-        self.assertIn('Forbidden', content)
+        content = response.content.decode("utf-8")
+        self.assertIn("CSRF verification failed", content)
+        self.assertIn("Forbidden", content)
 
     def test_serves_the_esp_page_and_not_djangos_default(self):
         """The whole point of this view: our page, not the built-in one.
@@ -64,13 +63,13 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         assertions use text that belongs to exactly one of the two, which is
         what makes this a regression test for the view falling back silently.
         """
-        content = csrf_failure(self._request()).content.decode('utf-8')
+        content = csrf_failure(self._request()).content.decode("utf-8")
 
         # Only in ours: the site template wrapper and the sign-off.
-        self.assertIn('Web Team', content)
-        self.assertIn('sorry for the inconvenience', content)
+        self.assertIn("Web Team", content)
+        self.assertIn("sorry for the inconvenience", content)
         # Only in Django's: its own troubleshooting list.
-        self.assertNotIn('The form has a valid CSRF token', content)
+        self.assertNotIn("The form has a valid CSRF token", content)
 
     def test_renders_any_render_capable_response(self):
         """A response with render() but no is_rendered must still be rendered.
@@ -81,22 +80,24 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         does not define that attribute would put us back to reading .content
         off an unrendered response.
         """
+
         class LazilyRenderedResponse(HttpResponse):
             def __init__(self):
-                super().__init__('', content_type='text/html')
+                super().__init__("", content_type="text/html")
 
             def render(self):
-                self.content = 'body available only after render()'
+                self.content = "body available only after render()"
                 return self
 
-        with patch('esp.utils.web.render_to_response',
-                   return_value=LazilyRenderedResponse()):
+        with patch(
+            "esp.utils.web.render_to_response", return_value=LazilyRenderedResponse()
+        ):
             response = csrf_failure(self._request())
 
         self.assertEqual(response.status_code, 403)
         self.assertIn(
-            'body available only after render()',
-            response.content.decode('utf-8'),
+            "body available only after render()",
+            response.content.decode("utf-8"),
         )
 
     def test_middleware_rejection_serves_the_esp_page(self):
@@ -107,59 +108,56 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         because it accepts POST and is CSRF-protected.
         """
         client = Client(enforce_csrf_checks=True)
-        response = client.post('/accounts/login/', {'username': 'nobody'})
+        response = client.post("/accounts/login/", {"username": "nobody"})
 
         self.assertEqual(response.status_code, 403)
-        content = response.content.decode('utf-8')
-        self.assertIn('CSRF verification failed', content)
-        self.assertIn('Web Team', content)
+        content = response.content.decode("utf-8")
+        self.assertIn("CSRF verification failed", content)
+        self.assertIn("Web Team", content)
 
     def test_response_is_html(self):
         response = csrf_failure(self._request())
-        self.assertIn('text/html', response['Content-Type'])
+        self.assertIn("text/html", response["Content-Type"])
 
     def test_no_referer_reason_explains_the_referer_header(self):
         response = csrf_failure(self._request(), reason=REASON_NO_REFERER)
-        content = response.content.decode('utf-8')
-        self.assertIn('Referer', content)
-        self.assertIn('none was sent', content)
+        content = response.content.decode("utf-8")
+        self.assertIn("Referer", content)
+        self.assertIn("none was sent", content)
 
     def test_other_reason_omits_the_referer_explanation(self):
-        response = csrf_failure(self._request(), reason='CSRF token missing.')
-        self.assertNotIn('none was sent', response.content.decode('utf-8'))
+        response = csrf_failure(self._request(), reason="CSRF token missing.")
+        self.assertNotIn("none was sent", response.content.decode("utf-8"))
 
     @override_settings(DEBUG=True)
     def test_failure_reason_is_hidden_from_anonymous_visitors(self):
         """The reason is debug detail: only administrators may see it."""
-        response = csrf_failure(self._request(), reason='CSRF token missing.')
-        content = response.content.decode('utf-8')
-        self.assertNotIn('Reason given for failure', content)
-        self.assertNotIn('CSRF token missing.', content)
+        response = csrf_failure(self._request(), reason="CSRF token missing.")
+        content = response.content.decode("utf-8")
+        self.assertNotIn("Reason given for failure", content)
+        self.assertNotIn("CSRF token missing.", content)
 
     @override_settings(DEBUG=True)
     def test_failure_reason_is_shown_to_administrators(self):
-        admin = make_user('Administrator', username='csrf_failure_admin')
-        response = csrf_failure(
-            self._request(user=admin), reason='CSRF token missing.')
-        content = response.content.decode('utf-8')
-        self.assertIn('Reason given for failure', content)
-        self.assertIn('CSRF token missing.', content)
+        admin = make_user("Administrator", username="csrf_failure_admin")
+        response = csrf_failure(self._request(user=admin), reason="CSRF token missing.")
+        content = response.content.decode("utf-8")
+        self.assertIn("Reason given for failure", content)
+        self.assertIn("CSRF token missing.", content)
 
     @override_settings(DEBUG=True)
     def test_failure_reason_is_hidden_from_non_admin_users(self):
-        student = make_user('Student', username='csrf_failure_student')
+        student = make_user("Student", username="csrf_failure_student")
         response = csrf_failure(
-            self._request(user=student), reason='CSRF token missing.')
-        self.assertNotIn(
-            'Reason given for failure', response.content.decode('utf-8'))
+            self._request(user=student), reason="CSRF token missing."
+        )
+        self.assertNotIn("Reason given for failure", response.content.decode("utf-8"))
 
     def test_debug_details_stay_off_when_debug_is_off(self):
         """With DEBUG off, not even an administrator sees the reason."""
-        admin = make_user('Administrator', username='csrf_failure_admin_nodebug')
-        response = csrf_failure(
-            self._request(user=admin), reason='CSRF token missing.')
-        self.assertNotIn(
-            'Reason given for failure', response.content.decode('utf-8'))
+        admin = make_user("Administrator", username="csrf_failure_admin_nodebug")
+        response = csrf_failure(self._request(user=admin), reason="CSRF token missing.")
+        self.assertNotIn("Reason given for failure", response.content.decode("utf-8"))
 
     def _captured_context(self, path):
         """Call the view with render_to_response patched, return its context.
@@ -167,46 +165,53 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         The view imports render_to_response inside the function body, so the
         patch is applied where it is defined rather than where it is used.
         """
-        with patch('esp.utils.web.render_to_response') as mock_render:
+        with patch("esp.utils.web.render_to_response") as mock_render:
             mock_render.return_value = HttpResponse(
-                'rendered', content_type='text/html')
+                "rendered", content_type="text/html"
+            )
             csrf_failure(self._request(path))
         self.assertTrue(mock_render.called)
         return mock_render.call_args[0][2]
 
     def test_program_url_populates_the_program_context(self):
         program = make_program()
-        context = self._captured_context('/learn/%s' % program.url)
-        self.assertEqual(context['prog'], program)
+        context = self._captured_context("/learn/%s" % program.url)
+        self.assertEqual(context["prog"], program)
 
     def test_unknown_program_leaves_the_context_program_empty(self):
         """A program-shaped path for a program that does not exist is not an error."""
-        context = self._captured_context('/learn/NoSuchProgram/9999_Fall')
-        self.assertIsNone(context['prog'])
+        context = self._captured_context("/learn/NoSuchProgram/9999_Fall")
+        self.assertIsNone(context["prog"])
 
     def test_non_program_path_leaves_the_context_program_empty(self):
-        context = self._captured_context('/')
-        self.assertIsNone(context['prog'])
+        context = self._captured_context("/")
+        self.assertIsNone(context["prog"])
 
     def test_reason_and_no_referer_reach_the_template_context(self):
-        with patch('esp.utils.web.render_to_response') as mock_render:
+        with patch("esp.utils.web.render_to_response") as mock_render:
             mock_render.return_value = HttpResponse(
-                'rendered', content_type='text/html')
+                "rendered", content_type="text/html"
+            )
             csrf_failure(self._request(), reason=REASON_NO_REFERER)
         context = mock_render.call_args[0][2]
-        self.assertEqual(context['reason'], REASON_NO_REFERER)
-        self.assertTrue(context['no_referer'])
+        self.assertEqual(context["reason"], REASON_NO_REFERER)
+        self.assertTrue(context["no_referer"])
 
     def test_falls_back_to_djangos_view_when_rendering_fails(self):
         """The custom page must never be the reason the error page fails."""
-        sentinel = HttpResponseForbidden('django default csrf page')
-        with patch('esp.utils.web.render_to_response',
-                   side_effect=RuntimeError('template exploded')), \
-                patch('esp.web.views.csrf.django_csrf_failure',
-                      return_value=sentinel) as mock_default:
-            response = csrf_failure(self._request(), reason='some reason')
+        sentinel = HttpResponseForbidden("django default csrf page")
+        with (
+            patch(
+                "esp.utils.web.render_to_response",
+                side_effect=RuntimeError("template exploded"),
+            ),
+            patch(
+                "esp.web.views.csrf.django_csrf_failure", return_value=sentinel
+            ) as mock_default,
+        ):
+            response = csrf_failure(self._request(), reason="some reason")
 
         self.assertIs(response, sentinel)
         self.assertEqual(response.status_code, 403)
         mock_default.assert_called_once()
-        self.assertEqual(mock_default.call_args[1]['reason'], 'some reason')
+        self.assertEqual(mock_default.call_args[1]["reason"], "some reason")

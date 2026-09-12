@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2011 by the individual contributors
@@ -48,6 +48,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Permission
 
+
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         super().setUp(num_students=5, room_capacity=5, *args, **kwargs)
@@ -62,18 +63,20 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.other_teacher2 = random.choice(other_teachers)
 
         self.free_teacher1, created = ESPUser.objects.get_or_create(
-            username='freeteacher1',
-            first_name='Free',
-            last_name='Teacher1',
-            email='freeteacher1@example.com')
-        self.free_teacher1.set_password('password')
+            username="freeteacher1",
+            first_name="Free",
+            last_name="Teacher1",
+            email="freeteacher1@example.com",
+        )
+        self.free_teacher1.set_password("password")
         self.free_teacher1.save()
         self.free_teacher2, created = ESPUser.objects.get_or_create(
-            username='freeteacher2',
-            first_name='Free',
-            last_name='Teacher2',
-            email='freeteacher2@example.com')
-        self.free_teacher2.set_password('password')
+            username="freeteacher2",
+            first_name="Free",
+            last_name="Teacher2",
+            email="freeteacher2@example.com",
+        )
+        self.free_teacher2.set_password("password")
         self.free_teacher2.save()
 
         # Make the teachers available all the time
@@ -83,98 +86,214 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Make the primary teacher an admin of the class
 
         # Get and remember the instance of TeacherClassRegModule
-        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        pm = ProgramModule.objects.get(handler="TeacherClassRegModule")
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.moduleobj.user = self.teacher
 
     def test_grade_range_popup(self):
         # Login the teacher
-        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % self.teacher.username,
+        )
 
         # Try editing the class
-        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
+        response = self.client.get("%smakeaclass" % self.program.get_teach_url())
         self.assertContains(response, "check_grade_range", status_code=200)
 
         # Add a tag that specifically removes this functionality
-        Tag.setTag('grade_range_popup', self.program, 'False')
+        Tag.setTag("grade_range_popup", self.program, "False")
 
         # Try editing the class
-        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
+        response = self.client.get("%smakeaclass" % self.program.get_teach_url())
         self.assertNotContains(response, "check_grade_range", status_code=200)
 
     def apply_coteacher_op(self, dict):
-        return self.client.post('%scoteachers' % self.program.get_teach_url(), dict)
+        return self.client.post("%scoteachers" % self.program.get_teach_url(), dict)
 
     def test_adding_coteachers(self):
         # Login the teacher
-        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % self.teacher.username,
+        )
 
         cur_coteachers = []
 
         # Error on adding self
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.teacher.id, 'coteachers': ",".join([str(coteacher.id) for coteacher in cur_coteachers])})
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.teacher.id,
+                "coteachers": ",".join(
+                    [str(coteacher.id) for coteacher in cur_coteachers]
+                ),
+            }
+        )
         self.assertContains(response, "Error", status_code=200)
 
         # Error on no teacher selected
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': '', 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": "",
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
         self.assertContains(response, "Error", status_code=200)
 
         # Add free_teacher1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher1.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertContains(
+            response, f"({self.free_teacher1.username})", status_code=200
+        )
         cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher1.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
         self.assertContains(response, "Error", status_code=200)
 
         # Add free_teacher2
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, f"({self.free_teacher2.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher2.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertContains(
+            response, f"({self.free_teacher2.username})", status_code=200
+        )
         cur_coteachers.append(self.free_teacher2.id)
 
         # Delete free_teacher 1
-        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "del",
+                "clsid": self.cls.id,
+                "delete_coteachers": self.free_teacher1.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertNotContains(
+            response, f"({self.free_teacher1.username})", status_code=200
+        )
         cur_coteachers.remove(self.free_teacher1.id)
 
         # Add free_teacher 1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher1.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertContains(
+            response, f"({self.free_teacher1.username})", status_code=200
+        )
         cur_coteachers.append(self.free_teacher1.id)
 
         # Delete both free_teacher1 and free_teacher2
-        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertNotContains(response, f"({self.free_teacher1.username})", status_code=200)
-        self.assertNotContains(response, f"({self.free_teacher2.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "del",
+                "clsid": self.cls.id,
+                "delete_coteachers": [self.free_teacher1.id, self.free_teacher2.id],
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertNotContains(
+            response, f"({self.free_teacher1.username})", status_code=200
+        )
+        self.assertNotContains(
+            response, f"({self.free_teacher2.username})", status_code=200
+        )
         cur_coteachers.remove(self.free_teacher1.id)
         cur_coteachers.remove(self.free_teacher2.id)
 
         # Add free_teacher 1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.assertContains(response, f"({self.free_teacher1.username})", status_code=200)
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher1.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
+        self.assertContains(
+            response, f"({self.free_teacher1.username})", status_code=200
+        )
         cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
-        self.apply_coteacher_op({'op': 'save', 'clsid': self.cls.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.apply_coteacher_op(
+            {
+                "op": "save",
+                "clsid": self.cls.id,
+                "coteachers": ",".join(
+                    [str(coteacher) for coteacher in cur_coteachers]
+                ),
+            }
+        )
         self.assertTrue(self.cls in self.teacher.getTaughtClasses())
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
         self.assertTrue(not self.cls in self.free_teacher2.getTaughtClasses())
 
     def test_coteachers_post_data_is_not_trusted(self):
         # Login the teacher
-        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password="password"),
+            "Couldn't log in as teacher %s" % self.teacher.username,
+        )
 
         # Forge POST data pretending this teacher is already in the coteacher list.
         # This should be ignored, and the add should still succeed.
-        response = self.apply_coteacher_op({
-            'op': 'add',
-            'clsid': self.cls.id,
-            'teacher_selected': self.free_teacher1.id,
-            'coteachers': str(self.free_teacher1.id),
-        })
+        response = self.apply_coteacher_op(
+            {
+                "op": "add",
+                "clsid": self.cls.id,
+                "teacher_selected": self.free_teacher1.id,
+                "coteachers": str(self.free_teacher1.id),
+            }
+        )
 
-        self.assertContains(response, "({})".format(self.free_teacher1.username), status_code=200)
+        self.assertContains(
+            response, "({})".format(self.free_teacher1.username), status_code=200
+        )
         self.assertTrue(self.cls in self.free_teacher1.getTaughtClasses())
 
     def add_resource_request(self, sec, res_type, val):
@@ -185,11 +304,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         rr.save()
 
     def delete_resource_request(self, sec, res_type):
-        ResourceRequest.objects.filter(target = sec, res_type = res_type).delete()
+        ResourceRequest.objects.filter(target=sec, res_type=res_type).delete()
 
     def has_resource_pair_with_teacher(self, res_type, val_index, teacher):
-        label = f'teacher_res_{res_type.id}_{val_index}'
-        label_list = [resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()]
+        label = f"teacher_res_{res_type.id}_{val_index}"
+        label_list = [
+            resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()
+        ]
         if not label in label_list:
             return False
         i = label_list.index(label)
@@ -199,28 +320,35 @@ class TeacherClassRegTest(ProgramFrameworkTest):
     @transaction.atomic
     def test_get_resource_pairs(self):
         prog = self.program
-        new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
-        new_res_type2 = ResourceType.get_or_create('NewResource2', program = self.program)
+        new_res_type1 = ResourceType.get_or_create("NewResource1", program=self.program)
+        new_res_type2 = ResourceType.get_or_create("NewResource2", program=self.program)
         sec = random.choice(self.cls.sections.all())
 
-        self.add_resource_request(sec, new_res_type1, 'Yes')
-        self.assertTrue(self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+        self.add_resource_request(sec, new_res_type1, "Yes")
+        self.assertTrue(
+            self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher)
+        )
 
-        self.add_resource_request(sec, new_res_type2, 'ThisValueIsAwesome')
-        self.assertTrue(self.has_resource_pair_with_teacher(new_res_type2, 0, self.teacher))
+        self.add_resource_request(sec, new_res_type2, "ThisValueIsAwesome")
+        self.assertTrue(
+            self.has_resource_pair_with_teacher(new_res_type2, 0, self.teacher)
+        )
 
         self.delete_resource_request(sec, new_res_type1)
-        self.assertTrue(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+        self.assertTrue(
+            not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher)
+        )
 
     def check_all_teachers(self, all_teachers):
-        teaching_teachers = [teacher for teacher in self.teachers
-                                     if len(teacher.getTaughtClasses()) > 0]
+        teaching_teachers = [
+            teacher for teacher in self.teachers if len(teacher.getTaughtClasses()) > 0
+        ]
         return set(teaching_teachers) == set(all_teachers)
 
     @transaction.atomic
     def test_teachers(self):
         # Get the instance of StudentClassRegModule
-        pm = ProgramModule.objects.get(handler='StudentClassRegModule')
+        pm = ProgramModule.objects.get(handler="StudentClassRegModule")
         ProgramModuleObj.getFromProgModule(self.program, pm)
 
         d = self.moduleobj.teachers()
@@ -237,9 +365,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         cls3.save()
         # Check them
         d = self.moduleobj.teachers()
-        self.assertTrue(self.teacher in d['class_rejected'])
-        self.assertTrue(self.other_teacher1 in d['class_approved'])
-        self.assertTrue(self.other_teacher2 in d['class_proposed'])
+        self.assertTrue(self.teacher in d["class_rejected"])
+        self.assertTrue(self.other_teacher1 in d["class_approved"])
+        self.assertTrue(self.other_teacher2 in d["class_proposed"])
         # Undo the statuses
         cls1.status = ClassStatus.ACCEPTED
         cls1.save()
@@ -251,7 +379,14 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Schedule the classes randomly
         self.schedule_randomly()
         # Find an empty class
-        cls = random.choice([cls for cls in self.program.classes() if not cls.isFull() and not cls.is_nearly_full(ClassSubject.get_capacity_factor())])
+        cls = random.choice(
+            [
+                cls
+                for cls in self.program.classes()
+                if not cls.isFull()
+                and not cls.is_nearly_full(ClassSubject.get_capacity_factor())
+            ]
+        )
         teacher = cls.get_teachers()[0]
         classes = list(teacher.getTaughtClasses())
         classes.remove(cls)
@@ -259,7 +394,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
             c.removeTeacher(teacher)
         d = self.moduleobj.teachers()
         # Check it
-        self.assertTrue(teacher not in d['class_full'] and teacher not in d['class_nearly_full'])
+        self.assertTrue(
+            teacher not in d["class_full"] and teacher not in d["class_nearly_full"]
+        )
 
         # Mostly fill it
         self.add_student_profiles()
@@ -268,27 +405,34 @@ class TeacherClassRegTest(ProgramFrameworkTest):
             cls.preregister_student(cur_student)
         # Check it
         d = self.moduleobj.teachers()
-        self.assertTrue(teacher in d['class_nearly_full'])
-        self.assertTrue(teacher not in d['class_full'])
+        self.assertTrue(teacher in d["class_nearly_full"])
+        self.assertTrue(teacher not in d["class_full"])
 
         # Fill it
         cls.get_sections()[0].preregister_student(self.students[4])
         # Check it
         d = self.moduleobj.teachers()
-        self.assertTrue(teacher in d['class_full'])
-        self.assertTrue(teacher in d['class_nearly_full'])
+        self.assertTrue(teacher in d["class_full"])
+        self.assertTrue(teacher in d["class_nearly_full"])
 
         # Make a program
         self.create_past_program()
 
         # Create a class for the teacher
-        new_class, created = ClassSubject.objects.get_or_create(category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
+        new_class, created = ClassSubject.objects.get_or_create(
+            category=self.categories[0],
+            grade_min=7,
+            grade_max=12,
+            parent_program=self.new_prog,
+            class_size_max=30,
+            class_info="Previous class!",
+        )
         new_class.makeTeacher(self.teacher)
-        new_class.add_section(duration=50.0/60.0)
+        new_class.add_section(duration=50.0 / 60.0)
         new_class.accept()
         # Check taught_before
         d = self.moduleobj.teachers()
-        self.assertTrue(self.teacher in d['taught_before'])
+        self.assertTrue(self.teacher in d["taught_before"])
 
     @transaction.atomic
     def test_deadline_met(self):
@@ -297,7 +441,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.moduleobj.user = self.teachers[0]
         self.assertTrue(self.moduleobj.deadline_met())
 
-        Permission.objects.filter(permission_type__startswith='Teacher', program=self.moduleobj.program).delete()
+        Permission.objects.filter(
+            permission_type__startswith="Teacher", program=self.moduleobj.program
+        ).delete()
 
         self.assertTrue(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
@@ -306,28 +452,36 @@ class TeacherClassRegTest(ProgramFrameworkTest):
     # Regression: fix for GET/POST boolean guard in teacherlookup
     def test_teacherlookup_post_with_name_returns_json(self):
         """POST with 'name' absent from GET must return JSON, not redirect."""
-        self.client.login(username=self.teacher.username, password='password')
-        url = '%steacherlookup' % self.program.get_teach_url()
-        response = self.client.post(url, {'name': 'teacher'})
+        self.client.login(username=self.teacher.username, password="password")
+        url = "%steacherlookup" % self.program.get_teach_url()
+        response = self.client.post(url, {"name": "teacher"})
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(json.loads(response.content), list)
 
     def test_teacherlookup_no_name_redirects(self):
         """Request without 'name' in GET or POST must redirect via goToCore."""
-        self.client.login(username=self.teacher.username, password='password')
-        url = '%steacherlookup' % self.program.get_teach_url()
+        self.client.login(username=self.teacher.username, password="password")
+        url = "%steacherlookup" % self.program.get_teach_url()
         self.assertEqual(self.client.get(url).status_code, 302)
 
     def test_makeaclass_no_durations_shows_warning(self):
         """Assert that duration warning banner is shown when no timeslots/durations exist."""
-        self.assertTrue(self.client.login(username=self.teacher.username, password='password'), "Failed to log in")
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password="password"),
+            "Failed to log in",
+        )
         # Delete class timeslots configured in setUp
-        Event.objects.filter(program=self.program, event_type__description='Class Time Block').delete()
+        Event.objects.filter(
+            program=self.program, event_type__description="Class Time Block"
+        ).delete()
         self.assertEqual(len(self.program.countTimeSlots()), 0)
-        url = '%smakeaclass' % self.program.get_teach_url()
+        url = "%smakeaclass" % self.program.get_teach_url()
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'no valid class meeting timeslots or durations are available')
+        self.assertContains(
+            response, "no valid class meeting timeslots or durations are available"
+        )
+
     @transaction.atomic
     def test_ajaxstudentattendance_rejects_unrelated_teacher(self):
         """A teacher with no relationship to a section must not be able to
@@ -345,40 +499,51 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Precondition: attacker genuinely lacks rights to the section
         self.assertNotIn(attacker, victim_cls.get_teachers())
-        self.assertFalse(attacker.canEdit(victim_section.parent_class),
-                         "Test setup invalid: attacker can edit victim class")
-        self.assertFalse(attacker.canMod(victim_section),
-                         "Test setup invalid: attacker can moderate victim section")
+        self.assertFalse(
+            attacker.canEdit(victim_section.parent_class),
+            "Test setup invalid: attacker can edit victim class",
+        )
+        self.assertFalse(
+            attacker.canMod(victim_section),
+            "Test setup invalid: attacker can moderate victim section",
+        )
 
         attended = RegistrationType.objects.get_or_create(
-            name='Attended', category='student')[0]
+            name="Attended", category="student"
+        )[0]
         self.assertFalse(
-            StudentRegistration.valid_objects().filter(
-                user=student, section=victim_section, relationship=attended
-            ).exists())
+            StudentRegistration.valid_objects()
+            .filter(user=student, section=victim_section, relationship=attended)
+            .exists()
+        )
 
         # Exploit: POST as attacker against the victim's secid
         self.assertTrue(
-            self.client.login(username=attacker.username, password='password'),
-            "Couldn't log in as attacker %s" % attacker.username)
+            self.client.login(username=attacker.username, password="password"),
+            "Couldn't log in as attacker %s" % attacker.username,
+        )
 
-        url = '%sajaxstudentattendance' % self.program.get_teach_url()
-        response = self.client.post(url, {
-            'student': student.username,
-            'secid': victim_section.id,
-        })
+        url = "%sajaxstudentattendance" % self.program.get_teach_url()
+        response = self.client.post(
+            url,
+            {
+                "student": student.username,
+                "secid": victim_section.id,
+            },
+        )
 
         self.assertEqual(response.status_code, 200)
         payload = json.loads(response.content)
 
         # Desired (post-fix) behaviour: mutation refused, student NOT attended
         self.assertFalse(
-            StudentRegistration.valid_objects().filter(
-                user=student, section=victim_section, relationship=attended
-            ).exists(),
+            StudentRegistration.valid_objects()
+            .filter(user=student, section=victim_section, relationship=attended)
+            .exists(),
             "SECURITY: unrelated teacher was able to mark a student as "
             "attending a section they do not teach (secid=%s). Response: %r"
-            % (victim_section.id, payload))
+            % (victim_section.id, payload),
+        )
 
     @transaction.atomic
     def test_section_students_rejects_unrelated_teacher(self):
@@ -392,8 +557,8 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertFalse(attacker.canMod(victim_section))
 
         self.assertTrue(
-            self.client.login(username=attacker.username, password='password'))
-        url = '%ssection_students' % self.program.get_teach_url()
-        response = self.client.post(url, {'secid': victim_section.id})
-        self.assertContains(response, 'do not have privileges to edit', status_code=200)
-
+            self.client.login(username=attacker.username, password="password")
+        )
+        url = "%ssection_students" % self.program.get_teach_url()
+        response = self.client.post(url, {"secid": victim_section.id})
+        self.assertContains(response, "do not have privileges to edit", status_code=200)

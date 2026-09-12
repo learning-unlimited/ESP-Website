@@ -5,20 +5,18 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0025_lineitemsmodule'),
+        ("modules", "0025_lineitemsmodule"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='TeacherModeratorModule',
-            fields=[
-            ],
+            name="TeacherModeratorModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
+                "proxy": True,
+                "indexes": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

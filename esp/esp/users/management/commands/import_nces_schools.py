@@ -40,99 +40,100 @@ from esp.users.models import K12School
 
 # Default column names for NCES CCD Public School Name and Address files
 # (adjust per year; see https://nces.ed.gov/ccd/ccd_layout.asp or file layout docs)
-DEFAULT_CCD_NAME = 'SCH_NAME'
-DEFAULT_CCD_CITY = 'LCITY'
-DEFAULT_CCD_STATE = 'LSTATE'
-DEFAULT_CCD_ID = 'NCESSCH'
+DEFAULT_CCD_NAME = "SCH_NAME"
+DEFAULT_CCD_CITY = "LCITY"
+DEFAULT_CCD_STATE = "LSTATE"
+DEFAULT_CCD_ID = "NCESSCH"
 
 # Common PSS (Private School) column names
-DEFAULT_PSS_NAME = 'PNAME'
-DEFAULT_PSS_CITY = 'PCITY'
-DEFAULT_PSS_STATE = 'PSTABB'
-DEFAULT_PSS_ID = 'PPIN'
+DEFAULT_PSS_NAME = "PNAME"
+DEFAULT_PSS_CITY = "PCITY"
+DEFAULT_PSS_STATE = "PSTABB"
+DEFAULT_PSS_ID = "PPIN"
 
 
 def safe_str(val):
     if val is None:
         return None
     s = str(val).strip()
-    return s if s and s not in ('M', 'N', '-1', '-2') else None
+    return s if s and s not in ("M", "N", "-1", "-2") else None
 
 
 class Command(BaseCommand):
-    help = 'Import K12 schools from NCES public/private school CSV files into K12School'
+    help = "Import K12 schools from NCES public/private school CSV files into K12School"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--csv',
+            "--csv",
             type=str,
             required=True,
-            help='Path to the CSV file (e.g. from NCES CCD or PSS).',
+            help="Path to the CSV file (e.g. from NCES CCD or PSS).",
         )
         parser.add_argument(
-            '--name-col',
+            "--name-col",
             type=str,
             default=DEFAULT_CCD_NAME,
-            help='CSV column name for school name (default: %s for CCD)' % DEFAULT_CCD_NAME,
+            help="CSV column name for school name (default: %s for CCD)"
+            % DEFAULT_CCD_NAME,
         )
         parser.add_argument(
-            '--city-col',
+            "--city-col",
             type=str,
             default=DEFAULT_CCD_CITY,
-            help='CSV column name for city (default: %s)' % DEFAULT_CCD_CITY,
+            help="CSV column name for city (default: %s)" % DEFAULT_CCD_CITY,
         )
         parser.add_argument(
-            '--state-col',
+            "--state-col",
             type=str,
             default=DEFAULT_CCD_STATE,
-            help='CSV column name for state (default: %s)' % DEFAULT_CCD_STATE,
+            help="CSV column name for state (default: %s)" % DEFAULT_CCD_STATE,
         )
         parser.add_argument(
-            '--id-col',
+            "--id-col",
             type=str,
             default=DEFAULT_CCD_ID,
-            help='CSV column name for unique school ID (default: %s)' % DEFAULT_CCD_ID,
+            help="CSV column name for unique school ID (default: %s)" % DEFAULT_CCD_ID,
         )
         parser.add_argument(
-            '--type-col',
+            "--type-col",
             type=str,
             default=None,
-            help='Optional: column name for school type (e.g. Public, Private).',
+            help="Optional: column name for school type (e.g. Public, Private).",
         )
         parser.add_argument(
-            '--dry-run',
-            action='store_true',
-            help='Do not write to the database; only report what would be done.',
+            "--dry-run",
+            action="store_true",
+            help="Do not write to the database; only report what would be done.",
         )
         parser.add_argument(
-            '--limit',
+            "--limit",
             type=int,
             default=None,
-            help='Maximum number of rows to import (for testing).',
+            help="Maximum number of rows to import (for testing).",
         )
         parser.add_argument(
-            '--encoding',
+            "--encoding",
             type=str,
-            default='utf-8-sig',
-            help='CSV file encoding (default: utf-8-sig). Try latin-1 if utf-8 fails.',
+            default="utf-8-sig",
+            help="CSV file encoding (default: utf-8-sig). Try latin-1 if utf-8 fails.",
         )
 
     def handle(self, *args, **options):
-        csv_path = options['csv']
+        csv_path = options["csv"]
         if not os.path.isfile(csv_path):
-            raise CommandError('File not found: %s' % csv_path)
+            raise CommandError("File not found: %s" % csv_path)
 
-        name_col = options['name_col']
-        city_col = options['city_col']
-        state_col = options['state_col']
-        id_col = options['id_col']
-        type_col = options['type_col']
-        dry_run = options['dry_run']
-        limit = options['limit']
-        encoding = options['encoding']
+        name_col = options["name_col"]
+        city_col = options["city_col"]
+        state_col = options["state_col"]
+        id_col = options["id_col"]
+        type_col = options["type_col"]
+        dry_run = options["dry_run"]
+        limit = options["limit"]
+        encoding = options["encoding"]
 
         if dry_run:
-            self.stdout.write(self.style.WARNING('Dry run: no changes will be saved.'))
+            self.stdout.write(self.style.WARNING("Dry run: no changes will be saved."))
 
         created = 0
         updated = 0
@@ -141,17 +142,21 @@ class Command(BaseCommand):
 
         try:
             # Count data rows up front for a progress percentage
-            with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
+            with open(
+                csv_path, "r", encoding=encoding, errors="replace", newline=""
+            ) as f:
                 total_rows = max(sum(1 for _ in f) - 1, 0)  # subtract the header row
 
             # With --limit, track progress against the capped count, not the file.
             progress_total = min(total_rows, limit) if limit is not None else total_rows
 
-            with open(csv_path, 'r', encoding=encoding, errors='replace', newline='') as f:
+            with open(
+                csv_path, "r", encoding=encoding, errors="replace", newline=""
+            ) as f:
                 reader = csv.DictReader(f, skipinitialspace=True)
 
                 if not reader.fieldnames:
-                    raise CommandError('CSV has no header row or is empty.')
+                    raise CommandError("CSV has no header row or is empty.")
 
                 # Normalize column names: some NCES files have extra spaces
                 fieldnames = [fn.strip() for fn in reader.fieldnames]
@@ -159,12 +164,11 @@ class Command(BaseCommand):
 
                 for col in (name_col, city_col, state_col, id_col):
                     if col not in fieldnames:
-                        available = ', '.join(repr(fn) for fn in fieldnames[:20])
+                        available = ", ".join(repr(fn) for fn in fieldnames[:20])
                         if len(fieldnames) > 20:
-                            available += ' ...'
+                            available += " ..."
                         raise CommandError(
-                            'Column "%s" not found. Available: %s'
-                            % (col, available)
+                            'Column "%s" not found. Available: %s' % (col, available)
                         )
 
                 PROGRESS_EVERY = 5000  # rows between progress lines; tune to taste
@@ -220,7 +224,9 @@ class Command(BaseCommand):
                                     errors += 1
                                     if errors <= 5:
                                         self.stderr.write(
-                                            self.style.ERROR('Error creating "%s": %s' % (name, e))
+                                            self.style.ERROR(
+                                                'Error creating "%s": %s' % (name, e)
+                                            )
                                         )
 
                     # Report progress
@@ -228,27 +234,32 @@ class Command(BaseCommand):
                     if processed % PROGRESS_EVERY == 0:
                         if progress_total:
                             self.stdout.write(
-                                '  ... %d/%d rows (%.1f%%) — created %d, updated %d, skipped %d'
-                                % (processed, progress_total,
-                                   100.0 * processed / progress_total,
-                                   created, updated, skipped)
+                                "  ... %d/%d rows (%.1f%%) — created %d, updated %d, skipped %d"
+                                % (
+                                    processed,
+                                    progress_total,
+                                    100.0 * processed / progress_total,
+                                    created,
+                                    updated,
+                                    skipped,
+                                )
                             )
                         else:
                             self.stdout.write(
-                                '  ... %d rows — created %d, updated %d, skipped %d'
+                                "  ... %d rows — created %d, updated %d, skipped %d"
                                 % (processed, created, updated, skipped)
                             )
 
         except CommandError:
             raise
         except Exception as e:
-            raise CommandError('Failed to read CSV: %s' % e)
+            raise CommandError("Failed to read CSV: %s" % e)
 
         self.stdout.write(
             self.style.SUCCESS(
-                'Done. Created: %s, Updated: %s, Skipped: %s, Errors: %s'
+                "Done. Created: %s, Updated: %s, Skipped: %s, Errors: %s"
                 % (created, updated, skipped, errors)
             )
         )
         if dry_run:
-            self.stdout.write(self.style.WARNING('(Dry run: no changes were saved.)'))
+            self.stdout.write(self.style.WARNING("(Dry run: no changes were saved.)"))

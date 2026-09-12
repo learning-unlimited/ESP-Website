@@ -6,50 +6,72 @@ import django.db.models.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0024_auto_20210617_0928'),
+        ("program", "0024_auto_20210617_0928"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classcategories',
-            name='category',
-            field=models.TextField(help_text='The name of the category'),
+            model_name="classcategories",
+            name="category",
+            field=models.TextField(help_text="The name of the category"),
         ),
         migrations.AlterField(
-            model_name='classcategories',
-            name='seq',
-            field=models.IntegerField(default=0, help_text='Categories will be ordered by this.  Smaller is earlier; the default is 0.'),
+            model_name="classcategories",
+            name="seq",
+            field=models.IntegerField(
+                default=0,
+                help_text="Categories will be ordered by this.  Smaller is earlier; the default is 0.",
+            ),
         ),
         migrations.AlterField(
-            model_name='classcategories',
-            name='symbol',
-            field=models.CharField(default='?', help_text='A single character to represent the category', max_length=1),
+            model_name="classcategories",
+            name="symbol",
+            field=models.CharField(
+                default="?",
+                help_text="A single character to represent the category",
+                max_length=1,
+            ),
         ),
         migrations.AlterField(
-            model_name='classflagtype',
-            name='name',
-            field=models.CharField(help_text='The name of the flag type', max_length=255, unique=True),
+            model_name="classflagtype",
+            name="name",
+            field=models.CharField(
+                help_text="The name of the flag type", max_length=255, unique=True
+            ),
         ),
         migrations.AlterField(
-            model_name='classflagtype',
-            name='show_in_dashboard',
-            field=models.BooleanField(default=False, help_text='Should this flag type be shown in the dashboard?'),
+            model_name="classflagtype",
+            name="show_in_dashboard",
+            field=models.BooleanField(
+                default=False,
+                help_text="Should this flag type be shown in the dashboard?",
+            ),
         ),
         migrations.AlterField(
-            model_name='classflagtype',
-            name='show_in_scheduler',
-            field=models.BooleanField(default=False, help_text='Should this flag type be shown in the scheduler?'),
+            model_name="classflagtype",
+            name="show_in_scheduler",
+            field=models.BooleanField(
+                default=False,
+                help_text="Should this flag type be shown in the scheduler?",
+            ),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='class_categories',
-            field=models.ManyToManyField(blank=True, help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.', to='program.ClassCategories'),
+            model_name="program",
+            name="class_categories",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text='You can add new categories or modify existing ones <a href="/manage/categoriesandflags/categories">here</a>.',
+                to="program.ClassCategories",
+            ),
         ),
         migrations.AlterField(
-            model_name='program',
-            name='flag_types',
-            field=models.ManyToManyField(blank=True, help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.', to='program.ClassFlagType'),
+            model_name="program",
+            name="flag_types",
+            field=models.ManyToManyField(
+                blank=True,
+                help_text='The set of flags that can be used to tag classes for this program. You can add and modify flag types <a href="/manage/categoriesandflags/flagtypes">here</a>.',
+                to="program.ClassFlagType",
+            ),
         ),
     ]

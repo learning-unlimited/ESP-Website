@@ -5,15 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0021_auto_20201010_1042'),
+        ("users", "0021_auto_20201010_1042"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='contactinfo',
-            name='address_state',
-            field=models.CharField(blank=True, max_length=32, null=True, verbose_name='State'),
+            model_name="contactinfo",
+            name="address_state",
+            field=models.CharField(
+                blank=True, max_length=32, null=True, verbose_name="State"
+            ),
         ),
     ]

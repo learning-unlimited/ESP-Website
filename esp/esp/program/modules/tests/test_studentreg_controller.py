@@ -23,32 +23,31 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
 
     def test_student_can_register_for_class(self):
         """Student can successfully register for a class."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-        self.assertIsNotNone(section, 'Test requires at least one scheduled section')
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
+        self.assertIsNotNone(section, "Test requires at least one scheduled section")
 
         result = section.preregister_student(self.student)
-        self.assertTrue(result, 'preregister_student() should return True for successful registration')
         self.assertTrue(
-            StudentRegistration.valid_objects().filter(
-                user=self.student,
-                section=section,
-                relationship__name='Enrolled'
-            ).exists(),
-            'Student should have valid Enrolled registration'
+            result,
+            "preregister_student() should return True for successful registration",
+        )
+        self.assertTrue(
+            StudentRegistration.valid_objects()
+            .filter(user=self.student, section=section, relationship__name="Enrolled")
+            .exists(),
+            "Student should have valid Enrolled registration",
         )
 
     def test_conflict_prevents_enrollment_at_same_timeslot(self):
         """Conflict detected when student tries to enroll in overlapping classes."""
         timeslots = list(self.program.getTimeSlots())
-        self.assertGreater(len(timeslots), 0, 'Test setup should create timeslots')
+        self.assertGreater(len(timeslots), 0, "Test setup should create timeslots")
 
         first_timeslot = timeslots[0]
 
         # Get any two sections - we'll set their times manually
         sections = list(self.program.sections()[:2])
-        self.assertGreaterEqual(len(sections), 2, 'Test requires at least 2 sections')
+        self.assertGreaterEqual(len(sections), 2, "Test requires at least 2 sections")
         sec_a, sec_b = sections[0], sections[1]
 
         # Ensure both sections are at the same timeslot
@@ -57,12 +56,20 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
 
         # First enrollment should succeed
         result_a = sec_a.preregister_student(self.student)
-        self.assertTrue(result_a, 'First registration should succeed')
+        self.assertTrue(result_a, "First registration should succeed")
 
         # Conflict detection must block second enrollment
-        error = sec_b.cannotAdd(self.student, checkFull=True, autocorrect_constraints=False)
-        self.assertTrue(error, 'cannotAdd() should return an error for conflicting timeslot')
-        self.assertIn('conflicts', error.lower(), 'Error message should mention schedule conflicts')
+        error = sec_b.cannotAdd(
+            self.student, checkFull=True, autocorrect_constraints=False
+        )
+        self.assertTrue(
+            error, "cannotAdd() should return an error for conflicting timeslot"
+        )
+        self.assertIn(
+            "conflicts",
+            error.lower(),
+            "Error message should mention schedule conflicts",
+        )
 
 
 class CapacityEnforcementTest(ProgramFrameworkTest):
@@ -75,10 +82,8 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
 
     def test_section_under_capacity_accepts_registration(self):
         """Section with available capacity accepts new registration."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-        self.assertIsNotNone(section, 'Test requires at least one scheduled section')
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
+        self.assertIsNotNone(section, "Test requires at least one scheduled section")
 
         section.max_class_capacity = 10
         section.save()
@@ -86,49 +91,57 @@ class CapacityEnforcementTest(ProgramFrameworkTest):
         student = self.students[0]
         result = section.preregister_student(student)
 
-        self.assertTrue(result, 'Registration should succeed when section has capacity')
+        self.assertTrue(result, "Registration should succeed when section has capacity")
         self.assertTrue(
-            StudentRegistration.valid_objects().filter(
-                user=student,
-                section=section,
-                relationship__name='Enrolled'
-            ).exists(),
-            'Student should be enrolled when capacity available'
+            StudentRegistration.valid_objects()
+            .filter(user=student, section=section, relationship__name="Enrolled")
+            .exists(),
+            "Student should be enrolled when capacity available",
         )
 
     def test_full_section_rejects_new_registration(self):
         """Section at capacity rejects new registration."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-        self.assertIsNotNone(section, 'Test requires at least one scheduled section')
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
+        self.assertIsNotNone(section, "Test requires at least one scheduled section")
 
         section.max_class_capacity = 2
         section.save()
 
         result1 = section.preregister_student(self.students[0])
-        self.assertTrue(result1, 'First registration should succeed')
+        self.assertTrue(result1, "First registration should succeed")
         # Refresh section from database to get updated student count
         section.refresh_from_db()
-        self.assertEqual(section.num_students(), 1, 'Section should have 1 student after first registration')
+        self.assertEqual(
+            section.num_students(),
+            1,
+            "Section should have 1 student after first registration",
+        )
 
         result2 = section.preregister_student(self.students[1])
-        self.assertTrue(result2, 'Second registration should succeed')
+        self.assertTrue(result2, "Second registration should succeed")
         section.refresh_from_db()
-        self.assertEqual(section.num_students(), 2, 'Section should have 2 students after second registration')
+        self.assertEqual(
+            section.num_students(),
+            2,
+            "Section should have 2 students after second registration",
+        )
 
         result3 = section.preregister_student(self.students[2])
 
-        self.assertFalse(result3, 'Registration should fail when section is full')
+        self.assertFalse(result3, "Registration should fail when section is full")
         section.refresh_from_db()
-        self.assertEqual(section.num_students(), 2, 'Section should still have 2 students after failed registration')
+        self.assertEqual(
+            section.num_students(),
+            2,
+            "Section should still have 2 students after failed registration",
+        )
         self.assertFalse(
-            StudentRegistration.valid_objects().filter(
-                user=self.students[2],
-                section=section,
-                relationship__name='Enrolled'
-            ).exists(),
-            'Student should not be enrolled in full section'
+            StudentRegistration.valid_objects()
+            .filter(
+                user=self.students[2], section=section, relationship__name="Enrolled"
+            )
+            .exists(),
+            "Student should not be enrolled in full section",
         )
 
 
@@ -142,10 +155,8 @@ class GradeFilterTest(ProgramFrameworkTest):
 
     def test_student_in_grade_range_can_enroll(self):
         """Student within grade range can enroll in class."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-        self.assertIsNotNone(section, 'Test requires at least one scheduled section')
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
+        self.assertIsNotNone(section, "Test requires at least one scheduled section")
 
         section.parent_class.grade_min = 7
         section.parent_class.grade_max = 12
@@ -154,35 +165,31 @@ class GradeFilterTest(ProgramFrameworkTest):
         student = self.students[0]
         schoolyear = ESPUser.program_schoolyear(self.program)
         profile = student.getLastProfile()
-        self.assertIsNotNone(profile, 'Student must have a profile')
-        self.assertIsNotNone(profile.student_info, 'Student must have student_info')
+        self.assertIsNotNone(profile, "Student must have a profile")
+        self.assertIsNotNone(profile.student_info, "Student must have student_info")
 
         profile.student_info.graduation_year = schoolyear + 5
         profile.student_info.save()
 
         # Verify grade calculation: schoolyear + 12 - graduation_year = grade
         student_grade = student.getGrade(self.program)
-        self.assertEqual(student_grade, 7, 'Student should be in grade 7')
-        self.assertTrue(7 <= student_grade <= 12, 'Student should be in valid grade range')
+        self.assertEqual(student_grade, 7, "Student should be in grade 7")
+        self.assertTrue(
+            7 <= student_grade <= 12, "Student should be in valid grade range"
+        )
 
         error = section.parent_class.cannotAdd(student, checkFull=True)
         self.assertFalse(
-            error,
-            'ClassSubject.cannotAdd() should allow a student in the grade range'
+            error, "ClassSubject.cannotAdd() should allow a student in the grade range"
         )
 
         result = section.preregister_student(student)
-        self.assertTrue(
-            result,
-            'Student within grade range should be able to register'
-        )
+        self.assertTrue(result, "Student within grade range should be able to register")
 
     def test_student_outside_grade_range_is_blocked(self):
         """Student outside grade range is blocked from enrolling."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
-        self.assertIsNotNone(section, 'Test requires at least one scheduled section')
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
+        self.assertIsNotNone(section, "Test requires at least one scheduled section")
 
         section.parent_class.grade_min = 11
         section.parent_class.grade_max = 12
@@ -191,8 +198,8 @@ class GradeFilterTest(ProgramFrameworkTest):
         student = self.students[0]
         schoolyear = ESPUser.program_schoolyear(self.program)
         profile = student.getLastProfile()
-        self.assertIsNotNone(profile, 'Student must have a profile')
-        self.assertIsNotNone(profile.student_info, 'Student must have student_info')
+        self.assertIsNotNone(profile, "Student must have a profile")
+        self.assertIsNotNone(profile.student_info, "Student must have student_info")
 
         # Create grade 6 student: schoolyear + 12 - graduation_year = grade
         # So graduation_year = schoolyear + 6 gives grade = 12 - 6 = 6
@@ -201,18 +208,22 @@ class GradeFilterTest(ProgramFrameworkTest):
 
         # Verify grade calculation
         student_grade = student.getGrade(self.program)
-        self.assertEqual(student_grade, 6, 'Student should be in grade 6')
+        self.assertEqual(student_grade, 6, "Student should be in grade 6")
         section_grade_min = section.parent_class.grade_min
         section_grade_max = section.parent_class.grade_max
 
         self.assertFalse(
             section_grade_min <= student_grade <= section_grade_max,
-            f'Student grade {student_grade} should be outside range [{section_grade_min}, {section_grade_max}]'
+            f"Student grade {student_grade} should be outside range [{section_grade_min}, {section_grade_max}]",
         )
 
         error = section.parent_class.cannotAdd(student, checkFull=True)
         self.assertTrue(
             error,
-            'Student outside grade range should be blocked by ClassSubject.cannotAdd()'
+            "Student outside grade range should be blocked by ClassSubject.cannotAdd()",
         )
-        self.assertIn('requested grade range', error.lower(), 'Error should mention requested grade range')
+        self.assertIn(
+            "requested grade range",
+            error.lower(),
+            "Error should mention requested grade range",
+        )

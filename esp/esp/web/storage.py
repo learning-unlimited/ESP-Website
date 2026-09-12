@@ -35,9 +35,9 @@ class LowercaseExtensionStorage(FileSystemStorage):
             return name
 
         # If the path contains directory separators, reconstruct with dirs
-        if '/' in root:
-            dir_path, basename = root.rsplit('/', 1)
-            return dir_path + '/' + basename + ext.lower()
+        if "/" in root:
+            dir_path, basename = root.rsplit("/", 1)
+            return dir_path + "/" + basename + ext.lower()
 
         # Return with lowercased extension
         return root + ext.lower()

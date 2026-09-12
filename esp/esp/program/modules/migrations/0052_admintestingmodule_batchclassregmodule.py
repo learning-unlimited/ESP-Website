@@ -4,32 +4,29 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0051_auto_20260317_2119'),
+        ("modules", "0051_auto_20260317_2119"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AdminTestingModule',
-            fields=[
-            ],
+            name="AdminTestingModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='BatchClassRegModule',
-            fields=[
-            ],
+            name="BatchClassRegModule",
+            fields=[],
             options={
-                'proxy': True,
-                'indexes': [],
-                'constraints': [],
+                "proxy": True,
+                "indexes": [],
+                "constraints": [],
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

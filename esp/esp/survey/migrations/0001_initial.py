@@ -5,80 +5,160 @@ import datetime
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0001_initial'),
-        ('contenttypes', '0002_remove_content_type_name'),
+        ("program", "0001_initial"),
+        ("contenttypes", "0002_remove_content_type_name"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Answer',
+            name="Answer",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('object_id', models.PositiveIntegerField(null=True, blank=True)),
-                ('value', models.TextField()),
-                ('content_type', models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True, on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("object_id", models.PositiveIntegerField(null=True, blank=True)),
+                ("value", models.TextField()),
+                (
+                    "content_type",
+                    models.ForeignKey(
+                        blank=True,
+                        to="contenttypes.ContentType",
+                        null=True,
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='Question',
+            name="Question",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(max_length=255)),
-                ('_param_values', models.TextField(help_text='A pipe (|) delimited list of values.', verbose_name='Parameter values', blank=True)),
-                ('per_class', models.BooleanField(default=False)),
-                ('seq', models.IntegerField(default=0)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "_param_values",
+                    models.TextField(
+                        help_text="A pipe (|) delimited list of values.",
+                        verbose_name="Parameter values",
+                        blank=True,
+                    ),
+                ),
+                ("per_class", models.BooleanField(default=False)),
+                ("seq", models.IntegerField(default=0)),
             ],
             options={
-                'ordering': ['seq'],
+                "ordering": ["seq"],
             },
         ),
         migrations.CreateModel(
-            name='QuestionType',
+            name="QuestionType",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(max_length=255)),
-                ('_param_names', models.TextField(help_text='A pipe (|) delimited list of parameter names.', verbose_name='Parameter names', blank=True)),
-                ('is_numeric', models.BooleanField(default=False)),
-                ('is_countable', models.BooleanField(default=False)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                (
+                    "_param_names",
+                    models.TextField(
+                        help_text="A pipe (|) delimited list of parameter names.",
+                        verbose_name="Parameter names",
+                        blank=True,
+                    ),
+                ),
+                ("is_numeric", models.BooleanField(default=False)),
+                ("is_countable", models.BooleanField(default=False)),
             ],
         ),
         migrations.CreateModel(
-            name='Survey',
+            name="Survey",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(max_length=255)),
-                ('category', models.CharField(max_length=32)),
-                ('program', models.ForeignKey(related_name='surveys', blank=True, to='program.Program', help_text='Blank if not associated to a program', null=True, on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("category", models.CharField(max_length=32)),
+                (
+                    "program",
+                    models.ForeignKey(
+                        related_name="surveys",
+                        blank=True,
+                        to="program.Program",
+                        help_text="Blank if not associated to a program",
+                        null=True,
+                        on_delete=models.CASCADE,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='SurveyResponse',
+            name="SurveyResponse",
             fields=[
-                ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('time_filled', models.DateTimeField(default=datetime.datetime.now)),
-                ('survey', models.ForeignKey(to='survey.Survey', on_delete=models.CASCADE)),
+                (
+                    "id",
+                    models.AutoField(
+                        verbose_name="ID",
+                        serialize=False,
+                        auto_created=True,
+                        primary_key=True,
+                    ),
+                ),
+                ("time_filled", models.DateTimeField(default=datetime.datetime.now)),
+                (
+                    "survey",
+                    models.ForeignKey(to="survey.Survey", on_delete=models.CASCADE),
+                ),
             ],
         ),
         migrations.AddField(
-            model_name='question',
-            name='question_type',
-            field=models.ForeignKey(to='survey.QuestionType', on_delete=models.CASCADE),
+            model_name="question",
+            name="question_type",
+            field=models.ForeignKey(to="survey.QuestionType", on_delete=models.CASCADE),
         ),
         migrations.AddField(
-            model_name='question',
-            name='survey',
-            field=models.ForeignKey(related_name='questions', to='survey.Survey', on_delete=models.CASCADE),
+            model_name="question",
+            name="survey",
+            field=models.ForeignKey(
+                related_name="questions", to="survey.Survey", on_delete=models.CASCADE
+            ),
         ),
         migrations.AddField(
-            model_name='answer',
-            name='question',
-            field=models.ForeignKey(to='survey.Question', on_delete=models.CASCADE),
+            model_name="answer",
+            name="question",
+            field=models.ForeignKey(to="survey.Question", on_delete=models.CASCADE),
         ),
         migrations.AddField(
-            model_name='answer',
-            name='survey_response',
-            field=models.ForeignKey(related_name='answers', to='survey.SurveyResponse', on_delete=models.CASCADE),
+            model_name="answer",
+            name="survey_response",
+            field=models.ForeignKey(
+                related_name="answers",
+                to="survey.SurveyResponse",
+                on_delete=models.CASCADE,
+            ),
         ),
     ]

@@ -4,7 +4,6 @@ from esp.program.models import Program
 
 
 class ProgramValidationTest(TestCase):
-
     def test_invalid_grade_range(self):
         program = Program(grade_min=10, grade_max=5)
 

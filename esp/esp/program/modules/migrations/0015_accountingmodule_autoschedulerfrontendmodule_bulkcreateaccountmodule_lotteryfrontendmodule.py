@@ -4,46 +4,41 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('modules', '0014_studentregphasezero_studentregphasezeromanage'),
+        ("modules", "0014_studentregphasezero_studentregphasezeromanage"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='AccountingModule',
-            fields=[
-            ],
+            name="AccountingModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='AutoschedulerFrontendModule',
-            fields=[
-            ],
+            name="AutoschedulerFrontendModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='BulkCreateAccountModule',
-            fields=[
-            ],
+            name="BulkCreateAccountModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
         migrations.CreateModel(
-            name='LotteryFrontendModule',
-            fields=[
-            ],
+            name="LotteryFrontendModule",
+            fields=[],
             options={
-                'proxy': True,
+                "proxy": True,
             },
-            bases=('modules.programmoduleobj',),
+            bases=("modules.programmoduleobj",),
         ),
     ]

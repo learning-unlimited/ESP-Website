@@ -1,5 +1,4 @@
-from esp.program.modules.base import (ProgramModuleObj, needs_admin,
-                                      main_call, aux_call)
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.utils.web import render_to_response
 from esp.middleware import ESPError
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo
@@ -12,7 +11,9 @@ class BulkCreateAccountModule(ProgramModuleObj):
     doc = """Create a bulk set of accounts (e.g. for outreach)."""
 
     MAX_PREFIX_LENGTH = 30
-    MAX_NUMBER_OF_ACCOUNTS = 1000  # backstop so that an errant request can't fill up the DB with accounts
+    MAX_NUMBER_OF_ACCOUNTS = (
+        1000  # backstop so that an errant request can't fill up the DB with accounts
+    )
 
     @classmethod
     def module_properties(cls):
@@ -27,8 +28,10 @@ class BulkCreateAccountModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def bulk_create_form(self, request, tl, one, two, module, extra, prog):
-        context = {'groups': Group.objects.all().values_list('name', flat=True)}
-        return render_to_response(self.baseDir() + 'bulk_create_form.html', request, context)
+        context = {"groups": Group.objects.all().values_list("name", flat=True)}
+        return render_to_response(
+            self.baseDir() + "bulk_create_form.html", request, context
+        )
 
     @aux_call
     @needs_admin
@@ -36,88 +39,128 @@ class BulkCreateAccountModule(ProgramModuleObj):
         row_index = 0
         total_accounts = 0
         prefix_dict = {}
-        while 'prefix' + str(1+row_index) in request.POST and 'count' + str(1+row_index) in request.POST:
+        while (
+            "prefix" + str(1 + row_index) in request.POST
+            and "count" + str(1 + row_index) in request.POST
+        ):
             row_index += 1
-            prefix = request.POST['prefix' + str(row_index)].strip()
-            count = request.POST['count' + str(row_index)].strip()
-            if prefix == '' and count == '': # skip blank row
+            prefix = request.POST["prefix" + str(row_index)].strip()
+            count = request.POST["count" + str(row_index)].strip()
+            if prefix == "" and count == "":  # skip blank row
                 continue
 
             # validate data
             try:
                 count = int(count)
             except ValueError:
-                return self.bulk_account_error(request, 'Number of accounts must be a positive integer.')
+                return self.bulk_account_error(
+                    request, "Number of accounts must be a positive integer."
+                )
             if count <= 0:
-                return self.bulk_account_error(request, 'Number of accounts must be a positive integer.')
-            if prefix == '':
-                return self.bulk_account_error(request, 'Prefix cannot be empty.')
+                return self.bulk_account_error(
+                    request, "Number of accounts must be a positive integer."
+                )
+            if prefix == "":
+                return self.bulk_account_error(request, "Prefix cannot be empty.")
             if len(prefix) > self.MAX_PREFIX_LENGTH:
-                return self.bulk_account_error(request, 'Prefix cannot be more than %d characters.'
-                               % self.MAX_PREFIX_LENGTH)
+                return self.bulk_account_error(
+                    request,
+                    "Prefix cannot be more than %d characters."
+                    % self.MAX_PREFIX_LENGTH,
+                )
             total_accounts += count
             if total_accounts > self.MAX_NUMBER_OF_ACCOUNTS:
-                return self.bulk_account_error(request, 'Total number of accounts cannot be more than %d.'
-                               % self.MAX_NUMBER_OF_ACCOUNTS)
+                return self.bulk_account_error(
+                    request,
+                    "Total number of accounts cannot be more than %d."
+                    % self.MAX_NUMBER_OF_ACCOUNTS,
+                )
             if prefix in prefix_dict:
-                return self.bulk_account_error(request, 'Duplicate prefix: %s' % prefix)
+                return self.bulk_account_error(request, "Duplicate prefix: %s" % prefix)
 
             prefix_dict[prefix] = count
 
         if not prefix_dict:
-            return self.bulk_account_error(request, 'You did not enter any accounts to create.')
+            return self.bulk_account_error(
+                request, "You did not enter any accounts to create."
+            )
 
         groups = []
         student_or_teacher = False
-        for group_string in request.POST.getlist('groups'):
-            if group_string in ('Student', 'Teacher'):
+        for group_string in request.POST.getlist("groups"):
+            if group_string in ("Student", "Teacher"):
                 student_or_teacher = True
             group = get_group(group_string)
             if group:
                 groups.append(group)
             else:
-                return self.bulk_account_error(request, 'There is no group named %s.' % group_string)
+                return self.bulk_account_error(
+                    request, "There is no group named %s." % group_string
+                )
         if not student_or_teacher:
-            return self.bulk_account_error(request, 'You must select either the Student or Teacher group, '
-                            + 'in addition to any other groups you want.')
+            return self.bulk_account_error(
+                request,
+                "You must select either the Student or Teacher group, "
+                + "in addition to any other groups you want.",
+            )
 
         result = {}
         # check none of the prefixes have been used before
         used_prefixes = []
         for prefix in prefix_dict:
-            if ESPUser.objects.filter(username = prefix + "1").exists():
+            if ESPUser.objects.filter(username=prefix + "1").exists():
                 used_prefixes.append(prefix)
         if len(used_prefixes) > 2:
-            return self.bulk_account_error(request, 'The prefixes ' + ', '.join(used_prefixes[:-1]) + ', and ' + used_prefixes[-1]
-                                                    + ' have been used before. Please choose different prefixes.')
+            return self.bulk_account_error(
+                request,
+                "The prefixes "
+                + ", ".join(used_prefixes[:-1])
+                + ", and "
+                + used_prefixes[-1]
+                + " have been used before. Please choose different prefixes.",
+            )
         if len(used_prefixes) == 2:
-            return self.bulk_account_error(request, 'The prefixes ' + ' and '.join(used_prefixes)
-                                                    + ' have been used before. Please choose different prefixes.')
+            return self.bulk_account_error(
+                request,
+                "The prefixes "
+                + " and ".join(used_prefixes)
+                + " have been used before. Please choose different prefixes.",
+            )
         elif len(used_prefixes) == 1:
-            return self.bulk_account_error(request, 'The prefix ' + used_prefixes[0]
-                                                    + ' has been used before. Please choose a different prefix.')
+            return self.bulk_account_error(
+                request,
+                "The prefix "
+                + used_prefixes[0]
+                + " has been used before. Please choose a different prefix.",
+            )
         # create users
         for prefix, number in prefix_dict.items():
             pw = prefix + str(random.randrange(1000000))
-            create_users_for_program(prog, prefix + '{}', pw, groups, number)
-            result[prefix] = {'password': pw, 'number': number}
-        context = {'passwords': result}
+            create_users_for_program(prog, prefix + "{}", pw, groups, number)
+            result[prefix] = {"password": pw, "number": number}
+        context = {"passwords": result}
 
-        return render_to_response(self.baseDir() + 'bulk_create_response.html', request, context)
+        return render_to_response(
+            self.baseDir() + "bulk_create_response.html", request, context
+        )
 
     def bulk_account_error(self, request, message):
-        context = {'bulk_account_error_message': message}
-        return render_to_response(self.baseDir() + 'bulk_create_error.html', request, context)
+        context = {"bulk_account_error_message": message}
+        return render_to_response(
+            self.baseDir() + "bulk_create_error.html", request, context
+        )
 
     def isStep(self):
         return False
 
     class Meta:
         proxy = True
-        app_label = 'modules'
+        app_label = "modules"
 
 
-def create_users_for_program(program, username_format, password_format, groups, number=1):
+def create_users_for_program(
+    program, username_format, password_format, groups, number=1
+):
     """Create a set of generic users for a program.
 
     Example use case: create one-time accounts for a HS's outreach students.
@@ -175,7 +218,7 @@ def get_group(group):
         except Group.DoesNotExist:
             return None
     else:
-        raise ESPError(f'{group} is not a Group or Group name')
+        raise ESPError(f"{group} is not a Group or Group name")
 
 
 def create_user_with_profile(username, password, program, groups):
@@ -193,12 +236,7 @@ def create_user_with_profile(username, password, program, groups):
     user.groups.add(*groups)
 
     # Create ContactInfo with username as first name (limited without real names)
-    contact_info = ContactInfo(
-        user=user,
-        first_name=username,
-        last_name='',
-        e_mail=''
-    )
+    contact_info = ContactInfo(user=user, first_name=username, last_name="", e_mail="")
     contact_info.save()
 
     # Get or create RegistrationProfile for this program
@@ -208,23 +246,20 @@ def create_user_with_profile(username, password, program, groups):
     # Create StudentInfo or TeacherInfo based on groups
     group_names = [g.name for g in groups]
 
-    if 'Student' in group_names:
+    if "Student" in group_names:
         # Create StudentInfo with a default graduation year
         default_grade = 9
         if program:
-            yog = ESPUser.YOGFromGrade(default_grade,
-                                       ESPUser.program_schoolyear(program))
+            yog = ESPUser.YOGFromGrade(
+                default_grade, ESPUser.program_schoolyear(program)
+            )
         else:
-            yog = ESPUser.YOGFromGrade(default_grade,
-                                       ESPUser.current_schoolyear())
-        student_info = StudentInfo(
-            user=user,
-            graduation_year=yog
-        )
+            yog = ESPUser.YOGFromGrade(default_grade, ESPUser.current_schoolyear())
+        student_info = StudentInfo(user=user, graduation_year=yog)
         student_info.save()
         reg_profile.student_info = student_info
 
-    if 'Teacher' in group_names:
+    if "Teacher" in group_names:
         # Create TeacherInfo for teacher accounts
         teacher_info = TeacherInfo(user=user)
         teacher_info.save()
@@ -233,8 +268,8 @@ def create_user_with_profile(username, password, program, groups):
     reg_profile.save()
 
     return {
-        'username': username,
-        'password': password,
-        'user': user,
-        'profile': reg_profile,
+        "username": username,
+        "password": password,
+        "user": user,
+        "profile": reg_profile,
     }

@@ -20,7 +20,7 @@ class LotteryTimeslotsJsonTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
     """Tests for timeslots_json() — the JSON endpoint serving the lottery UI."""
 
     def _url(self):
-        return self.get_module_url('learn', 'timeslots_json')
+        return self.get_module_url("learn", "timeslots_json")
 
     def test_timeslots_json_returns_200(self):
         """timeslots_json() is publicly accessible and returns 200."""
@@ -31,7 +31,7 @@ class LotteryTimeslotsJsonTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
     def test_timeslots_json_content_type(self):
         """Response is JSON."""
         response = self.client.get(self._url())
-        self.assertIn('application/json', response.get('Content-Type', ''))
+        self.assertIn("application/json", response.get("Content-Type", ""))
 
     def test_timeslots_json_returns_list_of_id_name_pairs(self):
         """Response body is a JSON array of [id, short_description] pairs."""
@@ -39,7 +39,9 @@ class LotteryTimeslotsJsonTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         data = json.loads(response.content)
         self.assertIsInstance(data, list)
         for item in data:
-            self.assertEqual(len(item), 2, 'Each timeslot entry should be [id, short_description]')
+            self.assertEqual(
+                len(item), 2, "Each timeslot entry should be [id, short_description]"
+            )
             self.assertIsInstance(item[0], int)
             self.assertIsInstance(item[1], str)
 
@@ -63,11 +65,11 @@ class LotteryViewPrefsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.schedule_randomly()
         self.student = self.students[0]
         self.priority_rt, _ = RegistrationType.objects.get_or_create(
-            name='Priority/1', defaults={'category': 'student'}
+            name="Priority/1", defaults={"category": "student"}
         )
 
     def _url(self):
-        return self.get_module_url('learn', 'viewlotteryprefs')
+        return self.get_module_url("learn", "viewlotteryprefs")
 
     def test_unauthenticated_redirects(self):
         """Unauthenticated GET redirects to login (302)."""
@@ -77,21 +79,19 @@ class LotteryViewPrefsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
 
     def test_student_with_priority_sees_registration(self):
         """Student with a Priority/1 SR sees it in viewlotteryprefs context."""
-        section = self.program.sections().filter(
-            meeting_times__isnull=False
-        ).first()
+        section = self.program.sections().filter(meeting_times__isnull=False).first()
         if section is None:
-            self.skipTest('No scheduled section available')
+            self.skipTest("No scheduled section available")
 
         StudentRegistration.objects.create(
             user=self.student,
             section=section,
             relationship=self.priority_rt,
         )
-        self.client.login(username=self.student.username, password='password')
+        self.client.login(username=self.student.username, password="password")
         response = self.client.get(self._url())
         self.assertEqual(response.status_code, 200)
         self.assertFalse(
-            response.context.get('pempty', True),
-            'pempty should be False when student has Priority/1 registrations'
+            response.context.get("pempty", True),
+            "pempty should be False when student has Priority/1 registrations",
         )

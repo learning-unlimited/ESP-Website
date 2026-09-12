@@ -4,7 +4,22 @@ from esp.admin import admin_site
 from django import forms
 from django.db import models
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, RecordType, Record, Permission, GradeChangeRequest
+from esp.users.models import (
+    UserAvailability,
+    ContactInfo,
+    StudentInfo,
+    TeacherInfo,
+    GuardianInfo,
+    EducatorInfo,
+    ZipCode,
+    ZipCodeSearches,
+    K12School,
+    ESPUser,
+    RecordType,
+    Record,
+    Permission,
+    GradeChangeRequest,
+)
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 from esp.utils.admin_user_search import default_user_search
@@ -12,86 +27,142 @@ import datetime
 
 
 class UserForwarderAdmin(admin.ModelAdmin):
-    list_display = ('source', 'target')
-    search_fields = default_user_search('source') + default_user_search('target')
+    list_display = ("source", "target")
+    search_fields = default_user_search("source") + default_user_search("target")
+
+
 admin_site.register(UserForwarder, UserForwarderAdmin)
 
+
 class ZipCodeAdmin(admin.ModelAdmin):
-    search_fields = ('=zip_code',)
-    list_display = ('zip_code', 'latitude', 'longitude')
+    search_fields = ("=zip_code",)
+    list_display = ("zip_code", "latitude", "longitude")
+
+
 admin_site.register(ZipCode, ZipCodeAdmin)
+
 
 class ZipCodeSearchesAdmin(admin.ModelAdmin):
     def count(obj):
-        return len(obj.zipcodes.split(','))
+        return len(obj.zipcodes.split(","))
+
     count.short_description = "Number of zip codes"
-    list_display = ('zip_code', 'distance', count)
-    search_fields = ('=zip_code__zip_code',)
+    list_display = ("zip_code", "distance", count)
+    search_fields = ("=zip_code__zip_code",)
+
+
 admin_site.register(ZipCodeSearches, ZipCodeSearchesAdmin)
 
+
 class UserAvailabilityAdmin(admin.ModelAdmin):
-    def parent_program(obj): #because 'event__program' for some reason doesn't want to work...
+    def parent_program(
+        obj,
+    ):  # because 'event__program' for some reason doesn't want to work...
         return obj.event.program
-    list_display = ['id', 'user', 'event', parent_program]
-    list_filter = ['event__program', ]
+
+    list_display = ["id", "user", "event", parent_program]
+    list_filter = [
+        "event__program",
+    ]
     search_fields = default_user_search()
-    ordering = ['-event__program', 'user__username', 'event__start']
+    ordering = ["-event__program", "user__username", "event__start"]
+
+
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
+
 class ESPUserAdmin(UserAdmin):
-    #remove the user_permissions from adminpage
-    #(since we don't use it)
-    #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
+    # remove the user_permissions from adminpage
+    # (since we don't use it)
+    # See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
 
     from django.utils.translation import gettext_lazy as _
+
     fieldsets = (
-        (None, {'fields': ('username', 'password')}),
-        (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
-        (_('Permissions'), {'fields': ('is_active', 'is_staff', 'is_superuser')}),
-        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
-        (_('User Roles'), {'fields': ('groups',)}),
-        )
+        (None, {"fields": ("username", "password")}),
+        (_("Personal info"), {"fields": ("first_name", "last_name", "email")}),
+        (_("Permissions"), {"fields": ("is_active", "is_staff", "is_superuser")}),
+        (_("Important dates"), {"fields": ("last_login", "date_joined")}),
+        (_("User Roles"), {"fields": ("groups",)}),
+    )
+
+
 admin_site.register(ESPUser, ESPUserAdmin)
 
+
 class RecordTypeAdmin(admin.ModelAdmin):
-    list_display = ['id', 'name', 'description']
-    search_fields = ['name', 'description']
+    list_display = ["id", "name", "description"]
+    search_fields = ["name", "description"]
 
     def get_readonly_fields(self, request, obj=None):
         if obj:  # Editing an existing object
-            return self.readonly_fields + ('name',)
+            return self.readonly_fields + ("name",)
         return self.readonly_fields
+
+
 admin_site.register(RecordType, RecordTypeAdmin)
 
+
 class RecordAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'event', 'program', 'time',]
-    list_filter = ['event', 'program', 'time']
+    list_display = [
+        "id",
+        "user",
+        "event",
+        "program",
+        "time",
+    ]
+    list_filter = ["event", "program", "time"]
     search_fields = default_user_search()
-    date_hierarchy = 'time'
+    date_hierarchy = "time"
+
+
 admin_site.register(Record, RecordAdmin)
 
+
 class ExpiredListFilter(admin.SimpleListFilter):
-    title = _('expiration status')
-    parameter_name = 'status'
+    title = _("expiration status")
+    parameter_name = "status"
 
     def lookups(self, request, model_admin):
         return (
-            ('unexpired', _('Not expired')),
-            ('expired', _('Expired')),
+            ("unexpired", _("Not expired")),
+            ("expired", _("Expired")),
         )
 
     def queryset(self, request, queryset):
-        if self.value() == 'unexpired':
-            return queryset.filter(end_date=None) | queryset.filter(end_date__gt=datetime.datetime.now())
-        elif self.value() == 'expired':
+        if self.value() == "unexpired":
+            return queryset.filter(end_date=None) | queryset.filter(
+                end_date__gt=datetime.datetime.now()
+            )
+        elif self.value() == "expired":
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
+
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'user_filter', 'permission_type', 'program', 'start_date', 'end_date']
-    search_fields = default_user_search() + ['permission_type', 'program__url', 'user_filter__useful_name']
-    list_filter = ['permission_type', 'program', 'role', 'user_filter', ExpiredListFilter]
-    date_hierarchy = 'start_date'
-    actions = [ 'expire', 'renew' ]
+    list_display = [
+        "id",
+        "user",
+        "role",
+        "user_filter",
+        "permission_type",
+        "program",
+        "start_date",
+        "end_date",
+    ]
+    search_fields = default_user_search() + [
+        "permission_type",
+        "program__url",
+        "user_filter__useful_name",
+    ]
+    list_filter = [
+        "permission_type",
+        "program",
+        "role",
+        "user_filter",
+        ExpiredListFilter,
+    ]
+    date_hierarchy = "start_date"
+    actions = ["expire", "renew"]
 
     def expire(self, request, queryset):
         rows_updated = queryset.update(end_date=datetime.datetime.now())
@@ -100,6 +171,7 @@ class PermissionAdmin(admin.ModelAdmin):
         else:
             message_bit = f"{rows_updated} permissions were"
         self.message_user(request, f"{message_bit} successfully expired.")
+
     expire.short_description = "Expire permissions"
 
     def renew(self, request, queryset):
@@ -109,67 +181,139 @@ class PermissionAdmin(admin.ModelAdmin):
         else:
             message_bit = f"{rows_updated} permissions were"
         self.message_user(request, f"{message_bit} successfully renewed.")
+
     renew.short_description = "Renew permissions"
+
 
 admin_site.register(Permission, PermissionAdmin)
 
+
 class ContactInfoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'e_mail', 'phone_day']
-    search_fields = default_user_search() + ['e_mail']
+    list_display = ["id", "user", "e_mail", "phone_day"]
+    search_fields = default_user_search() + ["e_mail"]
+
+
 admin_site.register(ContactInfo, ContactInfoAdmin)
+
 
 class UserInfoAdmin(admin.ModelAdmin):
     search_fields = default_user_search()
 
+
 class StudentInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'getSchool']
-    list_filter = ['graduation_year', 'studentrep']
+    list_display = ["id", "user", "graduation_year", "getSchool"]
+    list_filter = ["graduation_year", "studentrep"]
     search_fields = default_user_search()
+
+
 admin_site.register(StudentInfo, StudentInfoAdmin)
 
+
 class TeacherInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college', 'is_graduate_student', 'affiliation']
-    search_fields = default_user_search() + ['college']
-    list_filter = ('from_here', 'is_graduate_student', 'graduation_year', 'affiliation')
+    list_display = [
+        "id",
+        "user",
+        "graduation_year",
+        "from_here",
+        "college",
+        "is_graduate_student",
+        "affiliation",
+    ]
+    search_fields = default_user_search() + ["college"]
+    list_filter = ("from_here", "is_graduate_student", "graduation_year", "affiliation")
+
+
 admin_site.register(TeacherInfo, TeacherInfoAdmin)
 
+
 class GuardianInfoAdmin(UserInfoAdmin):
-    list_display = ['id', 'user', 'year_finished', 'num_kids']
+    list_display = ["id", "user", "year_finished", "num_kids"]
     search_fields = default_user_search()
+
+
 admin_site.register(GuardianInfo, GuardianInfoAdmin)
+
 
 class EducatorInfoAdmin(UserInfoAdmin):
     search_fields = default_user_search()
-    list_display = ['id', 'user', 'position', 'getSchool']
+    list_display = ["id", "user", "position", "getSchool"]
+
+
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
+
 class K12SchoolAdmin(admin.ModelAdmin):
-    list_display = ['name', 'city', 'state', 'grades', 'contact_title', 'contact_name', 'school_type']
+    list_display = [
+        "name",
+        "city",
+        "state",
+        "grades",
+        "contact_title",
+        "contact_name",
+        "school_type",
+    ]
     formfield_overrides = {
-        models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
+        models.TextField: {
+            "widget": forms.TextInput(
+                attrs={
+                    "size": "50",
+                }
+            ),
+        },
     }
-    search_fields = ['name', 'city', 'state', 'contact__first_name', 'contact__last_name']
-    list_filter = ['school_type', 'state']
+    search_fields = [
+        "name",
+        "city",
+        "state",
+        "contact__first_name",
+        "contact__last_name",
+    ]
+    list_filter = ["school_type", "state"]
+
     def contact_name(self, obj):
         if obj.contact:
             return f"{obj.contact.first_name} {obj.contact.last_name}"
         return None
-    contact_name.short_description = 'Contact name'
+
+    contact_name.short_description = "Contact name"
+
 
 admin_site.register(K12School, K12SchoolAdmin)
 
+
 class GradeChangeRequestAdmin(admin.ModelAdmin):
-    list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
-    readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
-    search_fields = default_user_search('requesting_student')
-    list_filter = ('created', 'approved',)
+    list_display = [
+        "requesting_student",
+        "claimed_grade",
+        "approved",
+        "acknowledged_by",
+        "acknowledged_time",
+        "created",
+    ]
+    readonly_fields = [
+        "grade_before_request",
+        "requesting_student",
+        "acknowledged_by",
+        "acknowledged_time",
+        "claimed_grade",
+    ]
+    search_fields = default_user_search("requesting_student")
+    list_filter = (
+        "created",
+        "approved",
+    )
 
     def save_model(self, request, obj, form, change):
-        if getattr(obj, 'acknowledged_by', None) is None:
+        if getattr(obj, "acknowledged_by", None) is None:
             obj.acknowledged_by = request.user
-        if getattr(obj, 'acknowledged_time', None) is None and getattr(request.POST, 'approved', None) is True:
+        if (
+            getattr(obj, "acknowledged_time", None) is None
+            and getattr(request.POST, "approved", None) is True
+        ):
             obj.acknowledged_time = datetime.datetime.now()
         obj.save()
+
+
 admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group

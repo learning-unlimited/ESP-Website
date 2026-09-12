@@ -4,21 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('program', '0006_classsubject_timestamp'),
+        ("program", "0006_classsubject_timestamp"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='classimplication',
-            name='cls',
+            model_name="classimplication",
+            name="cls",
         ),
         migrations.RemoveField(
-            model_name='classimplication',
-            name='parent',
+            model_name="classimplication",
+            name="parent",
         ),
         migrations.DeleteModel(
-            name='ClassImplication',
+            name="ClassImplication",
         ),
     ]

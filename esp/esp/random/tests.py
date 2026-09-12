@@ -7,6 +7,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.random.views import good_random_class, main, ajax
 
+
 class RandomModuleTests(ProgramFrameworkTest):
     def setUp(self):
         super(RandomModuleTests, self).setUp(
@@ -26,34 +27,36 @@ class RandomModuleTests(ProgramFrameworkTest):
         # blacklist class2 but keep class1
         constraints = {
             "bad_program_names": ["Some Totally Unknown Program"],
-            "bad_titles": [self.class2.title]
+            "bad_titles": [self.class2.title],
         }
-        Tag.setTag('random_constraints', value=json.dumps(constraints))
+        Tag.setTag("random_constraints", value=json.dumps(constraints))
 
     def test_good_random_class(self):
         """make sure good_random_class respects tag constraints"""
         # check if program blacklist works
         constraints = {
-            "bad_program_names": [self.program_name], # block all programs
-            "bad_titles": []
+            "bad_program_names": [self.program_name],  # block all programs
+            "bad_titles": [],
         }
-        Tag.setTag('random_constraints', value=json.dumps(constraints))
+        Tag.setTag("random_constraints", value=json.dumps(constraints))
         cls = good_random_class()
         self.assertIsNone(cls)
 
         # now testing title blacklists
         constraints = {
             "bad_program_names": [],
-            "bad_titles": [c.title for c in ClassSubject.objects.exclude(id=self.class1.id)]
+            "bad_titles": [
+                c.title for c in ClassSubject.objects.exclude(id=self.class1.id)
+            ],
         }
-        Tag.setTag('random_constraints', value=json.dumps(constraints))
+        Tag.setTag("random_constraints", value=json.dumps(constraints))
         cls = good_random_class()
         self.assertIsNotNone(cls)
         self.assertEqual(cls.title, self.class1.title)
 
     def test_good_random_class_missing_tag(self):
         """test what happens when tag is missing entirely"""
-        Tag.unSetTag('random_constraints')
+        Tag.unSetTag("random_constraints")
 
         # it should safely return a valid class
         # previously this threw JSONDecodeError/TypeError bc getTag returned None
@@ -64,17 +67,20 @@ class RandomModuleTests(ProgramFrameworkTest):
         """test ajax view when good_random_class returns None (no classes available)"""
         # Configure constraints so that all classes are excluded for this program
         constraints = {
-            "bad_program_names": [self.program_name],  # block all programs, so no classes are returned
+            "bad_program_names": [
+                self.program_name
+            ],  # block all programs, so no classes are returned
             "bad_titles": [],
         }
-        Tag.setTag('random_constraints', value=json.dumps(constraints))
-        request = self.factory.get('/random/ajax')
+        Tag.setTag("random_constraints", value=json.dumps(constraints))
+        request = self.factory.get("/random/ajax")
         response = ajax(request)
         # ajax view should handle the absence of a class gracefully (no crash)
         self.assertEqual(response.status_code, 200)
         # Response should still be valid JSON
-        response_data = json.loads(response.content.decode('utf-8'))
+        response_data = json.loads(response.content.decode("utf-8"))
         self.assertIsInstance(response_data, dict)
+
 
 """
 Tests for esp.random.views
@@ -92,11 +98,11 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 class GoodRandomClassTest(TestCase):
     """Tests for good_random_class() filtering logic"""
 
-    @patch('esp.random.views.Tag')
-    @patch('esp.random.views.ClassSubject')
+    @patch("esp.random.views.Tag")
+    @patch("esp.random.views.ClassSubject")
     def test_no_constraints(self, mock_classsubject, mock_tag):
 
-        mock_tag.getTag.return_value = '{}'
+        mock_tag.getTag.return_value = "{}"
         mock_cls = MagicMock()
         mock_classsubject.objects.random_class.return_value = mock_cls
 
@@ -106,52 +112,53 @@ class GoodRandomClassTest(TestCase):
         mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
-    @patch('esp.random.views.Tag')
-    @patch('esp.random.views.ClassSubject')
+    @patch("esp.random.views.Tag")
+    @patch("esp.random.views.ClassSubject")
     def test_bad_program_name_excluded(self, mock_classsubject, mock_tag):
 
-        mock_tag.getTag.return_value = json.dumps({
-            'bad_program_names': ['TestProgram']
-        })
+        mock_tag.getTag.return_value = json.dumps(
+            {"bad_program_names": ["TestProgram"]}
+        )
         mock_cls = MagicMock()
         mock_classsubject.objects.random_class.return_value = mock_cls
 
         result = good_random_class()
 
-        expected_q = Q() & ~Q(parent_program__name__icontains='TestProgram')
+        expected_q = Q() & ~Q(parent_program__name__icontains="TestProgram")
         mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
-    @patch('esp.random.views.Tag')
-    @patch('esp.random.views.ClassSubject')
+    @patch("esp.random.views.Tag")
+    @patch("esp.random.views.ClassSubject")
     def test_bad_title_excluded(self, mock_classsubject, mock_tag):
         """Classes with bad titles should be excluded."""
-        mock_tag.getTag.return_value = json.dumps({
-            'bad_titles': ['Lunch Period']
-        })
+        mock_tag.getTag.return_value = json.dumps({"bad_titles": ["Lunch Period"]})
         mock_cls = MagicMock()
         mock_classsubject.objects.random_class.return_value = mock_cls
 
         result = good_random_class()
 
-        expected_q = Q() & ~Q(title__iexact='Lunch Period')
+        expected_q = Q() & ~Q(title__iexact="Lunch Period")
         mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
-    @patch('esp.random.views.Tag')
-    @patch('esp.random.views.ClassSubject')
+    @patch("esp.random.views.Tag")
+    @patch("esp.random.views.ClassSubject")
     def test_multiple_constraints_combined(self, mock_classsubject, mock_tag):
 
-        mock_tag.getTag.return_value = json.dumps({
-            'bad_program_names': ['TestProgram'],
-            'bad_titles': ['Lunch Period']
-        })
+        mock_tag.getTag.return_value = json.dumps(
+            {"bad_program_names": ["TestProgram"], "bad_titles": ["Lunch Period"]}
+        )
         mock_cls = MagicMock()
         mock_classsubject.objects.random_class.return_value = mock_cls
 
         result = good_random_class()
 
-        expected_q = Q() & ~Q(parent_program__name__icontains='TestProgram') & ~Q(title__iexact='Lunch Period')
+        expected_q = (
+            Q()
+            & ~Q(parent_program__name__icontains="TestProgram")
+            & ~Q(title__iexact="Lunch Period")
+        )
         mock_classsubject.objects.random_class.assert_called_once_with(expected_q)
         self.assertEqual(result, mock_cls)
 
@@ -163,13 +170,13 @@ class MainViewTest(TestCase):
         super().setUp()
         self.factory = RequestFactory()
 
-    @patch('esp.random.views.good_random_class')
+    @patch("esp.random.views.good_random_class")
     def test_main_returns_200(self, mock_good_random_class):
 
         mock_cls = MagicMock()
         mock_good_random_class.return_value = mock_cls
 
-        request = self.factory.get('/random/')
+        request = self.factory.get("/random/")
         response = main(request)
 
         self.assertEqual(response.status_code, 200)
@@ -182,27 +189,27 @@ class AjaxViewTest(TestCase):
         super().setUp()
         self.factory = RequestFactory()
 
-    @patch('esp.random.views.good_random_class')
+    @patch("esp.random.views.good_random_class")
     def test_ajax_returns_json(self, mock_good_random_class):
 
         mock_cls = MagicMock()
-        mock_cls.title = 'Test Class'
-        mock_cls.parent_program.niceName.return_value = 'Test Program'
-        mock_cls.class_info = 'Some info'
+        mock_cls.title = "Test Class"
+        mock_cls.parent_program.niceName.return_value = "Test Program"
+        mock_cls.class_info = "Some info"
         mock_good_random_class.return_value = mock_cls
 
-        request = self.factory.get('/random/ajax')
+        request = self.factory.get("/random/ajax")
         response = ajax(request)
 
         self.assertEqual(response.status_code, 200)
 
-        response_data = json.loads(response.content.decode('utf-8'))
+        response_data = json.loads(response.content.decode("utf-8"))
 
         # check standard json keys
-        self.assertIn('title', response_data)
-        self.assertIn('program', response_data)
-        self.assertIn('info', response_data)
+        self.assertIn("title", response_data)
+        self.assertIn("program", response_data)
+        self.assertIn("info", response_data)
         data = json.loads(response.content)
-        self.assertEqual(data['title'], 'Test Class')
-        self.assertEqual(data['program'], 'Test Program')
-        self.assertEqual(data['info'], 'Some info')
+        self.assertEqual(data["title"], "Test Class")
+        self.assertEqual(data["program"], "Test Program")
+        self.assertEqual(data["info"], "Some info")

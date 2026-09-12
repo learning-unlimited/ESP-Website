@@ -1,6 +1,5 @@
 import unittest
-from esp.program.controllers.autoscheduler import \
-        scoring, testutils
+from esp.program.controllers.autoscheduler import scoring, testutils
 
 
 class ScoringTest(unittest.TestCase):
@@ -20,10 +19,9 @@ class ScoringTest(unittest.TestCase):
             "RoomConsecutivityScorer": 10.0,
             "RoomSizeMismatchScorer": 30.0,
             "StudentClassHoursScorer": 50.0,
-            "TeachersWhoLikeRunningScorer": 10.0
+            "TeachersWhoLikeRunningScorer": 10.0,
         }
-        self.scorer = scoring.CompositeScorer(
-            scorer_names_and_weights, self.schedule)
+        self.scorer = scoring.CompositeScorer(scorer_names_and_weights, self.schedule)
 
     def test_schedule_unschedule(self):
         """Scheduling and unscheduling should do nothing."""
@@ -66,7 +64,8 @@ class ScoringTest(unittest.TestCase):
 
     def schedule_section(self, section, start_roomslot):
         roomslots_to_use = start_roomslot.room.get_roomslots_by_duration(
-                start_roomslot, section.duration)
+            start_roomslot, section.duration
+        )
         section.assign_roomslots(roomslots_to_use)
 
     def unschedule_section(self, section):

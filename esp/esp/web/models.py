@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 from django.db import models
@@ -41,23 +42,32 @@ from django.db.models.query import Q
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function
 
+
 class NavBarCategory(models.Model):
     include_auto_links = models.BooleanField(default=False)
     name = models.CharField(max_length=64)
-    path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
+    path = models.CharField(
+        max_length=64,
+        default="",
+        help_text="Matches the beginning of the URL (without the /).  Example: learn/splash",
+    )
     long_explanation = models.TextField()
 
     def get_navbars(self):
-        return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
+        return (
+            self.navbarentry_set.all().select_related("category").order_by("sort_rank")
+        )
 
     @cache_function
     def from_request(section, path):
-        """ A function to guess the appropriate navigation category when one
-            is not provided in the context. """
+        """A function to guess the appropriate navigation category when one
+        is not provided in the context."""
 
         if path:
             #   See if there's a category whose path matches the desired URL.
-            categories = NavBarCategory.objects.extra(select={'length':'Length(path)'}).order_by('-length')
+            categories = NavBarCategory.objects.extra(
+                select={"length": "Length(path)"}
+            ).order_by("-length")
             for cat in categories:
                 if cat.path and path.lower().startswith(cat.path.lower()):
                     return cat
@@ -71,40 +81,44 @@ class NavBarCategory(models.Model):
         #   If all else fails, make something up.
         return default_navbarcategory()
 
-    from_request.depend_on_model('web.NavBarCategory')
+    from_request.depend_on_model("web.NavBarCategory")
     from_request = staticmethod(from_request)
 
     def __str__(self):
         return str(self.name)
 
     class Meta:
-        verbose_name_plural = 'Nav bar categories'
+        verbose_name_plural = "Nav bar categories"
+
 
 def default_navbarcategory():
-    """ Default navigation category. """
-    if not hasattr(NavBarCategory, '_default'):
+    """Default navigation category."""
+    if not hasattr(NavBarCategory, "_default"):
         if not NavBarCategory.objects.exists():
             # We shouldn't need this before we've had a chance to run install()
             # But Django was trying to call it anyway
             return None
-        NavBarCategory._default = NavBarCategory.objects.filter(name='default')[0]
+        NavBarCategory._default = NavBarCategory.objects.filter(name="default")[0]
     return NavBarCategory._default
 
+
 class NavBarEntry(models.Model):
-    """ An entry for the secondary navigation bar """
+    """An entry for the secondary navigation bar"""
 
     sort_rank = models.IntegerField()
     link = models.CharField(max_length=256, blank=True, null=True)
     text = models.CharField(max_length=64)
     indent = models.BooleanField(default=False)
 
-    category = models.ForeignKey(NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        NavBarCategory, default=default_navbarcategory, on_delete=models.CASCADE
+    )
 
     def can_edit(self, user):
         return user.isAdmin()
 
     def __str__(self):
-        return f'{self.category}:{self.sort_rank} ({self.text}) [{self.link}]'
+        return f"{self.category}:{self.sort_rank} ({self.text}) [{self.link}]"
 
     def makeTitle(self):
         return self.text
@@ -116,13 +130,14 @@ class NavBarEntry(models.Model):
         return (self.link is not None) and (len(self.link) > 0)
 
     class Meta:
-        verbose_name_plural = 'Nav bar entries'
+        verbose_name_plural = "Nav bar entries"
+
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
     logger.info("Installing esp.web initial data...")
-    if not NavBarCategory.objects.filter(name='default').exists():
+    if not NavBarCategory.objects.filter(name="default").exists():
         NavBarCategory.objects.create(
-            name='default',
-            long_explanation='The default category, to which new nav bars and QSD pages get assigned.',
+            name="default",
+            long_explanation="The default category, to which new nav bars and QSD pages get assigned.",
         )

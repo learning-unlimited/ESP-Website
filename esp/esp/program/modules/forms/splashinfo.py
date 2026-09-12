@@ -1,7 +1,7 @@
-__author__    = "Individual contributors (see AUTHORS file)"
-__date__      = "$DATE$"
-__rev__       = "$REV$"
-__license__   = "AGPL v.3"
+__author__ = "Individual contributors (see AUTHORS file)"
+__date__ = "$DATE$"
+__rev__ = "$REV$"
+__license__ = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2009 by the individual contributors
@@ -36,41 +36,65 @@ from django import forms
 from esp.program.models import Program
 from esp.utils.widgets import RadioSelectWithData
 
+
 class SiblingDiscountForm(forms.Form):
-    siblingdiscount = forms.TypedChoiceField(choices=[], coerce=lambda x: x == 'True')
+    siblingdiscount = forms.TypedChoiceField(choices=[], coerce=lambda x: x == "True")
     siblingname = forms.CharField(max_length=128, required=False)
 
     def __init__(self, *args, **kwargs):
-        if 'program' in kwargs:
-            program = kwargs.pop('program')
+        if "program" in kwargs:
+            program = kwargs.pop("program")
         else:
-            raise KeyError('Need to supply program as named argument to SiblingDiscountForm')
+            raise KeyError(
+                "Need to supply program as named argument to SiblingDiscountForm"
+            )
         super().__init__(*args, **kwargs)
-        choices = [(False, 'I am the first in my household enrolling in Splash (+ $' + str(program.base_cost) + ').'),
-                   (True, 'I have a sibling already enrolled in Splash (+ $' + str(program.base_cost - program.sibling_discount) + ').')]
-        option_data = {False: {'cost': program.base_cost, 'for_finaid': 'true'},
-                       True: {'cost': program.base_cost - program.sibling_discount, 'for_finaid': 'true'}}
-        self.fields['siblingdiscount'].widget = RadioSelectWithData(option_data=option_data)
-        self.fields['siblingdiscount'].choices = choices
-        self.fields['siblingdiscount'].initial = True
+        choices = [
+            (
+                False,
+                "I am the first in my household enrolling in Splash (+ $"
+                + str(program.base_cost)
+                + ").",
+            ),
+            (
+                True,
+                "I have a sibling already enrolled in Splash (+ $"
+                + str(program.base_cost - program.sibling_discount)
+                + ").",
+            ),
+        ]
+        option_data = {
+            False: {"cost": program.base_cost, "for_finaid": "true"},
+            True: {
+                "cost": program.base_cost - program.sibling_discount,
+                "for_finaid": "true",
+            },
+        }
+        self.fields["siblingdiscount"].widget = RadioSelectWithData(
+            option_data=option_data
+        )
+        self.fields["siblingdiscount"].choices = choices
+        self.fields["siblingdiscount"].initial = True
 
     def clean(self):
         cleaned_data = super().clean()
         siblingdiscount = cleaned_data.get("siblingdiscount")
         siblingname = cleaned_data.get("siblingname")
         if siblingdiscount and not siblingname:
-            self.add_error('siblingname', "You didn't provide the name of your sibling.")
+            self.add_error(
+                "siblingname", "You didn't provide the name of your sibling."
+            )
         elif not siblingdiscount:
-            self.cleaned_data['siblingname'] = ""
+            self.cleaned_data["siblingname"] = ""
 
     def load(self, splashinfo):
-        self.initial['siblingdiscount'] = splashinfo.siblingdiscount
-        self.initial['siblingname'] = splashinfo.siblingname
+        self.initial["siblingdiscount"] = splashinfo.siblingdiscount
+        self.initial["siblingname"] = splashinfo.siblingname
 
     def save(self, splashinfo):
-        if 'siblingdiscount' in self.cleaned_data:
-            splashinfo.siblingdiscount = self.cleaned_data['siblingdiscount']
-        if 'siblingname' in self.cleaned_data:
-            splashinfo.siblingname = self.cleaned_data['siblingname']
+        if "siblingdiscount" in self.cleaned_data:
+            splashinfo.siblingdiscount = self.cleaned_data["siblingdiscount"]
+        if "siblingname" in self.cleaned_data:
+            splashinfo.siblingname = self.cleaned_data["siblingname"]
         splashinfo.submitted = True
         splashinfo.save()
