@@ -205,6 +205,24 @@
 
     {% autoescape off %}{{ settings.ADDITIONAL_TEMPLATE_SCRIPTS }}{% endautoescape %}
     {% endblock %}
+{# Shown by csrf_check.js when the session's CSRF cookie is missing #}
+<div class="modal fade" id="csrf-alert-modal" tabindex="-1"
+     aria-labelledby="csrf-alert-modal-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="csrf-alert-modal-title">Oops!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        It appears your session has become disconnected. Please make sure cookies are enabled and try again.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
   </body>
 </html>
 
