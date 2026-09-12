@@ -22,4 +22,3 @@ class InstallConfig(AppConfig):
 
 class UtilsConfig(AppConfig):
     name = 'esp.utils'
-
