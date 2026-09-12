@@ -1,27 +1,18 @@
-var csrfAlert;
-function makeCsrfAlert()
+var CSRF_ALERT_MESSAGE = 'It appears your session has become disconnected. Please make sure cookies are enabled and try again.';
+
+//  Show the "session disconnected" warning.  Most pages inherit the modal from
+//  elements/html, but a few (the onsite webapps and the Django admin) are built
+//  on their own skeletons without Bootstrap, so fall back to a plain alert there.
+function showCsrfAlert()
 {
-    if(!$j.ui)
+    var el = document.getElementById('csrf-alert-modal');
+    if (el && window.bootstrap)
     {
-	// Load the appropriate javascript and css
-	$j.getScriptWithCaching('/media/scripts/jquery-ui.js', makeCsrfAlert);
-	if (document.createStylesheet)
-	{
-	    document.createStylesheet('/media/styles/jquery-ui/jquery-ui.css');
-	}
-	else
-	{
-	    $j("head").append($j("<link rel='stylesheet' href='/media/styles/jquery-ui/jquery-ui.css' type='text/css' >"));
-	}
+        bootstrap.Modal.getOrCreateInstance(el).show();
     }
     else
     {
-	csrfAlert = $j('<div></div>')
-	    .html('It appears your session has become disconnected. Please make sure cookies are enabled and try again.')
-            .dialog({
-		autoOpen: false,
-		title: 'Oops!'
-            });
+        alert(CSRF_ALERT_MESSAGE);
     }
 }
 
@@ -33,7 +24,6 @@ function strip_tags(str)
 var check_csrf_cookie = function(form)
 {
     //console.log("CSRF check!");
-    //csrfAlert.dialog('open');
     //If the form is null, return false
     if (!form) return false;
 
@@ -63,11 +53,7 @@ var check_csrf_cookie = function(form)
     csrf_cookie = $j.cookie("esp_csrftoken");
     if (csrf_cookie == null)
     {
-	if(!csrfAlert)
-	{
-	    makeCsrfAlert();
-	}
-        csrfAlert.dialog('open');
+        showCsrfAlert();
         return false;
     }
 

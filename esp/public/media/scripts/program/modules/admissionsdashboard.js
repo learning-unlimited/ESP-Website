@@ -37,6 +37,17 @@ $j(function () {
             return 'You have unsaved changes; if you leave this page, they will be lost.';
         }
     });
+    //  Bound once here rather than per row, since every comments cell shares
+    //  the one modal; it saves whichever cell was opened last.
+    $j('#comments-modal .comments-save').on("click", function () {
+        var text = $j('#comments-modal .comments-textarea').val();
+        var change = {};
+        change[active_comments_field] = text;
+        active_comments_cell.set_comment(text);
+        update(active_comments_app_id, change);
+        bootstrap.Modal.getOrCreateInstance(
+            document.getElementById('comments-modal')).hide();
+    });
 });
 
 function load_class(class_id, prev) {
@@ -148,19 +159,39 @@ function make_teacher_ranking_cell(app, num_apps, readonly) {
     return $teacher_ranking;
 }
 
+//  Which comments cell currently has the shared modal open.
+var active_comments_cell = null;
+var active_comments_app_id = null;
+var active_comments_field = null;
+
+//  Point the shared comments modal at one cell and open it.
+function open_comments_modal($cell, app_id, field, instructions, readonly) {
+    active_comments_cell = $cell;
+    active_comments_app_id = app_id;
+    active_comments_field = field;
+
+    var $modal = $j('#comments-modal');
+    $modal.find('.comments-instructions').text(instructions);
+    $modal.find('.comments-textarea')
+        .val($cell.data('comment'))
+        .prop('readonly', !!readonly);
+    //  Readonly cells get a lone Close button; editable ones get Save/Cancel.
+    $modal.find('.comments-save').toggle(!readonly);
+    $modal.find('.comments-dismiss').text(readonly ? 'Close' : 'Cancel');
+    $modal.one('shown.bs.modal', function () {
+        $modal.find('.comments-textarea').trigger('focus');
+    });
+    bootstrap.Modal.getOrCreateInstance($modal[0]).show();
+}
+
 function make_teacher_comments_cell(app, readonly) {
-    var $textarea = $j('<textarea rows="5" cols="50" />');
-    var $teacher_comments_dialog = $j('<div title="Comments"></div>').append(
-        readonly ? '<p>View teacher comment below.</p>'
-            : '<p>Type your comment below.</p>',
-        $textarea
-    );
     var $teacher_comments = $j('<div></div>')
         .addClass('teacher_comments')
         .on("click", function () {
-            var text = $teacher_comments.data('comment');
-            $teacher_comments_dialog.dialog('open');
-            $textarea.val(text).focus();
+            open_comments_modal($teacher_comments, app.id, 'teacher_comment',
+                                readonly ? 'View teacher comment below.'
+                                         : 'Type your comment below.',
+                                readonly);
         });
     $teacher_comments.set_comment = function (comment) {
         if (readonly) {
@@ -174,26 +205,6 @@ function make_teacher_comments_cell(app, readonly) {
         }
     }
     $teacher_comments.set_comment(app.teacher_comment)
-    $teacher_comments_dialog.dialog({
-        autoOpen: false,
-        modal: true,
-        width: 'auto',
-        buttons: readonly ? {
-            'Close': function () {
-                $j(this).dialog('close');
-            }
-        } : {
-            'Save': function () {
-                var text = $textarea.val();
-                $teacher_comments.set_comment(text);
-                update(app.id, {'teacher_comment': text});
-                $(this).dialog('close');
-            },
-            'Cancel': function () {
-                $j(this).dialog('close');
-            }
-        }
-    });
     return $teacher_comments;
 }
 
@@ -212,39 +223,18 @@ function make_admin_status_cell(app) {
 }
 
 function make_admin_comments_cell(app) {
-    var $textarea = $j('<textarea rows="5" cols="50" />');
-    var $admin_comments_dialog = $j('<div title="Comments"></div>').append(
-        '<p>Type your comment below.</p>',
-        $textarea
-    );
     var $admin_comments = $j('<div></div>')
         .addClass('admin_comments')
-        .data('comment', app.admin_comment || '')
-        .text(app.admin_comment || '(click to add comment)')
-        .css('color', app.admin_comment ? '' : '#aaa')
         .on("click", function () {
-            var text = $admin_comments.data('comment');
-            $admin_comments_dialog.dialog('open');
-            $textarea.val(text).focus();
+            open_comments_modal($admin_comments, app.id, 'admin_comment',
+                                'Type your comment below.', false);
         });
-    $admin_comments_dialog.dialog({
-        autoOpen: false,
-        modal: true,
-        width: 'auto',
-        buttons: {
-            'Save': function () {
-                var text = $textarea.val();
-                $admin_comments.data('comment', text)
-                    .text(text || '(click to add comment)')
-                    .css('color', text ? '' : '#aaa');
-                update(app.id, {'admin_comment': text});
-                $j(this).dialog('close');
-            },
-            'Cancel': function () {
-                $j(this).dialog('close');
-            }
-        }
-    });
+    $admin_comments.set_comment = function (comment) {
+        this.data('comment', comment)
+            .text(comment || '(click to add comment)')
+            .css('color', comment ? '' : '#aaa');
+    };
+    $admin_comments.set_comment(app.admin_comment || '');
     return $admin_comments;
 }
 
