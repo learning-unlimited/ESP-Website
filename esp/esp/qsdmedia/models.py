@@ -1,3 +1,4 @@
+from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -79,7 +80,7 @@ class Media(models.Model):
         import uuid
 
         # Do we actually need this?
-        splitname = os.path.basename(filename).split('.')
+        splitname = Path(filename).name.split('.')
         if len(splitname) > 1:
             self.file_extension = splitname[-1]
         else:
@@ -117,11 +118,11 @@ class Media(models.Model):
 
     # returns an absolute path to this file
     def get_uploaded_filename(self):
-        return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip('/'))
+        return str(Path(settings.MEDIA_ROOT) / ".." / self.target_file.url.lstrip('/'))
 
     # returns an absolute path to this file
     def test_upload_filename(self):
-        return not os.path.isfile(os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name))
+        return not (Path(settings.MEDIA_ROOT) / root_file_path / self.hashed_name).is_file()
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
@@ -132,7 +133,7 @@ class Media(models.Model):
         except Exception:
             uploaded = None
 
-        if uploaded and os.path.isfile(uploaded):
+        if uploaded and Path(uploaded).is_file():
             os.remove(uploaded)
 
         super().delete(*args, **kwargs)
