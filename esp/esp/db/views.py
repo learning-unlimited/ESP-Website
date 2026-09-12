@@ -12,24 +12,20 @@ user_is_staff = user_passes_test(lambda u: u.is_authenticated and u.is_staff and
 
 def autocomplete_wrapper(function, data, is_staff, **kwargs):
     """Call the model's ajax_autocomplete; pass request if the function accepts it."""
-    # Read declared parameters
+    # Only pass 'request' if the function actually accepts it
     try:
-        sig = inspect.signature(function)
+        params = inspect.signature(function).parameters
     except (TypeError, ValueError):
         # Some C-implemented callables have no introspectable signature.
         params = {}
-    else:
-        params = sig.parameters
-
-    # Only pass 'request' if the function actually accepts it
     if 'request' not in params:
         kwargs.pop('request', None)
 
     if is_staff:
         return function(data, **kwargs)
 
-    # Non-staff access requires an explicit allow_non_staff parameter.
-    if 'allow_non_staff' in params:
+    # Non-staff access is granted only by @allow_non_staff_autocomplete.
+    if getattr(function, 'allow_non_staff', False):
         return function(data, **kwargs)
     return []
 
