@@ -51,7 +51,7 @@ class LunchConstraintsForm(forms.Form):
             if sched_constraints.exclude(on_failure='').exists():
                 self.fields['autocorrect'].initial = True
             # If any BooleanTokens associated with the schedule constraints have text other than '1', check the include_conditions box
-            if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
+            if BooleanToken.objects.filter(exp__condition_constraint__program=self.program).exclude(text='1').exists():
                 self.fields['include_conditions'].initial = True
 
     def save_data(self):
@@ -63,7 +63,7 @@ class LunchConstraintsForm(forms.Form):
 
     generate_constraints=forms.BooleanField(initial=False, required=False, help_text="Check this box to generate lunch scheduling constraints. If unchecked, only lunch sections will be generated, and the other two check boxes will have no effect.")
     autocorrect = forms.BooleanField(initial=False, required=False, help_text="Check this box to attempt automatically adding lunch to a student's schedule so that they are less likely to violate the schedule constraint.")
-    include_conditions = forms.BooleanField(initial=False, required=False, help_text="Check this box to allow students to schedule classes through lunch if they do not have morning or afternoon classes.")
+    include_conditions = forms.BooleanField(initial=False, required=False, help_text="Check this box to require students to select a lunch period only if they have classes both before AND after lunch. Uncheck to require lunch for all students (or use with 'generate_constraints' disabled for no constraint at all).")
 
 class ProgramSettingsForm(ProgramCreationForm):
     """ Form for changing program-related settings. """
