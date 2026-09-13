@@ -410,6 +410,19 @@ class OnSiteClassList(ProgramModuleObj):
             else:
                 context[key_option] = defaults[key_option]
 
+        #   Both values come from free-text inputs; fall back to the defaults
+        #   when they are missing or non-numeric rather than crashing the page
+        #   (refresh) or breaking the inline JavaScript (scrollspeed).
+        try:
+            context['refresh'] = int(context['refresh'])
+        except (ValueError, TypeError):
+            context['refresh'] = defaults['refresh']
+
+        try:
+            context['scrollspeed'] = int(context['scrollspeed'])
+        except (ValueError, TypeError):
+            context['scrollspeed'] = defaults['scrollspeed']
+
         time_now = datetime.now()
 
         try:

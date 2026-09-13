@@ -627,6 +627,18 @@ class ClassListReloadTests(ProgramFrameworkTest):
         content = self._render({'refresh': '1', 'scrollspeed': '1'})
         self.assertNotIn('refresh_interval_ms = 1 * 1000', content)
 
+    def test_non_numeric_refresh_falls_back_to_default(self):
+        """A non-numeric refresh option must not raise a 500 (issue #6033)."""
+        content = self._render({'refresh': '2 minutes', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+        self.assertNotIn('refresh_interval_ms = 2 minutes', content)
+
+    def test_non_numeric_scrollspeed_falls_back_to_default(self):
+        """A non-numeric scroll speed must not break the inline JS (issue #6033)."""
+        content = self._render({'refresh': '30', 'scrollspeed': 'fast'})
+        self.assertIn('scroll_offset -= 1;', content)
+        self.assertNotIn('scroll_offset -= fast;', content)
+
     def test_scroll_checks_elapsed_time_before_reloading(self):
         """Reload should happen only after checking elapsed time when the
         scroll wraps around."""
