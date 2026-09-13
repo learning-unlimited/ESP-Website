@@ -53,6 +53,14 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
             <li>{{ error }}</li>
             {% endfor %}
         </ul>
+    {% elif awaiting_activation %}
+        <ul class="errorlist" role="alert">
+            This account has not been activated yet. Please click the link in your activation email, or <a href="{% url 'esp.users.views.resend_activation_view' %}">request a new one</a>.
+        </ul>
+    {% elif account_disabled %}
+        <ul class="errorlist" role="alert">
+            This account has been disabled. Please contact us if you think this is a mistake.
+        </ul>
     {% elif wrong_pw %}
         <ul class="errorlist" role="alert">
             The password you entered is not valid.
