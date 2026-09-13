@@ -32,7 +32,9 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django import forms
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from esp.admin import admin_site
 
@@ -48,7 +50,7 @@ from esp.program.models import RegistrationType, StudentRegistration, StudentSub
 from esp.program.models import ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
-from esp.program.models import ClassFlag, ClassFlagType
+from esp.program.models import ClassFlag, ClassFlagType, AutoClassFlagRule
 
 from esp.accounting.models import FinancialAidGrant
 
@@ -59,6 +61,11 @@ from esp.users.admin import ExpiredListFilter
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('handler', 'module_type')
+        return self.readonly_fields
 admin_site.register(ProgramModule, ProgramModuleAdmin)
 
 class ArchiveClassAdmin(admin.ModelAdmin):
@@ -73,6 +80,11 @@ class ProgramAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'url', 'director_email', 'grade_min', 'grade_max',)
     filter_horizontal = ('program_modules', 'class_categories', 'flag_types',)
     search_fields = ('name', )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('url',)
+        return self.readonly_fields
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
@@ -221,6 +233,11 @@ admin_site.register(VolunteerOffer, VolunteerOfferAdmin)
 
 class Admin_RegistrationType(admin.ModelAdmin):
     list_display = ('name', 'category', 'displayName', 'description', )
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('name', 'category')
+        return self.readonly_fields
 admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
@@ -236,7 +253,8 @@ def renew_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date',)
     actions = [ expire_student_registrations, renew_student_registrations ]
-    search_fields = default_user_search() + ['id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = default_user_search(prefix='^') + ['=id', '=section__id', '=section__parent_class__id', 'section__parent_class__title']
+    list_select_related = ('user', 'relationship', 'section', 'section__parent_class', 'section__parent_class__category')
     list_filter = ['section__parent_class__parent_program', 'relationship', ExpiredListFilter]
     date_hierarchy = 'start_date'
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
@@ -244,7 +262,8 @@ admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = default_user_search() + ['id', 'subject__id', 'subject__title']
+    search_fields = default_user_search(prefix='^') + ['=id', '=subject__id', 'subject__title']
+    list_select_related = ('user', 'subject')
     list_filter = ['subject__parent_program',]
     date_hierarchy = 'start_date'
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
@@ -258,6 +277,11 @@ class SectionAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     list_filter = ['status', 'parent_class__parent_program']
     search_fields = ['=id', '=parent_class__id', 'parent_class__title', 'parent_class__class_info', 'resourceassignment__resource__name']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('parent_class',)
+        return self.readonly_fields
 admin_site.register(ClassSection, SectionAdmin)
 
 class SectionInline(admin.TabularInline):
@@ -275,6 +299,12 @@ class SubjectAdmin(admin.ModelAdmin):
     readonly_fields = ('timestamp',)
     list_filter = ('parent_program', 'category')
     inlines = (SectionInline,)
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('parent_program',)
+        return self.readonly_fields
+
     fieldsets = (
         (None, {
             'fields': ('title', 'parent_program', 'timestamp', 'category',
@@ -299,12 +329,18 @@ class SubjectAdmin(admin.ModelAdmin):
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
-     list_display = ('category', 'symbol', 'seq', )
+    list_display = ('category', 'symbol', 'seq', 'is_lunch')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('symbol',)
+        return self.readonly_fields
+
 admin_site.register(ClassCategories, Admin_ClassCategories)
 
 class Admin_ClassSizeRange(admin.ModelAdmin):
-     list_display = ('program', 'range_min', 'range_max', )
-     list_filter = ('program',)
+    list_display = ('program', 'range_min', 'range_max', )
+    list_filter = ('program',)
 admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
@@ -313,6 +349,15 @@ class StudentAppAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
+
+    def has_add_permission(self, request):
+        #   Applications are created by the registration flow
+        #   (ESPUser.getApplication), which supplies the program and user and
+        #   derives the question set from them.  Both foreign keys are
+        #   editable=False, so the admin's add form can't populate them and
+        #   submitting it could only ever fail the program_id NOT NULL
+        #   constraint.  Hide the form rather than offer a broken one.
+        return False
 admin_site.register(StudentApplication, StudentAppAdmin)
 
 class Admin_StudentAppQuestion(admin.ModelAdmin):
@@ -356,13 +401,35 @@ class ClassFlagTypeAdmin(admin.ModelAdmin):
 admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
-    list_display = ('flag_type', 'subject', 'comment', 'created_by', 'modified_by')
-    readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
+    list_display = ('flag_type', 'subject', 'comment', 'resolved', 'created_by', 'modified_by')
+    readonly_fields = ['resolved', 'modified_by', 'modified_time', 'created_by', 'created_time',
+                       'resolved_by', 'resolved_time']
     search_fields = default_user_search('modified_by') + default_user_search('created_by') + ['flag_type__name', 'flag_type__id', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
-    list_filter = ['subject__parent_program', 'flag_type']
+    list_filter = ['subject__parent_program', 'flag_type', 'resolved']
 admin_site.register(ClassFlag, ClassFlagAdmin)
 
+class AutoClassFlagRuleAdmin(admin.ModelAdmin):
+    list_display = ('flag_type', 'program', 'comment')
+    list_filter = ['program', 'flag_type']
+admin_site.register(AutoClassFlagRule, AutoClassFlagRuleAdmin)
+
+class PhaseZeroRecordAdminForm(forms.ModelForm):
+    class Meta:
+        model = PhaseZeroRecord
+        fields = '__all__'
+        error_messages = {
+            'program': {
+                'required': _("Program is required. Please select a program."),
+            },
+        }
+
+    def clean_program(self):
+        program = self.cleaned_data.get('program')
+        if program is None:
+            raise forms.ValidationError(_("Program is required. Please select a program."))
+        return program
 class PhaseZeroRecordAdmin(admin.ModelAdmin):
+    form = PhaseZeroRecordAdminForm
     list_display = ('id', 'display_user', 'program')
     search_fields = ['user__username']
     list_filter = ['program']

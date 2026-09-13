@@ -37,6 +37,8 @@ from esp.users.models import ESPUser
 
 from django.db import models
 from django import forms
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils.deconstruct import deconstructible
 
 import datetime
@@ -198,12 +200,16 @@ class StudentApplication(models.Model):
     def __str__(self):
         return str(self.user)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.save()
-        self.set_questions()
-
     def set_questions(self):
+        """ Sync this application's questions with the program's questions and
+        those of the classes the student applied to.
+
+        Does nothing for an instance that hasn't been saved or is missing
+        either foreign key, since the m2m updates below need a primary key
+        and the queries need a program and a user.
+        """
+        if not self.pk or not self.program_id or not self.user_id:
+            return
         new_user = self.user
         existing_list = self.questions.all().values_list('id', flat=True)
         new_list = list(StudentAppQuestion.objects.filter(program=self.program).values_list('id', flat=True))
@@ -216,10 +222,13 @@ class StudentApplication(models.Model):
         for i in to_add:
             self.questions.add(i)
 
-    def get_forms(self, data={}):
+    def get_forms(self, data=None):
         """ Get a list of forms for the student to fill out.
         This function sets a target attribute on each form so that
         the update function can be called directly on target. """
+
+        if data is None:
+            data = {}
 
         #   Get forms for already existing responses.
         forms = []
@@ -249,4 +258,18 @@ class StudentApplication(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_junctionstudentapp'
+
+
+@receiver(post_save, sender=StudentApplication,
+          dispatch_uid='studentapplication_set_questions', weak=False)
+def set_questions_on_create(sender, instance, created, **kwargs):
+    """ Populate a new application's questions, as __init__ used to do.
+
+    Only on creation: set_questions() is also called explicitly whenever the
+    set of relevant questions can change (see StudentJunctionAppModule and
+    ClassSection.preregister_student), so running it on every save would just
+    repeat those queries.
+    """
+    if created:
+        instance.set_questions()
 

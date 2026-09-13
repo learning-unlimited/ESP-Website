@@ -44,7 +44,7 @@ class ESPAuthMiddlewareProcessResponseTest(TestCase):
     def setUp(self):
         super().setUp()
         _setup_roles()
-        self.middleware = ESPAuthMiddleware()
+        self.middleware = ESPAuthMiddleware(get_response=lambda request: None)
         self.factory = RequestFactory()
 
     def test_no_set_cookies_flag(self):

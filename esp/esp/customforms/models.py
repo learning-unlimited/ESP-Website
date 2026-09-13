@@ -4,11 +4,12 @@ logger = logging.getLogger(__name__)
 
 from django.db import models, transaction, connection
 from django.db.utils import DatabaseError, ProgrammingError
+from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class Form(models.Model):
-    title = models.CharField(max_length=40, blank=True)
+    title = models.CharField(max_length=40, blank=False)
     description = models.TextField(blank=True)
     date_created = models.DateField(auto_now_add=True)
     created_by = models.ForeignKey(ESPUser, on_delete=models.CASCADE)
@@ -22,9 +23,22 @@ class Form(models.Model):
     def __str__(self):
         return f'{self.title} (created by {self.created_by.username})'
 
+    def clean(self):
+        """Validate that title is not empty or whitespace-only."""
+        if not self.title or not self.title.strip():
+            raise ValidationError('Form Name/Title is required and cannot be empty.')
+
+    def save(self, *args, **kwargs):
+        """Run clean() before saving to enforce validation at all code paths."""
+        self.clean()
+        super().save(*args, **kwargs)
+
 class Page(models.Model):
     form = models.ForeignKey(Form, on_delete=models.CASCADE)
     seq = models.IntegerField(default=-1)
+
+    class Meta:
+        ordering = ['seq']
 
     def __str__(self):
         return f'Page {self.seq} of {self.form.title}'
@@ -34,6 +48,9 @@ class Section(models.Model):
     title = models.CharField(max_length=40)
     description = models.CharField(max_length=140, blank=True)
     seq = models.IntegerField()
+
+    class Meta:
+        ordering = ['seq']
 
     def __str__(self):
         return f'Sec. {self.seq}: {self.title}'
@@ -46,6 +63,9 @@ class Field(models.Model):
     label = models.CharField(max_length=200)
     help_text = models.TextField(blank=True)
     required = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['seq']
 
     def __str__(self):
         return f'{self.label}'
@@ -93,7 +113,7 @@ def create_schema(db):
 
     transaction.set_autocommit(False)
     try:
-        db.execute("CREATE SCHEMA customforms")
+        db.execute("CREATE SCHEMA IF NOT EXISTS customforms")
     except (DatabaseError, ProgrammingError):
         transaction.rollback()
     else:
