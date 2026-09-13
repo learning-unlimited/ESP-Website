@@ -143,37 +143,51 @@ $j(document).ready(function() {
     function getAdaptiveRowHeight(moduleCount) {
         var normalHeight = 56;
         var compactHeight = 40;
-        var fitLimit = 12;
         var bodyHeight = getTimelineBodyRowsHeight();
 
         if (!bodyHeight) {
             return normalHeight;
         }
 
-        var targetHeight = Math.floor(bodyHeight / Math.max(1, Math.min(moduleCount, fitLimit)));
-        var rowHeight = Math.max(compactHeight, Math.min(normalHeight, targetHeight));
+        var targetHeight = Math.floor(bodyHeight / Math.max(1, moduleCount));
+        return Math.max(compactHeight, Math.min(normalHeight, targetHeight));
+    }
 
-        if (moduleCount > fitLimit) {
-            var compactTarget = Math.floor(bodyHeight / fitLimit);
-            rowHeight = Math.max(compactHeight, Math.min(normalHeight, compactTarget));
-        }
-
-        return rowHeight;
+    function getRenderedTimelineHeight($content) {
+        var $rows = $content.find('.tl-row-label, .tl-block-row');
+        var lastRow = $rows.last().get(0);
+        if (!lastRow) return 0;
+        return lastRow.offsetTop + lastRow.offsetHeight;
     }
 
     function applyAdaptiveTimelineSizing(type, moduleCount) {
         var rowHeight = getAdaptiveRowHeight(moduleCount);
         var $content = $j('#' + type + 'Content');
-        var $bodyRow = $content.find('.tl-body-row');
 
         $content.css('--timeline-row-height', rowHeight + 'px');
-        $bodyRow.toggleClass('tl-body-scrollable', moduleCount > 12);
-        $bodyRow.toggleClass('tl-body-static', moduleCount <= 12);
+    }
+
+    function updateVerticalScrollState(type) {
+        var $content = $j('#' + type + 'Content');
+        var bodyRow = $content.find('.tl-body-row').get(0);
+        if (!bodyRow || bodyRow.clientHeight === 0) {
+            return;
+        }
+
+        var renderedHeight = Math.max(
+            getRenderedTimelineHeight($content),
+            bodyRow.scrollHeight
+        );
+        var shouldScroll = renderedHeight > bodyRow.clientHeight + 1;
+        $j(bodyRow).toggleClass('tl-body-scrollable', shouldScroll);
+        $j(bodyRow).toggleClass('tl-body-static', !shouldScroll);
     }
 
     function refreshAdaptiveSizing() {
         applyAdaptiveTimelineSizing('student', allModules.learn.length);
         applyAdaptiveTimelineSizing('teacher', allModules.teach.length);
+        updateVerticalScrollState('student');
+        updateVerticalScrollState('teacher');
     }
 
     function computeTimelineDates() {
@@ -482,6 +496,9 @@ $j(document).ready(function() {
         });
 
         initSortable(type);
+        requestAnimationFrame(function() {
+            updateVerticalScrollState(type);
+        });
     }
 
     function initSortable(type) {
@@ -613,6 +630,7 @@ $j(document).ready(function() {
         }
 
         updateLegend(view);
+        refreshAdaptiveSizing();
     };
 
     // ──────────────────────────────────────────────────────────────
@@ -822,6 +840,21 @@ $j(document).ready(function() {
             refreshAdaptiveSizing();
         }, 50);
     });
+
+    if (window.ResizeObserver) {
+        var layoutObserver = new ResizeObserver(function() {
+            clearTimeout(resizeAdaptiveSizingTimer);
+            resizeAdaptiveSizingTimer = setTimeout(function() {
+                refreshAdaptiveSizing();
+            }, 0);
+        });
+        var timelineWrapper = document.querySelector('.tl-wrapper');
+        var studentPanel = document.querySelector('#studentContent');
+        var teacherPanel = document.querySelector('#teacherContent');
+        if (timelineWrapper) layoutObserver.observe(timelineWrapper);
+        if (studentPanel) layoutObserver.observe(studentPanel);
+        if (teacherPanel) layoutObserver.observe(teacherPanel);
+    }
 
     function syncHorizontalScroll($content, scrollLeft, source) {
         if (isSyncingHorizontalScroll) return;
