@@ -296,7 +296,10 @@ class UserSearchController(object):
             #   Get an initial query from the supplied base list
             recipient_type, list_name = data['combo_base_list'].split(':')
             if list_name.startswith('all'):
-                q_program = Q()
+                if recipient_type in ESPUser.getTypes():
+                    q_program = ESPUser.getAllOfType(recipient_type, True)
+                else:
+                    q_program = Q()
             else:
                 q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
 
@@ -333,7 +336,7 @@ class UserSearchController(object):
                         q_program = q_program | ~Q(pk__in=subquery_qs)
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria(recipient_type, data, program)
+            q_extra = self.query_from_criteria('any', data, program)
 
         qobject = (q_extra & q_program & Q(is_active=True))
 

@@ -81,7 +81,6 @@ LOG_LEVEL = 'INFO'
 DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
-SENTRY_DSN = ""  # (disabled)
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -111,6 +110,10 @@ DATABASES = {'default':
         'PASSWORD': '',
     }
 }
+
+# How long a custom form schema change (creating or altering a response table)
+# waits for a database lock before giving up (passed to PostgreSQL's lock_timeout)
+CUSTOMFORMS_LOCK_TIMEOUT = '5s'
 
 ##########################
 # Default email settings #
@@ -201,13 +204,13 @@ TEMPLATES = [
     },
 ]
 
-FORM_RENDERER = 'django.forms.renderers.TemplatesSetting'
+FORM_RENDERER = 'esp.utils.forms.TableFormRenderer'
 
 # Set MIDDLEWARE_LOCAL in local_settings.py to configure this
 MIDDLEWARE_GLOBAL = [
+    (  50, 'django.middleware.security.SecurityMiddleware'),
     ( 100, 'esp.middleware.threadlocalrequest.ThreadLocals'),
    #( 100, 'django.middleware.http.SetRemoteAddrFromForwardedFor'),
-    ( 300, 'esp.middleware.FixIEMiddleware'),
     ( 500, 'esp.middleware.ESPErrorMiddleware'),
     ( 700, 'django.middleware.common.CommonMiddleware'),
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
@@ -274,6 +277,9 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db' #which is persistent storage
+
+# Keep the CSRF cookie readable by JavaScript
+CSRF_COOKIE_HTTPONLY = False
 
 ATOMIC_REQUESTS = True
 
@@ -454,3 +460,6 @@ ADMIN_TOOLS_THEMING_CSS = '/media/styles/admin_theme.css'
 
 SILENCED_SYSTEM_CHECKS = ['captcha.recaptcha_test_key_error',
                           'debug_toolbar.W006']
+
+# Google Maps Embed API key
+GOOGLE_MAPS_EMBED_KEY = ''

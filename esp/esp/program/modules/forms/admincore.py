@@ -41,7 +41,7 @@ class LunchConstraintsForm(forms.Form):
         self.load_data()
 
     def load_data(self):
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
         sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
         # If there are any schedule constraints for this program, check that box
@@ -93,7 +93,7 @@ class ProgramSettingsForm(ProgramCreationForm):
         }
         model = Program
 _ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', r'\.')
-ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)?learningu\.org$)"})
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)*learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """

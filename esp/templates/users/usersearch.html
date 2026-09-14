@@ -29,14 +29,14 @@ Please search for a user: <br />
 
 {% if error %}
 <div align="center" role="alert" class="alert alert-warning" id="user-search-error">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  <span class="bi bi-info-circle" aria-hidden="true"></span>
   {% if error == True %}Error: No user found by that criteria.{% else %}Error: {{ error }}{% endif %}
 </div>
 {% endif %}
 
 {% if message %}
 <div role="alert" class="alert alert-info">
-  <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+  <span class="bi bi-info-circle" aria-hidden="true"></span>
   <b>{{ message }}</b>
 </div>
 {% endif %}

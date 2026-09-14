@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter, Record, RecordType
@@ -53,13 +54,30 @@ class UserRecordsModule(ProgramModuleObj):
             "choosable": 1,
         }
 
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface user records management in the admin dashboard search dropdown.
+        # Only the main view is searchable; aux endpoints (userrecordsfinal) return None.
+        if view_name != "userrecords":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Manage User Records",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["user", "records", "checkin", "attendance", "flags"],
+        )
+
     @aux_call
     @needs_admin
     def userrecordsfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET:
             raise ESPError()('User filter has not been properly set')
 
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the user records management process.')
         users = filterObj.getList(ESPUser)
         try:
             users = users.distinct()

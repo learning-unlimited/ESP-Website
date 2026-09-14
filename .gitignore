@@ -26,6 +26,7 @@ venv/
 venv
 useful_logs
 theme_compiled.css
+theme_compiled_test.css
 /.vagrant/*
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg
@@ -39,6 +40,12 @@ local_fabfile.py
 *.swp
 .espsettings
 
+
+# Claude Code
+.claude/
+
+# pyenv local version pin — developer-specific, should not be committed
+.python-version
 
 # Mac
 .DS_Store

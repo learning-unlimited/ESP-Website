@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add or remove labels based on open PR count
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const maxOpenPRs = 5;

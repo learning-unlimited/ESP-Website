@@ -1,6 +1,5 @@
 from django import forms
 from django.contrib.auth.password_validation import validate_password
-from django.db.models.query import Q
 from django.forms.fields import HiddenInput, TextInput
 import socket
 
@@ -102,8 +101,7 @@ class UserRegForm(forms.Form):
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the email list only (they can be 'upgraded' to a full account)
-        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
-        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).exists():
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(ESPUser.awaiting_activation_Q()).exists():
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
@@ -146,8 +144,7 @@ class AwaitingActivationEmailForm(forms.Form):
 
     def clean_username(self):
         data = self.cleaned_data['username']
-        awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
-        if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).exists():
+        if not ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(ESPUser.awaiting_activation_Q()).exists():
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
 
         data = data.strip()
