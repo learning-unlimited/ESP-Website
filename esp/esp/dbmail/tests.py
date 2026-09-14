@@ -38,6 +38,7 @@ from django.contrib.auth.models import Group
 from django.core import mail
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.test import override_settings
 
 from esp.dbmail.models import ActionHandler, MessageRequest, PlainRedirect, send_mail
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -91,6 +92,37 @@ class SendMailTest(TestCase):
         self.assertEqual(len(mail.outbox), 1)
         sent = mail.outbox[0]
         self.assertIn('List-Unsubscribe', sent.extra_headers)
+
+    def test_unsubscribe_header_does_not_leak_between_calls(self):
+        """extra_headers must not be a shared mutable default.
+
+        The per-user List-Unsubscribe header is written into extra_headers, so a
+        mutable default would carry one recipient's one-click unsubscribe link
+        into every later message sent by the same process.
+        """
+        other = ESPUser.objects.create_user(
+            username='mailuser2',
+            email='mailuser2@example.com',
+            password='password',
+        )
+
+        send_mail('First', 'Body', 'from@learningu.org',
+                  ['to@example.com'], user=other)
+        send_mail('Second', 'Body', 'from@learningu.org',
+                  ['to@example.com'])
+
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertIn('List-Unsubscribe', mail.outbox[0].extra_headers)
+        self.assertNotIn('List-Unsubscribe', mail.outbox[1].extra_headers)
+
+    def test_callers_headers_are_not_modified(self):
+        """A caller reusing one dict across recipients must not accumulate headers."""
+        headers = {'Reply-To': 'someone@learningu.org'}
+
+        send_mail('Subject', 'Body', 'from@learningu.org',
+                  ['to@example.com'], extra_headers=headers, user=self.user)
+
+        self.assertEqual(headers, {'Reply-To': 'someone@learningu.org'})
 
 
 class ActionHandlerTest(TestCase):
@@ -195,7 +227,19 @@ class UserEmailHandlerTest(TestCase):
 
         self.assertFalse(handler.send)
 
-    def test_student_with_list_id_sets_recipients(self):
+    def test_student_with_list_id_does_not_bypass(self):
+        """A forged List-Id must not open a non-staff alias.
+
+        Trusted only where Mailman is in use; see the Mailman case below.
+        """
+        msg = _make_message(list_id='<list.example.com>')
+        handler = UserEmail(self.email_list, msg)
+        handler.process('student_user', 'student_user')
+
+        self.assertFalse(handler.send)
+
+    @override_settings(USE_MAILMAN=True)
+    def test_student_with_list_id_under_mailman(self):
         msg = _make_message(list_id='<list.example.com>')
         handler = UserEmail(self.email_list, msg)
         handler.process('student_user', 'student_user')
@@ -203,6 +247,14 @@ class UserEmailHandlerTest(TestCase):
         self.assertTrue(handler.send)
         self.assertEqual(handler.recipients, ['student@example.com'])
         self.assertTrue(handler.preserve_headers)
+
+    def test_staff_sender_reaches_student(self):
+        msg = _make_message(frm='teacher@example.com')
+        handler = UserEmail(self.email_list, msg)
+        handler.process('student_user', 'student_user')
+
+        self.assertTrue(handler.send)
+        self.assertEqual(handler.recipients, ['student@example.com'])
 
     def test_nonexistent_user_does_not_send(self):
         msg = _make_message()
