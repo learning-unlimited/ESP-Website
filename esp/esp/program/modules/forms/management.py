@@ -171,7 +171,7 @@ class SectionManageForm(ManagementForm):
             for ts in sec.meeting_times.all():
                 avails = [res for res in sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r) if res.is_available()]
                 if len(avails)== 0:
-                    raise ESPError('No floating resource "%s" available for timeslot %s.' % (r, ts), log=True)
+                    raise ESPError(f'No floating resource "{r}" available for timeslot {ts}.', log=True)
                 else:
                     res_list.append(avails[0])
             #if we made it this far, the resources are available, so we can assign them
@@ -200,7 +200,7 @@ class ClassCancellationForm(forms.Form):
 class SectionMultipleChoiceField(forms.ModelMultipleChoiceField):
     """ Custom field to customize the section labels """
     def label_from_instance(self, sec):
-        return '%s: %s (%s)' % (sec.emailcode(), sec.title(), ', '.join(sec.friendly_times(include_date = True)))
+        return f'{sec.emailcode()}: {sec.title()} ({", ".join(sec.friendly_times(include_date = True))})'
 
 class SectionCancellationForm(forms.Form):
     target = SectionMultipleChoiceField(label = "Section(s)", queryset=ClassSection.objects.all(), widget = forms.CheckboxSelectMultiple(), required=False)

@@ -3,7 +3,7 @@ import json
 
 from django.db import transaction
 from django.shortcuts import redirect
-from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
 from django.db import connection
 from django.core.exceptions import ObjectDoesNotExist
@@ -19,8 +19,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.decorators import user_passes_test, login_required
 
 from esp.users.models import ESPUser
-from esp.middleware import ESPError
-from esp.utils.web import render_to_response, zip_download
+from esp.middleware import ESPError, Http403
+from esp.utils.web import render_to_response, zip_download, error404
 
 def test_func(user):
     return user.is_authenticated and (user.is_morphed() or user.isTeacher() or user.isAdministrator())
@@ -111,7 +111,7 @@ def onSubmit(request):
 
                 # Validate that title is not empty or missing
                 if not title or not title.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -125,9 +125,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -135,7 +135,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -165,6 +165,8 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
@@ -209,7 +211,7 @@ def onModify(request):
                 title_raw = (metadata.get('title') or '').strip()
                 title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
                 if not title_normalized or not title_normalized.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
 
                 # NOT updating 'anonymous'
                 form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
@@ -226,9 +228,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -236,7 +238,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -297,6 +299,8 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def hasPerm(user, form):
@@ -338,7 +342,7 @@ def viewForm(request, form_id):
         form_id = int(form_id)
         form = Form.objects.get(pk=form_id)
     except (ValueError, Form.DoesNotExist):
-        raise Http404
+        return error404(request)
 
     perm, error_text = hasPerm(request.user, form)
     if not perm:
@@ -354,7 +358,7 @@ def success(request, form_id):
     try:
         form_id = int(form_id)
     except ValueError:
-        raise Http404
+        return error404(request)
 
     form = Form.objects.get(pk=form_id)
     return render_to_response('customforms/success.html', request, {'success_message': form.success_message,
@@ -365,15 +369,16 @@ def viewResponse(request, form_id):
     """
     Viewing response data
     """
-    # Only teachers and admins can view responses; others are redirected to home
-    if not (request.user.isTeacher() or request.user.isAdministrator()):
+    if not (request.user.isTeacher() or request.user.isAdministrator() or request.user.is_morphed(request)):
         return HttpResponseRedirect(reverse('home'))
 
     try:
         form_id = int(form_id)
-    except ValueError:
-        raise Http404
-    form = Form.objects.get(id=form_id)
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
+        return error404(request)
+    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+        raise Http403('You do not have permission to view responses for this form.')
     return render_to_response('customforms/view_results.html', request, {'form': form})
 
 @user_passes_test(test_func)
@@ -384,10 +389,11 @@ def getExcelData(request, form_id):
 
     try:
         form_id = int(form_id)
-    except ValueError:
-        return HttpResponse(status=400)
-
-    form = Form.objects.get(pk=form_id)
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
+        return error404(request)
+    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+        raise Http403('You do not have permission to download responses for this form.')
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
     response = HttpResponse(wbk.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -403,9 +409,11 @@ def getData(request):
         if request.method == 'GET':
             try:
                 form_id = int(request.GET['form_id'])
-            except ValueError:
-                return HttpResponse(status=400)
-            form = Form.objects.get(pk=form_id)
+                form = Form.objects.get(pk=form_id)
+            except (KeyError, ValueError, Form.DoesNotExist):
+                return error404(request)
+            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+                raise Http403('You do not have permission to view responses for this form.')
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
             return HttpResponse(resp_data)
@@ -422,7 +430,12 @@ def bulkDownloadFiles(request):
             question_name = request.GET['question_name']
         except (ValueError, KeyError):
             return HttpResponse(status=400)
-        form = Form.objects.get(pk=form_id)
+        try:
+            form = Form.objects.get(pk=form_id)
+        except Form.DoesNotExist:
+            return error404(request)
+        if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+            raise Http403('You do not have permission to download files for this form.')
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]

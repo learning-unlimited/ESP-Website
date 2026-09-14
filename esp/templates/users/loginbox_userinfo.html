@@ -5,3 +5,23 @@
         <span id="user_username"></span> / <span id="user_userid"></span>
     </span>
 </div>
+
+<script type="text/javascript">
+  /* Fill user info during parsing (before first paint) to avoid a flash of
+     empty text. */
+  (function () {
+    try {
+      if (!window.esp_user) { return; }
+      function setText(id, val) {
+        var el = document.getElementById(id);
+        if (!el || val == null) { return; }
+        var s = ("" + val).trim();
+        if (s && s !== "undefined" && s !== "NaN") { el.textContent = s; }
+      }
+      setText("user_first_name", esp_user.cur_first_name || esp_user.cur_username || "Guest");
+      setText("user_username", esp_user.cur_username);
+      setText("user_userid", esp_user.cur_userid);
+    } catch (e) {}
+  })();
+</script>
+

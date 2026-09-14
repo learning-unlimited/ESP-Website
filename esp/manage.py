@@ -11,16 +11,13 @@ from io import open
 # If the variable isn't defined, then activate our own virtualenv.
 # Alternatively, if we're using the Github Actions testing environment,
 # then the GITHUB_ACTIONS environment variable should be set to true.
-
-# Skip virtualenv activation on Windows (activate_this.py doesn't exist)
-# Just let the Python interpreter handle it
-if os.environ.get('VIRTUAL_ENV') is None and not os.environ.get('GITHUB_ACTIONS') and sys.platform != 'win32':
+if os.environ.get('VIRTUAL_ENV') is None and not os.environ.get('GITHUB_ACTIONS'):
     project = os.path.dirname(os.path.realpath(__file__))
     root = os.path.dirname(project)
-    # Try .venv first (modern convention), then fall back to env
-    activate_this = os.path.join(root, '.venv', 'bin', 'activate_this.py')
+    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
     if not os.path.exists(activate_this):
-        activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
+        activate_this = os.path.join(root, 'env', 'Scripts', 'activate_this.py')
+
     if os.path.exists(activate_this):
         exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
 

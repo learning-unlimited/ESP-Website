@@ -8,6 +8,7 @@ from argcache import cache_function_for, cache_function
 from esp.program.models import ClassSection
 from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
 from esp.utils.web import render_to_response
 
@@ -28,6 +29,19 @@ class BigBoardModule(ProgramModuleObj):
     class Meta:
         proxy = True
         app_label = 'modules'
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the student registration big board in the admin dashboard search dropdown.
+        if view_name != "bigboard":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Student Registration Big Board",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["big board", "student", "registration", "stats", "statistics", "live", "student big board"],
+        )
 
     @main_call
     @needs_admin
@@ -51,8 +65,8 @@ class BigBoardModule(ProgramModuleObj):
              self.num_users_enrolled(prog)),
             ("students who completed the medical form",
              self.num_medical(prog)),
-            ("first choices entered",
-             self.num_priority1s(prog)),
+            ("priority selections entered",
+             self.num_priority_selections(prog)),
             ("stars entered",
              self.num_ssis(prog)),
             ("lottery preferences entered",
@@ -154,16 +168,16 @@ class BigBoardModule(ProgramModuleObj):
             subject__parent_program=prog).count()
 
     @cache_function_for(105)
-    def num_priority1s(self, prog):
+    def num_priority_selections(self, prog):
         return StudentRegistration.valid_objects().filter(
-            relationship__name='Priority/1',
+            relationship__name__startswith='Priority',
             section__parent_class__parent_program=prog).count()
 
     @cache_function_for(105)
     def num_prefs(self, prog):
         num_srs = StudentRegistration.valid_objects().filter(
             Q(relationship__name='Interested') |
-            Q(relationship__name__contains='Priority/'),
+            Q(relationship__name__startswith='Priority'),
             section__parent_class__parent_program=prog).count()
         return num_srs + self.num_ssis(prog)
 
@@ -192,11 +206,11 @@ class BigBoardModule(ProgramModuleObj):
         # this caches this based on dependencies, so even if the 105 second
         # timer runs out, we only update if the dependencies have changed
         sections = ClassSection.objects.filter(
-            parent_class__parent_program=prog).exclude(parent_class__category__category='Lunch')
+            parent_class__parent_program=prog).exclude(parent_class__category__is_lunch=True)
         fields = [
             ("number of stars", 'parent_class__studentsubjectinterest', sections),
-            ("number of first choices", 'studentregistration',
-             sections.filter(studentregistration__relationship__name='Priority/1')),
+            ("number of priority selections", 'studentregistration',
+             sections.filter(studentregistration__relationship__name__startswith='Priority')),
             ("number of enrollments", "studentregistration",
              sections.filter((Q(studentregistration__start_date=None) | Q(studentregistration__start_date__lte=datetime.datetime.now())) &
                  (Q(studentregistration__end_date=None) | Q(studentregistration__end_date__gte=datetime.datetime.now())) &
@@ -251,9 +265,12 @@ class BigBoardModule(ProgramModuleObj):
                     series.append(sec_dict)
                 popular_classes.append((description, series))
         return popular_classes
+    popular_classes.get_or_create_token(('prog',))
     popular_classes.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program},
-                                                       filter = lambda sr: (sr.relationship.name in ["Priority/1", "Enrolled"]))
+                                                       filter = lambda sr: (sr.relationship.name.startswith("Priority") or sr.relationship.name == "Enrolled"))
     popular_classes.depend_on_row(StudentSubjectInterest, lambda ssi: {'prog': ssi.subject.parent_program})
+    popular_classes.depend_on_m2m(ClassSection, 'meeting_times',
+                                  lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @cache_function_for(105)
     def times_medical(self, prog):

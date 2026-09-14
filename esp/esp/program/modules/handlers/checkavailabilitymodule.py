@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.middleware              import ESPError
 from esp.utils.web               import render_to_response
 from esp.users.models            import ESPUser
@@ -52,6 +53,19 @@ class CheckAvailabilityModule(ProgramModuleObj):
             "seq": 0,
             "choosable": 1,
             } ]
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        # Surface the teacher availability checker in the admin dashboard search dropdown.
+        if view_name != "edit_availability":
+            return None
+        return AdminSearchEntry(
+            id="manage_%s" % view_name,
+            url="/%s/%s/%s" % (tl, program.getUrlBase(), view_name),
+            title="Check Teacher Availability",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
+            keywords=["availability", "teacher", "check", "edit", "schedule", "check availability"],
+        )
 
     @main_call
     @needs_admin
@@ -75,7 +89,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
 
         try:
             teacher = ESPUser.objects.get(id=target_id)
-        except ESPUser.DoesNotExist:
+        except (ESPUser.DoesNotExist, ValueError):
             try:
                 teacher = ESPUser.objects.get(username=target_id)
             except ESPUser.DoesNotExist:
