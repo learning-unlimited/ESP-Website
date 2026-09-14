@@ -1,54 +1,16 @@
-<style>
-.ui-dialog-titlebar-close {
-    padding:0 !important;
-}
-
-.ui-dialog-titlebar-close:after {
-    content: '';
-    width: 18px;
-    height: 20px;
-    display: inline-block;
-    background-image: url(/media/styles/jquery-ui/images/ui-icons_444444_256x240.png);
-    background-position: -96px -128px;
-    background-repeat: no-repeat;
-}
-</style>
-
 {% block xtrajs %}
 <script type="text/javascript">
 $j(function() {
     $j(".cancel_confirm").on("change", function() {
-        $j(this).nextAll("input").prop("disabled", !$j(this).prop("checked"));
+        $j(this).closest("form").find("[type=submit]")
+            .prop("disabled", !$j(this).prop("checked"));
     });
 });
-
-function requestCancel(cls) {
-    $j('#request_' + cls).dialog({
-        height: "auto",
-        width: 500,
-        resizable: false,
-        modal: true,
-        autoOpen: true,
-        closeText: "Close",
-        closeOnEscape: true,
-        title: "Class Cancellation Request",
-        // Allows user to escape popup by clicking outside of it
-        open: function(event, ui) { 
-            $j('.ui-widget-overlay').bind('click', function()
-            { 
-                $j(this).siblings('.ui-dialog').find('.ui-dialog-content').dialog('close');
-            });
-        },
-    });
-}
-
 </script>
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
-
-<br />
-<br />
+<link rel="stylesheet" href="/media/styles/class-toggle.css" type="text/css" />
 
 {% if not can_create %}
 <div class="info">
@@ -73,39 +35,49 @@ If you have any questions regarding the program, <br /> please email the
 <div id="battlescreen">
 
 {% for cls in clslist %}
-<!--
-Popup div for class cancellation request
--->
-<div hidden id="request_{{ cls.id }}">
-  <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
-    <h3>Cancellation Request for {{ cls|truncatewords:6 }}</h3>
-    <input type="hidden" name="cls" value="{{ cls.id }}">
-    <label for="reason_{{ cls.id }}" class="ui-hidden-accessible">Reason for Cancellation:</label>
-    <textarea rows="4" style="width: 450px;" id="reason_{{ cls.id }}" name="reason" placeholder="Enter text here..." required></textarea><br>
-    <input type="checkbox" class="cancel_confirm" name="confirm" id="confirm_{{ cls.id }}" required> <label for="confirm_{{ cls.id }}">I confirm I would like this class to be cancelled.</label><br>
-    <input type="submit" value="Submit" disabled>
-  </form>
+{# Cancellation request modal, opened by the button in class_teacher_list_row.html #}
+<div class="modal fade" id="request_{{ cls.id }}" tabindex="-1"
+     aria-labelledby="request_title_{{ cls.id }}" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="/teach/{{program.getUrlBase}}/cancelrequest/">
+        <div class="modal-header">
+          <h5 class="modal-title" id="request_title_{{ cls.id }}">Cancellation Request for {{ cls|truncatewords:6 }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="cls" value="{{ cls.id }}">
+          <label for="reason_{{ cls.id }}" class="form-label">Reason for Cancellation:</label>
+          <textarea rows="4" class="form-control" id="reason_{{ cls.id }}" name="reason" placeholder="Enter text here..." required></textarea>
+          <div class="form-check mt-3">
+            <input type="checkbox" class="form-check-input cancel_confirm" name="confirm" id="confirm_{{ cls.id }}" required>
+            <label class="form-check-label" for="confirm_{{ cls.id }}">I confirm I would like this class to be cancelled.</label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-danger" disabled>Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endfor %}
 
-<table cellpadding="4" cellspacing="0" align="center">
-  <tr>
-    <th colspan="7">
-       Manage Your Classes
-    </th>
-  </tr>
-  <tr>
-    <td colspan="7">Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; email the directors if you believe there is a problem with your time or room assignment.</td>
-  </tr>
+<section class="card class-list-panel">
+<div class="card-header text-bg-primary">
+<h2>Manage Your Classes</h2>
+</div>
+<div class="card-body">
+<p>Below is a summary of the classes you have registered to teach for {{ program.niceName }}.  Please look through the information carefully; email the directors if you believe there is a problem with your time or room assignment.</p>
+<table cellpadding="4" cellspacing="0" class="class-list-table class-list-classes">
+  <colgroup><col><col><col><col><col><col><col><col></colgroup>
   {% if crmi.noclasses %}
   <tr>
-    <td class="clsleft classname">
+    <td class="clsleft classname" colspan="8">
       <em>(None available)</em>
     </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-    <td> &nbsp; </td>
-   </tr>
+  </tr>
   {% endif %}
   {% load class_render_row %}
   {% for cls in clslist %}
@@ -113,33 +85,47 @@ Popup div for class cancellation request
   {% endfor %}
   {% if can_create %}
   <tr>
-  <td colspan="7" class="clsleft bordertop2 add-class-cell">
-    {% if can_create_class %}
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-      Add a new class for {{ program.niceName }}!
-    </a>
-    <br />
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
-      Copy a registered class (including from a previous program) for {{ program.niceName }}!
-    </a>
-    {% endif %}
-    {% if can_create_open_class %}<br />
-    <a class="create-class-link" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category}}!">
-      Add a new {{ open_class_category }} for {{ program.niceName }}!
-    </a> {% endif %}
+  <td colspan="8" class="bordertop2 create-class-cell">
+    <div class="create-class-actions">
+      {% if can_create_class %}
+      <a class="btn btn-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/makeaclass" title="Teach for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+        <span class="bi bi-plus-lg" aria-hidden="true"></span>
+        Add a new class
+      </a>
+      <a class="btn btn-outline-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/copyclasses" title="Teach your existing class for {{ settings.ORGANIZATION_SHORT_NAME }}!">
+        <span class="bi bi-box-arrow-in-down" aria-hidden="true"></span>
+        Import a class
+        <small>Copy one of your registered classes, including from a past program</small>
+      </a>
+      {% endif %}
+      {% if can_create_open_class %}
+      <a class="btn btn-outline-primary create-class-btn" href="/teach/{{ one }}/{{ two }}/makeopenclass" title="Teach a {{ open_class_category }}!">
+        <span class="bi bi-plus-lg" aria-hidden="true"></span>
+        Add a new {{ open_class_category }}
+      </a>
+      {% endif %}
+    </div>
   </td>
   </tr>
   {% endif %}
-  {% if modlist %}
-  {% load section_render_row %}
-  <tr>
-    <th colspan="7">
-       Manage Your {{ program.getModeratorTitle }} Sections
-    </th>
-  </tr>
+</table>
+</div>
+</section>
+
+{% if modlist %}
+{% load section_render_row %}
+<section class="card class-list-panel">
+<div class="card-header text-bg-primary">
+<h2>Manage Your {{ program.getModeratorTitle }} Sections</h2>
+</div>
+<div class="card-body">
+<table cellpadding="4" cellspacing="0" class="class-list-table class-list-sections">
+  <colgroup><col><col><col><col><col><col><col></colgroup>
   {% for sec in modlist %}
     {% render_section_moderator_list_row sec request.user %}
   {% endfor %}
-  {% endif %}
 </table>
+</div>
+</section>
+{% endif %}
 </div> <!-- div#battlescreen -->

@@ -1,14 +1,23 @@
 {# expects program, sec, and user #}
 
-<tr{% if not sec.isReviewed %} style="color: gray"{% endif %}{% if sec.isRejected or sec.isCancelled %} style="color: red"{% endif %}>
-  <td style="padding-top: 10px; padding-bottom: 10px" class="clsleft classname bordertop2" colspan="7">
-  {% block sec_title %}
-    <span title="{{sec}}">
-      {{ sec }}
-    </span>
-  {% endblock %}
+<tbody class="class-summary">
+<tr class="{% if not sec.isReviewed %}class-row-unreviewed {% endif %}{% if sec.isRejected or sec.isCancelled %}class-row-rejected{% endif %}">
+  <td class="clsleft classname bordertop2" colspan="7">
+    <button type="button" class="class-toggle" data-bs-toggle="collapse"
+            data-bs-target="#section-details-{{ sec.id }}"
+            aria-controls="section-details-{{ sec.id }}" aria-expanded="false">
+      {% block sec_title %}
+      <span class="class-toggle-title" title="{{sec}}">{{ sec }}</span>
+      {% endblock %}
+      {% include "inclusion/program/review_status_label.html" with obj=sec only %}
+      <span class="bi bi-plus-lg class-toggle-icon" aria-hidden="true"></span>
+      <span class="bi bi-dash-lg class-toggle-icon" aria-hidden="true"></span>
+    </button>
   </td>
 </tr>
+</tbody>
+
+<tbody class="collapse" id="section-details-{{ sec.id }}">
 
 <tr>
   <td class="clsleft" colspan="2"><b>Teachers (<a href="mailto:{{ sec.parent_class.emailcode }}-teachers@{{ email_host_sender }}">email</a>): </b></td>
@@ -36,17 +45,7 @@
 <tr>
   <td class="clsleft" valign="middle">
     Status:
-    {% if sec.isReviewed %}
-        {% if sec.isAccepted %}
-        <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
-        {% elif sec.isCancelled %}
-        <span style="font-weight: bold; color: #C00;">Cancelled</span>
-        {% else %}
-        <span style="font-weight: bold; color: #C00;">Rejected</span>
-        {% endif %}
-    {% else %}
-    <span style="font-weight: bold; color: #00C;">Unreviewed</span>
-    {% endif %}
+    {% include "inclusion/program/review_status_label.html" with obj=sec only %}
   </td>
   <td class="clsmiddle" valign="middle" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length == 0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
   <td class="clsmiddle" valign="middle">{{ sec.num_students }} / {{ sec.capacity }} students
@@ -62,3 +61,5 @@
   {% endblock %}
   </td>
 </tr>
+
+</tbody>
