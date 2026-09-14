@@ -37,7 +37,7 @@ function process_img(data)
             printself();
 
             auto_reload_img.hide();
-            var entry = $j('<div>').text("[" + data.time_executed + "] Executed print request #" + data.id + " for " + data.user + " (requested at " + data.time_requested + ")");
+            var entry = $j('<div>').text("[" + data.time_executed + "] Checked in and printed request #" + data.id + " for " + data.user);
             entry.insertAfter("#log");
             page_rest.show();
             fetch_img();
