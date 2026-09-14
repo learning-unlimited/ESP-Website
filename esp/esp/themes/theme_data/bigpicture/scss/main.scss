@@ -161,11 +161,7 @@ div.navbar-collapse.collapse {
             }
         }
     }
-    li > a {
-        display: block;
-        padding: 10px 18px;
-        color: $sidebarLink;
-        font-size: 17px;
+    li:not(.dropdown-header):not(.nav-header) > a {
         text-decoration: none;
 
         &:hover, &:focus {
