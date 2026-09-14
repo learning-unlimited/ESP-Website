@@ -641,6 +641,26 @@ class ClassListReloadTests(ProgramFrameworkTest):
         self.assertLess(wrap_index, check_index)
         self.assertLess(check_index, reload_index)
 
+    def test_refresh_non_numeric_fallback(self):
+        """Non-numeric refresh should fall back to 120."""
+        content = self._render({'refresh': '2 minutes', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_refresh_empty_fallback(self):
+        """Empty refresh should fall back to 120."""
+        content = self._render({'refresh': '', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_scrollspeed_non_numeric_fallback(self):
+        """Non-numeric scrollspeed should fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '2 fast'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_fractional_scale_factor(self):
+        """Fractional scrollspeed should be preserved (float parsing, not int)."""
+        content = self._render({'refresh': '120', 'scrollspeed': '0.5'})
+        self.assertIn('scroll_offset -= 0.5;', content)
+
 
 class OnsiteAuthorizationTests(CacheFlushTestCase):
     """Integration-level tests for the needs_onsite access guard on catalog_status.
