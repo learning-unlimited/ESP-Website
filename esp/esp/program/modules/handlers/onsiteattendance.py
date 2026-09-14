@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.db.models.aggregates import Min
+from django.db.models.aggregates import Max, Min
 from django.db.models.query      import Q
 
 from argcache import cache_function_for
@@ -155,33 +155,48 @@ class OnSiteAttendance(ProgramModuleObj):
 
     @cache_function_for(105)
     def times_attending_class(self, prog):
+        # distinct() matters here: filtering on the meeting_times m2m joins one row
+        # per meeting time, so a section spanning n timeslots would otherwise yield
+        # n copies of every registration.
         srs = StudentRegistration.objects.filter(section__parent_class__parent_program=prog,
             relationship__name="Attended", section__meeting_times__isnull=False
-            ).order_by('start_date')
+            ).select_related('user').distinct().order_by('start_date')
+
+        # The end of each section, looked up once instead of per registration.
+        # Equivalent to ClassSection.end_time().end, but without a query per row.
+        section_end_times = dict(
+            ClassSection.objects.filter(parent_class__parent_program=prog,
+                                        meeting_times__isnull=False)
+            .annotate(latest_end=Max('meeting_times__end'))
+            .values_list('id', 'latest_end'))
+
         att_dict = {}
         for sr in srs:
             # For classes that are multiple hours, we want to count a student for
             # each hour starting from when they are marked and ending at the end of the class
             # Also, for multi-week programs (e.g. Sprout), we want to adjust the start and end times based on the attendance sr
             start_time = sr.start_date.replace(minute = 0, second = 0, microsecond = 0)
-            section_end_dt = sr.section.end_time().end
+            section_end_dt = section_end_times.get(sr.section_id)
+            if section_end_dt is None:
+                continue
             end_time = section_end_dt.replace(
                 year = sr.start_date.year, month = sr.start_date.month, day = sr.start_date.day,
                 minute = 0, second = 0, microsecond = 0)
             user = sr.user
-            time = start_time
-            # loop through hours until we get to the end time of the section
+
+            # end_time borrows the registration's date, so a class that runs past
+            # midnight lands before its own start.  Push it onto the next day.
             if end_time < start_time:
-                # If the original section end time-of-day is earlier than the start time-of-day,
-                # treat this as a cross-midnight class and shift the end time forward by one day.
-                if section_end_dt.time() < start_time.time():
-                    end_time = end_time + datetime.timedelta(days=1)
+                end_time = end_time + datetime.timedelta(days=1)
 
-                # If after adjustment the end time is still invalid, skip this record.
-                if end_time < start_time:
-                    continue
+            # Nothing sensible to count if the end still precedes the start, and
+            # walking forward from here would never reach it.
+            if end_time < start_time:
+                continue
 
-            while(True):
+            # loop through hours until we get to the end time of the section
+            time = start_time
+            while time <= end_time:
                 if time in att_dict:
                     # Only count each student a maximum of one time per hour
                     if user not in att_dict[time]:
@@ -189,8 +204,6 @@ class OnSiteAttendance(ProgramModuleObj):
                 else:
                     att_dict[time] = [user]
                 time = time + datetime.timedelta(hours = 1)
-                if time > end_time:
-                    break
         return att_dict
 
     @aux_call
