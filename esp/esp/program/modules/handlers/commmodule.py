@@ -106,6 +106,54 @@ def _program_urls_in_text(text, current_program_url):
     return sorted(found)
 
 
+def _get_school_context_dict(user, program):
+    """
+    Look up a K12School associated with the given user for email template context.
+    Lookup order:
+      1. RegistrationProfile.student_info.k12school (student enrolled at a school)
+      2. EducatorInfo.k12school (educator at a school)
+      3. K12School.contact__user (user is listed as school contact)
+    Returns a dict of school template variables, or an empty dict if no school found
+    (callers should treat missing school as no-op rather than injecting sample data).
+    """
+    from esp.users.models import K12School, RegistrationProfile
+    school_obj = None
+
+    if hasattr(user, 'pk'):
+        # 1. Check via RegistrationProfile.student_info (correct path for student school data)
+        profile = RegistrationProfile.objects.filter(
+            user=user, most_recent_profile=True
+        ).select_related('student_info__k12school').first()
+        if profile and profile.student_info and profile.student_info.k12school:
+            school_obj = profile.student_info.k12school
+
+        # 2. Check via EducatorInfo.k12school
+        if school_obj is None:
+            try:
+                educator_info = user.educatorinfo
+                if educator_info and educator_info.k12school:
+                    school_obj = educator_info.k12school
+            except Exception:
+                pass
+
+        # 3. Check if user is the school contact
+        if school_obj is None:
+            school_qs = K12School.objects.filter(contact__user=user)
+            if school_qs.exists():
+                school_obj = school_qs.first()
+
+    if school_obj:
+        roster_users = school_obj.get_student_roster(program)
+        return {
+            'name': school_obj.name or '',
+            'roster': ", ".join([u.name() for u in roster_users]) if roster_users else "No enrolled students",
+            'attendance': school_obj.get_student_attendance(program),
+            'contact_titleandlastname': school_obj.get_contact_titleandlastname(),
+        }
+    # Return empty dict — no school found; templates should use a default or omit {{ school.* }}
+    return {}
+
+
 class CommModule(ProgramModuleObj):
     doc = """Email users that match specific search criteria."""
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -262,6 +310,7 @@ class CommModule(ProgramModuleObj):
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
                        'request': ActionHandler(MessageRequest(), firstuser),
+                       'school' : _get_school_context_dict(firstuser, self.program),
                        'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER}
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
@@ -540,6 +589,7 @@ class CommModule(ProgramModuleObj):
             'user': ActionHandler(request.user, request.user),
             'program': ActionHandler(self.program, request.user),
             'request': ActionHandler(MessageRequest(), request.user),
+            'school': _get_school_context_dict(request.user, self.program),
         }
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
