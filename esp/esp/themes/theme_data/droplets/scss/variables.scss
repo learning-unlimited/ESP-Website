@@ -1,3 +1,16 @@
 $navbarBrandFontSize: 24px;
 $navbarFontSize: 20px;
 $navbarCollapseWidth: 979px;
+
+// Footer colors default to the navbar-inverse background's own stock value
+// and the footer's previous hardcoded rendering, so leaving them untouched
+// renders identically to before this PR (see main.scss for how they're
+// used).  Literal hex, not a $navbarInverseBackground reference or rgba():
+// the theme editor's "advanced variables" section infers the input type
+// (color/length/text) from the raw declared value (see
+// esp/esp/themes/views.py's editor() view), and only a leading '#' is
+// recognized as a color -- a variable reference or rgba() falls through to
+// a plain text field with the raw source text shown as the value.
+$footerBackground: #111111;
+$footerText: #b8b8b8;
+$footerLinkColor: #dbdbdb;

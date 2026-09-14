@@ -312,19 +312,19 @@ div.navbar-collapse {
 }
 
 #footer .navbar-nav a {
-    color: rgba(255, 255, 255, 0.85);
+    color: $footerLinkColor;
     padding: 0.25rem 0.75rem;
 }
 
 #footer .qsd_header {
-    color: rgba(255, 255, 255, 0.7);
+    color: $footerText;
     border-color: rgba(255, 255, 255, 0.35);
     margin-bottom: 0.25rem;
 }
 
 #footer .qsd_view_visible {
     border: none;
-    color: rgba(255, 255, 255, 0.85);
+    color: $footerLinkColor;
 }
 
 // Bootstrap 5 gives .dropdown-menu 0.5rem of vertical padding.  The navbar
@@ -394,9 +394,23 @@ div.navbar-collapse {
         .navbar-dark .navbar-nav .nav-item:hover,
         .navbar-dark .navbar-nav .nav-item:focus-within { background-color: $navbarInverseBackgroundHighlight !important; }
     }
+    //  Footer defaults to the same $primary background as the navbar (no rule
+    //  needed for that — .footer-container .navbar.bg-dark already matches the
+    //  unconditional .navbar.bg-dark rule above).  Only force $footerBackground
+    //  when the admin actually changed it, same rationale as navbarInverseBackground.
+    @if index($esp-overridden, 'footerBackground') {
+        .footer-container .navbar.bg-dark { background: $footerBackground !important; }
+    }
 } @else {
     .navbar.bg-dark {
         background-color: $navbarInverseBackground !important;
+    }
+
+    //  Footer background defaults to $navbarInverseBackground (same as the
+    //  navbar) but can be customized independently — see issue #5028.  Higher
+    //  specificity than .navbar.bg-dark above so it wins for the footer only.
+    .footer-container .navbar.bg-dark {
+        background-color: $footerBackground !important;
     }
 
     .navbar-dark .navbar-nav .nav-link,
