@@ -1808,3 +1808,42 @@ class DisableAccountPostOnlyTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+
+class LoginErrorMessageTest(TestCase):
+    """The login page tells inactive accounts why they can't log in, instead
+    of claiming their (correct) password is wrong."""
+
+    def setUp(self):
+        from esp.users.models import ESPUser as _ESPUser
+        self.user = _ESPUser.objects.create_user(
+            username='loginmsg', email='loginmsg@example.com', password='correct-horse')
+
+    def _post(self, password='correct-horse', username='loginmsg'):
+        return self.client.post('/myesp/login/', {'username': username, 'password': password})
+
+    def test_awaiting_activation_gets_activation_message(self):
+        from esp.users.models import PendingActivation
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+        response = self._post()
+        self.assertContains(response, 'has not been activated yet')
+        self.assertContains(response, reverse('esp.users.views.resend_activation_view'))
+        self.assertNotContains(response, 'The password you entered is not valid')
+
+    def test_deactivated_account_does_not_get_activation_message(self):
+        # Deactivated is not the same as never activated: without a
+        # PendingActivation there is no activation email to point at.
+        self.user.is_active = False
+        self.user.save()
+        response = self._post()
+        self.assertNotContains(response, 'has not been activated yet')
+
+    def test_wrong_password_message_unchanged(self):
+        response = self._post(password='wrong')
+        self.assertContains(response, 'The password you entered is not valid')
+
+    def test_unknown_username_message_unchanged(self):
+        response = self._post(username='nobody-here')
+        self.assertContains(response, 'The username you entered is not valid')
