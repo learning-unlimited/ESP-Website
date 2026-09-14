@@ -57,6 +57,18 @@ def mask_redirect(user, next):
     else:
         return HttpMetaRedirect('/')
 
+from django.contrib.auth.forms import AuthenticationForm
+from django.core.exceptions import ValidationError
+
+class CustomAuthenticationForm(AuthenticationForm):
+    def confirm_login_allowed(self, user):
+        # Override to allow inactive users to log in, unless they are awaiting email activation.
+        if not user.is_active and ESPUser.objects.filter(pk=user.pk).filter(ESPUser.awaiting_activation_Q()).exists():
+            raise ValidationError(
+                self.error_messages['inactive'],
+                code='inactive',
+            )
+
 class CustomLoginView(LoginView):
     """
     Custom login view extending Django's default LoginView.
@@ -67,6 +79,7 @@ class CustomLoginView(LoginView):
     """
 
     template_name = 'registration/login.html'
+    authentication_form = CustomAuthenticationForm
 
     def render_to_response(self, context, **response_kwargs):
         response_kwargs.setdefault("content_type", self.content_type)
