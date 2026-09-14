@@ -31,11 +31,11 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
 <div class="control-group">
     {% if form.username.errors %}
        <ul class="errorlist" role="alert">
-            {{ form.username.errors|last }}
+            <li>{{ form.username.errors|last }}</li>
        </ul>
     {% elif wrong_user %}
        <ul class="errorlist" role="alert">
-            The username you entered is not valid. Keep in mind it is case sensitive.
+            <li>The username you entered is not valid. Keep in mind it is case sensitive.</li>
        </ul>
     {% endif %}
 
@@ -55,15 +55,15 @@ Both the username and password are <b>case-sensitive</b>: capitalization matters
         </ul>
     {% elif awaiting_activation %}
         <ul class="errorlist" role="alert">
-            This account has not been activated yet. Please click the link in your activation email, or <a href="{% url 'esp.users.views.resend_activation_view' %}">request a new one</a>.
+            <li>This account has not been activated yet. Please click the link in your activation email, or <a href="{% url 'esp.users.views.resend_activation_view' %}">request a new one</a>.</li>
         </ul>
     {% elif account_disabled %}
         <ul class="errorlist" role="alert">
-            This account has been disabled. Please contact us if you think this is a mistake.
+            <li>This account has been disabled. Please contact us if you think this is a mistake.</li>
         </ul>
     {% elif wrong_pw %}
         <ul class="errorlist" role="alert">
-            The password you entered is not valid.
+            <li>The password you entered is not valid.</li>
         </ul>
     {% endif %}
 
