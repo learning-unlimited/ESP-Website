@@ -10,7 +10,7 @@ from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USStateSelect
 from phonenumber_field.formfields import PhoneNumberField
-from esp.customforms.forms import NameField, AddressField
+from esp.customforms.forms import NameField, AddressField, RequiredNullBooleanField
 from esp.customforms.DynamicModel import DMH
 from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
@@ -31,46 +31,8 @@ class BaseCustomForm(BetterForm):
     """
     def clean(self):
         """
-        Takes cleaned_data and expands the values for combo fields.
-        Also enforces server-side validation of required fields.
+        Takes cleaned_data and expands the values for combo fields
         """
-        # Collect all validation errors to report them together
-        errors = {}
-
-        # Enforce required field validation server-side
-        for field_name, field in self.fields.items():
-            if not field.required:
-                continue
-
-            # Skip fields that already have validation errors; they may have
-            # been omitted from cleaned_data due to field-level validation.
-            if field_name in self.errors:
-                continue
-
-            # If the field is missing from cleaned_data at this point, the user
-            # did not provide a value at all.
-            if field_name not in self.cleaned_data:
-                errors[field_name] = field.error_messages.get(
-                    "required",
-                    "This field is required.",
-                )
-                continue
-
-            value = self.cleaned_data[field_name]
-
-            # Use the field's own empty_values semantics to determine emptiness.
-            if value in getattr(field, "empty_values", [None, ""]):
-                errors[field_name] = field.error_messages.get(
-                    "required",
-                    "This field is required.",
-                )
-            elif isinstance(value, (list, tuple)) and not value:
-                # Preserve existing behavior for list-like fields that must
-                # contain at least one value.
-                errors[field_name] = "This field must have at least one value."
-        if errors:
-            raise ValidationError(errors)
-
         cleaned_data = self.cleaned_data.copy()
         for k, v in self.cleaned_data.items():
             if isinstance(v, list):
@@ -238,13 +200,15 @@ class CustomFormHandler():
                         else:
                             raise Exception(f'Could not find linked field: {model_field}')
 
-                    # Enforce required constraint on the field object
+                    # Django's NullBooleanField.validate() ignores `required`; ours doesn't.
+                    if field['required'] and isinstance(form_field, forms.NullBooleanField):
+                        form_field = RequiredNullBooleanField(widget=form_field.widget)
+
+                    # `required` arrives in field_attrs and is enforced by Django's field validation.
                     form_field.__dict__.update(field_attrs)
-                    # Explicitly set required attribute to ensure it's enforced server-side
-                    form_field.required = field_attrs.get('required', False)
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
-                        # Add a class 'required' to the widget for client-side validation
+                        # Add a class 'required' to the widget
                         form_field.widget.attrs['class'] += 'required '
                         form_field.widget.is_required = True
                         form_field.widget.attrs['aria-required'] = 'true'
