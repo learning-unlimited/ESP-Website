@@ -20,6 +20,12 @@ from esp.program.models import (
     StudentRegistration,
     StudentSubjectInterest,
 )
+from esp.program.models.app_ import (
+    StudentAppQuestion,
+    StudentAppResponse,
+    StudentAppReview,
+    StudentApplication,
+)
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, StudentInfo
 
@@ -332,3 +338,64 @@ class LotterySaveTest(LotteryTestBase):
             relationship__name='Enrolled',
         ).count()
         self.assertEqual(total_before, total_after)
+
+
+# ---------------------------------------------------------------------------
+# LotteryStudentAppsTest
+# ---------------------------------------------------------------------------
+
+class LotteryStudentAppsTest(LotteryTestBase):
+    """Tests for the use_student_apps option, which ranks students by their
+    application reviews instead of treating every signup as rank 10."""
+
+    def _make_app_controller(self):
+        return LotteryAssignmentController(self.program, use_student_apps=True)
+
+    def test_use_student_apps_initializes(self):
+        """The controller initializes with use_student_apps enabled."""
+        for student in self.students:
+            for cls in self.program.classes():
+                StudentSubjectInterest.objects.get_or_create(
+                    user=student, subject=cls
+                )
+        ctrl = self._make_app_controller()
+        self.assertEqual(ctrl.ranks.shape, (ctrl.num_students, ctrl.num_sections))
+
+    def test_use_student_apps_reads_review_score(self):
+        """A reviewed application sets that student/section entry in ranks."""
+        sr = StudentRegistration.objects.filter(
+            relationship=self.priority_rt,
+            section__parent_class__parent_program=self.program,
+        ).order_by('id').first()
+        self.assertIsNotNone(sr)
+        student, section = sr.user, sr.section
+        subject = section.parent_class
+        teacher = subject.get_teachers()[0]
+
+        question = StudentAppQuestion.objects.create(
+            program=self.program, subject=subject, question='Why this class?'
+        )
+        response = StudentAppResponse.objects.create(
+            question=question, response='Because it is interesting.', complete=True
+        )
+        review = StudentAppReview.objects.create(
+            reviewer=teacher, score=5, comments='Solid application.'
+        )
+        app = StudentApplication.objects.create(program=self.program, user=student)
+        app.questions.add(question)
+        app.responses.add(response)
+        app.reviews.add(review)
+
+        ctrl = self._make_app_controller()
+        si = ctrl.student_indices[student.id]
+        sj = ctrl.section_indices[section.id]
+        self.assertGreaterEqual(sj, 0)
+        self.assertEqual(ctrl.ranks[si, sj], 5)
+
+    def test_use_student_apps_compute_assignments_completes(self):
+        """compute_assignments() runs to completion with use_student_apps on."""
+        ctrl = self._make_app_controller()
+        ctrl.compute_assignments()
+        self.assertEqual(
+            ctrl.student_sections.shape, (ctrl.num_students, ctrl.num_sections)
+        )
