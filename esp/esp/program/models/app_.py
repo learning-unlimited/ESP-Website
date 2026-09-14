@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 
 from esp.db.fields import AjaxForeignKey
 from esp.users.models import ESPUser
-from esp.program.models import Program, ClassSubject
 
 from django.db import models
 from django import forms
@@ -123,6 +122,8 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     """ A question for a student application form, a la Junction or Delve.
     Questions pertaining to the program or to classes the student has
     applied to will appear on their application. """
+    from esp.program.models import Program, ClassSubject
+
     _element_name = 'question'
     _field_names = ['question', 'directions']
 
@@ -163,12 +164,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     teacher of a class for which the student applied. """
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
-    class_subject = models.ForeignKey(
-        "program.ClassSubject",
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE
-    )
+    class_subject = models.ForeignKey('program.ClassSubject', blank=True, null=True, editable=False, on_delete=models.CASCADE)
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
@@ -178,6 +174,8 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
 
     def __str__(self):
+        if self.class_subject is not None:
+            return f'{self.score} by {self.reviewer.username} for {self.class_subject.title}: {self.comments[:80]}...'
         return f'{self.score} by {self.reviewer.username}: {self.comments[:80]}...'
 
     class Meta:
@@ -186,6 +184,7 @@ class StudentAppReview(BaseAppElement, models.Model):
 
 class StudentApplication(models.Model):
     """ Student applications for Junction and any other programs that need them. """
+    from esp.program.models import Program
 
     program = models.ForeignKey(Program, editable=False, on_delete=models.CASCADE)
     user    = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
@@ -238,15 +237,13 @@ class StudentApplication(models.Model):
         forms = []
         new_user = self.user
         applied_classes = new_user.getAppliedClasses(self.program)
-        for r in self.responses.all():
+        for r in self.responses.filter(question__subject__in=applied_classes):
             f = r.get_form(data)
             f.target = r
             forms.append(f)
 
         #   Create responses if necessary for the other questions, and get their forms.
-        #   Only create forms for questions that apply to the student's applied classes or program-wide questions
-        applicable_questions = self.questions.filter(subject__in=applied_classes) | self.questions.filter(subject__isnull=True)
-        for q in applicable_questions:
+        for q in self.questions.all():
             if self.responses.filter(question=q).count() == 0:
                 r = StudentAppResponse(question=q)
                 r.save()

@@ -88,7 +88,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=request.user,class_subject=cls, score__isnull=False)
+                reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls, score__isnull=False)
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
