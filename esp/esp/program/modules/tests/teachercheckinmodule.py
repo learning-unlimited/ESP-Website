@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 import datetime
 import phonenumbers
 
+from esp.cal.models import Event, EventType
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -92,6 +93,28 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
             teacher = self.teacher
         return self.module.undoCheckIn(teacher, self.program, when)
 
+    def addTimeslot(self, start, short_description):
+        """Add a class time block to the program, so that its date becomes
+        one of the program's dates."""
+        event_type = EventType.get_from_desc('Class Time Block')
+        event, _ = Event.objects.get_or_create(
+            program=self.program,
+            event_type=event_type,
+            start=start,
+            end=start + datetime.timedelta(minutes=50),
+            short_description=short_description,
+            description=start.strftime("%H:%M %m/%d/%Y"),
+        )
+        return event
+
+    def missingTeachersPage(self, **params):
+        """GET the missingteachers page as an admin."""
+        self.assertTrue(self.client.login(username=self.admin.username, password='password'),
+                        "Couldn't log in as admin %s" % self.admin.username)
+        response = self.client.get('%smissingteachers' % self.program.get_onsite_url(), params)
+        self.assertEqual(response.status_code, 200)
+        return response
+
     # End aliases.
 
     def test_checkIn(self):
@@ -142,3 +165,98 @@ class TeacherCheckinModuleTest(ProgramFrameworkTest):
         response = self.client.get('%smissingteachers' % self.program.get_onsite_url())
         phone = phonenumbers.format_number(self.teacher.getLastProfile().contact_user.phone_cell, phonenumbers.PhoneNumberFormat.NATIONAL)
         self.assertIn(phone, str(response.content, encoding='UTF-8'))
+
+    def test_missingteachers_when_defaults_to_viewed_date(self):
+        """Viewing missingteachers for a day other than today should report
+        check-in status as of that day."""
+        program_date = self.settings['start_time'].date()
+        self.assertNotEqual(program_date, datetime.date.today(),
+                            'The test program is expected not to run today')
+
+        #   The teacher checked in on the program date (but not today).
+        self.checkIn(when=self.settings['start_time'])
+
+        response = self.missingTeachersPage(date=program_date.strftime('%m/%d/%Y'))
+
+        #   'when' defaults to the end of the day being viewed...
+        self.assertEqual(response.context['when'],
+                         datetime.datetime.combine(program_date, datetime.time(23, 59)))
+        #   ...so the teacher counts as having arrived, which would not be the
+        #   case if 'when' had defaulted to the current date and time.
+        self.assertIn(self.teacher.id, response.context['arrived'])
+
+        #   The default is not echoed into the links on the page: carrying it
+        #   over to another day's page would show that page as of this day.
+        self.assertIsNone(response.context.get('url_when'))
+        content = str(response.content, encoding='UTF-8')
+        self.assertNotIn('?when=', content)
+        self.assertNotIn('&when=', content)
+        #   The page does say which point in time it is reporting.
+        self.assertIn('as of', content)
+
+    def test_missingteachers_when_not_defaulted_for_today(self):
+        """Viewing missingteachers for today should leave 'when' unset, so that
+        check-in status is live and the check-in buttons stay enabled."""
+        today = datetime.date.today()
+        self.addTimeslot(datetime.datetime.combine(today, datetime.time(9, 0)), 'Today Slot')
+        self.assertIn(today, self.program.dates())
+
+        response = self.missingTeachersPage(date=today.strftime('%m/%d/%Y'))
+
+        self.assertIsNone(response.context.get('when'))
+        self.assertIsNone(response.context.get('url_when'))
+        #   With no 'when', the page reports the present rather than a fixed
+        #   point in time (and so leaves the check-in buttons enabled).
+        self.assertNotIn('as of', str(response.content, encoding='UTF-8'))
+
+    def test_missingteachers_explicit_when_is_used_and_preserved(self):
+        """An explicitly requested 'when' overrides the default and is echoed
+        back into the links on the page."""
+        checkin_time = self.settings['start_time']
+        self.checkIn(when=checkin_time)
+
+        for offset, arrived in ((datetime.timedelta(hours=1), True),
+                                (datetime.timedelta(hours=-1), False)):
+            when = checkin_time + offset
+            with self.subTest(when=when):
+                response = self.missingTeachersPage(
+                    date=when.strftime('%m/%d/%Y'), when=when.strftime('%m/%d/%Y %H:%M'))
+                self.assertEqual(response.context['when'], when)
+                self.assertEqual(response.context['url_when'], when.strftime('%m/%d/%Y %H:%M'))
+                self.assertEqual(self.teacher.id in response.context['arrived'], arrived)
+
+    def test_previously_checked_in_returned(self):
+        """Teachers checked in on the previous program day appear in
+        previously_checked_in (and not those already checked in today)."""
+        # Create a second day of timeslots so prog.dates() returns two dates.
+        day2_start = self.settings['start_time'] + datetime.timedelta(days=1)
+        self.addTimeslot(day2_start, 'Day2 Slot')
+
+        day1 = self.settings['start_time'].date()
+        day2 = day2_start.date()
+        self.assertIn(day1, self.program.dates())
+        self.assertIn(day2, self.program.dates())
+
+        # Check in the teacher on day 1.
+        self.checkIn(when=self.settings['start_time'])
+        self.assertTrue(self.isCheckedIn(when=self.settings['start_time']))
+
+        # Query getMissingTeachers for day 2 (teacher has NOT checked in on
+        # day 2, but did check in on day 1).
+        when_day2 = datetime.datetime.combine(day2, self.settings['start_time'].time())
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=day2, when=when_day2)
+        self.assertIn(self.teacher.id, prev)
+
+        # Now check in the teacher on day 2 as well — they should no longer
+        # appear in previously_checked_in.
+        self.checkIn(when=when_day2)
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=day2, when=when_day2)
+        self.assertNotIn(self.teacher.id, prev)
+
+    def test_previously_checked_in_empty_on_first_day(self):
+        """On the first program day, previously_checked_in should be empty."""
+        _sections, _arrived, prev = self.module.getMissingTeachers(
+            self.program, date=self.settings['start_time'].date(), when=self.now)
+        self.assertEqual(prev, set())

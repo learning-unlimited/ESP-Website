@@ -1,0 +1,18 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Survey Administration - CSV Import Complete{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+{% endblock %}
+
+{% block content %}
+<h1>CSV Import Complete</h1>
+
+<p>Successfully imported <strong>{{ imported_count }}</strong> question{{ imported_count|pluralize }} into <strong>{{ survey.name }} ({{ survey.category }})</strong>.</p>
+
+<a class="btn btn-primary" href="/manage/{{ program.getUrlBase }}/surveys/manage">Return to survey management</a>
+
+{% endblock %}

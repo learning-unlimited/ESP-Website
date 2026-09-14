@@ -10,7 +10,7 @@
 Sorry {{ request.user.name }}, you are not an administrator of this program.
 <br />
 If you're interested in helping out with {{ settings.ORGANIZATION_SHORT_NAME }},
-just <a href="/contact/contact/">contact us</a>.
+just <a href="{% url 'contact' %}">contact us</a>.
 We can always use an extra hand!
 </p>
 

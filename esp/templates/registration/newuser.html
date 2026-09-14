@@ -2,6 +2,9 @@
 
 {% block title %}Create a new user account{% endblock %}
 
+{# This page has its own account form, so suppress the sidebar/navbar login box. #}
+{% block loginbox %}{% endblock %}
+
 {% block content %}
 {% if accounts %}
 <div class="note">
@@ -16,16 +19,16 @@
   <ul>
     {% for u in accounts %}
     <li>Username: "{{ u.username }}" (
-    <form method="post" action="/myesp/login">
+    <form method="post" action="{% url 'login' %}">
       <input type="hidden" name="username" value="{{ u.username }}" />
       <input type="hidden" name="password" value="" />
-      <input type="hidden" name="next" value="/myesp/profile/" />
+      <input type="hidden" name="next" value="{% url 'myesp_profile' %}" />
       <input type="submit" value="Try logging in" class="btn btn-primary" />
     </form>
-    <form action="/myesp/passwdrecover/" method="post">
+    <form action="{% url 'passwd_recover' %}" method="post">
       <input type="hidden" name="email" value="{{ u.email }}" />
       <input type="hidden" name="username" value="{{ u.username }}" />
-      <input type="submit" value="I forgot my password!" class="btn btn-default" />
+      <input type="submit" value="I forgot my password!" class="btn btn-secondary" />
     </form>
     )
     </li>
@@ -56,7 +59,7 @@
 {% end_inline_qsd_block %}
 </div>
 <div>
-<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
+<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well" novalidate>
   <fieldset>
     <h3>User Account Creation Form</h3>
 
@@ -64,7 +67,7 @@
 
     <div class="errors">
       <p>There
-      {% if form.errors|length_is:1 %}is an error{% else %}
+      {% if form.errors|length == 1 %}is an error{% else %}
       are errors{% endif %} in the below form. Please fix and resubmit.<p>
     </div>
 
@@ -72,6 +75,9 @@
     {% endif %}
 
     {% include "themes/bs_form.html" %}
+    <div id="username-live-feedback" class="help-block" aria-live="polite"></div>
+  <div id="password-live-feedback" class="help-block" aria-live="polite"></div>
+  <div id="confirm-password-live-feedback" class="help-block" aria-live="polite"></div>
     {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 
     <div class="form-actions">
@@ -83,7 +89,180 @@
 
 <script type="text/javascript">
 <!--
-  document.getElementById('id_first_name').focus();
+  (function() {
+    var firstNameInput = document.getElementById('id_first_name');
+    if (firstNameInput) {
+      firstNameInput.focus();
+    }
+
+    var usernameInput = document.getElementById('id_username');
+    var passwordInput = document.getElementById('id_password');
+    var confirmPasswordInput = document.getElementById('id_confirm_password');
+    var usernameFeedback = document.getElementById('username-live-feedback');
+    var passwordFeedback = document.getElementById('password-live-feedback');
+    var confirmPasswordFeedback = document.getElementById('confirm-password-live-feedback');
+    if (!usernameInput || !usernameFeedback) {
+      return;
+    }
+
+    var checkTimer = null;
+    var usernameRequestCounter = 0;
+    var passwordRequestCounter = 0;
+
+    function setFeedback(target, text, cssClass, symbol) {
+      if (!target) {
+        return;
+      }
+
+      target.className = 'help-block ' + cssClass;
+      target.textContent = (symbol ? symbol + ' ' : '') + (text || '');
+    }
+
+    function clearFeedback(target) {
+      if (!target) {
+        return;
+      }
+
+      target.className = 'help-block';
+      target.textContent = '';
+    }
+
+    function runConfirmPasswordCheck() {
+      if (!confirmPasswordInput || !confirmPasswordFeedback) {
+        return;
+      }
+
+      var password = passwordInput ? passwordInput.value : '';
+      var confirmPassword = confirmPasswordInput.value;
+
+      if (!confirmPassword) {
+        clearFeedback(confirmPasswordFeedback);
+        return;
+      }
+
+      if (password && password === confirmPassword) {
+        clearFeedback(confirmPasswordFeedback);
+      } else {
+        setFeedback(confirmPasswordFeedback, 'Ensure the password and password confirmation are equal.', 'text-danger', '✗');
+      }
+    }
+
+    function runUsernameCheck() {
+      var username = usernameInput.value;
+      if (!username) {
+        clearFeedback(usernameFeedback);
+        return;
+      }
+
+      var currentRequest = ++usernameRequestCounter;
+      var url = '/myesp/register/check-username/?username=' + encodeURIComponent(username);
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4 || currentRequest !== usernameRequestCounter) {
+          return;
+        }
+
+        if (xhr.status !== 200) {
+          setFeedback(usernameFeedback, 'Could not validate username right now.', 'text-warning', '⚠');
+          return;
+        }
+
+        try {
+          var result = JSON.parse(xhr.responseText);
+          if (!result.valid) {
+            setFeedback(usernameFeedback, result.message, 'text-danger', '✗');
+          } else if (result.available === false) {
+            setFeedback(usernameFeedback, result.message, 'text-danger', '✗');
+          } else if (result.available === true) {
+            clearFeedback(usernameFeedback);
+          } else {
+            clearFeedback(usernameFeedback);
+          }
+        } catch (e) {
+          setFeedback(usernameFeedback, 'Could not validate username right now.', 'text-warning', '⚠');
+        }
+      };
+      xhr.send();
+    }
+
+    function runPasswordCheck() {
+      if (!passwordInput || !passwordFeedback) {
+        return;
+      }
+
+      var password = passwordInput.value;
+      if (!password) {
+        clearFeedback(passwordFeedback);
+        runConfirmPasswordCheck();
+        return;
+      }
+
+      var currentRequest = ++passwordRequestCounter;
+      var url = '/myesp/register/check-password/?password=' + encodeURIComponent(password) +
+        '&username=' + encodeURIComponent(usernameInput ? usernameInput.value : '') +
+        '&first_name=' + encodeURIComponent(firstNameInput ? firstNameInput.value : '') +
+        '&last_name=' + encodeURIComponent(document.getElementById('id_last_name') ? document.getElementById('id_last_name').value : '');
+
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4 || currentRequest !== passwordRequestCounter) {
+          return;
+        }
+
+        if (xhr.status !== 200) {
+          setFeedback(passwordFeedback, 'Could not validate password right now.', 'text-warning', '⚠');
+          return;
+        }
+
+        try {
+          var result = JSON.parse(xhr.responseText);
+          if (!result.valid) {
+            setFeedback(passwordFeedback, result.message, 'text-danger', '✗');
+          } else {
+            clearFeedback(passwordFeedback);
+          }
+        } catch (e) {
+          setFeedback(passwordFeedback, 'Could not validate password right now.', 'text-warning', '⚠');
+        }
+
+        runConfirmPasswordCheck();
+      };
+      xhr.send();
+    }
+
+    function scheduleCheck() {
+      if (checkTimer) {
+        window.clearTimeout(checkTimer);
+      }
+      checkTimer = window.setTimeout(function() {
+        runUsernameCheck();
+        runPasswordCheck();
+      }, 350);
+    }
+
+    usernameInput.addEventListener('input', scheduleCheck);
+    usernameInput.addEventListener('blur', scheduleCheck);
+
+    if (passwordInput) {
+      passwordInput.addEventListener('input', scheduleCheck);
+      passwordInput.addEventListener('blur', runPasswordCheck);
+    }
+
+    if (confirmPasswordInput) {
+      confirmPasswordInput.addEventListener('input', runConfirmPasswordCheck);
+      confirmPasswordInput.addEventListener('blur', runConfirmPasswordCheck);
+    }
+
+    var lastNameInput = document.getElementById('id_last_name');
+    if (firstNameInput) {
+      firstNameInput.addEventListener('input', scheduleCheck);
+    }
+    if (lastNameInput) {
+      lastNameInput.addEventListener('input', scheduleCheck);
+    }
+  })();
 //-->
 </script>
 

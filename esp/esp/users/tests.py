@@ -1,23 +1,44 @@
 import datetime
+import importlib
 import json
+import re
+from unittest import mock
 
 from django import forms
 from django.core import mail
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Group
+from django.db.models import Q
 from django.test.client import Client, RequestFactory
 from django.http import HttpRequest
 from django.conf import settings
+from django.urls import reverse
+from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import SimpleLazyObject
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 
 from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
-from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
+from esp.users.models import (
+    User,
+    ESPUser,
+    AnonymousESPUser,
+    UserForwarder,
+    StudentInfo,
+    Permission,
+    Record,
+    RecordType,
+    PersistentQueryFilter,
+    DBList,
+    PendingActivation,
+)
 from esp.users.forms.user_profile import StudentProfileForm
-from esp.users.models import User, ESPUser, UserForwarder, StudentInfo, Permission, Record, RecordType
+from esp.users.tokens import account_activation_token
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -62,18 +83,18 @@ class ESPUserTest(TestCase):
         self.basic_user.backend = request.backend
 
         login(request, self.user)
-        self.assertEqual(request.user, self.user, "Failed to log in as '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to log in as '{self.user}'")
 
         request.user.switch_to_user(request, self.basic_user, None, None)
-        self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+        self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
 
         request.user.switch_back(request)
-        self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)
+        self.assertEqual(request.user, self.user, f"Failed to morph back into '{self.user}'")
 
         blocked_illegal_morph = True
         try:
             request.user.switch_to_user(request, self.basic_user, None, None)
-            self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
+            self.assertEqual(request.user, self.basic_user, f"Failed to morph into '{self.basic_user}'")
         except ESPError():
             blocked_illegal_morph = True
 
@@ -103,7 +124,7 @@ class ESPUserTest(TestCase):
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
         self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
-        self.assertTrue(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+        self.assertTrue(studentUser.getGrade() == testGrade, f"Grades don't match: {studentUser.getGrade()} {testGrade}")
 
         # Clean up
         if (c1):
@@ -139,19 +160,73 @@ class ESPUserTest(TestCase):
             finally:
                 user.delete()
 
+    def test_db_list_count_cache_invalidated_on_user_save(self):
+        ESPUser.objects.create(username='dblist_before_1')
+        ESPUser.objects.create(username='dblist_before_2')
+
+        baseline = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        ESPUser.objects.create(username='dblist_after_3')
+
+        # Use a fresh DBList instance so the result must come from cache or DB.
+        refreshed = DBList(key='all-users', QObject=Q(id__gt=0)).count()
+
+        self.assertEqual(refreshed, baseline + 1)
+
+    def test_sort_key_normal_user_greater_than_anon(self):
+        anon_user = AnonymousESPUser()
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertGreater(user, anon_user)
+
+    def test_sort_key_alphabetical_order(self):
+        user_m = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_z = ESPUser(username="t2", first_name="Adam", last_name="Zebra")
+        self.assertLess(user_m, user_z)
+
+    def test_sort_key_same_last_name(self):
+        user_s = ESPUser(username="t1", first_name="Smith", last_name="Michael")
+        user_a = ESPUser(username="t2", first_name="Adam", last_name="Michael")
+        self.assertLess(user_a, user_s)
+
+    def test_sort_key_none_name_same_sort_position(self):
+        user1 = ESPUser(username="t1", first_name=None, last_name=None)
+        user2 = ESPUser(username="t2", first_name="", last_name="")
+        self.assertFalse(user1 < user2)
+        self.assertFalse(user2 < user1)
+
+    def test_sort_key_case_insensitive_same_sort_position(self):
+        user_lower = ESPUser(username="t1", first_name="smith", last_name="michael")
+        user_upper = ESPUser(username="t2", first_name="Smith", last_name="Michael")
+        self.assertFalse(user_lower < user_upper)
+        self.assertFalse(user_upper < user_lower)
+
+    def test_sort_key_compare_with_non_user(self):
+        user = ESPUser(username="t", first_name="Smith", last_name="Michael")
+        self.assertFalse(user == "string") # Django Model.__eq__ returns False, does not raise
+        with self.assertRaises(TypeError): # ordering operators raise TypeError for non-BaseESPUser
+            _ = user > "string"
+        with self.assertRaises(TypeError):
+            _ = user < "string"
+
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
 
     Tokens are computed via HMAC from user data and are never stored in the
     database.
     """
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='forgetful')
+        cls.user.set_password('forgotten_pw')
+        cls.user.save()
+        cls.other, _ = ESPUser.objects.get_or_create(username='innocent')
+        cls.other.set_password('remembered_pw')
+        cls.other.save()
+
     def setUp(self):
-        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.user.set_password('forgotten_pw')
-        self.user.save()
-        self.other, created = ESPUser.objects.get_or_create(username='innocent')
-        self.other.set_password('remembered_pw')
-        self.other.save()
+        # Refresh so tests that modify user/other don't affect the shared instances
+        self.user.refresh_from_db()
+        self.other.refresh_from_db()
 
     def test_run(self):
         from django.contrib.auth.tokens import default_token_generator
@@ -282,7 +357,7 @@ class ValidHostEmailFieldTest(TestCase):
         # Hardcoding 'esp.mit.edu' here might be a bad idea
         # But at least it verifies that A records work in place of MX
         for domain in [ 'esp.mit.edu', 'gmail.com', 'yahoo.com' ]:
-            self.assertTrue( ValidHostEmailField().clean( 'fakeaddress@%s' % domain ) == 'fakeaddress@%s' % domain )
+            self.assertTrue( ValidHostEmailField().clean( f'fakeaddress@{domain}' ) == f'fakeaddress@{domain}' )
     def testFakeDomain(self):
         # If we have an internet connection, bad domains raise ValidationError.
         # This should be the *only* kind of error we ever raise!
@@ -299,7 +374,7 @@ class UserForwarderTest(TestCase):
         self.users = [self.ua, self.ub, self.uc]
     def test_run(self):
         def fwd_info(user):
-            return '%s forwards by: %s' % (user.username, user.forwarders_out.all())
+            return f'{user.username} forwards by: {user.forwarders_out.all()}'
         # Ensure that users have no forwarders by default
         for user in self.users:
             self.assertTrue(UserForwarder.follow(user) == (user, False), fwd_info(user))
@@ -382,15 +457,34 @@ class AjaxExistenceChecker(TestCase):
 
         response = self.client.get(self.path)
         for key in self.keys:
-            self.assertContains(response, key, msg_prefix="Key %s missing from Ajax response to %s" % (key, self.path), status_code=200)
+            self.assertContains(response, key, msg_prefix=f"Key {key} missing from Ajax response to {self.path}", status_code=200)
 
 class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
     def test_run(self):
-        self.path = '/learn/%s/ajax_schedule' % self.program.getUrlBase()
+        self.path = f'/learn/{self.program.getUrlBase()}/ajax_schedule'
         self.keys = ['student_schedule_html']
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super().test_run()
+
+class AjaxScheduleNoScriptTest(ProgramFrameworkTest):
+    """ The ajax_schedule view describes how to update the page with data;
+        it must never return JavaScript for the browser to execute.
+    """
+    def test_payload_is_data_only(self):
+        user = self.students[0]
+        self.assertTrue(self.client.login(username=user.username, password='password'))
+        response = self.client.get(f'/learn/{self.program.getUrlBase()}/ajax_schedule')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+
+        self.assertNotIn('script', data)
+        self.assertIn('student_schedule_html', data)
+        self.assertIsInstance(data['links'], list)
+        self.assertEqual([callback['name'] for callback in data['callbacks']],
+                         ['student_schedule'])
+        for link in data['links']:
+            self.assertEqual(sorted(link.keys()), ['id', 'url'])
 
 class AccountCreationTest(TestCase):
 
@@ -425,9 +519,12 @@ class AccountCreationTest(TestCase):
         self.assertContains(response2, "do_reg_no_really")
 
         #check when there's a user awaiting activation
-        #(we check with a regex searching for _ in the password, since that
-        #can't happen normally)
-        u.password="blah_"
+        #(the account is inactive with an outstanding PendingActivation row,
+        #which is what registration leaves behind before the user clicks the
+        #link in their activation email)
+        u.is_active = False
+        u.save()
+        PendingActivation.objects.create(user=u)
 
         response3 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
@@ -454,8 +551,8 @@ class AccountCreationTest(TestCase):
             url+="information/"
         response = self.client.post(url,
                                    data={"username":"username",
-                                         "password":"passw",
-                                         "confirm_password":"passw",
+                                         "password":"Str0ng!Pass",
+                                         "confirm_password":"Str0ng!Pass",
                                          "first_name":"first",
                                          "last_name":"last",
                                          "email":"tsutton125@gmail.com",
@@ -468,24 +565,132 @@ class AccountCreationTest(TestCase):
                                   first_name="first",
                                   last_name="last",
                                   email="tsutton125@gmail.com")
-        except ESPUser.DoesNotExist as xxx_todo_changeme:
-            ESPUser.MultipleObjectsReturned = xxx_todo_changeme
+        except (ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned):
             self.fail("User not created correctly or created multiple times")
 
         if not Tag.getBooleanTag('require_email_validation'):
             return
 
         self.assertFalse(u.is_active)
-        self.assertTrue("_" in u.password)
+        #the activation token is an HMAC and is never written to the database
+        self.assertIsNone(re.search(r"_\d+$", u.password))
+        self.assertTrue(PendingActivation.objects.filter(user=u).exists())
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(len(mail.outbox[0].to), 1)
         self.assertEqual(mail.outbox[0].to[0], u.email)
         #note: will break if the activation email is changed too much
-        import re
-        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)", mail.outbox[0].body)
-        self.assertEqual(match.group("user"), u.username)
-        self.assertEqual(match.group("key"), u.password.rsplit("_")[-1])
+        match = re.search(r"/myesp/activate/(?P<uid>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/",
+                          mail.outbox[0].body)
+        self.assertIsNotNone(match, "activation email is missing the uid/token link")
+        self.assertEqual(force_str(urlsafe_base64_decode(match.group("uid"))), str(u.pk))
+        self.assertTrue(account_activation_token.check_token(u, match.group("token")))
+
+    def test_live_email_validation_endpoint(self):
+        original_ask_about_duplicates = Tag._getTag('ask_about_duplicate_accounts')
+        try:
+            Tag.setTag('ask_about_duplicate_accounts', value='true')
+
+            user = ESPUser.objects.create(email='livecheck@example.com')
+            user.makeRole('Teacher')
+
+            taken_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'livecheck@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(taken_response.status_code, 200)
+            taken_payload = json.loads(taken_response.content.decode('utf-8'))
+            self.assertTrue(taken_payload['valid'])
+            self.assertFalse(taken_payload['available'])
+            self.assertTrue(taken_payload['message'])
+
+            no_role_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': '',
+            })
+            self.assertEqual(no_role_response.status_code, 200)
+            no_role_payload = json.loads(no_role_response.content.decode('utf-8'))
+            self.assertTrue(no_role_payload['valid'])
+            self.assertIsNone(no_role_payload['available'])
+            self.assertEqual(no_role_payload['message'], '')
+
+            invalid_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'invalid-email',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(invalid_response.status_code, 200)
+            invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+            self.assertFalse(invalid_payload['valid'])
+            self.assertIsNone(invalid_payload['available'])
+
+            free_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'newaddress@example.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(free_response.status_code, 200)
+            free_payload = json.loads(free_response.content.decode('utf-8'))
+            self.assertTrue(free_payload['valid'])
+            self.assertTrue(free_payload['available'])
+            self.assertEqual(free_payload['message'], '')
+        finally:
+            if original_ask_about_duplicates is None:
+                Tag.unSetTag('ask_about_duplicate_accounts')
+            else:
+                Tag.setTag('ask_about_duplicate_accounts', value=original_ask_about_duplicates)
+
+    def test_live_username_validation_endpoint(self):
+        ESPUser.objects.create(username='AlreadyTaken123', password='password')
+
+        taken_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'AlreadyTaken123',
+        })
+        self.assertEqual(taken_response.status_code, 200)
+        taken_payload = json.loads(taken_response.content.decode('utf-8'))
+        self.assertTrue(taken_payload['valid'])
+        self.assertFalse(taken_payload['available'])
+        self.assertTrue(taken_payload['message'])
+
+        invalid_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'bad*name',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+
+        free_response = self.client.get('/myesp/register/check-username/', {
+            'username': 'FreeName123',
+        })
+        self.assertEqual(free_response.status_code, 200)
+        free_payload = json.loads(free_response.content.decode('utf-8'))
+        self.assertTrue(free_payload['valid'])
+        self.assertTrue(free_payload['available'])
+        self.assertEqual(free_payload['message'], '')
+
+    def test_live_password_validation_endpoint(self):
+        invalid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'short',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(invalid_response.status_code, 200)
+        invalid_payload = json.loads(invalid_response.content.decode('utf-8'))
+        self.assertFalse(invalid_payload['valid'])
+        self.assertIsNone(invalid_payload['available'])
+        self.assertTrue(invalid_payload['message'])
+
+        valid_response = self.client.get('/myesp/register/check-password/', {
+            'password': 'Str0ng!Pass',
+            'username': 'PasswordUser',
+            'first_name': 'Test',
+            'last_name': 'User',
+        })
+        self.assertEqual(valid_response.status_code, 200)
+        valid_payload = json.loads(valid_response.content.decode('utf-8'))
+        self.assertTrue(valid_payload['valid'])
+        self.assertTrue(valid_payload['available'])
+        self.assertEqual(valid_payload['message'], '')
 
 from esp.users.models import GradeChangeRequest
 
@@ -549,7 +754,7 @@ class TestChangeRequestView(TestCase):
         self.password = "pass1234"
 
         #   May fail once in a while, but it's not critical.
-        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.unique_name = f'Test_UNIQUE{random.randint(0, 999999):06d}'
         self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
@@ -561,8 +766,8 @@ class TestChangeRequestView(TestCase):
 
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
-        self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+        self.assertFormError(response.context['form'], 'reason', 'This field is required.')
+        self.assertFormError(response.context['form'], 'claimed_grade', 'Value 483 is not a valid choice.')
 
     def test_send_request_email(self):
         c = Client()
@@ -793,6 +998,105 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
+    def testUserCanEditQSDTeacherFix(self):
+        """Test that teachers can edit their class QSD pages, ensuring .html suffixes are correctly stripped."""
+        from esp.program.models import ClassSubject, ClassCategories
+        from esp.users.models import Permission
+
+        # Create a test teacher account
+        teacher = ESPUser.objects.create(username='qsd_edit_teacher')
+
+        # Setup the program and class categories required by the regex matcher
+        cat = ClassCategories.objects.create(category='TestCategory', symbol='T')
+        test_prog = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program3')
+        test_class = ClassSubject.objects.create(
+            parent_program=test_prog,
+            category=cat,
+            grade_min=7,
+            grade_max=12,
+            title='Test Class',
+        )
+
+        # Assign the teacher to the class
+        test_class.teachers.add(teacher)
+
+        # Generate a test URL matching what the QSD parser expects: "section/Splash/Program3/Classes/T<id>/file.html"
+        test_url = "section/%s/Classes/T%d/welcome.html" % (test_prog.url, test_class.id)
+
+        self.assertTrue(Permission.user_can_edit_qsd(teacher, test_url))
+
+    def testFilterPermissionAppliesToMatchingUsers(self):
+        perm_name = 'Student/MainPage'
+        # Create a filter that matches self.user only
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+        )
+
+        other_user = ESPUser.objects.create(username='other_for_filter')
+        self.assertTrue(self.user_has_perm_for_program(perm_name))
+        self.assertFalse(Permission.user_has_perm(other_user, perm_name, program=self.program))
+
+    def testFilterPermissionControlsDeadline(self):
+        perm_name = 'Student/MainPage'
+        from django.db.models import Q
+        filter_q = Q(id=self.user.pk)
+        pqf = PersistentQueryFilter.getFilterFromQ(filter_q, ESPUser, description='Only self.user')
+
+        start = datetime.datetime.now() - datetime.timedelta(days=1)
+        end = datetime.datetime.now() + datetime.timedelta(days=1)
+        Permission.objects.create(
+            permission_type=perm_name,
+            program=self.program,
+            user_filter=pqf,
+            start_date=start,
+            end_date=end,
+        )
+
+        self.assertEqual(
+            Permission.user_deadline_when(self.user, perm_name, program=self.program),
+            end,
+        )
+
+class PersistentQueryFilterHashTest(TestCase):
+    """ The sha1_hash column stores a SHA-256 digest (the column name is
+        historical).  These tests pin down that every code path agrees on the
+        same digest, so that identical filters are deduplicated rather than
+        piling up duplicate rows. """
+
+    def _expected_hash(self, q_filter):
+        import hashlib
+        import pickle
+        return hashlib.sha256(pickle.dumps(q_filter)).hexdigest()
+
+    def testCreateFromQUsesSha256(self):
+        q_filter = Q(username='hash_test_user')
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, q_filter)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(q_filter))
+
+    def testSetQUsesSha256(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(username='before'))
+        new_filter = Q(username='after')
+        pqf.set_Q(new_filter, restrict_to_active=False)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(new_filter))
+
+    def testGetFilterFromQIsIdempotent(self):
+        """ Looking up the same Q twice must reuse the stored row, which only
+            works if the lookup and the write use the same algorithm. """
+        q_filter = Q(username='hash_test_user')
+        first = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        second = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(
+            PersistentQueryFilter.objects.filter(sha1_hash=first.sha1_hash).count(),
+            1,
+        )
+
 class AjaxAutocompleteViewTest(TestCase):
     def setUp(self):
         user_role_setup()
@@ -921,7 +1225,7 @@ class StudentInfoFormGradeTest(TestCase):
         errors = form.errors.get('graduation_year', [])
         self.assertTrue(
             any('required' in e.lower() for e in errors),
-            "Expected a 'required' error for graduation_year, got: %s" % errors,
+            f"Expected a 'required' error for graduation_year, got: {errors}",
         )
 
     def test_no_auto_default_to_lowest_grade(self):
@@ -1100,3 +1404,407 @@ class StudentProfileForm__emailvalidationtest(TestCase):
         email_errors = [e for e in form.non_field_errors()
                         if 'email' in e.lower()]
         self.assertEqual(email_errors, [])
+
+
+class ActivateAccountLegacyTest(TestCase):
+    """The pre-HMAC "?username=&key=" route no longer activates anything.
+
+    Migration 0048 stripped the "_<key>" suffixes those links were checked
+    against, so the route only exists to explain itself to anyone still
+    holding an old email.
+    """
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testactivate',
+            email='testactivate@example.com',
+            password='testpassword',
+        )
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+        self.url = reverse('activate_account_legacy')
+
+    def test_legacy_link_does_not_activate(self):
+        response = self.client.get(
+            self.url, {'username': 'testactivate', 'key': '123456'})
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        #   The account stays eligible for a fresh link.
+        self.assertTrue(PendingActivation.objects.filter(user=self.user).exists())
+
+    def test_legacy_link_without_parameters_does_not_crash(self):
+        self.assertEqual(self.client.get(self.url).status_code, 500)
+
+
+class LegacyActivationSuffixTest(TestCase):
+    """Migration 0048 strips "_<key>" from password hashes; check it is safe.
+
+    The guarantee is structural rather than statistical: after the first "$"
+    a Django hash contains only a salt ([a-zA-Z0-9]) and a digest (base64 or
+    hex), and none of those alphabets includes an underscore, so an anchored
+    "_<digits>" cannot match an untouched hash.  These samples are a
+    regression guard in case a future hasher breaks that assumption.
+    """
+
+    HASHERS = [
+        'django.contrib.auth.hashers.PBKDF2PasswordHasher',
+        'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+
+    def setUp(self):
+        migration = importlib.import_module(
+            'esp.users.migrations.0048_pendingactivation')
+        self.pattern = migration.LEGACY_SUFFIX_REGEX
+
+    def test_strips_a_legacy_suffix(self):
+        hashed = make_password('testpassword')
+        self.assertEqual(re.sub(self.pattern, '', hashed + '_1234567890'), hashed)
+
+    def test_leaves_real_hashes_alone(self):
+        #   pbkdf2 is deliberately slow, so sample it lightly and lean on the
+        #   cheap hasher for volume.
+        for algorithm, samples in (('pbkdf2_sha256', 5),
+                                   ('pbkdf2_sha1', 5),
+                                   ('md5', 50)):
+            with self.settings(PASSWORD_HASHERS=self.HASHERS):
+                for i in range(samples):
+                    hashed = make_password(f'password{i}', hasher=algorithm)
+                    self.assertIsNone(
+                        re.search(self.pattern, hashed),
+                        f'{algorithm} produced a hash the strip would damage: {hashed}')
+
+
+class ActivateAccountTokenTest(TestCase):
+    """Tests for the HMAC-token activate_account view."""
+
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='testtoken',
+            email='testtoken@example.com',
+            password='testpassword',
+        )
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+
+    def activation_url(self, user=None, token=None):
+        user = user or self.user
+        if token is None:
+            token = account_activation_token.make_token(user)
+        return reverse('activate_account', kwargs={
+            'uidb64': urlsafe_base64_encode(force_bytes(user.pk)),
+            'token': token,
+        })
+
+    def test_valid_token_activates_user(self):
+        """A valid token activates the account and clears the pending row."""
+        response = self.client.get(self.activation_url())
+        self.assertRedirects(response, reverse('myesp_profile'),
+                             fetch_redirect_response=False)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+        self.assertFalse(PendingActivation.objects.filter(user=self.user).exists())
+
+    def test_token_is_single_use(self):
+        """Replaying a link that already activated the account is rejected."""
+        url = self.activation_url()
+        self.client.get(url)
+        self.user.refresh_from_db()
+        self.user.is_active = False   # as if an admin later disabled the account
+        self.user.save()
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_token_rejected_for_deliberately_disabled_account(self):
+        """A disabled account with no pending row cannot be activated."""
+        token = account_activation_token.make_token(self.user)
+        PendingActivation.objects.filter(user=self.user).delete()
+
+        response = self.client.get(self.activation_url(token=token))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_expired_token_raises_error(self):
+        """A token older than PASSWORD_RESET_TIMEOUT is rejected."""
+        stale = (datetime.datetime.now()
+                 - datetime.timedelta(seconds=settings.PASSWORD_RESET_TIMEOUT + 60))
+        with mock.patch.object(type(account_activation_token), '_now',
+                               return_value=stale):
+            token = account_activation_token.make_token(self.user)
+
+        response = self.client.get(self.activation_url(token=token))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_wrong_token_raises_error(self):
+        """A token that does not verify is rejected."""
+        response = self.client.get(self.activation_url(token='1a2b3c-deadbeef'))
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_unknown_uid_raises_error(self):
+        """A uid that decodes to no user is rejected."""
+        url = reverse('activate_account', kwargs={
+            'uidb64': urlsafe_base64_encode(force_bytes(self.user.pk + 10000)),
+            'token': account_activation_token.make_token(self.user),
+        })
+        self.assertEqual(self.client.get(url).status_code, 500)
+
+    def test_undecodable_uid_raises_error(self):
+        """A uid that is not valid base64 is rejected rather than crashing."""
+        url = reverse('activate_account', kwargs={
+            'uidb64': 'not-base64',
+            'token': account_activation_token.make_token(self.user),
+        })
+        self.assertEqual(self.client.get(url).status_code, 500)
+
+    def test_already_active_user_raises_error(self):
+        """Activating an already active account is rejected."""
+        self.user.is_active = True
+        self.user.save()
+        self.assertEqual(self.client.get(self.activation_url()).status_code, 500)
+
+    def test_password_change_invalidates_outstanding_token(self):
+        """Registering again over a pending account supersedes the old link."""
+        stale_url = self.activation_url()
+        self.user.set_password('adifferentpassword')
+        self.user.save()
+
+        response = self.client.get(stale_url)
+        self.assertEqual(response.status_code, 500)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        #   ...and a freshly issued link still works.
+        self.assertRedirects(self.client.get(self.activation_url()),
+                             reverse('myesp_profile'),
+                             fetch_redirect_response=False)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+
+class AwaitingActivationTest(TestCase):
+    """Tests for what counts as "awaiting activation".
+
+    is_active=False on its own is not enough: it also covers accounts that
+    were disabled on purpose, and those must not be able to request an
+    activation email or have their username treated as re-registerable.
+    """
+
+    def setUp(self):
+        user_role_setup()
+        self.pending = ESPUser.objects.create_user(
+            username='pendinguser',
+            email='pendinguser@example.com',
+            password='testpassword',
+        )
+        self.pending.is_active = False
+        self.pending.save()
+        PendingActivation.objects.create(user=self.pending)
+
+        #   Disabled on purpose and never logged in, so last_login IS NULL.
+        #   Without the explicit PendingActivation row this is
+        #   indistinguishable from an account awaiting activation.
+        self.disabled = ESPUser.objects.create_user(
+            username='disableduser',
+            email='disableduser@example.com',
+            password='testpassword',
+        )
+        self.disabled.is_active = False
+        self.disabled.save()
+
+    def test_predicate_matches_only_pending_accounts(self):
+        matched = ESPUser.objects.filter(ESPUser.awaiting_activation_Q())
+        self.assertIn(self.pending, matched)
+        self.assertNotIn(self.disabled, matched)
+
+    def test_resend_form_accepts_pending_account(self):
+        form = AwaitingActivationEmailForm({'username': 'pendinguser'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_resend_form_is_case_insensitive(self):
+        form = AwaitingActivationEmailForm({'username': 'PendingUser'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_resend_form_rejects_disabled_account(self):
+        """A deliberately disabled account cannot request an activation email."""
+        form = AwaitingActivationEmailForm({'username': 'disableduser'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+
+    def test_resend_view_sends_token_link(self):
+        response = self.client.post('/myesp/resend/', {'username': 'PendingUser'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+
+        match = re.search(r"/myesp/activate/(?P<uid>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/",
+                          mail.outbox[0].body)
+        self.assertIsNotNone(match, "resent activation email is missing the uid/token link")
+        self.assertEqual(force_str(urlsafe_base64_decode(match.group("uid"))),
+                         str(self.pending.pk))
+        self.assertTrue(account_activation_token.check_token(self.pending,
+                                                            match.group("token")))
+
+    def test_resend_view_refuses_disabled_account(self):
+        response = self.client.post('/myesp/resend/', {'username': 'disableduser'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_pending_username_is_still_available(self):
+        """A user who never activated can re-register the same username.
+
+        user_registration_validate reuses the existing inactive row, so the
+        username must not be reported as taken.
+        """
+        payload = json.loads(self.client.get(
+            '/myesp/register/check-username/', {'username': 'pendinguser'},
+        ).content.decode('utf-8'))
+        self.assertTrue(payload['valid'])
+        self.assertTrue(payload['available'])
+
+    def test_disabled_username_is_not_available(self):
+        payload = json.loads(self.client.get(
+            '/myesp/register/check-username/', {'username': 'disableduser'},
+        ).content.decode('utf-8'))
+        self.assertFalse(payload['available'])
+
+
+class PasswordValidationTest(TestCase):
+    """Ensure password strength rules are enforced on registration and password change."""
+
+    REG_BASE = {
+        'first_name': 'Test',
+        'last_name': 'User',
+        'username': 'testpwuser',
+        'initial_role': 'Student',
+        'email': 'test@example.com',
+        'confirm_email': 'test@example.com',
+    }
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(username='pwchangeuser')
+        cls.user.set_password('ValidPass1!')
+        cls.user.save()
+
+    def _reg_form(self, password, confirm=None):
+        from esp.users.forms.user_reg import UserRegForm
+        if confirm is None:
+            confirm = password
+        data = dict(self.REG_BASE, password=password, confirm_password=confirm)
+        return UserRegForm(data=data)
+
+    def _passwd_form(self, new_password, confirm=None):
+        from esp.users.forms.password_reset import UserPasswdForm
+        if confirm is None:
+            confirm = new_password
+        data = {
+            'password': 'ValidPass1!',
+            'newpasswd': new_password,
+            'newpasswdconfirm': confirm,
+        }
+        return UserPasswdForm(user=self.user, data=data)
+
+    def test_registration_rejects_short_password(self):
+        form = self._reg_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('password', form.errors)
+
+    def test_registration_rejects_common_password(self):
+        form = self._reg_form('password')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_rejects_numeric_only_password(self):
+        form = self._reg_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_registration_accepts_strong_password(self):
+        form = self._reg_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_mismatched_passwords(self):
+        form = self._reg_form('Str0ng!Pass', confirm='Different!1')
+        self.assertFalse(form.is_valid())
+        self.assertIn('confirm_password', form.errors)
+
+    def test_password_change_rejects_short_password(self):
+        form = self._passwd_form('abc123')
+        self.assertFalse(form.is_valid())
+        self.assertIn('newpasswd', form.errors)
+
+    def test_password_change_rejects_common_password(self):
+        form = self._passwd_form('password1')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_rejects_numeric_only_password(self):
+        form = self._passwd_form('12345678')
+        self.assertFalse(form.is_valid())
+
+    def test_password_change_accepts_strong_password(self):
+        form = self._passwd_form('Str0ng!Pass')
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_registration_rejects_username_similar_password(self):
+        # UserAttributeSimilarityValidator must receive the user instance to work.
+        # 'testpwuser1' is too similar to username 'testpwuser'.
+        form = self._reg_form('testpwuser1')
+        self.assertFalse(form.is_valid())
+
+
+class DisableAccountPostOnlyTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create(username='disableme', email='disableme@example.com')
+        self.user.set_password('password')
+        self.user.save()
+        self.client.login(username='disableme', password='password')
+
+    def test_get_does_not_change_account_state(self):
+        # The legacy ?disable=1 GET branch must not disable an active account.
+        response = self.client.get('/myesp/disableaccount/?disable=1')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+        # Properly disable via POST so the legacy ?enable=1 GET branch
+        # can be checked against a disabled account.
+        response = self.client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        # The legacy ?enable=1 GET branch must not re-enable a disabled account.
+        response = self.client.get('/myesp/disableaccount/?enable=1')
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_post_without_csrf_token_is_rejected(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        self.assertTrue(csrf_client.login(username='disableme', password='password'))
+        response = csrf_client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 403)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_post_disable_and_enable(self):
+        response = self.client.post('/myesp/disableaccount/', {'action': 'disable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        response = self.client.post('/myesp/disableaccount/', {'action': 'enable'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)

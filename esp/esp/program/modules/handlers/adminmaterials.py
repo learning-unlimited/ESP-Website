@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject
 
@@ -62,7 +62,7 @@ class AdminMaterials(ProgramModuleObj):
             id="manage_get_materials",
             url="/manage/%s/get_materials" % base,
             title="Documents",
-            category="Logistics",
+            category=SEARCH_CATEGORY_SETTINGS,
             keywords=["documents", "files", "upload", "download", "materials"],
         )
 

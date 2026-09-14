@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_FINANCIAL
 from esp.utils.web       import render_to_response
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from argcache            import cache_function
@@ -49,6 +50,19 @@ class CreditCardViewer(ProgramModuleObj):
             "seq": 10000,
             "choosable": 0,
             }
+
+    @classmethod
+    def get_admin_search_entry(cls, program, tl, view_name, pmo):
+        if view_name != "viewpay":
+            return None
+        base = program.getUrlBase()
+        return AdminSearchEntry(
+            id="manage_viewpay",
+            url="/manage/%s/viewpay" % base,
+            title="View Credit Card Transactions",
+            category=SEARCH_CATEGORY_FINANCIAL,
+            keywords=["credit card", "transactions", "payments", "viewpay", "stripe"],
+        )
 
     @main_call
     @needs_admin

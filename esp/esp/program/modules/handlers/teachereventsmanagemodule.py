@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.utils.web import render_to_response
 from esp.cal.models import Event, EventType
 from esp.users.models import UserAvailability
@@ -71,8 +71,8 @@ class TeacherEventsManageModule(ProgramModuleObj):
             id="manage_teacher_events",
             url="/manage/%s/teacher_events" % base,
             title="Teacher Training / Interviews",
-            category="Configure",
-            keywords=["teacher", "training", "interviews", "events"],
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["teacher", "training", "interviews", "events", "teacher events"],
         )
 
     @main_call
