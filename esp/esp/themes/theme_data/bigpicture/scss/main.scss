@@ -136,6 +136,10 @@ div.navbar-collapse.collapse {
         background: $sidebarBackground;
         margin-bottom: 2em;
     }
+}
+
+.sidebar,
+#sidebar {
     .nav-header,
     .dropdown-header {
         color: $sidebarHeader;
@@ -161,7 +165,12 @@ div.navbar-collapse.collapse {
             }
         }
     }
-    li:not(.dropdown-header):not(.nav-header) > a {
+    li:not(.dropdown-header):not(.nav-header) > a,
+    #nav_accordion .card-header > a {
+        display: block;
+        padding: 10px 18px;
+        color: $sidebarLink;
+        font-size: 17px;
         text-decoration: none;
 
         &:hover, &:focus {
@@ -194,10 +203,18 @@ div.navbar-collapse.collapse {
         border-radius: 4px;
     }
     .card-header {
+        padding: 0;
+
         a {
+            display: block;
+            padding: 10px 18px;
             color: $sidebarLink;
             font-size: 17px;
-            &:active, &:hover, &:focus {
+            text-decoration: none;
+
+            &:hover, &:focus {
+                color: $sidebarLinkHover;
+                background-color: $sidebarHover;
                 text-decoration: none;
             }
         }
