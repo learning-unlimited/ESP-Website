@@ -1832,12 +1832,13 @@ class LoginErrorMessageTest(TestCase):
         self.assertContains(response, reverse('esp.users.views.resend_activation_view'))
         self.assertNotContains(response, 'The password you entered is not valid')
 
-    def test_disabled_account_gets_disabled_message(self):
+    def test_deactivated_account_does_not_get_activation_message(self):
+        # Deactivated is not the same as never activated: without a
+        # PendingActivation there is no activation email to point at.
         self.user.is_active = False
         self.user.save()
         response = self._post()
-        self.assertContains(response, 'This account has been disabled')
-        self.assertNotContains(response, 'The password you entered is not valid')
+        self.assertNotContains(response, 'has not been activated yet')
 
     def test_wrong_password_message_unchanged(self):
         response = self._post(password='wrong')

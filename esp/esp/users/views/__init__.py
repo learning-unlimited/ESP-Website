@@ -117,8 +117,6 @@ class CustomLoginView(LoginView):
                     context['wrong_user'] = True
                 elif users.filter(ESPUser.awaiting_activation_Q()).exists():
                     context['awaiting_activation'] = True
-                elif users.filter(is_active=False).exists():
-                    context['account_disabled'] = True
                 else:
                     context['wrong_pw'] = True
         if not self.request.GET:
