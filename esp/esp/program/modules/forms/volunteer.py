@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django import forms
 from django.utils.safestring import mark_safe
+from django.utils.html import escape
 from django.db.models import Count
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
@@ -101,7 +102,7 @@ class VolunteerOfferForm(forms.Form):
     shirt_size = forms.ChoiceField(choices=[], required=False)
     shirt_type = forms.ChoiceField(choices=[], required=False)
 
-    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text="Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!", widget=forms.CheckboxSelectMultiple, required=False)
+    requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Please sign up to volunteer for specific timeslots by selecting them below. Hovering over a timeslot will display details for that timeslot.', widget=forms.CheckboxSelectMultiple, required=False)
     has_previous_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
     clear_requests = forms.BooleanField(widget=forms.HiddenInput, required=False, initial=False)
 
@@ -138,6 +139,19 @@ class VolunteerOfferForm(forms.Form):
             tag_data = Tag.getProgramTag('volunteer_help_text_comments', self.program)
             if tag_data:
                 self.fields['comments'].help_text = tag_data
+            tag_data = Tag.getProgramTag('volunteer_label_comments', self.program)
+            if tag_data:
+                self.fields['comments'].label = tag_data
+
+        tag_data = Tag.getProgramTag('volunteer_help_text_requests', self.program)
+        if tag_data:
+            self.fields['requests'].help_text = tag_data
+
+        tag_data = Tag.getProgramTag('volunteer_help_text_confirm', self.program)
+        if tag_data:
+            #   The tag supplies only the text; keep the default red styling
+            self.fields['confirm'].help_text = mark_safe(
+                '<span style="color: red; font-weight: bold;">%s</span>' % escape(tag_data))
 
     def load(self, user):
         self.fields['user'].initial = user.id
