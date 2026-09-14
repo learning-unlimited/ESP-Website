@@ -70,7 +70,12 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     def teacherreg(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher reg page """
         context = {}
-        modules = self.program.getModules(request.user, 'teach')
+
+        # --- Simulated-time preview support ---
+        simulate_dt = StudentRegCore._resolve_simulate_time(request, prog)
+        # --------------------------------------
+
+        modules = self.program.getModules(request.user, 'teach', when=simulate_dt)
 
         context['completedAll'] = True
         for module in modules:
@@ -87,6 +92,8 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['extra_steps'] = "teach:extra_steps"
+        context['is_preview'] = simulate_dt is not None
+        context['simulate_time'] = simulate_dt.isoformat() if simulate_dt else None
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
