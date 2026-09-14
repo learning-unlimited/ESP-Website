@@ -15,7 +15,9 @@
 <tr>
     <td class="clsleft" colspan="5">
         <b>Directors' review status</b>:
-        {% if cls.isReviewed %}
+        {% if cls.isDraft %}
+        <span style="font-weight: bold; color: #888;">Draft &ndash; not yet submitted</span>
+        {% elif cls.isReviewed %}
             {% if cls.isAccepted %}
             <span style="font-weight: bold; color: #0C0;">Accepted{% if cls.isHidden %} (Hidden){% endif %}</span>
             {% elif cls.isCancelled %}
@@ -112,7 +114,7 @@
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
   <td class="clsmiddle">
-    {% if can_req_cancel %}
+    {% if can_req_cancel and not cls.isDraft %}
         <button class="btn btn-info" onclick="requestCancel({{cls.id}})">Request Cancellation</button>
     {% endif %}
   </td>
@@ -134,7 +136,9 @@
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
     Status:
-    {% if sec.isReviewed %}
+    {% if sec.isDraft %}
+    <span style="font-weight: bold; color: #888;">Draft</span>
+    {% elif sec.isReviewed %}
         {% if sec.isAccepted %}
         <span style="font-weight: bold; color: #0C0;">Accepted{% if sec.isHidden %} (Hidden){% endif %}</span>
         {% elif sec.isCancelled %}
