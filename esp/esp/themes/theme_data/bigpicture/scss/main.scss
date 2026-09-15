@@ -179,6 +179,7 @@ div.navbar-collapse.collapse {
             text-decoration: none;
         }
     }
+
     > .active > a,
     li.active > a {
         &, &:hover, &:focus {
@@ -195,6 +196,23 @@ div.navbar-collapse.collapse {
     .bi {
         vertical-align: baseline;
         margin-right: 6px;
+    }
+}
+
+// Admin sidebar: ul.sidebar is rendered INSIDE #sidebar, so the .sidebar
+// rule block above covers it. This extra rule is a fallback for any case
+// where admin links are direct children of #sidebar without a .sidebar wrapper.
+#sidebar > li:not(.dropdown-header):not(.nav-header) > a {
+    display: block;
+    padding: 10px 18px;
+    color: $sidebarLink;
+    font-size: 17px;
+    text-decoration: none;
+
+    &:hover, &:focus {
+        color: $sidebarLinkHover;
+        background-color: $sidebarHover;
+        text-decoration: none;
     }
 }
 
