@@ -44,6 +44,7 @@ from django.test import TransactionTestCase, override_settings
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import (
     DynamicModelHandler, PG_LOCK_NOT_AVAILABLE, lock_timeout, schema_lock)
+from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.views import hasPerm
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_NoLog
@@ -1048,3 +1049,158 @@ class FailedFormSaveRollbackTest(TestCase):
                       json.loads(response.content)['message'])
         self.assertFalse(Form.objects.filter(title='Rollback Form').exists())
         self.assertFalse(Field.objects.filter(label='Q').exists())
+
+
+
+class RequiredFieldValidationTest(TestCase):
+    """
+    Server-side enforcement of the 'required' flag on custom form fields.
+
+    Django already enforces 'required' for nearly every field type these forms
+    can build; most of these tests just lock that in so it cannot silently
+    regress.  The exception is linked NullBooleanFields, whose validate() is a
+    no-op in Django and which rely on RequiredNullBooleanField instead.
+    """
+
+    #   (field_type, label, required, attrs)
+    FIELD_SPECS = [
+        ('textField', 'Required Text', True, {'charlimits': '0,100'}),
+        ('textField', 'Optional Text', False, {'charlimits': '0,100'}),
+        ('multiselect', 'Required Multi', True, {'options': 'A|B|C'}),
+        ('ContactInfo_phone_day', 'Required Link', True, {}),
+        ('TeacherInfo_from_here', 'Required Null Boolean', True, {}),
+        ('TeacherInfo_is_graduate_student', 'Optional Null Boolean', False, {}),
+    ]
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='reqfield_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='reqfield_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        form_data = {
+            'title': 'Required Field Test Form',
+            'desc': 'Test form for required field validation',
+            'perms': '',
+            'link_type': '-1',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': field_type, 'question_text': label,
+                                  'required': required, 'attrs': attrs,
+                                  'seq': seq, 'parent_id': -1, 'help_text': ''}}
+                        for seq, (field_type, label, required, attrs)
+                        in enumerate(self.FIELD_SPECS)
+                    ],
+                }],
+            }],
+        }
+
+        self.client.login(username='reqfield_admin', password='password')
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.client.logout()
+
+        self.form = Form.objects.get(title='Required Field Test Form')
+        self.field_ids = {field.label: field.id for field in self.form.field_set.all()}
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def question(self, label):
+        """The POST key for the question with this label."""
+        return 'question_%d' % self.field_ids[label]
+
+    def valid_answers(self):
+        """Answers that fill in every required field on the test form."""
+        return {
+            'Required Text': 'an answer',
+            'Required Multi': ['A'],
+            'Required Link': '(201) 426-5797',
+            'Required Null Boolean': 'true',
+        }
+
+    def post_data(self, overrides=None):
+        """Valid answers keyed by POST key, with `overrides` (by label) applied.
+           A value of None omits that question from the POST entirely."""
+        answers = self.valid_answers()
+        answers.update(overrides or {})
+        return {self.question(label): value
+                for label, value in answers.items() if value is not None}
+
+    def errors_for(self, overrides=None):
+        """Bind page 0 of the generated form to post_data() and return its errors."""
+        form_class = FormHandler(form=self.form, request=None)._getFormList()[0]
+        return form_class(data=self.post_data(overrides)).errors
+
+    def assertRequiredError(self, label, overrides):
+        errors = self.errors_for(overrides)
+        self.assertEqual(errors.get(self.question(label)), ['This field is required.'])
+
+    def test_valid_answers_pass(self):
+        """The baseline answers validate, and the optional fields may be omitted."""
+        self.assertEqual(self.errors_for(), {})
+
+    def test_required_text_field_rejects_empty(self):
+        self.assertRequiredError('Required Text', {'Required Text': ''})
+
+    def test_required_text_field_rejects_whitespace_only(self):
+        self.assertRequiredError('Required Text', {'Required Text': '   '})
+
+    def test_required_text_field_rejects_missing_key(self):
+        """A crafted POST that omits the question entirely is still rejected."""
+        self.assertRequiredError('Required Text', {'Required Text': None})
+
+    def test_required_multiselect_rejects_empty(self):
+        self.assertRequiredError('Required Multi', {'Required Multi': []})
+
+    def test_required_multiselect_rejects_missing_key(self):
+        self.assertRequiredError('Required Multi', {'Required Multi': None})
+
+    def test_required_link_field_rejects_empty(self):
+        """Link fields get their `required` flag from field_attrs, like any other."""
+        self.assertRequiredError('Required Link', {'Required Link': ''})
+
+    def test_required_null_boolean_link_field_rejects_null(self):
+        """NullCheckboxSelect maps any non-boolean value to None; `required`
+           means that null answer is not acceptable."""
+        self.assertRequiredError('Required Null Boolean', {'Required Null Boolean': ''})
+        self.assertRequiredError('Required Null Boolean', {'Required Null Boolean': 'unknown'})
+
+    def test_required_null_boolean_link_field_accepts_booleans(self):
+        for value in ('true', 'false'):
+            self.assertEqual(self.errors_for({'Required Null Boolean': value}), {})
+
+    def test_optional_null_boolean_link_field_accepts_null(self):
+        """Only required null booleans are enforced; optional ones still accept null."""
+        errors = self.errors_for({'Optional Null Boolean': 'unknown'})
+        self.assertNotIn(self.question('Optional Null Boolean'), errors)
+
+    def test_submission_surfaces_error_to_user(self):
+        """End-to-end: an empty required field re-renders the form with the error."""
+        self.client.login(username='reqfield_student', password='password')
+        response = self.client.get("/customforms/view/%d/" % self.form.id)
+        self.assertEqual(response.status_code, 200)
+
+        post_dict = {'combo_form-current_step': '0'}
+        post_dict.update(self.post_data({'Required Text': ''}))
+        response = self.client.post("/customforms/view/%d/" % self.form.id, post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.question('Required Text'), response.context['form'].errors)
+        self.assertContains(response, 'This field is required.')
+        self.client.logout()
