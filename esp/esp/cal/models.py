@@ -78,6 +78,14 @@ class Event(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
     group = models.IntegerField(blank=True, null=True) # Event group
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['program', 'start', 'end'],
+                name='unique_event_program_start_end',
+            ),
+        ]
+        
     def title(self):
         return self.name
 
