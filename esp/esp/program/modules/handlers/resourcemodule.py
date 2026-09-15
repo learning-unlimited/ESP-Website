@@ -134,7 +134,11 @@ class ResourceModule(ProgramModuleObj):
                         return (HttpResponseBadRequest('Invalid or missing timeslot ID.'), {})
                 form = TimeslotForm(data, auto_id="timeslot_%s", program = prog)
                 if form.is_valid():
-                    controller.add_or_edit_timeslot(form)
+                    try:
+                        controller.add_or_edit_timeslot(form)
+                    except IntegrityError:
+                        form.add_error(None, 'This timeslot was just created by another request. Please refresh and try again.')
+                        context['timeslot_form'] = form
                 else:
                     context['timeslot_form'] = form
 

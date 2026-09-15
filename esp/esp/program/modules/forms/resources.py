@@ -24,7 +24,7 @@ class TimeslotForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
-            program = kwargs.pop('program')
+            self.program = kwargs.pop('program')
         else:
             raise KeyError('Need to supply program as named argument to TimeslotForm')
         super().__init__(*args, **kwargs)
@@ -32,7 +32,7 @@ class TimeslotForm(forms.Form):
                                                     Note that the assigned value is solely for grouping purposes; the blocks displayed on
                                                     availability forms will be numbered consecutively based on the first timeslot in the block.
                                                     Any timeslots with no value indicated will be grouped together based on the
-                                                    <a href = '%stags/teach' target='_blank'>'Availability group tolerance' tag</a>.""" % program.get_manage_url())
+                                                    <a href = '%stags/teach' target='_blank'>'Availability group tolerance' tag</a>.""" % self.program.get_manage_url())
 
     def load_timeslot(self, slot):
         self.fields['name'].initial = slot.short_description
@@ -50,6 +50,25 @@ class TimeslotForm(forms.Form):
         cleaned_data = super().clean()
         if cleaned_data.get('openclass') and cleaned_data.get('compulsory'):
             raise forms.ValidationError("A timeslot cannot be both 'Open Class' and 'Compulsory' at the same time.")
+
+        start = cleaned_data.get('start')
+        hours = cleaned_data.get('hours')
+        minutes = cleaned_data.get('minutes')
+        if start is not None and hours is not None and minutes is not None:
+            end = start + timedelta(hours=hours, minutes=minutes)
+
+            duplicates = Event.objects.filter(
+                program=self.program,
+                start=start,
+                end=end,
+            )
+            existing_id = cleaned_data.get('id')
+            if existing_id:
+                duplicates = duplicates.exclude(pk=existing_id)
+
+            if duplicates.exists():
+                raise forms.ValidationError("A timeslot with these start and end times already exists.")
+
         return cleaned_data
 
     def save_timeslot(self, program, slot):
