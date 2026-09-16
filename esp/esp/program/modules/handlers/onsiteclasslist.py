@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import json
+import math
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -411,7 +412,8 @@ class OnSiteClassList(ProgramModuleObj):
             context['refresh'] = defaults['refresh']
 
         try:
-            context['scrollspeed'] = float(options.get('scrollspeed', defaults['scrollspeed']) or defaults['scrollspeed'])
+            parsed_scrollspeed = float(options.get('scrollspeed', defaults['scrollspeed']) or defaults['scrollspeed'])
+            context['scrollspeed'] = parsed_scrollspeed if math.isfinite(parsed_scrollspeed) else defaults['scrollspeed']
         except (ValueError, TypeError):
             context['scrollspeed'] = defaults['scrollspeed']
 

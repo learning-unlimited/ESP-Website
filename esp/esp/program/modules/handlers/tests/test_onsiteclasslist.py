@@ -661,6 +661,21 @@ class ClassListReloadTests(ProgramFrameworkTest):
         content = self._render({'refresh': '120', 'scrollspeed': '0.5'})
         self.assertIn('scroll_offset -= 0.5;', content)
 
+    def test_scrollspeed_nan_fallback(self):
+        """scrollspeed='nan' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'nan'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_inf_fallback(self):
+        """scrollspeed='inf' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'inf'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_overflow_fallback(self):
+        """scrollspeed='1e309' overflows to inf (non-finite); must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '1e309'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
 
 class OnsiteAuthorizationTests(CacheFlushTestCase):
     """Integration-level tests for the needs_onsite access guard on catalog_status.
