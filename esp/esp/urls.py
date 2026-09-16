@@ -39,6 +39,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic import TemplateView
+from django.views.i18n import JavaScriptCatalog
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
 
@@ -76,6 +77,12 @@ urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + st
 # Robots.txt
 urlpatterns += [
     path('robots.txt', TemplateView.as_view(template_name="robots.txt", content_type="text/plain"), name='robots_txt')
+]
+
+# Translation catalog for the admin widgets reused outside the admin site
+# (the admin's own jsi18n view is behind a staff-only login)
+urlpatterns += [
+    path('jsi18n/', JavaScriptCatalog.as_view(packages=['django.contrib.admin']), name='javascript_catalog')
 ]
 
 # Admin stuff

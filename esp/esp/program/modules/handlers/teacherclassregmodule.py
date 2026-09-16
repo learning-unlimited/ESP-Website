@@ -41,6 +41,7 @@ from esp.program.models          import ClassSubject, ClassSection, Program, Pro
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.resources.models        import ResourceRequest
+from esp.tagdict.active_fields    import inactive_teacherreg_fields
 from esp.tagdict.models          import Tag
 from esp.utils.web               import render_to_response
 from esp.dbmail.models           import send_mail
@@ -1013,16 +1014,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
 
                 # Makes importing a class from a previous program work
-                # These are the only three fields that can currently be hidden
+                # These are the only hidden fields with a default tag to fall back on
                 # If another one is added later, this will need to be changed
-                hidden_fields = Tag.getProgramTag('teacherreg_hide_fields', prog)
-                if hidden_fields:
-                    if 'grade_min' in hidden_fields:
-                        current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
-                    if 'grade_max' in hidden_fields:
-                        current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
-                    if 'class_size_max' in hidden_fields:
-                        current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
+                hidden_fields = inactive_teacherreg_fields(prog)
+                if 'grade_min' in hidden_fields:
+                    current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
+                if 'grade_max' in hidden_fields:
+                    current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
+                if 'class_size_max' in hidden_fields:
+                    current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
 
                 if not populateonly:
                     context['class'] = newclass

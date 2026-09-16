@@ -4,13 +4,13 @@ from django.contrib import admin
 from esp.admin import admin_site
 from esp.tagdict.models import Tag
 from esp.tagdict.validators import (
-    ALL_HIDE_FIELDS_TAG_KEYS,
-    validate_hide_fields_value,
+    ALL_FIELD_NAME_TAG_KEYS,
+    validate_field_names_value,
 )
 
 
 class TagAdminForm(forms.ModelForm):
-    """ModelForm for Tag that validates *_hide_fields tag values."""
+    """ModelForm for Tag that validates *_active_fields/*_hide_fields tag values."""
 
     value = forms.CharField(required=False, widget=forms.Textarea)
 
@@ -23,8 +23,8 @@ class TagAdminForm(forms.ModelForm):
         key = cleaned_data.get('key', '')
         value = cleaned_data.get('value', '')
 
-        if key in ALL_HIDE_FIELDS_TAG_KEYS and value:
-            result = validate_hide_fields_value(key, value)
+        if key in ALL_FIELD_NAME_TAG_KEYS and value:
+            result = validate_field_names_value(key, value)
             if result is not None:
                 _valid_fields, invalid_fields, valid_set = result
                 if invalid_fields:
