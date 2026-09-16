@@ -2,6 +2,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, StudentInfo, Record, RecordType
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
+from esp.middleware import ESPError_NoLog
 
 
 class TestUserSearchController(ProgramFrameworkTest):
@@ -53,6 +54,48 @@ class TestUserSearchController(ProgramFrameworkTest):
         result = ESPUser.objects.filter(query)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
+
+    def _usernames_for(self, criteria):
+        query = self.controller.query_from_criteria('any', criteria)
+        return sorted(ESPUser.objects.filter(query).distinct()
+                      .values_list('username', flat=True))
+
+    def test_username_matches_whole_username_only(self):
+        """A plain username should match that account and not longer usernames."""
+        ESPUser.objects.create_user(username='john', password='x')
+        ESPUser.objects.create_user(username='johnny', password='x')
+        ESPUser.objects.create_user(username='ajohn', password='x')
+
+        self.assertEqual(self._usernames_for({'username': 'john'}), ['john'])
+
+    def test_username_is_case_insensitive_and_stripped(self):
+        ESPUser.objects.create_user(username='john', password='x')
+
+        self.assertEqual(self._usernames_for({'username': '  JoHn  '}), ['john'])
+
+    def test_username_supports_anchored_regexes(self):
+        """Regex searches keep working, but each alternative must match in full."""
+        for username in ['esp_alice', 'esp_bob', 'esp_bobby', 'carol']:
+            ESPUser.objects.create_user(username=username, password='x')
+
+        self.assertEqual(self._usernames_for({'username': 'esp_.*'}),
+                         ['esp_alice', 'esp_bob', 'esp_bobby'])
+        self.assertEqual(self._usernames_for({'username': 'esp_bob|carol'}),
+                         ['carol', 'esp_bob'])
+        #   Already-anchored patterns keep working
+        self.assertEqual(self._usernames_for({'username': '^carol$'}), ['carol'])
+
+    def test_username_not_excludes_whole_username_only(self):
+        ESPUser.objects.create_user(username='john', password='x')
+        ESPUser.objects.create_user(username='johnny', password='x')
+
+        usernames = self._usernames_for({'username': 'john', 'username__not': 'true'})
+        self.assertNotIn('john', usernames)
+        self.assertIn('johnny', usernames)
+
+    def test_invalid_username_regex_raises(self):
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_criteria('any', {'username': 'john('})
 
     def test_overlap_bug(self):
         """
