@@ -29,7 +29,7 @@ class ESPAuthBackend(ModelBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):
         try:
             user = ESPUser.objects.get_by_natural_key(username)
-            if user.check_password(password):
+            if user.check_password(password) and self.user_can_authenticate(user):
                 return user
         except ESPUser.DoesNotExist:
             # Run the default password hasher once to reduce the timing

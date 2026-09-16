@@ -1948,13 +1948,11 @@ class ESPAuthBackendAwaitingActivationTest(TestCase):
 
     def test_authenticate_returns_none_for_awaiting_activation(self):
         """authenticate() must block accounts awaiting email activation."""
-        from django.contrib.auth import authenticate
         result = authenticate(username='backend_pending', password=self.password)
         self.assertIsNone(result, "authenticate() must return None for a pending-activation account")
 
     def test_authenticate_returns_user_for_inactive_non_pending(self):
         """authenticate() must succeed for deliberately deactivated (non-pending) accounts."""
-        from django.contrib.auth import authenticate
         result = authenticate(username='backend_inactive', password=self.password)
         self.assertIsNotNone(result, "authenticate() should return the user for an inactive (non-pending) account")
         self.assertEqual(result.pk, self.inactive_user.pk)
