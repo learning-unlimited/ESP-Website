@@ -107,11 +107,14 @@ def initial_choices(tag_value, choices, legacy_value=None, tag_key=None):
 
 
 def value_from_choices(selected, choices):
-    """ Return the tag value to store for the selected choice values. """
-    if not selected:
-        return NO_FIELDS
+    """ Return the tag value to store for the selected choice values.
+
+    An empty selection stores _ALL_, not _NONE_: a widget that fails to post
+    looks exactly like one the admin emptied, and that must not silently strip
+    every field from a form. _NONE_ is still honored when read.
+    """
     choice_values = [str(choice[0]) for choice in choices]
-    if set(selected) == set(choice_values):
+    if not selected or set(selected) == set(choice_values):
         return ALL_FIELDS
     selected = set(selected)
     return ",".join(value for value in choice_values if value in selected)

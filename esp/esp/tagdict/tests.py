@@ -993,13 +993,17 @@ class ActiveFieldsParsingTest(SimpleTestCase):
         self.assertEqual(initial_choices('phone_cell,shirt_size', self.choices),
                          ['shirt_size', 'phone_cell'])
 
+    def test_empty_selection_is_not_destructive(self):
+        """A widget that posts nothing must not strip every field from a form."""
+        self.assertEqual(value_from_choices([], self.choices), ALL_FIELDS)
+        self.assertEqual(initial_choices(value_from_choices([], self.choices), self.choices),
+                         ['shirt_size', 'shirt_type', 'phone_cell'])
+
     def test_value_round_trips_through_the_form(self):
-        """Selecting every/no choice stores a sentinel rather than an ambiguous value."""
-        self.assertEqual(value_from_choices([], self.choices), NO_FIELDS)
         self.assertEqual(value_from_choices(['shirt_size', 'shirt_type', 'phone_cell'], self.choices),
                          ALL_FIELDS)
         self.assertEqual(value_from_choices(['shirt_size'], self.choices), 'shirt_size')
-        for selected in ([], ['shirt_size'], ['shirt_size', 'phone_cell'],
+        for selected in (['shirt_size'], ['shirt_size', 'phone_cell'],
                          ['shirt_size', 'shirt_type', 'phone_cell']):
             stored = value_from_choices(selected, self.choices)
             self.assertEqual(initial_choices(stored, self.choices), selected)

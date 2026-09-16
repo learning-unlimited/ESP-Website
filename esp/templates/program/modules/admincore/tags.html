@@ -7,12 +7,12 @@
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
-    {# The dual column *_active_fields selectors: the admin widget CSS, the variables
-       it reads, the gettext()/interpolate() SelectFilter2.js calls, then its JS #}
+    {# Admin widget CSS/JS and its gettext catalog, for the *_active_fields selectors #}
     <link rel="stylesheet" href="{% static 'admin/css/widgets.css' %}" type="text/css" />
     <link rel="stylesheet" href="/media/styles/admin_selector.css" type="text/css" />
     <script src="{% url 'javascript_catalog' %}"></script>
     {{ form.media }}
+    <script src="/media/scripts/admin_selector.js"></script>
     <style>
         #id_grade_increment_date_year {
             display: none;

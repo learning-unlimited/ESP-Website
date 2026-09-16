@@ -6,7 +6,7 @@ import logging
 
 from django.db import migrations
 
-from esp.tagdict.active_fields import LEGACY_TAG_KEYS, value_from_choices
+from esp.tagdict.active_fields import ALL_FIELDS, LEGACY_TAG_KEYS, NO_FIELDS
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,12 @@ def split_names(value):
     return {name.strip().lower() for name in (value or '').split(',') if name.strip()}
 
 
+def flush_tag_cache():
+    """ Drop the cached tag lookups, which writes via the historical model miss. """
+    from esp.tagdict.models import Tag as RealTag
+    RealTag._getTag.delete_all()
+
+
 def move_tag(Tag, source, target_key, value):
     """ Write value under target_key on the same target, and drop the source row. """
     if value is None:
@@ -66,14 +72,19 @@ def hide_fields_to_active_fields(apps, schema_editor):
         return
 
     for legacy_key, fields in controllable.items():
-        choices = [(name, name) for name in fields]
         for tag in Tag.objects.filter(key=legacy_key):
             hidden = split_names(tag.value)
             active = [name for name in fields if name not in hidden]
-            value = value_from_choices(active, choices)
-            #   Hiding nothing is the default, so no new tag is needed
-            move_tag(Tag, tag, ACTIVE_TAG_KEYS[legacy_key],
-                     None if len(active) == len(fields) else value)
+            if len(active) == len(fields):
+                #   Hiding nothing is the default, so no new tag is needed
+                value = None
+            elif not active:
+                value = NO_FIELDS
+            else:
+                value = ",".join(active)
+            move_tag(Tag, tag, ACTIVE_TAG_KEYS[legacy_key], value)
+
+    flush_tag_cache()
 
 
 def active_fields_to_hide_fields(apps, schema_editor):
@@ -88,14 +99,16 @@ def active_fields_to_hide_fields(apps, schema_editor):
         active_key = ACTIVE_TAG_KEYS[legacy_key]
         for tag in Tag.objects.filter(key=active_key):
             value = (tag.value or '').strip()
-            if value == '_ALL_' or not value:
+            if value == ALL_FIELDS or not value:
                 hidden = []
-            elif value == '_NONE_':
+            elif value == NO_FIELDS:
                 hidden = list(fields)
             else:
                 active = split_names(value)
                 hidden = [name for name in fields if name not in active]
             move_tag(Tag, tag, legacy_key, ",".join(hidden) if hidden else None)
+
+    flush_tag_cache()
 
 
 class Migration(migrations.Migration):
