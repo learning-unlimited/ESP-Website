@@ -8,6 +8,18 @@ class ESPAuthBackend(ModelBackend):
     https://stackoverflow.com/questions/10682414/django-user-proxy-model-from-request
     and from django/contrib/auth/backends.py as of 1.8.5 """
 
+    def user_can_authenticate(self, user):
+        """
+        Allow inactive users to authenticate (e.g. deliberately deactivated
+        accounts), but reject accounts that are awaiting email activation.
+        The login form still provides the user-facing error message; this
+        guard protects callers of authenticate() that bypass the form,
+        such as the medicalsyncapi view.
+        """
+        if ESPUser.objects.filter(pk=user.pk).filter(ESPUser.awaiting_activation_Q()).exists():
+            return False
+        return True
+
     def get_user(self, user_id):
         try:
             return ESPUser.objects.get(id=user_id)

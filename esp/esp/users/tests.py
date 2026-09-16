@@ -1913,3 +1913,48 @@ class PasswordResetReactivationTest(TestCase):
 
         self.user.refresh_from_db()
         self.assertFalse(self.user.is_active)
+
+
+class ESPAuthBackendAwaitingActivationTest(TestCase):
+    """
+    ESPAuthBackend.authenticate() must return None for accounts that are
+    awaiting email activation, while still authenticating deliberately
+    deactivated (inactive but not pending) accounts.
+
+    This ensures that callers bypassing AuthenticationForm — such as the
+    medicalsyncapi view — cannot receive a pending user object.
+    """
+
+    def setUp(self):
+        from esp.users.models import ESPUser as _ESPUser, PendingActivation
+        self.password = 'correct-horse'
+
+        self.pending_user = _ESPUser.objects.create_user(
+            username='backend_pending',
+            email='backend_pending@example.com',
+            password=self.password,
+        )
+        self.pending_user.is_active = False
+        self.pending_user.save()
+        PendingActivation.objects.create(user=self.pending_user)
+
+        self.inactive_user = _ESPUser.objects.create_user(
+            username='backend_inactive',
+            email='backend_inactive@example.com',
+            password=self.password,
+        )
+        self.inactive_user.is_active = False
+        self.inactive_user.save()
+
+    def test_authenticate_returns_none_for_awaiting_activation(self):
+        """authenticate() must block accounts awaiting email activation."""
+        from django.contrib.auth import authenticate
+        result = authenticate(username='backend_pending', password=self.password)
+        self.assertIsNone(result, "authenticate() must return None for a pending-activation account")
+
+    def test_authenticate_returns_user_for_inactive_non_pending(self):
+        """authenticate() must succeed for deliberately deactivated (non-pending) accounts."""
+        from django.contrib.auth import authenticate
+        result = authenticate(username='backend_inactive', password=self.password)
+        self.assertIsNotNone(result, "authenticate() should return the user for an inactive (non-pending) account")
+        self.assertEqual(result.pk, self.inactive_user.pk)
