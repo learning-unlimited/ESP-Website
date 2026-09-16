@@ -1,7 +1,7 @@
 {% load render_qsd %}
 
-<div class="row-fluid">
-<div class="span10 offset1">
+<div class="row">
+<div class="col-md-10 offset-md-1">
 <table class="table table-condensed" align="center" width="400">
 <tr class="well"><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -28,9 +28,9 @@
 <a href="#module-{{ module.id }}">
 {% endif %}
 {% if module.isCompleted %}
-    <i class="glyphicon glyphicon-ok done-sign" aria-label="Done"></i>
+    <i class="bi bi-check done-sign" aria-label="Done"></i>
 {% else %}
-    <i class="glyphicon glyphicon-remove not-done-sign" aria-label="Not done"></i>
+    <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
 {% endif %}
 </a>
 

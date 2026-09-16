@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import logging
 
 from django.db.models.query import Q
-from django.template import Variable, Context, VariableDoesNotExist
+from django.template import Variable, Context, VariableDoesNotExist, Template
 
 from esp.application.models import FormstackStudentProgramApp
 from esp.program.modules.base import (
@@ -116,18 +116,52 @@ class FormstackAppModule(ProgramModuleObj):
         context['form'] = fsas.form()
         context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
+        context['app_is_open'] = context['form'] is not None and (
+            fsas.app_is_open or request.user.isAdmin(prog)
+        )
         context['autopopulated'] = autopopulated = []
         for line in fsas.autopopulated_fields.strip().split('\n'):
-            if not line.strip():
-                continue
-            field, _, expr = line.partition(':')
-            value = resolve_field_expression(expr, {'user': request.user})
+            field, sep, expr = line.partition(':')
             field_name = field.strip()
-            if value is not None and field_name:
-                autopopulated.append((field_name, value))
+            expr_stripped = expr.strip()
+            #   Require a colon and both halves (also skips blank lines)
+            if not sep or not field_name or not expr_stripped:
+                continue
+
+            if '{{' in expr_stripped or '{%' in expr_stripped:
+                #   Render with autoescape off so the value is raw here;
+                #   studentapp.html escapes once at output, matching the
+                #   dotted-lookup path below. Do not "fix" this to autoescape on.
+                try:
+                    value = Template(expr_stripped).render(
+                        Context({'user': request.user}, autoescape=False)
+                    )
+                except Exception:
+                    expr_preview = (
+                        expr_stripped
+                        if len(expr_stripped) <= 200
+                        else expr_stripped[:197] + '...'
+                    )
+                    logger.exception(
+                        "Error rendering FormstackAppSettings autopopulated "
+                        "field %r with expr %r",
+                        field_name,
+                        expr_preview,
+                    )
+                    continue
+            else:
+                #   Backwards-compatible dotted lookup (e.g. user.username)
+                value = resolve_field_expression(expr_stripped, {'user': request.user})
+
+            #   Skip unresolved/empty; strip stray whitespace before it POSTs to Formstack
+            value = (value or '').strip()
+            if not value:
+                continue
+            autopopulated.append((field_name, value))
+
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, context)
+
 
     @aux_call
     @needs_student_in_grade

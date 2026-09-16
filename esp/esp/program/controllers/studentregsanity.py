@@ -1,4 +1,3 @@
-from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -83,7 +82,8 @@ class StudentRegSanityController(object):
                 report.append((sec, srs.count()))
                 if not fake:
                     for sr in srs:
-                        if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__str__().encode('ascii', 'ignore')])
+                        if csvlog:
+                            csvwriter.writerow([w.title(), ', '.join(sec.friendly_times()), sr.user.name(), str(sr.relationship)])
                         sr.expire()
         logger.debug(report)
         logger.info("Walkins checked")
@@ -107,8 +107,7 @@ class StudentRegSanityController(object):
         if csvlog and not fake:
             csvwriter.writerow(['Sanitizing Lunch Blocks'])
             csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
-        category_lunch = ClassCategories.objects.get(category="Lunch")
-        lunchblocks = self.program.classes().filter(category=category_lunch)
+        lunchblocks = self.program.classes().filter(category__is_lunch=True)
         report = []
         for l in lunchblocks:
             srs = l.getRegistrations()

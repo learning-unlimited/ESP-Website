@@ -43,9 +43,7 @@ def load_schedule_from_db(
     timeslots = sorted(
         batch_convert_events(program.getTimeSlots(), program))
 
-    lunch_events = Event.objects.filter(
-            meeting_times__parent_class__category__category="Lunch",
-            meeting_times__parent_class__parent_program=program)
+    lunch_events = program.lunch_timeslots()
 
     lunch_timeslots = [(e.start, e.end) for e in lunch_events]
 
@@ -88,7 +86,7 @@ def load_sections_and_teachers_and_classrooms(
 
     if exclude_lunch:
         sections = sections.exclude(
-                parent_class__category__category="Lunch")
+                parent_class__category__is_lunch=True)
     if exclude_walkins and schedule.program.open_class_registration:
         sections = sections.exclude(
                 parent_class__category=schedule.program.open_class_category)

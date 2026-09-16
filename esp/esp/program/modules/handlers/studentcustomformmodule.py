@@ -1,4 +1,6 @@
 
+import logging
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -43,7 +45,11 @@ from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
+from django.core.exceptions import SuspiciousOperation
+from django.http import HttpResponseRedirect
 from django.db.models.query import Q
+
+logger = logging.getLogger(__name__)
 
 class StudentCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
@@ -101,6 +107,18 @@ class StudentCustomFormModule(ProgramModuleObj):
     @main_call
     @needs_student_in_grade
     def extraform(self, request, tl, one, two, module, extra, prog):
+        def _safe_wizard_view(**kwargs):
+            try:
+                return FormHandler(cf, request, request.user).get_wizard_view(
+                    wizard_view=StudentCustomComboForm,
+                    extra_context={'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title},
+                    program=prog,
+                    **kwargs,
+                )
+            except SuspiciousOperation:
+                logger.warning('Invalid or missing wizard ManagementForm in StudentCustomFormModule.extraform', exc_info=True)
+                return HttpResponseRedirect(request.path)
+
         custom_form_id = Tag.getProgramTag('learn_extraform_id', prog)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
@@ -114,11 +132,9 @@ class StudentCustomFormModule(ProgramModuleObj):
         #   If the user already filled out the form, use their earlier response for the initial values
         if self.isCompleted(request.user):
             prev_result_data = TeacherCustomFormModule.get_prev_data(cf, request)
-            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=StudentCustomComboForm, initial_data = prev_result_data,
-                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title}, program = prog)
+            return _safe_wizard_view(initial_data=prev_result_data)
         else:
-            return FormHandler(cf, request, request.user).get_wizard_view(wizard_view=StudentCustomComboForm,
-                               extra_context = {'prog': prog, 'qsd_name': 'learn:customform_header', 'module': self.module.link_title}, program = prog)
+            return _safe_wizard_view()
 
     def isStep(self):
         custom_form_id = Tag.getProgramTag('learn_extraform_id', self.program)

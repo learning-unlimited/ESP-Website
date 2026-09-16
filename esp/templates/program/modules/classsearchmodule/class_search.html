@@ -7,15 +7,6 @@
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/query-builder.css"/>
-    <style>
-    .btn-group a {
-        color: #333333 !important;
-        text-decoration: none !important;
-    }
-    .dropdown-menu a:hover {
-        color: #ffffff !important;
-    }
-    </style>
 {% endblock %}
 
 {% block xtrajs %}
@@ -36,77 +27,190 @@
 <p><strong>No class with ID {{ id_query }} found. Attempting as title search:</strong></p>
 {% endif %}
 
-{% load query_builder %}
-{% render_query_builder query_builder query %}
+{# ---- Simple Search Form ---- #}
+<div class="well">
+    <p class="text-muted">Fill in any combination of fields below and click Search. All filled fields are ANDed together.</p>
+    <form method="get" action="">
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label" for="s_title">Title contains</label>
+                <input type="text" class="form-control" id="s_title" name="s_title" value="{{ s_title }}" placeholder="e.g., Python" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="s_teacher">Teacher username contains</label>
+                <input type="text" class="form-control" id="s_teacher" name="s_teacher" value="{{ s_teacher }}" placeholder="e.g., jsmith" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="s_category">Category</label>
+                <select class="form-select" id="s_category" name="s_category">
+                    <option value="">-- Any --</option>
+                    {% for cat in simple_categories %}
+                    <option value="{{ cat.id }}" {% if s_category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-4">
+                <label class="form-label" for="s_status">Status</label>
+                <select class="form-select" id="s_status" name="s_status">
+                    <option value="">-- Any --</option>
+                    {% for val, label in simple_status_choices %}
+                    <option value="{{ val }}" {% if s_status == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="s_grade_min">Open to grades from</label>
+                <select class="form-select" id="s_grade_min" name="s_grade_min">
+                    <option value="">-- Any --</option>
+                    {% for g in simple_grades %}
+                    <option value="{{ g }}" {% if s_grade_min == g|stringformat:"s" %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label" for="s_grade_max">Open to grades through</label>
+                <select class="form-select" id="s_grade_max" name="s_grade_max">
+                    <option value="">-- Any --</option>
+                    {% for g in simple_grades %}
+                    <option value="{{ g }}" {% if s_grade_max == g|stringformat:"s" %}selected{% endif %}>{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="mt-2">
+            <button type="submit" class="btn btn-primary">
+                <span class="bi bi-search" aria-hidden="true"></span>&nbsp;Search
+            </button>
+            <a href="?" class="btn btn-secondary text-decoration-none">
+                <span class="bi bi-x-lg" aria-hidden="true"></span>&nbsp;Clear
+            </a>
+        </div>
+    </form>
+</div>
+
+{# ---- Advanced Query Builder (Collapsible) ---- #}
+<div id="advancedSearchToggle" style="margin-bottom: 20px;">
+    <a href="#advancedSearch" class="btn btn-sm btn-info text-decoration-none" data-bs-toggle="collapse"
+       data-bs-target="#advancedSearch" role="button" aria-controls="advancedSearch"
+       aria-expanded="false">
+        {% if simple_search_active %}Refine with Advanced Search &raquo;{% else %}Advanced Search Options &raquo;{% endif %}
+    </a>
+</div>
+
+<div id="advancedSearch" class="collapse">
+    <div class="well">
+        <h3>Advanced Search</h3>
+        {% load query_builder %}
+        {% render_query_builder query_builder query %}
+    </div>
+</div>
 
 {% if queryset %}
 <p>
 Your query returned {{queryset|length}} of {{program.classsubject_set.count}} classes in {{program.niceName}}.  Click on a class or flag to see more detail (<a href="#" onclick="showAll()">show all</a> <a href="#" onclick="showWithComments()">show comments</a> <a href="#" onclick="hideAll()">hide all</a>).  Or <a href="?">search again</a>.
 </p>
 
-<div class="btn-group">
-    <button class="btn btn-approve" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
-    <button class="btn btn-unreview" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
-    <button class="btn btn-reject" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
+<div class="btn-group mb-2">
+    <button class="btn btn-success" onclick="approveAll({{ IDs|escapejs }});">Approve All</button>
+    <button class="btn btn-light" onclick="unreviewAll({{ IDs|escapejs }});">Unreview All</button>
+    <button class="btn btn-warning" onclick="rejectAll({{ IDs|escapejs }});">Reject All</button>
+    <button class="btn btn-info" onclick="showAutoRuleModal();" {% if not query %}style="display:none;"{% endif %}>Create Auto-Flag Rule</button>
 </div>
-<div class="btn-toolbar">
-    <div class="btn-group" id="catalog_links">
-        <a class="btn" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
-    </div>
-    <div class="btn-group" id="spreadsheet_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+
+<!-- Auto-Flag Rule Modal -->
+<div id="autorule-modal" class="modal fade" tabindex="-1">
+ <div class="modal-dialog">
+  <div class="modal-content">
+  <div class="modal-header">
+    <h3 class="modal-title">Create Auto-Flag Rule</h3>
+    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+  </div>
+  <div class="modal-body">
+    <p>This will automatically add the selected flag to any class that matches the current search criteria whenever it is saved.</p>
+    <form id="autorule-form" action="./create_autorule" method="POST">
+        {% csrf_token %}
+        <input type="hidden" name="query_data" value="{{ query_json }}">
+        <label for="flag_type_id">Flag Type:</label>
+        <select name="flag_type_id" id="flag_type_id" required>
+            {% for ft in flag_types %}
+                <option value="{{ ft.id }}">{{ ft.name }}</option>
+            {% endfor %}
+        </select>
+        <label for="rule_comment">Comment (optional):</label>
+        <textarea name="comment" id="rule_comment" placeholder="Automatically added by rule."></textarea>
+        <label style="display:block; margin-top:10px;">
+            <input type="checkbox" name="apply_existing" value="1" checked>
+            Also apply this flag to all existing classes matching the current query
+        </label>
+    </form>
+  </div>
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <a href="#" class="btn btn-primary text-decoration-none" onclick="$j('#autorule-form').submit();">Save Rule</a>
+  </div>
+  </div>
+ </div>
+</div>
+
+<script type="text/javascript">
+function showAutoRuleModal() {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('autorule-modal')).show();
+}
+</script>
+<div class="btn-toolbar gap-2 mb-2">
+    <a class="btn btn-primary text-decoration-none" id="catalog_links" href="./coursecatalog?clsids={{ IDs|join:',' }}" target="_blank" title="Change sorting with the 'catalog_sort_fields' tag">Course Catalog</a>
+    <div class="dropdown" id="spreadsheet_links">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             Class Spreadsheets
-            <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu">
-            <li><a href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">By ID</a></li>
-            <li><a href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">By Title</a></li>
-            <li><a href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">By Time</a></li>
+            <li><a class="dropdown-item" href="./classesbyid?clsids={{ IDs|join:',' }}" target="_blank">By ID</a></li>
+            <li><a class="dropdown-item" href="./classesbytitle?clsids={{ IDs|join:',' }}" target="_blank">By Title</a></li>
+            <li><a class="dropdown-item" href="./classesbytime?clsids={{ IDs|join:',' }}" target="_blank">By Time</a></li>
         </ul>
     </div>
-    <div class="btn-group" id="flag_printable_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+    <div class="dropdown" id="flag_printable_links">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             Class Flag Printables
-            <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu">
-            <li><a href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">Without Comments</a></li>
-            <li><a href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">With Comments</a></li>
+            <li><a class="dropdown-item" href="./classflagdetails?clsids={{ IDs|join:',' }}" target="_blank">Without Comments</a></li>
+            <li><a class="dropdown-item" href="./classflagdetails?comments&clsids={{ IDs|join:',' }}" target="_blank">With Comments</a></li>
         </ul>
     </div>
 </div>
-<div class="btn-toolbar">
-    <div id="reg_types_div" class="btn-group">
-        Select student registration type(s):</br>
-        <select name="regtypes" id="regtypes" multiple>
+<div class="btn-toolbar gap-2 align-items-end mb-2">
+    <div id="reg_types_div">
+        <label class="form-label mb-0" for="regtypes">Select student registration type(s):</label>
+        <select class="form-select w-auto" name="regtypes" id="regtypes" multiple>
             {% for regtype in regtypes %}
             <option {% if regtype.description %}title="{{ regtype.description }}" {% endif %}value="{{ regtype.name }}"{% if regtype.name == "Enrolled" %} selected{% endif %}>{{ regtype }}</option>
             {% endfor %}
         </select>
     </div>
-    <div class="btn-group" id="student_links" data-clsids="{{ IDs|join:',' }}">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+    <div class="dropdown" id="student_links" data-clsids="{{ IDs|join:',' }}">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             Student Links
-            <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu">
-            <li><a href="./selectList?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Get Student Information</a></li>
-            <li><a href="./commpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Email Students</a></li>
+            <li><a class="dropdown-item" href="./selectList?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Get Student Information</a></li>
+            <li><a class="dropdown-item" href="./commpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Email Students</a></li>
             {% if program|hasModule:"GroupTextModule" %}
-            <li><a href="./grouptextpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Text Students</a></li>
+            <li><a class="dropdown-item" href="./grouptextpanel?clsid={{ IDs|join:',' }}&regtypes=Enrolled" target="_blank">Text Students</a></li>
             {% endif %}
         </ul>
     </div>
-    <div class="btn-group" id="teacher_links">
-        <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+    <div class="dropdown" id="teacher_links">
+        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
             Teacher Links
-            <span class="caret"></span>
-        </a>
+        </button>
         <ul class="dropdown-menu">
-            <li><a href="./selectList?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Get Teacher Information</a></li>
-            <li><a href="./commpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Email Teachers</a></li>
+            <li><a class="dropdown-item" href="./selectList?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Get Teacher Information</a></li>
+            <li><a class="dropdown-item" href="./commpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Email Teachers</a></li>
             {% if program|hasModule:"GroupTextModule" %}
-            <li><a href="./grouptextpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Text Teachers</a></li>
+            <li><a class="dropdown-item" href="./grouptextpanel?recipient_type=Teacher&userid={% for cls in queryset %}{% for teacher in cls.teachers.all %}{{ teacher.id }}{% if not forloop.last %},{% endif %}{% endfor %}{% if cls.teachers.exists and not forloop.last %},{% endif %}{% endfor %}" target="_blank">Text Teachers</a></li>
             {% endif %}
         </ul>
     </div>
@@ -124,27 +228,17 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
                     {% include "program/modules/classflagmodule/flag_name.html" %}
                 {% endfor %}
             </div>
-            <div class="fqr-class-buttons btn-toolbar">
+            <div class="fqr-class-buttons btn-toolbar gap-2">
+                <button class="btn btn-dark" onclick="manage({{class.id}});">manage</button>
+                <button class="btn btn-secondary" onclick="edit({{class.id}});">edit</button>
                 <div class="btn-group">
-                    <button class="btn btn-default" onclick="manage({{class.id}});">manage</button>
+                    <button class="btn btn-success" onclick="approve({{class.id}});">approve</button>
+                    <button class="btn btn-light" onclick="unreview({{class.id}});">unreview</button>
+                    {% if not class.hasScheduledSections %}<button class="btn btn-warning" id="reject_{{ class.id }}" onclick="reject({{class.id}});">reject</button>{% endif %}
                 </div>
-                <div class="btn-group">
-                    <button class="btn btn-default" onclick="edit({{class.id}});">edit</button>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-approve" onclick="approve({{class.id}});">approve</button>
-                    <button class="btn btn-unreview" onclick="unreview({{class.id}});">unreview</button>
-                    {% if not class.hasScheduledSections %}<button class="btn btn-reject" id="reject_{{ class.id }}" onclick="reject({{class.id}});">reject</button>{% endif %}
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
-                </div>
-                <div class="btn-group">
-                    <button class="btn btn-default" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
-                </div>
-                <div class="btn-group">
-                    <button class="add-flag btn btn-default">add flag</button>
-                </div>
+                <button class="btn btn-danger" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+                <button class="btn btn-secondary" onclick="emailTeachers('{{class.emailcode}}-teachers@{{EMAIL_HOST_SENDER}}', 'Your {{program.program_type}} Class {{class.emailcode}}: {{class.title}}');">email</button>
+                <button class="add-flag btn btn-info">add flag</button>
             </div>
             <div class="fqr-class-detail" style="display: none;">
                 {% include "program/modules/classsearchmodule/class_detail.html" %}
@@ -159,7 +253,7 @@ Your query returned {{queryset|length}} of {{program.classsubject_set.count}} cl
     {% endfor %}
 </div>
 {% elif query %}
-No classes were found.
+<p><strong>No classes were found matching your criteria.</strong></p>
 {% endif %}
 {% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}

@@ -94,7 +94,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
             response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)
             if request.GET['gen_img'] == 'json':
                 import base64
-                src = f"data:image/png;base64,{base64.b64encode(response.content)}"
+                src = f"data:image/png;base64,{base64.b64encode(response.content).decode('ascii')}"
                 data = {
                     'src': src,
                     'id': req.id,

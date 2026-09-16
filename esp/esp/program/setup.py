@@ -47,14 +47,52 @@ def prepare_program(program, data):
     perms = []
     modules = []
 
-    perms += [('Student/All', None, data['student_reg_start'], data['student_reg_end'])] #it is recursive
-    perms += [('Student/Profile', None, data['student_reg_start'], None)]
-    perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
-    perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
-    perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
-    perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
+    perms += [('Student/All', None, data.get('student_reg_start'), data.get('student_reg_end'))] #it is recursive
+    perms += [('Student/Profile', None, data.get('student_reg_start'), None)]
+    perms += [('Teacher/All', None, data.get('teacher_reg_start'), data.get('teacher_reg_end'))]
+    perms += [('Teacher/Classes/View', None, data.get('teacher_reg_start'), None)]
+    perms += [('Teacher/MainPage', None, data.get('teacher_reg_start'), None)]
+    perms += [('Teacher/Profile', None, data.get('teacher_reg_start'), None)]
 
-    modules += [(i.admin_title, i.id) for i in data['program_modules']]
+    existing_perm_types = {p[0] for p in perms}
+
+    for pm in data.get('program_modules', []):
+        try:
+            handler_cls = pm.getPythonClass()
+        except Exception:
+            handler_cls = None
+
+        if handler_cls:
+            perm_types = ()
+            if hasattr(handler_cls, 'get_permission_types'):
+                try:
+                    perm_types = handler_cls.get_permission_types(handler_cls)
+                except Exception:
+                    perm_types = getattr(handler_cls, 'permission_types', ())
+            else:
+                perm_types = getattr(handler_cls, 'permission_types', ())
+
+            for perm_type in perm_types:
+                if perm_type in existing_perm_types:
+                    continue
+
+                if perm_type.startswith('Student') or getattr(pm, 'module_type', '') == 'learn':
+                    start_date = data.get('student_reg_start')
+                    end_date = data.get('student_reg_end')
+                elif perm_type.startswith('Teacher') or getattr(pm, 'module_type', '') == 'teach':
+                    start_date = data.get('teacher_reg_start')
+                    end_date = data.get('teacher_reg_end')
+                elif perm_type.startswith('Volunteer') or getattr(pm, 'module_type', '') == 'volunteer':
+                    start_date = data.get('teacher_reg_start') or data.get('student_reg_start')
+                    end_date = data.get('teacher_reg_end') or data.get('student_reg_end')
+                else:
+                    start_date = data.get('student_reg_start')
+                    end_date = data.get('student_reg_end')
+
+                perms.append((perm_type, None, start_date, end_date))
+                existing_perm_types.add(perm_type)
+
+    modules += [(i.admin_title, i.id) for i in data.get('program_modules', [])]
 
     return perms, modules
 
@@ -75,6 +113,9 @@ def commit_program(prog, perms, cost=0, sibling_discount=None):
             new_perm.role=Group.objects.get(name="Student")
         elif tup[1] is None and tup[0].startswith("Teacher"):
             new_perm.role=Group.objects.get(name="Teacher")
+        elif tup[1] is None and tup[0].startswith("Volunteer"):
+            group, _ = Group.objects.get_or_create(name="Volunteer")
+            new_perm.role = group
         else:
             raise ESPError('Invalid permission/deadline: `{}`'.format(tup[1]))
         new_perm.save()

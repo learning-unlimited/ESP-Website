@@ -1,0 +1,196 @@
+#splash_page {
+  width: 706px;
+  margin: 60px auto;
+  height: 470px;
+  background: #fff url(/media/images/theme/splash.png) no-repeat 0% 0% scroll;
+  position: relative;
+  text-align:center;
+}
+
+#student, #teacher {
+  background: transparent;
+  color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+#student {
+  position: absolute;
+  left: 5px;
+  top: 65px;
+  width: 180px;
+  height: 180px;
+}
+
+#about {
+  position: absolute;
+  left: 230px;
+  top: 30px;
+  width: 250px;
+  height: 250px;
+}
+
+#whoarewe {
+  font-variant: small-caps;
+  font-family: sans-serif;
+  font-size: 16px;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  padding: 15px 15px;
+  position: absolute;
+  right: 165px;
+  top: 24px;
+  width: 45px;
+  height: 45px;
+}
+
+#teacher {
+  position: absolute;
+  right: 5px;
+  top: 110px;
+  width: 180px;
+  height: 180px;
+}
+
+#remember {
+  position: absolute;
+  top: 311px;
+  left: 275px;
+}
+
+#remember_label {
+  position: absolute;
+  top: 310px;
+  left: 300px;
+  color: #4d7600;
+}
+
+#orbox {
+  position: absolute;
+  top: 343px;
+  left: 340px;
+  color: #333333;
+}
+
+#login_box_index {
+  box-sizing: content-box !important;
+  position: absolute;
+  top: 380px;
+  left: 220px;
+  width: 265px;
+  height: 70px;
+  background: #4d7600 !important;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+#login_div_index {
+  box-sizing: content-box !important;
+  position: relative;
+  width: 265px;
+  height: 70px;
+  background: #79ab00 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#login_user_index {
+  box-sizing: border-box !important;
+  position: absolute;
+  top: 12px;
+  left: 8px;
+  padding: 1px 4px;
+  height: 20px;
+  font-size: 12px;
+  width: 110px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+}
+
+#login_pswd_index {
+  box-sizing: border-box !important;
+  position: absolute;
+  top: 37px;
+  left: 8px;
+  padding: 1px 4px;
+  height: 20px;
+  font-size: 12px;
+  width: 110px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 2px;
+}
+
+#login_submit {
+  box-sizing: content-box !important;
+  position: absolute;
+  top: 9px;
+  right: 48px;
+  height: 20px;
+  width: 45px;
+  font-size: 11px;
+  line-height: 20px;
+  color: #ffffff !important;
+  background: #4d7600 !important;
+  text-decoration: none;
+  border-radius: 0;
+  border: none;
+  cursor: pointer;
+  z-index: 0;
+  padding: 0 4px 0 0;
+  text-align: center;
+}
+
+#login_arrow1 {
+  box-sizing: content-box !important;
+  position: absolute;
+  top: 9px;
+  right: 93px;
+  height: 0;
+  width: 0;
+  border: 10px solid transparent;
+  border-right-color: #4d7600 !important;
+  cursor: pointer;
+}
+
+#login_arrow2 {
+  box-sizing: content-box !important;
+  position: absolute;
+  top: 9px;
+  right: 48px;
+  height: 0;
+  width: 0;
+  border: 10px solid transparent;
+  border-right-color: #355300 !important;
+  cursor: pointer;
+  z-index: 1;
+}
+
+#login_signup {
+  box-sizing: content-box !important;
+  position: absolute;
+  top: 9px;
+  right: 4px;
+  height: 20px;
+  line-height: 20px;
+  width: 44px;
+  font-size: 11px;
+  color: #ffffff !important;
+  background: #355300 !important;
+  text-decoration: none;
+  border: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+#login_help_index {
+  position: absolute;
+  top: 37px;
+  right: 25px;
+  font-size: smaller;
+  color: #355300 !important;
+  text-decoration: underline;
+}

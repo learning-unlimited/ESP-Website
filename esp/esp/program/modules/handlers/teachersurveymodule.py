@@ -42,6 +42,7 @@ import datetime
 
 class TeacherSurveyModule(ProgramModuleObj):
     doc = """Allows teachers to take post-program/class surveys."""
+    permission_types = ('Teacher/Survey',)
 
     @classmethod
     def module_properties(cls):
