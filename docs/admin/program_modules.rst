@@ -342,7 +342,7 @@ This module will prompt teachers to fill out their profile information before pr
 
 If you would like to remove a question, you can do so using the following tag:
 
-* teacherreg_hide_fields - A comma separated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+* teacherreg_active_fields - Which fields teachers see during teacher registration.
 
 The questions shown on the teacher profile are configurable via the following tags:
 

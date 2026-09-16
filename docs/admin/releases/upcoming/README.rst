@@ -7,6 +7,21 @@ Administrators can navigate to the refunds page (linked under "Quick Links" in t
 
 When a refund is submitted, it is processed synchronously via Stripe, and the results (success or failure) are shown on a confirmation screen. In either case, the CFO is sent an email indicating the status of the refund.
 
+Form Field Selectors
+====================
+
+The tags that control which optional fields appear on the profile and teacher class
+registration forms are now two-column selectors on the tag settings pages.
+
+The tags behind them have been renamed from ``*_hide_fields`` (a list of the fields to
+remove) to ``*_active_fields`` (a list of the fields to keep):
+``student_profile_active_fields``, ``teacher_profile_active_fields``,
+``guardian_profile_active_fields``, ``educator_profile_active_fields``,
+``volunteer_profile_active_fields``, and ``teacherreg_active_fields``.
+
+A migration converts any ``*_hide_fields`` tag you have set, so no action is needed to
+upgrade.
+
 Bug Fixes
 =========
 
