@@ -112,7 +112,7 @@ $j(function () {
   <img src="/static/admin/img/search.svg" border="0" width="16" height="16" alt="Lookup" /></a>
    &nbsp;<strong>%(old_init_val)s</strong>
 </div>
-<input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="span6" />
+<input type="text" id="id_%(fn)s" name="%(fn)s_raw" value="%(data)s" class="col-md-6" />
 <input type="hidden" id="id_%(fn)s_data" name="%(fn)s" />
 """ % dict(fn=fn, data=addslashes(data or ''), old_init_val=old_init_val)
 

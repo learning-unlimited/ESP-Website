@@ -47,6 +47,7 @@ from esp.users.forms.generic_search_form import TeacherSearchForm
 
 class AvailabilityModule(ProgramModuleObj):
     doc = """This program module allows teachers to indicate their availability for the program."""
+    permission_types = ('Teacher/Availability',)
 
     @classmethod
     def module_properties(cls):

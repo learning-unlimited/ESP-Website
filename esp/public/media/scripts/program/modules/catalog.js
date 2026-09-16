@@ -130,12 +130,13 @@ let uniqueLengths = [
     });
 
 // Set up difficulties by getting them from tag data (injected further up)
+// Show both abbreviation and description so students understand each option
 const difficultyFilterElem = document.getElementById("difficulty_filter");
 
-DIFFICULTIES.forEach(([difficulty])=>{
+DIFFICULTIES.forEach(([difficulty, description])=>{
     let option = document.createElement("option")
     option.setAttribute("value", difficulty)
-    option.textContent = difficulty
+    option.textContent = description ? (difficulty + " – " + description) : difficulty
     difficultyFilterElem.append(option)
 });
 

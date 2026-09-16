@@ -28,7 +28,7 @@ The username field should be required and read-only. It will be pre-populated by
 
 The dropdown fields for class choices should include an option for each class in the program. Each option should be associated with its respective class subject (which should be registered on the website in the usual manner) by editing the dropdown field on Formstack, choosing "use separate values", and putting each class's ID number into the "option values" column.
 
-Finally, go to the form settings in Formstack and add a webhook_ to http://WEBSITE_URL/formstack_webhook (where WEBSITE_URL is, for example, esp.mit.edu or stanfordesp.org or splashchicago.learningu.org). This will notify the website whenever the form is submitted, so that the database stays in sync.
+Finally, go to the form settings in Formstack and add a webhook_ to https://WEBSITE_URL/formstack_webhook (where WEBSITE_URL is, for example, esp.mit.edu or stanfordesp.org or splashchicago.learningu.org). This will notify the website whenever the form is submitted, so that the database stays in sync.
 
 .. _webhook: https://blog.formstack.com/2010/create-live-connections-for-your-web-forms-with-webhooks/
 

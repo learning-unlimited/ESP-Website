@@ -38,7 +38,7 @@
   If you would like, we can email you a link to reset your password.
   The email will remind you of your username.
   {% end_inline_qsd_block %}
-  <form action="/myesp/passwdrecover/" method="post">
+  <form action="{% url 'passwd_recover' %}" method="post">
     <input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
     <input type="submit" name="recoverpassword" value="Reset my password" />
   </form>

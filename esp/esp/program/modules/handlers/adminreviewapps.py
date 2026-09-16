@@ -86,10 +86,12 @@ class AdminReviewApps(ProgramModuleObj):
             except StudentApplication.DoesNotExist:
                 student.app = None
 
+            #   This class's reviews, plus program-wide ones (no class).
             if student.app:
-                reviews = student.app.reviews.all()
+                student.app_reviews = student.app.reviews.filter(
+                    Q(class_subject=cls) | Q(class_subject__isnull=True))
             else:
-                reviews = []
+                student.app_reviews = []
 
             if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
                 student.status = 'Accepted'
@@ -192,8 +194,9 @@ Student schedule for {student.name()}:
 
  Time               | Class                   | Room"""
 
-        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
-        classes = sorted([x.section.parent_class for x in regs])
+        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted').select_related('section__parent_class').prefetch_related('section__parent_class__sections__meeting_times')
+        classes = [x.section.parent_class for x in regs]
+        classes.sort(key=lambda s: s._sort_key())
 
         # now we sort them by time/title
 

@@ -12,6 +12,7 @@ class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """
     def setUp(self):
         super().setUp()
+        self._flush_cache()
         # Populate the thread-local request so that get_current_request()
         # never returns None during tests.  Tests using RequestFactory bypass
         # the ThreadLocals middleware, so we prime it here instead.
@@ -30,6 +31,10 @@ class CacheFlushTestCase(TestCase):
         super().tearDown()
 
     def _flush_cache(self):
+        self.__class__._flush_cache_class()
+
+    @classmethod
+    def _flush_cache_class(cls):
         """ Don't do any actual fancy deletions; just change the cache prefix """
         if hasattr(cache, "flush_all"):
             cache.flush_all()
@@ -47,9 +52,10 @@ class CacheFlushTestCase(TestCase):
             from django.conf import settings as django_settings
             django_settings.CACHE_PREFIX = settings.CACHE_PREFIX
 
-    def _fixture_setup(self):
-        self._flush_cache()
+    @classmethod
+    def _fixture_setup(cls):
         super()._fixture_setup()
+        cls._flush_cache_class()
 
     def _fixture_teardown(self):
         self._flush_cache()

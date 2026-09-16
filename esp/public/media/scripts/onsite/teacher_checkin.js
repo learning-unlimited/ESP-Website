@@ -126,7 +126,7 @@ $j(function(){
                 updateSelected(false);
 
                 var $undoButton = $j(document.createElement('button'));
-                $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
+                $undoButton.prop('class', 'btn btn-secondary btn-sm undo-button');
                 $undoButton.text('Undo');
                 $undoButton.on("click", function () {
                     undoLiveCheckIn(username);
@@ -330,7 +330,7 @@ $j(function(){
                             $txtbtn.attr("title","Teacher already checked-in");
 
                             var $undoButton = $j(document.createElement('button'));
-                            $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
+                            $undoButton.prop('class', 'btn btn-secondary btn-sm undo-button');
                             $undoButton.text('Undo');
                             $undoButton.on("click", function () {
                                 undoLiveCheckIn(username);
@@ -412,7 +412,7 @@ $j(function(){
                         $txtbtn.attr("title","Teacher already checked-in");
 
                         var $undoButton = $j(document.createElement('button'));
-                        $undoButton.prop('class', 'btn btn-default btn-mini undo-button');
+                        $undoButton.prop('class', 'btn btn-secondary btn-sm undo-button');
                         $undoButton.text('Undo');
                         $undoButton.on("click", function () {
                             undoLiveCheckIn(username);

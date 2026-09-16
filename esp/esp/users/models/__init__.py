@@ -73,6 +73,7 @@ from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
+from esp.db.autocomplete import allow_non_staff_autocomplete
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -365,33 +366,32 @@ class BaseESPUser(object):
         """
         return ESPUser.email_sendto_address(self.email, self.name())
 
-    def __cmp__(self, other):
-        if other is None:
-            return 1
-        # two anonymous users are equal
-        if isinstance(self, AnonymousESPUser) and isinstance(other, AnonymousESPUser):
-            return 0
-        # otherwise, rank the signed-in user higher
-        elif isinstance(other, AnonymousESPUser):
-            return 1
-        elif isinstance(self, AnonymousESPUser):
-            return -1
-        lastname = cmp(self.last_name.upper(), other.last_name.upper())
-        if lastname == 0:
-           return cmp(self.first_name.upper(), other.first_name.upper())
-        return lastname
+    def _get_sort_key(self):
+        not_anon = not isinstance(self, AnonymousESPUser)
+        # safe fallback to empty string if user is anonymous or normal user with last_name or first_name as None
+        last_name = getattr(self, 'last_name', '') or ''
+        first_name = getattr(self, 'first_name', '') or ''
+        return (not_anon, last_name.upper(), first_name.upper())
+
     def __lt__(self, other):
-        return self.__cmp__(other) < 0
-    def __gt__(self, other):
-        return self.__cmp__(other) > 0
-    def __eq__(self, other):
-        return self.__cmp__(other) == 0
+        if not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() < other._get_sort_key()
+
     def __le__(self, other):
-        return self.__cmp__(other) <= 0
+        if not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() <= other._get_sort_key()
+
+    def __gt__(self, other):
+        if not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() > other._get_sort_key()
+
     def __ge__(self, other):
-        return self.__cmp__(other) >= 0
-    def __ne__(self, other):
-        return self.__cmp__(other) != 0
+        if not isinstance(other, BaseESPUser):
+            return NotImplemented
+        return self._get_sort_key() >= other._get_sort_key()
 
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
@@ -404,6 +404,36 @@ class BaseESPUser(object):
         # RegistrationProfile.getLastProfile for coherence
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.get_last_program_with_profile(self)
+
+    @cache_function
+    def get_last_active_program(self):
+        """Return the most recent program the user participated in, or None.
+
+        "Participated" means the user wrote a registration profile for the
+        program (students/teachers) OR signed up to volunteer for it
+        (VolunteerOffer).
+        """
+        from esp.program.models import RegistrationProfile, Program
+
+        program_ids = set(
+            RegistrationProfile.objects
+                .filter(user=self, program__isnull=False)
+                .values_list('program_id', flat=True)
+        )
+        program_ids.update(
+            self.volunteeroffer_set
+                .values_list('request__program_id', flat=True)
+        )
+
+        if not program_ids:
+            return None
+
+        # A user is in only a handful of programs, so rank them in Python by
+        # program date rather than annotating timeslot dates in SQL.
+        programs = Program.objects.filter(id__in=program_ids)
+        return max(programs, key=lambda p: (p.datetime_range() or (datetime.min,))[0])
+    get_last_active_program.depend_on_row('program.RegistrationProfile', lambda p: {'self': p.user})
+    get_last_active_program.depend_on_row('program.VolunteerOffer', lambda vo: {'self': vo.user})
 
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
@@ -525,6 +555,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 classes = classes.exclude(status=ClassStatus.CANCELLED)
             return classes
+    getTaughtClassesFromProgram.get_or_create_token(('self',))
+    getTaughtClassesFromProgram.get_or_create_token(('program',))
     getTaughtClassesFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row('program.ClassSubject', lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
@@ -535,7 +567,11 @@ class BaseESPUser(object):
             raise ESPError("getModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
             return self.moderating_sections.filter(parent_class__parent_program = program).annotate(start_time = Min('meeting_times__start')).order_by('start_time')
+    getModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getModeratingSectionsFromProgram.get_or_create_token(('program',))
     getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
+    getModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                                   lambda sec, event: {'program': sec.parent_class.parent_program})
     getModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     def getModeratingTimesFromProgram(self, program, exclude = []):
@@ -566,6 +602,8 @@ class BaseESPUser(object):
             if not include_cancelled:
                 sections = sections.exclude(status=ClassStatus.CANCELLED)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('self',))
+    getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('program',))
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator})
     getTaughtOrModeratingSectionsFromProgram.depend_on_m2m('program.ClassSubject', 'teachers', lambda sec, teacher: {'self': teacher})
     getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
@@ -578,14 +616,26 @@ class BaseESPUser(object):
         if not include_cancelled:
             classes = classes.exclude(status=ClassStatus.CANCELLED)
         return classes
-    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {'self': cls})
+    getTaughtClassesAll.get_or_create_token(('self',))
+    getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {})
     getTaughtClassesAll.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
-    getFullClasses_pretty.depend_on_model('program.ClassSubject') # should filter by teachers... eh.
+    getFullClasses_pretty.get_or_create_token(('self',))
+    getFullClasses_pretty.get_or_create_token(('program',))
+    getFullClasses_pretty.depend_on_m2m('program.ClassSubject', 'teachers',
+                                        lambda cls, teacher: {'self': teacher})
+    getFullClasses_pretty.depend_on_row('program.ClassSubject',
+                                        lambda cls: {'program': cls.parent_program})
+    getFullClasses_pretty.depend_on_row('program.StudentRegistration',
+                                        lambda reg: {'program': reg.section.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('program.ClassSection',
+                                        lambda sec: {'program': sec.parent_class.parent_program})
+    getFullClasses_pretty.depend_on_row('tagdict.Tag', lambda tag: {},
+                                        lambda tag: tag.key == 'nearly_full_threshold')
 
     def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
         if program is None:
@@ -603,6 +653,7 @@ class BaseESPUser(object):
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
+    getTaughtSectionsAll.get_or_create_token(('self',))
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
@@ -618,6 +669,7 @@ class BaseESPUser(object):
             sections = sections.exclude(status=ClassStatus.CANCELLED)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
+    getTaughtSectionsFromProgram.get_or_create_token(('self', 'program',))
     getTaughtSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
@@ -678,6 +730,13 @@ class BaseESPUser(object):
     getTypes = staticmethod(getTypes)
 
     @staticmethod
+    def awaiting_activation_Q():
+        """
+        Q object matching accounts that were registered but never activated.
+        """
+        return Q(is_active=False, pending_activation__isnull=False)
+
+    @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
             raise ESPError("Invalid type to find all of.")
@@ -720,9 +779,11 @@ class BaseESPUser(object):
 
         return list(valid_events)
     getAvailableTimes.get_or_create_token(('self', 'program',))
+    getAvailableTimes.get_or_create_token(('program',))
+    getAvailableTimes.get_or_create_token(('self', 'program', 'ignore_classes',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:
-                 {'self':self, 'program':program, 'ignore_classes':True})
+                 {'self':self, 'program':program, 'ignore_classes':False})
     getAvailableTimes.depend_on_m2m('program.ClassSubject', 'teachers', lambda cls, teacher: {'self': teacher, 'program': cls.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'moderators', lambda sec, moderator: {'self': moderator, 'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'program': sec.parent_program})
@@ -834,6 +895,7 @@ class BaseESPUser(object):
         for sec in result:
             sec._timeslot_ids = sec.timeslot_ids()
         return result
+    getEnrolledSectionsFromProgram.get_or_create_token(('self',))
     getEnrolledSectionsFromProgram.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
     getEnrolledSectionsFromProgram.depend_on_cache('program.ClassSection.timeslot_ids', lambda self=wildcard, **kwargs: {})
 
@@ -855,7 +917,11 @@ class BaseESPUser(object):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
+    getFirstClassTime.get_or_create_token(('self',))
+    getFirstClassTime.get_or_create_token(('program',))
     getFirstClassTime.depend_on_row('program.StudentRegistration', lambda reg: {'self': reg.user})
+    getFirstClassTime.depend_on_m2m('program.ClassSection', 'meeting_times',
+                                    lambda sec, event: {'program': sec.parent_class.parent_program})
 
     def can_skip_phase_zero(self, program):
         return Permission.user_has_perm(self, 'OverridePhaseZero', program)
@@ -908,6 +974,7 @@ class BaseESPUser(object):
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).exists()
     #   Invalidate cache when any of the user's financial aid requests are changed
+    appliedFinancialAid.get_or_create_token(('self',))
     appliedFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
     appliedFinancialAid.depend_on_row('accounting.FinancialAidGrant', lambda fr: {'self': fr.request.user})
 
@@ -919,6 +986,7 @@ class BaseESPUser(object):
             return True
         else:
             return False
+    hasFinancialAid.get_or_create_token(('self',))
     hasFinancialAid.depend_on_row('program.FinancialAidRequest', lambda fr: {'self': fr.user})
 
     def isOnsite(self, program=None):
@@ -1277,7 +1345,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, class_subject=subject, reviewer__in=subject.get_teachers(), score__isnull=False).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
@@ -2158,10 +2226,14 @@ class K12School(models.Model):
         help_text='i.e. Public, Private, Charter, Magnet, ...')
     grades      = models.TextField(blank=True, null=True,
         help_text='i.e. "PK, K, 1, 2, 3"')
-    school_id   = models.CharField(max_length=128, blank=True, null=True,
+    school_id   = models.CharField(max_length=128, blank=True, null=True, db_index=True,
         help_text='An 8-digit ID number.')
     contact_title = models.TextField(blank=True, null=True)
-    name          = models.TextField(blank=True, null=True)
+    name          = models.TextField(blank=True, null=True, db_index=True)
+    state         = models.CharField(max_length=2, blank=True, null=True, db_index=True,
+        help_text='Two-letter state code (e.g. MA). Used for filtering and NCES import.')
+    city          = models.CharField(max_length=128, blank=True, null=True, db_index=True,
+        help_text='City. Used for display and filtering.')
 
     objects = K12SchoolManager()
 
@@ -2169,20 +2241,45 @@ class K12School(models.Model):
         app_label = 'users'
         db_table = 'users_k12school'
 
+    # Minimum characters before running server-side search (avoids heavy queries on 50k+ rows)
+    AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH = 2
+    AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
+
     @classmethod
-    def ajax_autocomplete(cls, data, allow_non_staff=True, **kwargs):
-        name = data.strip()
-        query_set = cls.objects.filter(name__icontains = name)
-        values = query_set.order_by('name', 'id').values('name', 'id')
+    @allow_non_staff_autocomplete
+    def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
+        """
+        Server-side autocomplete for K12 schools. Requires a minimum query length
+        and limits results for performance with large datasets (e.g. NCES import).
+        Optionally narrow by state via request GET param 'state' (2-letter code).
+        """
+        name = (data or '').strip()
+        if len(name) < cls.AJAX_AUTOCOMPLETE_MIN_QUERY_LENGTH:
+            return []
+        # Use istartswith for case-insensitive prefix matching in autocomplete results
+        query_set = cls.objects.filter(name__istartswith=name)
+        # Optional state filter: only when request is passed and state is provided
+        if request is not None:
+            state = request.GET.get('state') or ''
+            state = (state.strip().upper())[:2]
+            if state:
+                query_set = query_set.filter(state__iexact=state)
+        query_set = query_set.order_by('name', 'id')[:cls.AJAX_AUTOCOMPLETE_MAX_RESULTS]
+        values = list(query_set.values('name', 'id', 'city', 'state'))
         for value in values:
-            value['ajax_str'] = f'{value["name"]}'
+            # Show "School Name (City, ST)" when we have location
+            if value.get('city') and value.get('state'):
+                value['ajax_str'] = f'{value["name"]} ({value["city"]}, {value["state"]})'
+            else:
+                value['ajax_str'] = f'{value["name"]}'
         return values
 
     def __str__(self):
         if self.contact_id and self.contact.address_city and self.contact.address_state:
             return f'{self.name} in {self.contact.address_city}, {self.contact.address_state}'
-        else:
-            return f'{self.name}'
+        if self.city and self.state:
+            return f'{self.name} in {self.city}, {self.state}'
+        return f'{self.name or ""}'
 
     @classmethod
     def choicelist(cls, other_help_text=''):
@@ -2198,7 +2295,7 @@ class PersistentQueryFilter(models.Model):
         to pass the query along to multiple pages and retrieval (et al). """
     item_model   = models.CharField(max_length=256)            # A string representing the model, for instance User or Program
     q_filter     = models.BinaryField()                         # A bytestring representing a query filter
-    sha1_hash    = models.CharField(max_length=256)            # A sha1 hash of the string representing the query filter
+    sha1_hash    = models.CharField(max_length=256)            # A SHA-256 digest of the pickled query filter. Column name is historical.
     create_ts    = models.DateTimeField(auto_now_add = True)  # The create timestamp
     useful_name  = models.CharField(max_length=1024, blank=True, null=True) # A nice name to apply to this filter.
 
@@ -2213,14 +2310,15 @@ class PersistentQueryFilter(models.Model):
         dumped_filter = pickle.dumps(q_filter)
 
         # Deal with multiple instances
-        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
+        query_q = Q(item_model = str(item_model), q_filter = dumped_filter, sha1_hash = filter_hash)
         pqfs = PersistentQueryFilter.objects.filter(query_q)
         if pqfs.exists():
             foo = pqfs[0]
         else:
             foo, created = PersistentQueryFilter.objects.get_or_create(item_model = str(item_model),
                                                                        q_filter = dumped_filter,
-                                                                       sha1_hash = hashlib.sha1(dumped_filter).hexdigest())
+                                                                       sha1_hash = filter_hash)
         foo.useful_name = description
         foo.save()
         return foo
@@ -2258,10 +2356,10 @@ class PersistentQueryFilter(models.Model):
 
         import hashlib
         dumped_filter = pickle.dumps(q_filter)
-        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+        filter_hash = hashlib.sha256(dumped_filter).hexdigest()
 
         self.q_filter = dumped_filter
-        self.sha1_hash = sha1_hash
+        self.sha1_hash = filter_hash
         self.useful_name = description
 
         if should_save:
@@ -2300,7 +2398,7 @@ class PersistentQueryFilter(models.Model):
         except Exception:
             qobject_string = b''
         try:
-            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha1(qobject_string).hexdigest())#    pass
+            filterObj = PersistentQueryFilter.objects.get(sha1_hash = hashlib.sha256(qobject_string).hexdigest())
         except PersistentQueryFilter.DoesNotExist:
             filterObj = PersistentQueryFilter.create_from_Q(item_model  = model,
                                                             q_filter    = QObject,
@@ -2461,15 +2559,30 @@ class Record(models.Model):
         if cls.user_completed(user, extension.lower(), program):
             return False
         else:
-            cls.objects.create(
-                user = user,
-                event = extension.lower(),
-                program = program
-            )
+            event_obj = RecordType.objects.get(name=extension.lower())
+            cls.objects.create(user=user, event=event_obj, program=program)
             return True
 
     def __str__(self):
         return str(self.user) + " has completed " + str(self.event) + " for " + str(self.program)
+
+class PendingActivation(models.Model):
+    """
+    Marks an account as registered but never activated.
+
+    The presence of a row means "this account is waiting for its owner to
+    click the activation link in their registration email"; the row is
+    deleted the first time the account is successfully activated.
+    """
+    user = models.OneToOneField(ESPUser, related_name='pending_activation',
+                                on_delete=models.CASCADE)
+    created = models.DateTimeField(blank=True, default=datetime.now)
+
+    class Meta:
+        app_label = 'users'
+
+    def __str__(self):
+        return f"{self.user} is awaiting account activation"
 
 #helper method for designing implications
 def flatten(choices):
@@ -2486,6 +2599,17 @@ class Permission(ExpirableModel):
                           help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.", on_delete=models.CASCADE)
     role = models.ForeignKey("auth.Group", blank=True, null=True,
                              help_text="Apply this permission to an entire user role (can be blank).", on_delete=models.CASCADE)
+
+    # Alternatively, a permission can be assigned to a dynamic user filter.
+    # This allows applying permissions to all users matching a saved filter
+    # (e.g. all 7th graders), and will stay up-to-date as users change.
+    user_filter = models.ForeignKey(
+        PersistentQueryFilter,
+        blank=True,
+        null=True,
+        help_text="Apply this permission to all users matching this saved filter.",
+        on_delete=models.PROTECT,
+    )
 
     #For now, we'll use plain text for a description of what permission it is
     PERMISSION_CHOICES = (
@@ -2506,6 +2630,7 @@ class Permission(ExpirableModel):
             ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
             ("Student/PhaseZero", "Enter Phase Zero"),
             ("Student/Applications", "Apply for classes"),
+            ("Student/Catalog", "View the catalog"),
             ("Student/Classes", "Register for classes"),
             ("Student/Classes/Lunch", "Register for lunch"),
             ("Student/Classes/Lottery", "Enter the lottery"),
@@ -2659,11 +2784,59 @@ class Permission(ExpirableModel):
             `datetime`
         """
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        q_obj = cls.q_permissions_on_program(quser, name, program, None, program_is_none_implies_all, is_valid=False).order_by("-end_date")
-        if q_obj.exists():
-            return q_obj[0].end_date
-        else:
+        direct_qs = cls.q_permissions_on_program(
+            quser, name, program, None, program_is_none_implies_all, is_valid=False
+        )
+
+        # Include permissions that apply via a dynamic user_filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            None,
+            program_is_none_implies_all,
+            is_valid=False,
+        ).select_related("user_filter")
+
+        best_direct = direct_qs.order_by("-end_date", "-start_date").first()
+        perms = [best_direct] if best_direct is not None else []
+        membership_cache = {}
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+            cache_key = uf.pk
+            is_member = None
+            if cache_key is not None and cache_key in membership_cache:
+                is_member = membership_cache[cache_key]
+            else:
+                try:
+                    is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+                except ESPError:
+                    # Ignore invalid filters when computing deadlines
+                    if cache_key is not None:
+                        membership_cache[cache_key] = False
+                    continue
+                if cache_key is not None:
+                    membership_cache[cache_key] = is_member
+            if is_member:
+                perms.append(perm)
+
+        if not perms:
             return None
+
+        # Match existing semantics: pick the latest closing time
+        latest = sorted(
+            perms,
+            key=lambda p: (
+                p.end_date is None,
+                p.end_date,
+                p.start_date is None,
+                p.start_date
+            ),
+            reverse=True,
+        )[0]
+        return latest.end_date
 
     @classmethod
     def user_has_perm(cls, user, name, program=None, when=None, program_is_none_implies_all=False):
@@ -2717,9 +2890,53 @@ class Permission(ExpirableModel):
         if user.isAdministrator(program=program):
             return True
 
+        # Direct user / role-based permissions
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
-        return cls.q_permissions_on_program(quser, name, program, when,
-                program_is_none_implies_all).exists()
+        if cls.q_permissions_on_program(
+            quser, name, program, when, program_is_none_implies_all
+        ).exists():
+            return True
+
+        # Permissions granted via a dynamic user filter
+        filter_qs = cls.q_permissions_on_program(
+            Q(user_filter__isnull=False),
+            name,
+            program,
+            when,
+            program_is_none_implies_all,
+        ).select_related('user_filter')
+
+        # Per-request cache for user filter membership checks, keyed by
+        # (user_id, user_filter_id) to avoid repeated DB queries.
+        cache_attr = '_user_filter_membership_cache'
+        membership_cache = getattr(user, cache_attr, None)
+        if membership_cache is None:
+            membership_cache = {}
+            setattr(user, cache_attr, membership_cache)
+
+        for perm in filter_qs:
+            uf = perm.user_filter
+            if uf is None:
+                continue
+
+            key = (user.pk, uf.pk)
+            cached_result = membership_cache.get(key)
+            if cached_result is not None:
+                if cached_result:
+                    return True
+                continue
+
+            try:
+                is_member = uf.getList(ESPUser).filter(pk=user.pk).exists()
+            except ESPError:
+                # Ignore invalid filters when checking permissions
+                membership_cache[key] = False
+                continue
+
+            membership_cache[key] = is_member
+            if is_member:
+                return True
+        return False
 
     @classmethod
     def list_roles_with_perm(cls, name, program):
@@ -2756,18 +2973,21 @@ class Permission(ExpirableModel):
         return bool(self.implications.get(self.permission_type, None))
 
     def __str__(self):
-        #TODO
         if self.user is not None:
-            user = self.user.username
+            grantee = self.user.username
+        elif self.role is not None:
+            grantee = str(self.role)
+        elif self.user_filter is not None:
+            grantee = str(self.user_filter)
         else:
-            user = self.role
+            grantee = "None"
 
         if self.program is not None:
             program = self.program.niceName()
         else:
             program = "None"
 
-        return f"GRANT {self.permission_type} ON {program} TO {user}"
+        return f"GRANT {self.permission_type} ON {program} TO {grantee}"
 
     @classmethod
     def nice_name_lookup(cls, perm_type):
@@ -2866,8 +3086,7 @@ def install():
     """
     logger.info("Installing esp.users initial data...")
     install_groups()
-    if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                     # the one account is the admin account
+    if ESPUser.objects.count() == 1:    # We just did a syncdb; the one account is the admin account
         user = ESPUser.objects.all()[0]
         user.makeAdmin()
 

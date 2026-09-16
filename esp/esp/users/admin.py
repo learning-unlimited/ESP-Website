@@ -87,9 +87,9 @@ class ExpiredListFilter(admin.SimpleListFilter):
             return queryset.filter(end_date__lte=datetime.datetime.now())
 
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'permission_type', 'program', 'start_date', 'end_date']
-    search_fields = default_user_search() + ['permission_type', 'program__url']
-    list_filter = ['permission_type', 'program', 'role', ExpiredListFilter]
+    list_display = ['id', 'user', 'role', 'user_filter', 'permission_type', 'program', 'start_date', 'end_date']
+    search_fields = default_user_search() + ['permission_type', 'program__url', 'user_filter__useful_name']
+    list_filter = ['permission_type', 'program', 'role', 'user_filter', ExpiredListFilter]
     date_hierarchy = 'start_date'
     actions = [ 'expire', 'renew' ]
 
@@ -144,12 +144,12 @@ class EducatorInfoAdmin(UserInfoAdmin):
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
-    list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
+    list_display = ['name', 'city', 'state', 'grades', 'contact_title', 'contact_name', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
     }
-    search_fields = ['name', 'contact__first_name', 'contact__last_name'] #no, using default_user_search does not work.
-    list_filter = ['school_type']
+    search_fields = ['name', 'city', 'state', 'contact__first_name', 'contact__last_name']
+    list_filter = ['school_type', 'state']
     def contact_name(self, obj):
         if obj.contact:
             return f"{obj.contact.first_name} {obj.contact.last_name}"

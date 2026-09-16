@@ -1,12 +1,6 @@
 """
 conftest.py — pytest-django configuration for ESP-Website.
 
-Known compatibility issues:
-- esp/users/controllers/tests/test_usersearch.py: has a class-level
-  `Program.objects.get(id=88)` call that runs at import/collection time.
-  This requires a specific DB fixture with that exact program ID, making it
-  unsuitable for the standard test DB. Excluded via collect_ignore below.
-
 pytest-django integration:
 - DJANGO_SETTINGS_MODULE is set in pytest.ini.
 - pytest-django's auto-detection of the Django project (django_find_project)
@@ -35,16 +29,7 @@ Notes on xdist compatibility:
 import django
 import pytest
 
-collect_ignore = [
-    # These tests query Program.objects.get(id=88) at class level, which fires
-    # at import time before the test DB exists. More importantly, the tests
-    # depend on a specific live database with real students/teachers registered
-    # to that program — they cannot run against a clean test DB regardless of
-    # where the query is placed. One test also contains an unconditional
-    # `assert False` (marked TODO by a prior developer). These are integration
-    # tests for a specific deployment, not portable unit tests.
-    "esp/users/controllers/tests/test_usersearch.py",
-]
+collect_ignore = []
 
 
 def pytest_configure(config):

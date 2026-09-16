@@ -50,6 +50,7 @@ import datetime
 
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
+    permission_types = ('Student/PhaseZero',)
 
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
