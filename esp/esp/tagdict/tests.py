@@ -940,3 +940,90 @@ class TagAdminFormValidationTest(TestCase):
         # Should mention at least one valid field
         any_valid = sorted(TeacherProfileForm.declared_fields.keys())[0]
         self.assertIn(any_valid, error_text)
+
+
+class TagSearchMarkupTest(ProgramFrameworkTest):
+    """
+    Tests the markup the tag settings search box relies on (issue #5251).
+
+    The filtering itself is client side, so these tests only check that the
+    template renders the hooks tag_search.js needs.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _get_page(self, url):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def _urls(self):
+        return ['/manage/tags/', '/manage/%s/tags/' % self.program.getUrlBase()]
+
+    def _search_text_by_tag(self, content):
+        """Map each search row's tag name to its full data-search-text value."""
+        rows = re.findall(r'<tr class="tag-row" data-search-text="([^"]*)"', content)
+        return {row.split(' ')[0]: row for row in rows}
+
+    def _rendered_fields(self, form):
+        """The fields the template actually renders, in fieldset order."""
+        for fieldset in form.fieldsets:
+            if fieldset.name in form.categories:
+                for field in fieldset:
+                    yield field
+
+    def _program_form(self):
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+        return ProgramTagSettingsForm(program=self.program)
+
+    def test_search_box_is_rendered_with_a_label(self):
+        """Both tag pages get a labelled search input and a status region."""
+        for url in self._urls():
+            content = self._get_page(url)
+            self.assertIn('id="tag-search-input"', content)
+            self.assertIn('for="tag-search-input"', content)
+            self.assertIn('id="tag-search-status"', content)
+
+    def test_search_scripts_are_loaded(self):
+        for url in self._urls():
+            content = self._get_page(url)
+            self.assertIn('id="tag-list"', content)
+            self.assertIn('/media/scripts/utils/search_filter.js', content)
+            self.assertIn('/media/scripts/tag_search.js', content)
+
+    def test_rows_are_searchable_by_tag_name(self):
+        """Each visible setting is a search row keyed by its raw tag name.
+
+        The rendered label is a prettified version of the tag name, so the tag
+        name has to come from data-search-text for admins to be able to search
+        for the key they see in the documentation.
+        """
+        content = self._get_page('/manage/%s/tags/' % self.program.getUrlBase())
+        rows = self._search_text_by_tag(content)
+        self.assertTrue(rows, 'No searchable tag rows were rendered')
+
+        for field in self._rendered_fields(self._program_form()):
+            if field.is_hidden:
+                # Hidden settings show no text, so they must not be matchable.
+                self.assertNotIn(field.name, rows)
+            else:
+                self.assertIn(field.name, rows)
+
+    def test_help_text_is_searchable_without_markup(self):
+        """Help text is searchable, with any HTML markup stripped out of it."""
+        from django.utils.html import escape, strip_tags
+
+        content = self._get_page('/manage/%s/tags/' % self.program.getUrlBase())
+        rows = self._search_text_by_tag(content)
+
+        checked = 0
+        for field in self._rendered_fields(self._program_form()):
+            if field.is_hidden or not field.help_text:
+                continue
+            self.assertIn(escape(strip_tags(field.help_text)), rows[field.name])
+            checked += 1
+        self.assertTrue(checked, 'No tags with help text were rendered')
