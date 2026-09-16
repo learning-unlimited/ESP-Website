@@ -6,7 +6,11 @@ describe("SectionInfoPanel", function() {
         sections = new Sections(section_fixture(), {}, teacher_fixture(),
                                     schedule_assignment_fixture(), new FakeApiClient());
         sipNoToggle = new SectionInfoPanel($j("<div>"), sections, null);
-        sipToggle = new SectionInfoPanel($j("<div>"), sections, new MessagePanel($j("<div>"), "Initial Message"));
+        sipToggle = new SectionInfoPanel($j("<div>"), sections, new MessagePanel($j("<div>"), "<i>Initial Message</i>"));
+    });
+
+    it("should keep the initial message in the toggle panel", function() {
+        expect(sipToggle.togglePanel.el[0].innerHTML).toEqual("<i>Initial Message</i>");
     });
 
     describe("hide", function() {

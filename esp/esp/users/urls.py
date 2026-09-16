@@ -1,4 +1,5 @@
 from django.urls import re_path
+from django.views.generic.base import RedirectView
 
 from esp.users import views
 from esp.users.views.registration import GradeChangeRequestView
@@ -11,10 +12,16 @@ urlpatterns = [
         name='esp.users.views.user_registration_phase1'),
     re_path(r'^register/information/?$', views.user_registration_phase2,
         name='esp.users.views.user_registration_phase2'),
-    re_path(r'^activate/?$', views.registration.activate_account, name='activate_account'),
+    re_path(r'^register/check-email/?$', views.registration_live_email_check, name='check_email'),
+    re_path(r'^register/check-password/?$', views.registration_live_password_check, name='check_password'),
+    re_path(r'^register/check-username/?$', views.registration_live_username_check, name='check_username'),
+    re_path(r'^activate/?$', views.registration.activate_account_legacy,
+        name='activate_account_legacy'),
+    re_path(r'^activate/(?P<uidb64>[0-9A-Za-z_\-]+)/(?P<token>[0-9A-Za-z\-]+)/?$',
+        views.registration.activate_account, name='activate_account'),
     re_path(r'^passwdrecover/(success)?/?$', views.initial_passwd_request, name='passwd_recover_success'),
     re_path(r'^passwdrecover/?$', views.initial_passwd_request, name='passwd_recover'),
-    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+    re_path(r'^resetpassword/(?P<uidb64>[-\w]+)/(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]+)/$',
         views.password_reset_confirm, name='password_reset_confirm'),
     re_path(r'^resetpassword/done/?$', views.password_reset_done),
     re_path(r'^resend/?$', views.resend_activation_view,
@@ -41,6 +48,7 @@ urlpatterns += [
 ]
 
 urlpatterns += [
+    re_path(r'^$', RedirectView.as_view(url='accountmanage/', permanent=False)),
     re_path(r'^switchback/?$', myesp.myesp_switchback, name='myesp_switchback'),
     re_path(r'^stop_testing/?$', myesp.myesp_stop_testing, name='myesp_stop_testing'),
     re_path(r'^onsite/?$', myesp.myesp_onsite, name='myesp_onsite'),

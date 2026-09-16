@@ -40,25 +40,31 @@ class Formstack(object):
 
         return self.__request('forms')
 
-    def form(self, id, args = {}):
+    def form(self, id, args=None):
         """Returns detailed information about a form."""
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('form', args)
 
-    def data(self, id, args = {}):
+    def data(self, id, args=None):
         """Returns data collected for a form."""
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('data', args)
 
-    def submission(self, id, args = {}):
+    def submission(self, id, args=None):
         """Returns a single submission collected for a form."""
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('submission', args)
 
-    def submit(self, id, args = {}):
+    def submit(self, id, args=None):
         """
         Submits data to a form. This method does not honor any
         validation or default values configured for a field. because of the lack
@@ -68,33 +74,43 @@ class Formstack(object):
         for the account has been reached.
         """
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('submit', args)
 
-    def edit(self, id, args = {}):
+    def edit(self, id, args=None):
         """
         This method makes changes to an existing submission. Only values
         supplied within args will be overwritten.
         """
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('edit', args)
 
-    def delete(self, id, args = {}):
+    def delete(self, id, args=None):
         """Deletes an existing submission."""
 
+        if args is None:
+            args = {}
         args['id'] = id
         return self.__request('delete', args)
 
-    def create_field(self, form, args = {}):
+    def create_field(self, form, args=None):
         """ Creates a field."""
 
+        if args is None:
+            args = {}
         args['form'] = form
         return self.__request('createField', args)
 
-    def __request(self, method, args = {}):
+    def __request(self, method, args=None):
         """ Makes a Formstack API call and returns the response as an array."""
 
+        if args is None:
+            args = {}
         args['api_key'] = self.__api_key
         args['type'] = 'json'
         req = urllib.request.Request(self.__api_url + '/' + method, \
@@ -120,4 +136,5 @@ class Formstack(object):
 
 class APIError(Exception):
     def __str__(self):
-        return f'Formstack API error: {self.message}'
+        msg = self.args[0] if self.args else ''
+        return f'Formstack API error: {msg}'

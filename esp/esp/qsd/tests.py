@@ -37,7 +37,9 @@ from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
 
+from django.core.cache import cache
 from django.template import Template, Context
+from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
 from reversion import revisions as reversion
 from reversion.models import Version
@@ -215,6 +217,63 @@ class QSDCorrectnessTest(TestCase):
             # Attempting to edit a nonexistent page should give 404, not 500
             response = self.client.get(edit_url)
             self.assertEqual(response.status_code, 404)
+
+
+class QSDDefaultContentTest(TestCase):
+    """ Tests for default QSD content loading in the .edit page (issue #3791). """
+
+    def setUp(self):
+        self.admin, created = ESPUser.objects.get_or_create(username='qsd_default_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+    def test_edit_shows_placeholder_when_no_default(self):
+        """For a URL with no template default, edit should show the placeholder."""
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/learn/nonexistent_page.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Please insert your text here', content)
+
+    def test_edit_shows_cached_default(self):
+        """When default content is cached, edit should show it instead of placeholder."""
+        cache.set(qsd_cache_key('contact'), {
+            'content': '<p>Default contact content from template</p>',
+            'title': 'Contact Us',
+        }, timeout=3600)
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('Default contact content from template', content)
+        self.assertNotIn('Please insert your text here', content)
+
+    def test_cache_populated_by_inline_qsd_block(self):
+        """Rendering a template with inline_qsd_block should populate the cache."""
+        cache.delete(qsd_cache_key('test/defaultblock'))
+        template_data = """
+            {% load render_qsd %}
+            {% inline_qsd_block "test/defaultblock" %}
+            <p>This is the default block content</p>
+            {% end_inline_qsd_block %}
+        """
+        template = Template(template_data)
+        template.render(Context({}))
+        cached = cache.get(qsd_cache_key('test/defaultblock'))
+        self.assertIsNotNone(cached)
+        self.assertIn('This is the default block content', cached['content'])
+
+    def test_edit_loads_default_via_internal_render(self):
+        """Visiting /contact.edit.html should load defaults even without prior cache."""
+        cache.delete(qsd_cache_key('contact'))
+        self.client.login(username='qsd_default_admin', password='password')
+        response = self.client.get('/contact.edit.html')
+        self.assertEqual(response.status_code, 200)
+        content = str(response.content, encoding='UTF-8')
+        # Should contain the contact page default content, not the placeholder
+        self.assertNotIn('Please insert your text here', content)
+        self.assertIn('Before contacting us', content)
 
 
 class QSDVersionHistoryTest(TestCase):
@@ -829,3 +888,86 @@ class QSDAdminAuthorTest(TestCase):
 
         self.qsd.refresh_from_db()
         self.assertEqual(self.qsd.author, self.user2)
+
+
+class HTMLCommentSanitizationTest(TestCase):
+
+    def test_simple_comment_unchanged(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "Hello <!-- comment --> World"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "Hello <!-- comment --> World")
+
+    def test_nested_comment_markers_removed(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- outer <!-- inner --> -->"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertEqual(result, "<!-- outer  inner  -->")
+
+    def test_comment_with_blank_lines(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- ABC\n\nDEF -->"
+        result = sanitize_html_comments(content)
+        self.assertTrue(result.startswith("<!--"))
+        self.assertTrue(result.endswith("-->"))
+        self.assertIn("ABC", result)
+        self.assertIn("DEF", result)
+
+    def test_multiple_comments_unchanged(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- first --> text <!-- second -->"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "<!-- first --> text <!-- second -->")
+
+    def test_html_tags_inside_comment(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- <h2>hidden header</h2> -->"
+        result = sanitize_html_comments(content)
+        self.assertIn("<h2>", result)
+        self.assertIn("</h2>", result)
+
+    def test_unterminated_comment_marker_removed_content_preserved(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "foo <!-- bar"
+        result = sanitize_html_comments(content)
+        # No lone opener survives (would comment out the rest of the page)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        # The text is preserved
+        self.assertIn("foo", result)
+        self.assertIn("bar", result)
+
+    def test_unterminated_nested_comment_all_markers_removed(self):
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "x <!-- a <!-- b"
+        result = sanitize_html_comments(content)
+        self.assertNotIn("<!--", result)
+        self.assertNotIn("-->", result)
+        self.assertIn("a", result)
+        self.assertIn("b", result)
+
+    def test_terminated_comment_still_kept(self):
+        # Guard against the fix accidentally stripping well-formed comments
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "before <!-- keep me --> after"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result, "before <!-- keep me --> after")
+
+    def test_terminated_then_unterminated(self):
+        # A valid comment followed by a dangling opener: keep the first, strip the second
+        from esp.utils.sanitize import sanitize_html_comments
+        content = "<!-- ok --> mid <!-- dangling"
+        result = sanitize_html_comments(content)
+        self.assertEqual(result.count("<!--"), 1)
+        self.assertEqual(result.count("-->"), 1)
+        self.assertIn("mid", result)
+        self.assertIn("dangling", result)
+
+    def test_markdown_filter(self):
+        from esp.utils.templatetags.markup import markdown
+        content = "Text <!-- outer <!-- inner --> outer --> more"
+        result = markdown(content)
+        self.assertIsNotNone(result)
+        self.assertEqual(str(result).count("<!--"), 1)

@@ -39,6 +39,12 @@ from esp.cal.models import EventType, Event
 class EventTypeAdmin(admin.ModelAdmin):
     list_display = ('description', 'is_teacher_type')
     list_filter = ('is_teacher_type',)
+    search_fields = ['description']
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('description',)
+        return self.readonly_fields
 
 admin_site.register(EventType, EventTypeAdmin)
 

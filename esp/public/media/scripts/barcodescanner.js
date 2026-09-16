@@ -52,7 +52,7 @@ $j(function() {
                 },
             }, function(err) {
                   if (err) {
-                      console.log(err);
+                      console.warn(err);
                       return
                   }
                   Quagga.start();
