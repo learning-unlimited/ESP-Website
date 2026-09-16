@@ -14,33 +14,29 @@
 
   {% load render_qsd %}
 
+  {# d-flex rather than .row: bootstrap_initial.css (BS2) overrides .row's #}
+  {# left margin, which pulls a grid row out of alignment on this shell.   #}
   {% inline_qsd_block "homepage_qsdpart" %}
-    <div class="row g-3 text-center">
+    <div class="d-flex flex-column flex-md-row gap-3 text-center">
 
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-body p-4">
-            <h2 class="card-title h4"><a href="{% url 'qsd_page' url='learn/index' %}">Learn</a></h2>
-            <p class="card-text">Edit this page to serve as a starting point for your students.</p>
-          </div>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='learn/index' %}">Learn</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your students.</p>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-body p-4">
-            <h2 class="card-title h4"><a href="{% url 'qsd_page' url='teach/index' %}">Teach</a></h2>
-            <p class="card-text">Edit this page to serve as a starting point for your teachers.</p>
-          </div>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='teach/index' %}">Teach</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your teachers.</p>
         </div>
       </div>
 
-      <div class="col-md-4">
-        <div class="card h-100">
-          <div class="card-body p-4">
-            <h2 class="card-title h4"><a href="{% url 'qsd_page' url='volunteer/index' %}">Volunteer</a></h2>
-            <p class="card-text">Edit this page to serve as a starting point for your volunteers.</p>
-          </div>
+      <div class="card flex-fill w-100">
+        <div class="card-body p-4">
+          <h2 class="card-title h4"><a href="{% url 'qsd_page' url='volunteer/index' %}">Volunteer</a></h2>
+          <p class="card-text">Edit this page to serve as a starting point for your volunteers.</p>
         </div>
       </div>
 
