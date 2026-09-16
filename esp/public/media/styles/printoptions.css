@@ -37,7 +37,9 @@ table {
         justify-content: center;
         column-gap: 10px;
     }
-    button {
+    /* The class-list links are <a> elements, so they also need the chrome and
+       the link resets a browser would otherwise supply for a <button>. */
+    button, a {
         width: calc(100% - 20px);
         min-width: 200px;
         margin: 10px;
@@ -47,6 +49,17 @@ table {
         height: 75px;
         border-radius: 4px;
         font-weight: bold;
+    }
+    a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        background-color: #efefef;
+        border: 1px solid #767676;
+        color: inherit;
+        text-decoration: none;
+        cursor: pointer;
     }
 }
 
