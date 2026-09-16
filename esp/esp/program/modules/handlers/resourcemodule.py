@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import json
+from django.db import IntegrityError
 
 from django.forms import formset_factory
 from django.http import HttpResponseBadRequest, HttpResponse

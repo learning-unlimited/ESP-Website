@@ -81,11 +81,11 @@ class Event(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['program', 'start', 'end'],
+                fields=['program', 'start', 'end', 'event_type'],
                 name='unique_event_program_start_end',
             ),
         ]
-        
+
     def title(self):
         return self.name
 

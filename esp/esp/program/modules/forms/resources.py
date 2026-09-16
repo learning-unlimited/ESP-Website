@@ -57,10 +57,18 @@ class TimeslotForm(forms.Form):
         if start is not None and hours is not None and minutes is not None:
             end = start + timedelta(hours=hours, minutes=minutes)
 
+            if cleaned_data.get('openclass'):
+                slot_event_type = EventType.get_from_desc("Open Class Time Block")
+            elif cleaned_data.get('compulsory'):
+                slot_event_type = EventType.get_from_desc("Compulsory")
+            else:
+                slot_event_type = EventType.get_from_desc("Class Time Block")
+
             duplicates = Event.objects.filter(
                 program=self.program,
                 start=start,
                 end=end,
+                event_type=slot_event_type,
             )
             existing_id = cleaned_data.get('id')
             if existing_id:
