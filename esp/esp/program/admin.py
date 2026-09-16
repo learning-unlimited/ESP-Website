@@ -113,6 +113,9 @@ class FinancialAidGrantInline(admin.TabularInline):
     verbose_name_plural = 'Financial aid grant - enter 100 in "Percent" field to waive entire cost'
 
 class FinancialAidRequestAdmin(admin.ModelAdmin):
+    #   'program' and 'user' are editable=False, so a duplicate could not be
+    #   saved (see StudentAppAdmin below for the same problem).
+    save_as = False
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = default_user_search() + ['id', 'program__url']
     list_filter = ['program']
@@ -346,6 +349,8 @@ admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 ## app_.py
 
 class StudentAppAdmin(admin.ModelAdmin):
+    #   Nothing can be added here, duplicates included; see below.
+    save_as = False
     list_display = ('user', 'program', 'done')
     search_fields = default_user_search()
     list_filter = ('program',)
@@ -372,6 +377,9 @@ class Admin_StudentAppQuestion(admin.ModelAdmin):
 admin_site.register(StudentAppQuestion, Admin_StudentAppQuestion)
 
 class Admin_StudentAppResponse(admin.ModelAdmin):
+    #   'question' is readonly and editable=False, so a duplicate would have
+    #   no question to belong to.
+    save_as = False
     list_display = (
         'question',
         'response',
@@ -384,6 +392,8 @@ class Admin_StudentAppResponse(admin.ModelAdmin):
 admin_site.register(StudentAppResponse, Admin_StudentAppResponse)
 
 class Admin_StudentAppReview(admin.ModelAdmin):
+    #   'reviewer' is editable=False, so a duplicate could not be saved.
+    save_as = False
     list_display = (
         'reviewer',
         'date',

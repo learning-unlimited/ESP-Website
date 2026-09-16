@@ -82,6 +82,8 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
 class CybersourcePostbackAdmin(admin.ModelAdmin):
+    #   Log of what Cybersource actually sent us; a copy would be invented.
+    save_as = False
     readonly_fields = ['timestamp']
     list_display = ['timestamp', 'transfer']
     search_fields = ['post_data', '=transfer__id', '=transfer__user__id',

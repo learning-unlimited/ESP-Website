@@ -39,6 +39,11 @@ class UserAvailabilityAdmin(admin.ModelAdmin):
 admin_site.register(UserAvailability, UserAvailabilityAdmin)
 
 class ESPUserAdmin(UserAdmin):
+    #   "Save as new" would post the change form to UserAdmin's add form,
+    #   which asks for a new password; copying accounts is not something we
+    #   want to make easy anyway.
+    save_as = False
+
     #remove the user_permissions from adminpage
     #(since we don't use it)
     #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
@@ -159,6 +164,9 @@ class K12SchoolAdmin(admin.ModelAdmin):
 admin_site.register(K12School, K12SchoolAdmin)
 
 class GradeChangeRequestAdmin(admin.ModelAdmin):
+    #   A student's request, and the fields identifying it are readonly, so a
+    #   duplicate could not be saved.
+    save_as = False
     list_display = ['requesting_student', 'claimed_grade', 'approved', 'acknowledged_by', 'acknowledged_time', 'created']
     readonly_fields = ['grade_before_request', 'requesting_student', 'acknowledged_by', 'acknowledged_time', 'claimed_grade']
     search_fields = default_user_search('requesting_student')

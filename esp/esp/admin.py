@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.contrib.admin.options import ModelAdmin
 from django.contrib.admin.sites import AdminSite
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
@@ -42,12 +43,28 @@ from django.views.decorators.cache import never_cache
 from esp.users.views import signout
 
 
+def sets_save_as(admin_class):
+    """
+    Whether admin_class picks its own value for `save_as`.
+
+    Django's own ModelAdmin always defines `save_as`, so the search stops
+    there; only a value set by one of our classes counts as a choice.
+    """
+    for klass in getattr(admin_class, '__mro__', ()):
+        if klass is ModelAdmin:
+            break
+        if 'save_as' in vars(klass):
+            return True
+    return False
+
+
 class ESPAdminSite(AdminSite):
     """
     Custom AdminSite for ESP project.
 
     Overrides the default logout behavior to use the project's
-    custom signout view.
+    custom signout view, and turns on Django's "Save as new" button so that
+    objects can be duplicated from their change page.
     """
 
     @method_decorator(never_cache)
@@ -56,6 +73,22 @@ class ESPAdminSite(AdminSite):
         Log out using custom signout view to ensure cookies are cleared properly.
         """
         return signout(request)
+
+    def register(self, model_or_iterable, admin_class=None, **options):
+        """
+        Register model(s), enabling "Save as new" unless the admin opts out.
+
+        Duplicating an object is useful for most of what we keep in the admin
+        panel, so it is the default here rather than something every
+        ModelAdmin has to remember to turn on.  Two kinds of admin set
+        `save_as = False` for themselves: those whose add form cannot produce
+        a saveable duplicate (a required field is readonly, excluded, or
+        `editable=False`), and those for records of something that already
+        happened, where a hand-made copy would be fabricated history.
+        """
+        if 'save_as' not in options and not sets_save_as(admin_class):
+            options['save_as'] = True
+        super().register(model_or_iterable, admin_class, **options)
 
 
 # Instantiate custom admin site

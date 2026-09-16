@@ -61,6 +61,9 @@ class MessageRequestAdmin(admin.ModelAdmin):
 admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
+    #   Record of an email we actually sent; 'created_at' is editable=False
+    #   and has no default, so a duplicate could not be saved either.
+    save_as = False
     list_display = ('id', 'send_from', 'send_to', 'subject', 'sent', 'user')
     search_fields = ('=id', 'send_from', 'send_to', 'subject', 'user')
     date_hierarchy = 'sent'
