@@ -1,0 +1,15 @@
+/* Scoped support for Django's admin FilteredSelectMultiple ("dual column") widget
+   outside the admin, used by the *_active_fields tag settings. */
+.selector {
+    --primary: #79aec8;
+    --secondary: #417690;
+    --primary-fg: #fff;
+    --border-color: #ccc;
+    --darkened-bg: #f8f8f8;
+    --selected-bg: #e4e4e4;
+    --body-quiet-color: #666;
+    --breadcrumbs-fg: #c4dce8;
+    --header-link-color: var(--primary-fg);
+    --link-fg: #417893;
+    max-width: 800px;
+}

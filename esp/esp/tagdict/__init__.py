@@ -337,13 +337,13 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
     },
-    # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
+    # For the five *_profile_active_fields tags below, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'teacher_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'DEPRECATED: use "teacher_profile_active_fields" instead. Previously selected teacher profile fields to hide.',
+        'help_text': 'DEPRECATED: replaced by "teacher_profile_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': '',
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
     },
     'teacher_profile_active_fields': {
         'is_boolean': False,
@@ -354,10 +354,10 @@ all_global_tags = {
     },
     'student_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'DEPRECATED: use "student_profile_active_fields" instead. Previously selected student profile fields to hide.',
+        'help_text': 'DEPRECATED: replaced by "student_profile_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': '',
         'category': 'learn',
-        'is_setting': True,
+        'is_setting': False,
     },
     'student_profile_active_fields': {
         'is_boolean': False,
@@ -368,10 +368,10 @@ all_global_tags = {
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'DEPRECATED: use "volunteer_profile_active_fields" instead. Previously selected volunteer profile fields to hide.',
+        'help_text': 'DEPRECATED: replaced by "volunteer_profile_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': '',
         'category': 'volunteer',
-        'is_setting': True,
+        'is_setting': False,
     },
     'volunteer_profile_active_fields': {
         'is_boolean': False,
@@ -382,10 +382,10 @@ all_global_tags = {
     },
     'educator_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'DEPRECATED: use "educator_profile_active_fields" instead. Previously selected educator profile fields to hide.',
+        'help_text': 'DEPRECATED: replaced by "educator_profile_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': '',
         'category': 'teach',
-        'is_setting': True,
+        'is_setting': False,
     },
     'educator_profile_active_fields': {
         'is_boolean': False,
@@ -396,10 +396,10 @@ all_global_tags = {
     },
     'guardian_profile_hide_fields': {
         'is_boolean': False,
-        'help_text': 'DEPRECATED: use "guardian_profile_active_fields" instead. Previously selected guardian profile fields to hide.',
+        'help_text': 'DEPRECATED: replaced by "guardian_profile_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': '',
         'category': 'learn',
-        'is_setting': True,
+        'is_setting': False,
     },
     'guardian_profile_active_fields': {
         'is_boolean': False,
@@ -629,13 +629,6 @@ all_program_tags = {
         'help_text': 'Show category-specific catalog pages instead of a single combined catalog page.',
         'default': False,
         'category': 'learn',
-        'is_setting': True,
-    },
-    'teacherreg_active_fields': {
-        'is_boolean': False,
-        'help_text': 'What fields should be active on the teacher registration form? (Leave empty for system defaults)',
-        'default': '_ALL_',
-        'category': 'class',
         'is_setting': True,
     },
     'multiweek_schedule': {
@@ -944,8 +937,15 @@ all_program_tags = {
     # We populate the next widget as a MultipleChoiceField when initializing the form to avoid import loops
     'teacherreg_hide_fields': {
         'is_boolean': False,
-        'help_text': 'Select the field(s) you want to hide from teachers during teacher registration (only fields that are not required may be hidden)',
+        'help_text': 'DEPRECATED: replaced by "teacherreg_active_fields". Still honored as a list of fields to hide while that tag is unset.',
         'default': None,
+        'category': 'class',
+        'is_setting': False,
+    },
+    'teacherreg_active_fields': {
+        'is_boolean': False,
+        'help_text': 'Select the field(s) you want to show to teachers during teacher registration (required fields are always shown)',
+        'default': '_ALL_',
         'category': 'class',
         'is_setting': True,
     },

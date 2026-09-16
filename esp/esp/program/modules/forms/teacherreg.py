@@ -46,6 +46,7 @@ from esp.program.models import ClassCategories, ClassSubject, ClassSection, Clas
 from esp.program.modules.module_ext import ClassRegModuleInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
+from esp.tagdict.active_fields import TEACHERREG_HIDEABLE_REQUIRED_FIELDS, inactive_teacherreg_fields
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
@@ -238,15 +239,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
             if tag_data:
                 self.fields[field].help_text = tag_data
 
-        #   Hide fields that are not defined in active_fields
-        tag_data = Tag.getProgramTag('teacherreg_active_fields', prog)
-        #   If the tag is unset or explicitly '_ALL_', leave all optional fields visible.
-        if tag_data and tag_data != '_ALL_':
-            active_fields = [x.strip().lower() for x in tag_data.split(',')]
-            for field_name, opt_field in list(self.fields.items()):
-                if not opt_field.required and field_name not in active_fields:
-                    hide_field(opt_field)
-
         tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
         if tag_data:
             self.fields['grade_min'].initial = tag_data
@@ -270,6 +262,22 @@ class TeacherClassRegForm(FormWithRequiredCss):
         else:
             hide_field(self.fields['class_style'])
         # plus subprogram section wizard
+
+        #   Hide the fields teacherreg_active_fields excludes. Runs last so the tags
+        #   above have set which fields are required and their default initial values.
+        for field_name in inactive_teacherreg_fields(prog):
+            if field_name not in self.fields:
+                continue
+            excluded_field = self.fields[field_name]
+            #   A required field can only be hidden once it has a value to submit
+            if not excluded_field.required or excluded_field.initial:
+                hide_field(excluded_field)
+            else:
+                logger.warning(
+                    "teacherreg_active_fields: '%s' is required and has no default, "
+                    "so it will stay on the form. Set the '%s' tag to hide it.",
+                    field_name, TEACHERREG_HIDEABLE_REQUIRED_FIELDS.get(field_name, ''),
+                )
 
     def clean(self):
         cleaned_data = self.cleaned_data

@@ -1,10 +1,7 @@
-import logging
-
 from django import forms
 from esp.users.forms import _states
+from esp.tagdict.active_fields import LEGACY_TAG_KEYS, optional_field_names, parse_inactive_fields
 from esp.tagdict.models import Tag
-
-logger = logging.getLogger(__name__)
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
@@ -423,6 +420,21 @@ GuardianInfoForm.base_fields['year_finished'].widget.attrs['maxlength'] = 4
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['size'] = 3
 GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 
+def _remove_inactive_fields(form, tag_key, undeletable_fields):
+    """ Drop the optional fields that the *_profile_active_fields tag excludes.
+
+    Only fields declared optional on the form class are removed, so fields added
+    or made optional at runtime survive a tag that cannot list them.
+    """
+    optional_fields = optional_field_names(type(form))
+    inactive = parse_inactive_fields(
+        Tag.getTag(tag_key), optional_fields,
+        legacy_value=Tag.getTag(LEGACY_TAG_KEYS[tag_key]), tag_key=tag_key)
+    for field_name in inactive - set(undeletable_fields):
+        form.fields.pop(field_name, None)
+    if 'phone_cell' not in form.fields and 'receive_txt_message' in form.fields:
+        del form.fields['receive_txt_message']
+
 # A list of fields (across all profile forms) that can not be deleted via profile_active_fields tags
 _undeletable_fields_all = ['e_mail']
 
@@ -432,15 +444,7 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
     """ Form for student profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_tag = Tag.getTag('student_profile_active_fields')
-        if active_tag != '_ALL_':
-            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
-            for field_name in list(self.fields.keys()):
-                if field_name not in _undeletable_fields_all + _undeletable_fields_students and field_name not in active_fields:
-                    if not self.fields[field_name].required:
-                        del self.fields[field_name]
-        if 'phone_cell' not in self.fields and 'receive_txt_message' in self.fields:
-            del self.fields['receive_txt_message']
+        _remove_inactive_fields(self, 'student_profile_active_fields', _undeletable_fields_all + _undeletable_fields_students)
     def clean(self):
         cleaned_data = super(StudentProfileForm, self).clean()
 
@@ -466,13 +470,7 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_tag = Tag.getTag('teacher_profile_active_fields')
-        if active_tag != '_ALL_':
-            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
-            for field_name in list(self.fields.keys()):
-                if field_name not in _undeletable_fields_all + _undeletable_fields_teachers and field_name not in active_fields:
-                    if not self.fields[field_name].required:
-                        del self.fields[field_name]
+        _remove_inactive_fields(self, 'teacher_profile_active_fields', _undeletable_fields_all + _undeletable_fields_teachers)
 
 # A list of guardian fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_guardians = []
@@ -480,13 +478,7 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_tag = Tag.getTag('guardian_profile_active_fields')
-        if active_tag != '_ALL_':
-            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
-            for field_name in list(self.fields.keys()):
-                if field_name not in _undeletable_fields_all + _undeletable_fields_guardians and field_name not in active_fields:
-                    if not self.fields[field_name].required:
-                        del self.fields[field_name]
+        _remove_inactive_fields(self, 'guardian_profile_active_fields', _undeletable_fields_all + _undeletable_fields_guardians)
 
 # A list of educator fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_educators = []
@@ -494,26 +486,14 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_tag = Tag.getTag('educator_profile_active_fields')
-        if active_tag != '_ALL_':
-            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
-            for field_name in list(self.fields.keys()):
-                if field_name not in _undeletable_fields_all + _undeletable_fields_educators and field_name not in active_fields:
-                    if not self.fields[field_name].required:
-                        del self.fields[field_name]
+        _remove_inactive_fields(self, 'educator_profile_active_fields', _undeletable_fields_all + _undeletable_fields_educators)
 
 # A list of volunteer fields that can not be deleted via profile_active_fields tags
 _undeletable_fields_volunteers = []
 class VolunteerProfileForm(UserContactForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        active_tag = Tag.getTag('volunteer_profile_active_fields')
-        if active_tag != '_ALL_':
-            active_fields = [x.strip().lower() for x in active_tag.split(',')] if active_tag else []
-            for field_name in list(self.fields.keys()):
-                if field_name not in _undeletable_fields_all + _undeletable_fields_volunteers and field_name not in active_fields:
-                    if not self.fields[field_name].required:
-                        del self.fields[field_name]
+        _remove_inactive_fields(self, 'volunteer_profile_active_fields', _undeletable_fields_all + _undeletable_fields_volunteers)
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)

@@ -12,6 +12,8 @@ from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import all_program_tags, tag_categories
+from esp.tagdict.active_fields import (LEGACY_TAG_KEYS, TEACHERREG_HIDEABLE_REQUIRED_FIELDS,
+                                       active_fields_form_field, initial_choices, value_from_choices)
 from esp.tagdict.models import Tag
 from esp.utils.models import TemplateOverride
 
@@ -209,14 +211,9 @@ class ProgramTagSettingsForm(BetterForm):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 if key == 'teacherreg_active_fields':
-                    self.fields[key] = forms.MultipleChoiceField(
-                        choices=[
-                            (field_name, field_obj.label if field_obj.label else field_name)
-                            for field_name, field_obj in TeacherClassRegForm.declared_fields.items()
-                            if not field_obj.required
-                        ],
-                        widget=forms.SelectMultiple(),
-                    )
+                    self.fields[key] = active_fields_form_field(
+                        TeacherClassRegForm, 'fields', use_labels=True,
+                        extra_fields=TEACHERREG_HIDEABLE_REQUIRED_FIELDS)
                 elif key in ['student_reg_records', 'teacher_reg_records']:
                     from esp.users.models import RecordType
                     self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))
@@ -235,7 +232,14 @@ class ProgramTagSettingsForm(BetterForm):
                 self.fields[key].initial = self.fields[key].default = tag_info.get('default')
                 self.fields[key].required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
-                if set_val != None and set_val != self.fields[key].initial:
+                if key in LEGACY_TAG_KEYS:
+                    # Expand the sentinels/comma-separated value into a list of choices,
+                    # falling back to the deprecated *_hide_fields tag if it is still set
+                    self.fields[key].initial = initial_choices(
+                        set_val, self.fields[key].choices,
+                        legacy_value=Tag.getProgramTag(LEGACY_TAG_KEYS[key], program = self.program),
+                        tag_key=key)
+                elif set_val != None and set_val != self.fields[key].initial:
                     if isinstance(self.fields[key], forms.MultipleChoiceField):
                         set_val = set_val.split(",")
                     self.fields[key].initial = set_val
@@ -252,7 +256,12 @@ class ProgramTagSettingsForm(BetterForm):
             tag_info = all_program_tags[key]
             if tag_info.get('is_setting', False):
                 set_val = self.cleaned_data[key]
-                if isinstance(set_val, list):
+                if key in LEGACY_TAG_KEYS:
+                    set_val = value_from_choices(set_val, self.fields[key].choices)
+                    # Saving here supersedes the deprecated tag that is read as a
+                    # fallback, which would otherwise keep hiding fields
+                    Tag.unSetTag(LEGACY_TAG_KEYS[key], prog)
+                elif isinstance(set_val, list):
                     set_val = ",".join(set_val)
                 global_val = Tag.getBooleanTag(key, default = tag_info.get('default')) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, default = tag_info.get('default'))
                 if not set_val in ("", "None", None, global_val):
