@@ -43,7 +43,7 @@ from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag

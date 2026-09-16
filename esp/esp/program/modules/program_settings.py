@@ -43,16 +43,15 @@ from esp.db.fields import AjaxForeignKey
 from esp.program.models import Program, RegistrationType, ClassSection
 from esp.users.models import ESPUser
 
-# If this module is a little confusingly named, or has some cruft in it, it's
-# because it used to work differently.  Back in the day, certain program
-# modules inherited from one of the below models in addition to
-# ProgramModuleObj, thus the name "module extensions".  These days, they're
-# basically just a settings model that may be attached to the program, which
-# happens to have a name that suggests it has something to do with a program
-# module.  They still have a little to do with modules -- they're autocreated
-# when the corresponding program modules get added to a program (see
-# esp.program.models.maybe_create_module_ext), but that's about it.
-# TODO(benkraft): rename this to "program settings" or something.
+# If these models have some cruft in them, it's because they used to work
+# differently.  Back in the day, certain program modules inherited from one of
+# the below models in addition to ProgramModuleObj, thus the old name "module
+# extensions" (this file was module_ext.py, and the model names still say
+# "ModuleInfo").  These days, they're basically just settings models that may
+# be attached to a program.  They still have a little to do with modules --
+# they're autocreated when the corresponding program modules get added to a
+# program (see esp.program.models.maybe_create_module_ext), but that's about
+# it.
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
