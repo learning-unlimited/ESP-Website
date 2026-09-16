@@ -222,20 +222,6 @@ div.navbar-collapse.collapse {
     }
     .card-header {
         padding: 0;
-
-        a {
-            display: block;
-            padding: 10px 18px;
-            color: $sidebarLink;
-            font-size: 17px;
-            text-decoration: none;
-
-            &:hover, &:focus {
-                color: $sidebarLinkHover;
-                background-color: $sidebarHover;
-                text-decoration: none;
-            }
-        }
     }
     .collapse {
         .sidebar {
