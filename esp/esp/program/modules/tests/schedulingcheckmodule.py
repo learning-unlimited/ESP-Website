@@ -16,9 +16,13 @@
 from django.test import RequestFactory
 
 from esp.middleware.threadlocalrequest import ThreadLocals, clear_current_request
+from esp.program.models import ClassCategories
 from esp.program.modules.handlers.schedulingcheckmodule import RawSCFormatter, SchedulingCheckRunner
 from esp.program.tests import ProgramFrameworkTest
-from esp.resources.models import Resource
+from esp.resources.models import Resource, ResourceRequest, ResourceType
+from esp.tagdict.models import Tag
+
+import json
 
 
 class SchedulingCheckModuleTest(ProgramFrameworkTest):
@@ -195,3 +199,189 @@ class SchedulingCheckModuleTest(ProgramFrameworkTest):
         )
         self.assertTrue(any(row['Dependency Chain'] == long_loop_chain and row['Loop'] == 'Yes'
                             for row in results))
+
+
+class SchedulingCheckSnapshotTest(ProgramFrameworkTest):
+    """Diagnostics must not change or blow up when the schedule moves under them.
+
+    See issue #511: the checks used to re-query meeting times and rooms as they
+    iterated, so a class unscheduled by someone else mid-run made later checks
+    disagree with earlier ones, or index into an empty result and 500.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 2,
+            'num_rooms': 4,
+            'num_teachers': 3,
+            'classes_per_teacher': 1,
+            'sections_per_class': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
+        ThreadLocals(get_response=lambda request: None).process_request(request)
+
+        self.timeslots = list(self.program.getTimeSlots().order_by('start'))
+        for teacher in self.teachers:
+            for timeslot in self.timeslots:
+                teacher.addAvailableTime(self.program, timeslot)
+
+        self.sections = list(self.program.sections().order_by('id'))
+        for i, section in enumerate(self.sections):
+            timeslot = self.timeslots[i % len(self.timeslots)]
+            section.assign_meeting_times([timeslot])
+            section.assign_room(Resource.objects.get(name='Room %d' % i, event=timeslot))
+
+    def tearDown(self):
+        clear_current_request()
+        super().tearDown()
+
+    def _all_results(self, runner):
+        return runner.run_diagnostics([name for name, title in runner.all_diagnostics()])
+
+    def test_results_are_unchanged_when_a_section_is_unscheduled_mid_run(self):
+        runner = SchedulingCheckRunner(self.program)
+        before = self._all_results(runner)
+
+        # Someone else unschedules a class while the run is in progress.
+        victim = self.sections[0]
+        victim.clearRooms()
+        victim.clear_meeting_times()
+
+        self.assertEqual(self._all_results(runner), before)
+
+    def test_snapshotted_unsatisfied_requests_match_the_model(self):
+        # The snapshot recomputes ClassSection.unsatisfied_requests() in memory,
+        # so it has to agree with the model it replaces.
+        section = self.sections[0]
+        res_type = ResourceType.get_or_create('LCD Projector')
+        ResourceRequest.objects.create(target=section, res_type=res_type, desired_value='Yes')
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        runner._build_snapshot()
+        for snapshot_section in runner.all_sections:
+            self.assertEqual(
+                sorted(r.id for r in runner._unsatisfied_requests(snapshot_section)),
+                sorted(r.id for r in snapshot_section.unsatisfied_requests()),
+            )
+
+    def test_snapshot_is_not_built_until_a_diagnostic_needs_it(self):
+        # The diagnostics landing page builds a runner just to list the checks.
+        runner = SchedulingCheckRunner(self.program)
+        self.assertFalse(runner.built_snapshot)
+        runner.all_diagnostics()
+        self.assertFalse(runner.built_snapshot)
+        runner.incompletely_scheduled_classes()
+        self.assertTrue(runner.built_snapshot)
+
+    def test_unapproved_scheduled_classes_reports_unreviewed_sections(self):
+        # Unapproved sections are excluded from the snapshot, so this check has
+        # to look them up separately or it can never report anything.
+        section = self.sections[0]
+        section.status = 0
+        section.save()
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        self.assertIn(section, runner.unapproved_scheduled_classes())
+
+    def test_no_overlap_classes_reports_each_class_once_per_block(self):
+        first, second = self.sections[0], self.sections[1]
+        second.assign_meeting_times(list(first.get_meeting_times()))
+        class_ids = [first.parent_class_id, second.parent_class_id]
+        Tag.setTag('no_overlap_classes', self.program, json.dumps({'materials': class_ids}))
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        rows = runner.no_overlap_classes()
+
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(sorted(cls.id for cls in rows[0]['Classes']), sorted(class_ids))
+
+    def test_teachers_who_like_running_compares_rooms_across_back_to_back_sections(self):
+        teacher = self.teachers[0]
+        first, second = self.sections[0], self.sections[1]
+        for section in (first, second):
+            section.parent_class.teachers.set([teacher])
+        # Adjacent timeslots, different rooms: the teacher has to run.
+        first.clearRooms()
+        second.clearRooms()
+        first.assign_meeting_times([self.timeslots[0]])
+        first.assign_room(Resource.objects.get(name='Room 0', event=self.timeslots[0]))
+        second.assign_meeting_times([self.timeslots[1]])
+        second.assign_room(Resource.objects.get(name='Room 1', event=self.timeslots[1]))
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        rows = runner.teachers_who_like_running()
+
+        self.assertEqual([row['Username'] for row in rows], [teacher])
+        self.assertEqual(rows[0]['Room 1'].name, 'Room 0')
+        self.assertEqual(rows[0]['Room 2'].name, 'Room 1')
+
+    def test_teachers_who_like_running_ignores_sections_without_meeting_times(self):
+        teacher = self.teachers[0]
+        for section in self.sections:
+            section.parent_class.teachers.set([teacher])
+        # Two sections with rooms but no times would previously make the sort
+        # key compare None to None and raise TypeError.
+        for section in self.sections[:2]:
+            section.clear_meeting_times()
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        self.assertEqual(runner.teachers_who_like_running(), [])
+
+
+class SchedulingCheckLunchTest(ProgramFrameworkTest):
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 2,
+            'num_rooms': 4,
+            'num_teachers': 2,
+            'classes_per_teacher': 1,
+            'sections_per_class': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
+        ThreadLocals(get_response=lambda request: None).process_request(request)
+
+        self.timeslots = list(self.program.getTimeSlots().order_by('start'))
+        self.lunch_slot = self.timeslots[0]
+
+        # Reserve the first timeslot for lunch by scheduling a lunch class in it.
+        lunch_category = ClassCategories.objects.create(category='Lunch', symbol='L', seq=0, is_lunch=True)
+        lunch_section = self.program.sections().order_by('id')[0]
+        lunch_section.parent_class.category = lunch_category
+        lunch_section.parent_class.save()
+        lunch_section.assign_meeting_times([self.lunch_slot])
+
+        # A teacher scheduled straight through lunch.
+        self.hungry_section = self.program.sections().order_by('id')[1]
+        self.hungry_teacher = self.hungry_section.parent_class.get_teachers()[0]
+        self.hungry_section.assign_meeting_times([self.lunch_slot])
+        self.hungry_section.assign_room(Resource.objects.get(name='Room 0', event=self.lunch_slot))
+
+    def tearDown(self):
+        clear_current_request()
+        super().tearDown()
+
+    def test_hungry_teachers_reports_teacher_scheduled_through_lunch(self):
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        rows = runner.hungry_teachers()
+
+        self.assertEqual([row['Username'] for row in rows], [self.hungry_teacher])
+        self.assertEqual(rows[0]['Classes over lunch'], str(self.hungry_section))
+
+    def test_hungry_teachers_survives_unscheduling_mid_run(self):
+        # The old implementation re-queried sections per lunch block and indexed
+        # the first result, so an unschedule between queries raised IndexError.
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        before = runner.hungry_teachers()
+
+        self.hungry_section.clearRooms()
+        self.hungry_section.clear_meeting_times()
+
+        self.assertEqual(runner.hungry_teachers(), before)
+
+    def test_classes_which_cover_lunch_reports_the_section(self):
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        self.assertEqual(runner.classes_which_cover_lunch(), [self.hungry_section])

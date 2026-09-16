@@ -675,6 +675,12 @@ will see a summary of common issues such as teachers that have to travel
 between adjacent timeslots and classes that aren't assigned the resources they
 need.
 
+Each check loads the schedule once when it starts and reports on that snapshot,
+so a single check is never self-contradictory if someone reschedules a class
+while it runs.  Checks are fetched one at a time, though, so two checks on the
+same page can still reflect slightly different states; reload the page after
+scheduling changes to see them all agree.
+
 For larger chapters the page may take a long time to load.  More improvements
 are in the works, but for now, the page
 <site>.learningu.org/manage/<program>/<instance>/scheduling_check_list
