@@ -44,13 +44,11 @@ import re
 
 # django Util
 from django.conf import settings
-from django.apps import apps
 from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import Count, Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
 from django.dispatch import receiver
-from collections import OrderedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
 from django.contrib.auth.models import AnonymousUser
@@ -137,6 +135,10 @@ class ClassSizeRange(models.Model):
         app_label='program'
 
 
+#   Catalog attributes filled in after the QuerySet is evaluated, so they are
+#   not available to order_by().
+CATALOG_UNSORTABLE_FIELDS = frozenset(['media_count', '_index_qsd', '_studentapps_count'])
+
 class ClassManager(Manager):
     def __repr__(self):
         return "ClassManager()"
@@ -209,6 +211,16 @@ class ClassManager(Manager):
             for f in order_args
         ]
 
+        #   A stale tag naming one of these should still render a catalog.
+        kept_order_args = [f for f in order_args if f.lstrip('-') not in CATALOG_UNSORTABLE_FIELDS]
+        if len(kept_order_args) != len(order_args):
+            logger.warning(
+                "Ignoring catalog sort field(s) %s for program %s: no longer database columns.",
+                [f for f in order_args if f.lstrip('-') in CATALOG_UNSORTABLE_FIELDS],
+                program,
+            )
+            order_args = kept_order_args or ['id']
+
         #   Only add the earliest_start annotation when the ordering uses it,
         #   to avoid unnecessary aggregate + joins for other sort configurations.
         if any(f.lstrip('-') == 'earliest_start' for f in order_args):
@@ -238,28 +250,25 @@ class ClassManager(Manager):
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
         #   SELECT statement and doesn't include them in the result.
         #   See https://docs.djangoproject.com/en/dev/ref/models/querysets/#s-distinct
-        counter = 0
-        index = 0
-        max_count = len(classes)
-        id_list = []
-        while counter < max_count:
-            cls = classes[index]
+        seen_ids = set()
+        deduped = []
+        for counter, cls in enumerate(classes):
             cls._temp_index = counter
-            if cls.id not in id_list:
-                id_list.append(cls.id)
-                index += 1
-            else:
-                classes.remove(cls)
-            counter += 1
+            if cls.id not in seen_ids:
+                seen_ids.add(cls.id)
+                deduped.append(cls)
+        classes = deduped
 
         # All class ID's; used by later query ugliness:
         class_ids = [x.id for x in classes]
 
+        #   One batched query each, replacing a correlated subquery per row.
         media_counts = {}
         studentapps_counts = {}
         index_qsd_class_ids = set()
 
         if class_ids:
+            #   Content type for finding class documents (generic relation)
             content_type_id = ContentType.objects.get_for_model(ClassSubject).id
             media_counts = dict(
                 Media.objects.filter(owner_type_id=content_type_id, owner_id__in=class_ids)
@@ -267,13 +276,15 @@ class ClassManager(Manager):
                 .annotate(total=Count('id'))
             )
 
-            student_app_question_model = apps.get_model('program', 'StudentAppQuestion')
+            from esp.program.models.app_ import StudentAppQuestion
             studentapps_counts = dict(
-                student_app_question_model.objects.filter(subject_id__in=class_ids)
+                StudentAppQuestion.objects.filter(subject_id__in=class_ids)
                 .values_list('subject_id')
                 .annotate(total=Count('id'))
             )
 
+            #   Class index QSDs live at 'learn/<program.url>/Classes/<emailcode>/index';
+            #   see ClassSubject.url() and got_index_qsd().
             qsd_url_qs = QuasiStaticData.objects.filter(
                 name='learn:index',
                 url__contains='/Classes/',
@@ -282,6 +293,8 @@ class ClassManager(Manager):
             if program is not None:
                 qsd_url_qs = qsd_url_qs.filter(url__startswith='learn/%s/Classes/' % program.url)
 
+            #   Also matches lower-case category symbols, which the old
+            #   '%[A-Z]' SQL pattern missed even though symbol permits them.
             for qsd_url in qsd_url_qs.values_list('url', flat=True):
                 match = re.search(r'/Classes/[^/]*?(\d+)/index$', qsd_url)
                 if match:
