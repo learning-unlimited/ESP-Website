@@ -704,6 +704,9 @@ def _meets_grade_test(moduleObj, request):
     """Return True if the user meets the program's grade range requirement."""
     if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
         return True
+    # Bypass grade check for admin preview (simulate_time query param)
+    if request.GET.get('simulate_time') and request.user.isAdministrator(moduleObj.program):
+        return True
     cur_grade = request.user.getGrade(moduleObj.program)
     return not (cur_grade != 0 and (
         cur_grade < moduleObj.program.grade_min or
