@@ -249,21 +249,6 @@ function setup_search()
 
 /*  Event handlers  */
 
-function show_loading_box()
-{
-    var loading_box = $j("<div/>").attr("id", "loading_box");
-    loading_box.html("Loading...");
-    loading_box.dialog({
-        autoOpen: true,
-        modal: false
-    });
-}
-
-function hide_loading_box()
-{
-    $j("#loading_box").dialog("close");
-}
-
 function print_schedule()
 {
     printer_name = $j("#printer_selector").attr("value");
@@ -639,11 +624,11 @@ function register_student(student_id, dialog)
                 if(data.status) {
                     fetch_all();
                     set_current_student(parseInt(student_id));
-                    dialog.dialog("close");
+                    bootstrap.Modal.getOrCreateInstance(dialog[0]).hide();
                 } else {
                     $j('#not-registered-msg').hide();
                     $j('#noinfo-msg').show();
-                    $j("#dialog-confirm-button-register").button("disable");
+                    $j("#dialog-confirm-button-register").prop("disabled", true);
                 }
             },
 
@@ -734,9 +719,9 @@ function autocomplete_select_item(event, ui)
             var dialog = $j("#dialog-confirm");
             $j("#not-registered-msg").show();
             $j("#noinfo-msg").hide();
-            $j("#dialog-confirm-button-register").button("enable");
+            $j("#dialog-confirm-button-register").prop("disabled", false);
             dialog.data('student_id', student_id);
-            dialog.dialog('open');
+            bootstrap.Modal.getOrCreateInstance(dialog[0]).show();
         }
         else 
         {
@@ -997,7 +982,7 @@ function render_table(display_mode, student_id)
             }
             
             //  Create a tooltip with more information about the class
-            new_td.addClass("tooltip");
+            new_td.addClass("onsite-tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover");
             var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
             if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
@@ -1460,28 +1445,11 @@ $j(document).ready(function () {
     //  Once they have all completed, the results will be parsed and the
     //  class changes grid will be displayed.
 
-    var dialog = $j("#dialog-confirm").dialog({
-        resizable: true,
-        width: 450,
-        height:250,
-        modal: true,
-        buttons: [{
-            id: "dialog-confirm-button-register",
-            text: "Register Account",
-            click: function() {
-                register_student($j(this).data('student_id'),$j(this));
-            }
-        },
-        {
-            id: "dialog-confirm-button-cancel",
-            text: "Cancel",
-            click: function() {
-                $j(this).dialog( "close" );
-            }
-        }]
+    var dialog = $j("#dialog-confirm");
+    //  The Cancel button dismisses the modal via data-bs-dismiss.
+    $j("#dialog-confirm-button-register").on("click", function() {
+        register_student(dialog.data('student_id'), dialog);
     });
-
-    dialog.dialog("close");
 
     $j("#messages").html("Loading class and student data...");
     

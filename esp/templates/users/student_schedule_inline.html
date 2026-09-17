@@ -1,17 +1,45 @@
 {% spaceless %}
 <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
 
-<div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
-    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+<div class="modal fade remove-confirm" id="enrolled-remove-confirm" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false"
+     aria-labelledby="enrolled-remove-confirm-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="enrolled-remove-confirm-title"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
         This class will be permanently deleted from your schedule.
         If the class fills with new students, you will be unable to add it back to you
         Are you sure?
-    </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger remove-confirm-action">Remove class</button>
+      </div>
+    </div>
+  </div>
 </div>
-<div id="applied-remove-confirm" class="remove-confirm" style="display:none;">
-    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+<div class="modal fade remove-confirm" id="applied-remove-confirm" tabindex="-1"
+     data-bs-backdrop="static" data-bs-keyboard="false"
+     aria-labelledby="applied-remove-confirm-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="applied-remove-confirm-title"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
         Are you sure you want to remove this class?
-    </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger remove-confirm-action">Remove class</button>
+      </div>
+    </div>
+  </div>
 </div>
 <div id='program_form' class='program_form_small'>
 <table cellpadding='3' style='width: 500px; margin: auto' border=1>
