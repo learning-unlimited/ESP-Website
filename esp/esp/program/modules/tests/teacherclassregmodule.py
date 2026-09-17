@@ -411,6 +411,12 @@ class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         super().setUp(*args, **kwargs)
 
+        self.add_user_profiles()
+
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
         self.teacher = self.teachers[0]
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
