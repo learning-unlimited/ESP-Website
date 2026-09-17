@@ -20,7 +20,8 @@ def render_class_teacher_list_row(cls, can_req_cancel, survey_results, user=None
             'friendly_times_with_date': Tag.getBooleanTag(
                 'friendly_times_with_date', cls.parent_program),
             'email_host_sender': settings.EMAIL_HOST_SENDER,
-            'user': user
+            'user': user,
+            'can_edit_capacity': user.canEdit(cls) if user else False,
             }
 render_class_teacher_list_row.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_teacher_list_row.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
