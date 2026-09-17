@@ -91,7 +91,7 @@
                         title="View students enrolled in section {{ sec.index }}" target="_blank">View Section {{ sec.index }}'s Students</a></li>
                         <li><a href="mailto:{{ sec.emailcode }}-students@{{ email_host_sender }}"
                          title="Email students enrolled in section {{ sec.index }}" target="_blank">Email Section {{ sec.index }}'s Students</a></li>
-                        {% if sec.meeting_times.count > 0 %}
+                        {% if sec.meeting_times.count > 0 and can_view_schedule %}
                             <li><a href="/teach/{{ program.getUrlBase }}/section_attendance/{{ sec.id }}"
                             title="Take attendance for section {{ sec.index }}" target="_blank">Section {{ sec.index }} Attendance</a></li>
                         {% endif %}
@@ -147,8 +147,12 @@
     {% endif %}
   </td>
   <td class="clsmiddle" valign="top" colspan="4">
+    {% if can_view_schedule %}
     Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />
     Time: {% if sec.friendly_times|length == 0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% if not forloop.last %}, {% endif %}{% endfor %}{% endif%}{% endif %}<br />
+    {% else %}
+    <em>Schedule not yet available.</em>
+    {% endif %}
   </td>
   <td class="clsmiddle" valign="top" colspan="3">
     {{ sec.num_students }} / {{ sec.capacity }} students <br />
