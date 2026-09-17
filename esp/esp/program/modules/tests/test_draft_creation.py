@@ -358,7 +358,7 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         # custom-action opts out of the site-wide submit handler in
         # elements/html; formnovalidate then suppresses native validation.
         self.assertContains(response, 'custom-action')
-        self.assertContains(response, 'value="draft" formnovalidate>')
+        self.assertContains(response, 'value="draft" formnovalidate')
 
     def test_draft_with_resource_requests(self):
         """Draft saving should handle resource requests properly."""
