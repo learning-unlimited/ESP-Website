@@ -22,6 +22,9 @@ def _populate_related(target, related_list, many_to_many):
         objects = getattr(target, name_out, None)
         if objects is None:
             continue
+        if related.one_to_one:
+            ans.append((objects, name_in, many_to_many))
+            continue
         for obj in objects.all():
             ans.append((obj, name_in, many_to_many))
     return ans
