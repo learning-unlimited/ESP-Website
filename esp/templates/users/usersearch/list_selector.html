@@ -58,6 +58,7 @@ $j(document).ready(function() {
                     {% for user_type in user_types %}
                     <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}"{% if default_user_type == user_type %} selected="selected"{% endif %}>{{ user_type|capfirst|add:"s" }}</option>
                     {% endfor %}
+                    <option value="School" id="recipient_type_School">Schools</option>
                     <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>
                 {% if include_prev_list %}
