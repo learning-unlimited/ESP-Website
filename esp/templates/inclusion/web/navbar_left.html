@@ -2,6 +2,7 @@
   <!-- secondary nav -->
   <ul id="submenu">
   {% for nav_entry in navbar_list.entries %}
+    {% if nav_entry.entry.makeTitle|trim %}
     <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}">
       {% if nav_entry.entry.is_link %}
         <a href="{{ nav_entry.entry.makeUrl }}"
@@ -9,10 +10,12 @@
           {{ nav_entry.entry.makeTitle }}
         </a>
       {% else %}
-          {{ nav_entry.entry.makeTitle }}
+        {{ nav_entry.entry.makeTitle }}
       {% endif %}
-   </li>
+    </li>
+    {% endif %}
   {% endfor %}
+
   {% if navbar_list.category %}
   {% with navbar_list.category as cat %}
   <li class="navbar-manage admin">
