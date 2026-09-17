@@ -38,6 +38,10 @@ from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.utils.datastructures import MultiValueDict
 from django.template import loader
 from django.views.generic.base import TemplateView
+from django.conf import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from urllib.parse import quote
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 import datetime
@@ -54,7 +58,6 @@ from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
-from django.conf import settings
 
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
@@ -128,6 +131,27 @@ class FAQView(DefaultQSDView):
 
 class ContactUsView(DefaultQSDView):
     template_name = "contact_qsd.html"
+
+class TeachIndexView(DefaultQSDView):
+    template_name = "teach/index.html"
+
+def teach_register(request):
+    """
+    Smart routing for the 'Register to Teach!' button on the teach landing page.
+
+    - Not logged in: redirect to login with next=/teach/register/
+    - Logged in as teacher or admin: redirect to registration_redirect (finds open programs)
+    - Logged in as non-teacher: show the 'Not a Teacher' error page
+    """
+    if not request.user.is_authenticated:
+        return HttpResponseRedirect(
+            '%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME,
+                          quote('/teach/register/')))
+    # isAdministrator() with no program arg checks for global admin role,
+    # allowing all site admins through regardless of program context.
+    if request.user.isTeacher() or request.user.isAdministrator():
+        return registration_redirect(request)
+    return render_to_response('errors/program/notateacher.html', request, {})
 
 def contact(request, section='esp'):
     """
