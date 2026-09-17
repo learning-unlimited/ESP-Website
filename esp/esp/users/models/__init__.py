@@ -73,6 +73,7 @@ from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
+from esp.db.autocomplete import allow_non_staff_autocomplete
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -1344,7 +1345,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, class_subject=subject, reviewer__in=subject.get_teachers(), score__isnull=False).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
@@ -2245,6 +2246,7 @@ class K12School(models.Model):
     AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
 
     @classmethod
+    @allow_non_staff_autocomplete
     def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
         """
         Server-side autocomplete for K12 schools. Requires a minimum query length

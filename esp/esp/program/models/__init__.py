@@ -320,7 +320,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
     director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)*learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -683,6 +683,10 @@ class Program(models.Model, CustomFormsLinkModel):
     # everything in sight, including every student registration for the program
     # and for the grade-based version every registration profile for the
     # program, so they're probably not worth caching.
+    def _classreg_students(self):
+        """Students registered for at least one class."""
+        return self.students().get('classreg', ESPUser.objects.none())
+
     def _students_in_program_in_grades(self, grades):
         """The number of students in the program in a set of grades
 
@@ -691,7 +695,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # Due to how RegistrationProfiles work, this is ~impossible to do
         # efficiently.  getGrade is cached, though, and probably most of those
         # caches will be warm, so it'll probably be okay.  Maybe.  Hopefully.
-        return len([student for student in self.students()['classreg']
+        return len([student for student in self._classreg_students()
                     if student.getGrade(self, assume_student=True) in grades])
 
     def _students_in_program(self):
@@ -699,13 +703,12 @@ class Program(models.Model, CustomFormsLinkModel):
 
         Used by the program cap logic.
         """
-        return self.students()['classreg'].count()
+        return self._classreg_students().count()
 
     @cache_function
     def _student_is_in_program(self, user):
         """Return whether the student is in the program."""
-        students = self.students()['classreg']
-        return students.filter(id=user.id).exists()
+        return self._classreg_students().filter(id=user.id).exists()
     _student_is_in_program.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     _student_is_in_program.depend_on_row('program.ClassSection', lambda cls: {'self': cls.parent_class.parent_program})
     _student_is_in_program.depend_on_row('program.StudentRegistration', lambda sr: {'user': sr.user})
