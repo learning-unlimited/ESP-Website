@@ -16,9 +16,9 @@ class ESPAuthBackend(ModelBackend):
         guard protects callers of authenticate() that bypass the form,
         such as the medicalsyncapi view.
         """
-        if ESPUser.objects.filter(pk=user.pk).filter(ESPUser.awaiting_activation_Q()).exists():
-            return False
-        return True
+        if user.is_active:
+            return True
+        return not ESPUser.objects.filter(pk=user.pk).filter(ESPUser.awaiting_activation_Q()).exists()
 
     def get_user(self, user_id):
         try:

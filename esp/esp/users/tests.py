@@ -1838,9 +1838,7 @@ class LoginErrorMessageTest(TestCase):
         self.user.save()
         response = self._post()
         self.assertNotContains(response, 'has not been activated yet')
-        # Should redirect or show success page, meaning success
-        if response.status_code not in (200, 302):
-            print("Response content:", response.content)
+        self.assertNotContains(response, 'The password you entered is not valid')
         self.assertIn(response.status_code, (200, 302))
         self.assertEqual(str(self.client.session.get('_auth_user_id')), str(self.user.pk))
 
@@ -1859,6 +1857,17 @@ class LoginErrorMessageTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'You have successfully logged in! However, the username you gave')
         self.assertEqual(str(self.client.session.get('_auth_user_id')), str(target_user.pk))
+
+    def test_awaiting_activation_wrong_password_gets_wrong_password_message(self):
+        # The activation state must not be revealed without the right password.
+        from esp.users.models import PendingActivation
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+        response = self._post(password='wrong')
+        self.assertContains(response, 'The password you entered is not valid')
+        self.assertNotContains(response, 'has not been activated yet')
+        self.assertFalse(self.client.session.get('_auth_user_id'))
 
     def test_wrong_password_message_unchanged(self):
         response = self._post(password='wrong')
@@ -1956,3 +1965,31 @@ class ESPAuthBackendAwaitingActivationTest(TestCase):
         result = authenticate(username='backend_inactive', password=self.password)
         self.assertIsNotNone(result, "authenticate() should return the user for an inactive (non-pending) account")
         self.assertEqual(result.pk, self.inactive_user.pk)
+
+
+class ReRegisterPendingAccountTest(TestCase):
+    """Re-registering a pending account after activation stops being required activates it."""
+
+    def setUp(self):
+        user_role_setup()
+
+    def test_reregister_without_activation_clears_pending_state(self):
+        from esp.users.models import PendingActivation
+        Tag.setTag('require_email_validation', value='True')
+        data = {"username": "rereg", "password": "Str0ng!Pass", "confirm_password": "Str0ng!Pass",
+                "first_name": "first", "last_name": "last", "email": "rereg@example.com",
+                "confirm_email": "rereg@example.com", "initial_role": "Teacher"}
+        url = "/myesp/register/"
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
+            url += "information/"
+        self.client.post(url, data=data)
+        user = ESPUser.objects.get(username="rereg")
+        self.assertTrue(PendingActivation.objects.filter(user=user).exists())
+
+        Tag.setTag('require_email_validation', value='False')
+        response = self.client.post(url, data=data)
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertFalse(PendingActivation.objects.filter(user=user).exists())
+        self.assertEqual(str(self.client.session.get('_auth_user_id')), str(user.pk))
