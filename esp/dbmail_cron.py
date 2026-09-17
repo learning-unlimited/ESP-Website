@@ -5,6 +5,7 @@ import os
 import fcntl
 import logging
 from io import open
+     
 logger = logging.getLogger('esp.dbmail_cron')   # __name__ is not very useful
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
@@ -25,6 +26,8 @@ if os.environ.get('VIRTUAL_ENV') is None:
 
 import django
 django.setup()
+from django.utils import timezone
+from esp.program.models import ClassSubject
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
 # This import must be after the evaluation of the Django settings, because
@@ -44,6 +47,12 @@ except IOError:
     sys.exit(0)
 
 try:
+    #To auto run ClassSubject.deactivate_old_class_lists() without depending on any external factors
+    now = timezone.now()
+    if now.month == 1 and now.day == 1:
+        if 2 <= now.hour < 3:      #the condition can be 2 == now.hour but i am not sure while running if it will aligne perfectly or not
+            total = ClassSubject.deactivate_old_class_lists()  #even if it run 4 time as this cron file autorun every 15 min it shouldnt cause a problem 
+    
     logger.info('dbmail_cron: beginning to process messages.')
     process_messages()
     logger.info('dbmail_cron: message processing complete; sending emails.')
