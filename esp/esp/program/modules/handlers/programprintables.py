@@ -38,6 +38,7 @@ from esp.utils.web import render_to_response
 from esp.users.models    import ESPUser, Permission, Record, RecordType
 from esp.program.models  import ClassSubject, ClassSection, StudentRegistration, PrintableJob
 from esp.program.models  import ClassFlagType
+from esp.program.models.class_ import parse_catalog_sort_fields, annotate_earliest_start, catalog_sort_uses_earliest_start
 from esp.program.class_status import ClassStatus
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
@@ -52,6 +53,7 @@ from esp.program.models import VolunteerOffer
 
 from django import forms
 from django.conf import settings
+from django.core.exceptions import FieldError
 from django.http import HttpResponse
 from django.db.models import IntegerField, Case, When, Count
 from django.template import loader
@@ -61,6 +63,7 @@ from django.utils.html import mark_safe
 
 from datetime import timedelta
 from functools import cmp_to_key
+import logging
 import collections
 import copy
 import csv
@@ -78,6 +81,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 from numpy import array_split
+
+logger = logging.getLogger(__name__)
 
 # Define a thread pool for background PDF generation jobs
 # Throttling to 4 concurrent jobs to avoid exhausting server resources
@@ -306,23 +311,37 @@ class ProgramPrintables(ProgramModuleObj):
             maxgrade=int(request.GET['maxgrade'])
             classes = classes.filter(grade_min__lte=maxgrade)
 
-        if 'open' in request.GET:
-            classes = [cls for cls in classes if not cls.isFull()]
-
         if request.GET.get('sort_name_list'):
-            sort_order = request.GET['sort_name_list'].split(',')
+            sort_order = parse_catalog_sort_fields(request.GET['sort_name_list'])
         else:
-            sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
+            sort_order = parse_catalog_sort_fields(Tag.getProgramTag('catalog_sort_fields', prog, default='category'))
 
         #   Perform sorting based on specified order rules
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
-        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
-        for i in range(len(sort_order)):
-            if sort_order[i] == 'timeblock':
-                sort_order[i] = 'meeting_times__start'
-        classes = classes.order_by(*sort_order)
+        if not sort_order:
+            sort_order = ['id']
+
+        #   Only annotate earliest_start (a correlated subquery) when it's
+        #   actually needed to sort.
+        if catalog_sort_uses_earliest_start(sort_order):
+            classes = annotate_earliest_start(classes)
+
+        try:
+            classes = list(classes.order_by(*sort_order))
+        except FieldError:
+            logger.warning(
+                "Ignoring invalid catalog sort field(s) %s for program %s; falling back to id order.",
+                sort_order, prog,
+            )
+            classes = list(classes.order_by('id'))
+            sort_order = ['id']
+
+        #   'open' filters out full classes; done here (rather than before
+        #   ordering) since classes only becomes a plain list at this point.
+        if 'open' in request.GET:
+            classes = [cls for cls in classes if not cls.isFull()]
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
@@ -354,7 +373,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         #   Hack for timeblock sorting (sorting by category is the default)
         template_name = 'catalog_category.tex'
-        if sort_order[0] == 'meeting_times__start':
+        if sort_order[0].lstrip('-') == 'earliest_start':
             template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes:

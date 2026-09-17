@@ -52,6 +52,7 @@ from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_C
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
+from esp.program.models.class_ import parse_catalog_sort_fields
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
@@ -611,10 +612,12 @@ class StudentClassRegModule(ProgramModuleObj):
         catalog_sort = 'category__symbol'
         program_sort_fields = Tag.getProgramTag('catalog_sort_fields', prog)
         if program_sort_fields:
-            catalog_sort = program_sort_fields.split(',')[0]
+            order_args = parse_catalog_sort_fields(program_sort_fields)
+            if order_args:
+                catalog_sort = order_args[0]
 
         catalog_sort_split = catalog_sort.split('__')
-        if catalog_sort_split[0] == 'category' and catalog_sort_split[1] in ['id', 'category', 'symbol']:
+        if catalog_sort_split[0] == 'category' and len(catalog_sort_split) > 1 and catalog_sort_split[1] in ['id', 'category', 'symbol']:
             sort_field = catalog_sort_split[1]
         elif force_sort:
             # Separate catalog pages always need a category list, even when class sorting

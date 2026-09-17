@@ -457,3 +457,22 @@ class StudentClassRegModuleTest(ProgramFrameworkTest):
         module = self.program.getModule('StudentClassRegModule')
         desc = module.studentDesc()
         self.assertIn('enrolled', desc)
+
+    def test_sort_categories_bare_category_field(self):
+        """A 'catalog_sort_fields' value of bare 'category' (no '__' suffix)
+        must not crash sort_categories() (issue #6043)."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        Tag.setTag('catalog_sort_fields', target=self.program, value='category')
+        classes = self.program.classes()
+        result = StudentClassRegModule.sort_categories(classes, self.program, force_sort=True)
+        self.assertIsNotNone(result)
+
+    def test_sort_categories_whitespace_after_comma(self):
+        """Spaces after commas in 'catalog_sort_fields' must not break category
+        sorting (issue #6043)."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        Tag.setTag('catalog_sort_fields', target=self.program, value='category__id, id')
+        classes = self.program.classes()
+        result = StudentClassRegModule.sort_categories(classes, self.program)
+        self.assertIsNotNone(result)
+        self.assertEqual([cat['id'] for cat in result], sorted(cat['id'] for cat in result))
