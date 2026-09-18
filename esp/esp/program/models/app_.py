@@ -164,6 +164,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     teacher of a class for which the student applied. """
 
     reviewer = AjaxForeignKey(ESPUser, editable=False, on_delete=models.CASCADE)
+    class_subject = models.ForeignKey('program.ClassSubject', blank=True, null=True, editable=False, on_delete=models.CASCADE)
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
@@ -173,6 +174,8 @@ class StudentAppReview(BaseAppElement, models.Model):
     _field_names = ['score', 'comments', 'reject']
 
     def __str__(self):
+        if self.class_subject is not None:
+            return f'{self.score} by {self.reviewer.username} for {self.class_subject.title}: {self.comments[:80]}...'
         return f'{self.score} by {self.reviewer.username}: {self.comments[:80]}...'
 
     class Meta:
