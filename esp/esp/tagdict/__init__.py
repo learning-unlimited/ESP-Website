@@ -18,6 +18,9 @@ def validate_JSON(value):
 
 class JSONValidatedCharField(forms.CharField):
     default_validators = [validate_JSON]
+    # JSON values are structured and often long, so don't cram them into a
+    # single-line input
+    widget = forms.Textarea(attrs={'rows': 3})
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -1025,6 +1028,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'special_classroom_types': {
         'is_boolean': False,
@@ -1032,6 +1036,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'collapse_full_classes': {
         'is_boolean': True,
@@ -1120,6 +1125,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_scorer_weight_overrides': {
         'is_boolean': False,
@@ -1127,6 +1133,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_resource_constraint_overrides': {
         'is_boolean': False,
@@ -1134,6 +1141,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_resource_scoring_overrides': {
         'is_boolean': False,
@@ -1141,6 +1149,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'num_stars': {
         'is_boolean': False,

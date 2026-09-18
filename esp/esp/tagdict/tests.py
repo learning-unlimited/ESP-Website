@@ -2,9 +2,11 @@ import ast
 import os
 import re
 
+from django import forms
+from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
-from esp.tagdict import all_global_tags, all_program_tags
+from esp.tagdict import all_global_tags, all_program_tags, JSONValidatedCharField
 from esp.tagdict.models import Tag
 from esp.tagdict.validators import (
     ALL_HIDE_FIELDS_TAG_KEYS,
@@ -1027,3 +1029,57 @@ class TagSearchMarkupTest(ProgramFrameworkTest):
             self.assertIn(escape(strip_tags(field.help_text)), rows[field.name])
             checked += 1
         self.assertTrue(checked, 'No tags with help text were rendered')
+
+
+class JSONTagFieldTest(SimpleTestCase):
+    """
+    Tests the form field used for tags whose values are JSON.
+
+    Consumers of these tags json.loads() the value, so a malformed value should
+    be caught on the tag settings page rather than at the point of use.
+    """
+
+    def _json_tags(self):
+        """Every setting whose default value is a JSON object or list."""
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if not info.get('is_setting', False):
+                    continue
+                default = info.get('default')
+                if isinstance(default, str) and default[:1] in ('{', '['):
+                    yield key, info
+
+    def test_json_tags_are_validated(self):
+        checked = 0
+        for key, info in self._json_tags():
+            self.assertIsInstance(
+                info.get('field'), JSONValidatedCharField,
+                "Tag '%s' holds JSON but is not validated as JSON" % key)
+            checked += 1
+        self.assertTrue(checked, 'No JSON tags were found')
+
+    def test_json_fields_are_multiline(self):
+        checked = 0
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if isinstance(info.get('field'), JSONValidatedCharField):
+                    self.assertIsInstance(
+                        info['field'].widget, forms.Textarea,
+                        "Tag '%s' should not show JSON in a one-line input" % key)
+                    checked += 1
+        self.assertTrue(checked, 'No JSON fields were found')
+
+    def test_malformed_json_is_rejected(self):
+        field = JSONValidatedCharField(required=False)
+        for value in ('{"unclosed": 1', "{'single': 'quotes'}", 'not json'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+    def test_valid_json_is_accepted(self):
+        field = JSONValidatedCharField(required=False)
+        for value in ('{}', '[]', '{"a": [1, 2]}'):
+            self.assertEqual(field.clean(value), value)
+
+    def test_blank_value_is_accepted(self):
+        """Tags are optional, so an empty value must not be validated as JSON."""
+        self.assertEqual(JSONValidatedCharField(required=False).clean(''), '')
