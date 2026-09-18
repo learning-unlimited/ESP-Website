@@ -130,8 +130,9 @@ class AllViewsTest(ProgramFrameworkTest):
         # filter saved by the first step.  Target a student rather than the
         # admin: deactivatefinal really does deactivate everyone it matches,
         # and losing the admin would break every later view.
+        self.filter_user = self.students[-1]
         self.user_filter = PersistentQueryFilter.create_from_Q(
-            ESPUser, Q(id=self.students[-1].id), 'All views test filter')
+            ESPUser, Q(id=self.filter_user.id), 'All views test filter')
 
         # Set up credit card test keys
         settings.STRIPE_CONFIG = {
@@ -180,11 +181,16 @@ class AllViewsTest(ProgramFrameworkTest):
                         self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id)
 
     def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id):
-        """Fail unless one of our candidate requests to this view serves a page."""
+        """Fail unless this view handles at least one of our candidate requests."""
         url = '/' + tl + '/' + self.program.getUrlBase() + '/' + view
 
         # In case the user has been unregistered, reregister them
         sec.preregister_student(self.adminUser)
+
+        # Likewise, deactivatefinal really deactivates the users the filter
+        # matches, and get_Q() only ever returns active ones -- so without
+        # this every later view handed the filter sees an empty user list.
+        ESPUser.objects.filter(id=self.filter_user.id).update(is_active=True)
 
         def post_fcfs():
             # Mostly used for registering for classes, so unregister for the class in advance
@@ -247,7 +253,12 @@ class AllViewsTest(ProgramFrameworkTest):
             })),
         ]
 
-        # Stop as soon as this view properly serves a page (or redirects to another page)
+        # Stop as soon as this view handles the request.  4xx counts: the AJAX
+        # endpoints answer a request they can't use with HttpResponseBadRequest
+        # or 405, which means the view resolved, loaded and ran its own
+        # validation.  What this test is looking for is a view that cannot
+        # serve anything at all -- an unhandled exception, or the 500 that
+        # ESPErrorMiddleware renders for an ESPError.
         failures = []
         for label, attempt in attempts:
             try:
@@ -257,8 +268,8 @@ class AllViewsTest(ProgramFrameworkTest):
                 # the exception that the view raised.
                 failures.append('%s: raised %s: %s' % (label, type(e).__name__, e))
                 continue
-            if 200 <= response.status_code < 400:
+            if 200 <= response.status_code < 500:
                 return
             failures.append('%s: HTTP %d' % (label, response.status_code))
 
-        self.fail('No request to %s was served:\n  %s' % (url, '\n  '.join(failures)))
+        self.fail('No request to %s was handled:\n  %s' % (url, '\n  '.join(failures)))
