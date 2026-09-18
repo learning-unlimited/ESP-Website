@@ -38,7 +38,9 @@ table {
         column-gap: 10px;
     }
     /* The class-list links are <a> elements, so they also need the chrome and
-       the link resets a browser would otherwise supply for a <button>. */
+       the link resets a browser would otherwise supply for a <button>.  They
+       also carry the `link_button` marker class, which the theme stylesheets
+       exclude from their link colour/underline rules. */
     button, a {
         width: calc(100% - 20px);
         min-width: 200px;
@@ -55,9 +57,9 @@ table {
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        background-color: #efefef;
-        border: 1px solid #767676;
-        color: inherit;
+        background-color: ButtonFace;
+        border: 2px outset ButtonBorder;
+        color: ButtonText;
         text-decoration: none;
         cursor: pointer;
     }
@@ -70,6 +72,10 @@ table {
     flex-wrap: wrap;
     gap: 10px;
     
+    /* The tiles are flex containers, so keep this rule off their contents. */
+    .module_link_large > div {
+        flex: 0 0 auto;
+    }
     div {
         flex: 1 1 0;
         text-align: center;

@@ -53,9 +53,10 @@ div .module_link_large {
     border-radius: 4px;
     /* These tiles are <a> elements (a <button> may not be nested inside a
        link), so they need the chrome a browser used to supply for <button>.
-       Themes may override the border/background at a higher specificity. */
-    background-color: #efefef;
-    border: 1px solid #767676;
+       The system colours reproduce that exactly; themes may override the
+       border/background at a higher specificity. */
+    background-color: ButtonFace;
+    border: 2px outset ButtonBorder;
 }
 
 /* Strip the theme's link colour/underline from the tiles.  The #main variant
@@ -70,10 +71,10 @@ a.module_link_large:active,
        keep their previous layout. */
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
+    align-items: stretch;
     box-sizing: border-box;
-    color: inherit;
+    color: ButtonText;
     text-decoration: none;
     cursor: pointer;
 }
@@ -90,9 +91,6 @@ div .module_link_large_dead {
     border-radius: 4px;
 	cursor: default; 
 	background-color: gray;
-	/* Match the border of the live tiles next to it. */
-	border: 1px solid #767676;
-	box-sizing: border-box;
 }
 
 div .module_link_large_dead :hover {
