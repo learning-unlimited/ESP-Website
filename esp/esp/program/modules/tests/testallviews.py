@@ -156,6 +156,20 @@ class AllViewsTest(ProgramFrameworkTest):
         # clean up surveys
         Survey.objects.all().delete()
 
+    #   Views the generic requests below cannot reach.  Each needs data
+    #   specific enough that supplying it here would amount to writing the
+    #   view's own test, so they are named rather than worked around.
+    SKIP_VIEWS = {
+        #   Wants a PrintableJob whose id is the extra path segment.
+        ('manage', 'printable_job_status'),
+        #   Wants POST 'progname'; every other field its form reads is already
+        #   covered by the user search request below.
+        ('manage', 'generatetags'),
+        #   Must not be covered: on success it logs the admin out and logs in
+        #   as the test user, which would break every view after it.
+        ('manage', 'start_testing'),
+    }
+
     def testAllViews(self):
         # Check all views of all modules
         # These are the same for every view, so look them up once rather than
@@ -175,6 +189,8 @@ class AllViewsTest(ProgramFrameworkTest):
             modules = self.program.getModules(tl = tl)
             for module in modules:
                 for view in module.views:
+                    if (tl, view) in self.SKIP_VIEWS:
+                        continue
                     # Report each view separately so one broken view neither
                     # hides the others nor requires reading a single blob.
                     with self.subTest(tl = tl, module = module.module.handler, view = view):
