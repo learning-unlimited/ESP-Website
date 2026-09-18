@@ -22,7 +22,9 @@
     </tr>
     <tr>
         <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i><br />
-            Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
+            Status: {% if sec.isDraft %}
+            <span style="font-weight: bold; color: #888;">Draft</span>
+            {% elif sec.isReviewed %}{% if sec.isAccepted %}
             <span style="font-weight: bold; color: #0C0;">Accepted</span>
             {% else %}
             <span style="font-weight: bold; color: #C00;">Rejected</span>

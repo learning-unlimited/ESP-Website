@@ -29,6 +29,8 @@ function getStatusDetails(statusCode) {
     return {text: "Cancelled", action: "", classes: ['unapproved', 'dashboard_red']};
   else if(statusCode == -10)
     return {text: "Rejected", action: "REJECT", classes: ['unapproved', 'dashboard_red']};
+  else if(statusCode == -5)
+    return {text: "Draft", action: "", classes: ['unapproved', 'dashboard_gray']};
   else if(statusCode == 0)
     return {text: "Unreviewed", action: "UNREVIEW", classes: ['unapproved', 'dashboard_blue']};
   else if(statusCode == 5)
