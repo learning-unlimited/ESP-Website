@@ -1808,3 +1808,188 @@ class DisableAccountPostOnlyTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+
+class LoginErrorMessageTest(TestCase):
+    """The login page allows inactive accounts to log in, unless they are awaiting email activation."""
+
+    def setUp(self):
+        from esp.users.models import ESPUser as _ESPUser
+        self.user = _ESPUser.objects.create_user(
+            username='loginmsg', email='loginmsg@example.com', password='correct-horse')
+
+    def _post(self, password='correct-horse', username='loginmsg'):
+        return self.client.post('/myesp/login/', {'username': username, 'password': password})
+
+    def test_awaiting_activation_gets_activation_message_and_blocked(self):
+        from esp.users.models import PendingActivation
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+        response = self._post()
+        self.assertContains(response, 'has not been activated yet')
+        self.assertContains(response, reverse('esp.users.views.resend_activation_view'))
+        self.assertNotContains(response, 'The password you entered is not valid')
+        self.assertFalse(self.client.session.get('_auth_user_id')) # Blocked
+
+    def test_deactivated_account_logs_in_successfully(self):
+        # Deactivated is not the same as never activated. We should just log them in.
+        self.user.is_active = False
+        self.user.save()
+        response = self._post()
+        self.assertNotContains(response, 'has not been activated yet')
+        self.assertNotContains(response, 'The password you entered is not valid')
+        self.assertIn(response.status_code, (200, 302))
+        self.assertEqual(str(self.client.session.get('_auth_user_id')), str(self.user.pk))
+
+    def test_merged_account_logs_in_and_is_forwarded(self):
+        from esp.users.models.forwarder import UserForwarder
+        from esp.users.models import ESPUser as _ESPUser
+        target_user = _ESPUser.objects.create_user(
+            username='target', email='target@example.com', password='pwd')
+        UserForwarder.objects.create(source=self.user, target=target_user)
+
+        self.user.is_active = False
+        self.user.save()
+        response = self._post()
+
+        # UserForwarder.follow() should redirect them to profile (since no RegistrationProfile)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'You have successfully logged in! However, the username you gave')
+        self.assertEqual(str(self.client.session.get('_auth_user_id')), str(target_user.pk))
+
+    def test_awaiting_activation_wrong_password_gets_wrong_password_message(self):
+        # The activation state must not be revealed without the right password.
+        from esp.users.models import PendingActivation
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+        response = self._post(password='wrong')
+        self.assertContains(response, 'The password you entered is not valid')
+        self.assertNotContains(response, 'has not been activated yet')
+        self.assertFalse(self.client.session.get('_auth_user_id'))
+
+    def test_wrong_password_message_unchanged(self):
+        response = self._post(password='wrong')
+        self.assertContains(response, 'The password you entered is not valid')
+
+    def test_unknown_username_message_unchanged(self):
+        response = self._post(username='nobody-here')
+        self.assertContains(response, 'The username you entered is not valid')
+
+class PasswordResetReactivationTest(TestCase):
+    """Test that password resets only reactivate accounts awaiting activation."""
+    def setUp(self):
+        from esp.users.models import ESPUser as _ESPUser
+        self.user = _ESPUser.objects.create_user(
+            username='resetmsg', email='resetmsg@example.com', password='correct-horse')
+
+    def test_password_reset_reactivates_awaiting_activation(self):
+        from esp.users.models import PendingActivation
+        from esp.users.views.password_reset import ESPPasswordResetConfirmView
+        from django.contrib.auth.forms import SetPasswordForm
+
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.create(user=self.user)
+
+        view = ESPPasswordResetConfirmView()
+        view.request = HttpRequest()
+        view.request.session = self.client.session
+
+        form = SetPasswordForm(self.user, data={'new_password1': 'new-horse', 'new_password2': 'new-horse'})
+        self.assertTrue(form.is_valid())
+        view.form_valid(form)
+
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+        self.assertEqual(PendingActivation.objects.filter(user=self.user).count(), 0)
+
+    def test_password_reset_does_not_reactivate_unsubscribed(self):
+        from esp.users.views.password_reset import ESPPasswordResetConfirmView
+        from django.contrib.auth.forms import SetPasswordForm
+
+        self.user.is_active = False
+        self.user.save()
+
+        view = ESPPasswordResetConfirmView()
+        view.request = HttpRequest()
+        view.request.session = self.client.session
+
+        form = SetPasswordForm(self.user, data={'new_password1': 'new-horse', 'new_password2': 'new-horse'})
+        self.assertTrue(form.is_valid())
+        view.form_valid(form)
+
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+
+class ESPAuthBackendAwaitingActivationTest(TestCase):
+    """
+    ESPAuthBackend.authenticate() must return None for accounts that are
+    awaiting email activation, while still authenticating deliberately
+    deactivated (inactive but not pending) accounts.
+
+    This ensures that callers bypassing AuthenticationForm — such as the
+    medicalsyncapi view — cannot receive a pending user object.
+    """
+
+    def setUp(self):
+        from esp.users.models import ESPUser as _ESPUser, PendingActivation
+        self.password = 'correct-horse'
+
+        self.pending_user = _ESPUser.objects.create_user(
+            username='backend_pending',
+            email='backend_pending@example.com',
+            password=self.password,
+        )
+        self.pending_user.is_active = False
+        self.pending_user.save()
+        PendingActivation.objects.create(user=self.pending_user)
+
+        self.inactive_user = _ESPUser.objects.create_user(
+            username='backend_inactive',
+            email='backend_inactive@example.com',
+            password=self.password,
+        )
+        self.inactive_user.is_active = False
+        self.inactive_user.save()
+
+    def test_authenticate_returns_none_for_awaiting_activation(self):
+        """authenticate() must block accounts awaiting email activation."""
+        result = authenticate(username='backend_pending', password=self.password)
+        self.assertIsNone(result, "authenticate() must return None for a pending-activation account")
+
+    def test_authenticate_returns_user_for_inactive_non_pending(self):
+        """authenticate() must succeed for deliberately deactivated (non-pending) accounts."""
+        result = authenticate(username='backend_inactive', password=self.password)
+        self.assertIsNotNone(result, "authenticate() should return the user for an inactive (non-pending) account")
+        self.assertEqual(result.pk, self.inactive_user.pk)
+
+
+class ReRegisterPendingAccountTest(TestCase):
+    """Re-registering a pending account after activation stops being required activates it."""
+
+    def setUp(self):
+        user_role_setup()
+
+    def test_reregister_without_activation_clears_pending_state(self):
+        from esp.users.models import PendingActivation
+        Tag.setTag('require_email_validation', value='True')
+        data = {"username": "rereg", "password": "Str0ng!Pass", "confirm_password": "Str0ng!Pass",
+                "first_name": "first", "last_name": "last", "email": "rereg@example.com",
+                "confirm_email": "rereg@example.com", "initial_role": "Teacher"}
+        url = "/myesp/register/"
+        if Tag.getBooleanTag("ask_about_duplicate_accounts"):
+            url += "information/"
+        self.client.post(url, data=data)
+        user = ESPUser.objects.get(username="rereg")
+        self.assertTrue(PendingActivation.objects.filter(user=user).exists())
+
+        Tag.setTag('require_email_validation', value='False')
+        response = self.client.post(url, data=data)
+        self.assertRedirects(response, reverse('myesp_profile'), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.is_active)
+        self.assertFalse(PendingActivation.objects.filter(user=user).exists())
+        self.assertEqual(str(self.client.session.get('_auth_user_id')), str(user.pk))
