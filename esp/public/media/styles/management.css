@@ -51,6 +51,32 @@ div .module_link_large {
     min-height: 75px;
     height: auto;
     border-radius: 4px;
+    /* These tiles are <a> elements (a <button> may not be nested inside a
+       link), so they need the chrome a browser used to supply for <button>.
+       The system colours reproduce that exactly; themes may override the
+       border/background at a higher specificity. */
+    background-color: ButtonFace;
+    border: 2px outset ButtonBorder;
+}
+
+/* Strip the theme's link colour/underline from the tiles.  The #main variant
+   is needed to outrank themes that style `#main a`. */
+a.module_link_large:link,
+a.module_link_large:visited,
+a.module_link_large:hover,
+a.module_link_large:focus,
+a.module_link_large:active,
+#main a.module_link_large {
+    /* <button> centres its content on both axes; reproduce that so the tiles
+       keep their previous layout. */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    box-sizing: border-box;
+    color: ButtonText;
+    text-decoration: none;
+    cursor: pointer;
 }
 
 div .module_link_large_dead {
