@@ -36,7 +36,6 @@ from django.conf import settings
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
-from esp.middleware import ESPError
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
@@ -149,78 +148,71 @@ class AllViewsTest(ProgramFrameworkTest):
 
     def testAllViews(self):
         # Check all views of all modules
-        failed_modules = {}
-        for tl in ['learn', 'teach', 'admin', 'volunteer']:
+        # These are the same for every view, so look them up once rather than
+        # re-querying inside the loop.
+        cls = self.program.classes()[0]
+        cls_id = str(cls.id)
+        sec = cls.get_sections()[0]
+        sec_id = str(sec.id)
+        event = self.program.getTimeSlots()[0]
+        event_id = str(event.id)
+        user_id = str(self.adminUser.id)
+
+        # The admin-facing modules use the 'manage' module_type; no module uses
+        # 'admin', so the previous 'admin' entry here matched nothing.
+        for tl in ['learn', 'teach', 'manage', 'volunteer']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
-                views = module.views
-                for view in views:
-                    passes = False
-                    module_view = module.module.handler + '.' + view
-                    failed_modules[module_view] = {}
-                    cls = self.program.classes()[0]
-                    cls_id = str(cls.id)
-                    sec = cls.get_sections()[0]
-                    sec_id = str(sec.id)
-                    event = self.program.getTimeSlots()[0]
-                    event_id = str(event.id)
-                    # In case the user has been unregistered, reregister them
-                    sec.preregister_student(self.adminUser)
-                    # Try a whole bunch of different requests (because different views have different expectations)
-                    # Skip to the next view if this view ever properly serves a page (or redirects to another page)
-                    try: # Various GET arguments
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a class ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET class'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a section ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET section'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use an event ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET event'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a user ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + str(self.adminUser.id))
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET user'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Various POST data
-                        # Mostly used for registering for classes, so unregister for the class in advance
-                        sec.unpreregister_student(self.adminUser)
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST FCFS'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Different student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST alt lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    if passes:
-                        del failed_modules[module_view]
-        # Check if any failed
-        if len(failed_modules) > 0:
-            print(failed_modules)
-        self.assertTrue(len(failed_modules) == 0)
+                for view in module.views:
+                    # Report each view separately so one broken view neither
+                    # hides the others nor requires reading a single blob.
+                    with self.subTest(tl = tl, module = module.module.handler, view = view):
+                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id)
+
+    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id):
+        """Fail unless one of our candidate requests to this view serves a page."""
+        url = '/' + tl + '/' + self.program.getUrlBase() + '/' + view
+
+        # In case the user has been unregistered, reregister them
+        sec.preregister_student(self.adminUser)
+
+        def post_fcfs():
+            # Mostly used for registering for classes, so unregister for the class in advance
+            sec.unpreregister_student(self.adminUser)
+            return self.client.post(url, {'class_id': cls_id, 'section_id': sec_id, 'json_data': '{}'})
+
+        # Try a whole bunch of different requests (because different views have different expectations)
+        attempts = [
+            # Various GET arguments
+            ('GET', lambda: self.client.get(url + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')),
+            # Use a class ID as the extra argument
+            ('GET class', lambda: self.client.get(url + '/' + cls_id)),
+            # Use a section ID as the extra argument
+            ('GET section', lambda: self.client.get(url + '/' + sec_id)),
+            # Use an event ID as the extra argument
+            ('GET event', lambda: self.client.get(url + '/' + event_id)),
+            # Use a user ID as the extra argument
+            ('GET user', lambda: self.client.get(url + '/' + user_id)),
+            # Various POST data
+            ('POST FCFS', post_fcfs),
+            # Student lottery POST data
+            ('POST lottery', lambda: self.client.post(url, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})),
+            # Different student lottery POST data
+            ('POST alt lottery', lambda: self.client.post(url, {'json_data': '{"' + event_id + '": {}}'})),
+        ]
+
+        # Stop as soon as this view properly serves a page (or redirects to another page)
+        failures = []
+        for label, attempt in attempts:
+            try:
+                response = attempt()
+            except Exception as e:
+                # There is no response to read a status code from, so report
+                # the exception that the view raised.
+                failures.append('%s: raised %s: %s' % (label, type(e).__name__, e))
+                continue
+            if 200 <= response.status_code < 400:
+                return
+            failures.append('%s: HTTP %d' % (label, response.status_code))
+
+        self.fail('No request to %s was served:\n  %s' % (url, '\n  '.join(failures)))
