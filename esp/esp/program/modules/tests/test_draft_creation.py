@@ -55,15 +55,19 @@ class DraftCreationTestMixin(object):
         self.client = Client()
 
         # Set up resource types for testing in a deterministic way
-        classroom_type, _ = ResourceType.objects.get_or_create(
-            name='Classroom',
-            defaults={'description': ''},
-        )
-        test_resource_type, _ = ResourceType.objects.get_or_create(
-            name='Test Resource',
-            defaults={'description': ''},
-        )
-        self.resource_types = [classroom_type, test_resource_type]
+        self.resource_types = [
+            self._make_resource_type('Classroom', ['Projector']),
+            self._make_resource_type('Test Resource', ['Whiteboard']),
+        ]
+
+    def _make_resource_type(self, name, choices):
+        """Get or create a ResourceType offering exactly the given choices."""
+        res_type, _ = ResourceType.objects.get_or_create(
+            name=name, defaults={'description': ''})
+        ResourceType.objects.filter(pk=res_type.pk).update(
+            attributes_dumped='|'.join(choices))
+        res_type.refresh_from_db()
+        return res_type
 
     def _get_teacherclassreg_module(self):
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
