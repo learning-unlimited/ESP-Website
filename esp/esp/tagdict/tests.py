@@ -9,6 +9,9 @@ from django.contrib.auth.models import User
 from esp.tagdict import (
     all_global_tags,
     all_program_tags,
+    initial_choices,
+    join_choices,
+    preserve_current_choice,
     JSONValidatedCharField,
     MultilineCharField,
 )
@@ -1154,3 +1157,169 @@ class TagSettingsFormFieldTest(ProgramFrameworkTest):
             self.assertNotIsInstance(
                 all_program_tags[key]['field'].widget, forms.HiddenInput,
                 "Hiding tag '%s' leaked into the tag dict" % key)
+
+
+class ChoiceValueHelperTest(SimpleTestCase):
+    """Tests the conversion between a stored tag value and a list of choices."""
+
+    def test_comma_separated_values_are_split(self):
+        self.assertEqual(initial_choices('a,b'), ['a', 'b'])
+
+    def test_surrounding_whitespace_and_blanks_are_dropped(self):
+        self.assertEqual(initial_choices(' a , ,b '), ['a', 'b'])
+
+    def test_json_values_are_parsed(self):
+        self.assertEqual(initial_choices('["a", "b"]', json_list=True), ['a', 'b'])
+
+    def test_malformed_json_gives_no_choices(self):
+        self.assertEqual(initial_choices('not json', json_list=True), [])
+        self.assertEqual(initial_choices('{"a": 1}', json_list=True), [])
+
+    def test_values_are_joined_the_way_they_are_read(self):
+        for json_list in (False, True):
+            values = ['a', 'b']
+            self.assertEqual(
+                initial_choices(join_choices(values, json_list), json_list), values)
+
+    def test_an_empty_selection_clears_the_tag(self):
+        """The forms unset a tag whose value is empty, so don't store '[]'."""
+        self.assertEqual(join_choices([], json_list=True), '')
+        self.assertEqual(join_choices([]), '')
+
+    def test_a_stored_value_stays_selectable(self):
+        field = forms.MultipleChoiceField(choices=[('a', 'a')])
+        preserve_current_choice(field, ['a', 'gone'])
+        self.assertEqual(list(field.choices),
+                         [('a', 'a'), ('gone', 'gone (current value)')])
+
+    def test_offered_values_are_not_duplicated(self):
+        field = forms.ChoiceField(choices=[('a', 'a')])
+        preserve_current_choice(field, 'a')
+        self.assertEqual(list(field.choices), [('a', 'a')])
+
+    def test_non_choice_fields_are_left_alone(self):
+        field = forms.CharField()
+        preserve_current_choice(field, 'anything')
+        self.assertFalse(hasattr(field, 'choices'))
+
+
+class ChoiceTagFieldTest(ProgramFrameworkTest):
+    """
+    Tests the settings whose values are picked from a list rather than typed.
+
+    Their choices come from the database or from another form, so the tag dict
+    declares a callable that the settings forms call while building the form.
+    """
+
+    PROGRAM_CHOICE_TAGS = (
+        'teacherreg_hide_fields', 'student_reg_records', 'teacher_reg_records',
+        'survey_teacher_filter', 'survey_student_filter', 'open_class_category',
+        'creditcard_required_for_extracosts',
+    )
+    GLOBAL_CHOICE_TAGS = (
+        'teacher_profile_hide_fields', 'student_profile_hide_fields',
+        'volunteer_profile_hide_fields', 'educator_profile_hide_fields',
+        'guardian_profile_hide_fields', 'finaid_form_fields',
+        'show_studentrep_application',
+    )
+
+    def _program_form(self, data=None):
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+        return ProgramTagSettingsForm(data, program=self.program)
+
+    def _global_form(self, data=None):
+        from esp.program.forms import TagSettingsForm
+        return TagSettingsForm(data)
+
+    def test_tags_offer_choices(self):
+        for form, keys in ((self._program_form(), self.PROGRAM_CHOICE_TAGS),
+                           (self._global_form(), self.GLOBAL_CHOICE_TAGS)):
+            for key in keys:
+                field = form.fields[key]
+                self.assertIsInstance(field, forms.ChoiceField, key)
+                self.assertTrue(list(field.choices), key)
+
+    def test_survey_filters_offer_the_sets_the_modules_define(self):
+        """The stored value has to be a key of program.students()/teachers()."""
+        form = self._program_form()
+        for key, user_type in (('survey_student_filter', 'students'),
+                               ('survey_teacher_filter', 'teachers')):
+            offered = {choice[0] for choice in form.fields[key].choices}
+            self.assertEqual(offered, set(getattr(self.program, user_type)(True)))
+            self.assertIn(all_program_tags[key]['default'], offered,
+                          "The default for '%s' is not offered" % key)
+
+    def test_open_class_category_offers_category_ids(self):
+        """The tag stores the category's ID, so that has to be the value."""
+        from esp.program.models import ClassCategories
+
+        category = ClassCategories.objects.all()[0]
+        offered = dict(self._program_form().fields['open_class_category'].choices)
+        self.assertIn(str(category.id), offered)
+        self.assertIn(category.category, offered[str(category.id)])
+        self.assertIn('', offered, 'There is no way to leave the tag unset')
+
+    def test_any_extra_cost_item_overrides_the_named_ones(self):
+        """'*' means any item, so it cannot be combined with item names."""
+        field = self._program_form().fields['creditcard_required_for_extracosts']
+        field.choices = list(field.choices) + [('T-Shirt', 'T-Shirt')]
+        self.assertEqual(field.clean(['*', 'T-Shirt']), ['*'])
+        self.assertEqual(field.clean(['T-Shirt']), ['T-Shirt'])
+
+    def test_a_selection_is_saved_and_read_back(self):
+        form = self._program_form()
+        choices = [choice[0] for choice in form.fields['student_reg_records'].choices]
+        selected = choices[:2]
+
+        data = {'student_reg_records': selected}
+        save_form = self._program_form(data)
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+
+        self.assertEqual(Tag.getProgramTag('student_reg_records', self.program),
+                         ','.join(selected))
+        self.assertEqual(self._program_form().fields['student_reg_records'].initial,
+                         selected)
+
+    def test_a_json_list_selection_is_saved_as_json(self):
+        from esp.program.models import RegistrationType
+
+        RegistrationType.objects.get_or_create(name='Applied')
+        form = self._program_form()
+        field = form.fields['display_registration_names']
+        self.assertIsInstance(field, forms.MultipleChoiceField)
+        self.assertNotIn('Enrolled', dict(field.choices),
+                         "'Enrolled' is always included, so don't offer it")
+
+        save_form = self._program_form({'display_registration_names': ['Applied']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+
+        self.assertEqual(
+            Tag.getProgramTag('display_registration_names', self.program), '["Applied"]')
+        self.assertEqual(
+            self._program_form().fields['display_registration_names'].initial, ['Applied'])
+
+    def test_a_value_that_is_no_longer_offered_is_kept(self):
+        """A stored value must survive the next save even if it is now unknown."""
+        Tag.setTag('student_reg_records', self.program, 'no_such_record')
+        form = self._program_form()
+        self.assertIn('no_such_record',
+                      dict(form.fields['student_reg_records'].choices))
+
+        save_form = self._program_form({'student_reg_records': ['no_such_record']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertEqual(Tag.getProgramTag('student_reg_records', self.program),
+                         'no_such_record')
+
+    def test_catalog_sort_fields_rejects_unsortable_fields(self):
+        from esp.program.models.class_ import CATALOG_UNSORTABLE_FIELDS
+
+        unsortable = sorted(CATALOG_UNSORTABLE_FIELDS)[0]
+        form = self._program_form({'catalog_sort_fields': 'category__symbol,-%s' % unsortable})
+        self.assertFalse(form.is_valid())
+        self.assertIn('catalog_sort_fields', form.errors)
+
+        form = self._program_form({'catalog_sort_fields': 'category__symbol,-id'})
+        self.assertTrue(form.is_valid(), form.errors)
