@@ -54,16 +54,27 @@ class DraftCreationTestMixin(object):
         super(DraftCreationTestMixin, self).setUp(**self.DEFAULT_SETTINGS)
         self.client = Client()
 
-        # Set up resource types for testing in a deterministic way
-        classroom_type, _ = ResourceType.objects.get_or_create(
-            name='Classroom',
+        # Set up resource types for testing in a deterministic way.
+        # Draft saving only stores desired_values the ResourceType actually
+        # offers, so these types have to list the values the tests post.
+        self.resource_types = [
+            self._make_resource_type('Classroom', ['Projector']),
+            self._make_resource_type('Test Resource', ['Whiteboard']),
+        ]
+
+    def _make_resource_type(self, name, choices):
+        """Get or create a ResourceType offering exactly the given choices."""
+        res_type, _ = ResourceType.objects.get_or_create(
+            name=name,
             defaults={'description': ''},
         )
-        test_resource_type, _ = ResourceType.objects.get_or_create(
-            name='Test Resource',
-            defaults={'description': ''},
+        # get_or_create ignores defaults for an existing row, and save() would
+        # re-dump any cached attributes, so write the column directly.
+        ResourceType.objects.filter(pk=res_type.pk).update(
+            attributes_dumped='|'.join(choices),
         )
-        self.resource_types = [classroom_type, test_resource_type]
+        res_type.refresh_from_db()
+        return res_type
 
     def _get_teacherclassreg_module(self):
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
