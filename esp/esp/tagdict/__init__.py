@@ -1,9 +1,10 @@
 from collections import OrderedDict
 from django import forms
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, URLValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 import datetime
+import re
 
 from esp.users.forms import _states
 
@@ -114,6 +115,45 @@ def extra_cost_items_field(key, program):
     return AnyOrNamesMultipleChoiceField(
         choices=[('*', 'Any extra cost item')] +
                 [(item.text, item.text) for item in items])
+
+
+class MonthDayWidget(forms.SelectDateWidget):
+    """A SelectDateWidget without the year, for a date whose year is ignored.
+
+    The year is still submitted, so the value stays a full date; it is just not
+    something the admin is asked to pick.
+    """
+
+    def __init__(self, year=None, **kwargs):
+        self.year = year or datetime.date.today().year
+        super().__init__(years=[self.year], **kwargs)
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['subwidgets'] = [
+            subwidget for subwidget in context['widget']['subwidgets']
+            if subwidget['name'] != self.year_field % name]
+        return context
+
+    def value_from_datadict(self, data, files, name):
+        # The year isn't rendered, so supply it rather than read it back
+        data = {**data, self.year_field % name: str(self.year)}
+        return super().value_from_datadict(data, files, name)
+
+
+# A path that is safe to put in an href, i.e. no spaces or markup
+_PAGE_PATH = re.compile(r'^/[^\s"\'<>]*$')
+
+
+def validate_page_url(value):
+    """Require a path starting with '/', or a full http(s) URL."""
+    if _PAGE_PATH.match(value):
+        return
+    try:
+        URLValidator(schemes=['http', 'https'])(value)
+    except ValidationError:
+        raise ValidationError('Enter a path starting with "/" '
+                              '(e.g. /learn/index.html) or a full http(s) URL.')
 
 
 def validate_catalog_sort_fields(value):
@@ -618,24 +658,27 @@ all_global_tags = {
     },
     'admin_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which admins get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which admins get redirected after logging in (a path starting with "/", or a full URL)',
         'default': None,
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'teacher_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which teachers get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which teachers get redirected after logging in (a path starting with "/", or a full URL)',
         'default': "/teach/index.html",
         'category': 'teach',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'student_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which students get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which students get redirected after logging in (a path starting with "/", or a full URL)',
         'default': "/learn/index.html",
         'category': 'learn',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'default_restypes': {
         'is_boolean': False,
@@ -651,6 +694,8 @@ all_global_tags = {
         'default': '',
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[RegexValidator(r'^[A-Za-z]{1,4}-[A-Za-z0-9-]+$',
+                                                   'Enter a measurement ID, such as G-PSW1MY7HB4.')]),
     },
     'shirt_types': {
         'is_boolean': False,
@@ -661,11 +706,11 @@ all_global_tags = {
     },
     'grade_increment_date': {
         'is_boolean': False,
-        'help_text': 'When should students\' grades rollover/increment?',
+        'help_text': 'When should students\' grades rollover/increment? (the year is ignored)',
         'default': datetime.date(datetime.date.today().year, 7, 31),
         'category': 'learn',
         'is_setting': True,
-        'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
+        'field': forms.DateField(widget=MonthDayWidget()),
     },
     'current_theme_version': {
         'is_boolean': False,
@@ -1413,6 +1458,9 @@ all_program_tags = {
         'default': None,
         'category': 'onsite',
         'is_setting': True,
+        'field': forms.CharField(widget=forms.TimeInput(attrs={'type': 'time'}),
+                                validators=[RegexValidator(r'^([01]?\d|2[0-3]):[0-5]\d$',
+                                                           'Enter a time in 24-hour HH:MM format (e.g. 13:30).')]),
     },
     'switch_lag_class_attendance': {
         'is_boolean': False,

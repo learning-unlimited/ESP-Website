@@ -12,7 +12,9 @@ from esp.tagdict import (
     initial_choices,
     join_choices,
     preserve_current_choice,
+    validate_page_url,
     JSONValidatedCharField,
+    MonthDayWidget,
     MultilineCharField,
 )
 from esp.tagdict.models import Tag
@@ -1323,3 +1325,107 @@ class ChoiceTagFieldTest(ProgramFrameworkTest):
 
         form = self._program_form({'catalog_sort_fields': 'category__symbol,-id'})
         self.assertTrue(form.is_valid(), form.errors)
+
+
+class FormattedTagValueTest(SimpleTestCase):
+    """
+    Tests the settings whose value has to be in a particular format.
+
+    Their consumers either fall back silently or log a warning when the value
+    does not parse, so the format is checked on the settings form instead.
+    """
+
+    def _field(self, tags, key):
+        return tags[key]['field']
+
+    def test_switch_time_takes_a_24_hour_time(self):
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        for value in ('00:00', '9:05', '13:30', '23:59'):
+            field.clean(value)
+        for value in ('24:00', '13:60', '1:30 pm', '13:30:00', 'noon'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+    def test_switch_time_uses_a_time_input(self):
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        self.assertEqual(field.widget.input_type, 'time')
+
+    def test_home_pages_take_a_path_or_a_url(self):
+        for value in ('/learn/index.html', '/', '/a/b?c=d#e',
+                      'https://example.com/page', 'http://example.com'):
+            validate_page_url(value)
+
+    def test_home_pages_reject_values_that_would_not_redirect(self):
+        # The value is put in an href, so it cannot carry spaces or markup
+        for value in ('learn/index.html', 'www.example.com', 'javascript:alert(1)',
+                      '/a b', '/a" onmouseover="x'):
+            with self.assertRaises(ValidationError, msg=value):
+                validate_page_url(value)
+
+    def test_all_three_home_page_tags_are_validated(self):
+        for key in ('admin_home_page', 'teacher_home_page', 'student_home_page'):
+            field = self._field(all_global_tags, key)
+            with self.assertRaises(ValidationError, msg=key):
+                field.clean('somewhere')
+            self.assertEqual(field.clean(all_global_tags[key]['default'] or '/'),
+                             all_global_tags[key]['default'] or '/')
+
+    def test_analytics_id_takes_a_prefixed_measurement_id(self):
+        field = self._field(all_global_tags, 'google_analytics_id')
+        for value in ('G-PSW1MY7HB4', 'UA-123456-1', 'AW-12345'):
+            field.clean(value)
+        for value in ('PSW1MY7HB4', 'G PSW1MY7HB4',
+                      '<script async src="https://www.googletagmanager.com">'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+
+class MonthDayWidgetTest(TestCase):
+    """
+    Tests the widget for grade_increment_date.
+
+    Its consumer parses the stored value as a full date and then replaces the
+    year (see ESPUser.current_schoolyear), so the year is stored but not asked
+    for.
+    """
+
+    def _field(self):
+        return all_global_tags['grade_increment_date']['field']
+
+    def test_the_year_is_not_offered(self):
+        html = self._field().widget.render('grade_increment_date', None)
+        self.assertIn('name="grade_increment_date_month"', html)
+        self.assertIn('name="grade_increment_date_day"', html)
+        self.assertNotIn('name="grade_increment_date_year"', html)
+
+    def test_a_month_and_day_still_make_a_full_date(self):
+        """The stored value has to be one strptime('%Y-%m-%d') can read."""
+        import datetime
+
+        field = self._field()
+        value = field.widget.value_from_datadict(
+            {'grade_increment_date_month': '7', 'grade_increment_date_day': '31'},
+            {}, 'grade_increment_date')
+        cleaned = field.clean(value)
+        self.assertEqual((cleaned.month, cleaned.day), (7, 31))
+        self.assertEqual(
+            datetime.datetime.strptime(str(cleaned), '%Y-%m-%d').date(), cleaned)
+
+    def test_a_saved_date_is_stored_the_way_its_consumer_reads_it(self):
+        from esp.program.forms import TagSettingsForm
+        import datetime
+
+        form = TagSettingsForm({'grade_increment_date_month': '8',
+                                'grade_increment_date_day': '1'})
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+
+        stored = Tag.getTag('grade_increment_date')
+        self.assertEqual(
+            datetime.datetime.strptime(stored, '%Y-%m-%d').date(),
+            datetime.date(MonthDayWidget().year, 8, 1))
+
+    def test_the_year_matches_the_default(self):
+        """So that saving an unchanged value still counts as the default."""
+        self.assertEqual(MonthDayWidget().year,
+                         all_global_tags['grade_increment_date']['default'].year)
