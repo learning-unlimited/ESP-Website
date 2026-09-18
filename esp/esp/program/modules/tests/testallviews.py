@@ -183,9 +183,10 @@ class AllViewsTest(ProgramFrameworkTest):
         user_id = str(self.adminUser.id)
         filter_id = str(self.user_filter.id)
 
-        # The admin-facing modules use the 'manage' module_type; no module uses
-        # 'admin', so the previous 'admin' entry here matched nothing.
-        for tl in ['learn', 'teach', 'manage', 'volunteer']:
+        # Every module_type any module declares.  The admin-facing modules use
+        # 'manage'; no module uses 'admin', so the previous 'admin' entry here
+        # matched nothing.
+        for tl in ['learn', 'teach', 'manage', 'volunteer', 'onsite', 'json']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
                 for view in module.views:
@@ -223,6 +224,10 @@ class AllViewsTest(ProgramFrameworkTest):
             'sec_id=' + sec_id,         # deletesection
             'filterid=' + filter_id,    # generateList and the other step-2 views
             'last_fetched_index=0',     # ajax_change_log
+            'class=' + cls_id,          # ajaxclassdetail
+            'show_flags=1',             # ajaxclassdetail
+            'class_id=' + cls_id,       # the json class_*_info views
+            'section_id=' + sec_id,     # ditto, which prefer a section
         ])
 
         # Try a whole bunch of different requests (because different views have different expectations)
