@@ -1,3 +1,5 @@
+import copy
+
 from django import forms
 from django.conf import settings
 from django.contrib import admin
@@ -214,7 +216,9 @@ class ProgramTagSettingsForm(BetterForm):
                     from esp.users.models import RecordType
                     self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))
                 elif field is not None:
-                    self.fields[key] = field
+                    # Copy it, since the form mutates the field (and the tag
+                    # dict's instance is shared by every program's form)
+                    self.fields[key] = copy.deepcopy(field)
                 elif tag_info.get('is_boolean', False):
                     self.fields[key] = forms.BooleanField()
                 else:

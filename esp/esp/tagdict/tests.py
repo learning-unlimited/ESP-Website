@@ -6,7 +6,12 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
-from esp.tagdict import all_global_tags, all_program_tags, JSONValidatedCharField
+from esp.tagdict import (
+    all_global_tags,
+    all_program_tags,
+    JSONValidatedCharField,
+    MultilineCharField,
+)
 from esp.tagdict.models import Tag
 from esp.tagdict.validators import (
     ALL_HIDE_FIELDS_TAG_KEYS,
@@ -1083,3 +1088,69 @@ class JSONTagFieldTest(SimpleTestCase):
     def test_blank_value_is_accepted(self):
         """Tags are optional, so an empty value must not be validated as JSON."""
         self.assertEqual(JSONValidatedCharField(required=False).clean(''), '')
+
+
+class ProseTagFieldTest(SimpleTestCase):
+    """
+    Tests the form fields used for tags whose values are prose.
+
+    These hold sentences or paragraphs (help text overrides, notes shown in the
+    webapps), which do not fit in a single-line input.
+    """
+
+    EXTRA_PROSE_TAGS = ('teacher_onsite_checkin_note', 'student_onsite_checkin_note',
+                        'already_paid_extracosts_text')
+
+    def _prose_tags(self):
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if '_help_text_' in key or key in self.EXTRA_PROSE_TAGS:
+                    yield key, info
+
+    def test_prose_tags_are_multiline(self):
+        checked = 0
+        for key, info in self._prose_tags():
+            self.assertIsInstance(
+                info.get('field'), MultilineCharField,
+                "Tag '%s' holds prose and should not be a one-line input" % key)
+            checked += 1
+        self.assertTrue(checked, 'No prose tags were found')
+
+    def test_label_tags_stay_single_line(self):
+        """Label overrides are a few words, so they keep the default input."""
+        checked = 0
+        for key, info in all_program_tags.items():
+            if '_label_' in key:
+                self.assertNotIsInstance(info.get('field'), MultilineCharField, key)
+                checked += 1
+        self.assertTrue(checked, 'No label tags were found')
+
+
+class TagSettingsFormFieldTest(ProgramFrameworkTest):
+    """
+    Tests how the tag settings forms use the fields declared in the tag dict.
+    """
+
+    def test_form_does_not_mutate_the_declared_fields(self):
+        """Each form must work on its own copy of the declared field.
+
+        The program form swaps in a HiddenInput for class registration tags
+        whose field is not in the teacher registration form.  The tag dict's
+        field instances are shared by every form, so mutating one in place
+        would hide that tag for every program from then on.
+        """
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        form = ProgramTagSettingsForm(program=self.program)
+        hidden = [key for key, field in form.fields.items()
+                  if isinstance(field.widget, forms.HiddenInput)]
+        self.assertTrue(hidden, 'No class registration tags were hidden')
+
+        declared = [key for key in hidden
+                    if all_program_tags[key].get('field') is not None]
+        self.assertTrue(declared, 'No hidden tag declares its own field')
+        for key in declared:
+            self.assertIsNot(form.fields[key], all_program_tags[key]['field'], key)
+            self.assertNotIsInstance(
+                all_program_tags[key]['field'].widget, forms.HiddenInput,
+                "Hiding tag '%s' leaked into the tag dict" % key)

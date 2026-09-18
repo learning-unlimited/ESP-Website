@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+import copy
 import re
 import unicodedata
 
@@ -640,7 +641,9 @@ class TagSettingsForm(BetterForm):
                     from esp.users.forms.user_profile import GuardianProfileForm
                     self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[0]) for field in GuardianProfileForm.declared_fields.items() if not field[1].required])
                 elif field is not None:
-                    self.fields[key] = field
+                    # Copy it, since the form mutates the field (and the tag
+                    # dict's instance is shared by every request's form)
+                    self.fields[key] = copy.deepcopy(field)
                 elif tag_info.get('is_boolean', False):
                     self.fields[key] = forms.BooleanField()
                 else:

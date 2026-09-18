@@ -22,6 +22,10 @@ class JSONValidatedCharField(forms.CharField):
     # single-line input
     widget = forms.Textarea(attrs={'rows': 3})
 
+class MultilineCharField(forms.CharField):
+    """A CharField for tag values that hold prose, shown as a small textarea."""
+    widget = forms.Textarea(attrs={'rows': 2})
+
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
 
@@ -613,6 +617,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_category': {
         'is_boolean': False,
@@ -620,6 +625,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_info': {
         'is_boolean': False,
@@ -627,6 +633,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_prereqs': {
         'is_boolean': False,
@@ -634,6 +641,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_duration': {
         'is_boolean': False,
@@ -641,6 +649,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_num_sections': {
         'is_boolean': False,
@@ -648,6 +657,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_session_count': {
         'is_boolean': False,
@@ -655,6 +665,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_range': {
         'is_boolean': False,
@@ -662,6 +673,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_min': {
         'is_boolean': False,
@@ -669,6 +681,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_max': {
         'is_boolean': False,
@@ -676,6 +689,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_size_max': {
         'is_boolean': False,
@@ -683,6 +697,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_size_optimal': {
         'is_boolean': False,
@@ -690,6 +705,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_optimal_class_size_range': {
         'is_boolean': False,
@@ -697,6 +713,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_allowable_class_size_ranges': {
         'is_boolean': False,
@@ -704,6 +721,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_style': {
         'is_boolean': False,
@@ -711,6 +729,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_hardness_rating': {
         'is_boolean': False,
@@ -718,6 +737,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_allow_lateness': {
         'is_boolean': False,
@@ -725,6 +745,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_requested_room': {
         'is_boolean': False,
@@ -732,6 +753,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_requested_special_resources': {
         'is_boolean': False,
@@ -739,6 +761,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_purchase_requests': {
         'is_boolean': False,
@@ -746,6 +769,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_message_for_directors': {
         'is_boolean': False,
@@ -753,6 +777,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     # These label tags are in order of the fields in TeacherClassRegForm
     'teacherreg_label_title': {
@@ -940,6 +965,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_num_slots': {
         'is_boolean': False,
@@ -947,6 +973,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_class_categories': {
         'is_boolean': False,
@@ -954,6 +981,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_comments': {
         'is_boolean': False,
@@ -961,6 +989,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_label_will_moderate': {
         'is_boolean': False,
@@ -1187,6 +1216,7 @@ all_program_tags = {
         'default': None,
         'category': 'volunteer',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'volunteer_require_auth': {
         'is_boolean': True,
@@ -1268,6 +1298,7 @@ all_program_tags = {
         'default': 'Note: Please make sure to check in before your first class today.',
         'category': 'onsite',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'student_onsite_checkin_note': {
         'is_boolean': False,
@@ -1275,6 +1306,7 @@ all_program_tags = {
         'default': 'Note: You will not be able to see your classrooms until after your check-in has been processed by the admin team.',
         'category': 'onsite',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'availability_group_tolerance': {
         'is_boolean': False,
@@ -1366,6 +1398,7 @@ all_program_tags = {
                     to our program (thanks!).',
         'category': 'learn',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'creditcard_required_for_extracosts': {
         'is_boolean': False,
