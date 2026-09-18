@@ -479,14 +479,39 @@ class DropletsFooterStylingTest(TestCase):
 
     def test_footer_background_defaults_to_stock_navbar_inverse_background(self):
         """Leaving both navbarInverseBackground and footerBackground untouched
-        must render the footer identically to the navbar (both at their
-        shared #111111 stock default) -- backward compatible with pre-#5028
-        behavior for a fresh, unmodified droplets site."""
+        must render the footer identically to the navbar. No footer-specific
+        rule is emitted at all -- the footer's <nav> inherits the navbar's
+        .navbar.bg-dark rule (#111111 stock default), keeping it in lockstep
+        with the navbar exactly as it was before #5028."""
         self.tc.compile_css('droplets', {}, self.css_filename)
         with open(self.css_filename) as f:
             css = f.read()
         self.assertIn('.navbar.bg-dark {\n  background-color: #111111 !important;\n}', css)
-        self.assertIn('.footer-container .navbar.bg-dark {\n  background-color: #111111 !important;\n}', css)
+        self.assertNotIn('.footer-container .navbar.bg-dark', css)
+
+    def test_footer_background_navbar_only_override_still_tracks(self):
+        """Overriding navbarInverseBackground alone (footerBackground left
+        untouched) must recolor the footer along with the navbar rather than
+        pinning it to the $footerBackground default -- the pre-#5028 inherited
+        behavior. Without this, deploying #5028 would visibly change every site
+        that had customized only its navbar color."""
+        self.tc.compile_css(
+            'droplets', {'navbarInverseBackground': '#00ff00'}, self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('.footer-container .navbar.bg-dark', css)
+        self.assertIn('.navbar.bg-dark {\n  background-color: #00ff00 !important;\n}', css)
+
+    def test_footer_text_and_link_default_to_inherited_translucent_white(self):
+        """With footerText/footerLinkColor untouched, the footer text and links
+        keep their previous translucent-white rendering rather than the literal
+        $footer* hex defaults, so an unmodified site is unchanged (#5028)."""
+        self.tc.compile_css('droplets', {}, self.css_filename)
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#footer .navbar-nav a {\n  color: rgba(255, 255, 255, 0.85);', css)
+        self.assertIn('#footer .qsd_header {\n  color: rgba(255, 255, 255, 0.7);', css)
 
     def test_footer_background_can_be_customized_independently(self):
         """Setting footerBackground must recolor only the footer, leaving the
@@ -539,7 +564,7 @@ class DropletsFooterStylingTest(TestCase):
         with open(self.css_filename) as f:
             css = f.read()
         self.assertIn('#footer .qsd_header {\n  color: #123456;', css)
-        self.assertIn('#footer .navbar-nav a {\n  color: #654321;', css)
+        self.assertIn('#footer .navbar-nav a {\n  color: #654321 !important;', css)
         self.assertIn('#footer .qsd_view_visible {\n  border: none;\n  color: #654321;', css)
 
     def test_footer_background_bootswatch_navbar_only_override_still_tracks(self):

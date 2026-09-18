@@ -311,20 +311,39 @@ div.navbar-collapse {
     width: 100%;
 }
 
+//  The footer colors only apply the independent $footer* values when the admin
+//  actually saved that field (see $esp-overridden); otherwise they keep the
+//  footer's previous translucent-white rendering, so a site that customized
+//  only the navbar is unchanged by this feature (see issue #5028).
 #footer .navbar-nav a {
-    color: $footerLinkColor;
+    @if index($esp-overridden, 'footerLinkColor') {
+        //  !important so this beats Bootstrap's .text-light utility on the
+        //  Privacy Policy link in main.html, which would otherwise win the
+        //  cascade and make footerLinkColor a no-op for the visible link.
+        color: $footerLinkColor !important;
+    } @else {
+        color: rgba(255, 255, 255, 0.85);
+    }
     padding: 0.25rem 0.75rem;
 }
 
 #footer .qsd_header {
-    color: $footerText;
+    @if index($esp-overridden, 'footerText') {
+        color: $footerText;
+    } @else {
+        color: rgba(255, 255, 255, 0.7);
+    }
     border-color: rgba(255, 255, 255, 0.35);
     margin-bottom: 0.25rem;
 }
 
 #footer .qsd_view_visible {
     border: none;
-    color: $footerLinkColor;
+    @if index($esp-overridden, 'footerLinkColor') {
+        color: $footerLinkColor;
+    } @else {
+        color: rgba(255, 255, 255, 0.85);
+    }
 }
 
 // Bootstrap 5 gives .dropdown-menu 0.5rem of vertical padding.  The navbar
@@ -406,11 +425,15 @@ div.navbar-collapse {
         background-color: $navbarInverseBackground !important;
     }
 
-    //  Footer background defaults to $navbarInverseBackground (same as the
-    //  navbar) but can be customized independently — see issue #5028.  Higher
-    //  specificity than .navbar.bg-dark above so it wins for the footer only.
-    .footer-container .navbar.bg-dark {
-        background-color: $footerBackground !important;
+    //  Footer background defaults to $navbarInverseBackground — the footer's
+    //  <nav> already matches the .navbar.bg-dark rule above — and is only forced
+    //  to $footerBackground when the admin actually changed it, mirroring the
+    //  Bootswatch branch.  Emitting it unconditionally would reset the footer of
+    //  a site that had only customized navbarInverseBackground (issue #5028).
+    @if index($esp-overridden, 'footerBackground') {
+        .footer-container .navbar.bg-dark {
+            background-color: $footerBackground !important;
+        }
     }
 
     .navbar-dark .navbar-nav .nav-link,
