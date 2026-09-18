@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.conf import settings
+from django.db.models import Q
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
@@ -41,7 +42,7 @@ from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 from esp.survey.models import Survey, Question, QuestionType
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, PersistentQueryFilter
 
 import json
 
@@ -124,6 +125,14 @@ class AllViewsTest(ProgramFrameworkTest):
         Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)
         Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
 
+        # The second step of each user-search flow (communications, user
+        # records, mass deactivation, ...) expects to be handed the id of a
+        # filter saved by the first step.  Target a student rather than the
+        # admin: deactivatefinal really does deactivate everyone it matches,
+        # and losing the admin would break every later view.
+        self.user_filter = PersistentQueryFilter.create_from_Q(
+            ESPUser, Q(id=self.students[-1].id), 'All views test filter')
+
         # Set up credit card test keys
         settings.STRIPE_CONFIG = {
             'secret_key': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
@@ -157,6 +166,7 @@ class AllViewsTest(ProgramFrameworkTest):
         event = self.program.getTimeSlots()[0]
         event_id = str(event.id)
         user_id = str(self.adminUser.id)
+        filter_id = str(self.user_filter.id)
 
         # The admin-facing modules use the 'manage' module_type; no module uses
         # 'admin', so the previous 'admin' entry here matched nothing.
@@ -167,9 +177,9 @@ class AllViewsTest(ProgramFrameworkTest):
                     # Report each view separately so one broken view neither
                     # hides the others nor requires reading a single blob.
                     with self.subTest(tl = tl, module = module.module.handler, view = view):
-                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id)
+                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id)
 
-    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id):
+    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id):
         """Fail unless one of our candidate requests to this view serves a page."""
         url = '/' + tl + '/' + self.program.getUrlBase() + '/' + view
 
@@ -181,24 +191,60 @@ class AllViewsTest(ProgramFrameworkTest):
             sec.unpreregister_student(self.adminUser)
             return self.client.post(url, {'class_id': cls_id, 'section_id': sec_id, 'json_data': '{}'})
 
+        # Identifiers that views pick out of the query string by name.  Views
+        # that ignore them are unaffected, so every GET below carries all of
+        # them; several views want both an extra path segment and a query
+        # parameter (accept_student and view_app, for instance).
+        query = '&'.join([
+            'cls=' + cls_id, 'clsid=' + cls_id, 'name=Admin', 'username=admin',
+            'student=' + user_id,       # accept_student, reject_student, view_app
+            'sec_id=' + sec_id,         # deletesection
+            'filterid=' + filter_id,    # generateList and the other step-2 views
+            'last_fetched_index=0',     # ajax_change_log
+        ])
+
         # Try a whole bunch of different requests (because different views have different expectations)
         attempts = [
             # Various GET arguments
-            ('GET', lambda: self.client.get(url + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')),
+            ('GET', lambda: self.client.get(url + '?' + query)),
             # Use a class ID as the extra argument
-            ('GET class', lambda: self.client.get(url + '/' + cls_id)),
+            ('GET class', lambda: self.client.get(url + '/' + cls_id + '?' + query)),
             # Use a section ID as the extra argument
-            ('GET section', lambda: self.client.get(url + '/' + sec_id)),
+            ('GET section', lambda: self.client.get(url + '/' + sec_id + '?' + query)),
             # Use an event ID as the extra argument
-            ('GET event', lambda: self.client.get(url + '/' + event_id)),
+            ('GET event', lambda: self.client.get(url + '/' + event_id + '?' + query)),
             # Use a user ID as the extra argument
-            ('GET user', lambda: self.client.get(url + '/' + user_id)),
+            ('GET user', lambda: self.client.get(url + '/' + user_id + '?' + query)),
             # Various POST data
             ('POST FCFS', post_fcfs),
             # Student lottery POST data
             ('POST lottery', lambda: self.client.post(url, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})),
             # Different student lottery POST data
             ('POST alt lottery', lambda: self.client.post(url, {'json_data': '{"' + event_id + '": {}}'})),
+            # Second step of the user-search flows, which are handed a saved
+            # filter id plus whatever their own form collects
+            ('POST user search', lambda: self.client.post(url + '?filterid=' + filter_id, {
+                'filterid': filter_id,
+                'listcount': '1',
+                'from': 'test@learningu.org',
+                'replyto': 'test@learningu.org',
+                'subject': 'Test subject',
+                'body': 'Test body',
+                'message': 'Test message',
+                'confirm': 'true',
+                'group_name_new': 'All views test group',
+                'records': 'attended',
+                'section_id': sec_id,
+                'type': 'students',
+            })),
+            # Scheduling AJAX endpoints, which key off an action plus a section
+            ('POST ajax', lambda: self.client.post(url, {
+                'action': 'removemod',
+                'sec': sec_id,
+                'cls': sec_id,
+                'mod': user_id,
+                'comment': 'Test comment',
+            })),
         ]
 
         # Stop as soon as this view properly serves a page (or redirects to another page)
