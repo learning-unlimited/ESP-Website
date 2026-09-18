@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0043_alter_phasezerorecord_program'),
+        ('program', '0045_backfill_studentappreview_class_subject'),
     ]
 
     operations = [
