@@ -318,8 +318,9 @@ class ProgramPrintables(ProgramModuleObj):
 
         #   Perform sorting based on specified order rules
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
-        if '_num_students' in sort_order:
-            sort_order.remove('_num_students')
+        #   Drop it whether or not it carries a '-' prefix, keeping the other
+        #   valid fields rather than losing them to the FieldError fallback.
+        sort_order = [f for f in sort_order if f.lstrip('-') != '_num_students']
         if not sort_order:
             sort_order = ['id']
 

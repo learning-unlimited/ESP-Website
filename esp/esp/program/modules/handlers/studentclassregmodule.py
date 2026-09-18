@@ -616,16 +616,21 @@ class StudentClassRegModule(ProgramModuleObj):
             if order_args:
                 catalog_sort = order_args[0]
 
-        catalog_sort_split = catalog_sort.split('__')
+        #   The sort field may carry a leading '-' (descending); strip it for
+        #   the category-key check and honor it when ordering the headings.
+        descending = catalog_sort.startswith('-')
+        catalog_sort_split = catalog_sort.lstrip('-').split('__')
         if catalog_sort_split[0] == 'category' and len(catalog_sort_split) > 1 and catalog_sort_split[1] in ['id', 'category', 'symbol']:
             sort_field = catalog_sort_split[1]
         elif force_sort:
             # Separate catalog pages always need a category list, even when class sorting
-            # is not category-based.
+            # is not category-based.  The '-' (if any) applied to a non-category
+            # field, so it does not govern this heading order.
             sort_field = 'symbol'
+            descending = False
         else:
             return None
-        return sorted(list(categories.values()), key = lambda cat: cat[sort_field])
+        return sorted(list(categories.values()), key = lambda cat: cat[sort_field], reverse=descending)
 
     @aux_call
     @needs_student_in_grade

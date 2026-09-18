@@ -191,6 +191,20 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self._coursecatalog_tex_response()
         self.assertEqual(response.status_code, 200)
 
+    def testCatalogSignedUnsortableFieldDroppedNotIdFallback(self):
+        """A '-_num_students' prefix must drop just that unsupported field and
+        keep the remaining valid ordering, rather than triggering the id
+        fallback (issue #6043 review)."""
+        from esp.tagdict.models import Tag
+        Tag.setTag('catalog_sort_fields', target=self.program, value='category__symbol')
+        baseline = self._coursecatalog_tex_response().content
+        Tag.setTag('catalog_sort_fields', target=self.program,
+                   value='-_num_students, category__symbol')
+        with_signed = self._coursecatalog_tex_response().content
+        #   Dropping the signed, unsupported _num_students must leave the same
+        #   category-ordered output; an id fallback would differ.
+        self.assertEqual(with_signed, baseline)
+
     def testCatalogTimeblockSortUsesTimeblockTemplate(self):
         """The legacy 'timeblock' sort value must still select
         catalog_timeblock.tex (not silently fall back to the default
