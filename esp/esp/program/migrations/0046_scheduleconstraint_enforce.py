@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='scheduleconstraint',
             name='enforce',
-            field=models.BooleanField(default=False, help_text='Prevent schedule changes that would newly violate this constraint, rather than only warning about it'),
+            field=models.BooleanField(default=False, help_text='Should schedule changes that would newly violate this constraint be prevented? If not, produce a warning instead.'),
         ),
         #   Reverse is a noop: unmigrating drops the column anyway.
         migrations.RunPython(enforce_existing_constraints, migrations.RunPython.noop),
