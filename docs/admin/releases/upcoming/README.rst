@@ -14,6 +14,20 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Lunch Constraints: Warn or Enforce
+==================================
+
+Schedule constraints (e.g., lunch constraints generated from the "Lunch Constraints" management page) can now either warn students or block them when they try to add a class that **newly** violates a constraint. Previously existing overrides (e.g., an enrollment by an admin) no longer block a student from making new changes.
+
+The "Lunch Constraints" page has a new "enforce" checkbox:
+
+- **Unchecked (warn).** Students see a note at the top of their schedule listing what it is missing (e.g., "You need to choose a lunch period on Saturday"), on the main student registration page and in the onsite webapp. The note updates as soon as they add or remove a class. Nothing is ever blocked.
+- **Checked (enforce).** The same note appears, and in addition a student is refused any schedule change that would *newly* break a constraint (e.g., dropping their only lunch period while they still have classes before and after it). A student whose schedule already violates a constraint is never blocked, so they can always work their way back to a valid schedule instead of being stuck.
+
+Old programs will continue to enforce existing constraints. New programs will default to warnings unless configured otherwise.
+
+The onsite class changes grid now reports the same notifications but can be overriden using the "Override size limits and schedule constraints" checkbox.
+
 Bug Fixes
 =========
 
