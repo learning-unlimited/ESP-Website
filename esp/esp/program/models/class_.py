@@ -74,6 +74,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, Permission, PersistentQueryFilter
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile
+from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
@@ -954,13 +955,38 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m('program.ClassSection', 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotAdd(self, user, checkFull=True, webapp=False):
+    def cannotRemove(self, user):
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        if relevantConstraints:
+            sm = ScheduleMap(user, self.parent_program)
+            sm.remove_section(self)
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm, recursive=False):
+                    return f"You can't remove this class from your schedule because it would violate the requirement that you {exp.requirement.label}.  You can go back and correct this."
+        return False
+
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False, webapp=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
         # Check if section is full
         if checkFull and self.isFull(webapp=webapp):
             scrmi = self.parent_class.parent_program.studentclassregmoduleinfo
             return scrmi.temporarily_full_text
+
+        # Test any scheduling constraints
+        if ignore_constraints:
+            relevantConstraints = ScheduleConstraint.objects.none()
+        else:
+            relevantConstraints = self.parent_program.getScheduleConstraints()
+
+        if relevantConstraints:
+            # Set up a ScheduleMap; fake-insert this class into it
+            sm = ScheduleMap(user, self.parent_program)
+            sm.add_section(self)
+
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm, recursive=autocorrect_constraints):
+                    return f"Adding <i>{self.title()}</i> to your schedule requires that you {exp.requirement.label}.  You can go back and correct this."
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -1945,7 +1971,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in sections:
-            res = section.cannotAdd(user, checkFull, webapp=webapp)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False, webapp=webapp)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
         #   Pass on any errors that were triggered by the individual sections

@@ -60,7 +60,7 @@ class EnrollmentConflictTest(ProgramFrameworkTest):
         self.assertTrue(result_a, 'First registration should succeed')
 
         # Conflict detection must block second enrollment
-        error = sec_b.cannotAdd(self.student, checkFull=True)
+        error = sec_b.cannotAdd(self.student, checkFull=True, autocorrect_constraints=False)
         self.assertTrue(error, 'cannotAdd() should return an error for conflicting timeslot')
         self.assertIn('conflicts', error.lower(), 'Error message should mention schedule conflicts')
 

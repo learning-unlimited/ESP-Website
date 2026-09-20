@@ -12,9 +12,9 @@
     $j(function(){
         function update_checkboxes() {
             if(!$j("#id_generate_constraints").prop("checked")) {
-                $j("#id_enforce, #id_autocorrect, #id_include_conditions").prop("checked", false).prop("disabled", true);
+                $j("#id_autocorrect, #id_include_conditions").prop("checked", false).prop("disabled", true);
             } else {
-                $j("#id_enforce, #id_autocorrect, #id_include_conditions").prop("disabled", false);
+                $j("#id_autocorrect, #id_include_conditions").prop("disabled", false);
             }
         }
         $j("#id_generate_constraints").on("change", update_checkboxes);
@@ -26,7 +26,7 @@
 {% block content %}
     <h1>{{program.niceName}} Lunch Constraints</h1>
     <p>Please select the timeslots you would like to be used for lunch.</p>
-    <p>You can also use this page to setup lunch scheduling constraints, which ask that each student have at least one lunch block per day.  By default students are warned when their schedule does not meet them; check "enforce" below to block schedule changes that would newly violate them instead.</p>
+    <p>You can also use this page to setup lunch scheduling constraints, which will enforce that each student have at least one lunch block per day.</p>
 
     {% if POST and saved %}
         <div role="alert" class="alert alert-success">
