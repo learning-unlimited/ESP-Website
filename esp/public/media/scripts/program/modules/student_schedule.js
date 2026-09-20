@@ -6,21 +6,13 @@
 //  Attach the removal confirmation dialogs to the remove links currently in the
 //  document.  The dialogs live inside the schedule fragment, so this has to be
 //  re-run every time the fragment is replaced.
+//  Keep this in sync with the equivalent inline script in
+//  templates/users/student_schedule.html, which does the same thing for the
+//  server-rendered copy of this schedule.
 function setup_remove_confirmation()
 {
-    //  Create two dialog boxes with two different warning messages,
-    //  one that appears when you try to remove an enrolled class,
-    //  and another that appears when you try removing a non-enrolled class.
-    //  autoOpen: false makes it so that the dialog boxes don't appear on page load.
-    $j("div.remove-confirm").dialog({
-        resizable: false,
-        modal: true,
-        autoOpen: false,
-        closeOnEscape: false
-    });
-
     //  When clicking any remove link, handle the event here rather than immediately removing the class.
-    //  Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
+    //  Display a warning modal, and give the user an option to confirm the removal or cancel it.
     $j("a.remove").click(function(eventObject) {
         //  The hyperlink click is always cancelled at first.
         //  If the user confirms the removal,
@@ -30,15 +22,13 @@ function setup_remove_confirmation()
         var cls_code = $j(this).attr("data-sec-code");
         //  "enrolled" for enrolled classes, "applied" for non-enrolled classes
         var remove_type = $j(this).attr("data-remove-type");
-        $j("#" + remove_type + "-remove-confirm").dialog("option", "title", "Remove class " + cls_code + "?").dialog("option", "buttons", {
-            "Remove class": function() {
-                $j(this).dialog("close");
-                window.location.replace($a_remove_tag.attr("href"));
-            },
-            "Cancel": function() {
-                $j(this).dialog("close");
-            }
-        }).dialog("open");
+        var $modal = $j("#" + remove_type + "-remove-confirm");
+        $modal.find(".modal-title").text("Remove class " + cls_code + "?");
+        $modal.find(".remove-confirm-action").off("click").on("click", function() {
+            bootstrap.Modal.getOrCreateInstance($modal[0]).hide();
+            window.location.replace($a_remove_tag.attr("href"));
+        });
+        bootstrap.Modal.getOrCreateInstance($modal[0]).show();
     });
 }
 

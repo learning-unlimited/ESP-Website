@@ -34,21 +34,13 @@
 <script type="text/javascript">
   function confirm_cancellation() {
       $j("input[name=clear_requests]").val("True");
-      $j("#confirm_cancellation_dialog").dialog("close");
+      bootstrap.Modal.getOrCreateInstance(document.getElementById("confirm_cancellation_dialog")).hide();
       $j("#volunteer_shift_form").trigger("submit");
-  }
-
-  function decline_cancellation() {
-      $j("#confirm_cancellation_dialog").dialog("close");
   }
 
   $j(document).ready(function () {
       Availability.init({{ isAdmin|yesno:"true,false" }});
 
-      $j("#confirm_cancellation_dialog").dialog({
-          autoOpen: false,
-          buttons: [ { text: "Confirm", click: confirm_cancellation }, {text: "Cancel", click: decline_cancellation} ]
-      });
       $j("#volunteer_form_submit").click(function (event) {
           //  Check if the user has previous requests and is asking to clear all of them
           var checkboxes_checked = $j("input[name=requests]:checked");
@@ -58,7 +50,7 @@
               event.preventDefault();
 
               //  Show the confirmation dialog
-              $j("#confirm_cancellation_dialog").dialog("open");
+              bootstrap.Modal.getOrCreateInstance(document.getElementById("confirm_cancellation_dialog")).show();
           }
           else {
               //  They are not cancelling all shifts; submit the form normally
@@ -188,10 +180,25 @@ The directors have been notified that you are no longer able to volunteer at {{ 
     </center>
   </form>
 </div>
-<div id="confirm_cancellation_dialog" title="Confirm Cancellation">
-  You have unchecked all volunteer shifts. If you must cancel your volunteer
-  commitments, please click "Confirm" to notify the directors. Otherwise, click
-  "Cancel".
+<div class="modal fade" id="confirm_cancellation_dialog" tabindex="-1"
+     aria-labelledby="confirm_cancellation_title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirm_cancellation_title">Confirm Cancellation</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        You have unchecked all volunteer shifts. If you must cancel your volunteer
+        commitments, please click "Confirm" to notify the directors. Otherwise, click
+        "Cancel".
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="confirm_cancellation()">Confirm</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="summary_div" hidden>
