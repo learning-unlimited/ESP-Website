@@ -40,12 +40,13 @@ import datetime
 
 class LunchConstraintGenerator(object):
     """ A class for finding issues with the scheduling of a program. """
-    def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+    def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, enforce=False, **kwargs):
         self.program = program
         self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
         self.include_conditions = include_conditions
         self.autocorrect = autocorrect
+        self.enforce = enforce
 
         #   Figure out which timeslots are before, during and after lunch on each day
         self.days = {}
@@ -214,6 +215,7 @@ else:
         constraint.program = self.program
         constraint.condition = exp_check
         constraint.requirement = exp_requirement
+        constraint.enforce = self.enforce
         if self.autocorrect:
             constraint.on_failure = self.get_failure_function(day)
         constraint.save()

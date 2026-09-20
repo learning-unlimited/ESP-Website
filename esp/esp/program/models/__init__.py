@@ -2096,6 +2096,9 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint', on_delete=models.CASCADE)
     #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
     on_failure = models.TextField()
+    #   Binding constraints block schedule changes that would newly break them;
+    #   advisory ones only produce a warning.
+    enforce = models.BooleanField(default=False, help_text='Should schedule changes that would newly violate this constraint be prevented? If not, produce a warning instead.')
 
     class Meta:
         app_label = 'program'
@@ -2137,6 +2140,34 @@ class ScheduleConstraint(models.Model):
                 self.program_id,
             )
         return (None, None)
+
+def unmet_requirements(user, program):
+    """ Labels of the schedule constraint requirements this user's schedule fails.
+
+    Every constraint is reported, whether or not it is enforced.
+    """
+    constraints = program.getScheduleConstraints()
+    if not constraints:
+        return []
+    schedule_map = ScheduleMap(user, program)
+    return [constraint.requirement.label for constraint in constraints
+            if not constraint.evaluate(schedule_map, recursive=False)]
+
+def blocking_requirements(user, program, add_sections=(), remove_sections=()):
+    """ Labels of the enforced requirements that this schedule change would newly break."""
+    constraints = [c for c in program.getScheduleConstraints() if c.enforce]
+    if not constraints:
+        return []
+
+    before = ScheduleMap(user, program)
+    after = ScheduleMap(user, program)
+    for section in remove_sections:
+        after.remove_section(section)
+    for section in add_sections:
+        after.add_section(section)
+
+    return [c.requirement.label for c in constraints
+            if c.evaluate(before, recursive=False) and not c.evaluate(after, recursive=False)]
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock.
