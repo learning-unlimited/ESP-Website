@@ -1032,13 +1032,42 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @staticmethod
     def calc_section_hours(sections):
         hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
+        sections = list(sections)
+        #   One query for the sections we need capacities for, rather than one
+        #   ClassSection.objects.get() per row.
+        section_objs = ClassSection.objects.in_bulk(
+            [sec['id'] for sec in sections if sec['duration']])
         for sec in sections:
             if sec['duration']:
                 hours["class-hours"] += float(sec['duration'])
-                capacity = ClassSection.objects.get(id=sec['id']).capacity
+                capacity = section_objs[sec['id']].capacity
                 hours["class-student-hours"] += float(sec['duration']) * float(capacity)
                 hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
         return hours
+
+    @staticmethod
+    def checked_in_students_by_class(prog):
+        """Map class id -> number of enrolled students who ever checked in.
+
+        Batched replacement for calling
+        ClassSection.count_ever_checked_in_students() once per section.
+        Counts are computed per section and then summed, so a student
+        enrolled in two sections of one class counts twice, as before.
+        """
+        per_section = (StudentRegistration.valid_objects()
+                       .filter(section__parent_class__parent_program=prog,
+                               relationship__name='Enrolled',
+                               user__record__event__name='attended',
+                               user__record__program=prog)
+                       #   order_by() clears any default ordering, which would
+                       #   otherwise join the GROUP BY and split the counts.
+                       .order_by()
+                       .values_list('section__parent_class_id', 'section_id')
+                       .annotate(total=Count('user', distinct=True)))
+        counts = defaultdict(int)
+        for class_id, _section_id, total in per_section:
+            counts[class_id] += total
+        return counts
 
     @cache_function
     def hour_nums(prog):
@@ -1051,13 +1080,14 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
+        checked_in_by_class = JSONDataModule.checked_in_students_by_class(prog)
         reg_classes = prog.classes().exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in reg_classes:
-            cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
+            cls.subject_checked_in_students = checked_in_by_class[cls.id]
         reg_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in reg_classes])
         app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in app_classes:
-            cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
+            cls.subject_checked_in_students = checked_in_by_class[cls.id]
         app_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in app_classes])
         sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__is_lunch=True).values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)

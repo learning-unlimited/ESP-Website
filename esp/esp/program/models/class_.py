@@ -306,7 +306,11 @@ class ClassManager(Manager):
             c._index_qsd = 1 if c.id in index_qsd_class_ids else 0
 
         # Now to get the sections corresponding to these classes...
-        sections = ClassSection.objects.filter(parent_class__in=class_ids)
+        #   prefetch_catalog_data populates _events, which friendly_times(),
+        #   get_meeting_times() and get_section() all check for before falling
+        #   back to a query per section.
+        sections = ClassSection.prefetch_catalog_data(
+            ClassSection.objects.filter(parent_class__in=class_ids))
 
         sections_by_parent_id = defaultdict(list)
         for s in sections:
@@ -348,6 +352,54 @@ class ClassManager(Manager):
         except Exception:
             return {}
 
+    @staticmethod
+    def _catalog_key_set_for_media(media):
+        #   Media owners are a generic relation; only class documents matter.
+        try:
+            owner = media.owner
+        except Exception:
+            return {}
+        if not isinstance(owner, ClassSubject):
+            return {}
+        return ClassManager._catalog_key_set_for_subject(owner)
+
+    @staticmethod
+    def _catalog_key_set_for_studentappquestion(question):
+        try:
+            return ClassManager._catalog_key_set(question.subject.parent_program)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _catalog_key_set_for_tag(tag):
+        #   getProgramTag() falls back to the global tag, so a global tag
+        #   (no target) can change any program's catalog and still has to
+        #   drop everything.  A program-targeted tag only affects that one.
+        try:
+            from esp.program.models import Program
+            target = tag.target
+        except Exception:
+            return {}
+        if isinstance(target, Program):
+            return ClassManager._catalog_key_set(target)
+        return {}
+
+    @staticmethod
+    def _catalog_key_set_for_qsd(page):
+        #   Class index QSDs live at 'learn/<program.url>/Classes/<emailcode>/index';
+        #   see ClassSubject.url() and got_index_qsd().
+        try:
+            from esp.program.models import Program
+            #   Strip the leading 'learn/' and the trailing
+            #   'Classes/<emailcode>/index' to recover the program url.
+            parts = page.url.split('/')
+            classes_index = parts.index('Classes')
+            program_url = '/'.join(parts[1:classes_index])
+            program = Program.objects.filter(url=program_url).first()
+        except Exception:
+            return {}
+        return ClassManager._catalog_key_set(program)
+
     catalog_cached.get_or_create_token(('program',))
     catalog_cached.depend_on_row('program.ClassSubject',
                                  lambda cls: ClassManager._catalog_key_set_for_subject(cls))
@@ -357,11 +409,13 @@ class ClassManager(Manager):
                                  lambda sec, event: ClassManager._catalog_key_set_for_section(sec))
     catalog_cached.depend_on_m2m('program.ClassSubject', 'teachers',
                                  lambda subj, teacher: ClassManager._catalog_key_set_for_subject(subj))
-    catalog_cached.depend_on_model('program.StudentAppQuestion')
-    catalog_cached.depend_on_model('qsdmedia.Media')
-    catalog_cached.depend_on_model('tagdict.Tag')
+    catalog_cached.depend_on_row('program.StudentAppQuestion',
+                                 lambda question: ClassManager._catalog_key_set_for_studentappquestion(question))
+    catalog_cached.depend_on_row('qsdmedia.Media',
+                                 lambda media: ClassManager._catalog_key_set_for_media(media))
+    catalog_cached.depend_on_row('tagdict.Tag',
+                                 lambda tag: ClassManager._catalog_key_set_for_tag(tag))
 
-    #perhaps make it program-specific?
     @staticmethod
     def is_class_index_qsd(qsd):
         parts = qsd.url.split("/")
@@ -369,7 +423,8 @@ class ClassManager(Manager):
             parts[-1] == "index" and \
             parts[0] == "learn" and \
             "Classes" in parts
-    catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
+    catalog_cached.depend_on_row('qsd.QuasiStaticData',
+                                 lambda page: ClassManager._catalog_key_set_for_qsd(page),
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
     def random_class(self, q=None):
@@ -565,16 +620,40 @@ class ClassSection(models.Model):
         else:
             return int(ans)
 
+    #   Fall back to {} (drop everything) if there's an exception, the same
+    #   way ClassManager's catalog selectors do.
+    @staticmethod
+    def _capacity_key_sets_for_subject(subject):
+        """Only the subject's own sections read its capacity fields."""
+        try:
+            return [{'self': sec} for sec in subject.sections.all()]
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _capacity_key_sets_for_resource(resource):
+        """Only sections this room is assigned to use it for room capacity."""
+        try:
+            return [{'self': ra.target} for ra
+                    in resource.resourceassignment_set.select_related('target')
+                    if ra.target_id is not None]
+        except Exception:
+            return {}
+
     _get_capacity.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     _get_capacity.depend_on_row('program.ClassSection', lambda r: {'self': r})
-    _get_capacity.depend_on_model('program.ClassSubject')
-    _get_capacity.depend_on_model('resources.Resource')
+    _get_capacity.depend_on_row('program.ClassSubject',
+                                lambda cls: ClassSection._capacity_key_sets_for_subject(cls))
+    _get_capacity.depend_on_row('resources.Resource',
+                                lambda res: ClassSection._capacity_key_sets_for_resource(res))
     _get_capacity.depend_on_row('program.ClassSection', 'self')
     _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
     _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
+    #   A StudentClassRegModuleInfo change alters the capacity multiplier for
+    #   every section of its program; there is no bounded key set for that.
     _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
     _get_capacity.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges',
-                                lambda subj, csr: {})
+                                lambda subj, csr: ClassSection._capacity_key_sets_for_subject(subj))
 
 
     capacity = property(_get_capacity)
