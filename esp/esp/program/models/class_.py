@@ -491,7 +491,8 @@ class ClassSection(models.Model):
     def prefetch_catalog_data(cls, queryset):
         """Take a queryset of ClassSections, prefetch their meeting_times,
         and cache the resulting Event objects on each section in a sorted
-        internal ``_events`` list for later reuse."""
+        internal ``_events`` list for later reuse.  Also preloads the
+        classroom data that capacity needs, via prefetch_capacity_data()."""
         sections = queryset.prefetch_related('meeting_times')
         sections = list(sections)
 
@@ -500,6 +501,52 @@ class ClassSection(models.Model):
         for s in sections:
             s._events = list(s.meeting_times.all())
             s._events.sort(key=lambda e:e.start)
+
+        cls.prefetch_capacity_data(sections)
+
+        return sections
+
+    @classmethod
+    def prefetch_capacity_data(cls, sections):
+        """Preload, in one query, the classroom data that _get_capacity()
+        would otherwise query per section.
+
+        Sets two attributes on each section, which _get_capacity() and
+        _get_room_capacity() use in place of classrooms():
+
+          _num_classrooms     how many distinct classrooms are assigned
+          _raw_room_capacity  the minimum over timeblocks of the summed
+                              classroom capacity, before the
+                              studentclassregmoduleinfo multiplier is applied
+                              (None when no classroom is assigned)
+
+        _get_capacity() is cached, so these only matter on a cache miss.
+        """
+        sections = list(sections)
+        section_ids = [s.id for s in sections]
+        rooms_by_section = defaultdict(dict)
+
+        if section_ids:
+            rows = (ResourceAssignment.objects
+                    .filter(target_id__in=section_ids,
+                            resource__res_type__name="Classroom")
+                    .values_list('target_id', 'resource_id',
+                                 'resource__event_id', 'resource__num_students'))
+            #   Keyed by resource id so that two assignments of the same room
+            #   count once, matching the id__in filter in classrooms().
+            for target_id, resource_id, event_id, num_students in rows:
+                rooms_by_section[target_id][resource_id] = (event_id, num_students)
+
+        for s in sections:
+            rooms = rooms_by_section[s.id]
+            s._num_classrooms = len(rooms)
+            if rooms:
+                capacity_by_event = defaultdict(int)
+                for event_id, num_students in rooms.values():
+                    capacity_by_event[event_id] += num_students
+                s._raw_room_capacity = min(capacity_by_event.values())
+            else:
+                s._raw_room_capacity = None
 
         return sections
 
@@ -550,11 +597,15 @@ class ClassSection(models.Model):
 
     def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
-        if rooms is None:
-            rooms = self.classrooms()
+        if getattr(self, '_raw_room_capacity', None) is not None:
+            #   Preloaded in bulk by prefetch_capacity_data().
+            rc = self._raw_room_capacity
+        else:
+            if rooms is None:
+                rooms = self.classrooms()
 
-        # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
-        rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
+            # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
+            rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap and not ignore_changes:
@@ -575,11 +626,18 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
-        rooms = self.classrooms()
+        if getattr(self, '_num_classrooms', None) is not None:
+            #   Preloaded in bulk by prefetch_capacity_data(); _get_room_capacity()
+            #   reads its preloaded value too, so the queryset is never needed.
+            rooms = None
+            num_rooms = self._num_classrooms
+        else:
+            rooms = self.classrooms()
+            num_rooms = len(rooms)
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
-            if len(rooms) == 0:
+            if num_rooms == 0:
                 if not ans:
                     ans = self.parent_class.class_size_max
             else:
@@ -591,20 +649,20 @@ class ClassSection(models.Model):
         if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
-            if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
+            if self.parent_class.allowable_class_size_ranges.all() and num_rooms != 0:
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
-            elif self.parent_class.class_size_optimal and len(rooms) != 0:
+            elif self.parent_class.class_size_optimal and num_rooms != 0:
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
-            elif len(rooms) != 0:
+            elif num_rooms != 0:
                 ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0

@@ -1037,6 +1037,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         #   ClassSection.objects.get() per row.
         section_objs = ClassSection.objects.in_bulk(
             [sec['id'] for sec in sections if sec['duration']])
+        ClassSection.prefetch_capacity_data(section_objs.values())
         for sec in sections:
             if sec['duration']:
                 hours["class-hours"] += float(sec['duration'])
