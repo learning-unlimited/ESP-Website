@@ -1345,7 +1345,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, class_subject=subject, reviewer__in=subject.get_teachers(), score__isnull=False).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
@@ -2659,6 +2659,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Schedule", "View class schedule (room/time assignments)"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
