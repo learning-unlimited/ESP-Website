@@ -391,10 +391,20 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        #   The form has already established that this username belongs to an
-        #   account awaiting activation; it matches case-insensitively, so
-        #   look the user up the same way.
-        user=ESPUser.objects.get(username__iexact=form.cleaned_data['username'])
+        #   The form matches case-insensitively and excludes email-only
+        #   accounts awaiting activation; look the user up the same way to
+        #   avoid 500s from DoesNotExist/MultipleObjectsReturned (usernames
+        #   are case-sensitive in the DB) or a race between validation and
+        #   lookup.
+        user = (
+            ESPUser.objects
+            .filter(username__iexact=form.cleaned_data['username'])
+            .exclude(password='emailuser')
+            .filter(ESPUser.awaiting_activation_Q())
+            .first()
+        )
+        if user is None:
+            raise ESPError("That username isn't waiting to be activated.", log=False)
         send_activation_email(user)
         return render_to_response('registration/resend_done.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})
