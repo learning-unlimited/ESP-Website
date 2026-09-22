@@ -26,16 +26,24 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # The suite is split across this many parallel shards by pytest-split.
+  # Three places must agree when changing it: this value, the length of the
+  # `shard` matrix below, and codecov.notify.after_n_builds in codecov.yml
+  # (Codecov holds the coverage status until every shard has uploaded).
+  TEST_SPLITS: 4
+
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python-version }})
+    name: Test (Python ${{ matrix.python-version }}, shard ${{ matrix.shard }})
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.12']
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:14
@@ -73,6 +81,8 @@ jobs:
       id: apt-action
       run: |
         PKGS=$(cat esp/packages_base.txt | grep -v '^memcached' | grep -v '^postgres' | grep -v '^libpq-dev' | grep -v '^.*pip' | tr '\n' ' ')
+        # pg_dump/pg_restore/createdb for the test-database seeding step
+        PKGS="$PKGS postgresql-client"
         echo "packages=$PKGS" >> $GITHUB_OUTPUT
     - name: Cache apt packages
       uses: Eeems-Org/apt-cache-action@v1
@@ -87,11 +97,31 @@ jobs:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/install
+    - name: Get PostgreSQL major version
+      id: pgver
+      # Keys the dump cache below, so upgrading the postgres service image
+      # cannot restore a dump taken against a different major version.
+      run: |
+        major=$(PGPASSWORD=testpassword psql -h localhost -U testuser -d test_django \
+                -tAc "SELECT current_setting('server_version_num')::int / 10000" 2>/dev/null || echo unknown)
+        echo "major=${major:-unknown}" >> $GITHUB_OUTPUT
+    - name: Cache test database dump
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+      with:
+        path: ~/testdb-cache
+        # Keyed on the runner, Postgres version, and all migration files.
+        key: ${{ runner.os }}-testdb-pg${{ steps.pgver.outputs.major }}-${{ hashFiles('esp/**/migrations/*.py') }}
     - name: Prepare for Test
       env:
         CI_JOB: test
         PYTHON_VERSION: ${{ matrix.python-version }}
       run: deploy/ci/before_script
+    - name: Seed Test Databases
+      env:
+        DATABASE_USER: testuser
+        DATABASE_PASSWORD: testpassword
+        DATABASE_NAME: test_django
+      run: deploy/ci/setup_test_db
     - name: Run Tests
       env:
         CI_JOB: test
@@ -100,11 +130,28 @@ jobs:
         DATABASE_USER: testuser
         DATABASE_PASSWORD: testpassword
         DATABASE_NAME: test_django
+        # TEST_SPLITS comes from the workflow-level env above.
+        TEST_GROUP: ${{ matrix.shard }}
       run: deploy/ci/script
     - name: Upload Coverage to Codecov
+      # Each shard uploads the partial report for the tests it ran; Codecov
+      # merges them into one project total.
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7
       with:
         fail_ci_if_error: true
         verbose: true
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  tests-complete:
+    # One stable status check to require in branch protection.
+    name: Tests Complete
+    runs-on: ubuntu-24.04
+    needs: test
+    if: always()
+    steps:
+    - name: Check shard results
+      if: needs.test.result != 'success'
+      run: |
+        echo "Test shards did not all succeed (result: ${{ needs.test.result }})"
+        exit 1
