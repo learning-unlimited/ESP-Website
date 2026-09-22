@@ -82,6 +82,7 @@ class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
             num_rooms=1,
             num_students=1,
         )
+        self.schedule_randomly()
         self.add_user_profiles()
         self.student = self.students[0]
         self.section = self.program.sections()[0]
