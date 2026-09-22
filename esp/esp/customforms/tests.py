@@ -38,9 +38,6 @@ from unittest.mock import patch
 
 import psycopg2
 from django.db import connection, transaction
-from django.db.utils import OperationalError
-from django.test import TransactionTestCase, override_settings
-
 from django.db.utils import IntegrityError, OperationalError
 from django.test import TransactionTestCase, override_settings
 
