@@ -103,7 +103,10 @@ class Media(models.Model):
 
     # returns a download path for this file
     def get_download_path(self):
-        return "/download/" + self.hashed_name + "/" + self.file_name
+        if (self.hashed_name and self.file_name):
+            return "/download/" + self.hashed_name + "/" + self.file_name
+        else:
+            return "/download/None/None"
     download_path = property(get_download_path)
 
     # returns an absolute path to this file
