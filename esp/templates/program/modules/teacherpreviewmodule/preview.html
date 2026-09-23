@@ -6,22 +6,14 @@
 {% load render_qsd %}
 {% render_inline_program_qsd program "teach:teacherpreview" %}
 
-<div id="catalog">
-  <table align="center" cellpadding="0" cellspacing="0" class="fullwidth" style="text-align: center">
-    <tr>
-        <th align="center">
-             <h2>
-                {% if categories %}
-                    Classes Already Registered
-                {% else %}
-                    No classes have been registered yet.
-                {% endif %}
-             </h2>
-          
-        </th>
-    </tr>
+{% include "program/modules/teacherpreviewmodule/handouts.html" %}
 
-    
+<section class="card teacher-preview-panel teacher-preview-classes-panel">
+  <div class="card-header text-bg-primary">
+    <h2>Classes Already Registered</h2>
+  </div>
+  <div class="card-body">
+    {% if categories %}
     {% for cat in categories %}
     <tr><td>
         <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#category-{{ forloop.counter }}" aria-expanded="false" aria-controls="category-{{ forloop.counter }}">
@@ -41,7 +33,8 @@
                     {% endfor %}
             </table>
         </div>
-    </td></tr>
+      </div>
+    </div>
     {% endfor %}
     
 </table>

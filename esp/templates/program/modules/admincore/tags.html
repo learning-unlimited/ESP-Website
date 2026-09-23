@@ -9,6 +9,9 @@
         #id_grade_increment_date_year {
             display: none;
         }
+        #tag-search-input {
+            max-width: 400px;
+        }
     </style>
 {% endblock %}
 
@@ -33,7 +36,15 @@
   Please be aware that these settings can be very sensitive and there are currently only a few warnings or blocks in place to prevent you from providing incorrect values. Please use caution, read the help text, and make sure to test everything whenever you change any of these settings! Feel free to contact <a href="mailto:websupport@learningu.org">websupport</a> with any questions.
 </div>
 
+<div class="mb-3">
+  <label for="tag-search-input" class="form-label"><h3>Search tags</h3></label>
+  <input type="text" id="tag-search-input" class="form-control" autocomplete="off"
+         placeholder="Search by tag name, label, or description" />
+  <div id="tag-search-status" role="status" aria-live="polite"></div>
+</div>
+
 <form action="/manage/{% if program %}{{ program.getUrlBase }}/{% endif %}tags/" method="post">
+<div id="tag-list">
 {% autoescape off %}
 {% if form.errors %}
 <div role="alert" class="alert alert-danger">
@@ -61,10 +72,12 @@
 
     <table class="contact table">
     {% for field in fieldset %}
-     <tr>
       {% if field.is_hidden %}
+     <tr>
        <td style="padding-bottom: 15px;"> {{ field }} </td>
+     </tr>
        {% else %}
+     <tr class="tag-row" data-search-text="{{ field.name|escape }} {{ field.label|escape }} {{ field.help_text|striptags|escape }}">
       {% if field.label  %}
       <td style="vertical-align:text-top;padding-right: 10px;">{{ field.label }} </td>
       {% endif %}
@@ -82,7 +95,7 @@
        <span class='form_error'> {{ error }} </span>
       {% endfor %}
        </td>
-       </tr>
+     </tr>
     
       {% endif %}
     {% endfor %}
@@ -99,8 +112,12 @@
   </div>
 {% endif %}
 {% endfor %}
+</div>
 </form>
 
+<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
+<script type="text/javascript" src="/media/scripts/utils/search_filter.js"></script>
+<script type="text/javascript" src="/media/scripts/tag_search.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
