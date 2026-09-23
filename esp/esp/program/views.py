@@ -68,14 +68,14 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
-from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, ClassSubject, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, Record, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -1258,6 +1258,53 @@ def catsflagsrecs(request, section=""):
 
     return render_to_response('program/categories_and_flags.html', request, context)
 
+#   Registration categories offered on StatisticsQueryForm, mapped to the program
+#   module that defines them (in its students()/teachers()) and a function building
+#   the equivalent Q object for a list of program IDs. The statistics view uses these
+#   instead of program.students()/teachers(QObjects=True), which build every category
+#   of every enabled module per program (e.g. evaluating the whole class catalog).
+STATISTICS_REG_TYPE_QS = {
+    'student_profile': ('StudentRegProfileModule', lambda program_ids: Q(id__in=RegistrationProfile.objects.filter(
+        program__in=program_ids, student_info__isnull=False).values('user_id'))),
+    'confirmed': ('StudentRegCore', lambda program_ids: Q(id__in=Record.objects.filter(
+        event__name='reg_confirmed', program__in=program_ids).values('user_id'))),
+    'attended': ('StudentRegCore', lambda program_ids: Q(id__in=Record.objects.filter(
+        event__name='attended', program__in=program_ids).values('user_id'))),
+    'classreg': ('StudentClassRegModule', lambda program_ids: Q(id__in=StudentRegistration.valid_objects().filter(
+        section__parent_class__parent_program__in=program_ids).values('user_id')) | Q(id__in=StudentSubjectInterest.valid_objects().filter(
+        subject__parent_program__in=program_ids).values('user_id'))),
+    'student_survey': ('StudentSurveyModule', lambda program_ids: Q(id__in=Record.objects.filter(
+        event__name='student_survey', program__in=program_ids).values('user_id'))),
+    'teacher_profile': ('TeacherRegProfileModule', lambda program_ids: Q(id__in=RegistrationProfile.objects.filter(
+        program__in=program_ids, teacher_info__isnull=False).values('user_id'))),
+    'class_proposed': ('TeacherClassRegModule', lambda program_ids: Q(id__in=ClassSubject.objects.filter(
+        parent_program__in=program_ids, status=0).values('teachers'))),
+    'class_approved': ('TeacherClassRegModule', lambda program_ids: Q(id__in=ClassSubject.objects.filter(
+        parent_program__in=program_ids, status__gt=0, sections__status__gt=0).values('teachers'))),
+    'class_rejected': ('TeacherClassRegModule', lambda program_ids: Q(id__in=ClassSubject.objects.filter(
+        parent_program__in=program_ids, status__lt=0).values('teachers'))),
+    'teacher_survey': ('TeacherSurveyModule', lambda program_ids: Q(id__in=Record.objects.filter(
+        event__name='teacher_survey', program__in=program_ids).values('user_id'))),
+}
+
+def statistics_users_q(programs, reg_types):
+    """ Q object for users in any of reg_types (keys of STATISTICS_REG_TYPE_QS)
+        in any of programs, counting a category only for programs that have
+        the module defining it enabled (as program.students()/teachers() do).
+    """
+    program_ids_by_handler = defaultdict(list)
+    for program_id, handler in Program.program_modules.through.objects.filter(
+            program__in=programs).values_list('program_id', 'programmodule__handler').distinct():
+        program_ids_by_handler[handler].append(program_id)
+    users_q = Q(pk__in=[])
+    for reg_type in reg_types:
+        if reg_type not in STATISTICS_REG_TYPE_QS:
+            continue
+        handler, reg_type_q = STATISTICS_REG_TYPE_QS[reg_type]
+        if program_ids_by_handler[handler]:
+            users_q |= reg_type_q(program_ids_by_handler[handler])
+    return users_q
+
 @admin_required
 def statistics(request, program=None):
 
@@ -1313,11 +1360,13 @@ def statistics(request, program=None):
             context = {}
 
             #   Get list of programs the query applies to
+            #   (instances are only selectable once a program type is chosen)
             programs = Program.objects.all()
             if not form.cleaned_data['program_type_all']:
-                programs = programs.filter(url__startswith=form.cleaned_data['program_type'])
-            if not form.cleaned_data['program_instance_all']:
-                programs = programs.filter(url__in=form.cleaned_data['program_instances'])
+                program_type = form.cleaned_data['program_type']
+                programs = programs.filter(Q(url=program_type) | Q(url__startswith=program_type + '/'))
+                if not form.cleaned_data['program_instance_all']:
+                    programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
 
             #   Which registration dimension applies matches StatisticsQueryForm.hide_unwanted_fields:
@@ -1326,81 +1375,18 @@ def statistics(request, program=None):
             #   which used to OR in teachers_union() for zipcodes etc. and produced enormous SQL.
             stats_query = form.cleaned_data['query']
             teacher_only = stats_query in ('teacher_reg', 'class_reg')
+            role = 'teacher' if teacher_only else 'student'
 
             #   Get list of users the query applies to.
-            #   Accumulate per-program registration Q objects, then apply each role
-            #   filter once (Student / Teacher). Doing (prog_q & role) for every
-            #   program duplicates the groups join on each OR branch and is very
-            #   slow; (prog_q1 | prog_q2 | ...) & role is equivalent for students
-            #   and avoids that.
-            student_reg_types_on_form = [
-                choice[0] for choice in form.fields.get('student_reg_types').choices
-            ] if 'student_reg_types' in form.fields else []
-            teacher_reg_types_on_form = [
-                choice[0] for choice in form.fields.get('teacher_reg_types').choices
-            ] if 'teacher_reg_types' in form.fields else []
-            student_users_q = None
-            teacher_users_q = None
-
-            for program in programs:
-                student_q = None
-                if not teacher_only:
-                    if form.cleaned_data.get('student_reg_type_all'):
-                        # "All" should be limited to the registration types shown
-                        # on the statistics form. `program.students_union()`
-                        # includes extra categories like attended_past/enrolled_past
-                        # which can be very expensive and are not part of this query.
-                        students_objects = program.students(QObjects=True)
-                        student_q = Q(pk__in=[])
-                        for reg_type in student_reg_types_on_form:
-                            if reg_type in students_objects:
-                                student_q |= students_objects[reg_type]
-                    elif form.cleaned_data.get('student_reg_types'):
-                        students_objects = program.students(QObjects=True)
-                        student_q = Q(pk__in=[])
-                        for reg_type in form.cleaned_data['student_reg_types']:
-                            if reg_type in students_objects:
-                                student_q |= students_objects[reg_type]
-
-                    if student_q:
-                        if student_users_q is None:
-                            student_users_q = student_q
-                        else:
-                            student_users_q |= student_q
-
-                teacher_q = None
-                if teacher_only:
-                    if form.cleaned_data.get('teacher_reg_type_all'):
-                        # Same restriction as the student side.
-                        teachers_objects = program.teachers(QObjects=True)
-                        teacher_q = Q(pk__in=[])
-                        for reg_type in teacher_reg_types_on_form:
-                            if reg_type in teachers_objects:
-                                teacher_q |= teachers_objects[reg_type]
-                    elif form.cleaned_data.get('teacher_reg_types'):
-                        teachers_objects = program.teachers(QObjects=True)
-                        teacher_q = Q(pk__in=[])
-                        for reg_type in form.cleaned_data['teacher_reg_types']:
-                            if reg_type in teachers_objects:
-                                teacher_q |= teachers_objects[reg_type]
-
-                    if teacher_q:
-                        if teacher_users_q is None:
-                            teacher_users_q = teacher_q
-                        else:
-                            teacher_users_q |= teacher_q
-
-            users_q = None
-            if student_users_q is not None:
-                # Restrict to students so teachers/volunteers with registration-like
-                # records are not counted as students.
-                users_q = student_users_q & ESPUser.getAllOfType('Student')
-            if teacher_users_q is not None:
-                tq = teacher_users_q & ESPUser.getAllOfType('Teacher')
-                users_q = tq if users_q is None else (users_q | tq)
-
-            if users_q is None:
-                users_q = Q(pk__in=[])
+            #   "All" is limited to the registration types shown on the statistics form.
+            #   Each type becomes one id__in subquery covering every selected program,
+            #   and the role filter (Student / Teacher) is applied once, so that
+            #   teachers/volunteers with registration-like records are not counted as students.
+            if form.cleaned_data.get('%s_reg_type_all' % role):
+                reg_types = [choice[0] for choice in form.fields['%s_reg_types' % role].choices]
+            else:
+                reg_types = form.cleaned_data.get('%s_reg_types' % role) or []
+            users_q = statistics_users_q(programs, reg_types) & ESPUser.getAllOfType(role.capitalize())
 
             #   Narrow down by school (perhaps not ideal results, but faster)
             if form.cleaned_data['school_query_type'] == 'name':
@@ -1432,18 +1418,20 @@ def statistics(request, program=None):
             )
             result_dict['num_users'] = len(user_ids)
             users = ESPUser.objects.filter(pk__in=user_ids)
-            user_list = list(users)
-            # Batch-fetch latest profile per user to avoid N+1
-            profile_by_user = {}
-            if user_list:
-                for p in RegistrationProfile.objects.filter(user__in=user_list).select_related('user', 'contact_user', 'student_info', 'student_info__k12school').order_by('user_id', '-last_ts'):
-                    if p.user_id not in profile_by_user:
-                        profile_by_user[p.user_id] = p
-            profiles = [profile_by_user.get(u.id) or RegistrationProfile(user=u) for u in user_list]
+            #   Batch-fetch latest profile per user to avoid N+1, only for the queries that read profiles.
+            #   DISTINCT ON keeps just the latest profile per user in SQL.
+            profiles = []
+            if stats_query in ('zipcodes', 'demographics', 'schools', 'heardabout') and user_ids:
+                profile_by_user = {
+                    p.user_id: p for p in RegistrationProfile.objects.filter(user__in=users)
+                    .select_related('contact_user', 'student_info', 'student_info__k12school')
+                    .order_by('user_id', '-last_ts').distinct('user_id')
+                }
+                profiles = [profile_by_user.get(user_id) or RegistrationProfile(user_id=user_id) for user_id in sorted(user_ids)]
 
             #   Accumulate desired information for selected query
             from esp.program import statistics as statistics_functions
-            if hasattr(statistics_functions, form.cleaned_data['query']):
+            if not stats_query.startswith('_') and hasattr(statistics_functions, stats_query):
                 context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, users, profiles, result_dict)
             else:
                 context['result'] = 'Unsupported query'
