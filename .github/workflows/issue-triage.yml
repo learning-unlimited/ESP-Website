@@ -47,7 +47,7 @@ jobs:
           PREV_ISSUES=$(gh api graphql -f query='
             query($owner: String!, $repo: String!, $author: String!) {
               repository(owner: $owner, name: $repo) {
-                issues(filterBy: {createdBy: $author}, first: 2) {
+                issues(filterBy: {createdBy: $author, states: [OPEN, CLOSED]}, first: 2) {
                   totalCount
                 }
               }
