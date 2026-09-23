@@ -1,6 +1,5 @@
 
 <link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
-<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 
 {% load class_render %}
 
@@ -25,11 +24,11 @@
     
     {% for cat in categories %}
     <tr><td>
-        <button class="dsphead small">
+        <button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#category-{{ forloop.counter }}" aria-expanded="false" aria-controls="category-{{ forloop.counter }}">
             <b>Category: {{ cat.category }}</b> (click to expand/contract)
         </button>
 
-        <div class="dspcont">
+        <div id="category-{{ forloop.counter }}" class="accordion-collapse collapse">
             <table cellpadding="2" cellspacing="0" width="100%">
                 <tr>
                     <th class="materials">Class</th>
@@ -48,6 +47,5 @@
 </table>
 </div>
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/teacherpreviewmodule/handouts.html" %}

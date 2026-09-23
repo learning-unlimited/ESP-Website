@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <style>
         #id_grade_increment_date_year {
             display: none;
@@ -50,11 +49,11 @@
 {% endautoescape %}
 {% for fieldset in form.fieldsets %}
 {% if fieldset.name in categories %}
-  <button type="button" class="dsphead{% if open_section == fieldset.name %} active{% endif %}">
+  <button type="button" class="accordion-button{% if open_section != fieldset.name %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#tag-{{ fieldset.name }}" aria-expanded="{% if open_section == fieldset.name %}true{% else %}false{% endif %}" aria-controls="tag-{{ fieldset.name }}">
      <b>{{ fieldset.legend }}</b> (click to expand/contract)
   </button>
 
-  <div class="dspcont{% if open_section == fieldset.name %} active{% endif %}">
+  <div id="tag-{{ fieldset.name }}" class="accordion-collapse collapse{% if open_section == fieldset.name %} show{% endif %}">
     {% autoescape off %}
     {% if fieldset.description %}
       <p class="description">{{ fieldset.description }}</p>
@@ -102,7 +101,6 @@
 {% endfor %}
 </form>
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
