@@ -2129,7 +2129,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
-                if t.getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
+                if t.getTaughtClasses(self.parent_program).filter(status__gte=ClassStatus.UNREVIEWED).count() == 0:
                     mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)
