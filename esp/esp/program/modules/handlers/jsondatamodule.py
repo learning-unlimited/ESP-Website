@@ -1034,9 +1034,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         hours = {"class-hours": 0, "class-student-hours": 0, "class-registered-hours": 0}
         sections = list(sections)
         #   One query for the sections we need capacities for, rather than one
-        #   ClassSection.objects.get() per row.
-        section_objs = ClassSection.objects.in_bulk(
-            [sec['id'] for sec in sections if sec['duration']])
+        #   ClassSection.objects.get() per row.  _get_capacity() also reads the
+        #   parent class, its program and that program's registration settings,
+        #   so those are joined in rather than fetched per section.
+        section_objs = (
+            ClassSection.objects
+            .select_related('parent_class',
+                            'parent_class__parent_program',
+                            'parent_class__parent_program__studentclassregmoduleinfo')
+            .in_bulk([sec['id'] for sec in sections if sec['duration']]))
         ClassSection.prefetch_capacity_data(section_objs.values())
         for sec in sections:
             if sec['duration']:

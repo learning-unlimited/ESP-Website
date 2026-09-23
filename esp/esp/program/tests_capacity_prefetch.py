@@ -111,14 +111,27 @@ class CapacityPrefetchTest(ProgramFrameworkTest):
             "fixture produced a single capacity (%s), so the comparison "
             "tests would pass without exercising the room logic" % capacities)
 
-    def test_prefetch_issues_one_query_and_capacity_issues_none(self):
+    def test_prefetch_issues_exactly_one_resource_query(self):
+        """The preload itself must be one query, not one per section."""
+        sections = list(self.program.sections())
+        self.assertGreater(len(sections), 1, "need several sections to be meaningful")
+        with CaptureQueriesContext(connection) as ctx:
+            ClassSection.prefetch_capacity_data(sections)
+        resource_queries = [q for q in ctx.captured_queries
+                            if 'resources_' in q['sql']]
+        self.assertEqual(
+            len(resource_queries), 1,
+            "preload should issue one resource query for %d sections, got %d"
+            % (len(sections), len(resource_queries)))
+
+    def test_preloaded_capacity_issues_no_resource_queries(self):
         sections = ClassSection.prefetch_catalog_data(self.program.sections())
         with CaptureQueriesContext(connection) as ctx:
             for section in sections:
                 section._get_capacity(use_cache=False)
-        room_queries = [q for q in ctx.captured_queries
-                        if 'resources_resource' in q['sql']]
+        resource_queries = [q for q in ctx.captured_queries
+                            if 'resources_' in q['sql']]
         self.assertEqual(
-            room_queries, [],
+            resource_queries, [],
             "preloaded sections should not query resources; got %d queries"
-            % len(room_queries))
+            % len(resource_queries))

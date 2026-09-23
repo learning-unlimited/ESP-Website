@@ -365,6 +365,12 @@ class ClassManager(Manager):
 
     @staticmethod
     def _catalog_key_set_for_studentappquestion(question):
+        #   subject is nullable: a program-level question is not counted by
+        #   _studentapps_count, which only counts questions attached to one of
+        #   the classes, so it cannot change any catalog.  None means "evict
+        #   nothing", as opposed to {}, which would evict everything.
+        if question.subject_id is None:
+            return None
         try:
             return ClassManager._catalog_key_set(question.subject.parent_program)
         except Exception:
@@ -383,6 +389,19 @@ class ClassManager(Manager):
         if isinstance(target, Program):
             return ClassManager._catalog_key_set(target)
         return {}
+
+    @staticmethod
+    def _catalog_key_set_for_event(event):
+        #   prefetch_catalog_data() stores Event objects on each section as
+        #   _events, so an edit to an event's times has to evict the catalog
+        #   holding them; the m2m dependency above only fires when the set of
+        #   meeting times changes, not when one of those times is edited.
+        try:
+            if event.program_id is None:
+                return {}
+            return ClassManager._catalog_key_set(event.program)
+        except Exception:
+            return {}
 
     @staticmethod
     def _catalog_key_set_for_qsd(page):
@@ -415,6 +434,8 @@ class ClassManager(Manager):
                                  lambda media: ClassManager._catalog_key_set_for_media(media))
     catalog_cached.depend_on_row('tagdict.Tag',
                                  lambda tag: ClassManager._catalog_key_set_for_tag(tag))
+    catalog_cached.depend_on_row('cal.Event',
+                                 lambda event: ClassManager._catalog_key_set_for_event(event))
 
     @staticmethod
     def is_class_index_qsd(qsd):
