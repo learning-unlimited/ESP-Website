@@ -61,6 +61,19 @@ td>ul { list-style-type: none; padding: 0px }
         {% elif f.type == "select" %}
             {% if f.form.option.errors %}<div style="color: red;" role="alert">Error: {{ f.form.option.errors|join:", " }}</div>{% endif %}
             {{ f.form.option }}
+        {% elif f.type == "multiselect" %}
+            {% if f.form.options.errors %}<div style="color: red;">{{ f.form.options.errors|join:", " }}</div>{% endif %}
+            <ul>
+                {% for checkbox, custom_amount in f.form.option_rows %}
+                <li>
+                    {{ checkbox }}
+                    {% if custom_amount %}
+                        {{ custom_amount }}
+                        {% if custom_amount.errors %}<span style="color: red;">{{ custom_amount.errors|join:", " }}</span>{% endif %}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
         {% elif f.type == "sibling" %}
             {% if f.form.siblingdiscount.errors %}<div style="color: red;" role="alert">Error: {{ f.form.siblingdiscount.errors|join:", " }}</div>{% endif %}
             {{ f.form.siblingdiscount }}
@@ -85,7 +98,7 @@ td>ul { list-style-type: none; padding: 0px }
         {# be able to remove a selected item, we need a button. The Javascript    #}
         {# code for the button is in extracosts.js.                               #}
 
-        {% if f.LineItem.num_options and not f.LineItem.required %}
+        {% if f.LineItem.num_options and not f.LineItem.required and f.type != "multiselect" %}
             <button type="button"
                     class="remove-item"
                     name="{{ f.form.prefix }}-option{% if f.type == "select" and f.LineItem.has_custom_options %}_0{% endif %}"
