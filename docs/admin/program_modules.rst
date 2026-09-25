@@ -562,7 +562,14 @@ page.
 Communications Panel for Admin (CommModule)
 -------------------------------------------
 
-This module allows you to use the website to send email to participants in your programs.  You first select the list of recipients and then enter the message title and text.  There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic).  Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release).  Please check that the number of recipients look reasonable before sending an email.  You can use the "recipient checklist" feature to see specific users.
+This module allows you to use the website to send email to participants in your programs. You first select the list of recipients and then enter the message title and text. There are many options for selecting recipients, either a basic list (single criteria) and combination list (multiple criteria combined with Boolean logic). Be aware that for technical reasons, combination lists often do not contain the set of users you are expecting (this will be addressed in a future release). Please check that the number of recipients look reasonable before sending an email. You can use the "recipient checklist" feature to see specific users.
+
+Admins can also select **School Contacts** as email recipients, with options to target all schools, schools with students enrolled in the current program, or schools without students enrolled. When emailing school contacts, templates support school-specific variables:
+
+* ``{{ school.name }}``: The name of the school.
+* ``{{ school.roster }}``: List of enrolled students from this school.
+* ``{{ school.attendance }}``: Attendance summary of students from this school.
+* ``{{ school.contact_titleandlastname }}``: Formatted salutation (e.g., "Mr. Smith").
 
 The text box for the body of the message includes a rich text editor that includes most common word-processing functions available in Microsoft Word or Google Docs, including font styles (bold, strikethrough, underline, and italics), indentation, lists, font families, headings, colors, alignment, tables, and symbols. The editor supports the pasting of rich text from various sources (including Microsoft Word), and images can be included from external sources or the filebrowser via URL (direct upload may be supported in a future release). The template tags are now located in a dropdown menu with the ``{{}}`` label. Admins can click the </> button to use a source code editor and write HTML code as before. All comm panel emails are now HTML, so including ``<html>`` tags are no longer necessary. We will address the spam filter implications of this in a future release.
 
