@@ -107,6 +107,17 @@ class DraftCreationTestMixin(object):
             'save_action': 'draft',  # This is the key for draft saving
         }
 
+    def _make_submit_form_data(self, teacher):
+        """Draft POST data trimmed to what TeacherClassRegForm accepts."""
+        data = self._make_draft_form_data(teacher)
+        # class_style only has choices when the class_style_choices Tag is set,
+        # and the rest are not fields on this form.
+        for key in ('class_style', 'schedule', 'directors_notes',
+                    'requested_special_resources', 'class_size_min'):
+            data.pop(key, None)
+        data['save_action'] = 'submit'
+        return data
+
     def _make_empty_draft_form_data(self, teacher):
         """Returns POST data with empty required fields to test draft saving with validation bypass."""
         return {
@@ -649,6 +660,8 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
             "Couldn't log in as teacher %s" % teacher.username
         )
 
+        # The tag cache is not transactional, so drop it after the rollback.
+        self.addCleanup(Tag._getTag.delete_all)
         Tag.setTag('teacherreg_custom_forms', value='["ChicagoTeacherQuestionsForm"]')
 
         draft_data = self._make_draft_form_data(teacher)
@@ -777,3 +790,78 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
             self.assertTrue(section.isDraft())
             self.assertFalse(section.isReviewed())
             self.assertFalse(section.isRejected())
+
+    def test_submitting_draft_promotes_it(self):
+        """A valid submit promotes the draft in place instead of creating a second class."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).delete()
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        submit_data = self._make_submit_form_data(teacher)
+        submit_data['class_id'] = draft.id
+        response = self.client.post(self._makeaclass_url(), submit_data)
+        self.assertIn(response.status_code, [200, 302])
+
+        # The draft itself was promoted; no second class was created.
+        self.assertEqual(
+            ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).count(), 1,
+            "Submitting a draft must not leave an orphaned draft behind"
+        )
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, ClassStatus.UNREVIEWED,
+                         "Submitting should promote the draft out of draft status")
+        self.assertFalse(draft.isDraft())
+        for section in draft.sections.all():
+            self.assertEqual(section.status, ClassStatus.UNREVIEWED,
+                             "Sections should be promoted along with the class")
+
+    def test_validation_error_keeps_draft_id(self):
+        """A failed submit must keep the draft id so the retry promotes it."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).delete()
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        # Submit with a blank title so the form fails validation.
+        bad_data = self._make_submit_form_data(teacher)
+        bad_data['class_id'] = draft.id
+        bad_data['title'] = ''
+        response = self.client.post(self._makeaclass_url(), bad_data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response, 'name="class_id" value="%d"' % draft.id,
+            msg_prefix="The re-rendered form must keep the draft id"
+        )
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, ClassStatus.DRAFT,
+                         "A failed submit must leave the draft as a draft")
+
+        # Retrying with valid data promotes that same draft rather than adding one.
+        good_data = self._make_submit_form_data(teacher)
+        good_data['class_id'] = draft.id
+        self.client.post(self._makeaclass_url(), good_data)
+
+        self.assertEqual(
+            ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).count(), 1,
+            "Retrying after a validation error must not create a second class"
+        )
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, ClassStatus.UNREVIEWED)

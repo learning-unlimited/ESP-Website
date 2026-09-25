@@ -1013,6 +1013,9 @@ class TeacherClassRegModule(ProgramModuleObj):
             except ClassCreationValidationError as e:
                 reg_form = e.reg_form
                 resource_formset = e.resource_formset
+                #   Set context['class'] to prevent creating a second class.
+                if newclass is not None:
+                    context['class'] = newclass
 
         else:
             # Resume an existing draft for create actions.

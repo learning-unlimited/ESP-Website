@@ -156,6 +156,9 @@ class AdminClass(ProgramModuleObj):
             except ClassSubject.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
+            if class_subject.isDraft():
+                raise ESPError("Error: this class is still a teacher's unsubmitted draft and cannot be reviewed.", log=False)
+
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':

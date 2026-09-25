@@ -164,13 +164,13 @@
                     </button>
                     {% if show_draft_button %}
                         <button type="submit" class="btn btn-info btn-lg custom-action" name="save_action" value="draft" formnovalidate
-                                onclick="skip_grade_range();">
+                                onclick="return start_draft_action();">
                             <span class="bi bi-save"></span>
                             Save {% if not has_draft %}as a {% endif %}Draft
                         </button>
                         {% if has_draft %}
                             <button type="submit" class="btn btn-danger btn-lg custom-action" name="save_action" value="discard_draft" formnovalidate
-                                    onclick="if (!confirm('Discard this draft?  Everything you have saved in it will be deleted.')) { return false; } skip_grade_range(); return true;">
+                                    onclick="return start_draft_action('Discard this draft?  Everything you have saved in it will be deleted.');">
                                 <span class="bi bi-trash"></span>
                                 Discard Draft
                             </button>

@@ -91,7 +91,17 @@ function fill_status_row(clsid, classes_data) {
     sections_table.append(sec_row)
   }
   
-  if (class_info.is_scheduled) {
+  if (classes_global[clsid].status == -5) {
+    // Drafts have not been submitted, so there is nothing to review yet.
+    var buttons = [
+    {
+      text: "Open class management page",
+      cls: ["btn", "btn-secondary"],
+      click: function() {
+        window.open("/manage/"+base_url+"/manageclass/"+clsid);
+      }
+    }]
+  } else if (class_info.is_scheduled) {
     var buttons = [
     {
       text: "Approve (all sections)",
@@ -248,7 +258,7 @@ function update_class(clsid, statusId) {
 
       // Set the appropriate styling and tag text
       var el = $j("#" + clsid).find("td.classname > span");
-      el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
+      el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red").removeClass("dashboard_gray");
 
       for(var i = 0; i < status_details['classes'].length; ++i)
       {
