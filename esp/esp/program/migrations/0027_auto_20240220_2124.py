@@ -24,6 +24,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('program', '0026_auto_20221122_2100'),
+        ('dbmail', '0001_initial'),
     ]
 
     operations = [
