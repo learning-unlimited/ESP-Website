@@ -20,6 +20,13 @@ defaults to the existing behavior, so nothing changes unless it is set.
 - ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the text of the volunteer form's confirmation checkbox. The value is treated as plain text and the default red styling is kept.
 - ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control how many data points are trimmed from each end of the big board's registration graph series, and how many points a series needs before it is plotted. These were previously hard-coded as 4, 0, and 5 respectively.
 
+Teacher Schedule Deadline
+=========================
+
+A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and moderators can see the room and time assigned to their sections on the teacher class registration page. While the deadline is closed, those assignments (along with the "Detailed Status" time blocks and the attendance links that go with them) are replaced with a note that the schedule is not yet available; everything else on the page is unchanged.
+
+The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
+
 Bug Fixes
 =========
 
