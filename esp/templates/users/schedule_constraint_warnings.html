@@ -4,8 +4,41 @@ constraints are enforced; see esp.program.models.unmet_requirements.
 Expects 'unmet_requirements' in the context (set by StudentClassRegModule.prepare_static).
 {% endcomment %}
 {% if unmet_requirements %}
-<div class="note schedule-constraint-warning">
-    <b>Please check your schedule:</b>
+<style type="text/css">
+    .schedule-constraint-warning {
+        display: block;
+        box-sizing: border-box;
+        width: auto;
+        max-width: 700px;
+        margin: 12px auto;
+        padding: 12px 16px;
+        border: 1px solid #e0a800;
+        border-left: 8px solid #e0a800;
+        border-radius: 4px;
+        background-color: #fff3cd;
+        color: #6b5200;
+        font-family: inherit;
+        font-size: 1em;
+        font-style: normal;
+        text-align: left;
+    }
+    .schedule-constraint-warning .schedule-constraint-warning-title {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+        font-size: 1.1em;
+        text-transform: none;
+    }
+    .schedule-constraint-warning ul {
+        margin: 0;
+        padding-left: 22px;
+    }
+    .schedule-constraint-warning li {
+        margin: 2px 0;
+    }
+</style>
+<div class="schedule-constraint-warning" role="alert">
+    <span class="schedule-constraint-warning-title">&#9888; Please check your schedule</span>
     <ul>
     {% for requirement in unmet_requirements %}
         <li>You need to {{ requirement }}.</li>
