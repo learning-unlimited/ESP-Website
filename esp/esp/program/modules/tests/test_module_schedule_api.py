@@ -352,3 +352,83 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 405)
 
+    def test_occ_single_update(self):
+        """Test OCC for single module update."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_update_api", kwargs=self.url_kwargs)
+
+        # Valid update
+        payload = {
+            "module_id": self.pmo.id,
+            "seq": 25,
+            "version": self.pmo.version
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        self.pmo.refresh_from_db()
+        self.assertEqual(self.pmo.seq, 25)
+        self.assertEqual(self.pmo.version, 2)
+
+        # Conflict update
+        payload = {
+            "module_id": self.pmo.id,
+            "seq": 30,
+            "version": 1  # Stale version
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 409)
+        self.pmo.refresh_from_db()
+        self.assertEqual(self.pmo.seq, 25)  # Should not have updated
+        self.assertEqual(self.pmo.version, 2)
+
+    def test_occ_reorder(self):
+        """Test OCC for bulk reorder."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+
+        another_mod = ProgramModule.objects.filter(
+            id__in=self.program.program_modules.values_list('id', flat=True)
+        ).exclude(id=self.pmo.module.id).first()
+        if another_mod is None:
+            self.skipTest("Need at least two modules to test reorder OCC rollback.")
+        pmo2 = ProgramModuleObj.getFromProgModule(self.program, another_mod)
+
+        original_seq = self.pmo.seq
+        original_seq2 = pmo2.seq
+        original_version = self.pmo.version
+        original_version2 = pmo2.version
+
+        # A stale module must roll back an otherwise valid batch update.
+        payload = {
+            "order": [
+                {"id": self.pmo.id, "seq": 50, "version": original_version},
+                {"id": pmo2.id, "seq": 60, "version": original_version2 - 1}
+            ]
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 409)
+        self.pmo.refresh_from_db()
+        pmo2.refresh_from_db()
+        self.assertEqual(self.pmo.seq, original_seq)
+        self.assertEqual(pmo2.seq, original_seq2)
+        self.assertEqual(self.pmo.version, original_version)
+        self.assertEqual(pmo2.version, original_version2)
+
+        # A valid batch returns the next version for every updated module.
+        # Valid reorder
+        payload = {
+            "order": [
+                {"id": self.pmo.id, "seq": 50, "version": self.pmo.version},
+                {"id": pmo2.id, "seq": 60, "version": pmo2.version}
+            ]
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIn("updated_versions", data)
+        self.pmo.refresh_from_db()
+        pmo2.refresh_from_db()
+        self.assertEqual(self.pmo.seq, 50)
+        self.assertEqual(pmo2.seq, 60)
+        self.assertEqual(self.pmo.version, original_version + 1)
+        self.assertEqual(pmo2.version, original_version2 + 1)

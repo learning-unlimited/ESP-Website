@@ -1614,6 +1614,7 @@ def module_schedule_api(request, program_type, program_term):
             "end_date": mod.end_date.isoformat() if mod.end_date else None,
             "required": mod.required,
             "required_label": mod.required_label,
+            "version": mod.version,
         })
 
     return JsonResponse(data)
@@ -1622,8 +1623,8 @@ def module_schedule_api(request, program_type, program_term):
 def module_schedule_update_api(request, program_type, program_term):
     """
     JSON API endpoint to update a program module's schedule and metadata.
-    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, start_date, end_date, seq, link_title, required, required_label.
-    Outputs: JSONResponse with success boolean and updated module fields.
+    Inputs: program_type (str), program_term (str) from the URL, JSON body with module_id, version, start_date, end_date, seq, link_title, required, required_label.
+    Outputs: JSONResponse with success boolean, updated module fields, and the next version.
     """
     # we simulate PATCH using POST with data, or we could just use POST.
     prog = get_program_or_404(request, program_type, program_term)
@@ -1634,102 +1635,113 @@ def module_schedule_update_api(request, program_type, program_term):
 
         from esp.program.modules.base import ProgramModuleObj
         from django.utils import timezone
+        from django.db import transaction
 
-        try:
-            mod = ProgramModuleObj.objects.get(id=module_id, program=prog)
-        except ProgramModuleObj.DoesNotExist:
-            return JsonResponse({"success": False, "error": "Module not found"}, status=404)
+        with transaction.atomic():
+            try:
+                mod = ProgramModuleObj.objects.select_for_update().get(id=module_id, program=prog)
+            except ProgramModuleObj.DoesNotExist:
+                return JsonResponse({"success": False, "error": "Module not found"}, status=404)
 
-        mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
+            if "version" in data:
+                client_version = data["version"]
+                if isinstance(client_version, bool) or not isinstance(client_version, int):
+                    return JsonResponse({"success": False, "error": "Invalid version format"}, status=400)
+                if client_version != mod.version:
+                    return JsonResponse({"success": False, "error": "Conflict: Module was modified by another administrator."}, status=409)
 
-        if "start_date" in data:
-            val = data["start_date"]
-            if val:
-                dt = parse_datetime(val)
-                if dt is None:
-                    return JsonResponse({"success": False, "error": "Invalid start_date format"}, status=400)
-                if timezone.is_aware(dt):
-                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
-                mod.start_date = dt
-            else:
-                mod.start_date = None
+            mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
-        if "end_date" in data:
-            val = data["end_date"]
-            if val:
-                dt = parse_datetime(val)
-                if dt is None:
-                    return JsonResponse({"success": False, "error": "Invalid end_date format"}, status=400)
-                if timezone.is_aware(dt):
-                    dt = timezone.make_naive(dt, timezone.get_current_timezone())
-                mod.end_date = dt
-            else:
-                mod.end_date = None
+            if "start_date" in data:
+                val = data["start_date"]
+                if val:
+                    dt = parse_datetime(val)
+                    if dt is None:
+                        return JsonResponse({"success": False, "error": "Invalid start_date format"}, status=400)
+                    if timezone.is_aware(dt):
+                        dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                    mod.start_date = dt
+                else:
+                    mod.start_date = None
 
-        if "seq" in data:
-            if mod_hydrated.seq_locked:
-                return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
-            mod.seq = int(data["seq"])
+            if "end_date" in data:
+                val = data["end_date"]
+                if val:
+                    dt = parse_datetime(val)
+                    if dt is None:
+                        return JsonResponse({"success": False, "error": "Invalid end_date format"}, status=400)
+                    if timezone.is_aware(dt):
+                        dt = timezone.make_naive(dt, timezone.get_current_timezone())
+                    mod.end_date = dt
+                else:
+                    mod.end_date = None
 
-        if "link_title" in data:
-            title = data["link_title"]
-            if not isinstance(title, str):
-                return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
-            max_len = ProgramModuleObj._meta.get_field('link_title').max_length
-            if len(title) > max_len:
-                return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
-            mod.link_title = title
+            if "seq" in data:
+                if mod_hydrated.seq_locked:
+                    return JsonResponse({"success": False, "error": f"Module {mod.module.handler} is locked and cannot be reordered"}, status=403)
+                mod.seq = int(data["seq"])
 
-        if "required" in data:
-            if not isinstance(data["required"], bool):
-                return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
-            mod.required = data["required"]
+            if "link_title" in data:
+                title = data["link_title"]
+                if not isinstance(title, str):
+                    return JsonResponse({"success": False, "error": "link_title must be a string"}, status=400)
+                max_len = ProgramModuleObj._meta.get_field('link_title').max_length
+                if len(title) > max_len:
+                    return JsonResponse({"success": False, "error": f"link_title must be {max_len} characters or fewer"}, status=400)
+                mod.link_title = title
 
-        if "required_label" in data:
-            label = data["required_label"]
-            if not isinstance(label, str):
-                return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
-            max_len = ProgramModuleObj._meta.get_field('required_label').max_length
-            if len(label) > max_len:
-                return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
-            mod.required_label = label
+            if "required" in data:
+                if not isinstance(data["required"], bool):
+                    return JsonResponse({"success": False, "error": "required must be a boolean"}, status=400)
+                mod.required = data["required"]
 
-        if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
-            return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
+            if "required_label" in data:
+                label = data["required_label"]
+                if not isinstance(label, str):
+                    return JsonResponse({"success": False, "error": "required_label must be a string"}, status=400)
+                max_len = ProgramModuleObj._meta.get_field('required_label').max_length
+                if len(label) > max_len:
+                    return JsonResponse({"success": False, "error": f"required_label must be {max_len} characters or fewer"}, status=400)
+                mod.required_label = label
 
-        # Enforce hard constraints (same as admincore POST handler)
-        handler = mod.module.handler
-        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
-            mod.seq = 0
-            mod.required = True
-        elif "CreditCardModule_" in handler:
-            mod.seq = 10000
-            mod.required = False
-        elif handler == "StudentRegConfirm":
-            mod.seq = 99999
-            mod.required = False
-        elif handler == "AvailabilityModule":
-            mod.required = True
-        elif "AcknowledgementModule" in handler:
-            mod.required = True
-        elif handler == "StudentRegTwoPhase":
-            mod.required = True
+            if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
+                return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
 
-        mod.save()
-        mod_hydrated.start_date = mod.start_date
-        mod_hydrated.end_date = mod.end_date
-        mod_hydrated.sync_permissions()
+            # Enforce hard constraints (same as admincore POST handler)
+            handler = mod.module.handler
+            if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
+                mod.seq = 0
+                mod.required = True
+            elif "CreditCardModule_" in handler:
+                mod.seq = 10000
+                mod.required = False
+            elif handler == "StudentRegConfirm":
+                mod.seq = 99999
+                mod.required = False
+            elif handler == "AvailabilityModule":
+                mod.required = True
+            elif "AcknowledgementModule" in handler:
+                mod.required = True
+            elif handler == "StudentRegTwoPhase":
+                mod.required = True
 
-        return JsonResponse({
-            "success": True,
-            "module_id": mod.id,
-            "start_date": mod.start_date.isoformat() if mod.start_date else None,
-            "end_date": mod.end_date.isoformat() if mod.end_date else None,
-            "seq": mod.seq,
-            "link_title": mod.link_title,
-            "required": mod.required,
-            "required_label": mod.required_label
-        })
+            mod.version += 1
+            mod.save()
+            mod_hydrated.start_date = mod.start_date
+            mod_hydrated.end_date = mod.end_date
+            mod_hydrated.sync_permissions()
+
+            return JsonResponse({
+                "success": True,
+                "module_id": mod.id,
+                "start_date": mod.start_date.isoformat() if mod.start_date else None,
+                "end_date": mod.end_date.isoformat() if mod.end_date else None,
+                "seq": mod.seq,
+                "link_title": mod.link_title,
+                "required": mod.required,
+                "required_label": mod.required_label,
+                "version": mod.version,
+            })
     except ValueError:
         return JsonResponse({"success": False, "error": "Invalid data format"}, status=400)
     except Exception:
@@ -1785,6 +1797,7 @@ def module_schedule_preview_api(request, program_type, program_term):
                 "end_date": mod.end_date.isoformat() if mod.end_date else None,
                 "required": mod.required,
                 "required_label": mod.required_label,
+                "version": mod.version,
             })
 
     return JsonResponse(data)
@@ -1834,7 +1847,7 @@ def module_schedule_conflicts_api(request, program_type, program_term):
 def module_schedule_reorder_api(request, program_type, program_term):
     """
     JSON API endpoint to bulk update the sequence (seq) of program modules.
-    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>} dicts.
+    Accepts a JSON body with 'order': a list of {"id": <int>, "seq": <int>, "version": <int>} dicts.
     """
     prog = get_program_or_404(request, program_type, program_term)
 
@@ -1848,9 +1861,10 @@ def module_schedule_reorder_api(request, program_type, program_term):
         from django.db import transaction
 
         update_ids = [u.get("id") for u in order if "id" in u]
-        module_map = {m.id: m for m in ProgramModuleObj.objects.filter(program=prog, id__in=update_ids).select_related('module')}
+        updated_versions = {}
 
         with transaction.atomic():
+            module_map = {m.id: m for m in ProgramModuleObj.objects.select_for_update().filter(program=prog, id__in=update_ids).select_related('module')}
             for update in order:
                 mod_id = update.get("id")
                 new_seq = update.get("seq")
@@ -1859,6 +1873,15 @@ def module_schedule_reorder_api(request, program_type, program_term):
                     continue
 
                 mod = module_map[mod_id]
+
+                # Optimistic Concurrency Control check
+                if "version" in update:
+                    client_version = update["version"]
+                    if isinstance(client_version, bool) or not isinstance(client_version, int):
+                        raise ValueError("Invalid version format")
+                    if client_version != mod.version:
+                        raise ValueError(f"Conflict: Module {mod.id} was modified by another administrator.")
+
                 handler = mod.module.handler
 
                 position_locked = (
@@ -1871,10 +1894,14 @@ def module_schedule_reorder_api(request, program_type, program_term):
                     raise ValueError(f"Module {handler} is locked and cannot be reordered")
 
                 mod.seq = int(new_seq)
-                mod.save(update_fields=['seq'])
+                mod.version += 1
+                mod.save(update_fields=['seq', 'version'])
+                updated_versions[mod.id] = mod.version
 
-        return JsonResponse({"success": True})
+        return JsonResponse({"success": True, "updated_versions": updated_versions})
     except ValueError as e:
+        if "Conflict" in str(e):
+            return JsonResponse({"success": False, "error": str(e)}, status=409)
         if "locked and cannot be reordered" in str(e):
             return JsonResponse({"success": False, "error": "One or more modules are locked and cannot be reordered"}, status=403)
         return JsonResponse({"success": False, "error": "Invalid request payload"}, status=400)
