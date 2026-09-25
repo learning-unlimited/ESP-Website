@@ -77,9 +77,13 @@
                     <span class="bituri">{{ perm_type }}</span>
                     <br /><br />
                     {% if details.is_open %}
-                        <a {% if details.implied_open %}class="btn btn-danger disabled" aria-disabled="true" tabindex="-1" title="Can not be closed due to implied deadline"{% else %}href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}" class="btn btn-danger"{% endif %} role="button">Close</a>
+                        {% if details.implied_open %}
+                            <button type="button" class="btn btn-danger" disabled title="Can not be closed due to implied deadline">Close</button>
+                        {% else %}
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/close?group={{ group.id }}&perm={{ perm_type|urlencode }}" class="btn btn-danger">Close</a>
+                        {% endif %}
                     {% else %}
-                        <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}" class="btn btn-success" role="button">Open</a>
+                        <a href="/manage/{{ program.getUrlBase }}/deadlines/open?group={{ group.id }}&perm={{ perm_type|urlencode }}" class="btn btn-success">Open</a>
                     {% endif %}
                 </th>
             {% for perm in details.perms %}
@@ -94,7 +98,7 @@
                     {% else %}
                         <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
                         {% if details.perms|length > 1 %}
-                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline" class="btn btn-danger btn-sm" role="button">Delete</a>
+                            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&deadline" class="btn btn-danger btn-sm">Delete</a>
                         {% endif %}
                     {% endif %}
                 </td>
@@ -177,9 +181,9 @@
             <span class="bituri">{{ perm.permission_type }}</span>
             <br /><br />
             {% if perm.is_valid %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}" class="btn btn-danger" role="button">Close</a>
+                <a href="/manage/{{ program.getUrlBase }}/deadlines/close?perm_id={{ perm.id }}" class="btn btn-danger">Close</a>
             {% else %}
-                <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}" class="btn btn-success" role="button">Open</a>
+                <a href="/manage/{{ program.getUrlBase }}/deadlines/open?perm_id={{ perm.id }}" class="btn btn-success">Open</a>
             {% endif %}
         </th>
         <td>
@@ -189,7 +193,7 @@
         </td>
         <td align="center" valign="center">
             <input class="btn btn-primary" type="Submit" name="submit_btn" value="Save" />
-            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission" class="btn btn-danger btn-sm" role="button">Delete</a>
+            <a href="/manage/{{ program.getUrlBase }}/deadlines/delete?perm_id={{ perm.id }}&permission" class="btn btn-danger btn-sm">Delete</a>
         </td>
     </tr>
     {% empty %}
