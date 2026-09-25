@@ -9,7 +9,6 @@
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
     <link rel="stylesheet" type="text/css" href="/media/styles/deadlines.css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block content %}
@@ -50,10 +49,10 @@
 <input type="hidden" name="action" value="save_deadlines">
 
 {% for group, perm_types in deadlines.items %}
-<button type="button" class="dsphead">
+<button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#deadlines-groups" aria-expanded="false" aria-controls="deadlines-groups">
    <b>Deadlines for {{ group }}s</b> (click to expand/contract)
 </button>
-<div class="dspcont">
+<div id="deadlines-groups" class="accordion-collapse collapse">
     <table class="table table-sm">
         <colgroup>
            <col span="1" width="30%">
@@ -137,10 +136,10 @@
 <a name="permissions"></a>
 <h2>Permissions (for individual users and filters)</h2>
 
-<button type="button" class="dsphead">
+<button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#existing-permissions" aria-expanded="false" aria-controls="existing-permissions">
    <b>Existing Permissions</b> (click to expand/contract)
 </button>
-<div class="dspcont">
+<div id="existing-permissions" class="accordion-collapse collapse">
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_perms_form">
 {{ perm_manage_form }}
 <input type="hidden" name="action" value="save_permissions">
@@ -232,5 +231,4 @@
 
 <br /><br />
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endblock %}
