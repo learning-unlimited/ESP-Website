@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from django.test import override_settings
+
 from esp.dbmail.receivers.useremail import UserEmail
 from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
@@ -61,7 +63,25 @@ class UserEmailTest(CacheFlushTestCase):
 
         self.assertFalse(handler.send)
 
-    def test_non_teacher_with_list_id(self):
+    def test_non_teacher_with_list_id_does_not_bypass(self):
+        """A List-Id header alone must not open a non-staff alias.
+
+        Any sender can add List-Id to their own message, so honouring it
+        unconditionally let anyone reach any student's alias. It is now trusted
+        only where Mailman is actually in use.
+        """
+        msg = Message()
+        msg['to'] = 'list@learningu.org'
+        msg['List-Id'] = '<some-list.learningu.org>'
+
+        handler = _make_handler(msg)
+        handler.process(self.student.username, None)
+
+        self.assertFalse(handler.send)
+
+    @override_settings(USE_MAILMAN=True)
+    def test_non_teacher_with_list_id_under_mailman(self):
+        """Where Mailman is in use, local list traffic is still trusted."""
         msg = Message()
         msg['to'] = 'list@learningu.org'
         msg['List-Id'] = '<some-list.learningu.org>'
@@ -72,6 +92,37 @@ class UserEmailTest(CacheFlushTestCase):
         self.assertTrue(handler.send)
         self.assertTrue(handler.preserve_headers)
         self.assertIn(self.student.email, handler.recipients)
+
+    def test_staff_sender_reaches_student(self):
+        """A teacher may write to a student's alias; this is the reply path."""
+        msg = Message()
+        msg['From'] = self.teacher.email
+
+        handler = _make_handler(msg)
+        handler.process(self.student.username, None)
+
+        self.assertTrue(handler.send)
+        self.assertIn(self.student.email, handler.recipients)
+
+    def test_student_sender_cannot_reach_student(self):
+        """One student's alias is not reachable from another student."""
+        other, _ = ESPUser.objects.get_or_create(
+            username='test_student_ue2',
+            defaults={
+                'first_name': 'Other',
+                'last_name': 'Student',
+                'email': 'student2@learningu.org',
+            }
+        )
+        other.makeRole('Student')
+
+        msg = Message()
+        msg['From'] = other.email
+
+        handler = _make_handler(msg)
+        handler.process(self.student.username, None)
+
+        self.assertFalse(handler.send)
 
     def test_case_insensitive_username(self):
         msg = Message()
