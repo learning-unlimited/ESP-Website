@@ -231,8 +231,9 @@ class TeacherBigBoardModule(ProgramModuleObj):
                     continue
                 if scheduled and len(sec.meeting_times.all()) == 0:
                     continue
-                cls.section_sum += sec.duration
-        hours = [[cls.timestamp, cls.class_size_max, cls.section_sum] for cls in classes]
+                cls.section_sum += sec.duration or 0
+        # treat a missing duration or class size as 0 rather than crashing
+        hours = [[cls.timestamp, cls.class_size_max or 0, cls.section_sum] for cls in classes]
         # use mindate if a class is missing a timestamp so we can still calculate static stats
         sorted_hours = sorted(hours, key=lambda x:x[0] or mindate)
         class_hours = [(hour[2], hour[0]) for hour in sorted_hours]
