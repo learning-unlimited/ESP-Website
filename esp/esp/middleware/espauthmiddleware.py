@@ -79,7 +79,8 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
         ## the no_set_cookies early-return so that cacheable views (decorated with
         ## @disable_csrf_cookie_update) also benefit from the workaround.
         ## -- aseering 11/1/2010, moved before no_set_cookies check
-        request.session.accessed = request.session.modified
+        if hasattr(request, 'session'):
+            request.session.accessed = request.session.modified
 
         ## This gets set if we're not supposed to modify the cookie
         if getattr(response, 'no_set_cookies', False):
@@ -105,10 +106,9 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                     "%a, %d-%b-%Y %H:%M:%S GMT"
                 )
             ret_title = ''
-            try:
-                ret_title = request.session['user_morph']['retTitle']
-            except KeyError:
-                pass
+            ret_title = ''
+            if hasattr(request, 'session'):
+                ret_title = request.session.get('user_morph', {}).get('retTitle', '')
 
             # URL-encode some data since cookies don't like funny characters. They
             # make the chocolate chips nervous.
