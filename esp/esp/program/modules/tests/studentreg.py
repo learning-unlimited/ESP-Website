@@ -97,6 +97,15 @@ class StudentRegTest(ProgramFrameworkTest):
         for ts in sec.meeting_times.all():
             self.assertContains(response, ts.short_description, status_code=200)
 
+    def test_mainpage_no_raw_template_comments(self):
+        """Template comments must not leak into the rendered main page (#6067)."""
+        student = random.choice(self.students)
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
+        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertContains(response, 'id="paper-schedule-optout"', status_code=200)
+        self.assertNotContains(response, '{#')
+
     def test_catalog(self):
 
         def verify_catalog_correctness():
