@@ -1,5 +1,33 @@
+// Draft saves and discards are not class submissions, so they skip the
+// grade-range confirmation. Set by those buttons, consumed on the next submit.
+var skip_grade_range_check = false;
+
+// Those buttons also opt out of the site-wide double-submit guard, so they
+// carry their own: a second click must not create a second draft.
+var draft_action_submitted = false;
+
+function start_draft_action(confirm_message)
+{
+    if (draft_action_submitted)
+    {
+        return false;
+    }
+    if (confirm_message && !confirm(confirm_message))
+    {
+        return false;
+    }
+    draft_action_submitted = true;
+    skip_grade_range_check = true;
+    return true;
+}
+
 function check_grade_range(form)
 {
+    if (skip_grade_range_check)
+    {
+        skip_grade_range_check = false;
+        return true;
+    }
     console.log("Checking!");
     var grade_max = $j(form).find('#id_grade_max').val();
     var grade_min = $j(form).find('#id_grade_min').val();

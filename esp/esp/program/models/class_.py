@@ -90,6 +90,7 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
+        (ClassStatus.DRAFT, "draft"),
         (ClassStatus.UNREVIEWED, "unreviewed"),
         (ClassStatus.HIDDEN, "accepted but hidden"),
         (ClassStatus.ACCEPTED, "accepted"),
@@ -1410,7 +1411,8 @@ class ClassSection(models.Model):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled
@@ -2026,7 +2028,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
@@ -2298,7 +2301,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status in (ClassStatus.REJECTED, ClassStatus.CANCELLED):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:
