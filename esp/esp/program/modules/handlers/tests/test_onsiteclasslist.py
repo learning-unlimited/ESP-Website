@@ -857,3 +857,14 @@ class ScheduleConstraintMessageTests(ProgramFrameworkTest):
         data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
         self.assertEqual(data['sections'], [],
                          'An already-violating schedule should still be changeable')
+
+    def test_override_constraints_flag_applies_a_removal(self):
+        """Removals send override_constraints, not the confirm-gated size override."""
+        self.enforce_constraint()
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id, 'sections': '[]',
+                           'override_constraints': 'true'})
+
+        self.assertEqual(data['sections'], [], 'Override should have applied the removal')
+        self.assertFalse(any('Made no changes' in message for message in data['messages']),
+                         'Override should not report a refusal: %r' % data['messages'])

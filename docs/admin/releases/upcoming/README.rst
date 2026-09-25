@@ -26,7 +26,7 @@ The "Lunch Constraints" page has a new "enforce" checkbox:
 
 Old programs will continue to enforce existing constraints. New programs will default to warnings unless configured otherwise.
 
-The onsite class changes grid now reports the same notifications but can be overriden using the "Override size limits and schedule constraints" checkbox.
+The onsite class changes grid now reports the same notifications but can be overridden using the "Override size limits and schedule constraints" checkbox.
 
 Bug Fixes
 =========

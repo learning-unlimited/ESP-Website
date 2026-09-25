@@ -35,7 +35,8 @@ Learning Unlimited, Inc.
 import datetime
 
 from esp.cal.models import Event, EventType
-from esp.program.models import ClassCategories, ClassSection, StudentRegistration
+from esp.program.models import (BooleanExpression, BooleanToken, ClassCategories, ClassSection,
+                                ScheduleConstraint, ScheduleTestCategory, StudentRegistration)
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
@@ -305,3 +306,53 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         lunch_section2.meeting_times.clear()
         lunch_section2.delete()
         lunch_event2.delete()
+
+    def require_lunch(self, enforce):
+        """A constraint requiring a lunch-category class in the lunch block."""
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        requirement = BooleanExpression.objects.create(label='choose a lunch period')
+        ScheduleTestCategory.objects.create(exp=requirement, timeblock=self.lunch_event,
+                                            category=self.lunch_category, seq=0)
+        return ScheduleConstraint.objects.create(program=self.program, condition=condition,
+                                                 requirement=requirement, on_failure='',
+                                                 enforce=enforce)
+
+    def decline_lunch(self):
+        self.assertTrue(
+            self.client.login(username=self.student.username, password='password'),
+        )
+        dates = self.program.dates()
+        post_data = {'day%d-timeslot' % i: -1 for i in range(len(dates))}
+        return self.client.post(self.module.get_full_path(), data=post_data)
+
+    def lunch_registration_exists(self):
+        return StudentRegistration.valid_objects().filter(
+            user=self.student,
+            section__parent_class__category=self.lunch_category,
+        ).exists()
+
+    def test_declining_lunch_blocked_when_constraint_is_enforced(self):
+        """Declining must not sidestep an enforced constraint (issue #1881 follow-up)."""
+        self.lunch_section.preregister_student(self.student)
+        self.require_lunch(enforce=True)
+
+        self.decline_lunch()
+        self.assertTrue(self.lunch_registration_exists(),
+                        'Enforced constraint should have prevented the lunch period being dropped')
+
+    def test_declining_lunch_allowed_when_constraint_only_warns(self):
+        self.lunch_section.preregister_student(self.student)
+        self.require_lunch(enforce=False)
+
+        self.decline_lunch()
+        self.assertFalse(self.lunch_registration_exists(),
+                         'A warning-only constraint must not block declining lunch')
+
+    def test_declining_lunch_allowed_when_none_was_selected(self):
+        """Nothing is newly broken if the student had no lunch to begin with."""
+        self.require_lunch(enforce=True)
+
+        response = self.decline_lunch()
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(self.lunch_registration_exists())

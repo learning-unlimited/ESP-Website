@@ -281,6 +281,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
+            override_constraints = override_full or (request.GET.get("override_constraints", "") == "true")
 
             current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
@@ -292,7 +293,7 @@ class OnSiteClassList(ProgramModuleObj):
                     result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: Class is currently full.')
                     failed_add_sections.append(sec.id)
 
-            blocked = [] if override_full else blocking_requirements(
+            blocked = [] if override_constraints else blocking_requirements(
                 user, prog, add_sections=sections_to_add, remove_sections=sections_to_remove)
             for requirement in blocked:
                 result['messages'].append(f'Made no changes for {user.name()} ({user.id}): this schedule would violate the requirement that they {requirement}.  Check "Override size limits and schedule constraints" to apply it anyway.')

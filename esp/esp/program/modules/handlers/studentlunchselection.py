@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
-from esp.program.models          import ClassSection, StudentRegistration
+from esp.program.models          import ClassSection, StudentRegistration, blocking_requirements
 from esp.users.models            import Record, RecordType
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
@@ -67,35 +67,38 @@ class StudentLunchSelectionForm(forms.Form):
                 self.initial['timeslot'] = section.get_meeting_times()[0].id
 
     def save_data(self):
-        msg = ''
-        result = False
+        #   The existing lunch periods for this day, which this choice replaces
+        old_sections = [section for section in self.user.getSections(self.program)
+                        if section.parent_class.category.is_lunch
+                        and section.get_meeting_times()[0].start.day == self.day.day]
 
-        #   Clear existing lunch periods for this day
-        for section in self.user.getSections(self.program):
-            if section.parent_class.category.is_lunch:
-                if section.get_meeting_times()[0].start.day == self.day.day:
-                    section.unpreregister_student(self.user)
-
-        #   Attempt to sign up for a new lunch period if specified
+        new_sections = []
         if int(self.cleaned_data['timeslot']) != -1:
-            sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=self.cleaned_data['timeslot']))
-            if len(sections) > 0:
-                ca_msg = sections[0].cannotAdd(self.user)
-                if ca_msg:
-                    result = False
-                else:
-                    result = sections[0].preregister_student(self.user)
-                if result:
-                    msg = 'Registered for %s.' % sections[0]
-                else:
-                    msg = 'Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule.' % sections[0]
-            else:
-                msg = 'No lunch sections are available for that timeslot.'
-        else:
-            result = True
-            msg = 'Lunch period declined.'
+            new_sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=self.cleaned_data['timeslot']))
+            if len(new_sections) == 0:
+                return (False, 'No lunch sections are available for that timeslot.')
 
-        return (result, msg)
+        #   Declining lunch, or moving it, can violate an enforced constraint.
+        #   Check the whole swap before giving up the existing registration.
+        request = get_current_request()
+        if not getattr(getattr(request, 'user', None), 'onsite_local', False):
+            blocked = blocking_requirements(self.user, self.program,
+                                            add_sections=new_sections[:1],
+                                            remove_sections=old_sections)
+            if blocked:
+                return (False, 'You need to %s.' % blocked[0])
+
+        for section in old_sections:
+            section.unpreregister_student(self.user)
+
+        if len(new_sections) == 0:
+            return (True, 'Lunch period declined.')
+
+        ca_msg = new_sections[0].cannotAdd(self.user)
+        result = False if ca_msg else new_sections[0].preregister_student(self.user)
+        if result:
+            return (True, 'Registered for %s.' % new_sections[0])
+        return (False, 'Failed to register for %s.  Please try another lunch period or remove conflicting classes from your schedule.' % new_sections[0])
 
 class StudentLunchSelection(ProgramModuleObj):
     doc = """Allows students to enroll in lunch blocks."""

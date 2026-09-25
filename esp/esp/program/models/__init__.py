@@ -2050,17 +2050,17 @@ class ScheduleMap:
         sl = self.user.getEnrolledSectionsFromProgram(self.program)
         for s in sl:
             for m in s._timeslot_ids:
-                result[m].append(s)
+                result.setdefault(m, []).append(s)
         self.map = result
         return self.map
 
     def add_section(self, sec):
         for t in sec.timeslot_ids():
-            self.map[t].append(sec)
+            self.map.setdefault(t, []).append(sec)
 
     def remove_section(self, sec):
         for t in sec.timeslot_ids():
-            if sec in self.map[t]:
+            if sec in self.map.get(t, []):
                 self.map[t].remove(sec)
 
     def __marinade__(self):
