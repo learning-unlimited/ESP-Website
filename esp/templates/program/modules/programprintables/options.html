@@ -50,26 +50,20 @@
         </div>
         <div class="module_button" id="student_schedules">
             <a href="./studentschedules/pdf/?recipient_type=Student&base_list=enrolled"
-                title="Generate Student Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Generate Student
-                        Schedules</div>
-                </button>
+                title="Generate Student Schedules" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Generate Student
+                    Schedules</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" title="Student Schedule Formatter">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-pencil"></i> Student Schedule Formatter
-                    </div>
-                </button>
+            <a href="/manage/{{ program.getUrlBase }}/studentscheduleform" title="Student Schedule Formatter" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-pencil"></i> Student Schedule Formatter
+                </div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Flat Student Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Flat Student Schedules</div>
-                </button>
+            <a href="./flatstudentschedules?recipient_type=Student&base_list=enrolled" title="Flat Student Schedules" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Flat Student Schedules</div>
             </a>
         </div>
     </div>
@@ -113,35 +107,27 @@
             </select>
         </div>
         <div class="module_button" id="other_schedules">
-            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Generate Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Generate Schedules</div>
-                </button>
+            <a href="./teacherschedules?recipient_type=Teacher&base_list=class_approved" title="Generate Schedules" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Generate Schedules</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./roomschedules" title="Room Schedules">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Room Schedules</div>
-                </button>
+            <a href="./roomschedules" title="Room Schedules" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Room Schedules</div>
             </a>
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
-            <a href="./moderator_rooms_spr" title="Complete {{ program.getModeratorTitle }} Schedule by Room">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Complete {{ program.getModeratorTitle }} Schedule by
-                        Room</div>
-                    <div class="module_link_caption">(CSV format)</div>
-                </button>
+            <a href="./moderator_rooms_spr" title="Complete {{ program.getModeratorTitle }} Schedule by Room" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Complete {{ program.getModeratorTitle }} Schedule by
+                    Room</div>
+                <div class="module_link_caption">(CSV format)</div>
             </a>
         </div>
         {% endif %}
         <div class="module_button">
-            <a href="/manage/{{ program.getUrlBase }}/selectidoptions" title="Nametags">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-window"></i> Nametags</div>
-                </button>
+            <a href="/manage/{{ program.getUrlBase }}/selectidoptions" title="Nametags" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-window"></i> Nametags</div>
             </a>
         </div>
     </div>
@@ -155,81 +141,63 @@
     </div>
     <div class="button_wrapper">
         <div class="module_button">
-            <a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters by Teachers">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Class Rosters by Teachers
-                    </div>
-                </button>
+            <a href="./classrosters?recipient_type=Teacher&base_list=class_approved" title="Class Rosters by Teachers" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Class Rosters by Teachers
+                </div>
             </a>
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
             <a href="./classrostersbymoderator?recipient_type=Teacher&base_list=assigned_moderator"
-                title="Class Rosters by {{ program.getModeratorTitle }}s">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Class Rosters by {{ program.getModeratorTitle }}s</div>
-                </button>
+                title="Class Rosters by {{ program.getModeratorTitle }}s" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Class Rosters by {{ program.getModeratorTitle }}s</div>
             </a>
         </div>
         {% endif %}
         <div class="module_button">
             <a href="./classrosters/attendance?recipient_type=Teacher&base_list=class_approved"
-                title="Attendance Sheets by Teachers">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Attendance Sheets by
-                        Teachers</div>
-                </button>
+                title="Attendance Sheets by Teachers" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Attendance Sheets by
+                    Teachers</div>
             </a>
         </div>
         {% if program|hasModule:"TeacherModeratorModule" %}
         <div class="module_button">
             <a href="./classrostersbymoderator/attendance?recipient_type=Teacher&base_list=assigned_moderator"
-                title="Attendance Sheets by {{ program.getModeratorTitle }}s">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Attendance Sheets by {{ program.getModeratorTitle }}s</div>
-                </button>
+                title="Attendance Sheets by {{ program.getModeratorTitle }}s" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Attendance Sheets by {{ program.getModeratorTitle }}s</div>
             </a>
         </div>
         {% endif %}
         <div class="module_button">
-            <a href="./classchecklists" title="Class Checklists">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-check"></i> Class Checklists</div>
-                    <div class="module_link_caption">(all confirmed students)</div>
-                </button>
+            <a href="./classchecklists" title="Class Checklists" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-check"></i> Class Checklists</div>
+                <div class="module_link_caption">(all confirmed students)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-check"></i> Student Checklist</div>
-                </button>
+            <a href="./studentchecklist?recipient_type=Student&base_list=enrolled" title="Student Checklist" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-check"></i> Student Checklist</div>
             </a>
         </div>
         <div class="module_button">
             <a href="./student_financial_spreadsheet?recipient_type=Student&base_list=enrolled"
-                title="Student Financial Spreadsheet">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Student Financial Spreadsheet
-                    </div>
-                    <div class="module_link_caption">(used by the check-scanning app)</div>
-                </button>
+                title="Student Financial Spreadsheet" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Student Financial Spreadsheet
+                </div>
+                <div class="module_link_caption">(used by the check-scanning app)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Students by Name">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-list-columns"></i> Students by Name</div>
-                </button>
+            <a href="./studentsbyname?recipient_type=Student&base_list=enrolled" title="Students by Name" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-list-columns"></i> Students by Name</div>
             </a>
         </div>
         <div class="module_button">
             <a href="./emergencycontacts?recipient_type=Student&base_list=enrolled"
-                title="Students' Emergency Contact Info">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-telephone"></i> Students' Emergency Contact
-                        Info</div>
-                </button>
+                title="Students' Emergency Contact Info" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-telephone"></i> Students' Emergency Contact
+                    Info</div>
             </a>
         </div>
     </div>
@@ -261,10 +229,8 @@
         </div>
         <div class="module_button" id="line_item_list">
             <a href="./selectList?recipient_type=Student&base_list=extracosts_{{ li_types.0.id }}"
-                title="Generate List">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-card-list"></i> Generate List</div>
-                </button>
+                title="Generate List" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-card-list"></i> Generate List</div>
             </a>
         </div>
     </div>
@@ -321,10 +287,8 @@
                 </div>
             </div>
             <div class="module_button" id="teacher_list">
-                <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Generate List">
-                    <button type="button" class="module_link_large">
-                        <div class="module_link_main"><i class="bi bi-card-list"></i> Generate List</div>
-                    </button>
+                <a href="./teachersbyname?recipient_type=Teacher&base_list=class_approved" title="Generate List" class="module_link_large">
+                    <div class="module_link_main"><i class="bi bi-card-list"></i> Generate List</div>
                 </a>
             </div>
         </div>
@@ -379,14 +343,10 @@
 </div>
 
 <div id="class_lists">
-    <div><a href="./classesbytime" title="Classes by Time"><button type="button">Class Sections Sorted by
-                Time</button></a></div>
-    <div><a href="./classesbyid" title="Classes by ID"><button type="button">Class Subjects Sorted by ID</button></a>
-    </div>
-    <div><a href="./classesbytitle" title="Classes by Name"><button type="button">Class Subjects Sorted by
-                Title</button></a></div>
-    <div><a href="./classesbyteacher" title="Classes by Teacher"><button type="button">Class Subjects Sorted by
-                Teacher</button></a></div>
+    <div><a href="./classesbytime" title="Classes by Time" class="link_button">Class Sections Sorted by Time</a></div>
+    <div><a href="./classesbyid" title="Classes by ID" class="link_button">Class Subjects Sorted by ID</a></div>
+    <div><a href="./classesbytitle" title="Classes by Name" class="link_button">Class Subjects Sorted by Title</a></div>
+    <div><a href="./classesbyteacher" title="Classes by Teacher" class="link_button">Class Subjects Sorted by Teacher</a></div>
 </div>
 
 <br />
@@ -397,118 +357,88 @@
     </div>
     <div class="button_wrapper">
         <div class="module_button">
-            <a href="./catalog" title="Course Catalog">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-book"></i> Course Catalog</div>
-                </button>
+            <a href="./catalog" title="Course Catalog" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-book"></i> Course Catalog</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./roomsbytime" title="Open Rooms by Time">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-list-columns"></i> Open Rooms by Time</div>
-                </button>
+            <a href="./roomsbytime" title="Open Rooms by Time" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-list-columns"></i> Open Rooms by Time</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./onsiteregform" title="On-Site Reg Form">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-pencil"></i> On-Site Reg Form</div>
-                </button>
+            <a href="./onsiteregform" title="On-Site Reg Form" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-pencil"></i> On-Site Reg Form</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./all_classes_spreadsheet" title="All Classes Spreadsheet (CSV)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> All Classes Spreadsheet (CSV)
-                    </div>
-                </button>
+            <a href="./all_classes_spreadsheet" title="All Classes Spreadsheet (CSV)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> All Classes Spreadsheet (CSV)
+                </div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./oktimes_spr" title="Viable Times for Sections Spreadsheet (CSV)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Viable Times for Sections
-                        Spreadsheet (CSV)</div>
-                </button>
+            <a href="./oktimes_spr" title="Viable Times for Sections Spreadsheet (CSV)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Viable Times for Sections
+                    Spreadsheet (CSV)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./classpopularity" title="Class Subject Popularity">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Class Subject Popularity</div>
-                </button>
+            <a href="./classpopularity" title="Class Subject Popularity" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Class Subject Popularity</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./classflagdetails" title="Class Flags">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Class Flags</div>
-                </button>
+            <a href="./classflagdetails" title="Class Flags" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Class Flags</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./classflagdetails?comments" title="Class Flags (with comments)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-grid"></i> Class Flags</div>
-                    <div class="module_link_caption">(with comments)</div>
-                </button>
+            <a href="./classflagdetails?comments" title="Class Flags (with comments)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-grid"></i> Class Flags</div>
+                <div class="module_link_caption">(with comments)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./certificate?recipient_type=Student&base_list=enrolled" title="Completion Certificate">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-award"></i> Completion Certificate
-                    </div>
-                </button>
+            <a href="./certificate?recipient_type=Student&base_list=enrolled" title="Completion Certificate" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-award"></i> Completion Certificate
+                </div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./paid_list_filter" title="Lists of Purchased Items">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-list-columns"></i> Lists of Purchased Items
-                    </div>
-                </button>
+            <a href="./paid_list_filter" title="Lists of Purchased Items" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-list-columns"></i> Lists of Purchased Items
+                </div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_tickets/3" title="Meal Tickets (3 lines)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
-                    <div class="module_link_caption">(3 lines)</div>
-                </button>
+            <a href="./student_tickets/3" title="Meal Tickets (3 lines)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
+                <div class="module_link_caption">(3 lines)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_tickets/4" title="Meal Tickets (4 lines)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
-                    <div class="module_link_caption">(4 lines)</div>
-                </button>
+            <a href="./student_tickets/4" title="Meal Tickets (4 lines)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
+                <div class="module_link_caption">(4 lines)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_tickets/5" title="Meal Tickets (5 lines)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
-                    <div class="module_link_caption">(5 lines)</div>
-                </button>
+            <a href="./student_tickets/5" title="Meal Tickets (5 lines)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
+                <div class="module_link_caption">(5 lines)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_tickets/6" title="Meal Tickets (6 lines)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
-                    <div class="module_link_caption">(6 lines)</div>
-                </button>
+            <a href="./student_tickets/6" title="Meal Tickets (6 lines)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
+                <div class="module_link_caption">(6 lines)</div>
             </a>
         </div>
         <div class="module_button">
-            <a href="./student_tickets/7" title="Meal Tickets (7 lines)">
-                <button type="button" class="module_link_large">
-                    <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
-                    <div class="module_link_caption">(7 lines)</div>
-                </button>
+            <a href="./student_tickets/7" title="Meal Tickets (7 lines)" class="module_link_large">
+                <div class="module_link_main"><i class="bi bi-cup-hot"></i> Meal Tickets</div>
+                <div class="module_link_caption">(7 lines)</div>
             </a>
         </div>
     </div>
