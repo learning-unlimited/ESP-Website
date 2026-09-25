@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import json
+import math
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -403,12 +404,18 @@ class OnSiteClassList(ProgramModuleObj):
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
-        defaults = {'refresh': 120, 'scrollspeed': 1}
-        for key_option in defaults.keys():
-            if key_option in options:
-                context[key_option] = options[key_option]
-            else:
-                context[key_option] = defaults[key_option]
+        defaults = {'refresh': 120, 'scrollspeed': 1.0}
+
+        try:
+            context['refresh'] = int(options.get('refresh', defaults['refresh']) or defaults['refresh'])
+        except (ValueError, TypeError):
+            context['refresh'] = defaults['refresh']
+
+        try:
+            parsed_scrollspeed = float(options.get('scrollspeed', defaults['scrollspeed']) or defaults['scrollspeed'])
+            context['scrollspeed'] = parsed_scrollspeed if math.isfinite(parsed_scrollspeed) else defaults['scrollspeed']
+        except (ValueError, TypeError):
+            context['scrollspeed'] = defaults['scrollspeed']
 
         time_now = datetime.now()
 
@@ -455,7 +462,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   Enforce a maximum refresh speed to avoid server overload.
         min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
-        if int(context['refresh']) < min_refresh:
+        if context['refresh'] < min_refresh:
             context['refresh'] = min_refresh
 
         classes = []
