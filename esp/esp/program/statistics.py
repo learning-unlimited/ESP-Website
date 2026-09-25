@@ -46,6 +46,7 @@ from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule
+from esp.tagdict.models import Tag
 
 """
 This file contains a set of functions used to perform statistics queries
@@ -86,16 +87,32 @@ def zipcodes(form, programs, students, profiles, result_dict=None):
     return render_to_string('program/statistics/zip_codes.html', result_dict)
 
 def demographics(form, programs, students, profiles, result_dict=None):
+    # Fix: Prevent mutable default argument cross-request leakage
     if result_dict is None:
         result_dict = {}
 
-    #   Get aggregate 'vitals' info via cross-program SQL aggregation.
+    # Fix: Dynamically find explicitly configured open class category IDs.
+    # We read the Tag directly to avoid database mutation side-effects 
+    # caused by Program.open_class_category() fallbacks.
+    open_class_cat_ids = []
+    for p in programs:
+        if p.open_class_registration:
+            pk = Tag.getProgramTag('open_class_category', p)
+            if pk is not None:
+                try:
+                    open_class_cat_ids.append(int(pk))
+                except (ValueError, TypeError):
+                    pass
+
+    # Get aggregate 'vitals' info via cross-program SQL aggregation.
     agg = (
         ClassSection.objects
         .filter(
             parent_class__parent_program__in=programs,
             status=ClassStatus.ACCEPTED,
         )
+        # Exclude using the safe, dynamic open class category IDs
+        .exclude(parent_class__category__id__in=open_class_cat_ids)
         .aggregate(
             num_classes=Count('parent_class', distinct=True),
             num_sections=Count('id'),
