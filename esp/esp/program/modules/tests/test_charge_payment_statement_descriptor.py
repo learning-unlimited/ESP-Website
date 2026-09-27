@@ -103,8 +103,10 @@ class ChargePaymentStatementDescriptorTest(TestCase):
             fn = getattr(
                 CreditCardModule_Stripe.charge_payment, 'method', CreditCardModule_Stripe.charge_payment,
             )
-            fn(self.cc_module, request, 'learn', None, None, None, None, self.program)
+            response = fn(self.cc_module, request, 'learn', None, None, None, None, self.program)
 
+        self.last_response = response
+        mock_create.response = response
         return mock_create
 
     def test_forbidden_characters_are_stripped(self):
@@ -164,3 +166,14 @@ class ChargePaymentStatementDescriptorTest(TestCase):
         self.assertEqual(descriptor, 'MIT Inc. ESP')
         description = mock_create.call_args.kwargs['description']
         self.assertIn('MIT, Inc. ESP*', description)
+
+    def test_sanitized_statement_descriptor_is_reused_in_success_context(self):
+        """The sanitized statement descriptor sent to Stripe must also be
+        used in the success page context, while description retains the original name."""
+        mock_create = self._call_charge_payment('Learning Unlimited, Inc.')
+        mock_create.assert_called_once()
+        descriptor = mock_create.call_args.kwargs['statement_descriptor']
+        self.assertEqual(descriptor, 'Learning Unlimited Inc')
+        self.assertEqual(self.last_response.context_data['statement_descriptor'], descriptor)
+        description = mock_create.call_args.kwargs['description']
+        self.assertIn('Learning Unlimited, Inc.', description)
