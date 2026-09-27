@@ -67,6 +67,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     user = request.user
     view_list = True
 
+    if tl == 'survey':
+        tl = 'generic'
     context['tl'] = tl
     if tl in ['teach', 'learn']:
         filters = [x.strip() for x in Tag.getProgramTag('survey_' + {'learn': "student", 'teach': "teacher"}[tl] + '_filter', prog).split(",") if x.strip()]
@@ -82,9 +84,11 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
     student_results = False
     if tl == 'learn':
         event = "student_survey"
-    else:
+    elif tl == 'teach':
         event = "teacher_survey"
         student_results = prog.getSurveys().filter(category = "learn", questions__per_class=True).exists()
+    else:
+        event = "generic_survey"
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
@@ -145,7 +149,10 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                 response.save()
 
                 # Set record to mark general survey as completed
-                rt = RecordType.objects.get(name=event)
+                rt, _ = RecordType.objects.get_or_create(
+                    name=event,
+                    defaults={'description': f'Completed {tl} survey'}
+                )
                 r = Record(user=user, event=rt, program=prog, time=datetime.datetime.now())
                 r.save()
 
@@ -157,6 +164,8 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
                     classes = user.getEnrolledClasses(prog)
                 elif tl == 'teach':
                     classes = user.getTaughtClasses(prog)
+                else:
+                    classes = []
                 view_list = False
 
     sections = []
@@ -165,10 +174,12 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
         if tl == 'learn':
             # Get a student's enrolled sections
             sections = ClassSection.objects.filter(id__in=[sec.id for sec in user.getEnrolledSections(prog)], status__gt=0, meeting_times__isnull=False).annotate(start=Min('meeting_times__start')).order_by('start')
-        else:
+        elif tl == 'teach':
             # Get a teacher's taught sections
             sections = user.getTaughtSections(prog).filter(status__gt=0).annotate(start=Min('meeting_times__start')).order_by('start')
             sections = [sec for sec in sections if sec.meeting_times.count() > 0]
+        else:
+            sections = []
         # Mark sections for whether they've started yet and whether the user has filled out a survey for them yet
         for sec in sections:
             sec.started = sec.start < datetime.datetime.now()
@@ -176,7 +187,10 @@ def survey_view(request, tl, program, instance, template = 'survey/survey.html',
 
         context['general_done'] = Record.user_completed(user, event, prog)
         # Is this the best way to trigger the availability of the general program survey?
-        general_available = any([sec.started for sec in sections])
+        if tl == 'generic':
+            general_available = True
+        else:
+            general_available = any([sec.started for sec in sections])
         general_survey = survey.questions.filter(per_class = False).exists()
         section_surveys = survey.questions.filter(per_class = True).exists()
 
