@@ -24,6 +24,7 @@
         text-decoration: none;
         
         &:hover {
+            @if not $bootswatch-active { color: darken($accent2, 15%); }
             text-decoration: underline;
         }
     }
