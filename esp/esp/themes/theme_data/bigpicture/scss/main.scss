@@ -21,7 +21,11 @@
     }
     a {
         @if not $bootswatch-active { color: $accent2; }
-        text-decoration: underline;
+        text-decoration: none;
+        
+        &:hover {
+            text-decoration: underline;
+        }
     }
     .btn {
         background-image: none;
