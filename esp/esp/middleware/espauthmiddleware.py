@@ -106,7 +106,6 @@ class ESPAuthMiddleware(AuthenticationMiddleware):
                     "%a, %d-%b-%Y %H:%M:%S GMT"
                 )
             ret_title = ''
-            ret_title = ''
             if hasattr(request, 'session'):
                 ret_title = request.session.get('user_morph', {}).get('retTitle', '')
 
