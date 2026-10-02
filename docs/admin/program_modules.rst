@@ -220,6 +220,7 @@ This module should be enabled if students will be registering using the Web site
 * Student module control field 'Cancel button dereg': If you check this box, students will be removed from all classes they registered for when they click the 'Cancel registration' button. 
 * Student module control field 'Send confirmation': If checked, students will receive email when they click the 'Confirm registration' button. You need to create an email receipt as described here: [[Add a registration receipt]] 
 * Tag 'allowed_student_types': Controls which types of user accounts may access student registration. By default, student and administrator accounts have access.
+* Program field 'Program allow waitlist': If the program has a cap ('Program size max' or the ``program_size_by_grade`` Tag), students who try to register once it is full are shown a "Join Waiting List" button on the "Program Full" page.  Students are not admitted from the waitlist automatically; use the waitlist page provided by AdminCore to admit them.
 
 Two-phase Student Registration (StudentRegTwoPhase)
 ---------------------------------------------------
@@ -483,6 +484,7 @@ You should include this module in all programs.  It provides the main program ma
 * Deadline management
 * Registration type management
 * Lunch constraints control
+* Waitlist management (http://[hostname]/manage/[program]/[instance]/waitlist_management): lists the students on the program waitlist in the order they joined it.  Admitting a student gives them the OverrideFull permission for the program, so they can register even while it is full, and removes them from the waitlist.  Admitting does not email the student.  A "Waitlist" button appears in the Registration section of the dashboard when 'Program allow waitlist' is on.
 
 Course Materials (AdminMaterials)
 ---------------------------------

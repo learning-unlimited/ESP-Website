@@ -14,6 +14,13 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Program Waitlist
+================
+
+The "Program allow waitlist" setting works again.  Previously the "Join Waiting List" button could never appear, because students over the program cap were sent to the "Program Full" page before reaching the registration page that held it.  The "Program Full" page now shows the button when the waitlist is on, and tells students who already joined that they are on the list.
+
+A new waitlist page (the "Waitlist" button in the Registration section of the dashboard, or ``/manage/[program]/[instance]/waitlist_management``) lists waitlisted students in the order they joined, alongside the program's current enrollment and cap.  Admins can admit students one at a time, which gives them the OverrideFull permission for the program and removes them from the waitlist, or remove students from the waitlist.  Admitting a student does not email them.
+
 Bug Fixes
 =========
 

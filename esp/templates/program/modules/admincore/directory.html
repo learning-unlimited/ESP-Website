@@ -346,6 +346,9 @@
                 {% if manage_registrationtype_management %}
                 <a href="/manage/{{ program.getUrlBase }}/registrationtype_management" title="what classes students see on their schedule" class="dashboard-btn"><i class="bi bi-easel"></i> Reg Types</a>
                 {% endif %}
+                {% if manage_waitlist_management and program.program_allow_waitlist %}
+                <a href="/manage/{{ program.getUrlBase }}/waitlist_management" title="monitor the waitlist and admit students" class="dashboard-btn"><i class="bi bi-hourglass-split"></i> Waitlist</a>
+                {% endif %}
                 {% if manage_bigboard %}
                 <a href="/manage/{{ program.getUrlBase }}/bigboard" title="live student registration statistics" class="dashboard-btn"><i class="bi bi-eye"></i> Student Big Board</a>
                 {% endif %}

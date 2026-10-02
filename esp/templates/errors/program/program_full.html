@@ -14,6 +14,22 @@
 Unfortunately, the program to which you are trying to register is full.  Please look in the <a href="/learn/index.html">students section</a> of our site for information about the schedule and program cap for this and our other programs.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
 </p>
 
+{% if show_waitlist %}
+<p>
+{% if on_waitlist %}
+You are already on the waitlist for {{ program.niceName }}.  We will contact you if a spot opens up.
+{% else %}
+This program has a waitlist.  Click below to add yourself to it, and we will contact you if a spot opens up.
+{% endif %}
+</p>
+{% if not on_waitlist %}
+<form action="/learn/{{ program.getUrlBase }}/waitlist_subscribe" method="post">
+{% csrf_token %}
+<input class="btn btn-primary" type="submit" value="Join Waiting List"/>
+</form>
+{% endif %}
+{% endif %}
+
 <p>
 If you think this message was in error, send us an <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">email</a>, telling us what you were trying to do and the URL of this page.
 </p>

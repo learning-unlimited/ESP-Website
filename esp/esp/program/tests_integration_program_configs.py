@@ -21,7 +21,7 @@ from esp.program.models import (
 )
 from esp.program.modules.base import ProgramModule
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser, Record, StudentInfo
+from esp.users.models import ESPUser, Permission, Record, StudentInfo
 from esp.tests.util import CacheFlushTestCase
 
 
@@ -366,3 +366,116 @@ class WaitlistToggleIntegrationTest(ProgramFrameworkTest):
         self.assertTrue(resp.context['already_on_list'])
         self.assertEqual(
             Record.objects.filter(user=blocked_student, program=self.program, event__name='waitlist').count(), 1)
+
+    def _fill_program(self):
+        """Cap the program at one student and give that seat to students[0]."""
+        self.program.program_allow_waitlist = True
+        self.program.program_size_max = 1
+        self.program.save()
+        self.section.preregister_student(self.students[0])
+        blocked_student = self.students[1]
+        self.assertFalse(self.program.user_can_join(blocked_student))
+        self.assertTrue(self.client.login(username=blocked_student.username, password='password'))
+        return blocked_student
+
+    def test_program_full_page_offers_waitlist(self):
+        blocked_student = self._fill_program()
+        resp = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertTemplateUsed(resp, 'errors/program/program_full.html')
+        self.assertContains(resp, '/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+
+        self.client.post('/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+        resp = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertContains(resp, 'already on the waitlist')
+        self.assertNotContains(resp, '/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+        self.assertTrue(Record.objects.filter(
+            user=blocked_student, program=self.program, event__name='waitlist').exists())
+
+    def test_program_full_page_hides_waitlist_when_disabled(self):
+        self._fill_program()
+        self.program.program_allow_waitlist = False
+        self.program.save()
+        resp = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertTemplateUsed(resp, 'errors/program/program_full.html')
+        self.assertNotContains(resp, 'waitlist_subscribe')
+
+    def test_subscribe_refused_when_disabled(self):
+        blocked_student = self._fill_program()
+        self.program.program_allow_waitlist = False
+        self.program.save()
+        self.client.post('/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+        self.assertFalse(Record.objects.filter(
+            user=blocked_student, program=self.program, event__name='waitlist').exists())
+
+    def test_subscribe_requires_post(self):
+        blocked_student = self._fill_program()
+        self.client.get('/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+        self.assertFalse(Record.objects.filter(
+            user=blocked_student, program=self.program, event__name='waitlist').exists())
+
+
+class WaitlistManagementIntegrationTest(ProgramFrameworkTest):
+    """The admin waitlist page, run with every module installed so the
+    subscribe view is also exercised with incomplete required modules."""
+
+    def setUp(self):
+        super().setUp(num_students=3, num_teachers=1, classes_per_teacher=1,
+                      sections_per_class=1, num_timeslots=1, room_capacity=30,
+                      program_instance_name='3331_WaitlistManagement')
+        self.add_user_profiles()
+        self.schedule_randomly()
+        self.program.program_allow_waitlist = True
+        self.program.program_size_max = 1
+        self.program.save()
+        self.program.sections()[0].preregister_student(self.students[0])
+        self.url = '/manage/%s/waitlist_management' % self.program.getUrlBase()
+
+    def _subscribe(self, student):
+        self.assertTrue(self.client.login(username=student.username, password='password'))
+        self.client.post('/learn/%s/waitlist_subscribe' % self.program.getUrlBase())
+        self.assertTrue(Record.objects.filter(
+            user=student, program=self.program, event__name='waitlist').exists())
+
+    def _login_admin(self):
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+
+    def test_page_lists_waitlist_in_signup_order(self):
+        first, second = self.students[1], self.students[2]
+        self._subscribe(first)
+        self._subscribe(second)
+        self._login_admin()
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual([entry['student'] for entry in resp.context['waitlist']], [first, second])
+        self.assertEqual(resp.context['caps'][0]['count'], 1)
+
+    def test_admit_grants_override_full_and_clears_waitlist(self):
+        student = self.students[1]
+        self._subscribe(student)
+        self._login_admin()
+        resp = self.client.post(self.url, {'action': 'admit', 'user_id': student.id})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(Permission.user_has_perm(student, 'OverrideFull', self.program))
+        self.assertTrue(self.program.user_can_join(student))
+        self.assertFalse(Record.objects.filter(
+            user=student, program=self.program, event__name='waitlist').exists())
+        self.assertIn(student, [perm.user for perm in resp.context['admitted']])
+
+        # Admitting again does not create a second permission.
+        self.client.post(self.url, {'action': 'admit', 'user_id': student.id})
+        self.assertEqual(Permission.objects.filter(
+            user=student, program=self.program, permission_type='OverrideFull').count(), 1)
+
+    def test_remove_clears_waitlist_without_admitting(self):
+        student = self.students[1]
+        self._subscribe(student)
+        self._login_admin()
+        self.client.post(self.url, {'action': 'remove', 'user_id': student.id})
+        self.assertFalse(Record.objects.filter(
+            user=student, program=self.program, event__name='waitlist').exists())
+        self.assertFalse(self.program.user_can_join(student))
+
+    def test_page_requires_admin(self):
+        self.assertTrue(self.client.login(username=self.students[1].username, password='password'))
+        self.client.post(self.url, {'action': 'admit', 'user_id': self.students[1].id})
+        self.assertFalse(Permission.user_has_perm(self.students[1], 'OverrideFull', self.program))

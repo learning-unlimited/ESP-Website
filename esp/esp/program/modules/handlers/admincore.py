@@ -52,7 +52,7 @@ from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.tagdict.models import Tag
 from esp.users.controllers.usersearch import UserSearchController
-from esp.users.models import Permission, ESPUser, PersistentQueryFilter
+from esp.users.models import Permission, ESPUser, PersistentQueryFilter, Record
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.web import render_to_response
 from esp.utils.widgets import DateTimeWidget
@@ -151,6 +151,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "dashboard": ("Dashboard", SEARCH_CATEGORY_CLASSES, ["classes", "stats", "overview", "enrollment", "logistics"]),
             "registrationtype_management": ("Student Registration Types", SEARCH_CATEGORY_REGISTRATION, ["registration", "types", "student", "sections", "schedule", "reg types"]),
             "lunch_constraints": ("Lunch Constraints", SEARCH_CATEGORY_REGISTRATION, ["lunch", "constraints", "schedule", "availability"]),
+            "waitlist_management": ("Program Waitlist", SEARCH_CATEGORY_REGISTRATION, ["waitlist", "waiting list", "full", "capacity", "cap", "admit"]),
             "deadlines": ("Deadlines", SEARCH_CATEGORY_SETTINGS, ["registration", "open", "close", "dates", "deadlines"]),
             "modules": ("Manage Modules", SEARCH_CATEGORY_SETTINGS, ["modules", "required", "sequence", "student registration", "teacher registration"]),
         }
@@ -363,6 +364,57 @@ class AdminCore(ProgramModuleObj, CoreModule):
         display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
         return render_to_response(self.baseDir()+'registrationtype_management.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def waitlist_management(self, request, tl, one, two, module, extra, prog):
+        """List the program waitlist in sign-up order and let admins admit
+        students one at a time by granting them the OverrideFull permission."""
+        context = {'one': one, 'two': two, 'prog': prog}
+
+        if request.method == 'POST':
+            action = request.POST.get('action')
+            try:
+                student = ESPUser.objects.get(id=request.POST.get('user_id'))
+            except (ESPUser.DoesNotExist, ValueError):
+                raise ESPError("Unknown student.", log=False)
+            waitlist_records = Record.objects.filter(event__name='waitlist', user=student, program=prog)
+            if action == 'admit':
+                if not Permission.user_has_perm(student, 'OverrideFull', prog):
+                    Permission.objects.create(user=student, permission_type='OverrideFull',
+                                              program=prog, start_date=datetime.now())
+                waitlist_records.delete()
+                context['message'] = '%s was admitted and can now register for the program.' % student.name()
+            elif action == 'remove':
+                waitlist_records.delete()
+                context['message'] = '%s was removed from the waitlist.' % student.name()
+            else:
+                raise ESPError("Unknown waitlist action.", log=False)
+
+        records = Record.objects.filter(event__name='waitlist', program=prog, user__isnull=False).select_related('user').order_by('time', 'id')
+        context['waitlist'] = [
+            {'record': rec, 'student': rec.user, 'grade': rec.user.getGrade(prog),
+             'can_join': prog.user_can_join(rec.user)}
+            for rec in records
+        ]
+        context['admitted'] = Permission.valid_objects().filter(
+            permission_type='OverrideFull', program=prog, user__isnull=False,
+        ).select_related('user').order_by('-start_date')
+
+        grade_caps = prog.grade_caps()
+        if grade_caps:
+            context['caps'] = [
+                {'label': '%d-%d' % (min(grades), max(grades)) if len(grades) > 1 else str(grades[0]),
+                 'cap': cap, 'count': prog._students_in_program_in_grades(grades)}
+                for grades, cap in sorted(grade_caps.items())
+            ]
+        elif prog.program_size_max:
+            context['caps'] = [{'label': 'All grades', 'cap': prog.program_size_max,
+                                'count': prog._students_in_program()}]
+        else:
+            context['caps'] = []
+
+        return render_to_response(self.baseDir()+'waitlist_management.html', request, context)
 
     @aux_call
     @needs_admin

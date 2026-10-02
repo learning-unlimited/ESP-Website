@@ -44,7 +44,7 @@ from django.contrib.auth.models import Group
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser, Permission
+from esp.users.models import ESPUser, Permission, Record
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.web import render_to_response
 from argcache import cache_function
@@ -266,7 +266,10 @@ class ProgramModuleObj(ExpirableModel):
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule):
+        #   Skipped for waitlist_subscribe: students over the cap would be routed to
+        #   cap-gated required modules and never reach the waitlist.
+        if tl not in ["manage", "json", "volunteer"] and isinstance(moduleobj, CoreModule) \
+                and call_txt != 'waitlist_subscribe':
             scrmi = prog.studentclassregmoduleinfo
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):
@@ -933,9 +936,20 @@ def meets_any_deadline(extensions=None):
         return _checkDeadline
     return meets_deadline
 
+def _program_full_context(moduleObj, request):
+    """Waitlist details for the program-full error page."""
+    prog = moduleObj.program
+    show_waitlist = prog.program_allow_waitlist and request.user.is_authenticated
+    return {
+        'show_waitlist': show_waitlist,
+        'on_waitlist': show_waitlist and Record.objects.filter(
+            event__name='waitlist', user=request.user, program=prog).exists(),
+    }
+
 meets_cap = user_passes_test(
     lambda moduleObj, request: moduleObj.program.user_can_join(request.user),
     error_template='errors/program/program_full.html',
+    extra_context_func=_program_full_context,
     require_login=False,
 )
 

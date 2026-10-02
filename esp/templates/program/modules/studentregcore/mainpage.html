@@ -51,15 +51,6 @@
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
 {% if not request.user.onsite_local %}
-{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
-{% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
-{% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}
-{% endif %}
-{% endif %}
-{% endif %}
 {% load render_qsd %}
 {% inline_program_qsd_block program "registration_steps" %}
 <p>
@@ -118,101 +109,81 @@
 {% endif %}
 {% endfor %}
 
-{% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
-<center>
-
-{% if program.isFull %}{% if program.program_allow_waitlist %}
-<div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
-{% else %}{% if not canRegToFullProgram %}
-<div class="errormsg">This program is now full!  You can no longer register for it; you may only use this page to update currently-existing registrations.</div>
-{% endif %}
-{% endif %}
-{% endif %}
-
-</center>
-{% endif %}
-
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:studentregfooter" %}
 
 {% if not request.user.onsite_local and not no_confirm %}
     <center>
     <a name="confirmreg"></a>
-    {% if program.isFull and program.program_allow_waitlist and not isConfirmed %}
-        <form action="/learn/{{one}}/{{two}}/waitlist_subscribe" method="post">
-        <input class="button" type="submit" value="Join Waiting List"/>
-        </form>
-    {% else %}
-        {% if can_confirm %}
-            <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
-            {# disable if (you haven't completed all requirements) OR (you can't register for the program because it's full) #}
-            {% if not completedAll or program.isFull and not canRegToFullProgram and not isConfirmed %}
-                <button id="confirmbutton" type="submit"
-                        class="btn btn-secondary btn-lg"
-                        disabled="disabled" />
-                    <span class="bi bi-slash-circle" aria-hidden="true"></span>
-                    {{ scrmi.confirm_button_text }}
-                </button>
-            {% else %}
-                <button id="confirmbutton" type="submit"
-                        class="btn btn-primary btn-lg" />
-                    {% if isConfirmed %}
-                        <span class="bi bi-eye" aria-hidden="true"></span>
-                        {{ scrmi.view_button_text }}
-                    {% else %}
-                        <span class="bi bi-check" aria-hidden="true"></span>
-                        {{ scrmi.confirm_button_text }}
-                    {% endif %}
-                </button>
-            {% endif %}
-            </form>
-            {% if isConfirmed or scrmi.cancel_button_dereg %}
-
-                {# Hide button for CC payments (has_external_payment) but keep for financial aid #}
-                {% if has_external_payment %}
-                    <p style="margin-top: 15px; font-style: italic; color: #555;">
-                        You have already paid for this program. If you want to cancel, please <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">contact us</a> directly to request a refund.
-                    </p>
+    {% if can_confirm %}
+        <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
+        {# disable if you haven't completed all requirements #}
+        {% if not completedAll %}
+            <button id="confirmbutton" type="submit"
+                    class="btn btn-secondary btn-lg"
+                    disabled="disabled" />
+                <span class="bi bi-slash-circle" aria-hidden="true"></span>
+                {{ scrmi.confirm_button_text }}
+            </button>
+        {% else %}
+            <button id="confirmbutton" type="submit"
+                    class="btn btn-primary btn-lg" />
+                {% if isConfirmed %}
+                    <span class="bi bi-eye" aria-hidden="true"></span>
+                    {{ scrmi.view_button_text }}
                 {% else %}
-                    <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
-                        <button type="submit" id="cancelbutton" class="btn btn-danger btn-lg">
-                            <span class="bi bi-x" aria-hidden="true"></span>
-                            {{ scrmi.cancel_button_text }}
-                        </button>
-                    </form>
+                    <span class="bi bi-check" aria-hidden="true"></span>
+                    {{ scrmi.confirm_button_text }}
                 {% endif %}
+            </button>
+        {% endif %}
+        </form>
+        {% if isConfirmed or scrmi.cancel_button_dereg %}
 
-            {% endif %}
-
-            {# Paper schedule opt-out toggle #}
-            <div style="margin-top: 12px;">
-                {# Flex + centred alignment keeps the checkbox lined up with its
-                   label text across themes; without it fonts like Sketchy's push
-                   the box out of alignment with the text. #}
-                <label class="d-flex align-items-center gap-2">
-                    <input type="checkbox" id="paper-schedule-optout" class="m-0 flex-shrink-0" {% if opt_out_paper_schedule %}checked{% endif %}
-                        onchange="toggle_paper_schedule_optout(this)" />
-                    <span id="paper-schedule-optout-label">
-                        {% if opt_out_paper_schedule %}
-                        You have opted out of paper schedule printing.
-                        {% else %}
-                        I do not need a paper schedule printed for me.
-                        {% endif %}
-                    </span>
-                </label>
-            </div>
-
-            {# Barcode fallback for students who opt out of a paper schedule #}
-            {% if opt_out_paper_schedule and invoice_id %}
-            <div style="margin-top: 12px;">
-                <p><strong>Your check-in barcode:</strong></p>
-                <img src="https://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&amp;o=1&amp;t=50&amp;r=1&amp;text={{ invoice_id }}&amp;f1=Arial.ttf&amp;f2=8&amp;a1=&amp;a2=&amp;a3="
-                    alt="Check-in barcode for {{ invoice_id }}" />
-                <p><small>Show this barcode to check in on-site if you do not have a printed schedule.</small></p>
-            </div>
+            {# Hide button for CC payments (has_external_payment) but keep for financial aid #}
+            {% if has_external_payment %}
+                <p style="margin-top: 15px; font-style: italic; color: #555;">
+                    You have already paid for this program. If you want to cancel, please <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">contact us</a> directly to request a refund.
+                </p>
+            {% else %}
+                <form action="/learn/{{one}}/{{two}}/cancelreg" method="get" onsubmit="return submit_cancel();" >
+                    <button type="submit" id="cancelbutton" class="btn btn-danger btn-lg">
+                        <span class="bi bi-x" aria-hidden="true"></span>
+                        {{ scrmi.cancel_button_text }}
+                    </button>
+                </form>
             {% endif %}
 
         {% endif %}
+
+        {# Paper schedule opt-out toggle #}
+        <div style="margin-top: 12px;">
+            {# Flex + centred alignment keeps the checkbox lined up with its
+               label text across themes; without it fonts like Sketchy's push
+               the box out of alignment with the text. #}
+            <label class="d-flex align-items-center gap-2">
+                <input type="checkbox" id="paper-schedule-optout" class="m-0 flex-shrink-0" {% if opt_out_paper_schedule %}checked{% endif %}
+                    onchange="toggle_paper_schedule_optout(this)" />
+                <span id="paper-schedule-optout-label">
+                    {% if opt_out_paper_schedule %}
+                    You have opted out of paper schedule printing.
+                    {% else %}
+                    I do not need a paper schedule printed for me.
+                    {% endif %}
+                </span>
+            </label>
+        </div>
+
+        {# Barcode fallback for students who opt out of a paper schedule #}
+        {% if opt_out_paper_schedule and invoice_id %}
+        <div style="margin-top: 12px;">
+            <p><strong>Your check-in barcode:</strong></p>
+            <img src="https://esp.scripts.mit.edu/barcodegen/html/image.php?code=code39&amp;o=1&amp;t=50&amp;r=1&amp;text={{ invoice_id }}&amp;f1=Arial.ttf&amp;f2=8&amp;a1=&amp;a2=&amp;a3="
+                alt="Check-in barcode for {{ invoice_id }}" />
+            <p><small>Show this barcode to check in on-site if you do not have a printed schedule.</small></p>
+        </div>
+        {% endif %}
+
     {% endif %}
     </center>
 {% endif %}

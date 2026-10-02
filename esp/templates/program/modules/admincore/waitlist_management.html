@@ -1,0 +1,90 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Waitlist{% endblock %}
+
+{% block content %}
+    <h1>{{program.niceName}} Waitlist</h1>
+    <br />
+    {% if not program.program_allow_waitlist %}
+        <div role="alert" class="alert alert-warning">
+            <span class="bi bi-info-circle" aria-hidden="true"></span>
+            The waitlist is turned off for this program, so students cannot join it.  Turn on "Program allow waitlist" in the <a href="/manage/{{ one }}/{{ two }}/settings">program settings</a> to use it.
+        </div>
+    {% endif %}
+
+    {% if message %}
+        <div role="alert" class="alert alert-success">
+            <span class="bi bi-info-circle" aria-hidden="true"></span>
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <p>Students who try to register after the program has reached its cap can add themselves to the waitlist.  Admitting a student gives them the OverrideFull permission for this program, which lets them register even while it is full, and removes them from the waitlist.  Admitting a student does not email them; use the <a href="/manage/{{ one }}/{{ two }}/commpanel">communications panel</a> to let them know.</p>
+
+    <h2>Capacity</h2>
+    {% if caps %}
+        <table class="table table-condensed">
+            <tr><th>Grades</th><th>Students in program</th><th>Cap</th></tr>
+            {% for cap in caps %}
+                <tr><td>{{ cap.label }}</td><td>{{ cap.count }}</td><td>{{ cap.cap }}</td></tr>
+            {% endfor %}
+        </table>
+        <p><small>Students in program are those registered for or interested in at least one class.  Admitted students count once they register for a class.</small></p>
+    {% else %}
+        <p>This program has no cap, so students do not need the waitlist to register.</p>
+    {% endif %}
+
+    <h2>Waitlist ({{ waitlist|length }})</h2>
+    {% if waitlist %}
+        <table class="table table-condensed table-striped">
+            <tr><th>#</th><th>Student</th><th>Grade</th><th>Email</th><th>Joined waitlist</th><th></th></tr>
+            {% for entry in waitlist %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td><a href="/manage/userview?username={{ entry.student.username|urlencode }}&program={{ program.id }}">{{ entry.student.name }}</a> ({{ entry.student.username }})</td>
+                    <td>{{ entry.grade }}</td>
+                    <td>{{ entry.student.email }}</td>
+                    <td>{{ entry.record.time|date:"M j, Y g:i A" }}</td>
+                    <td>
+                        {% if entry.can_join %}
+                            <em>Can already register</em>
+                        {% else %}
+                            <form method="post" action="/manage/{{ one }}/{{ two }}/waitlist_management" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="user_id" value="{{ entry.student.id }}" />
+                                <button type="submit" name="action" value="admit" class="btn btn-primary btn-sm">Admit</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="/manage/{{ one }}/{{ two }}/waitlist_management" style="display: inline;"
+                              onsubmit="return confirm('Remove {{ entry.student.name|escapejs }} from the waitlist?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="user_id" value="{{ entry.student.id }}" />
+                            <button type="submit" name="action" value="remove" class="btn btn-secondary btn-sm">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No students are on the waitlist.</p>
+    {% endif %}
+
+    <h2>Students allowed to register while full ({{ admitted|length }})</h2>
+    {% if admitted %}
+        <p>These students have the OverrideFull permission for this program, either from this page or from <a href="/manage/{{ one }}/{{ two }}/deadline_management">deadline management</a>.</p>
+        <table class="table table-condensed">
+            <tr><th>Student</th><th>Email</th><th>Granted</th></tr>
+            {% for perm in admitted %}
+                <tr>
+                    <td><a href="/manage/userview?username={{ perm.user.username|urlencode }}&program={{ program.id }}">{{ perm.user.name }}</a> ({{ perm.user.username }})</td>
+                    <td>{{ perm.user.email }}</td>
+                    <td>{{ perm.start_date|date:"M j, Y g:i A" }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No students have been admitted from the waitlist.</p>
+    {% endif %}
+
+    {% include "program/modules/admincore/returnlink.html" %}
+{% endblock %}
