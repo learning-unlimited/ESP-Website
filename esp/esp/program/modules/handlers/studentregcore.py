@@ -139,10 +139,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Add this user to the waitlist """
         self.request = request
 
-        if not prog.program_allow_waitlist:
-            raise ESPError("This program does not have a waitlist.", log=False)
-
-        if request.method != 'POST' or prog.user_can_join(request.user):
+        if not prog.program_allow_waitlist or request.method != 'POST' or prog.user_can_join(request.user):
             return self.goToCore(tl)
 
         waitlist = Record.objects.filter(event__name="waitlist",
