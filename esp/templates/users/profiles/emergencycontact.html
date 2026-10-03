@@ -1,133 +1,152 @@
-<!-- Begin Emergency Contact -->
-<h3>Emergency Contact</h3>
+  <!-- Begin Emergency Contact -->
+  <div class="profile-card">
+      <div class="profile-card-header">
+  <h3>Emergency Contact</h3>
+  </div>
+  <div class="profile-card-body">
+  <div
+      role="alert"
+      id="id_copy_parent_info"
+      class="alert alert-info profile-alert alert-dismissible fade show"
+  >
+  <button type="button" class=" close btn-close" data-bs-dismiss="alert" aria-label="Close">
+      <span aria-hidden="true">&times;</span>
+  </button>
+  <i class="icon-user"></i>
+  In the unlikely event of an emergency, we need to know who we should contact first, to let
+  them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
+  this might be a family friend or nearby relative.<br /><br />
+  Please either click below to copy your home address and your
+  parents' contact information into this form, or give contact information for someone else that you know and trust.
+  <p><button
+  type="button"
+  class="btn btn-primary copy-contact-btn"
+  onclick="copy_parent_info()">
 
-<div role="alert" class="alert alert-dismissible" id="id_copy_parent_info">
-<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-In the unlikely event of an emergency, we need to know who we should contact first, to let
-them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
-this might be a family friend or nearby relative.<br /><br />
-Please either click below to copy your home address and your
-parents' contact information into this form, or give contact information for someone else that you know and trust.
-<p><center><input type="button" class="btn" onclick="javascript:copy_parent_info();" value="Use my parents as my emergency contact" /></center></p>
-</div>
+  Use Parent/Guardian Information
 
-<script type="text/javascript">
-if (document.getElementById("id_phone_cell") && document.getElementById("id_guard_phone_cell")) {
-  document.getElementById("id_copy_parent_info").style.display = '';
-}
-function copy_parent_info() {
-  $j("#id_emerg_first_name").val($j("#id_guard_first_name").val()).change();
-  $j("#id_emerg_last_name").val($j("#id_guard_last_name").val()).change();
-  $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val()).change();
-  $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val()).change();
-  $j("#id_emerg_address_street").val($j("#id_address_street").val()).change();
-  $j("#id_emerg_address_city").val($j("#id_address_city").val()).change();
-  $j("#id_emerg_address_state").val($j("#id_address_state").val()).change();
-  $j("#id_emerg_address_zip").val($j("#id_address_zip").val()).change();
-  $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
-  $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
-}
-</script>
+  </button></p>
+  </div>
 
-{% if form.emerg_first_name %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_first_name">First Name:</label>
- <div class="controls">
- {{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_first_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-{% endif %}
+  <script type="text/javascript">
+  if (document.getElementById("id_phone_cell") && document.getElementById("id_guard_phone_cell")) {
+    document.getElementById("id_copy_parent_info").style.display = '';
+  }
+  function copy_parent_info() {
+    $j("#id_emerg_first_name").val($j("#id_guard_first_name").val()).change();
+    $j("#id_emerg_last_name").val($j("#id_guard_last_name").val()).change();
+    $j("#id_emerg_e_mail").val($j("#id_guard_e_mail").val()).change();
+    $j("#id_emerg_phone_cell").val($j("#id_guard_phone_cell").val()).change();
+    $j("#id_emerg_address_street").val($j("#id_address_street").val()).change();
+    $j("#id_emerg_address_city").val($j("#id_address_city").val()).change();
+    $j("#id_emerg_address_state").val($j("#id_address_state").val()).change();
+    $j("#id_emerg_address_zip").val($j("#id_address_zip").val()).change();
+    $j("#id_emerg_address_country").val($j("#id_address_country").val()).change();
+    $j("#id_emerg_phone_day").val($j("#id_guard_phone_day").val()).change();
+  }
+  </script>
 
-{% if form.emerg_last_name %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_last_name">Last Name:</label>
- <div class="controls">
- {{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_last_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-{% endif %}
-
-{% if form.emerg_e_mail %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_e_mail">Email address:</label>
- <div class="controls">
- {{ form.emerg_e_mail }} {% if form.emerg_e_mail.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_e_mail.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-{% endif %}
-
-{% if form.emerg_address_street or form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
-<h4>Address:</h4>
-{% endif %}
-
-{% if form.emerg_address_street %}
-<div class="control-group">
-    <label class="control-label" for="id_emerg_address_street">
-    <small><i>street</i></small>
-    </label>
-    <div class="controls">
-    {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
-    <br /><span class="form_error" role="alert">{{ form.emerg_address_street.errors|join:", " }}</span>
+  {% if form.emerg_first_name %}
+  <div class="control-group profile-field">
+  <label class="control-label" for="id_emerg_first_name">First Name:</label>
+  <div class="controls">
+  {{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
+    <br /><span class="form_error" role="alert">{{ form.emerg_first_name.errors|join:", " }}</span>
     {% endif %}
-    </div>
-</div>
-{% endif %}
+  </div>
+  </div>
+  {% endif %}
 
-{% if form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
-<div class="control-group">
-    <label class="control-label" for="id_emerg_address_city">
-    <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip{% endif %}</i></small>
-    </label>
-    <div class="controls controls-row">
-        {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_city.errors|join:", " }}</span>
-        {% endif %}
+  {% if form.emerg_last_name %}
+  <div class="control-group profile-field">
+  <label class="control-label" for="id_emerg_last_name">Last Name:</label>
+  <div class="controls">
+  {{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
+    <br /><span class="form_error" role="alert">{{ form.emerg_last_name.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  </div>
+  {% endif %}
 
-        {{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_state.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_country.errors|join:", " }}</span>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
+  {% if form.emerg_e_mail %}
+  <div class="control-group profile-field">
+  <label class="control-label" for="id_emerg_e_mail">Email address:</label>
+  <div class="controls">
+  {{ form.emerg_e_mail }} {% if form.emerg_e_mail.errors %}
+    <br /><span class="form_error" role="alert">{{ form.emerg_e_mail.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  </div>
+  {% endif %}
 
-{% if form.emerg_phone_day or form.emerg_phone_cell %}
-<h4>Phone numbers:</h4>
-{% endif %}
+  {% if form.emerg_address_street or form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
+  <h4>Address:</h4>
+  {% endif %}
 
-{% if form.emerg_phone_day %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
- <div class="controls">
- {{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_phone_day.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-{% endif %}
+  {% if form.emerg_address_street %}
+  <div class="control-group profile-field">
+      <label class="control-label" for="id_emerg_address_street">
+      <small><i>street</i></small>
+      </label>
+      <div class="controls">
+      {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
+      <br /><span class="form_error" role="alert">{{ form.emerg_address_street.errors|join:", " }}</span>
+      {% endif %}
+      </div>
+  </div>
+  {% endif %}
 
-{% if form.emerg_phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
- <div class="controls">
- {{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_phone_cell.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
-{% endif %}
+  {% if form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
+  <div class="control-group profile-field">
+      <label class="control-label" for="id_emerg_address_city">
+      <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip{% endif %}</i></small>
+      </label>
+      <div class="controls controls-row">
+          {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
+          <br /><span class="form_error" role="alert">{{ form.emerg_address_city.errors|join:", " }}</span>
+          {% endif %}
 
-<!-- End Emergency Contact -->
+          {{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
+          <br /><span class="form_error" role="alert">{{ form.emerg_address_state.errors|join:", " }}</span>
+          {% endif %}
+          
+          {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
+          <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
+          {% endif %}
+          
+          {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
+          <br /><span class="form_error" role="alert">{{ form.emerg_address_country.errors|join:", " }}</span>
+          {% endif %}
+      </div>
+  </div>
+  {% endif %}
+
+  {% if form.emerg_phone_day or form.emerg_phone_cell %}
+  <h4>Phone numbers:</h4>
+  {% endif %}
+
+  {% if form.emerg_phone_day %}
+  <div class="control-group profile-field">
+  <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
+  <div class="controls">
+  {{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
+    <br /><span class="form_error" role="alert">{{ form.emerg_phone_day.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  </div>
+  {% endif %}
+
+  {% if form.emerg_phone_cell %}
+  <div class="control-group profile-field">
+  <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
+  <div class="controls">
+  {{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
+    <br /><span class="form_error" role="alert">{{ form.emerg_phone_cell.errors|join:", " }}</span>
+    {% endif %}
+  </div>
+  </div>
+  {% endif %}
+  </div>
+  </div>
+
+  <!-- End Emergency Contact -->
