@@ -1,10 +1,10 @@
 from collections import OrderedDict
 from django import forms
-from django.forms import widgets
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, URLValidator
 from django.core.exceptions import ValidationError
 from decimal import Decimal
 import datetime
+import re
 
 from esp.users.forms import _states
 
@@ -18,6 +18,189 @@ def validate_JSON(value):
 
 class JSONValidatedCharField(forms.CharField):
     default_validators = [validate_JSON]
+    # JSON values are structured and often long, so don't cram them into a
+    # single-line input
+    widget = forms.Textarea(attrs={'rows': 3})
+
+class MultilineCharField(forms.CharField):
+    """A CharField for tag values that hold prose, shown as a small textarea."""
+    widget = forms.Textarea(attrs={'rows': 2})
+
+# Tag values that are chosen from a set of options rather than typed out.
+#
+# A tag's 'field' may be a callable instead of a form field instance.  The tag
+# settings forms call it as field(key, program) while building the form, which
+# is how a field whose choices come from the database, or from another form, is
+# built without importing either at module level.
+
+def _hideable_fields(form_class, use_labels=False):
+    """The fields of *form_class* that admins are allowed to hide."""
+    return [(name, (field.label or name) if use_labels else name)
+            for name, field in form_class.declared_fields.items()
+            if not field.required]
+
+
+def profile_hide_fields_field(form_class_name):
+    def field(key, program):
+        from esp.users.forms import user_profile
+        return forms.MultipleChoiceField(
+            choices=_hideable_fields(getattr(user_profile, form_class_name)))
+    return field
+
+
+def teacherreg_hide_fields_field(key, program):
+    from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+    return forms.MultipleChoiceField(
+        choices=_hideable_fields(TeacherClassRegForm, use_labels=True))
+
+
+def record_types_field(key, program):
+    from esp.users.models import RecordType
+    return forms.MultipleChoiceField(choices=list(RecordType.desc()))
+
+
+def finaid_form_fields_field(key, program):
+    """The Financial Aid Request fields that the form can be limited to."""
+    from esp.program.models import FinancialAidRequest
+    return forms.MultipleChoiceField(
+        choices=[(f.name, f.name) for f in FinancialAidRequest._meta.fields
+                 if f.editable and not f.auto_created])
+
+
+def survey_filter_field(user_type):
+    """The sets of users a program's modules define, e.g. 'class_submitted'."""
+    def field(key, program):
+        labels = getattr(program, user_type + 'Desc')()
+        return forms.MultipleChoiceField(
+            choices=[(name, labels.get(name, name))
+                     for name in getattr(program, user_type + 's')(True)])
+    return field
+
+
+def class_category_field(key, program):
+    from esp.program.models import ClassCategories
+    return forms.ChoiceField(
+        choices=[('', '---------')] +
+                [(str(cat.id), '%s (%s)' % (cat.category, cat.symbol))
+                 for cat in ClassCategories.objects.all().order_by('category')])
+
+
+def registration_type_field(key, program):
+    """Registration types other than 'Enrolled', which is always included.
+
+    Registration types are created as they are used, so fall back to entering
+    the JSON list by hand while there are none to pick from.
+    """
+    from esp.program.models import RegistrationType
+    names = list(RegistrationType.objects.exclude(name='Enrolled').order_by('name')
+                 .values_list('name', flat=True).distinct())
+    if not names:
+        return JSONValidatedCharField()
+    return forms.MultipleChoiceField(choices=[(name, name) for name in names])
+
+
+class AnyOrNamesMultipleChoiceField(forms.MultipleChoiceField):
+    """A multiple choice field where picking '*' means 'any of them'."""
+    def clean(self, value):
+        value = super().clean(value)
+        return ['*'] if '*' in value else value
+
+
+def extra_cost_items_field(key, program):
+    """The program's extra cost items, which exclude program admission."""
+    from esp.accounting.controllers import ProgramAccountingController
+    pac = ProgramAccountingController(program)
+    items = pac.get_lineitemtypes(include_donations=False).exclude(
+        text__in=pac.admission_items)
+    return AnyOrNamesMultipleChoiceField(
+        choices=[('*', 'Any extra cost item')] +
+                [(item.text, item.text) for item in items])
+
+
+class MonthDayWidget(forms.SelectDateWidget):
+    """A SelectDateWidget without the year, for a date whose year is ignored.
+
+    The year is still submitted, so the value stays a full date; it is just not
+    something the admin is asked to pick.
+    """
+
+    def __init__(self, year=None, **kwargs):
+        self.year = year or datetime.date.today().year
+        super().__init__(years=[self.year], **kwargs)
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        context['widget']['subwidgets'] = [
+            subwidget for subwidget in context['widget']['subwidgets']
+            if subwidget['name'] != self.year_field % name]
+        return context
+
+    def value_from_datadict(self, data, files, name):
+        # The year isn't rendered, so supply it rather than read it back
+        data = {**data, self.year_field % name: str(self.year)}
+        return super().value_from_datadict(data, files, name)
+
+
+# A path that is safe to put in an href, i.e. no spaces or markup
+_PAGE_PATH = re.compile(r'^/[^\s"\'<>]*$')
+
+
+def validate_page_url(value):
+    """Require a path starting with '/', or a full http(s) URL."""
+    if _PAGE_PATH.match(value):
+        return
+    try:
+        URLValidator(schemes=['http', 'https'])(value)
+    except ValidationError:
+        raise ValidationError('Enter a path starting with "/" '
+                              '(e.g. /learn/index.html) or a full http(s) URL.')
+
+
+def validate_catalog_sort_fields(value):
+    """Reject catalog sort fields that are no longer database columns."""
+    from esp.program.models.class_ import CATALOG_UNSORTABLE_FIELDS
+    unsortable = [name for name in
+                  (entry.strip().lstrip('-') for entry in value.split(','))
+                  if name in CATALOG_UNSORTABLE_FIELDS]
+    if unsortable:
+        raise ValidationError(
+            'The catalog cannot be sorted by %s.' % ', '.join(unsortable))
+
+
+def initial_choices(value, json_list=False):
+    """Split a stored tag value into the list a multiple choice field wants."""
+    if json_list:
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return []
+        return value if isinstance(value, list) else []
+    return [choice.strip() for choice in value.split(',') if choice.strip()]
+
+
+def join_choices(values, json_list=False):
+    """Turn a multiple choice value back into the string stored in the tag."""
+    if not values:
+        return ""
+    return json.dumps(values) if json_list else ",".join(values)
+
+
+def preserve_current_choice(field, value):
+    """Keep a stored value selectable when *field* no longer offers it.
+
+    Choices can come from the database or from another form, so a value that
+    was valid when it was set may not be offered any more.  Without this, the
+    next save of the settings page would silently drop it.
+    """
+    if not isinstance(field, forms.ChoiceField):
+        return
+    values = value if isinstance(value, list) else [value]
+    offered = {choice[0] for choice in field.choices}
+    extra = [(val, '%s (current value)' % val)
+             for val in values if val and val not in offered]
+    if extra:
+        field.choices = list(field.choices) + extra
+
 
 # Lists of all tags used anywhere in the codebase
 # Populated by hand, so don't be too surprised if something is missing
@@ -29,7 +212,11 @@ class JSONValidatedCharField(forms.CharField):
 #       'default': default value (normally a string or None, but can be a boolean if is_boolean is True or some other type if a custom field is set below),
 #       'category': 'category name' (see dictionary at the bottom of this file),
 #       'is_setting': show on tag settings page? (boolean),
-#       (optional) 'field': a django form field instance (e.g. forms.IntegerField())
+#       (optional) 'field': a django form field instance (e.g. forms.IntegerField()),
+#                  or a callable taking (key, program) that returns one, for
+#                  choices that aren't known when this module is imported,
+#       (optional) 'json_list': store a multiple choice value as a JSON list
+#                  instead of a comma-separated one? (boolean)
 #   }
 
 # Any tag used with Tag.getTag()
@@ -148,10 +335,11 @@ all_global_tags = {
     },
     'finaid_form_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list that specifies which Financial Aid Request fields to include in the form (all fields shown by default)',
+        'help_text': 'Select the Financial Aid Request field(s) to include in the form (all fields are shown if none are selected)',
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': finaid_form_fields_field,
     },
     'onsite_classlist_min_refresh': {
         'is_boolean': False,
@@ -241,10 +429,13 @@ all_global_tags = {
     },
     'show_studentrep_application': {
         'is_boolean': False,
-        'help_text': 'If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to \'no_expl\', don\'t show the explanation textbox in the form.',
+        'help_text': 'Should the student rep application be shown as part of the student profile, and if so, with an explanation textbox?',
         'default': None,
         'category': 'learn',
         'is_setting': True,
+        'field': forms.ChoiceField(choices=[('', 'Do not show the student rep application'),
+                                            ('yes', 'Show it, with an explanation box'),
+                                            ('no_expl', 'Show it, without an explanation box')]),
     },
     'show_student_tshirt_size_options': {
         'is_boolean': True,
@@ -337,13 +528,13 @@ all_global_tags = {
         'category': 'teach',
         'is_setting': True,
     },
-    # For the next five, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'teacher_profile_hide_fields': {
         'is_boolean': False,
         'help_text': 'Select the field(s) to hide in the teacher profile form (only fields that are not required may be hidden)',
         'default': '',
         'category': 'teach',
         'is_setting': True,
+        'field': profile_hide_fields_field('TeacherProfileForm'),
     },
     'student_profile_hide_fields': {
         'is_boolean': False,
@@ -351,6 +542,7 @@ all_global_tags = {
         'default': '',
         'category': 'learn',
         'is_setting': True,
+        'field': profile_hide_fields_field('StudentProfileForm'),
     },
     'volunteer_profile_hide_fields': {
         'is_boolean': False,
@@ -358,6 +550,7 @@ all_global_tags = {
         'default': '',
         'category': 'volunteer',
         'is_setting': True,
+        'field': profile_hide_fields_field('VolunteerProfileForm'),
     },
     'educator_profile_hide_fields': {
         'is_boolean': False,
@@ -365,6 +558,7 @@ all_global_tags = {
         'default': '',
         'category': 'teach',
         'is_setting': True,
+        'field': profile_hide_fields_field('EducatorProfileForm'),
     },
     'guardian_profile_hide_fields': {
         'is_boolean': False,
@@ -372,6 +566,7 @@ all_global_tags = {
         'default': '',
         'category': 'learn',
         'is_setting': True,
+        'field': profile_hide_fields_field('GuardianProfileForm'),
     },
     'student_grade_options': {
         'is_boolean': False,
@@ -463,24 +658,27 @@ all_global_tags = {
     },
     'admin_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which admins get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which admins get redirected after logging in (a path starting with "/", or a full URL)',
         'default': None,
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'teacher_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which teachers get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which teachers get redirected after logging in (a path starting with "/", or a full URL)',
         'default': "/teach/index.html",
         'category': 'teach',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'student_home_page': {
         'is_boolean': False,
-        'help_text': 'The page to which students get redirected after logging in (can be a relative or absolute page)',
+        'help_text': 'The page to which students get redirected after logging in (a path starting with "/", or a full URL)',
         'default': "/learn/index.html",
         'category': 'learn',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_page_url]),
     },
     'default_restypes': {
         'is_boolean': False,
@@ -496,6 +694,8 @@ all_global_tags = {
         'default': '',
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[RegexValidator(r'^[A-Za-z]{1,4}-[A-Za-z0-9-]+$',
+                                                   'Enter a measurement ID, such as G-PSW1MY7HB4.')]),
     },
     'shirt_types': {
         'is_boolean': False,
@@ -506,11 +706,11 @@ all_global_tags = {
     },
     'grade_increment_date': {
         'is_boolean': False,
-        'help_text': 'When should students\' grades rollover/increment?',
+        'help_text': 'When should students\' grades rollover/increment? (the year is ignored)',
         'default': datetime.date(datetime.date.today().year, 7, 31),
         'category': 'learn',
         'is_setting': True,
-        'field': forms.DateField(widget=forms.SelectDateWidget(years=[datetime.date.today().year]))
+        'field': forms.DateField(widget=MonthDayWidget()),
     },
     'current_theme_version': {
         'is_boolean': False,
@@ -568,11 +768,11 @@ all_program_tags = {
     },
     'open_class_category': {
         'is_boolean': False,
-        'help_text': 'Class category (specified as the ID number) used for open classes (classes for which students don\'t register in advance)',
+        'help_text': 'Class category used for open classes (classes for which students don\'t register in advance)',
         'default': None,
         'category': 'learn',
         'is_setting': True,
-        'field': forms.IntegerField(min_value=1),
+        'field': class_category_field,
     },
     'sibling_discount': {
         'is_boolean': False,
@@ -584,10 +784,11 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\'). Use \'earliest_start\' for time-based sorting; legacy \'sections__meeting_times__start\' values are automatically translated. \'media_count\', \'_index_qsd\' and \'_studentapps_count\' are not sortable and will be ignored.',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\'). Use \'earliest_start\' for time-based sorting; legacy \'sections__meeting_times__start\' values are automatically translated. \'media_count\', \'_index_qsd\' and \'_studentapps_count\' are not sortable and are rejected.',
         'default': 'category__symbol',
         'category': 'manage',
         'is_setting': True,
+        'field': forms.CharField(validators=[validate_catalog_sort_fields]),
     },
     'separate_catalog_pages': {
         'is_boolean': True,
@@ -610,6 +811,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_category': {
         'is_boolean': False,
@@ -617,6 +819,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_info': {
         'is_boolean': False,
@@ -624,6 +827,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_prereqs': {
         'is_boolean': False,
@@ -631,6 +835,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_duration': {
         'is_boolean': False,
@@ -638,6 +843,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_num_sections': {
         'is_boolean': False,
@@ -645,6 +851,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_session_count': {
         'is_boolean': False,
@@ -652,6 +859,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_range': {
         'is_boolean': False,
@@ -659,6 +867,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_min': {
         'is_boolean': False,
@@ -666,6 +875,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_grade_max': {
         'is_boolean': False,
@@ -673,6 +883,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_size_max': {
         'is_boolean': False,
@@ -680,6 +891,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_size_optimal': {
         'is_boolean': False,
@@ -687,6 +899,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_optimal_class_size_range': {
         'is_boolean': False,
@@ -694,6 +907,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_allowable_class_size_ranges': {
         'is_boolean': False,
@@ -701,6 +915,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_class_style': {
         'is_boolean': False,
@@ -708,6 +923,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_hardness_rating': {
         'is_boolean': False,
@@ -715,6 +931,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_allow_lateness': {
         'is_boolean': False,
@@ -722,6 +939,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_requested_room': {
         'is_boolean': False,
@@ -729,6 +947,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_requested_special_resources': {
         'is_boolean': False,
@@ -736,6 +955,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_purchase_requests': {
         'is_boolean': False,
@@ -743,6 +963,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'teacherreg_help_text_message_for_directors': {
         'is_boolean': False,
@@ -750,6 +971,7 @@ all_program_tags = {
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     # These label tags are in order of the fields in TeacherClassRegForm
     'teacherreg_label_title': {
@@ -899,13 +1121,13 @@ all_program_tags = {
         'category': 'class',
         'is_setting': True,
     },
-    # We populate the next widget as a MultipleChoiceField when initializing the form to avoid import loops
     'teacherreg_hide_fields': {
         'is_boolean': False,
         'help_text': 'Select the field(s) you want to hide from teachers during teacher registration (only fields that are not required may be hidden)',
         'default': None,
         'category': 'class',
         'is_setting': True,
+        'field': teacherreg_hide_fields_field,
     },
     'teacherreg_default_min_grade': {
         'is_boolean': False,
@@ -937,6 +1159,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_num_slots': {
         'is_boolean': False,
@@ -944,6 +1167,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_class_categories': {
         'is_boolean': False,
@@ -951,6 +1175,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_help_text_comments': {
         'is_boolean': False,
@@ -958,6 +1183,7 @@ all_program_tags = {
         'default': None,
         'category': 'moderate',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'moderatorreg_label_will_moderate': {
         'is_boolean': False,
@@ -1025,6 +1251,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'special_classroom_types': {
         'is_boolean': False,
@@ -1032,6 +1259,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'collapse_full_classes': {
         'is_boolean': True,
@@ -1064,11 +1292,12 @@ all_program_tags = {
     },
     'display_registration_names': {
         'is_boolean': False,
-        'help_text': 'Which registration types (in addition to "Enrolled") should be included in the inline student schedule? (JSON list)',
+        'help_text': 'Which registration types (in addition to "Enrolled") should be included in the inline student schedule?',
         'default': None,
         'category': 'learn',
         'is_setting': True,
-        'field': JSONValidatedCharField(),
+        'field': registration_type_field,
+        'json_list': True,
     },
     'program_size_by_grade': {
         'is_boolean': False,
@@ -1120,6 +1349,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_scorer_weight_overrides': {
         'is_boolean': False,
@@ -1127,6 +1357,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_resource_constraint_overrides': {
         'is_boolean': False,
@@ -1134,6 +1365,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'autoscheduler_resource_scoring_overrides': {
         'is_boolean': False,
@@ -1141,6 +1373,7 @@ all_program_tags = {
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
+        'field': JSONValidatedCharField(),
     },
     'num_stars': {
         'is_boolean': False,
@@ -1160,17 +1393,19 @@ all_program_tags = {
     },
     'survey_teacher_filter': {
         'is_boolean': False,
-        'help_text': 'Which sets of teachers are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.teachers().',
+        'help_text': 'Which sets of teachers are allowed to fill out the post-program survey?',
         'default': 'class_submitted',
         'category': 'teach',
         'is_setting': True,
+        'field': survey_filter_field('teacher'),
     },
     'survey_student_filter': {
         'is_boolean': False,
-        'help_text': 'Which sets of students are allowed to fill out the post-program survey? Specified as a comma-separated list of options in program.students().',
+        'help_text': 'Which sets of students are allowed to fill out the post-program survey?',
         'default': 'classreg',
         'category': 'learn',
         'is_setting': True,
+        'field': survey_filter_field('student'),
     },
     'volunteer_help_text_comments': {
         'is_boolean': False,
@@ -1178,6 +1413,7 @@ all_program_tags = {
         'default': None,
         'category': 'volunteer',
         'is_setting': True,
+        'field': MultilineCharField(),
     },
     'volunteer_require_auth': {
         'is_boolean': True,
@@ -1222,6 +1458,9 @@ all_program_tags = {
         'default': None,
         'category': 'onsite',
         'is_setting': True,
+        'field': forms.CharField(widget=forms.TimeInput(attrs={'type': 'time'}),
+                                validators=[RegexValidator(r'^([01]?\d|2[0-3]):[0-5]\d$',
+                                                           'Enter a time in 24-hour HH:MM format (e.g. 13:30).')]),
     },
     'switch_lag_class_attendance': {
         'is_boolean': False,
@@ -1259,6 +1498,7 @@ all_program_tags = {
         'default': 'Note: Please make sure to check in before your first class today.',
         'category': 'onsite',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'student_onsite_checkin_note': {
         'is_boolean': False,
@@ -1266,6 +1506,7 @@ all_program_tags = {
         'default': 'Note: You will not be able to see your classrooms until after your check-in has been processed by the admin team.',
         'category': 'onsite',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'availability_group_tolerance': {
         'is_boolean': False,
@@ -1290,13 +1531,13 @@ all_program_tags = {
         'category': 'moderate',
         'is_setting': True,
     },
-    # For the next two, we populate the widgets as MultipleChoiceFields when initializing the form to avoid import loops
     'student_reg_records': {
         'is_boolean': False,
         'help_text': 'Additional records that must be completed for student registration (e.g., if a form must be submitted via email).',
         'default': '',
         'category': 'learn',
         'is_setting': True,
+        'field': record_types_field,
     },
     'teacher_reg_records': {
         'is_boolean': False,
@@ -1304,6 +1545,7 @@ all_program_tags = {
         'default': '',
         'category': 'teach',
         'is_setting': True,
+        'field': record_types_field,
     },
     'student_certificate': {
         'is_boolean': False,
@@ -1357,17 +1599,18 @@ all_program_tags = {
                     to our program (thanks!).',
         'category': 'learn',
         'is_setting': True,
+        'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),
     },
     'creditcard_required_for_extracosts': {
         'is_boolean': False,
-        'help_text': 'Make the Credit Card module required when a student selects specific extra cost items. '
-                     'Set to * to trigger on any extra cost item, or a comma-separated list of item names '
-                     '(e.g. "Meal Ticket,T-Shirt") to trigger only on those items. '
+        'help_text': 'Select the extra cost item(s) that make the Credit Card module required, '
+                     'or "Any extra cost item" to trigger on all of them. '
                      'Does not trigger on program admission costs alone. '
                      'Balances under $0.50 are ignored to avoid gateway minimum charge rejections.',
         'default': '',
         'category': 'learn',
         'is_setting': True,
+        'field': extra_cost_items_field,
     },
     'student_schedule_format': {
         'is_boolean': False,
