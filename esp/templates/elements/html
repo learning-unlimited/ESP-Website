@@ -61,6 +61,14 @@
       .skip-nav:focus-visible {
         top: 0;
       }
+
+      /* Set on a submit button while its form is on its way. The submit
+         handler in js1 is what actually blocks the repeat submission; this
+         only makes the wait visible. */
+      .esp-submitting {
+        pointer-events: none;
+        opacity: 0.65;
+      }
     </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
@@ -130,40 +138,43 @@
     <!-- prevent forms from being submitted twice -->
     <script type="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
-          <!-- prevent any other behaviors -->
-          event.preventDefault();
-          event.stopPropagation();
-          
-          <!-- disable the submit button -->
-          $j(this).prop('disabled', true);
-          var form = $j(this).parents('form');
-          <!-- this adds a hidden field in case we care what the button name/value are -->
-          $j('<input>', {
-              type: 'hidden',
-              name: $j(this).prop('name'),
-              value: $j(this).prop('value')
-          }).appendTo(form);
-          <!-- check csrf cookie in form (we prevented this above) -->
-          check_csrf_cookie(form[0]);
-          var submitted = false;
-          <!-- check form validity -->
-          if(form[0].reportValidity()) {
-            <!-- run form's onsubmit if it has one -->
-            if(form[0].hasAttribute("onsubmit")) {
-              if(form[0].onsubmit()) {
-                form[0].submit();
-                submitted = true;
-              }
-            } else {
-              form[0].submit();
-              submitted = true;
-            }
+        // Delegated on document so this runs after any handler bound to the
+        // form itself, and so it also covers forms added to the page later.
+        $j(document).on('submit', 'form', function(event) {
+          var form = this;
+          if (form.method.toLowerCase() !== 'post') return;
+          // Another handler (AJAX, a confirm(), a knockout binding) has taken
+          // over, so it owns the form from here.
+          if (event.isDefaultPrevented() ||
+              (event.originalEvent && event.originalEvent.defaultPrevented)) return;
+          // Forms that open a new tab or return a file never navigate away,
+          // so locking them would leave them locked.
+          if (form.target) return;
+          // Already on its way; drop the repeat.
+          if ($j.data(form, 'espSubmitting')) {
+            event.preventDefault();
+            return;
           }
-          <!-- if we didn't end up submitting the form, reenable the submit button -->
-          if(!submitted) {
-            $j(this).prop('disabled', false);
+          // csrf_init.js binds this too, but only once csrf_check.js has
+          // finished loading asynchronously.
+          if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
+            event.preventDefault();
+            return;
           }
+          $j.data(form, 'espSubmitting', true);
+          // Mark the button rather than disabling it: disabled controls are
+          // left out of the POST data, which the browser builds after this
+          // handler returns. event.submitter is unsupported on older browsers,
+          // in which case mark every submit button in the form.
+          var submitter = event.originalEvent && event.originalEvent.submitter;
+          $j(submitter || $j(form).find(':submit'))
+            .addClass('esp-submitting').attr('aria-disabled', 'true');
+        });
+
+        // Browsers can restore a page, and its locked forms, on Back.
+        $j(window).on('pageshow', function() {
+          $j('form').each(function() { $j.removeData(this, 'espSubmitting'); });
+          $j('.esp-submitting').removeClass('esp-submitting').removeAttr('aria-disabled');
         });
       });
     </script>
