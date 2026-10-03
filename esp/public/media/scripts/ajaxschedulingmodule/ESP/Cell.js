@@ -66,16 +66,18 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
         this.el.removeData("section");
         this.el.removeClass("available-cell occupied-cell selectable-cell locked-cell selected-section ghost-section");
         this.el[0].innerHTML = "";
-        this.el.css("background-color", "");
-        this.el.css("background", "");
-        this.el.css("color", "");
+
+        // 1. Keep selected highlight intact on click
+        if (this.selected) {
+            this.el.addClass("selected-section");
+        }
 
         if(this.ghostSection || !this.section) {
             this.el.addClass("available-cell");
 
-            if(this.ghostSection) {
+            if (this.ghostSection) {
                 var color = this.cellBackground(this.ghostSection);
-                if(this.ghostSection.flags.indexOf("Special scheduling needs") !== -1) {
+                if (this.ghostSection.flags && this.ghostSection.flags.indexOf("Special scheduling needs") !== -1) {
                     this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
                         this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
                 } else {
@@ -83,28 +85,32 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 }
                 this.el.css("color", this.cellColors.textColor(color));
                 this.el.addClass("ghost-section");
-                this.el[0].innerHTML = this.ghostSection.emailcode;
+                this.el[0].innerHTML = this.ghostSection.emailcode || "";
+            } else {
+                // Preserve default styling for empty/available cell so it doesn't vanish
+                this.el.css({"background": "", "background-color": "", "color": ""});
             }
         } else {
             this.el.data("section", this.section);
-            this.el.addClass("occupied-cell");
-            this.el.addClass("selectable-cell");
-            if(this.section.schedulingLocked) {
+            this.el.addClass("occupied-cell selectable-cell");
+            
+            if (this.section.schedulingLocked) {
                 this.el.addClass("locked-cell");
             }
-            if(this.selected) {
-                this.el.addClass("selected-section");
-            }
+            
             var color = this.cellBackground(this.section);
-            if(this.section.flags.indexOf("Special scheduling needs") !== -1) {
+            var colorString = this.cellColors.RGBToString(color);
+
+            if (this.section.flags && this.section.flags.indexOf("Special scheduling needs") !== -1) {
                 this.el.css("background", "linear-gradient(to bottom right, " + this.cellColors.specialColor + " 0%," +
-                    this.cellColors.RGBToString(color) + " 50%," + this.cellColors.specialColor + " 100%)");
+                    colorString + " 50%," + this.cellColors.specialColor + " 100%)");
             } else {
-                this.el.css("background", this.cellColors.RGBToString(color));
+                this.el.css("background", colorString);
             }
+            
             this.el.css("color", this.cellColors.textColor(color));
             this.el.css("background-size", "cover");
-            this.el[0].innerHTML = "<a>" + this.section.emailcode + "</a>";
+            this.el[0].innerHTML = "<a>" + (this.section.emailcode || "") + "</a>";
         }
     };
 
@@ -139,8 +145,12 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                 }
             case "category":
                 // Color cell based on the class category
+                if (!section.category_id || !this.matrix.categories[section.category_id]) {
+                    return grey;
+                }
                 var cat_ind = Object.keys(this.matrix.categories).indexOf(section.category_id.toString());
-                return this.cellColors.hexToRGB(this.cellColors.colors[Math.round(cat_ind / Object.keys(this.matrix.categories).length * 100)]);
+                var colorIndex = Math.round(cat_ind / Object.keys(this.matrix.categories).length * 100);
+                return this.cellColors.hexToRGB(this.cellColors.colors[colorIndex] || "#777777");
             case "lunch":
                 // Check if section overlaps with all lunch timeslots for a single day
                 for(var day in this.matrix.timeslots.lunch_timeslots){
@@ -326,43 +336,68 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
      * Note: This has to be bound to the cell for the tooltip jquery function to
      *       work. It would be nice if this was in Sections instead.
      */
+    /**
+     * Create data for the tooltip
+     */
     this.tooltip = function(){
+        var currentSection = this.section || this.ghostSection;
+        
+        // Guard check: Return empty string if the cell is empty
+        if (!currentSection) return ""; 
+
         var tooltip_parts = {};
-        if(this.section.schedulingComment) {
-            tooltip_parts['Scheduling Comment'] = this.section.schedulingComment +
-                (this.section.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
+
+        if(currentSection.schedulingComment) {
+            tooltip_parts['Scheduling Comment'] = currentSection.schedulingComment +
+                (currentSection.schedulingLocked ? ' <b><i>(locked)</i></b>' : '');
         }
-        tooltip_parts['Category'] = this.matrix.categories[this.section.category_id || this.ghostSection.category_id].name;
-        tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(this.section);
-        if(has_moderator_module === "True") tooltip_parts[moderator_title + 's'] = this.matrix.sections.getModeratorsString(this.section);
-        tooltip_parts['Style'] = this.section.class_style;
-        tooltip_parts['Class size max'] = this.section.class_size_max;
+        
+        // 2. Category lookup with safety check
+        if (currentSection.category_id && this.matrix.categories[currentSection.category_id]) {
+            tooltip_parts['Category'] = this.matrix.categories[currentSection.category_id].name;
+        }
+        
+        // 3. Safe access using currentSection instead of this.section
+        tooltip_parts['Teachers'] = this.matrix.sections.getTeachersString(currentSection);
+        
+        if (typeof has_moderator_module !== "undefined" && has_moderator_module === "True") {
+            tooltip_parts[(typeof moderator_title !== "undefined" ? moderator_title : 'Moderator') + 's'] = 
+                this.matrix.sections.getModeratorsString(currentSection);
+        }
+        
+        tooltip_parts['Style'] = currentSection.class_style;
+        tooltip_parts['Class size max'] = currentSection.class_size_max;
+        
         var length_str = '';
-        if(Math.floor(this.section.length) > 0){
-            length_str += Math.floor(this.section.length);
+        if (Math.floor(currentSection.length) > 0) {
+            length_str += Math.floor(currentSection.length);
             length_str += ' hour';
-            if(Math.floor(this.section.length) > 1) length_str += 's';
+            if (Math.floor(currentSection.length) > 1) length_str += 's';
         }
-        if((this.section.length % 1) * 60 > 0) length_str += ' ' + Math.round((this.section.length % 1) * 60) + ' minutes';
+        if ((currentSection.length % 1) * 60 > 0) {
+            length_str += ' ' + Math.round((currentSection.length % 1) * 60) + ' minutes';
+        }
         tooltip_parts['Length'] = length_str;
-        tooltip_parts['Grades'] = this.section.grade_min + "-" + this.section.grade_max;
-        tooltip_parts['Room Request'] = this.section.requested_room;
-        tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(this.section);
-        tooltip_parts['Flags'] = this.section.flags;
-        if(this.section.comments) {
-            tooltip_parts['Comments'] = this.section.comments;
+        tooltip_parts['Grades'] = currentSection.grade_min + "-" + currentSection.grade_max;
+        tooltip_parts['Room Request'] = currentSection.requested_room;
+        tooltip_parts['Resource Requests'] = this.matrix.sections.getResourceString(currentSection);
+        tooltip_parts['Flags'] = currentSection.flags;
+        
+        if (currentSection.comments) {
+            tooltip_parts['Comments'] = currentSection.comments;
         }
-        if(this.section.special_requests && this.section.special_requests.length > 0) {
-            tooltip_parts['Room Requests'] = this.section.special_requests;
+        if (currentSection.special_requests && currentSection.special_requests.length > 0) {
+            tooltip_parts['Room Requests'] = currentSection.special_requests;
         }
 
-        var tooltipText = "<b>" + this.section.emailcode + ": " + this.section.title + "</b>";
-        for(var header in tooltip_parts) {
-            tooltipText += "<br/><b>" + header + "</b>: " + tooltip_parts[header];
+        var tooltipText = "<b>" + (currentSection.emailcode || '') + ": " + (currentSection.title || '') + "</b>";
+        for (var header in tooltip_parts) {
+            if (tooltip_parts[header] !== undefined && tooltip_parts[header] !== null) {
+                tooltipText += "<br/><b>" + header + "</b>: " + tooltip_parts[header];
+            }
         }
         return tooltipText;
     };
-
     /**
      * Add a section to the cell and update associated data
      *
