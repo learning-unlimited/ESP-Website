@@ -1,5 +1,5 @@
 # Django
-Django==5.2.16
+Django==5.2.17
 
 # Django-specific packages
 git+https://github.com/learning-unlimited/django-argcache.git@v0.5.1 # Handles caching
