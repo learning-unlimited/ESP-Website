@@ -98,7 +98,7 @@ class OnSiteRegister(ProgramModuleObj):
 
                 regProf.save()
 
-                if new_data['paid']:
+                if new_data.get('paid'):
                     IndividualAccountingController.updatePaid(self.program, self.user, True)
                 else:
                     IndividualAccountingController.updatePaid(self.program, self.user, False)
