@@ -120,6 +120,13 @@ class ChargePaymentStatementDescriptorTest(TestCase):
         self.assertNotIn('"', descriptor)
         self.assertEqual(descriptor, 'SomeGroup Name')
 
+    def test_apostrophe_angle_brackets_and_backslash_are_stripped(self):
+        """Stripe also rejects apostrophes, angle brackets and backslashes."""
+        mock_create = self._call_charge_payment("St. Mary's <ESP>\\")
+        mock_create.assert_called_once()
+        descriptor = mock_create.call_args.kwargs['statement_descriptor']
+        self.assertEqual(descriptor, 'St. Marys ESP')
+
     def test_descriptor_still_respects_the_22_character_limit(self):
         """Stripping forbidden characters must occur before truncating to 22 chars."""
         # Stripping *, ", and , from this 28-char string yields:
