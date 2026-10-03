@@ -207,3 +207,15 @@ class CatalogSortFieldTagTest(ProgramFrameworkTest):
         self.assertTrue(len(catalog) > 0)
         class_ids = [cls.id for cls in catalog]
         self.assertEqual(class_ids, sorted(class_ids))
+
+    def test_unresolvable_sort_field_falls_back_to_id(self):
+        """A field that isn't a real column at all shouldn't 500 the catalog
+        (issue #6043): it should fall back to id order like the removed-field
+        case above, rather than raising FieldError."""
+        Tag.setTag('catalog_sort_fields', target=self.program,
+                   value='not_a_real_field')
+
+        catalog = self._catalog()
+        self.assertTrue(len(catalog) > 0)
+        class_ids = [cls.id for cls in catalog]
+        self.assertEqual(class_ids, sorted(class_ids))

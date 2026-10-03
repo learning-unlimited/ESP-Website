@@ -48,6 +48,7 @@ from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import Count, Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
+from django.core.exceptions import FieldError
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -139,6 +140,57 @@ class ClassSizeRange(models.Model):
 #   not available to order_by().
 CATALOG_UNSORTABLE_FIELDS = frozenset(['media_count', '_index_qsd', '_studentapps_count'])
 
+#   Legacy/alias catalog_sort_fields values that mean "sort by each class's
+#   earliest scheduled meeting time"; see annotate_earliest_start() below.
+CATALOG_EARLIEST_START_ALIASES = frozenset(['sections__meeting_times__start', 'timeblock'])
+
+
+def parse_catalog_sort_fields(raw_value):
+    """Parse a 'catalog_sort_fields' tag value into order_by() arguments.
+
+    Shared by every catalog view that honors this tag, so that they all
+    tolerate the same formatting (the tag's help text shows spaces after
+    commas) and translate the same set of legacy/alias field names to
+    'earliest_start' rather than passing them straight through to the ORM.
+    """
+    fields = [f.strip() for f in (raw_value or '').split(',') if f.strip()]
+    translated = []
+    for f in fields:
+        sign, name = (f[0], f[1:]) if f.startswith('-') else ('', f)
+        if name in CATALOG_EARLIEST_START_ALIASES:
+            name = 'earliest_start'
+        translated.append(sign + name)
+    return translated
+
+
+def catalog_sort_uses_earliest_start(order_args):
+    """Whether an order_by() argument list references 'earliest_start', and
+    so needs annotate_earliest_start() applied first."""
+    return any(f.lstrip('-') == 'earliest_start' for f in order_args)
+
+
+def annotate_earliest_start(queryset):
+    """Annotate a ClassSubject queryset with each class's earliest scheduled
+    (non-cancelled) section meeting time, as 'earliest_start'.
+
+    Computed via a correlated subquery so that the sections -> meeting_times
+    join does not multiply rows and corrupt any other aggregate annotation
+    already on the queryset (e.g. _num_students).
+    """
+    return queryset.annotate(
+        earliest_start=Subquery(
+            ClassSubject.objects.filter(pk=OuterRef('pk'))
+            .annotate(
+                _es=Min(
+                    'sections__meeting_times__start',
+                    filter=~Q(sections__status=ClassStatus.CANCELLED),
+                )
+            )
+            .values('_es')[:1]
+        )
+    )
+
+
 class ClassManager(Manager):
     def __repr__(self):
         return "ClassManager()"
@@ -199,17 +251,10 @@ class ClassManager(Manager):
             #   First check if there is an ordering specified for the program.
             program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
             if program_sort_fields:
-                #   If you found one, use it.
-                order_args = [f.strip() for f in program_sort_fields.split(',') if f.strip()]
-
-        #   Translate legacy ordering fields to use earliest_start so that
-        #   older configurations keep working with the new stable behavior.
-        order_args = [
-            'earliest_start' if f == 'sections__meeting_times__start'
-            else '-earliest_start' if f == '-sections__meeting_times__start'
-            else f
-            for f in order_args
-        ]
+                #   If you found one, use it. This also translates legacy
+                #   ordering fields to earliest_start so that older
+                #   configurations keep working with the new stable behavior.
+                order_args = parse_catalog_sort_fields(program_sort_fields)
 
         #   A stale tag naming one of these should still render a catalog.
         kept_order_args = [f for f in order_args if f.lstrip('-') not in CATALOG_UNSORTABLE_FIELDS]
@@ -223,28 +268,19 @@ class ClassManager(Manager):
 
         #   Only add the earliest_start annotation when the ordering uses it,
         #   to avoid unnecessary aggregate + joins for other sort configurations.
-        if any(f.lstrip('-') == 'earliest_start' for f in order_args):
-            #   Compute earliest_start via a correlated subquery so that the
-            #   sections → meeting_times join does not multiply rows and
-            #   corrupt the earlier _num_students aggregate.
-            classes = classes.annotate(
-                earliest_start=Subquery(
-                    ClassSubject.objects.filter(pk=OuterRef('pk'))
-                    .annotate(
-                        _es=Min(
-                            'sections__meeting_times__start',
-                            filter=~Q(sections__status=ClassStatus.CANCELLED),
-                        )
-                    )
-                    .values('_es')[:1]
-                )
+        if catalog_sort_uses_earliest_start(order_args):
+            classes = annotate_earliest_start(classes)
+
+        #   Order the QuerySet using the specified list.  A stale/invalid tag
+        #   value should still render a catalog rather than 500.
+        try:
+            classes = list(classes.order_by(*order_args).distinct())
+        except FieldError:
+            logger.warning(
+                "Ignoring invalid catalog sort field(s) %s for program %s; falling back to id order.",
+                order_args, program,
             )
-
-        #   Order the QuerySet using the specified list.
-        classes = classes.order_by(*order_args)
-
-        classes = classes.distinct()
-        classes = list(classes)
+            classes = list(classes.order_by('id').distinct())
 
         #   Filter out duplicates by ID.  This is necessary because Django's ORM
         #   adds the related fields (e.g. sections__meeting_times) to the SQL
