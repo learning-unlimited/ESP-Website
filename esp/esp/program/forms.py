@@ -37,8 +37,9 @@ import re
 import unicodedata
 
 from django.conf import settings
+from argcache import cache_function
 from esp.middleware import ESPError
-from esp.users.models import StudentInfo, K12School, RecordType
+from esp.users.models import StudentInfo, K12School, RecordType, ZipCode
 from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
@@ -335,35 +336,37 @@ class StatisticsQueryForm(forms.Form):
 
     @staticmethod
     def get_program_type_choices():
-        programs = Program.objects.all()
-        names_url = sorted({x.program_type for x in programs})
+        #   Program types are the first component of each program's URL
+        names_url = sorted({url.split('/')[0] for url in Program.objects.values_list('url', flat=True)})
         result = list(zip(names_url, names_url))
         return result
 
     @staticmethod
     def get_program_instance_choices(program_name):
-        programs = Program.objects.all()
-        names_url = [x.url for x in programs]
-        names_friendly = [x.name for x in programs]
-        result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
+        result = sorted(Program.objects.values_list('url', 'name'), key=lambda pair: pair[0])
         result = [x for x in result if len(x[1]) > 0]
         return result
 
-    @staticmethod
+    @cache_function
     def get_school_choices():
         """
         Return only free-text (manually typed) school names from StudentInfo.
         K12 schools are not included here to avoid loading 50k+ options; users
         add them via the "Search and add school" autocomplete next to this field.
+        Cached (the form is rebuilt on every field change) until a StudentInfo changes.
         """
-        schools = list(set(
-            StudentInfo.objects.all()
+        schools = (
+            StudentInfo.objects
             .exclude(school__isnull=True)
             .exclude(school='')
+            .order_by('school')
             .values_list('school', flat=True)
-        ))
-        result = [('Sch:%s' % s, s) for s in sorted(schools)]
+            .distinct()
+        )
+        result = [('Sch:%s' % s, s) for s in schools]
         return result
+    get_school_choices.depend_on_model('users.StudentInfo')
+    get_school_choices = staticmethod(get_school_choices)
 
     query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
     limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
@@ -435,37 +438,42 @@ class StatisticsQueryForm(forms.Form):
                     self.fields['school_multisel'].widget.choices = self.fields['school_multisel'].choices
 
     def clean(self):
+        #   Fields that failed their own validation are missing from cleaned_data,
+        #   so use .get() to avoid a KeyError (their errors are already reported)
         """ Check that either 'All Programs' is selected or a program is selected   """
-        if not self.cleaned_data['program_type_all']:
-            if not self.cleaned_data['program_type']:
+        if not self.cleaned_data.get('program_type_all'):
+            if not self.cleaned_data.get('program_type'):
                 if len(self.fields['program_type'].choices) > 1:
                     raise forms.ValidationError('Please select at least one program type if you have not checked "All Programs."')
                 else:
                     self.cleaned_data['program_type'] = self.fields['program_type'].choices[0][0]
 
         """ Check that either 'All Instances' is selected or an instance is selected """
-        if not self.cleaned_data['program_type_all'] and not self.cleaned_data['program_instance_all']:
+        if not self.cleaned_data.get('program_type_all') and not self.cleaned_data.get('program_instance_all'):
             if 'program_instances' not in self.cleaned_data or not self.cleaned_data['program_instances']:
                 raise forms.ValidationError('Please select at least one instance if you have not checked "All Programs" or "All Instances."')
 
         """ Check that school_name or school_multisel is filled out """
-        if self.cleaned_data['school_query_type'] == 'name':
+        if self.cleaned_data.get('school_query_type') == 'name':
             if 'school_name' not in self.cleaned_data or len(self.cleaned_data['school_name'].strip()) == 0:
                 raise forms.ValidationError('Please enter a school name or name fragment.')
-        elif self.cleaned_data['school_query_type'] == 'list':
+        elif self.cleaned_data.get('school_query_type') == 'list':
             if 'school_multisel' not in self.cleaned_data or len(self.cleaned_data['school_multisel']) == 0:
                 raise forms.ValidationError('Please select at least one school from the list.')
 
         """ Check that the appropriate zip code fields are filled out """
-        if self.cleaned_data['zip_query_type'] in ['exact', 'distance']:
-            if not self.cleaned_data['zip_code'] or len(self.cleaned_data['zip_code']) != 5 or not self.cleaned_data['zip_code'].isnumeric():
+        zip_query_type = self.cleaned_data.get('zip_query_type')
+        if zip_query_type in ['exact', 'distance']:
+            if not self.cleaned_data.get('zip_code') or len(self.cleaned_data['zip_code']) != 5 or not self.cleaned_data['zip_code'].isnumeric():
                 raise forms.ValidationError('Please enter a 5-digit zip code to match.')
-        elif self.cleaned_data['zip_query_type'] == 'partial':
-            if not self.cleaned_data['zip_code_partial'] or len(self.cleaned_data['zip_code_partial']) > 5 or not self.cleaned_data['zip_code_partial'].isnumeric():
+        elif zip_query_type == 'partial':
+            if not self.cleaned_data.get('zip_code_partial') or len(self.cleaned_data['zip_code_partial']) > 5 or not self.cleaned_data['zip_code_partial'].isnumeric():
                 raise forms.ValidationError('Please enter a partial zip code (1-4 digits) to match.')
-        if self.cleaned_data['zip_query_type'] == 'distance':
-            if not self.cleaned_data['zip_code_distance']:
+        if zip_query_type == 'distance':
+            if not self.cleaned_data.get('zip_code_distance'):
                 raise forms.ValidationError('Please enter a zip code and a radius to search within.')
+            if not ZipCode.objects.filter(zip_code=self.cleaned_data['zip_code']).exists():
+                raise forms.ValidationError('Zip code %s was not found; distance searches need a known zip code.' % self.cleaned_data['zip_code'])
 
         return self.cleaned_data
 
