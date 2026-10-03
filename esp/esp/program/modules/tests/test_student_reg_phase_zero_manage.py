@@ -150,3 +150,84 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         messages = self.moduleobj.lottery(self.program, str(self.program) + " Winner", post)
 
         self.assertIn("Lottery mode invalid is not supported", messages['error'][0])
+
+    def test_lottery_statistics_percentages(self):
+            """Test that Manage Program Lottery calculates % Accepted correctly."""
+
+        # Set up an invalid grade student (grade outside program grade range)
+        invalid_student = self.students[19]
+        StudentInfo.objects.filter(user=invalid_student).update(graduation_year=None)
+
+        entrants = [
+            self.students[0], self.students[6],
+            self.students[1], self.students[7], self.students[13],
+            self.students[2], self.students[8], self.students[14],
+            self.students[3], self.students[9],
+            self.students[4], self.students[10],
+            invalid_student,
+        ]
+        for student in entrants:
+            rec = PhaseZeroRecord.objects.create(program=self.program)
+            rec.user.add(student)
+
+        # Set lottery as run
+        Tag.setTag('student_lottery_run', target=self.program, value='True')
+
+        # Add winners to winner group:
+        # Grade 7: 1 accepted out of 2 (50.0%)
+        # Grade 8: 1 accepted out of 3 (33.3%)
+        # Grade 9: 2 accepted out of 3 (66.7%)
+        # Grade 10: 0 accepted out of 2 (0.0%)
+        # Grade 11: 2 accepted out of 2 (100.0%)
+        # Grade 12: 0 in lottery ("NA")
+        # Invalid Grade: 1 accepted out of 1 (100.0%)
+        winners = [
+            self.students[0],
+            self.students[1],
+            self.students[2], self.students[8],
+            self.students[4], self.students[10],
+            invalid_student,
+        ]
+        winners_group, _ = Group.objects.get_or_create(name=str(self.program) + " Winner")
+        winners_group.user_set.add(*winners)
+
+        # Login admin and access the page
+        self.client.force_login(self.admins[0])
+        response = self.client.get(f'/manage/{self.program.getUrlBase()}/phasezero')
+        self.assertEqual(response.status_code, 200)
+
+        stats = response.context['stats']
+
+        # Grade 7: 1 / 2 -> 50.0
+        self.assertEqual(stats[7]['in_lottery'], 2)
+        self.assertEqual(stats[7]['num_accepted'], 1)
+        self.assertEqual(stats[7]['per_accepted'], 50.0)
+
+        # Grade 8: 1 / 3 -> 33.3
+        self.assertEqual(stats[8]['in_lottery'], 3)
+        self.assertEqual(stats[8]['num_accepted'], 1)
+        self.assertEqual(stats[8]['per_accepted'], 33.3)
+
+        # Grade 9: 2 / 3 -> 66.7
+        self.assertEqual(stats[9]['in_lottery'], 3)
+        self.assertEqual(stats[9]['num_accepted'], 2)
+        self.assertEqual(stats[9]['per_accepted'], 66.7)
+
+        # Grade 10: 0 / 2 -> 0.0
+        self.assertEqual(stats[10]['in_lottery'], 2)
+        self.assertEqual(stats[10]['num_accepted'], 0)
+        self.assertEqual(stats[10]['per_accepted'], 0.0)
+
+        # Grade 11: 2 / 2 -> 100.0
+        self.assertEqual(stats[11]['in_lottery'], 2)
+        self.assertEqual(stats[11]['num_accepted'], 2)
+        self.assertEqual(stats[11]['per_accepted'], 100.0)
+
+        # Grade 12: 0 / 0 -> "NA"
+        self.assertEqual(stats[12]['in_lottery'], 0)
+        self.assertEqual(stats[12]['per_accepted'], 'NA')
+
+        # Invalid Grade: 1 / 1 -> 100.0
+        self.assertEqual(stats['Invalid Grade']['in_lottery'], 1)
+        self.assertEqual(stats['Invalid Grade']['num_accepted'], 1)
+        self.assertEqual(stats['Invalid Grade']['per_accepted'], 100.0)
