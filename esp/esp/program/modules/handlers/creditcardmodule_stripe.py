@@ -302,11 +302,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context = {'postdata': request.POST.copy()}
 
         group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
-        # Stripe statement descriptors may not contain *, comma, or a double quote
-        # (https://docs.stripe.com/changelog/2019-02-19/changes-statement-descriptor-behaviors-charges),
-        # and reject the charge outright if they do. group_name comes from the
+        # Stripe rejects the charge if the statement descriptor contains any of
+        # < > \ ' " * (https://docs.stripe.com/get-started/account/statement-descriptors).
+        # Commas are stripped too, to be safe. group_name comes from the
         # full_group_name Tag or institution settings, which aren't guaranteed to
-        # avoid those characters, so strip them before truncating to Stripe's 22-character limit.
+        # avoid these, so strip them before truncating to Stripe's 22-character limit.
         statement_descriptor = re.sub(r'[*,"]', '', group_name)[0:22]
 
         iac = IndividualAccountingController(self.program, request.user)
