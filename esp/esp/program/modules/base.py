@@ -218,7 +218,7 @@ class ProgramModuleObj(ExpirableModel):
                 return module.get_full_path()
 
     def goToCore(self, tl):
-        return HttpResponseRedirect(self.getCoreURL(tl))
+        return HttpResponseRedirect(self.getCoreURL(tl) or '/')
 
     def require_auth(self):
         return True

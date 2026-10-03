@@ -467,6 +467,25 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super().test_run()
 
+class AjaxScheduleNoScriptTest(ProgramFrameworkTest):
+    """ The ajax_schedule view describes how to update the page with data;
+        it must never return JavaScript for the browser to execute.
+    """
+    def test_payload_is_data_only(self):
+        user = self.students[0]
+        self.assertTrue(self.client.login(username=user.username, password='password'))
+        response = self.client.get(f'/learn/{self.program.getUrlBase()}/ajax_schedule')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+
+        self.assertNotIn('script', data)
+        self.assertIn('student_schedule_html', data)
+        self.assertIsInstance(data['links'], list)
+        self.assertEqual([callback['name'] for callback in data['callbacks']],
+                         ['student_schedule'])
+        for link in data['links']:
+            self.assertEqual(sorted(link.keys()), ['id', 'url'])
+
 class AccountCreationTest(TestCase):
 
     def setUp(self):
@@ -979,6 +998,33 @@ class PermissionTestCase(TestCase):
         self.create_user_perm_for_program(name)
         self.assertTrue(all(map(self.user_has_perm_for_program, implications)))
 
+    def testUserCanEditQSDTeacherFix(self):
+        """Test that teachers can edit their class QSD pages, ensuring .html suffixes are correctly stripped."""
+        from esp.program.models import ClassSubject, ClassCategories
+        from esp.users.models import Permission
+
+        # Create a test teacher account
+        teacher = ESPUser.objects.create(username='qsd_edit_teacher')
+
+        # Setup the program and class categories required by the regex matcher
+        cat = ClassCategories.objects.create(category='TestCategory', symbol='T')
+        test_prog = Program.objects.create(grade_min=7, grade_max=12, url='Splash/Program3')
+        test_class = ClassSubject.objects.create(
+            parent_program=test_prog,
+            category=cat,
+            grade_min=7,
+            grade_max=12,
+            title='Test Class',
+        )
+
+        # Assign the teacher to the class
+        test_class.teachers.add(teacher)
+
+        # Generate a test URL matching what the QSD parser expects: "section/Splash/Program3/Classes/T<id>/file.html"
+        test_url = "section/%s/Classes/T%d/welcome.html" % (test_prog.url, test_class.id)
+
+        self.assertTrue(Permission.user_can_edit_qsd(teacher, test_url))
+
     def testFilterPermissionAppliesToMatchingUsers(self):
         perm_name = 'Student/MainPage'
         # Create a filter that matches self.user only
@@ -1015,6 +1061,40 @@ class PermissionTestCase(TestCase):
         self.assertEqual(
             Permission.user_deadline_when(self.user, perm_name, program=self.program),
             end,
+        )
+
+class PersistentQueryFilterHashTest(TestCase):
+    """ The sha1_hash column stores a SHA-256 digest (the column name is
+        historical).  These tests pin down that every code path agrees on the
+        same digest, so that identical filters are deduplicated rather than
+        piling up duplicate rows. """
+
+    def _expected_hash(self, q_filter):
+        import hashlib
+        import pickle
+        return hashlib.sha256(pickle.dumps(q_filter)).hexdigest()
+
+    def testCreateFromQUsesSha256(self):
+        q_filter = Q(username='hash_test_user')
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, q_filter)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(q_filter))
+
+    def testSetQUsesSha256(self):
+        pqf = PersistentQueryFilter.create_from_Q(ESPUser, Q(username='before'))
+        new_filter = Q(username='after')
+        pqf.set_Q(new_filter, restrict_to_active=False)
+        self.assertEqual(pqf.sha1_hash, self._expected_hash(new_filter))
+
+    def testGetFilterFromQIsIdempotent(self):
+        """ Looking up the same Q twice must reuse the stored row, which only
+            works if the lookup and the write use the same algorithm. """
+        q_filter = Q(username='hash_test_user')
+        first = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        second = PersistentQueryFilter.getFilterFromQ(q_filter, ESPUser)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(
+            PersistentQueryFilter.objects.filter(sha1_hash=first.sha1_hash).count(),
+            1,
         )
 
 class AjaxAutocompleteViewTest(TestCase):
@@ -1681,6 +1761,33 @@ class PasswordValidationTest(TestCase):
         form = self._reg_form('testpwuser1')
         self.assertFalse(form.is_valid())
 
+
+class ResendActivationCaseTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='johndoe',
+            email='johndoe@example.com',
+            password='ValidPass1!',
+        )
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.get_or_create(user=self.user)
+
+    def test_resend_accepts_different_username_case(self):
+        response = self.client.post('/myesp/resend/', {'username': 'JOHNDOE'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/resend_done.html')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_resend_rejects_wrong_case_for_inactive_without_pending(self):
+        #   Without a PendingActivation row the account is not awaiting
+        #   activation; the form must reject it even with matching case.
+        PendingActivation.objects.filter(user=self.user).delete()
+        response = self.client.post('/myesp/resend/', {'username': 'johndoe'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/resend.html')
+        self.assertEqual(len(mail.outbox), 0)
 
 class DisableAccountPostOnlyTest(TestCase):
     def setUp(self):

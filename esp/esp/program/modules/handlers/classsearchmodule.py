@@ -167,7 +167,7 @@ class ClassSearchModule(ProgramModuleObj):
             inputs=[TextInput(field_name='title__icontains', english_name='')])
         username_filter = SearchFilter(
             name='username', title='teacher username containing',
-            inputs=[TextInput(field_name='teachers__username__contains',
+            inputs=[TextInput(field_name='teachers__username__icontains',
                               english_name='')])
         all_scheduled_filter = SearchFilter(
             name="all_scheduled", title="all sections scheduled",
@@ -292,20 +292,97 @@ class ClassSearchModule(ProgramModuleObj):
 
         return HttpResponseRedirect('./classsearch?query=' + urllib.parse.quote(query_data))
 
+    # Fields of the simple search form.
+    SIMPLE_SEARCH_FIELDS = ('s_title', 's_teacher', 's_category', 's_status',
+                            's_grade_min', 's_grade_max')
+
+    def simple_search_context(self, request, prog):
+        """Context for rendering the simple search form."""
+        categories = list(prog.class_categories.all())
+        if prog.open_class_registration:
+            categories.append(prog.open_class_category)
+
+        context = {
+            'simple_categories': categories,
+            'simple_status_choices': STATUS_CHOICES,
+            'simple_grades': prog.classregmoduleinfo.getClassGrades(),
+        }
+        # Echo the submitted values back so the form stays filled in.
+        for field in self.SIMPLE_SEARCH_FIELDS:
+            context[field] = request.GET.get(field, '').strip()
+        return context
+
+    def simple_search_query(self, request, form_context):
+        """Translate the simple search form into a query builder query.
+
+        Returns a query in the format described in query-builder.jsx, ANDing
+        together one of the query builder's own filters per filled-in field,
+        or None if nothing was filled in.
+        """
+        choices = {
+            's_category': {str(cat.id)
+                           for cat in form_context['simple_categories']},
+            's_status': {str(status) for status, label
+                         in form_context['simple_status_choices']},
+            's_grade_min': {str(grade)
+                            for grade in form_context['simple_grades']},
+        }
+        choices['s_grade_max'] = choices['s_grade_min']
+
+        def value(field):
+            submitted = request.GET.get(field, '').strip()
+            # Ignore anything the form didn't offer.
+            if field in choices and submitted not in choices[field]:
+                return ''
+            return submitted
+
+        subqueries = []
+        if value('s_title'):
+            subqueries.append(('title', [value('s_title')]))
+        if value('s_teacher'):
+            subqueries.append(('username', [value('s_teacher')]))
+        if value('s_category'):
+            subqueries.append(('category', [value('s_category')]))
+        if value('s_status'):
+            subqueries.append(('status', [value('s_status')]))
+        # The grade filter takes both bounds at once, and an unrecognized
+        # value matches everything, so one-sided ranges are fine.
+        if value('s_grade_min') or value('s_grade_max'):
+            subqueries.append(('grade', [value('s_grade_min'),
+                                         value('s_grade_max')]))
+
+        if not subqueries:
+            return None
+        return {
+            'filter': 'and',
+            'negated': False,
+            'values': [{'filter': name, 'negated': False, 'values': values}
+                       for name, values in subqueries],
+        }
+
     @main_call
     @needs_admin
     def classsearch(self, request, tl, one, two, module, extra, prog):
         data = request.GET.get('query')
         query_builder = self.query_builder()
+
         context = {
             'query_builder': query_builder,
             'program': self.program,
             'query': None,
         }
+        simple_context = self.simple_search_context(request, prog)
+        context.update(simple_context)
+
         namequery = request.GET.get('namequery')
+        simple_query = self.simple_search_query(request, simple_context)
         decoded = None
         if data is not None:
             decoded = json.loads(data)
+        elif simple_query is not None:
+            # An explicit query wins, but otherwise run the simple search form.
+            decoded = simple_query
+            context['simple_search_active'] = True
         elif namequery: # only search if not None and not ""
             # if this looks like a class ID then just go to its manage page
             id_match = re.match('^[a-zA-Z]?(\\d+)$', namequery)

@@ -84,6 +84,9 @@ function setup_update(field_name)
     });
 }
 
+//  Let Ajax responses re-attach the change handlers by name
+register_handler("setup_update", setup_update);
+
 function setup_callbacks()
 {
     {% include "program/statistics/script.js" %}
