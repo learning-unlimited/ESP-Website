@@ -450,6 +450,66 @@ class FullStatusTests(ProgramFrameworkTest):
         section_ids = [entry[0] for entry in data]
         self.assertNotIn(section.id, section_ids)
 
+    def test_full_section_returns_true(self):
+        """A section where enrolled_students >= capacity must return is_full == True."""
+        section = self.program.sections()[0]
+        original_enrolled = section.enrolled_students
+        capacity = section.capacity
+        section.enrolled_students = capacity + 5
+        section.save(update_fields=['enrolled_students'])
+        self.addCleanup(
+            section.__class__.objects.filter(pk=section.pk).update,
+            enrolled_students=original_enrolled,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry, "Section not found in full_status result")
+        self.assertTrue(entry[1])
+
+    def test_query_count_is_bounded_and_avoids_n_plus_one(self):
+        """Proof for issue #4385: full_status must execute a bounded number
+        of queries (O(1)) regardless of the number of class sections, rather
+        than producing N+1 queries from per-section isFull() loops."""
+        from django.db import connection, reset_queries
+        from django.conf import settings
+        from esp.program.models import ClassSection
+
+        # First call warms up initial tag cache / argcache
+        self._call()
+
+        old_debug = settings.DEBUG
+        settings.DEBUG = True
+        try:
+            reset_queries()
+            self._call()
+            initial_query_count = len(connection.queries)
+
+            # Create 18 more sections (10x section count)
+            first_sec = self.program.sections()[0]
+            new_secs = [
+                ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
+                for _ in range(18)
+            ]
+            self.addCleanup(
+                ClassSection.objects.filter(id__in=[s.id for s in new_secs]).delete
+            )
+
+            reset_queries()
+            self._call()
+            scaled_query_count = len(connection.queries)
+
+            # Adding 18 sections must NOT increase the number of database queries
+            self.assertEqual(
+                scaled_query_count,
+                initial_query_count,
+                f"Query count scaled with number of sections: {initial_query_count} -> {scaled_query_count}"
+            )
+            # Total queries must remain strictly bounded (O(1))
+            self.assertLessEqual(scaled_query_count, 10)
+        finally:
+            settings.DEBUG = old_debug
+
 
 class StudentsStatusTests(ProgramFrameworkTest):
     """Tests for OnSiteClassList.students_status"""

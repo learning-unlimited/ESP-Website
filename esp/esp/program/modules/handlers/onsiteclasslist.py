@@ -214,9 +214,53 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def full_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = [[section.id, section.isFull(webapp=True)] for section in
-                     ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
-                                                 parent_class__parent_program=prog)]
+        sections = ClassSection.objects.filter(
+            status__gt=0,
+            parent_class__status__gt=0,
+            parent_class__parent_program=prog,
+        ).select_related(
+            'parent_class',
+            'parent_class__parent_program',
+            'parent_class__parent_program__studentclassregmoduleinfo',
+        ).prefetch_related(
+            'meeting_times',
+            'resourceassignment_set__resource__res_type',
+        )
+
+        now = datetime.now()
+        switch_time = None
+        tag_val = Tag.getProgramTag('switch_time_program_attendance', program=prog)
+        if tag_val:
+            try:
+                switch_time_str = now.strftime("%Y/%m/%d ") + tag_val
+                switch_time = datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
+            except ValueError:
+                pass
+
+        switch_lag = None
+        tag_val = Tag.getProgramTag('switch_lag_class_attendance', program=prog)
+        if tag_val:
+            try:
+                switch_lag = int(tag_val)
+            except ValueError:
+                pass
+
+        program_checked_in = None
+        if switch_time and now >= switch_time:
+            program_checked_in = prog.currentlyCheckedInStudents().count() >= 5
+
+        data = [
+            [
+                section.id,
+                section.isFull(
+                    webapp=True,
+                    switch_time=switch_time,
+                    switch_lag=switch_lag,
+                    program_checked_in=program_checked_in,
+                ),
+            ]
+            for section in sections
+        ]
         json.dump(data, resp)
         return resp
 
