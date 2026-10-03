@@ -7,7 +7,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -39,19 +38,11 @@ function deleteEmailRedirect() {
 
 <div id="program_form">
 
-    {% if open_section == "redirects" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "redirects" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#redirects-section" aria-expanded="{% if open_section == "redirects" %}true{% else %}false{% endif %}" aria-controls="redirects-section">
        <b>URL Redirects</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>URL Redirects</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="redirects-section" class="accordion-collapse collapse{% if open_section == "redirects" %} show{% endif %}">
 
     <form method="post">
     <input type="hidden" name="command" value="{% if redirect_form.instance.id %}edit{% else %}add{% endif %}" />
@@ -102,19 +93,11 @@ function deleteEmailRedirect() {
     </table>
     </div>
 
-    {% if open_section == "email_redirects" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "email_redirects" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#email-redirects-section" aria-expanded="{% if open_section == "email_redirects" %}true{% else %}false{% endif %}" aria-controls="email-redirects-section">
        <b>Email Redirects</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Email Redirects</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="email-redirects-section" class="accordion-collapse collapse{% if open_section == "email_redirects" %} show{% endif %}">
 
     <form method="post">
     <input type="hidden" name="command" value="{% if email_redirect_form.instance.id %}edit{% else %}add{% endif %}" />
@@ -166,6 +149,5 @@ function deleteEmailRedirect() {
 
 </div>
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% endblock %}

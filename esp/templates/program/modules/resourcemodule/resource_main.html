@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -33,7 +32,6 @@ Each step below is a form that you can expand or contract by clicking on the hea
 {% include "program/modules/resourcemodule/equipment.html" %}
 
 <script id="resourcesscript" src="/media/scripts/program/modules/resources.js" data-prog_url="{{ prog.url }}"></script>
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 {% endblock %}
