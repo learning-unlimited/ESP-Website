@@ -202,7 +202,7 @@ This is a module to allow students to fill out a global application for the prog
 Student Lunch Selection (StudentLunchSelection)
 -----------------------------------------------
 
-If you are using lunch constraints, some students may be confused by the requirement that they select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  If they end up having a schedule that is not subject to the constraints, they will be allowed to manually remove the lunch period then.
+If you are using lunch constraints, some students may be confused by being told that they should select a lunch period if they have both "morning" and "afternoon" classes.  To reduce confusion, this module forces students to choose a lunch period for each day before they proceed to the rest of student registration.  They can remove the lunch period again later; if their schedule still calls for one, they will keep seeing the warning on their schedule, or be blocked from removing it if you have enabled "enforce" on the Lunch Constraints page.
 
 Add "Confirm Registration" link (StudentRegConfirm)
 ---------------------------------------------------

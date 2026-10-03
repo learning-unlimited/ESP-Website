@@ -6,7 +6,8 @@ from django.http import HttpResponse
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models import Program, RegistrationType, StudentRegistration
+from esp.program.models import (BooleanExpression, BooleanToken, Program, RegistrationType,
+                                ScheduleConstraint, ScheduleTestOccupied, StudentRegistration)
 from esp.program.tests import ProgramFrameworkTest
 from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
@@ -756,3 +757,114 @@ class SchedulePdfTests(SimpleTestCase):
 
         self.assertIs(resp, response)
         mocked_get.assert_called_once_with(self.last_request, [user], program, onsite=False)
+
+
+class ScheduleConstraintMessageTests(ProgramFrameworkTest):
+    """The grid reports unmet schedule constraints instead of enforcing or ignoring them."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=2,
+            num_teachers=2,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=2,
+            num_students=1,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+        self.student = self.students[0]
+        #   Pin the schedule rather than relying on schedule_randomly(), so that
+        #   "a class during this block" is unambiguous.
+        timeslots = list(self.program.getTimeSlots())
+        self.timeslot, self.other_timeslot = timeslots[0], timeslots[1]
+        self.section = self.program.sections()[0]
+        self.section.meeting_times.set([self.timeslot])
+        self.section.preregister_student(self.student)
+
+        #   Unconditionally require a class during the section's timeslot, so
+        #   dropping it leaves the requirement unmet.
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        self.requirement = BooleanExpression.objects.create(label='have a class during the first block')
+        ScheduleTestOccupied.objects.create(exp=self.requirement, timeblock=self.timeslot, seq=0)
+        self.constraint = ScheduleConstraint.objects.create(program=self.program, condition=condition,
+                                                           requirement=self.requirement, on_failure='')
+
+    def enforce_constraint(self):
+        self.constraint.enforce = True
+        self.constraint.save()
+
+    def _call(self, view_name, params):
+        request = self.factory.get('/onsite/' + view_name, params)
+        request.user = self.admin
+        view = getattr(OnSiteClassList, view_name)
+        fn = getattr(view, 'method', view)
+        return json.loads(fn(SimpleNamespace(), request, None, None, None, None, None, self.program).content)
+
+    def test_get_schedule_json_reports_nothing_while_satisfied(self):
+        data = self._call('get_schedule_json', {'user': self.student.id})
+        self.assertEqual(data['messages'], [])
+
+    def test_update_schedule_json_removes_section_and_warns(self):
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+
+        self.assertEqual(data['sections'], [], 'Section should have been removed')
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']),
+                        'Expected a warning about the unmet requirement in %r' % data['messages'])
+
+    def test_get_schedule_json_warns_once_schedule_is_empty(self):
+        self.section.unpreregister_student(self.student)
+        data = self._call('get_schedule_json', {'user': self.student.id})
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']),
+                        'Expected a warning about the unmet requirement in %r' % data['messages'])
+
+    def test_enforced_constraint_makes_no_changes_without_override(self):
+        self.enforce_constraint()
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+
+        self.assertEqual(data['sections'], [self.section.id],
+                         'Enforced constraint should have prevented the removal')
+        self.assertTrue(any('Made no changes' in message for message in data['messages']),
+                        'Expected a refusal message in %r' % data['messages'])
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']))
+
+    def test_override_applies_the_change_anyway(self):
+        self.enforce_constraint()
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id, 'sections': '[]', 'override': 'true'})
+
+        self.assertEqual(data['sections'], [], 'Override should have applied the removal')
+        self.assertFalse(any('Made no changes' in message for message in data['messages']),
+                         'Override should not report a refusal: %r' % data['messages'])
+        #   The admin is still told what the resulting schedule fails.
+        self.assertTrue(any(self.requirement.label in message for message in data['messages']))
+
+    def test_enforced_constraint_does_not_trap_a_schedule_already_in_violation(self):
+        self.enforce_constraint()
+        self.section.unpreregister_student(self.student)
+
+        #   Enroll in a class in the *other* block, so the requirement stays unmet
+        #   and dropping this class cannot be what breaks it.
+        other = self.program.sections().exclude(id=self.section.id).first()
+        if other is None:
+            self.skipTest('Program has only one section')
+        other.meeting_times.set([self.other_timeslot])
+        other.preregister_student(self.student)
+
+        data = self._call('update_schedule_json', {'user': self.student.id, 'sections': '[]'})
+        self.assertEqual(data['sections'], [],
+                         'An already-violating schedule should still be changeable')
+
+    def test_override_constraints_flag_applies_a_removal(self):
+        """Removals send override_constraints, not the confirm-gated size override."""
+        self.enforce_constraint()
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id, 'sections': '[]',
+                           'override_constraints': 'true'})
+
+        self.assertEqual(data['sections'], [], 'Override should have applied the removal')
+        self.assertFalse(any('Made no changes' in message for message in data['messages']),
+                         'Override should not report a refusal: %r' % data['messages'])
