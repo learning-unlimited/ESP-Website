@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 """Script to dump zip code data to CSV.
 
 Writes a CSV with a column for each of various sets of students, and a row for
@@ -19,7 +20,7 @@ from esp.program.models import ProgramModule
 from esp.utils.query_utils import nest_Q
 from io import open
 
-filename = os.path.join(settings.PROJECT_ROOT, 'zip_data.csv')
+filename = str(Path(settings.PROJECT_ROOT) / 'zip_data.csv')
 
 student_sets = [
     ('All users', ESPUser.objects.all()),

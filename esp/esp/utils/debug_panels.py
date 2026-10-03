@@ -1,3 +1,4 @@
+from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -73,9 +74,9 @@ def format_stacktrace_simple(trace):
         code = frame[3]
 
         # Split into directory and filename
-        directory, filename = os.path.split(filepath)
-        if directory:
-            directory += os.sep
+        path = Path(filepath)
+        directory = f"{path.parent}{os.sep}" if str(path.parent) != "." else ""
+        filename = path.name
 
         lines.append(
             f'<span class="djdt-path">{directory}</span>'
