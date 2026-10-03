@@ -33,16 +33,16 @@ Learning Unlimited, Inc.
 """
 
 from django.conf import settings
+from django.db.models import Q
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
-from esp.middleware import ESPError
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 from esp.survey.models import Survey, Question, QuestionType
 from esp.tagdict.models import Tag
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, PersistentQueryFilter
 
 import json
 
@@ -125,6 +125,15 @@ class AllViewsTest(ProgramFrameworkTest):
         Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)
         Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
 
+        # The second step of each user-search flow (communications, user
+        # records, mass deactivation, ...) expects to be handed the id of a
+        # filter saved by the first step.  Target a student rather than the
+        # admin: deactivatefinal really does deactivate everyone it matches,
+        # and losing the admin would break every later view.
+        self.filter_user = self.students[-1]
+        self.user_filter = PersistentQueryFilter.create_from_Q(
+            ESPUser, Q(id=self.filter_user.id), 'All views test filter')
+
         # Set up credit card test keys
         settings.STRIPE_CONFIG = {
             'secret_key': 'sk_test_4eC39HqLyjWDarjtT1zdp7dc',
@@ -147,80 +156,141 @@ class AllViewsTest(ProgramFrameworkTest):
         # clean up surveys
         Survey.objects.all().delete()
 
+    #   Views the generic requests below cannot reach.  Each needs data
+    #   specific enough that supplying it here would amount to writing the
+    #   view's own test, so they are named rather than worked around.
+    SKIP_VIEWS = {
+        #   Wants a PrintableJob whose id is the extra path segment.
+        ('manage', 'printable_job_status'),
+        #   Wants POST 'progname'; every other field its form reads is already
+        #   covered by the user search request below.
+        ('manage', 'generatetags'),
+        #   Must not be covered: on success it logs the admin out and logs in
+        #   as the test user, which would break every view after it.
+        ('manage', 'start_testing'),
+    }
+
     def testAllViews(self):
         # Check all views of all modules
-        failed_modules = {}
-        for tl in ['learn', 'teach', 'admin', 'volunteer']:
+        # These are the same for every view, so look them up once rather than
+        # re-querying inside the loop.
+        cls = self.program.classes()[0]
+        cls_id = str(cls.id)
+        sec = cls.get_sections()[0]
+        sec_id = str(sec.id)
+        event = self.program.getTimeSlots()[0]
+        event_id = str(event.id)
+        user_id = str(self.adminUser.id)
+        filter_id = str(self.user_filter.id)
+
+        # Every module_type any module declares.  The admin-facing modules use
+        # 'manage'; no module uses 'admin', so the previous 'admin' entry here
+        # matched nothing.
+        for tl in ['learn', 'teach', 'manage', 'volunteer', 'onsite', 'json']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
-                views = module.views
-                for view in views:
-                    passes = False
-                    module_view = module.module.handler + '.' + view
-                    failed_modules[module_view] = {}
-                    cls = self.program.classes()[0]
-                    cls_id = str(cls.id)
-                    sec = cls.get_sections()[0]
-                    sec_id = str(sec.id)
-                    event = self.program.getTimeSlots()[0]
-                    event_id = str(event.id)
-                    # In case the user has been unregistered, reregister them
-                    sec.preregister_student(self.adminUser)
-                    # Try a whole bunch of different requests (because different views have different expectations)
-                    # Skip to the next view if this view ever properly serves a page (or redirects to another page)
-                    try: # Various GET arguments
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '?cls=' + cls_id + '&clsid=' + cls_id + '&name=Admin&username=admin')
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a class ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + cls_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET class'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a section ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + sec_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET section'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use an event ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + event_id)
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET event'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Use a user ID as the extra argument
-                        response = self.client.get('/' + tl + '/' + self.program.getUrlBase() + '/' + view + '/' + str(self.adminUser.id))
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['GET user'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Various POST data
-                        # Mostly used for registering for classes, so unregister for the class in advance
-                        sec.unpreregister_student(self.adminUser)
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'class_id': cls_id,  'section_id': sec_id, 'json_data': '{}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST FCFS'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    try: # Different student lottery POST data
-                        response = self.client.post('/' + tl + '/' + self.program.getUrlBase() + '/' + view, {'json_data': '{"' + event_id + '": {}}'})
-                        if str(response.status_code)[:1] in ['2', '3']:
-                            passes = True
-                    except Exception as e:
-                        failed_modules[module_view]['POST alt lottery'] = f'{module_view} is throwing a {response.status_code} error:\n{e}'
-                    if passes:
-                        del failed_modules[module_view]
-        # Check if any failed
-        if len(failed_modules) > 0:
-            print(failed_modules)
-        self.assertTrue(len(failed_modules) == 0)
+                for view in module.views:
+                    if (tl, view) in self.SKIP_VIEWS:
+                        continue
+                    # Report each view separately so one broken view neither
+                    # hides the others nor requires reading a single blob.
+                    with self.subTest(tl = tl, module = module.module.handler, view = view):
+                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id)
+
+    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id):
+        """Fail unless this view handles at least one of our candidate requests."""
+        url = '/' + tl + '/' + self.program.getUrlBase() + '/' + view
+
+        # In case the user has been unregistered, reregister them
+        sec.preregister_student(self.adminUser)
+
+        # Likewise, deactivatefinal really deactivates the users the filter
+        # matches, and get_Q() only ever returns active ones -- so without
+        # this every later view handed the filter sees an empty user list.
+        ESPUser.objects.filter(id=self.filter_user.id).update(is_active=True)
+
+        def post_fcfs():
+            # Mostly used for registering for classes, so unregister for the class in advance
+            sec.unpreregister_student(self.adminUser)
+            return self.client.post(url, {'class_id': cls_id, 'section_id': sec_id, 'json_data': '{}'})
+
+        # Identifiers that views pick out of the query string by name.  Views
+        # that ignore them are unaffected, so every GET below carries all of
+        # them; several views want both an extra path segment and a query
+        # parameter (accept_student and view_app, for instance).
+        query = '&'.join([
+            'cls=' + cls_id, 'clsid=' + cls_id, 'name=Admin', 'username=admin',
+            'student=' + user_id,       # accept_student, reject_student, view_app
+            'sec_id=' + sec_id,         # deletesection
+            'filterid=' + filter_id,    # generateList and the other step-2 views
+            'last_fetched_index=0',     # ajax_change_log
+            'class=' + cls_id,          # ajaxclassdetail
+            'show_flags=1',             # ajaxclassdetail
+            'class_id=' + cls_id,       # the json class_*_info views
+            'section_id=' + sec_id,     # ditto, which prefer a section
+        ])
+
+        # Try a whole bunch of different requests (because different views have different expectations)
+        attempts = [
+            # Various GET arguments
+            ('GET', lambda: self.client.get(url + '?' + query)),
+            # Use a class ID as the extra argument
+            ('GET class', lambda: self.client.get(url + '/' + cls_id + '?' + query)),
+            # Use a section ID as the extra argument
+            ('GET section', lambda: self.client.get(url + '/' + sec_id + '?' + query)),
+            # Use an event ID as the extra argument
+            ('GET event', lambda: self.client.get(url + '/' + event_id + '?' + query)),
+            # Use a user ID as the extra argument
+            ('GET user', lambda: self.client.get(url + '/' + user_id + '?' + query)),
+            # Various POST data
+            ('POST FCFS', post_fcfs),
+            # Student lottery POST data
+            ('POST lottery', lambda: self.client.post(url, {'json_data': '{"interested": [1, 5, 3, 9], "not_interested": [4, 6, 10]}'})),
+            # Different student lottery POST data
+            ('POST alt lottery', lambda: self.client.post(url, {'json_data': '{"' + event_id + '": {}}'})),
+            # Second step of the user-search flows, which are handed a saved
+            # filter id plus whatever their own form collects
+            ('POST user search', lambda: self.client.post(url + '?filterid=' + filter_id, {
+                'filterid': filter_id,
+                'listcount': '1',
+                'from': 'test@learningu.org',
+                'replyto': 'test@learningu.org',
+                'subject': 'Test subject',
+                'body': 'Test body',
+                'message': 'Test message',
+                'confirm': 'true',
+                'group_name_new': 'All views test group',
+                'records': 'attended',
+                'section_id': sec_id,
+                'type': 'students',
+            })),
+            # Scheduling AJAX endpoints, which key off an action plus a section
+            ('POST ajax', lambda: self.client.post(url, {
+                'action': 'removemod',
+                'sec': sec_id,
+                'cls': sec_id,
+                'mod': user_id,
+                'comment': 'Test comment',
+            })),
+        ]
+
+        # Stop as soon as this view handles the request.  4xx counts: the AJAX
+        # endpoints answer a request they can't use with HttpResponseBadRequest
+        # or 405, which means the view resolved, loaded and ran its own
+        # validation.  What this test is looking for is a view that cannot
+        # serve anything at all -- an unhandled exception, or the 500 that
+        # ESPErrorMiddleware renders for an ESPError.
+        failures = []
+        for label, attempt in attempts:
+            try:
+                response = attempt()
+            except Exception as e:
+                # There is no response to read a status code from, so report
+                # the exception that the view raised.
+                failures.append('%s: raised %s: %s' % (label, type(e).__name__, e))
+                continue
+            if 200 <= response.status_code < 500:
+                return
+            failures.append('%s: HTTP %d' % (label, response.status_code))
+
+        self.fail('No request to %s was handled:\n  %s' % (url, '\n  '.join(failures)))
