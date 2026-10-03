@@ -1,9 +1,9 @@
 """
 Regression tests for Stripe statement_descriptor sanitization (Issue #5914).
 
-Stripe's statement_descriptor field forbids '*', ',', and '"'
-(https://docs.stripe.com/changelog/2019-02-19/changes-statement-descriptor-behaviors-charges)
-and rejects charge creation outright if present. group_name (from the
+Stripe rejects the charge if statement_descriptor contains any of
+<, >, backslash, ', " or * (https://docs.stripe.com/get-started/account/statement-descriptors).
+Commas are stripped too, to be safe. group_name (from the
 full_group_name Tag, or institution settings as a fallback) is not guaranteed
 to avoid those characters before being truncated to Stripe's 22-character limit,
 so charge_payment must strip them first.
