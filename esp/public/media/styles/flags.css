@@ -50,6 +50,10 @@ select.fqb-type {
     background: #f7c6de;
 }
 
+.fqr-class-header.draft {
+    background: #e0e0e0;
+}
+
 .fqr-class-header:not(.active):after {
     content: '\002B';
     color: black;

@@ -22,10 +22,12 @@
 </tr>
 <tr>
     <th class="smaller">Reviewing Status:<br />
-        (Unreviewed, Accepted, Cancelled, or Rejected)
+        (Draft, Unreviewed, Accepted, Cancelled, or Rejected)
     </th>
     <td>
-        {% if class.isReviewed %}
+        {% if class.isDraft %}
+        <span class="class-status" style="font-weight: bold; color: #888;">Draft &ndash; not yet submitted by the teacher</span>
+        {% elif class.isReviewed %}
             {% if class.isAccepted %}
             <span class="class-status" style="font-weight: bold; color: #0C0;">Accepted{% if class.isHidden %} (Hidden){% endif %}</span>
             {% elif class.isCancelled %}

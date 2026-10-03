@@ -113,7 +113,7 @@
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
   <td class="clsmiddle" colspan="2">
-    {% if can_req_cancel %}
+    {% if can_req_cancel and not cls.isDraft  %}
         <button type="button" class="btn btn-info" data-bs-toggle="modal"
                 data-bs-target="#request_{{ cls.id }}">Request Cancellation</button>
     {% endif %}
