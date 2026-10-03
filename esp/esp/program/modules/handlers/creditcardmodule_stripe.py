@@ -307,7 +307,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         # Commas are stripped too, to be safe. group_name comes from the
         # full_group_name Tag or institution settings, which aren't guaranteed to
         # avoid these, so strip them before truncating to Stripe's 22-character limit.
-        statement_descriptor = re.sub(r'[*,"]', '', group_name)[0:22]
+        statement_descriptor = re.sub(r'[<>\\\'"*,]', '', group_name)[0:22]
 
         iac = IndividualAccountingController(self.program, request.user)
 
