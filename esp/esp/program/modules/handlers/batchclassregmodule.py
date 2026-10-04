@@ -182,11 +182,7 @@ class BatchClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def batch_register(filterobj, section, override_full=False):
-        users = filterobj.getList(ESPUser)
-        try:
-            users = users.distinct()
-        except:
-            pass
+        users = filterobj.getList(ESPUser).distinct()
 
         if not users.exists():
             raise ESPError()("Your query did not match any users")
