@@ -152,7 +152,7 @@ class StudentRegPhaseZeroManageTest(ProgramFrameworkTest):
         self.assertIn("Lottery mode invalid is not supported", messages['error'][0])
 
     def test_lottery_statistics_percentages(self):
-            """Test that Manage Program Lottery calculates % Accepted correctly."""
+        """Test that Manage Program Lottery calculates % Accepted correctly."""
 
         # Set up an invalid grade student (grade outside program grade range)
         invalid_student = self.students[19]
