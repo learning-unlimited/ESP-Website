@@ -37,7 +37,7 @@ import json
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Min
+from django.db.models import Count, Min
 from django.db.models.query import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -249,6 +249,16 @@ class OnSiteClassList(ProgramModuleObj):
         if switch_time and now >= switch_time:
             program_checked_in = prog.currentlyCheckedInStudents().count() >= 5
 
+        checked_in_counts = {}
+        if program_checked_in:
+            counts_qs = StudentRegistration.objects.filter(
+                StudentRegistration.is_valid_qobject(now),
+                section__in=sections,
+                relationship__name='Enrolled',
+                user__in=prog.currentlyCheckedInStudents(),
+            ).values('section_id').annotate(count=Count('user_id', distinct=True))
+            checked_in_counts = {row['section_id']: row['count'] for row in counts_qs}
+
         data = [
             [
                 section.id,
@@ -257,6 +267,7 @@ class OnSiteClassList(ProgramModuleObj):
                     switch_time=switch_time,
                     switch_lag=switch_lag,
                     program_checked_in=program_checked_in,
+                    num_checked_in=checked_in_counts.get(section.id, 0),
                 ),
             ]
             for section in sections

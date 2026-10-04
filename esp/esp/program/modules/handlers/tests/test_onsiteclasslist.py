@@ -491,6 +491,9 @@ class FullStatusTests(ProgramFrameworkTest):
                 ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
                 for _ in range(18)
             ]
+            meeting_times = list(first_sec.meeting_times.all())
+            for section in new_secs:
+                section.meeting_times.set(meeting_times)
             self.addCleanup(
                 ClassSection.objects.filter(id__in=[s.id for s in new_secs]).delete
             )
@@ -509,6 +512,165 @@ class FullStatusTests(ProgramFrameworkTest):
             self.assertLessEqual(scaled_query_count, 10)
         finally:
             settings.DEBUG = old_debug
+
+    def test_query_count_is_bounded_and_avoids_n_plus_one_in_attendance_mode(self):
+        """Proof for issue #4385: full_status must execute a bounded number
+        of queries (O(1)) in attendance switch mode (Mode 2) where switch_time
+        has passed and >= 5 students are checked into the program."""
+        from django.db import connection, reset_queries
+        from django.conf import settings
+        from django.contrib.contenttypes.models import ContentType
+        from esp.program.models import ClassSection
+        from esp.tagdict.models import Tag
+        from esp.users.models import ESPUser, Record, RecordType
+
+        # Configure switch_time tag to past time (00:00) so Mode 2 triggers
+        Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
+        prog_ct = ContentType.objects.get_for_model(self.program)
+        self.addCleanup(
+            Tag.objects.filter(
+                key='switch_time_program_attendance',
+                content_type=prog_ct,
+                object_id=self.program.id,
+            ).delete
+        )
+
+        # Create at least 5 checked-in students for the program
+        rec_type = RecordType.objects.get(name='attended')
+        attn_users = [
+            ESPUser.objects.create(
+                username=f'attn_test_student_{i}',
+                email=f'attn_{i}@example.com',
+            )
+            for i in range(5)
+        ]
+        for u in attn_users:
+            Record.objects.create(user=u, program=self.program, event=rec_type)
+
+        self.addCleanup(
+            Record.objects.filter(user__in=attn_users, program=self.program).delete
+        )
+        self.addCleanup(
+            ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
+        )
+
+        # First call warms up initial tag cache / argcache
+        self._call()
+
+        old_debug = settings.DEBUG
+        settings.DEBUG = True
+        try:
+            reset_queries()
+            self._call()
+            initial_query_count = len(connection.queries)
+
+            # Create 18 more sections (10x section count) with meeting times
+            first_sec = self.program.sections()[0]
+            new_secs = [
+                ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
+                for _ in range(18)
+            ]
+            meeting_times = list(first_sec.meeting_times.all())
+            for section in new_secs:
+                section.meeting_times.set(meeting_times)
+            self.addCleanup(
+                ClassSection.objects.filter(id__in=[s.id for s in new_secs]).delete
+            )
+
+            reset_queries()
+            self._call()
+            scaled_query_count = len(connection.queries)
+
+            # In attendance mode, adding 18 sections must NOT increase query count
+            self.assertEqual(
+                scaled_query_count,
+                initial_query_count,
+                f"Query count scaled with sections in attendance mode: {initial_query_count} -> {scaled_query_count}"
+            )
+            # Total queries must remain strictly bounded (O(1))
+            self.assertLessEqual(scaled_query_count, 10)
+        finally:
+            settings.DEBUG = old_debug
+
+    def test_attendance_mode_fullness_evaluation(self):
+        """In attendance switch mode (Mode 2), verify that section fullness
+        is evaluated against checked-in students rather than raw enrollment."""
+        from django.contrib.contenttypes.models import ContentType
+        from esp.program.models import RegistrationType, StudentRegistration
+        from esp.tagdict.models import Tag
+        from esp.users.models import ESPUser, Record, RecordType
+
+        section = self.program.sections()[0]
+        capacity = section.capacity
+        self.assertGreater(capacity, 0)
+
+        # Configure switch_time tag to past time (00:00)
+        Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
+        prog_ct = ContentType.objects.get_for_model(self.program)
+        self.addCleanup(
+            Tag.objects.filter(
+                key='switch_time_program_attendance',
+                content_type=prog_ct,
+                object_id=self.program.id,
+            ).delete
+        )
+
+        rec_type = RecordType.objects.get(name='attended')
+        rt_enrolled = RegistrationType.objects.get(name='Enrolled')
+
+        # Create 5 checked-in users for program attendance threshold
+        attn_users = [
+            ESPUser.objects.create(
+                username=f'attn_eval_user_{i}',
+                email=f'attn_eval_{i}@example.com',
+            )
+            for i in range(max(5, capacity))
+        ]
+        for u in attn_users:
+            Record.objects.create(user=u, program=self.program, event=rec_type)
+
+        self.addCleanup(
+            Record.objects.filter(user__in=attn_users, program=self.program).delete
+        )
+        self.addCleanup(
+            ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
+        )
+
+        # Set enrolled_students on section > capacity, but NO checked-in registrations yet.
+        # In attendance mode (Mode 2), fullness is based on checked-in students (0 < capacity),
+        # so is_full should be False despite enrolled_students > capacity.
+        orig_enrolled = section.enrolled_students
+        section.enrolled_students = capacity + 5
+        section.save(update_fields=['enrolled_students'])
+        self.addCleanup(
+            section.__class__.objects.filter(pk=section.pk).update,
+            enrolled_students=orig_enrolled,
+        )
+
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry)
+        self.assertFalse(entry[1], "Section should not be full when checked-in students count is 0")
+
+        # Now enroll enough checked-in students to reach capacity
+        created_regs = []
+        for i in range(capacity):
+            reg = StudentRegistration.objects.create(
+                section=section,
+                user=attn_users[i],
+                relationship=rt_enrolled,
+            )
+            created_regs.append(reg)
+        self.addCleanup(
+            StudentRegistration.objects.filter(id__in=[r.id for r in created_regs]).delete
+        )
+
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry)
+        self.assertTrue(entry[1], "Section should be full when checked-in students >= capacity")
 
 
 class StudentsStatusTests(ProgramFrameworkTest):

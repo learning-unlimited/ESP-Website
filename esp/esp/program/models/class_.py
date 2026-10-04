@@ -1326,7 +1326,9 @@ class ClassSection(models.Model):
 
     def isFull(self, ignore_changes=False, webapp=False,
                switch_time=_SENTINEL, switch_lag=_SENTINEL,
-               program_checked_in=_SENTINEL):
+               program_checked_in=_SENTINEL,
+               num_checked_in=_SENTINEL,
+               num_students_checked_in=_SENTINEL):
         if not self.meeting_times.all():
             return True
 
@@ -1368,7 +1370,12 @@ class ClassSection(models.Model):
             else:
                 has_enough_checked_in = bool(program_checked_in)
             if has_enough_checked_in:
-                num_students = self.num_students_checked_in()
+                if num_checked_in is not _SENTINEL:
+                    num_students = num_checked_in
+                elif num_students_checked_in is not _SENTINEL:
+                    num_students = num_students_checked_in
+                else:
+                    num_students = self.num_students_checked_in()
             else:
                 num_students = self.num_students()
         # Mode 3: Base "fullness" on enrollment numbers
