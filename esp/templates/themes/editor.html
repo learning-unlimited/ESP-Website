@@ -76,6 +76,20 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
      light tint).  Bootswatch's `.bg-primary h1..h6 { color: #fff }` rule assumes a
      solid dark .bg-primary, so it turns the title white-on-light. Force it dark. */
   #theme_editor_accordion .card-header h4, #theme_editor_accordion .card-header .h4 { color: #212529; }
+
+  /* Bootstrap 5 collapse compatibility: theme_compiled.css and bootstrap_initial.css
+     only define .collapse.in { height: auto; }, but Bootstrap 5 uses .show instead of .in.
+     Without this, sections expand during animation and immediately snap closed to height 0. */
+  #theme_editor_accordion .collapse.show {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  #theme_editor_accordion .collapse:not(.show) {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
@@ -172,15 +186,15 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                     <div class="collapse" id="scaffolding"><div class="card-body">
                         <h5>Use this section to change the color of the text and background.</h5>
                         <div class="control-group">
-                            <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% endif %}:</label>
+                            <label class="control-label" for="bodybg">Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (outside the frame){% elif theme_name == "droplets" %} (page){% endif %}:</label>
                             <div class="controls">
                                 <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" data-default="{{ variable_defaults|index:'bodyBackground' }}" data-scss-default="{{ scss_variable_defaults|index:'bodyBackground' }}"/>
                             </div>
                         </div>
 
-                    {% if theme_name != "bigpicture" and theme_name != "barebones" and theme_name != "droplets" %}
+                    {% if theme_name != "bigpicture" and theme_name != "barebones" %}
                         <div class="control-group">
-                            <label class="control-label" for="contentbg">Content Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (within the frame){% endif %}:</label>
+                            <label class="control-label" for="contentbg">Content Background{% if theme_name == "fruitsalad" or theme_name == "floaty" %} (within the frame){% elif theme_name == "droplets" %} (main content){% endif %}:</label>
                             <div class="controls">
                                 <input type="text" id="contentbg" name="contentBackground" class="color" value="{{contentBackground}}" data-default="{{ variable_defaults|index:'contentBackground' }}" data-scss-default="{{ scss_variable_defaults|index:'contentBackground' }}"/>
                             </div>
@@ -554,7 +568,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                 </div>
                             </div>
                             {% endif %}
-                            {% for item in data %}{% if item.2 %}
+                            {% for item in data %}{% if item.2 and item.0 != "contentBackground" and item.0 != "bodyBackground" %}
                             <div class="control-group" id="ctlgrp_{{ item.0 }}">
                                 <label class="control-label" for="{{ item.0 }}">{{ item.0 }}:</label>
                                 <div class="controls">
@@ -621,7 +635,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
 
 {% block javascript_footer %}
 {{ block.super }}
-    <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
+    <script src="/media/theme_editor/theme_editor.js?v={{ current_theme_version }}" type="text/javascript"></script>
     {% if bootswatch_vars %}
     {{ bootswatch_vars|json_script:"bootswatch-esp-vars" }}
     {{ scss_base_palette|json_script:"scss-base-palette" }}
@@ -643,6 +657,18 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
     $j(function () {
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
+
+      // Ensure all Spectrum color inputs sync their current color into the form inputs before submitting
+      $j('form.centered-form').on('submit', function () {
+        $j('.color').each(function () {
+          try {
+            var sp = $j(this).spectrum('get');
+            if (sp) {
+              $j(this).val(sp.toHexString());
+            }
+          } catch (e) {}
+        });
+      });
 
       // When the Bootswatch theme dropdown changes, update every color/font/length
       // picker to show that theme's resolved colors.  The picker value AND the

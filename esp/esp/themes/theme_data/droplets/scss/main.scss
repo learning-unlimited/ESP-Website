@@ -420,6 +420,15 @@ div.navbar-collapse {
     @if index($esp-overridden, 'footerBackground') {
         .footer-container .navbar.bg-dark { background: $footerBackground !important; }
     }
+
+    //  Apply content background to #main when customized by the admin (Issue #3939).
+    @if index($esp-overridden, 'contentBackground') {
+        #main {
+            background-color: $contentBackground !important;
+            padding: 20px;
+            border-radius: 4px;
+        }
+    }
 } @else {
     .navbar.bg-dark {
         background-color: $navbarInverseBackground !important;
@@ -433,6 +442,16 @@ div.navbar-collapse {
     @if index($esp-overridden, 'footerBackground') {
         .footer-container .navbar.bg-dark {
             background-color: $footerBackground !important;
+        }
+    }
+
+    //  Apply content background to #main when customized or distinct from the
+    //  page background (Issue #3939).
+    @if index($esp-overridden, 'contentBackground') or ($contentBackground != $bodyBackground) {
+        #main {
+            background-color: $contentBackground !important;
+            padding: 20px;
+            border-radius: 4px;
         }
     }
 
