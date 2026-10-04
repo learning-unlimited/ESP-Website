@@ -475,7 +475,6 @@ class FullStatusTests(ProgramFrameworkTest):
         from django.conf import settings
         from esp.program.models import ClassSection
 
-        # First call warms up initial tag cache / argcache
         self._call()
 
         old_debug = settings.DEBUG
@@ -485,7 +484,6 @@ class FullStatusTests(ProgramFrameworkTest):
             self._call()
             initial_query_count = len(connection.queries)
 
-            # Create 18 more sections (10x section count)
             first_sec = self.program.sections()[0]
             new_secs = [
                 ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
@@ -502,13 +500,11 @@ class FullStatusTests(ProgramFrameworkTest):
             self._call()
             scaled_query_count = len(connection.queries)
 
-            # Adding 18 sections must NOT increase the number of database queries
             self.assertEqual(
                 scaled_query_count,
                 initial_query_count,
                 f"Query count scaled with number of sections: {initial_query_count} -> {scaled_query_count}"
             )
-            # Total queries must remain strictly bounded (O(1))
             self.assertLessEqual(scaled_query_count, 10)
         finally:
             settings.DEBUG = old_debug
@@ -524,7 +520,6 @@ class FullStatusTests(ProgramFrameworkTest):
         from esp.tagdict.models import Tag
         from esp.users.models import ESPUser, Record, RecordType
 
-        # Configure switch_time tag to past time (00:00) so Mode 2 triggers
         Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
         prog_ct = ContentType.objects.get_for_model(self.program)
         self.addCleanup(
@@ -535,7 +530,6 @@ class FullStatusTests(ProgramFrameworkTest):
             ).delete
         )
 
-        # Create at least 5 checked-in students for the program
         rec_type = RecordType.objects.get(name='attended')
         attn_users = [
             ESPUser.objects.create(
@@ -554,7 +548,6 @@ class FullStatusTests(ProgramFrameworkTest):
             ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
         )
 
-        # First call warms up initial tag cache / argcache
         self._call()
 
         old_debug = settings.DEBUG
@@ -564,7 +557,6 @@ class FullStatusTests(ProgramFrameworkTest):
             self._call()
             initial_query_count = len(connection.queries)
 
-            # Create 18 more sections (10x section count) with meeting times
             first_sec = self.program.sections()[0]
             new_secs = [
                 ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
@@ -581,13 +573,11 @@ class FullStatusTests(ProgramFrameworkTest):
             self._call()
             scaled_query_count = len(connection.queries)
 
-            # In attendance mode, adding 18 sections must NOT increase query count
             self.assertEqual(
                 scaled_query_count,
                 initial_query_count,
                 f"Query count scaled with sections in attendance mode: {initial_query_count} -> {scaled_query_count}"
             )
-            # Total queries must remain strictly bounded (O(1))
             self.assertLessEqual(scaled_query_count, 10)
         finally:
             settings.DEBUG = old_debug
@@ -604,7 +594,6 @@ class FullStatusTests(ProgramFrameworkTest):
         capacity = section.capacity
         self.assertGreater(capacity, 0)
 
-        # Configure switch_time tag to past time (00:00)
         Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
         prog_ct = ContentType.objects.get_for_model(self.program)
         self.addCleanup(
@@ -618,7 +607,6 @@ class FullStatusTests(ProgramFrameworkTest):
         rec_type = RecordType.objects.get(name='attended')
         rt_enrolled = RegistrationType.objects.get(name='Enrolled')
 
-        # Create 5 checked-in users for program attendance threshold
         attn_users = [
             ESPUser.objects.create(
                 username=f'attn_eval_user_{i}',
@@ -636,9 +624,6 @@ class FullStatusTests(ProgramFrameworkTest):
             ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
         )
 
-        # Set enrolled_students on section > capacity, but NO checked-in registrations yet.
-        # In attendance mode (Mode 2), fullness is based on checked-in students (0 < capacity),
-        # so is_full should be False despite enrolled_students > capacity.
         orig_enrolled = section.enrolled_students
         section.enrolled_students = capacity + 5
         section.save(update_fields=['enrolled_students'])
@@ -653,7 +638,6 @@ class FullStatusTests(ProgramFrameworkTest):
         self.assertIsNotNone(entry)
         self.assertFalse(entry[1], "Section should not be full when checked-in students count is 0")
 
-        # Now enroll enough checked-in students to reach capacity
         created_regs = []
         for i in range(capacity):
             reg = StudentRegistration.objects.create(
