@@ -43,6 +43,9 @@ In order to use Formstack application forms with a program, enable the following
 
 Now go to /admin/application/formstackappsettings/ and find your program.
 
+.. image:: images/formstack_settings.png
+   :alt: Formstack App Settings form showing API key and field mappings
+
 1. Fill in your Formstack API key (v1) and hit "save and continue editing"
 2. A list of forms connected to your account should appear underneath that box. Find the application form that you created, fill in the form ID number, and hit "save and continue editing"
 3. A list of the questions in that form should appear underneath that box. Fill in the field ID numbers for the username field (which is used to link applications with accounts) and the core class fields (which are used to link applications with classes on the website).
@@ -62,6 +65,9 @@ Admin Workflow
 ==============
 
 Visit /manage///admissions as an admin. You should see a dropdown menu at the top, and a big table with lots of columns.
+
+.. image:: images/admin_admissions.png
+   :alt: Admin Admissions Dashboard showing student data table and status dropdowns
 
 Pick a class. If the class has any applicants, they should appear in the table.
 

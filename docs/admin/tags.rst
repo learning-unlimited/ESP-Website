@@ -36,6 +36,9 @@ by category, with help text for each one.
 How to Set a Tag
 ================
 
+.. image:: images/tag_settings.png
+   :alt: Tag Settings Page showing tag categories and configuration fields
+
 1. Go to the Tag Settings page.
 2. Find the tag you want — each entry shows a description.
 3. Enter the desired value and save.

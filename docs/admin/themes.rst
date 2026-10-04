@@ -15,6 +15,9 @@ The themes app can be accessed at https://[yoursite].learningu.org/themes/.  The
 
 * Select a theme (/themes/select/)
 
+  .. image:: images/themes/theme_select.png
+     :alt: Theme selection page showing different layout options
+
   You can choose from a set of pre-defined layouts.  We have adapted the most
   commonly used site designs and added two new ones geared towards simpler sites.
   You may need to force-refresh (hold the Shift key while refreshing the page)
@@ -37,6 +40,9 @@ See also the list of `Available Themes <available_themes.rst>`_.
   navigation links.
 
 * Customize the theme (/themes/customize/)
+
+  .. image:: images/themes/theme_customize.png
+     :alt: Theme customize page showing color palette picker and section options
 
   This is an opportunity to differentiate your site from the others by altering
   its appearance without affecting functionality.  You will see a multi-section
