@@ -10,7 +10,6 @@ from esp.program.modules.admin_search import (
 )
 from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
-from esp.users.models import ESPUser
 
 
 class CheckAvailabilityModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
@@ -47,20 +46,13 @@ class CheckAvailabilityModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
         self.assertIsNone(entry)
 
-    def test_edit_availability_without_user_renders_search_form(self):
-        """Verify that the admin sees a teacher search form when no user is specified."""
-        self.login_as("admin")
-        url = self.get_module_url("manage", "edit_availability")
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(
-            response,
-            "program/modules/availabilitymodule/availability_form.html",
-        )
-        self.assertIn("search_form", response.context)
 
+    # This function will cover both the test cases:
+    #1:admin accessing the edit form 
+    #2:Verify that the admin sees a teacher search form when no user is specified.
     def test_admin_can_access_edit_availability_form(self):
         """Verify that an admin can access the availability search form."""
+        """Verify that the admin sees a teacher search form when no user is specified."""
         self.login_as("admin")
         url = self.get_module_url("manage", "edit_availability")
         response = self.client.get(url)
