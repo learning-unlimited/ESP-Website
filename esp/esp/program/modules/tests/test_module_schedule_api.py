@@ -432,3 +432,61 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         self.assertEqual(pmo2.seq, 60)
         self.assertEqual(self.pmo.version, original_version + 1)
         self.assertEqual(pmo2.version, original_version2 + 1)
+
+    def test_update_api_returns_raw_and_display_title(self):
+        """The update response exposes the raw link_title override separately
+        from the effective display_title, so undo can restore an empty override
+        instead of persisting the module's default title."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_update_api", kwargs=self.url_kwargs)
+
+        # Setting an override returns it as both the raw value and the display title.
+        payload = {
+            "module_id": self.pmo.id,
+            "link_title": "Custom Title",
+            "version": self.pmo.version,
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data["link_title"], "Custom Title")
+        self.assertEqual(data["display_title"], "Custom Title")
+
+        # Clearing the override returns an empty raw value, while display_title
+        # falls back to the module's default title.
+        self.pmo.refresh_from_db()
+        payload = {
+            "module_id": self.pmo.id,
+            "link_title": "",
+            "version": self.pmo.version,
+        }
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data["link_title"], "")
+        self.assertEqual(data["display_title"], self.pmo.module.link_title)
+
+    def test_admincore_modules_post_bumps_version(self):
+        """Saving the legacy module settings form bumps the OCC version so the
+        timeline scheduler detects writes made outside the schedule API."""
+        learn_mod = ProgramModule.objects.filter(
+            id__in=self.program.program_modules.values_list('id', flat=True),
+            module_type='learn',
+        ).first()
+        if learn_mod is None:
+            self.skipTest("Need a learn module to test the version bump.")
+        pmo = ProgramModuleObj.getFromProgModule(self.program, learn_mod)
+        original_version = pmo.version
+
+        self.client.force_login(self.admin)
+        url = "/manage/%s/%s/modules" % (
+            self.program.program_type, self.program.program_instance)
+        response = self.client.post(url, {
+            "learn_req": str(pmo.id),
+            "%s_label" % pmo.id: "",
+            "%s_link_title" % pmo.id: "",
+        })
+        self.assertEqual(response.status_code, 200)
+
+        pmo.refresh_from_db()
+        self.assertGreater(pmo.version, original_version)

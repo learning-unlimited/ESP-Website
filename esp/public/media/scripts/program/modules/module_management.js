@@ -14,6 +14,7 @@ $j(document).ready(function() {
     var allModules = { learn: [], teach: [] };
     var undoStack = [];
     var redoStack = [];
+    var MAX_HISTORY = 20; // issue #6001: keep a rolling history of the last 20 operations
     var historyBusy = false;
     var activeModule = null;    // currently editing
     var activeModuleType = null; // 'student' or 'teacher'
@@ -103,6 +104,42 @@ $j(document).ready(function() {
         $j('#redoBtn').prop('disabled', historyBusy || redoStack.length === 0);
     }
 
+    // Push a command onto a history stack, trimming the oldest entries so the
+    // in-memory history never grows past MAX_HISTORY operations.
+    function recordHistory(stack, command) {
+        stack.push(command);
+        while (stack.length > MAX_HISTORY) {
+            stack.shift();
+        }
+    }
+
+    // Module ids touched by a command, used to surgically purge only the
+    // conflicted module's history on a 409 rather than wiping everything.
+    function commandModuleIds(command) {
+        if (command && command.type === 'reorder') {
+            return command.after.map(function(state) { return state.id; });
+        }
+        if (command && command.after) {
+            return [command.after.id];
+        }
+        return [];
+    }
+
+    function purgeHistoryFor(affectedIds) {
+        if (!affectedIds || !affectedIds.length) {
+            undoStack = [];
+            redoStack = [];
+            return;
+        }
+        var affected = {};
+        affectedIds.forEach(function(id) { affected[id] = true; });
+        function involvesAffected(command) {
+            return commandModuleIds(command).some(function(id) { return affected[id]; });
+        }
+        undoStack = undoStack.filter(function(command) { return !involvesAffected(command); });
+        redoStack = redoStack.filter(function(command) { return !involvesAffected(command); });
+    }
+
     function moduleState(mod) {
         return {
             id: mod.id,
@@ -123,17 +160,20 @@ $j(document).ready(function() {
         mod.end_date = response.end_date;
         mod.seq = response.seq;
         mod.link_title = response.link_title;
+        mod.display_title = response.display_title;
         mod.required = response.required;
         mod.required_label = response.required_label;
         mod.version = response.version;
     }
 
-    function historyRequestFailed(xhr) {
+    function historyRequestFailed(xhr, affectedIds) {
         var msg = 'Unable to apply history change.';
         try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
         showToast(msg, 'error');
-        undoStack = [];
-        redoStack = [];
+        // issue #6001: surgically purge only the conflicted module's history,
+        // then resync the UI with the database's true state. Without affected
+        // ids (e.g. a generic network error) fall back to clearing both stacks.
+        purgeHistoryFor(affectedIds);
         historyBusy = false;
         updateHistoryControls();
         loadModules();
@@ -161,14 +201,14 @@ $j(document).ready(function() {
             headers: { 'X-CSRFToken': csrfToken },
             success: function(response) {
                 if (!response.success) {
-                    historyRequestFailed({ responseText: JSON.stringify(response) });
+                    historyRequestFailed({ responseText: JSON.stringify(response) }, [target.id]);
                     return;
                 }
                 target.version = response.version;
                 applyModuleResponse(response);
                 callback();
             },
-            error: historyRequestFailed
+            error: function(xhr) { historyRequestFailed(xhr, [target.id]); }
         });
     }
 
@@ -187,7 +227,7 @@ $j(document).ready(function() {
             headers: { 'X-CSRFToken': csrfToken },
             success: function(response) {
                 if (!response.success) {
-                    historyRequestFailed({ responseText: JSON.stringify(response) });
+                    historyRequestFailed({ responseText: JSON.stringify(response) }, target.map(function(state) { return state.id; }));
                     return;
                 }
                 target.forEach(function(state) {
@@ -201,7 +241,7 @@ $j(document).ready(function() {
                 sortModulesBySequence();
                 callback();
             },
-            error: historyRequestFailed
+            error: function(xhr) { historyRequestFailed(xhr, target.map(function(state) { return state.id; })); }
         });
     }
 
@@ -213,7 +253,7 @@ $j(document).ready(function() {
         var run = command.type === 'reorder' ? runReorderCommand : runModuleCommand;
         run(command, 'undo', function() {
             undoStack.pop();
-            redoStack.push(command);
+            recordHistory(redoStack, command);
             historyBusy = false;
             if (command.type === 'reorder') {
                 loadModules();
@@ -233,7 +273,7 @@ $j(document).ready(function() {
         var run = command.type === 'reorder' ? runReorderCommand : runModuleCommand;
         run(command, 'redo', function() {
             redoStack.pop();
-            undoStack.push(command);
+            recordHistory(undoStack, command);
             historyBusy = false;
             if (command.type === 'reorder') {
                 loadModules();
@@ -466,7 +506,7 @@ $j(document).ready(function() {
             var pos     = calculatePosition(mod);
 
             // ── Sidebar row ──────────────────────────────────────
-            var rowTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
+            var rowTitle = mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $row = $j('<div>').addClass('tl-row-label')
                 .attr('tabindex', '0')
                 .attr('role', 'button')
@@ -506,7 +546,7 @@ $j(document).ready(function() {
             });
             
             var $title = $j('<span>').addClass('tl-row-title').text(
-                mod.link_title || mod.admin_title || ('Module ' + mod.id)
+                mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id)
             );
             $titleWrapper.append($title);
 
@@ -541,7 +581,7 @@ $j(document).ready(function() {
             $sidebar.append($row);
 
             // ── Grid block ───────────────────────────────────────
-            var blockTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
+            var blockTitle = mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $blockRow = $j('<div>').addClass('tl-block-row');
             var $block    = $j('<div>').addClass('tl-block')
                 .attr('data-module-id', mod.id)
@@ -557,7 +597,7 @@ $j(document).ready(function() {
                     }
                 });
 
-            var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title).css({
+            var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.display_title || mod.link_title || mod.admin_title).css({
                 position: 'sticky',
                 left: '12px'
             });
@@ -651,8 +691,16 @@ $j(document).ready(function() {
                     headers: { 'X-CSRFToken': csrfToken },
                     success: function(res) {
                         if (res.success) {
-                            after.forEach(function(state) { state.version = res.updated_versions[state.id]; });
-                            undoStack.push({ type: 'reorder', before: before, after: after });
+                            after.forEach(function(state) {
+                                state.version = res.updated_versions[state.id];
+                                // Keep the live module objects in sync so the next
+                                // edit or reorder sends the current version rather than
+                                // a stale one (which would wrongly 409).
+                                if (modMap[state.id]) {
+                                    modMap[state.id].version = state.version;
+                                }
+                            });
+                            recordHistory(undoStack, { type: 'reorder', before: before, after: after });
                             redoStack = [];
                             updateHistoryControls();
                             showToast('Order saved.', 'success');
@@ -741,7 +789,7 @@ $j(document).ready(function() {
         var c = constraints[String(mod.id)] || {};
 
         $j('#editPanel').removeClass('theme-student theme-teacher').addClass('theme-' + type);
-        $j('#editSubtitle').text('Editing: ' + (mod.link_title || mod.admin_title || ('Module ' + mod.id)));
+        $j('#editSubtitle').text('Editing: ' + (mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id)));
         $j('#editLabel').val(mod.link_title || '');
         $j('#editReqLabel').val(mod.required_label || '');
 
@@ -825,7 +873,7 @@ $j(document).ready(function() {
                 $j('#editSaveBtn').prop('disabled', false).text('Save Changes');
                 if (res.success) {
                     var after = moduleState($j.extend({}, before, res));
-                    undoStack.push({ type: 'update', before: before, after: after });
+                    recordHistory(undoStack, { type: 'update', before: before, after: after });
                     redoStack = [];
                     updateHistoryControls();
                     showToast('Module saved successfully.', 'success');
