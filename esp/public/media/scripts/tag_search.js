@@ -13,18 +13,19 @@
     var LIST_ID = "tag-list";
     var ROW_SELECTOR = ".tag-row";
 
-    // expand_display.js expands a category by adding the "active" class and
-    // setting an inline max-height (.dspcont is max-height: 0 by default), so
-    // set that state directly rather than synthesizing clicks, which would
-    // toggle whichever state a category happens to be in.
+    // Each category is a Bootstrap accordion: an .accordion-button followed by
+    // its .accordion-collapse panel. Set the expanded/collapsed state directly
+    // (toggling "show" on the panel and "collapsed"/aria-expanded on the button)
+    // rather than synthesizing clicks, which would toggle whichever state a
+    // category happens to be in. Keeping the "show" class in sync also means a
+    // later manual click still toggles in the expected direction.
     function setExpanded(head, expanded) {
         var content = head.nextElementSibling;
-        head.classList.toggle("active", expanded);
-        if (!content) {
-            return;
+        head.classList.toggle("collapsed", !expanded);
+        head.setAttribute("aria-expanded", expanded ? "true" : "false");
+        if (content) {
+            content.classList.toggle("show", expanded);
         }
-        content.classList.toggle("active", expanded);
-        content.style.maxHeight = expanded ? "none" : "";
     }
 
     function setVisible(head, visible) {
@@ -38,7 +39,7 @@
     function headsWithMatches($matched) {
         var heads = [];
         $matched.each(function() {
-            var content = this.closest(".dspcont");
+            var content = this.closest(".accordion-collapse");
             var head = content && content.previousElementSibling;
             if (head && heads.indexOf(head) === -1) {
                 heads.push(head);
@@ -61,7 +62,7 @@
             return;
         }
 
-        var heads = Array.prototype.slice.call(container.querySelectorAll(".dsphead"));
+        var heads = Array.prototype.slice.call(container.querySelectorAll(".accordion-button"));
         var status = document.getElementById("tag-search-status");
         var expandedBeforeSearch = null;
 
@@ -83,7 +84,7 @@
 
                 if (!expandedBeforeSearch) {
                     expandedBeforeSearch = heads.map(function(head) {
-                        return head.classList.contains("active");
+                        return !head.classList.contains("collapsed");
                     });
                 }
 
