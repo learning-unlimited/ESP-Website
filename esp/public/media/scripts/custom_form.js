@@ -493,8 +493,10 @@ var onChangePermProg=function(){
 		setPerms();
 		$j('#id_sub_perm').parent().show();
 	}
-	else
+	else {
+		$j('#id_sub_perm').children().remove();
 		$j('#id_sub_perm').parent().hide();
+	}
 };
 
 var onChangeMainCatSpec=function() {
