@@ -1644,12 +1644,14 @@ def module_schedule_update_api(request, program_type, program_term):
             except ProgramModuleObj.DoesNotExist:
                 return JsonResponse({"success": False, "error": "Module not found"}, status=404)
 
-            if "version" in data:
-                client_version = data["version"]
-                if isinstance(client_version, bool) or not isinstance(client_version, int):
-                    return JsonResponse({"success": False, "error": "Invalid version format"}, status=400)
-                if client_version != mod.version:
-                    return JsonResponse({"success": False, "error": "Conflict: Module was modified by another administrator."}, status=409)
+            # A valid version is required so every write goes through the
+            # optimistic concurrency check; an unversioned write could silently
+            # clobber a concurrent timeline edit.
+            client_version = data.get("version")
+            if isinstance(client_version, bool) or not isinstance(client_version, int):
+                return JsonResponse({"success": False, "error": "A valid version is required"}, status=400)
+            if client_version != mod.version:
+                return JsonResponse({"success": False, "error": "Conflict: Module was modified by another administrator."}, status=409)
 
             mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
 
@@ -1877,13 +1879,14 @@ def module_schedule_reorder_api(request, program_type, program_term):
 
                 mod = module_map[mod_id]
 
-                # Optimistic Concurrency Control check
-                if "version" in update:
-                    client_version = update["version"]
-                    if isinstance(client_version, bool) or not isinstance(client_version, int):
-                        raise ValueError("Invalid version format")
-                    if client_version != mod.version:
-                        raise ValueError(f"Conflict: Module {mod.id} was modified by another administrator.")
+                # Optimistic Concurrency Control check. A valid version is
+                # required for every entry so an unversioned reorder cannot
+                # bypass the check and overwrite a concurrent edit.
+                client_version = update.get("version")
+                if isinstance(client_version, bool) or not isinstance(client_version, int):
+                    raise ValueError("Invalid version format")
+                if client_version != mod.version:
+                    raise ValueError(f"Conflict: Module {mod.id} was modified by another administrator.")
 
                 handler = mod.module.handler
 

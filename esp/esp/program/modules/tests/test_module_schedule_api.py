@@ -70,7 +70,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             "module_id": self.pmo.id,
             "start_date": self.past.isoformat(),
             "end_date": self.future.isoformat(),
-            "seq": 999
+            "seq": 999,
+            "version": self.pmo.version
         }
 
         response = self.client.post(
@@ -95,7 +96,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         payload = {
             "module_id": self.pmo.id,
             "start_date": self.future.isoformat(),
-            "end_date": self.past.isoformat()
+            "end_date": self.past.isoformat(),
+            "version": self.pmo.version
         }
 
         response = self.client.post(
@@ -138,7 +140,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             "module_id": pmo.id,
             "start_date": self.past.isoformat(),
             "end_date": self.future.isoformat(),
-            "seq": 10
+            "seq": 10,
+            "version": pmo.version
         }
 
         response = self.client.post(
@@ -163,11 +166,13 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         # Test updating the dates again
         new_past = self.past - timedelta(days=2)
         new_future = self.future + timedelta(days=2)
+        pmo.refresh_from_db()
         payload = {
             "module_id": pmo.id,
             "start_date": new_past.isoformat(),
             "end_date": new_future.isoformat(),
-            "seq": 10
+            "seq": 10,
+            "version": pmo.version
         }
         response = self.client.post(
             reverse("module_schedule_update_api", kwargs=self.url_kwargs),
@@ -197,7 +202,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             "module_id": tpmo.id,
             "start_date": self.past.isoformat(),
             "end_date": self.future.isoformat(),
-            "seq": 10
+            "seq": 10,
+            "version": tpmo.version
         }
         response = self.client.post(
             reverse("module_schedule_update_api", kwargs=self.url_kwargs),
@@ -269,8 +275,8 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
         payload = {
             "order": [
-                {"id": self.pmo.id, "seq": 50},
-                {"id": pmo2.id, "seq": 10}
+                {"id": self.pmo.id, "seq": 50, "version": self.pmo.version},
+                {"id": pmo2.id, "seq": 10, "version": pmo2.version}
             ]
         }
         response = self.client.post(url, json.dumps(payload), content_type="application/json")
@@ -298,7 +304,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
             url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
             payload = {
                 "order": [
-                    {"id": self.pmo.id, "seq": 999}
+                    {"id": self.pmo.id, "seq": 999, "version": self.pmo.version}
                 ]
             }
             response = self.client.post(url, json.dumps(payload), content_type="application/json")
@@ -490,3 +496,24 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
         pmo.refresh_from_db()
         self.assertGreater(pmo.version, original_version)
+
+    def test_update_requires_version(self):
+        """Scheduler updates must carry a version so OCC cannot be bypassed."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_update_api", kwargs=self.url_kwargs)
+        payload = {"module_id": self.pmo.id, "seq": 42}
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.pmo.refresh_from_db()
+        self.assertNotEqual(self.pmo.seq, 42)
+
+    def test_reorder_requires_version(self):
+        """Reorder entries must carry a version so OCC cannot be bypassed."""
+        self.client.force_login(self.admin)
+        url = reverse("module_schedule_reorder_api", kwargs=self.url_kwargs)
+        original_seq = self.pmo.seq
+        payload = {"order": [{"id": self.pmo.id, "seq": 42}]}
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 400)
+        self.pmo.refresh_from_db()
+        self.assertEqual(self.pmo.seq, original_seq)

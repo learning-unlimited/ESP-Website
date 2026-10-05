@@ -174,9 +174,13 @@ $j(document).ready(function() {
         // then resync the UI with the database's true state. Without affected
         // ids (e.g. a generic network error) fall back to clearing both stacks.
         purgeHistoryFor(affectedIds);
-        historyBusy = false;
-        updateHistoryControls();
-        loadModules();
+        // Keep the timeline locked until the resync finishes (on both its
+        // success and error paths) so another undo/redo can't run against the
+        // still-stale state and have the pending GET overwrite the newer render.
+        loadModules(function() {
+            historyBusy = false;
+            updateHistoryControls();
+        });
     }
 
     function runModuleCommand(command, direction, callback) {
@@ -288,7 +292,7 @@ $j(document).ready(function() {
     // ──────────────────────────────────────────────────────────────
     // API: Load modules
     // ──────────────────────────────────────────────────────────────
-    function loadModules() {
+    function loadModules(onComplete) {
         $j.ajax({
             url: '/manage/' + programUrlBase + '/module_schedule',
             method: 'GET',
@@ -321,6 +325,11 @@ $j(document).ready(function() {
             },
             error: function() {
                 showToast('Network error while loading modules.', 'error');
+            },
+            complete: function() {
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
             }
         });
     }
@@ -888,6 +897,17 @@ $j(document).ready(function() {
                 var msg = 'An error occurred while saving.';
                 try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
                 showToast(msg, 'error');
+                // On a version conflict the form and allModules hold a stale
+                // version, so a repeat save would just conflict again. Drop this
+                // module's now-stale history, close the panel, and resync so the
+                // next edit starts from the other administrator's state.
+                if (xhr.status === 409) {
+                    if (activeModule) {
+                        purgeHistoryFor([activeModule.id]);
+                    }
+                    closeEditPanel(true);
+                    loadModules();
+                }
             }
         });
     });
