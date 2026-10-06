@@ -1,49 +1,135 @@
-from unittest import mock
-import importlib.util
-import pathlib
+from __future__ import absolute_import
 
-from django.test import SimpleTestCase
+import os
+import runpy
+import fcntl
 
-def load_cron_module():
-    path = pathlib.Path(__file__).resolve().parents[2] / "dbmail_cron.py"
-    spec = importlib.util.spec_from_file_location("dbmail_cron", path)
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+from unittest.mock import MagicMock, call, patch
 
-class DbmailCronTest(SimpleTestCase):
+from esp.dbmail import cronmail
+from esp.tests.util import CacheFlushTestCase
 
-    def test_import_does_not_run_cron(self):
-        """Importing the module should NOT run the cron job."""
-        with mock.patch("esp.dbmail.cronmail.process_messages") as pm:
-            load_cron_module()
-            pm.assert_not_called()
+class DbmailCronTest(CacheFlushTestCase):
 
-    @mock.patch("esp.dbmail.cronmail.send_email_requests")
-    @mock.patch("esp.dbmail.cronmail.process_messages")
-    def test_main_success(self, mock_process, mock_send):
-        """main() should call both functions and return 0."""
-        cron = load_cron_module()
-        with mock.patch.object(cron, "setup_django"), \
-             mock.patch("builtins.open", mock.mock_open()), \
-             mock.patch("fcntl.flock"):
-            result = cron.main()
-        self.assertEqual(result, 0)
-        mock_process.assert_called_once()
-        mock_send.assert_called_once()
+    def _run_script(self, lock_side_effect=None,
+                    process_side_effect=None):
+        lock_handle = MagicMock()
 
-    @mock.patch("esp.dbmail.cronmail.process_messages", side_effect=RuntimeError("DB down"))
-    def test_main_logs_error_and_closes_lock(self, mock_process):
-        """On failure, should log ERROR and close lock file (leak fix)."""
-        cron = load_cron_module()
-        mock_file_obj = mock.mock_open()()
+        with patch.dict(
+            os.environ,
+            {'VIRTUAL_ENV': '/test/virtualenv'},
+            clear=False
+        ), patch('django.setup'), \
+                patch('io.open', return_value=lock_handle), \
+                patch('tempfile.gettempdir', return_value='/tmp'), \
+                patch('logging.getLogger') as get_logger, \
+                patch('fcntl.lockf') as lockf, \
+                patch.object(
+                    cronmail,
+                    'process_messages'
+                ) as process_messages, \
+                patch.object(
+                    cronmail,
+                    'send_email_requests'
+                ) as send_email_requests:
 
-        with mock.patch.object(cron, "setup_django"), \
-             mock.patch("builtins.open", return_value=mock_file_obj), \
-             mock.patch("fcntl.flock"), \
-             self.assertLogs(cron.logger, level="ERROR"):
-            result = cron.main()
+            if lock_side_effect is not None:
+                lockf.side_effect = lock_side_effect
 
-        self.assertEqual(result, 1)
-        mock_file_obj.close.assert_called()
+            if process_side_effect is not None:
+                process_messages.side_effect = process_side_effect
+
+            logger = get_logger.return_value
+
+            state = {
+                'lock_handle': lock_handle,
+                'lockf': lockf,
+                'process_messages': process_messages,
+                'send_email_requests': send_email_requests,
+                'logger': logger,
+                'system_exit': None,
+            }
+
+            try:
+                runpy.run_path(
+                    '/app/esp/dbmail_cron.py',
+                    run_name='__main__'
+                )
+            except SystemExit as exc:
+                state['system_exit'] = exc
+
+        return state
+
+    def test_successful_processing(self):
+        state = self._run_script()
+
+        state['process_messages'].assert_called_once_with()
+        state['send_email_requests'].assert_called_once_with()
+
+        state['lockf'].assert_has_calls([
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_EX | fcntl.LOCK_NB
+            ),
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_UN
+            ),
+        ])
+
+        state['lock_handle'].close.assert_called_once_with()
+        self.assertIsNone(state['system_exit'])
+
+    def test_exits_when_lock_is_already_taken(self):
+        state = self._run_script(
+            lock_side_effect=IOError()
+        )
+
+        self.assertIsNotNone(state['system_exit'])
+        self.assertEqual(state['system_exit'].code, 0)
+
+        state['process_messages'].assert_not_called()
+        state['send_email_requests'].assert_not_called()
+
+        state['lock_handle'].close.assert_called_once_with()
+
+        state['lockf'].assert_called_once_with(
+            state['lock_handle'],
+            fcntl.LOCK_EX | fcntl.LOCK_NB
+        )
+
+        state['logger'].info.assert_any_call(
+            'dbmail_cron: exiting because another instance has the lock.'
+        )
+
+    def test_handles_processing_error(self):
+        error = RuntimeError('test processing error')
+
+        state = self._run_script(
+            process_side_effect=error
+        )
+
+        state['process_messages'].assert_called_once_with()
+        state['send_email_requests'].assert_not_called()
+
+        state['logger'].info.assert_any_call(
+            'dbmail_cron: fatal error!'
+        )
+
+        state['logger'].exception.assert_called_once_with(error)
+
+        state['lockf'].assert_has_calls([
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_EX | fcntl.LOCK_NB
+            ),
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_UN
+            ),
+        ])
+
+        state['lock_handle'].close.assert_called_once_with()
+        self.assertIsNone(state['system_exit'])
         
+

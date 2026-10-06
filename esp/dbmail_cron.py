@@ -1,110 +1,134 @@
-"""Cron job to process and send queued dbmail messages.
+from __future__ import absolute_import
 
-This fixes issue #4481: resource leaks in DB connections and wrong log level.
-"""
-import logging
-import time
-from datetime import datetime, timedelta
-from sqlalchemy import select, update
-from sqlalchemy.orm import Session
-from esp.db import db_engine
-from esp.db.models import DBMailMessage, DBMailStatus
-from esp.mail import send_mail
+import os
+import runpy
+import fcntl
 
-logger = logging.getLogger(__name__)
+from unittest.mock import MagicMock, call, patch
 
-BATCH_SIZE = 100
-SLEEP_SECONDS = 5
-MAX_RETRIES = 3
+from esp.dbmail import cronmail
+from esp.tests.util import CacheFlushTestCase
 
-def process_queue():
-    """Process queued dbmail messages and mark them sent/failed."""
-    logger.info("Starting dbmail_cron run at %s", datetime.utcnow())
-    
-    processed = 0
-    failed = 0
-    
-    # Use context manager to ensure engine connections are closed properly
-    with db_engine.connect() as conn:
-        with Session(bind=conn) as session:
+
+class DbmailCronTest(CacheFlushTestCase):
+
+    def _run_script(self, lock_side_effect=None,
+                    process_side_effect=None):
+        lock_handle = MagicMock()
+
+        with patch.dict(
+            os.environ,
+            {'VIRTUAL_ENV': '/test/virtualenv'},
+            clear=False
+        ), patch('django.setup'), \
+                patch('io.open', return_value=lock_handle), \
+                patch('tempfile.gettempdir', return_value='/tmp'), \
+                patch('logging.getLogger') as get_logger, \
+                patch('fcntl.lockf') as lockf, \
+                patch.object(
+                    cronmail,
+                    'process_messages'
+                ) as process_messages, \
+                patch.object(
+                    cronmail,
+                    'send_email_requests'
+                ) as send_email_requests:
+
+            if lock_side_effect is not None:
+                lockf.side_effect = lock_side_effect
+
+            if process_side_effect is not None:
+                process_messages.side_effect = process_side_effect
+
+            logger = get_logger.return_value
+
+            state = {
+                'lock_handle': lock_handle,
+                'lockf': lockf,
+                'process_messages': process_messages,
+                'send_email_requests': send_email_requests,
+                'logger': logger,
+                'system_exit': None,
+            }
+
             try:
-                # Get pending messages, oldest first
-                stmt = (
-                    select(DBMailMessage)
-                    .where(DBMailMessage.status == DBMailStatus.QUEUED)
-                    .where(DBMailMessage.send_after <= datetime.utcnow())
-                    .order_by(DBMailMessage.created_at)
-                    .limit(BATCH_SIZE)
-                    .with_for_update(skip_locked=True)
+                runpy.run_path(
+                    '/app/esp/dbmail_cron.py',
+                    run_name='__main__'
                 )
-                messages = session.scalars(stmt).all()
-                
-                if not messages:
-                    logger.debug("No queued messages to process")
-                    return
-                
-                for msg in messages:
-                    try:
-                        send_mail(
-                            to=msg.recipient,
-                            subject=msg.subject,
-                            body=msg.body,
-                            from_addr=msg.sender
-                        )
-                        # Mark as sent
-                        session.execute(
-                            update(DBMailMessage)
-                            .where(DBMailMessage.id == msg.id)
-                            .values(status=DBMailStatus.SENT, sent_at=datetime.utcnow())
-                        )
-                        processed += 1
-                        
-                    except Exception as e:
-                        # Increment retry count and mark failed if maxed out
-                        msg.retry_count = (msg.retry_count or 0) + 1
-                        if msg.retry_count >= MAX_RETRIES:
-                            session.execute(
-                                update(DBMailMessage)
-                                .where(DBMailMessage.id == msg.id)
-                                .values(status=DBMailStatus.FAILED, error=str(e))
-                            )
-                            failed += 1
-                            # Changed from logger.fatal to logger.error
-                            logger.error("Failed to send dbmail id=%s after %s retries: %s", 
-                                         msg.id, MAX_RETRIES, e)
-                        else:
-                            session.execute(
-                                update(DBMailMessage)
-                                .where(DBMailMessage.id == msg.id)
-                                .values(retry_count=msg.retry_count)
-                            )
-                            # Changed from logger.fatal to logger.warning
-                            logger.warning("Failed to send dbmail id=%s, retry=%s: %s", 
-                                           msg.id, msg.retry_count, e)
-                
-                session.commit()
-                
-            except Exception as e:
-                session.rollback()
-                # Changed from logger.fatal to logger.exception for proper traceback
-                logger.exception("Fatal error in dbmail_cron batch: %s", e)
-                raise
-            finally:
-                # Session and connection are auto-closed by context managers
-                pass
-    
-    logger.info("dbmail_cron finished: processed=%s failed=%s", processed, failed)
+            except SystemExit as exc:
+                state['system_exit'] = exc
 
-def main():
-    """Run the cron loop."""
-    while True:
-        try:
-            process_queue()
-        except Exception:
-            # Don't crash the whole cron on one bad batch
-            logger.exception("Unexpected error in main loop")
-        time.sleep(SLEEP_SECONDS)
+        return state
 
-if __name__ == "__main__":
-    main()
-    
+    def test_successful_processing(self):
+        state = self._run_script()
+
+        state['process_messages'].assert_called_once_with()
+        state['send_email_requests'].assert_called_once_with()
+
+        state['lockf'].assert_has_calls([
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_EX | fcntl.LOCK_NB
+            ),
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_UN
+            ),
+        ])
+
+        state['lock_handle'].close.assert_called_once_with()
+        self.assertIsNone(state['system_exit'])
+
+    def test_exits_when_lock_is_already_taken(self):
+        state = self._run_script(
+            lock_side_effect=IOError()
+        )
+
+        self.assertIsNotNone(state['system_exit'])
+        self.assertEqual(state['system_exit'].code, 0)
+
+        state['process_messages'].assert_not_called()
+        state['send_email_requests'].assert_not_called()
+
+        state['lock_handle'].close.assert_called_once_with()
+
+        state['lockf'].assert_called_once_with(
+            state['lock_handle'],
+            fcntl.LOCK_EX | fcntl.LOCK_NB
+        )
+
+        state['logger'].info.assert_any_call(
+            'dbmail_cron: exiting because another instance has the lock.'
+        )
+
+    def test_handles_processing_error(self):
+        error = RuntimeError('test processing error')
+
+        state = self._run_script(
+            process_side_effect=error
+        )
+
+        state['process_messages'].assert_called_once_with()
+        state['send_email_requests'].assert_not_called()
+
+        state['logger'].info.assert_any_call(
+            'dbmail_cron: fatal error!'
+        )
+
+        state['logger'].exception.assert_called_once_with(error)
+
+        state['lockf'].assert_has_calls([
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_EX | fcntl.LOCK_NB
+            ),
+            call(
+                state['lock_handle'],
+                fcntl.LOCK_UN
+            ),
+        ])
+
+        state['lock_handle'].close.assert_called_once_with()
+        self.assertIsNone(state['system_exit'])
