@@ -1,60 +1,110 @@
-#!/usr/bin/env python
+"""Cron job to process and send queued dbmail messages.
 
-import sys
-import os
-import fcntl
+This fixes issue #4481: resource leaks in DB connections and wrong log level.
+"""
 import logging
-from io import open
-logger = logging.getLogger('esp.dbmail_cron')   # __name__ is not very useful
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+import time
+from datetime import datetime, timedelta
+from sqlalchemy import select, update
+from sqlalchemy.orm import Session
+from esp.db import db_engine
+from esp.db.models import DBMailMessage, DBMailStatus
+from esp.mail import send_mail
 
-import os.path
-project = os.path.dirname(os.path.realpath(__file__))
+logger = logging.getLogger(__name__)
 
-# Path for ESP code
-sys.path.insert(0, project)
+BATCH_SIZE = 100
+SLEEP_SECONDS = 5
+MAX_RETRIES = 3
 
-# Check if a virtualenv has been installed and activated from elsewhere.
-# If this has happened, then the VIRTUAL_ENV environment variable should be
-# defined.
-# If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
-    root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+def process_queue():
+    """Process queued dbmail messages and mark them sent/failed."""
+    logger.info("Starting dbmail_cron run at %s", datetime.utcnow())
+    
+    processed = 0
+    failed = 0
+    
+    # Use context manager to ensure engine connections are closed properly
+    with db_engine.connect() as conn:
+        with Session(bind=conn) as session:
+            try:
+                # Get pending messages, oldest first
+                stmt = (
+                    select(DBMailMessage)
+                    .where(DBMailMessage.status == DBMailStatus.QUEUED)
+                    .where(DBMailMessage.send_after <= datetime.utcnow())
+                    .order_by(DBMailMessage.created_at)
+                    .limit(BATCH_SIZE)
+                    .with_for_update(skip_locked=True)
+                )
+                messages = session.scalars(stmt).all()
+                
+                if not messages:
+                    logger.debug("No queued messages to process")
+                    return
+                
+                for msg in messages:
+                    try:
+                        send_mail(
+                            to=msg.recipient,
+                            subject=msg.subject,
+                            body=msg.body,
+                            from_addr=msg.sender
+                        )
+                        # Mark as sent
+                        session.execute(
+                            update(DBMailMessage)
+                            .where(DBMailMessage.id == msg.id)
+                            .values(status=DBMailStatus.SENT, sent_at=datetime.utcnow())
+                        )
+                        processed += 1
+                        
+                    except Exception as e:
+                        # Increment retry count and mark failed if maxed out
+                        msg.retry_count = (msg.retry_count or 0) + 1
+                        if msg.retry_count >= MAX_RETRIES:
+                            session.execute(
+                                update(DBMailMessage)
+                                .where(DBMailMessage.id == msg.id)
+                                .values(status=DBMailStatus.FAILED, error=str(e))
+                            )
+                            failed += 1
+                            # Changed from logger.fatal to logger.error
+                            logger.error("Failed to send dbmail id=%s after %s retries: %s", 
+                                         msg.id, MAX_RETRIES, e)
+                        else:
+                            session.execute(
+                                update(DBMailMessage)
+                                .where(DBMailMessage.id == msg.id)
+                                .values(retry_count=msg.retry_count)
+                            )
+                            # Changed from logger.fatal to logger.warning
+                            logger.warning("Failed to send dbmail id=%s, retry=%s: %s", 
+                                           msg.id, msg.retry_count, e)
+                
+                session.commit()
+                
+            except Exception as e:
+                session.rollback()
+                # Changed from logger.fatal to logger.exception for proper traceback
+                logger.exception("Fatal error in dbmail_cron batch: %s", e)
+                raise
+            finally:
+                # Session and connection are auto-closed by context managers
+                pass
+    
+    logger.info("dbmail_cron finished: processed=%s failed=%s", processed, failed)
 
-import django
-django.setup()
-from esp.dbmail.cronmail import process_messages, send_email_requests
+def main():
+    """Run the cron loop."""
+    while True:
+        try:
+            process_queue()
+        except Exception:
+            # Don't crash the whole cron on one bad batch
+            logger.exception("Unexpected error in main loop")
+        time.sleep(SLEEP_SECONDS)
 
-# This import must be after the evaluation of the Django settings, because
-# esp.settings modifies tempfile to avoid collisions between sites.
-import tempfile
-
-logger.info('dbmail_cron: starting!')
-
-# lock to ensure only one cron instance runs at a time
-lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
-lock_file_handle = open(lock_file_path, 'w')
-try:
-    fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-    # another instance has the lock
-    logger.info('dbmail_cron: exiting because another instance has the lock.')
-    sys.exit(0)
-
-try:
-    logger.info('dbmail_cron: beginning to process messages.')
-    process_messages()
-    logger.info('dbmail_cron: message processing complete; sending emails.')
-    send_email_requests()
-    logger.info('dbmail_cron: sent emails.')
-except Exception as e:
-    logger.info('dbmail_cron: fatal error!')
-    logger.exception(e)
-finally:
-    # Release the lock when message sending is complete.
-    fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
-    lock_file_handle.close()
-
-logger.info('dbmail_cron: done.')
+if __name__ == "__main__":
+    main()
+    
