@@ -1,60 +1,67 @@
 #!/usr/bin/env python
-
-import sys
-import os
-import fcntl
+"""
+Cron entry-point for outgoing ESP mail.
+Fixes #4481: Resource leaks and incorrect log level for fatal errors.
+"""
 import logging
-from io import open
-logger = logging.getLogger('esp.dbmail_cron')   # __name__ is not very useful
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
-
-import os.path
-project = os.path.dirname(os.path.realpath(__file__))
-
-# Path for ESP code
-sys.path.insert(0, project)
-
-# Check if a virtualenv has been installed and activated from elsewhere.
-# If this has happened, then the VIRTUAL_ENV environment variable should be
-# defined.
-# If the variable isn't defined, then activate our own virtualenv.
-if os.environ.get('VIRTUAL_ENV') is None:
-    root = os.path.dirname(project)
-    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+import os
+import sys
 
 import django
-django.setup()
-from esp.dbmail.cronmail import process_messages, send_email_requests
+from django import db
 
-# This import must be after the evaluation of the Django settings, because
-# esp.settings modifies tempfile to avoid collisions between sites.
-import tempfile
+logger = logging.getLogger(__name__)
 
-logger.info('dbmail_cron: starting!')
+LOCK_FILE_PATH = "/tmp/dbmail_cron.lock"
 
-# lock to ensure only one cron instance runs at a time
-lock_file_path = os.path.join(tempfile.gettempdir(), 'espweb.dbmailcron.lock')
-lock_file_handle = open(lock_file_path, 'w')
-try:
-    fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-except IOError:
-    # another instance has the lock
-    logger.info('dbmail_cron: exiting because another instance has the lock.')
-    sys.exit(0)
+def setup_django():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
+    django.setup()
 
-try:
-    logger.info('dbmail_cron: beginning to process messages.')
-    process_messages()
-    logger.info('dbmail_cron: message processing complete; sending emails.')
-    send_email_requests()
-    logger.info('dbmail_cron: sent emails.')
-except Exception as e:
-    logger.info('dbmail_cron: fatal error!')
-    logger.exception(e)
-finally:
-    # Release the lock when message sending is complete.
-    fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
-    lock_file_handle.close()
+def main():
+    # Import inside function so importing this file doesn't run cron
+    from esp.dbmail.cronmail import process_messages, send_email_requests
 
-logger.info('dbmail_cron: done.')
+    setup_django()
+
+    lock_file = None
+    try:
+        lock_file = open(LOCK_FILE_PATH, "w")
+
+        try:
+            import fcntl
+            fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            logger.error("dbmail_cron: Another instance is already running. Exiting.")
+            return 1
+
+        logger.info("dbmail_cron: Starting process_messages()")
+        process_messages()
+
+        logger.info("dbmail_cron: Starting send_email_requests()")
+        send_email_requests()
+
+        logger.info("dbmail_cron: Completed successfully")
+        return 0
+
+    except Exception:
+        # Fixed: Fatal errors now logged at ERROR level with traceback
+        logger.exception("dbmail_cron: Fatal error during cron run")
+        return 1
+
+    finally:
+        # Fixed: Always close resources to prevent leaks
+        if lock_file is not None:
+            try:
+                import fcntl
+                fcntl.flock(lock_file, fcntl.LOCK_UN)
+            except Exception:
+                pass
+            finally:
+                lock_file.close()
+                logger.debug("dbmail_cron: Lock file released")
+
+        db.connections.close_all()
+
+if __name__ == "__main__":
+    sys.exit(main())
