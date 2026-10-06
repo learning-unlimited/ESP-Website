@@ -46,3 +46,4 @@ class DbmailCronTest(SimpleTestCase):
 
         self.assertEqual(result, 1)
         mock_file_obj.close.assert_called()
+        
