@@ -422,7 +422,7 @@ div.navbar-collapse {
     }
 
     //  Apply content background to #main when customized by the admin (Issue #3939).
-    @if index($esp-overridden, 'contentBackground') {
+    @if index($esp-overridden, 'contentBackground') or index($esp-overridden, 'bodyBackground') {
         #main {
             background-color: $contentBackground !important;
             padding: 20px;

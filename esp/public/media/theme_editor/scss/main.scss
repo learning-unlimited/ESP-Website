@@ -10,10 +10,12 @@
 body {
     font-size: $baseFontSize;
 }
-label,
-.control-label,
-.form-label {
-    color: $textColor;
+@if not $bootswatch-active {
+    label,
+    .control-label,
+    .form-label {
+        color: $textColor;
+    }
 }
 .navbar-brand {
     font-size: $navbarBrandFontSize;

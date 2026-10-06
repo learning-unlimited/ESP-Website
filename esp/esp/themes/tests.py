@@ -673,6 +673,43 @@ class DropletsContentBackgroundTest(TestCase):
             css = f.read()
         self.assertIn('#main {\n  background-color: #fefefe !important;', css)
 
+    def test_content_background_bootswatch_body_background_override(self):
+        """Under an active Bootswatch theme, customizing bodyBackground must emit
+        a #main background rule with contentBackground to preserve readability."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'bodyBackground': '#123456'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#main {\n  background-color: #ffffff !important;', css)
+
+    def test_bootswatch_labels_not_forced_dark_by_default(self):
+        """Under an active Bootswatch theme, default labels must not be forced to
+        $textColor so dark skins retain readable light labels."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css('droplets', {}, self.css_filename, bootswatch_theme=bw_themes[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('label,\n.control-label,\n.form-label {\n  color:', css)
+
+    def test_bootswatch_customized_text_color_applies_to_labels(self):
+        """Under an active Bootswatch theme, explicitly customizing textColor must
+        still apply to form labels."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'textColor': '#abcdef'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('label, .control-label, .form-label {\n  color: #abcdef;', css)
+
     def test_content_background_variable_is_literal_hex(self):
         """contentBackground must be declared as a literal hex in variables.scss
         so the theme editor recognizes it as a color picker input."""
