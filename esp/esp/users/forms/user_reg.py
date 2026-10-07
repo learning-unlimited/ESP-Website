@@ -161,7 +161,7 @@ class AwaitingActivationEmailForm(forms.Form):
     def clean_username(self):
         data = self.cleaned_data['username']
         awaiting_activation = Q(is_active=False, password__regex=r'\$(.*)_')
-        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
+        if ESPUser.objects.filter(username = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
 
         data = data.strip()
