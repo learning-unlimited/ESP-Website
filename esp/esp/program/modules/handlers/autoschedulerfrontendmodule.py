@@ -80,14 +80,19 @@ class AutoschedulerFrontendModule(ProgramModuleObj):
 
         try:
             schedulerObj = AutoschedulerController(prog, **options)
-            schedulerObj.compute_assignments()
         except (SchedulingError, ValueError) as e:
             return {'response': [{'error_msg': str(e)}]}
         except KeyError as e:
-            #   AutoschedulerController indexes the option set directly, so a
-            #   request that omits any of them is missing input rather than a
-            #   server fault.
+            #   The constructor indexes the option set directly, so a request
+            #   that omits any of them is missing input rather than a server
+            #   fault.  Only the constructor is covered: a KeyError raised
+            #   while actually scheduling is a defect and must still surface.
             return {'response': [{'error_msg': 'Missing autoscheduler option %s.' % e}]}
+
+        try:
+            schedulerObj.compute_assignments()
+        except (SchedulingError, ValueError) as e:
+            return {'response': [{'error_msg': str(e)}]}
 
         info = schedulerObj.get_scheduling_info()
         autoscheduler_data = json.dumps(schedulerObj.export_assignments())

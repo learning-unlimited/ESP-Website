@@ -274,12 +274,15 @@ class AllViewsTest(ProgramFrameworkTest):
             })),
         ]
 
-        # Stop as soon as this view handles the request.  4xx counts: the AJAX
-        # endpoints answer a request they can't use with HttpResponseBadRequest
-        # or 405, which means the view resolved, loaded and ran its own
-        # validation.  What this test is looking for is a view that cannot
-        # serve anything at all -- an unhandled exception, or the 500 that
-        # ESPErrorMiddleware renders for an ESPError.
+        # Stop as soon as a request is actually served.  A 4xx also counts as
+        # handled -- the AJAX endpoints answer a request they can't use with
+        # HttpResponseBadRequest, and a POST-only view answers a GET with 405,
+        # which means the view resolved, loaded and ran its own validation --
+        # but it does not end the search, or a GET that 405s would cancel the
+        # POST written for that very view.  What this test is looking for is a
+        # view that cannot serve anything at all: an unhandled exception, or
+        # the 500 that ESPErrorMiddleware renders for an ESPError.
+        handled = False
         failures = []
         for label, attempt in attempts:
             try:
@@ -289,8 +292,12 @@ class AllViewsTest(ProgramFrameworkTest):
                 # the exception that the view raised.
                 failures.append('%s: raised %s: %s' % (label, type(e).__name__, e))
                 continue
-            if 200 <= response.status_code < 500:
+            if 200 <= response.status_code < 400:
                 return
+            if response.status_code < 500:
+                handled = True
             failures.append('%s: HTTP %d' % (label, response.status_code))
 
+        if handled:
+            return
         self.fail('No request to %s was handled:\n  %s' % (url, '\n  '.join(failures)))
