@@ -117,6 +117,10 @@
     </script>
     {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+    <!-- csrf_init.js also fetches this on ready, but most POST forms render no
+         csrf token of their own and rely on check_csrf_cookie to inject one, so
+         it has to be defined before anything can be submitted. -->
+    <script type="text/javascript" src="/media/scripts/csrf_check.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -142,21 +146,26 @@
         // form itself, and so it also covers forms added to the page later.
         $j(document).on('submit', 'form', function(event) {
           var form = this;
-          if (form.method.toLowerCase() !== 'post') return;
+          // A submit button's formmethod/formtarget override the form's own.
+          var submitter = event.originalEvent && event.originalEvent.submitter;
+          var method = (submitter && submitter.formMethod) || form.method;
+          var target = (submitter && submitter.formTarget) || form.target;
+          if (method.toLowerCase() !== 'post') return;
           // Another handler (AJAX, a confirm(), a knockout binding) has taken
           // over, so it owns the form from here.
           if (event.isDefaultPrevented() ||
               (event.originalEvent && event.originalEvent.defaultPrevented)) return;
-          // Forms that open a new tab or return a file never navigate away,
-          // so locking them would leave them locked.
-          if (form.target) return;
+          // Submissions that open a new tab, or return a file, never navigate
+          // away, so locking them would leave them locked.
+          if (target) return;
           // Already on its way; drop the repeat.
           if ($j.data(form, 'espSubmitting')) {
             event.preventDefault();
             return;
           }
-          // csrf_init.js binds this too, but only once csrf_check.js has
-          // finished loading asynchronously.
+          // csrf_init.js binds this too, on ready. Most POST forms render no
+          // csrf token of their own, so a submission that reached us without
+          // one injected would just 403.
           if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
             event.preventDefault();
             return;
@@ -166,7 +175,6 @@
           // left out of the POST data, which the browser builds after this
           // handler returns. event.submitter is unsupported on older browsers,
           // in which case mark every submit button in the form.
-          var submitter = event.originalEvent && event.originalEvent.submitter;
           $j(submitter || $j(form).find(':submit'))
             .addClass('esp-submitting').attr('aria-disabled', 'true');
         });
