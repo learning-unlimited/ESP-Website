@@ -37,10 +37,8 @@ table {
         justify-content: center;
         column-gap: 10px;
     }
-    /* The class-list links are <a> elements, so they also need the chrome and
-       the link resets a browser would otherwise supply for a <button>.  They
-       also carry the `link_button` marker class, which the theme stylesheets
-       exclude from their link colour/underline rules. */
+    /* These links carry the `link_button` marker class, which the theme
+       stylesheets exclude from their link colour/underline rules. */
     button, a {
         width: calc(100% - 20px);
         min-width: 200px;
@@ -62,6 +60,10 @@ table {
         color: ButtonText;
         text-decoration: none;
         cursor: pointer;
+    }
+    /* Restore the pressed-in flip the user agent gave a <button>. */
+    a:active {
+        border-style: inset;
     }
 }
 
