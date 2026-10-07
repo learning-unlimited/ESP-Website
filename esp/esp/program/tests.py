@@ -930,6 +930,21 @@ class ProgramCapTest(ProgramFrameworkTest):
             # Assert that everyone can join the program.
             self.assertTrue(self.program.user_can_join(user))
 
+    def test_cap_without_classreg_module(self):
+        # Without StudentClassRegModule there is no 'classreg' key, which the
+        # cap checks used to index unconditionally and 500 the reg page.
+        classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
+        self.assertTrue(classreg_modules)
+        self.program.program_modules.remove(*classreg_modules)
+        self.program.save()
+
+        self.assertNotIn('classreg', self.program.students())
+        self.assertEqual(self.program._students_in_program(), 0)
+        self.assertEqual(self.program._students_in_program_in_grades([10]), 0)
+        self.assertFalse(self.program._student_is_in_program(self.students[0]))
+        for user in self.students:
+            self.assertTrue(self.program.user_can_join(user))
+
     def test_simple_cap(self):
         enrolled, _ = RegistrationType.objects.get_or_create(
             name='Enrolled', category='student')

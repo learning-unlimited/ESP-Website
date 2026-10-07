@@ -1762,6 +1762,33 @@ class PasswordValidationTest(TestCase):
         self.assertFalse(form.is_valid())
 
 
+class ResendActivationCaseTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.user = ESPUser.objects.create_user(
+            username='johndoe',
+            email='johndoe@example.com',
+            password='ValidPass1!',
+        )
+        self.user.is_active = False
+        self.user.save()
+        PendingActivation.objects.get_or_create(user=self.user)
+
+    def test_resend_accepts_different_username_case(self):
+        response = self.client.post('/myesp/resend/', {'username': 'JOHNDOE'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/resend_done.html')
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_resend_rejects_wrong_case_for_inactive_without_pending(self):
+        #   Without a PendingActivation row the account is not awaiting
+        #   activation; the form must reject it even with matching case.
+        PendingActivation.objects.filter(user=self.user).delete()
+        response = self.client.post('/myesp/resend/', {'username': 'johndoe'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'registration/resend.html')
+        self.assertEqual(len(mail.outbox), 0)
+
 class DisableAccountPostOnlyTest(TestCase):
     def setUp(self):
         user_role_setup()
