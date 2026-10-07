@@ -39,9 +39,12 @@ from django.db.models.query     import Q
 from esp.users.models    import ESPUser
 from esp.tagdict.models  import Tag
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
+from esp.accounting.cybersource import compute_signature
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from decimal import Decimal
+from datetime import datetime, timezone
+import uuid
 
 class CreditCardModule_Cybersource(ProgramModuleObj):
     doc = """Accept credit card payments via Cybersource."""
@@ -140,13 +143,46 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['post_url'] = settings.CYBERSOURCE_CONFIG['post_url']
         context['merchant_id'] = settings.CYBERSOURCE_CONFIG['merchant_id']
 
-        if (not context['post_url']) or (not context['merchant_id']):
+        if not self.isStep():
             raise ESPError("The Cybersource module is not configured")
+
+        # Sign the outgoing form so that the resulting postback to
+        # submit_transaction can be authenticated (see
+        # esp.accounting.cybersource). Every field below that is actually
+        # rendered into the payment form must be listed in
+        # signed_field_names, in the same order used here, or verification
+        # will fail.
+        context['access_key'] = settings.CYBERSOURCE_CONFIG['access_key']
+        context['profile_id'] = settings.CYBERSOURCE_CONFIG['profile_id']
+        context['transaction_uuid'] = uuid.uuid4().hex
+        context['signed_date_time'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+        context['comments'] = '%s Invoice %s/%s (for %s)' % (
+            settings.ORGANIZATION_SHORT_NAME, self.program.id, user.id, self.program.niceName())
+
+        signed_fields = {
+            'access_key': context['access_key'],
+            'profile_id': context['profile_id'],
+            'transaction_uuid': context['transaction_uuid'],
+            'signed_date_time': context['signed_date_time'],
+            'merchant_id': context['merchant_id'],
+            'amount': '%.2f' % context['itemizedcosttotal'],
+            'merchantDefinedData1': context['identifier'],
+            'comments': context['comments'],
+            'billTo_country': 'US',
+        }
+        context['signed_field_names'] = ','.join(signed_fields.keys())
+        context['unsigned_field_names'] = ''
+        context['signature'] = compute_signature(
+            signed_fields, context['signed_field_names'],
+            settings.CYBERSOURCE_CONFIG['secret_key'])
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def isStep(self):
-        return settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']
+        config = settings.CYBERSOURCE_CONFIG
+        return bool(config['post_url'] and config['merchant_id']
+                    and config['access_key'] and config['profile_id']
+                    and config['secret_key'])
 
     class Meta:
         proxy = True
