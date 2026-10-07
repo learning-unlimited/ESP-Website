@@ -736,6 +736,12 @@ class TeacherClassRegModule(ProgramModuleObj):
                 error = 'Error - You cannot select yourself as a coteacher!'
             elif request.POST['teacher_selected'] in txtTeachers.split(','):
                 error = 'Error - You already added this teacher as a coteacher!'
+            else:
+                teacher = ESPUser.objects.get(id=request.POST['teacher_selected'])
+                # without the availability module, getAvailableTimes treats everyone as always available
+                if prog.hasModule('AvailabilityModule') and not teacher.getAvailableTimes(prog, ignore_classes=True, ignore_moderation=True):
+                    error = ('Error - %s has not indicated their availability for %s yet. They must do so at %s before they can be added as a coteacher. '
+                             % (teacher.name(), prog.niceName(), request.build_absolute_uri(prog.get_teach_url() + 'teacherreg')))
 
             if error:
                 return render_to_response(template, request, {'class': cls,
@@ -744,8 +750,6 @@ class TeacherClassRegModule(ProgramModuleObj):
                                                               'coteachers': coteachers,
                                                               'error': error,
                                                               'conflict': []})
-
-            teacher = ESPUser.objects.get(id=request.POST['teacher_selected'])
 
             availability = teacher.getAvailableTimes(prog)
             # check that the teacher doesn't have a conflicting schedule
