@@ -687,7 +687,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         try:
             qs = ClassSubject.objects.filter(id=int(extra))
             cls = qs[0]
-        except (ValueError, IndexError):
+        except (TypeError, ValueError, IndexError):
             raise Http404
         if not request.user.canEdit(cls):
             raise Http403("You do not have permission to preview this class.")
@@ -879,12 +879,12 @@ class TeacherClassRegModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
-        if 'clsid' in request.GET:
-            classes = ClassSubject.objects.filter(id=request.GET['clsid'])
-        elif 'clsid' in request.POST:
-            classes = ClassSubject.objects.filter(id=request.POST['clsid'])
-        else:
+        clsid = request.GET.get('clsid', request.POST.get('clsid'))
+        if clsid is None:
             return self.goToCore(tl)  # just fails.
+        if not clsid.isdigit():
+            raise ESPError("Invalid class ID! Got `{}`".format(clsid), log=False)
+        classes = ClassSubject.objects.filter(id=clsid)
 
         if extra == 'nojs':
             ajax = False
