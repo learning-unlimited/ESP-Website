@@ -9,13 +9,13 @@
 #main {
     h1 {
         @if not $bootswatch-active { color: $accent2; }
-        font-size: 42px;
+        font-size: $h1FontSize;
         font-weight: normal;
         margin-bottom: 0.5em;
     }
     h2 {
         @if not $bootswatch-active { color: $accent2; }
-        font-size: 32px;
+        font-size: $h2FontSize;
         font-weight: normal;
         margin-bottom: 0.3em;
     }
@@ -315,7 +315,7 @@ div.navbar-collapse.collapse {
 .jumbotron {
     margin-bottom: 30px;
     position: relative;
-    padding: 50px 80px;
+    padding: $jumbotronPaddingVertical $jumbotronPaddingHorizontal;
     color: #fff;
     text-shadow: 0 1px 3px rgba(0,0,0,.7), 0 0 30px rgba(0,0,0,.075);
     background-size: cover;
@@ -325,7 +325,7 @@ div.navbar-collapse.collapse {
             box-shadow: inset 0 3px 7px rgba(0,0,0,.2), inset 0 -3px 7px rgba(0,0,0,.2);
 }
 .jumbotron-announcements {
-    font-size: 20px;
+    font-size: $jumbotronFontSize;
 
     p {
         margin: 0 0 0.5em;
