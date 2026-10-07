@@ -27,7 +27,7 @@
     <a href="/manage/{{ program.getUrlBase }}/main">Return to the {{ program.niceName }} admin portal</a><br />
     </p>
 {% else %}
-    {% if addoredit == 'Edit' %}
+    {% if addoredit == 'Edit' and class.id %}
         {% load modules %}
         <center>
         <a class="btn" title="Modify Coteachers" href="/teach/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">Modify Coteachers</a>
