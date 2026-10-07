@@ -85,25 +85,31 @@ def class_category_field(key, program):
                  for cat in ClassCategories.objects.all().order_by('category')])
 
 
+class AnyOrNamesMultipleChoiceField(forms.MultipleChoiceField):
+    """A multiple choice field where picking *any_value* means 'all of them'."""
+
+    def __init__(self, any_value='*', **kwargs):
+        self.any_value = any_value
+        super().__init__(**kwargs)
+
+    def clean(self, value):
+        value = super().clean(value)
+        return [self.any_value] if self.any_value in value else value
+
+
 def registration_type_field(key, program):
     """Registration types other than 'Enrolled', which is always included.
 
-    Registration types are created as they are used, so fall back to entering
-    the JSON list by hand while there are none to pick from.
+    'All' is a sentinel that RegistrationTypeController expands to every
+    registration type, so it is offered alongside the individual ones.
     """
     from esp.program.models import RegistrationType
-    names = list(RegistrationType.objects.exclude(name='Enrolled').order_by('name')
-                 .values_list('name', flat=True).distinct())
-    if not names:
-        return JSONValidatedCharField()
-    return forms.MultipleChoiceField(choices=[(name, name) for name in names])
-
-
-class AnyOrNamesMultipleChoiceField(forms.MultipleChoiceField):
-    """A multiple choice field where picking '*' means 'any of them'."""
-    def clean(self, value):
-        value = super().clean(value)
-        return ['*'] if '*' in value else value
+    names = RegistrationType.objects.exclude(name__in=['Enrolled', 'All'])
+    return AnyOrNamesMultipleChoiceField(
+        any_value='All',
+        choices=[('All', 'All registration types')] +
+                [(name, name) for name in
+                 names.order_by('name').values_list('name', flat=True).distinct()])
 
 
 def extra_cost_items_field(key, program):
@@ -141,8 +147,9 @@ class MonthDayWidget(forms.SelectDateWidget):
         return super().value_from_datadict(data, files, name)
 
 
-# A path that is safe to put in an href, i.e. no spaces or markup
-_PAGE_PATH = re.compile(r'^/[^\s"\'<>]*$')
+# A path on this site: no second leading slash or backslash, which browsers
+# read as a protocol-relative URL, and nothing that could break out of an href
+_PAGE_PATH = re.compile(r'^/(?![/\\])[^\s"\'<>\\]*$')
 
 
 def validate_page_url(value):

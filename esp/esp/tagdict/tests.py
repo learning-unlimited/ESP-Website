@@ -1216,7 +1216,7 @@ class ChoiceTagFieldTest(ProgramFrameworkTest):
     PROGRAM_CHOICE_TAGS = (
         'teacherreg_hide_fields', 'student_reg_records', 'teacher_reg_records',
         'survey_teacher_filter', 'survey_student_filter', 'open_class_category',
-        'creditcard_required_for_extracosts',
+        'creditcard_required_for_extracosts', 'display_registration_names',
     )
     GLOBAL_CHOICE_TAGS = (
         'teacher_profile_hide_fields', 'student_profile_hide_fields',
@@ -1282,6 +1282,26 @@ class ChoiceTagFieldTest(ProgramFrameworkTest):
                          ','.join(selected))
         self.assertEqual(self._program_form().fields['student_reg_records'].initial,
                          selected)
+
+    def test_registration_types_offer_the_all_sentinel(self):
+        """RegistrationTypeController expands 'All' to every type, so an admin
+        has to be able to pick it (see getVisibleRegistrationTypeNames)."""
+        from esp.program.models import RegistrationType
+
+        RegistrationType.objects.get_or_create(name='Applied')
+        field = self._program_form().fields['display_registration_names']
+        self.assertIn('All', dict(field.choices))
+        self.assertIn('Applied', dict(field.choices))
+        # 'All' covers the named ones, so it replaces them
+        self.assertEqual(field.clean(['All', 'Applied']), ['All'])
+        self.assertEqual(field.clean(['Applied']), ['Applied'])
+
+    def test_the_all_sentinel_is_saved_as_json(self):
+        save_form = self._program_form({'display_registration_names': ['All']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertEqual(
+            Tag.getProgramTag('display_registration_names', self.program), '["All"]')
 
     def test_a_json_list_selection_is_saved_as_json(self):
         from esp.program.models import RegistrationType
@@ -1359,6 +1379,12 @@ class FormattedTagValueTest(SimpleTestCase):
         # The value is put in an href, so it cannot carry spaces or markup
         for value in ('learn/index.html', 'www.example.com', 'javascript:alert(1)',
                       '/a b', '/a" onmouseover="x'):
+            with self.assertRaises(ValidationError, msg=value):
+                validate_page_url(value)
+
+    def test_home_pages_reject_paths_that_lead_off_site(self):
+        """A browser reads a second leading slash or backslash as a host."""
+        for value in ('//attacker.example', '/\\attacker.example', '/a\\b'):
             with self.assertRaises(ValidationError, msg=value):
                 validate_page_url(value)
 
