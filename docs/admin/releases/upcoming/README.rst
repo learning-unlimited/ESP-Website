@@ -28,6 +28,10 @@ Old programs will continue to enforce existing constraints. New programs will de
 
 The onsite class changes grid now reports the same notifications but can be overridden using the "Override size limits and schedule constraints" checkbox.
 
+The "autocorrect" checkbox on that page works again. When a student would otherwise be warned or blocked, they are enrolled in a lunch period in a block they still have free. If they have no free lunch block they are warned or blocked as usual.
+
+In terms of blocking, adding a class is refused only when it would use up their last opportunity to comply (e.g., filling their final free lunch block) and giving up a class is refused only when it breaks a requirement they were already meeting.
+
 Bug Fixes
 =========
 

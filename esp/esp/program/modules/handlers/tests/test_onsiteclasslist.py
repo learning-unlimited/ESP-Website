@@ -6,8 +6,9 @@ from django.http import HttpResponse
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models import (BooleanExpression, BooleanToken, Program, RegistrationType,
-                                ScheduleConstraint, ScheduleTestOccupied, StudentRegistration)
+from esp.program.models import (BooleanExpression, BooleanToken, ClassCategories, ClassSection, ClassSubject,
+                                Program, RegistrationType, ScheduleConstraint,
+                                ScheduleTestCategory, ScheduleTestOccupied, StudentRegistration)
 from esp.program.tests import ProgramFrameworkTest
 from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
@@ -791,7 +792,7 @@ class ScheduleConstraintMessageTests(ProgramFrameworkTest):
         self.requirement = BooleanExpression.objects.create(label='have a class during the first block')
         ScheduleTestOccupied.objects.create(exp=self.requirement, timeblock=self.timeslot, seq=0)
         self.constraint = ScheduleConstraint.objects.create(program=self.program, condition=condition,
-                                                           requirement=self.requirement, on_failure='')
+                                                           requirement=self.requirement)
 
     def enforce_constraint(self):
         self.constraint.enforce = True
@@ -868,3 +869,63 @@ class ScheduleConstraintMessageTests(ProgramFrameworkTest):
         self.assertEqual(data['sections'], [], 'Override should have applied the removal')
         self.assertFalse(any('Made no changes' in message for message in data['messages']),
                          'Override should not report a refusal: %r' % data['messages'])
+
+    def reserved_option(self):
+        """An accepted section that would satisfy a category requirement."""
+        from esp.program.class_status import ClassStatus
+        category = ClassCategories.objects.create(category='Reserved', symbol='R')
+        subject = ClassSubject.objects.create(
+            title='Reserved', category=category, parent_program=self.program,
+            grade_min=7, grade_max=12, class_size_max=100, duration='1.0',
+            status=ClassStatus.ACCEPTED)
+        section = ClassSection.objects.create(
+            parent_class=subject, duration='1.0', max_class_capacity=100,
+            status=ClassStatus.ACCEPTED)
+        section.meeting_times.add(self.other_timeslot)
+        return category, section
+
+    def require_category_in_other_block(self, category):
+        ScheduleConstraint.objects.filter(program=self.program).delete()
+        condition = BooleanExpression.objects.create(label='always')
+        BooleanToken.objects.create(exp=condition, text='True', seq=0)
+        requirement = BooleanExpression.objects.create(label='keep the second block free for Reserved')
+        ScheduleTestCategory.objects.create(exp=requirement, timeblock=self.other_timeslot,
+                                            category=category, seq=0)
+        return ScheduleConstraint.objects.create(program=self.program, condition=condition,
+                                                 requirement=requirement, enforce=True)
+
+    def test_grid_refuses_an_add_that_uses_up_the_last_option(self):
+        """The grid judges class adds the way the student interface does."""
+        category, _option = self.reserved_option()
+        constraint = self.require_category_in_other_block(category)
+
+        intruder = self.program.sections().exclude(id=self.section.id).first()
+        if intruder is None:
+            self.skipTest('Program has only one non-lunch section')
+        intruder.meeting_times.set([self.other_timeslot])
+
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id,
+                           'sections': '[%d, %d]' % (self.section.id, intruder.id)})
+
+        self.assertNotIn(intruder.id, data['sections'],
+                         'Grid should refuse an add that uses up the last way to comply')
+        self.assertTrue(any(constraint.requirement.label in message for message in data['messages']),
+                        'Expected a refusal naming the requirement in %r' % data['messages'])
+
+    def test_grid_allows_an_add_that_leaves_a_way_to_comply(self):
+        category, _option = self.reserved_option()
+        self.require_category_in_other_block(category)
+
+        #   Scheduled opposite the reserved block, so the option survives.
+        intruder = self.program.sections().exclude(id=self.section.id).first()
+        if intruder is None:
+            self.skipTest('Program has only one non-lunch section')
+        intruder.meeting_times.set([self.timeslot])
+
+        data = self._call('update_schedule_json',
+                          {'user': self.student.id,
+                           'sections': '[%d, %d]' % (self.section.id, intruder.id)})
+
+        self.assertIn(intruder.id, data['sections'],
+                      'Grid should allow an add that leaves the requirement satisfiable')

@@ -36,7 +36,8 @@ import datetime
 
 from esp.cal.models import Event, EventType
 from esp.program.models import (BooleanExpression, BooleanToken, ClassCategories, ClassSection,
-                                ScheduleConstraint, ScheduleTestCategory, StudentRegistration)
+                                ScheduleConstraint, ScheduleTestCategory, StudentRegistration,
+                                autocorrect_schedule, unrepairable_requirements)
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
@@ -307,16 +308,24 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         lunch_section2.delete()
         lunch_event2.delete()
 
-    def require_lunch(self, enforce):
-        """A constraint requiring a lunch-category class in the lunch block."""
+    def require_lunch(self, enforce, autocorrect=False, timeblocks=None):
+        """A constraint requiring a lunch-category class in one of these blocks."""
+        timeblocks = timeblocks or [self.lunch_event]
         condition = BooleanExpression.objects.create(label='always')
         BooleanToken.objects.create(exp=condition, text='True', seq=0)
         requirement = BooleanExpression.objects.create(label='choose a lunch period')
-        ScheduleTestCategory.objects.create(exp=requirement, timeblock=self.lunch_event,
-                                            category=self.lunch_category, seq=0)
+        seq = 0
+        for timeblock in timeblocks:
+            ScheduleTestCategory.objects.create(exp=requirement, timeblock=timeblock,
+                                                category=self.lunch_category, seq=seq)
+            seq += 10
+        #   Any one of the blocks will do, so OR the tests together.
+        for _ in range(len(timeblocks) - 1):
+            BooleanToken.objects.create(exp=requirement, text='OR', seq=seq)
+            seq += 10
         return ScheduleConstraint.objects.create(program=self.program, condition=condition,
-                                                 requirement=requirement, on_failure='',
-                                                 enforce=enforce)
+                                                 requirement=requirement, enforce=enforce,
+                                                 autocorrect=autocorrect)
 
     def decline_lunch(self):
         self.assertTrue(
@@ -356,3 +365,82 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         response = self.decline_lunch()
         self.assertEqual(response.status_code, 302)
         self.assertFalse(self.lunch_registration_exists())
+
+    def accept_lunch(self):
+        """The generator creates lunch classes accepted; this fixture leaves them unreviewed."""
+        from esp.program.class_status import ClassStatus
+        self.lunch_class.status = ClassStatus.ACCEPTED
+        self.lunch_class.save()
+        self.lunch_class.sections.update(status=ClassStatus.ACCEPTED)
+
+    def second_lunch_block(self):
+        """A second lunch section an hour after the first."""
+        import datetime as dt
+        start = dt.datetime.combine(self.lunch_day, dt.time(13, 0))
+        event = Event.objects.create(
+            program=self.program, event_type=self.lunch_event_type,
+            start=start, end=start + dt.timedelta(hours=1),
+            short_description='Lunch 13:00', description='Lunch 13:00',
+        )
+        section = ClassSection.objects.create(
+            parent_class=self.lunch_class, duration='1.0', max_class_capacity=100)
+        section.meeting_times.add(event)
+        return event, section
+
+    def test_autocorrect_enrols_the_student_in_a_free_lunch_block(self):
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True)
+        self.assertFalse(self.lunch_registration_exists())
+
+        added = autocorrect_schedule(self.student, self.program)
+
+        self.assertEqual([section.id for section in added], [self.lunch_section.id])
+        self.assertTrue(self.lunch_registration_exists())
+
+    def test_autocorrect_does_nothing_when_no_lunch_block_is_free(self):
+        """Nothing to repair once the student's lunch blocks are all occupied."""
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True)
+        busy = self.program.sections().exclude(parent_class=self.lunch_class).first()
+        if busy is None:
+            self.skipTest('Program has no non-lunch section')
+        busy.meeting_times.set([self.lunch_event])
+        busy.preregister_student(self.student)
+
+        self.assertEqual(autocorrect_schedule(self.student, self.program), [])
+        self.assertFalse(self.lunch_registration_exists())
+
+    def test_autocorrect_is_off_unless_the_constraint_asks_for_it(self):
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=False)
+        self.assertEqual(autocorrect_schedule(self.student, self.program), [])
+
+    def test_add_is_refused_only_when_it_uses_up_the_last_lunch_block(self):
+        """The #822 exception case: an already-overbooked student stays free."""
+        second_event, _second_lunch = self.second_lunch_block()
+        self.accept_lunch()
+        self.require_lunch(enforce=True, timeblocks=[self.lunch_event, second_event])
+
+        sections = list(self.program.sections().exclude(parent_class=self.lunch_class))
+        if len(sections) < 2:
+            self.skipTest('Program needs two non-lunch sections')
+        first, second = sections[0], sections[1]
+        first.meeting_times.set([self.lunch_event])
+        second.meeting_times.set([second_event])
+
+        #   One lunch block still free, so this is repairable and allowed.
+        self.assertEqual(
+            unrepairable_requirements(self.student, self.program, add_sections=[first]), [])
+        first.preregister_student(self.student)
+
+        #   This one would take the last block, so it is refused.
+        self.assertTrue(
+            unrepairable_requirements(self.student, self.program, add_sections=[second]))
+
+        #   Once an admin has overbooked them anyway, they are not stuck.
+        second.preregister_student(self.student)
+        other = self.program.sections().exclude(
+            parent_class=self.lunch_class).exclude(id__in=[first.id, second.id]).first()
+        if other is not None:
+            self.assertEqual(
+                unrepairable_requirements(self.student, self.program, add_sections=[other]), [])

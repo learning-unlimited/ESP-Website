@@ -49,7 +49,7 @@ from esp.program.models import RegistrationProfile
 from esp.program.class_status import ClassStatus
 
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_onsite_no_switchback, needs_student_in_grade, main_call, aux_call
-from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program, blocking_requirements, unmet_requirements
+from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap, Program, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.cal.models import Event
 from argcache import cache_function
@@ -293,7 +293,7 @@ class OnSiteClassList(ProgramModuleObj):
                     result['messages'].append(f'Failed to add {user.name()} ({user.id}) to {sec.emailcode()}: {sec.title()} ({sec.id}).  Error was: Class is currently full.')
                     failed_add_sections.append(sec.id)
 
-            blocked = [] if override_constraints else blocking_requirements(
+            blocked = [] if override_constraints else schedule_change_blockers(
                 user, prog, add_sections=sections_to_add, remove_sections=sections_to_remove)
             for requirement in blocked:
                 result['messages'].append(f'Made no changes for {user.name()} ({user.id}): this schedule would violate the requirement that they {requirement}.  Check "Override size limits and schedule constraints" to apply it anyway.')

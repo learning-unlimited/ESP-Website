@@ -295,8 +295,7 @@ class ScheduleConstraintWarningBlockingTest(ProgramFrameworkTest):
         BooleanToken.objects.create(exp=condition, text='True', seq=0)
         requirement = BooleanExpression.objects.create(label=requirement_label)
         constraint = ScheduleConstraint.objects.create(program=self.program, condition=condition,
-                                                       requirement=requirement, on_failure='',
-                                                       enforce=enforce)
+                                                       requirement=requirement, enforce=enforce)
         return constraint, requirement
 
     def require_class_during(self, timeslot, enforce=False):

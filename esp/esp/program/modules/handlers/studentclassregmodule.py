@@ -51,7 +51,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest, blocking_requirements, unmet_requirements
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest, autocorrect_schedule, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, ESPError_NoLog
 from esp.users.models    import ESPUser, Permission
@@ -131,16 +131,24 @@ CATALOG_CACHE_MAX_AGE = 120
 
 # student class picker module
 def check_schedule_constraints(request, prog, add_sections=(), remove_sections=()):
-    """ Refuse a schedule change that newly breaks an enforced constraint.
-    Onsite-morphed admins are exempt.
+    """ Refuse a schedule change that an enforced constraint does not allow.
+    Taking a class on is judged on repairability. Onsite-morphed admins are exempt.
     """
     if getattr(request.user, 'onsite_local', False):
         return
-    blocked = blocking_requirements(request.user, prog, add_sections=add_sections,
-                                    remove_sections=remove_sections)
+    blocked = schedule_change_blockers(request.user, prog, add_sections=add_sections,
+                                       remove_sections=remove_sections)
     if blocked:
         raise ESPError("This change would leave your schedule in violation of the requirement "
                        f"that you {blocked[0]}.  You can go back and correct this.", log=False)
+
+def apply_schedule_autocorrect(request, prog):
+    """ Repair whatever an autocorrecting constraint is missing, remembering
+    what was added so the schedule can say so. """
+    added = autocorrect_schedule(request.user, prog)
+    if added:
+        request.autocorrected_sections = getattr(request, 'autocorrected_sections', []) + added
+    return added
 
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
@@ -375,6 +383,7 @@ class StudentClassRegModule(ProgramModuleObj):
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
         context['unmet_requirements'] = unmet_requirements(user, program)
+        context['autocorrected_sections'] = getattr(get_current_request(), 'autocorrected_sections', [])
         if scrm:
             context['allow_removal'] = scrm.deadline_met('/Removal')
 
@@ -497,9 +506,9 @@ class StudentClassRegModule(ProgramModuleObj):
                 error = cobj_error or section_error
 
             if not error:
-                blocked = blocking_requirements(request.user, prog, add_sections=[section])
+                blocked = schedule_change_blockers(request.user, prog, add_sections=[section])
                 if blocked:
-                    error = f"Adding <i>{section.title()}</i> to your schedule requires that you {blocked[0]}.  You can go back and correct this."
+                    error = f"Adding <i>{section.title()}</i> to your schedule would leave you no way to {blocked[0]}.  You can go back and correct this."
 
             if scrmi.use_priority:
                 priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -511,6 +520,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
             #   Desired priority level is 1 above current max
             if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                apply_schedule_autocorrect(request, prog)
                 return True
             else:
                 raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)

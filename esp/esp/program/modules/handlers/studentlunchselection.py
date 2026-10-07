@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base    import ProgramModuleObj, main_call, needs_student_in_grade, meets_cap, meets_deadline
-from esp.program.models          import ClassSection, StudentRegistration, blocking_requirements
+from esp.program.models          import ClassSection, StudentRegistration, schedule_change_blockers
 from esp.users.models            import Record, RecordType
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.web               import render_to_response
@@ -82,9 +82,9 @@ class StudentLunchSelectionForm(forms.Form):
         #   Check the whole swap before giving up the existing registration.
         request = get_current_request()
         if not getattr(getattr(request, 'user', None), 'onsite_local', False):
-            blocked = blocking_requirements(self.user, self.program,
-                                            add_sections=new_sections[:1],
-                                            remove_sections=old_sections)
+            blocked = schedule_change_blockers(self.user, self.program,
+                                               add_sections=new_sections[:1],
+                                               remove_sections=old_sections)
             if blocked:
                 return (False, 'You need to %s.' % blocked[0])
 
