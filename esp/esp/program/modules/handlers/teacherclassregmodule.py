@@ -528,12 +528,20 @@ class TeacherClassRegModule(ProgramModuleObj):
         context_form = FileUploadForm()
         context_rename_form = FileRenameForm()
         copy_message = ''
+        classsubject_ct = ContentType.objects.get_for_model(ClassSubject)
 
         if request.method == 'POST':
             if request.POST['command'] == 'delete':
                 docid = request.POST['docid']
-                media = Media.objects.get(id = docid)
-                media.delete()
+                try:
+                    media = Media.objects.get(
+                        id=docid,
+                        owner_type=classsubject_ct,
+                        owner_id=target_class.id,
+                    )
+                    media.delete()
+                except Media.DoesNotExist:
+                    pass
             elif request.POST['command'] == 'add':
                 form = FileUploadForm(request.POST, request.FILES)
 
@@ -553,9 +561,16 @@ class TeacherClassRegModule(ProgramModuleObj):
                 form = FileRenameForm(request.POST, request.FILES)
                 if form.is_valid():
                     docid = request.POST['docid']
-                    media = Media.objects.get(id = docid)
-                    media.rename(form.cleaned_data['title'])
-                    media.save()
+                    try:
+                        media = Media.objects.get(
+                            id=docid,
+                            owner_type=classsubject_ct,
+                            owner_id=target_class.id,
+                        )
+                        media.rename(form.cleaned_data['title'])
+                        media.save()
+                    except Media.DoesNotExist:
+                        pass
                 else:
                     context_rename_form = form
             elif request.POST['command'] == 'copy_doc':
@@ -594,7 +609,6 @@ class TeacherClassRegModule(ProgramModuleObj):
             .exclude(id=target_class.id)
             .values_list('id', flat=True)
         )
-        classsubject_ct = ContentType.objects.get_for_model(ClassSubject)
         if previous_class_ids:
             previous_docs = list(Media.objects.filter(
                 owner_type=classsubject_ct,
