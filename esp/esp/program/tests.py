@@ -1238,6 +1238,50 @@ class ScheduleConstraintTest(ProgramFrameworkTest):
         self.assertTrue(sc1.evaluate(sm), 'ScheduleConstraint broken')
         self.assertTrue(sc2.evaluate(sm), 'ScheduleConstraint broken')
 
+        #   3. Test security properties of ScheduleConstraint.handle_failure() (issue #5270)
+        from unittest.mock import patch
+
+        #   Verify malicious on_failure is not executed and returns (None, None)
+        mutation_tracker = {'mutated': False}
+        sc_malicious = ScheduleConstraint(
+            program=program,
+            condition=exp1,
+            requirement=exp2,
+            on_failure="mutation_tracker['mutated'] = True\n",
+        )
+        result = sc_malicious.handle_failure()
+        self.assertFalse(mutation_tracker['mutated'], 'ScheduleConstraint.on_failure must not be executed')
+        self.assertEqual(result, (None, None))
+
+        #   Verify warning is emitted and deduplicated for non-empty on_failure
+        sc_warn = ScheduleConstraint.objects.create(
+            program=program,
+            condition=exp1,
+            requirement=exp2,
+            on_failure="return (schedule_map, 'test')",
+        )
+        with self.assertLogs('esp.program.models', level='WARNING') as cm:
+            sc_warn.handle_failure()
+            sc_warn.handle_failure()
+
+        warnings = [
+            msg for msg in cm.output
+            if 'Execution of ScheduleConstraint.on_failure disabled for security' in msg
+        ]
+        self.assertEqual(len(warnings), 1, 'Expected exactly 1 deduplicated security warning')
+
+        #   Verify empty/whitespace on_failure returns (None, None) without logging
+        for empty_val in ['', '   ', '\n\t  ', None]:
+            sc_empty = ScheduleConstraint(
+                program=program,
+                condition=exp1,
+                requirement=exp2,
+                on_failure=empty_val,
+            )
+            with patch('esp.program.models.logger.warning') as mock_warn:
+                self.assertEqual(sc_empty.handle_failure(), (None, None))
+                mock_warn.assert_not_called()
+
 class DynamicCapacityTest(ProgramFrameworkTest):
     def runTest(self):
         #   Parameters
