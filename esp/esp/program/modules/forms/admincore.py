@@ -54,7 +54,7 @@ class LunchConstraintsForm(forms.Form):
             if sched_constraints.filter(autocorrect=True).exists():
                 self.fields['autocorrect'].initial = True
             # If any BooleanTokens associated with the schedule constraints have text other than '1', check the include_conditions box
-            if BooleanToken.objects.filter(exp__condition_constraint__program=2).exclude(text='1').exists():
+            if BooleanToken.objects.filter(exp__condition_constraint__program=self.program).exclude(text='1').exists():
                 self.fields['include_conditions'].initial = True
 
     def save_data(self):

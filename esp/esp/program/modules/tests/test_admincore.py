@@ -4,7 +4,9 @@ from unittest.mock import patch
 from django.contrib.auth.models import Group
 from django.utils import timezone
 
-from esp.program.models import Program, ProgramModule
+from esp.program.models import (BooleanExpression, BooleanToken, Program, ProgramModule,
+                                ScheduleConstraint, ScheduleTestOccupied)
+from esp.program.modules.forms.admincore import LunchConstraintsForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, Permission
 
@@ -178,3 +180,32 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
             self.assertEqual(response.context['target_user'], self.testUser)
             mock_execute.assert_called_once()
 
+
+class LunchConstraintsFormTest(ProgramFrameworkTest):
+    """The form's settings must come from its own program."""
+
+    def constrain(self, program, include_conditions, timeblock=None):
+        condition = BooleanExpression.objects.create(label='check')
+        if include_conditions:
+            ScheduleTestOccupied.objects.create(exp=condition, timeblock=timeblock, seq=0)
+        else:
+            #   An unconditional constraint is stored as a single true token.
+            BooleanToken.objects.create(exp=condition, text='1', seq=0)
+        requirement = BooleanExpression.objects.create(label='choose a lunch period')
+        return ScheduleConstraint.objects.create(program=program, condition=condition,
+                                                 requirement=requirement)
+
+    def test_include_conditions_reflects_this_program(self):
+        other = Program.objects.create(
+            url='TestProgram/OtherLunch', name='TestProgram Other Lunch',
+            grade_min=7, grade_max=12, director_email='info@test.learningu.org',
+            program_size_max=3000)
+
+        self.constrain(self.program, include_conditions=True,
+                       timeblock=self.program.getTimeSlots()[0])
+        self.constrain(other, include_conditions=False)
+
+        self.assertTrue(LunchConstraintsForm(self.program).fields['include_conditions'].initial,
+                        'Conditions are in use for this program, so the box should be checked')
+        self.assertFalse(LunchConstraintsForm(other).fields['include_conditions'].initial,
+                         'The other program has no conditions, so its box should be clear')
