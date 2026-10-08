@@ -748,3 +748,4 @@ class GenerateConstraintTest(SimpleTestCase):
         occupied_test_model.assert_not_called()
         category_test_model.assert_called_once()
         
+        
