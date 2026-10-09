@@ -135,9 +135,7 @@ class AllViewsTest(ProgramFrameworkTest):
         self.printable_job = PrintableJob.objects.create(
             program=self.program, user=self.adminUser, job_type='all views test')
 
-        # view_app needs the student it displays to have applied. Create the
-        # application here rather than relying on an earlier learn view to
-        # make one as a side effect.
+        # view_app needs the student it displays to have applied
         self.adminUser.getApplication(self.program)
 
         # Set up credit card test keys
