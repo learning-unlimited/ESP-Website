@@ -62,9 +62,6 @@
         top: 0;
       }
 
-      /* Set on a submit button while its form is on its way. The submit
-         handler in js1 is what actually blocks the repeat submission; this
-         only makes the wait visible. */
       .esp-submitting {
         pointer-events: none;
         opacity: 0.65;
@@ -117,9 +114,6 @@
     </script>
     {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
-    <!-- csrf_init.js also fetches this on ready, but most POST forms render no
-         csrf token of their own and rely on check_csrf_cookie to inject one, so
-         it has to be defined before anything can be submitted. -->
     <script type="text/javascript" src="/media/scripts/csrf_check.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
@@ -151,8 +145,7 @@
           var method = (submitter && submitter.formMethod) || form.method;
           var target = (submitter && submitter.formTarget) || form.target;
           if (method.toLowerCase() !== 'post') return;
-          // Another handler (AJAX, a confirm(), a knockout binding) has taken
-          // over, so it owns the form from here.
+          // Another handler has taken over, so it owns the form from here.
           if (event.isDefaultPrevented() ||
               (event.originalEvent && event.originalEvent.defaultPrevented)) return;
           // Submissions that open a new tab, or return a file, never navigate
@@ -163,23 +156,18 @@
             event.preventDefault();
             return;
           }
-          // csrf_init.js binds this too, on ready. Most POST forms render no
-          // csrf token of their own, so a submission that reached us without
-          // one injected would just 403.
+          // Make sure there is a csrf token.
           if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
             event.preventDefault();
             return;
           }
+          // Mark the form and submit button to prevent multiple submissions.
           $j.data(form, 'espSubmitting', true);
-          // Mark the button rather than disabling it: disabled controls are
-          // left out of the POST data, which the browser builds after this
-          // handler returns. event.submitter is unsupported on older browsers,
-          // in which case mark every submit button in the form.
           $j(submitter || $j(form).find(':submit'))
             .addClass('esp-submitting').attr('aria-disabled', 'true');
         });
 
-        // Browsers can restore a page, and its locked forms, on Back.
+        // Restore the form submission state on Back.
         $j(window).on('pageshow', function() {
           $j('form').each(function() { $j.removeData(this, 'espSubmitting'); });
           $j('.esp-submitting').removeClass('esp-submitting').removeAttr('aria-disabled');
