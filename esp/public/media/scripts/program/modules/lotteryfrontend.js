@@ -4,8 +4,18 @@ var lottery_data = '';
 // Interval to update UI showing "progress" while performing lottery actions.
 var lottery_progress_interval = null;
 
+// A run already in flight. The form submits on Enter in any of its text
+// inputs too, so disabling the button alone would not stop a second run.
+var lottery_running = false;
+
+function lotteryRunFinished() {
+	lottery_running = false;
+	$j('#lotteryRun').prop('disabled', false);
+}
+
 function lotteryErrorHandler() {
 	clearInterval(lottery_progress_interval);
+	lotteryRunFinished();
 	$j('#lotteryStats').html('The server returned an error to our request. Contact your local webministry for help.');
 }
 
@@ -30,6 +40,10 @@ function startUpdatingLotteryProgress() {
 $j(document).ready(function() {
 	$j('#lotteryForm').submit(function(e) {
 		e.preventDefault();
+		if(lottery_running) {
+			return;
+		}
+		lottery_running = true;
 		var $inputs = $j('#lotteryForm :input');
 		var post_data = {'csrfmiddlewaretoken': csrf_token()};
 
@@ -45,6 +59,7 @@ $j(document).ready(function() {
 			data: post_data,
 			success: function(data) {
 				clearInterval(lottery_progress_interval);
+				lotteryRunFinished();
 
 				data = data['response'][0];
 				var stats_div = $j('#lotteryStats');
@@ -75,6 +90,7 @@ $j(document).ready(function() {
 
 		$j('#lotteryStats').html('Loading...');
 		startUpdatingLotteryProgress();
+		$j('#lotteryRun').prop('disabled', true);
 		$j('.lotterySave').prop('disabled', true);
 	});
 
