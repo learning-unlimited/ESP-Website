@@ -149,8 +149,7 @@ The directors have been notified that you are no longer able to volunteer at {{ 
       </div>
       <br />
       <div>
-        Please sign up to volunteer for specific timeslots by selecting them
-        below. Hovering over a timeslot will display details for that timeslot.
+        {{ form.requests.help_text }}
         <br /><br />
         {% include "program/modules/availability.html" %}
         <div hidden id="checkboxes">
