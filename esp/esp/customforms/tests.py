@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 import json
+from importlib import import_module
 import time
 from unittest.mock import patch
 
@@ -1303,3 +1304,61 @@ class AddLinkFieldToExistingFormTest(TestCase):
         response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 200)
+
+
+class FixLinkFieldColumnNamesMigrationTest(TestCase):
+    """
+    Migration 0005 renames "link_<Model>" columns left behind by #3762.
+    """
+
+    def setUp(self):
+        self.migration = import_module('esp.customforms.migrations.0005_fix_link_field_column_names')
+        user, _ = ESPUser.objects.get_or_create(username='migration_admin')
+        self.form = Form.objects.create(
+            title='Migration Form', created_by=user, link_type='-1', link_id=-1,
+            success_message='OK', success_url='/')
+        DynamicModelHandler(self.form).createTable()
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section', seq=1)
+        Field.objects.create(form=self.form, section=section, field_type='ContactInfo_e_mail',
+                             seq=1, label='Email', required=False)
+        self.table = f'customforms_response_{self.form.id}'
+
+    def tearDown(self):
+        DynamicModelHandler(self.form).purgeDynModel()
+
+    def add_column(self, column):
+        with connection.cursor() as cursor:
+            cursor.execute(f'ALTER TABLE "customforms"."{self.table}" ADD COLUMN "{column}" integer NULL '
+                           'REFERENCES users_contactinfo(id) DEFERRABLE INITIALLY DEFERRED')
+
+    def columns(self):
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT column_name FROM information_schema.columns "
+                           "WHERE table_schema = 'customforms' AND table_name = %s", [self.table])
+            return {row[0] for row in cursor.fetchall()}
+
+    def run_migration(self):
+        with connection.schema_editor() as schema_editor:
+            self.migration.rename_link_columns(None, schema_editor)
+
+    def test_misnamed_column_is_renamed(self):
+        self.add_column('link_ContactInfo')
+        self.run_migration()
+        self.assertIn('link_ContactInfo_id', self.columns())
+        self.assertNotIn('link_ContactInfo', self.columns())
+
+        #   The responses table is usable again, and the field can be removed
+        model = DynamicModelHandler(self.form).createDynModel()
+        self.assertEqual(model.objects.count(), 0)
+        dmh = DynamicModelHandler(self.form)
+        dmh._getModelFieldList()
+        dmh.removeLinkField(Field.objects.get(form=self.form))
+        self.assertNotIn('link_ContactInfo_id', self.columns())
+
+    def test_correct_and_conflicting_columns_are_left_alone(self):
+        self.add_column('link_ContactInfo_id')
+        self.add_column('link_ContactInfo')
+        before = self.columns()
+        self.run_migration()
+        self.assertEqual(self.columns(), before)
