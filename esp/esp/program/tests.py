@@ -2488,7 +2488,7 @@ class AdmissionsDashboardTest(TestCase):
     """Tests for selective admissions logic in AdmissionsDashboard."""
 
     def setUp(self):
-        self.admin = make_user('Admin')
+self.admin = make_user('Administrator', username='admissions_admin')
         self.teacher = make_user('Teacher')
         self.other_teacher = make_user('Teacher')
         self.student = make_user('Student')
