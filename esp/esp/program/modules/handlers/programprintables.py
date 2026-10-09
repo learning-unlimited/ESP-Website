@@ -1,3 +1,4 @@
+from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -1541,7 +1542,7 @@ class ProgramPrintables(ProgramModuleObj):
             job.file.open('rb')
             content_type = mimetypes.guess_type(job.file.name)[0] or 'application/octet-stream'
             response = HttpResponse(FileWrapper(job.file), content_type=content_type)
-            response['Content-Disposition'] = 'attachment; filename="%s"' % os.path.basename(job.file.name)
+            response['Content-Disposition'] = 'attachment; filename="%s"' % Path(job.file.name).name
             try:
                 response['Content-Length'] = job.file.size
             except (AttributeError, IOError, OSError):
