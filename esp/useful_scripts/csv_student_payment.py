@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 #
 # Add accounting records for students that have already paid (e.g. on an external website).
 # Assumes that a student has paid for the entirety of their amount due.
@@ -30,7 +31,7 @@ def main():
 
     PROGRAM = Program.objects.get(name=args.program)
 
-    filename = os.path.expanduser(args.csv_filename)
+    filename = str(Path(args.csv_filename).expanduser())
     csvfile = open(filename, "r")
     reader = csv.DictReader(csvfile)
 
