@@ -105,6 +105,8 @@ REGISTRATION_CHOICES = (
             (CLOSED, "closed"),
             )
 
+_SENTINEL = object()
+
 
 class ClassSizeRange(models.Model):
     range_min = models.IntegerField(null=False)
@@ -494,12 +496,18 @@ class ClassSection(models.Model):
     category = property(_get_category)
 
     def _get_room_capacity(self, rooms = None, ignore_changes=False):
-        # rooms should be a queryset
         if rooms is None:
             rooms = self.classrooms()
 
-        # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
-        rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
+        if isinstance(rooms, (list, tuple)):
+            from collections import defaultdict
+            event_caps = defaultdict(int)
+            for r in rooms:
+                event_caps[r.event_id] += (r.num_students or 0)
+            rc = min(event_caps.values()) if event_caps else 0
+        else:
+            # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
+            rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap and not ignore_changes:
@@ -520,10 +528,14 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
-        rooms = self.classrooms()
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
+            rooms = None
         else:
+            if hasattr(self, '_prefetched_objects_cache') and 'resourceassignment_set' in self._prefetched_objects_cache:
+                rooms = [ra.resource for ra in self.resourceassignment_set.all() if ra.resource.res_type.name == "Classroom"]
+            else:
+                rooms = self.classrooms()
             if len(rooms) == 0:
                 if not ans:
                     ans = self.parent_class.class_size_max
@@ -534,6 +546,11 @@ class ClassSection(models.Model):
 
         #hacky fix for classes with no max size
         if ans is None or ans == 0:
+            if rooms is None:
+                if hasattr(self, '_prefetched_objects_cache') and 'resourceassignment_set' in self._prefetched_objects_cache:
+                    rooms = [ra.resource for ra in self.resourceassignment_set.all() if ra.resource.res_type.name == "Classroom"]
+                else:
+                    rooms = self.classrooms()
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
             if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
@@ -1307,45 +1324,69 @@ class ClassSection(models.Model):
         # Sort None start times before real ones, matching __cmp__ semantics
         return (start is not None, start or datetime.datetime.min, self.title())
 
-    def isFull(self, ignore_changes=False, webapp=False):
-        if len(self.get_meeting_times()) == 0:
+    def isFull(self, ignore_changes=False, webapp=False,
+               switch_time=_SENTINEL, switch_lag=_SENTINEL,
+               program_checked_in=_SENTINEL,
+               num_checked_in=_SENTINEL,
+               num_students_checked_in=_SENTINEL):
+        if not self.meeting_times.all():
             return True
 
         # Get time and tag values to determine what number to base class changes on
         now = datetime.datetime.now()
-        switch_time = None
-        if Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program):
-            try:
-                switch_time_str = now.strftime("%Y/%m/%d ") + Tag.getProgramTag('switch_time_program_attendance', program=self.parent_program)
-                switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
-            except ValueError:
-                pass
-        switch_lag = None
-        if Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program):
-            try:
-                switch_lag = int(Tag.getProgramTag('switch_lag_class_attendance', program = self.parent_program))
-            except ValueError:
-                pass
+        prog = self.parent_program
+        if switch_time is _SENTINEL:
+            switch_time = None
+            tag_val = Tag.getProgramTag('switch_time_program_attendance', program=prog)
+            if tag_val:
+                try:
+                    switch_time_str = now.strftime("%Y/%m/%d ") + tag_val
+                    switch_time = datetime.datetime.strptime(switch_time_str, "%Y/%m/%d %H:%M")
+                except ValueError:
+                    pass
+
+        if switch_lag is _SENTINEL:
+            switch_lag = None
+            tag_val = Tag.getProgramTag('switch_lag_class_attendance', program=prog)
+            if tag_val:
+                try:
+                    switch_lag = int(tag_val)
+                except ValueError:
+                    pass
 
         # Mode 1: Base "fullness" on class attendance numbers if:
         # 1) using webapp/grid based class changes, 2) 'switch_lag_class_attendance' tag is set properly
         # 3) it is currently past the class start time + however many minutes specified in tag
         # 4) at least one student has been marked as attending the class
-        if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.count_attending_students() >= 1:
-            num_students = self.count_attending_students()
+        if webapp and switch_lag and now >= (self.start_time_prefetchable() + timedelta(minutes=switch_lag)) and self.attending_students >= 1:
+            num_students = self.attending_students
         # Mode 2: Base "fullness" on program attendance numbers if:
         # 1) using webapp/grid based class changes, 2) 'switch_time_program_attendance' tag is set properly
         # 3) it is currently past the time specified in tag
         # 4) at least five students have been marked as attending the program (to account for test users)
-        elif webapp and switch_time and now >= switch_time and self.parent_program.currentlyCheckedInStudents().count() >= 5:
-            num_students = self.num_students_checked_in()
+        elif webapp and switch_time and now >= switch_time:
+            if program_checked_in is _SENTINEL:
+                has_enough_checked_in = prog.currentlyCheckedInStudents().count() >= 5
+            else:
+                has_enough_checked_in = bool(program_checked_in)
+            if has_enough_checked_in:
+                if num_checked_in is not _SENTINEL:
+                    num_students = num_checked_in
+                elif num_students_checked_in is not _SENTINEL:
+                    num_students = num_students_checked_in
+                else:
+                    num_students = self.num_students_checked_in()
+            else:
+                num_students = self.num_students()
         # Mode 3: Base "fullness" on enrollment numbers
         else:
             num_students = self.num_students()
-        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
+
+        capacity = self._get_capacity(ignore_changes)
+        if (self.num_students() == capacity == 0):
             return False
         else:
-            return (num_students >= self._get_capacity(ignore_changes))
+            return (num_students >= capacity)
 
     def isFullWebapp(self, ignore_changes=False):
         return self.isFull(ignore_changes = ignore_changes, webapp = True)
@@ -1871,14 +1912,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         """ Return a prettified string listing of the class's moderators """
         return ", ".join([ f"{u.first_name} {u.last_name}" for u in self.moderators() ])
 
-    def isFull(self, ignore_changes=False, timeslot=None, webapp=False):
+    def isFull(self, ignore_changes=False, timeslot=None, webapp=False, **kwargs):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(ignore_changes=ignore_changes, webapp=webapp):
+            if not s.isFull(ignore_changes=ignore_changes, webapp=webapp, **kwargs):
                 return False
         return True
 

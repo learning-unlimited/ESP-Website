@@ -450,6 +450,212 @@ class FullStatusTests(ProgramFrameworkTest):
         section_ids = [entry[0] for entry in data]
         self.assertNotIn(section.id, section_ids)
 
+    def test_full_section_returns_true(self):
+        """A section where enrolled_students >= capacity must return is_full == True."""
+        section = self.program.sections()[0]
+        original_enrolled = section.enrolled_students
+        capacity = section.capacity
+        section.enrolled_students = capacity + 5
+        section.save(update_fields=['enrolled_students'])
+        self.addCleanup(
+            section.__class__.objects.filter(pk=section.pk).update,
+            enrolled_students=original_enrolled,
+        )
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry, "Section not found in full_status result")
+        self.assertTrue(entry[1])
+
+    def test_query_count_is_bounded_and_avoids_n_plus_one(self):
+        """Proof for issue #4385: full_status must execute a bounded number
+        of queries (O(1)) regardless of the number of class sections, rather
+        than producing N+1 queries from per-section isFull() loops."""
+        from django.db import connection, reset_queries
+        from django.conf import settings
+        from esp.program.models import ClassSection
+
+        self._call()
+
+        old_debug = settings.DEBUG
+        settings.DEBUG = True
+        try:
+            reset_queries()
+            self._call()
+            initial_query_count = len(connection.queries)
+
+            first_sec = self.program.sections()[0]
+            new_secs = [
+                ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
+                for _ in range(18)
+            ]
+            meeting_times = list(first_sec.meeting_times.all())
+            for section in new_secs:
+                section.meeting_times.set(meeting_times)
+            self.addCleanup(
+                ClassSection.objects.filter(id__in=[s.id for s in new_secs]).delete
+            )
+
+            reset_queries()
+            self._call()
+            scaled_query_count = len(connection.queries)
+
+            self.assertEqual(
+                scaled_query_count,
+                initial_query_count,
+                f"Query count scaled with number of sections: {initial_query_count} -> {scaled_query_count}"
+            )
+            self.assertLessEqual(scaled_query_count, 10)
+        finally:
+            settings.DEBUG = old_debug
+
+    def test_query_count_is_bounded_and_avoids_n_plus_one_in_attendance_mode(self):
+        """Proof for issue #4385: full_status must execute a bounded number
+        of queries (O(1)) in attendance switch mode (Mode 2) where switch_time
+        has passed and >= 5 students are checked into the program."""
+        from django.db import connection, reset_queries
+        from django.conf import settings
+        from django.contrib.contenttypes.models import ContentType
+        from esp.program.models import ClassSection
+        from esp.tagdict.models import Tag
+        from esp.users.models import ESPUser, Record, RecordType
+
+        Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
+        prog_ct = ContentType.objects.get_for_model(self.program)
+        self.addCleanup(
+            Tag.objects.filter(
+                key='switch_time_program_attendance',
+                content_type=prog_ct,
+                object_id=self.program.id,
+            ).delete
+        )
+
+        rec_type = RecordType.objects.get(name='attended')
+        attn_users = [
+            ESPUser.objects.create(
+                username=f'attn_test_student_{i}',
+                email=f'attn_{i}@example.com',
+            )
+            for i in range(5)
+        ]
+        for u in attn_users:
+            Record.objects.create(user=u, program=self.program, event=rec_type)
+
+        self.addCleanup(
+            Record.objects.filter(user__in=attn_users, program=self.program).delete
+        )
+        self.addCleanup(
+            ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
+        )
+
+        self._call()
+
+        old_debug = settings.DEBUG
+        settings.DEBUG = True
+        try:
+            reset_queries()
+            self._call()
+            initial_query_count = len(connection.queries)
+
+            first_sec = self.program.sections()[0]
+            new_secs = [
+                ClassSection.objects.create(parent_class=first_sec.parent_class, status=10)
+                for _ in range(18)
+            ]
+            meeting_times = list(first_sec.meeting_times.all())
+            for section in new_secs:
+                section.meeting_times.set(meeting_times)
+            self.addCleanup(
+                ClassSection.objects.filter(id__in=[s.id for s in new_secs]).delete
+            )
+
+            reset_queries()
+            self._call()
+            scaled_query_count = len(connection.queries)
+
+            self.assertEqual(
+                scaled_query_count,
+                initial_query_count,
+                f"Query count scaled with sections in attendance mode: {initial_query_count} -> {scaled_query_count}"
+            )
+            self.assertLessEqual(scaled_query_count, 10)
+        finally:
+            settings.DEBUG = old_debug
+
+    def test_attendance_mode_fullness_evaluation(self):
+        """In attendance switch mode (Mode 2), verify that section fullness
+        is evaluated against checked-in students rather than raw enrollment."""
+        from django.contrib.contenttypes.models import ContentType
+        from esp.program.models import RegistrationType, StudentRegistration
+        from esp.tagdict.models import Tag
+        from esp.users.models import ESPUser, Record, RecordType
+
+        section = self.program.sections()[0]
+        capacity = section.capacity
+        self.assertGreater(capacity, 0)
+
+        Tag.setTag('switch_time_program_attendance', target=self.program, value='00:00')
+        prog_ct = ContentType.objects.get_for_model(self.program)
+        self.addCleanup(
+            Tag.objects.filter(
+                key='switch_time_program_attendance',
+                content_type=prog_ct,
+                object_id=self.program.id,
+            ).delete
+        )
+
+        rec_type = RecordType.objects.get(name='attended')
+        rt_enrolled = RegistrationType.objects.get(name='Enrolled')
+
+        attn_users = [
+            ESPUser.objects.create(
+                username=f'attn_eval_user_{i}',
+                email=f'attn_eval_{i}@example.com',
+            )
+            for i in range(max(5, capacity))
+        ]
+        for u in attn_users:
+            Record.objects.create(user=u, program=self.program, event=rec_type)
+
+        self.addCleanup(
+            Record.objects.filter(user__in=attn_users, program=self.program).delete
+        )
+        self.addCleanup(
+            ESPUser.objects.filter(id__in=[u.id for u in attn_users]).delete
+        )
+
+        orig_enrolled = section.enrolled_students
+        section.enrolled_students = capacity + 5
+        section.save(update_fields=['enrolled_students'])
+        self.addCleanup(
+            section.__class__.objects.filter(pk=section.pk).update,
+            enrolled_students=orig_enrolled,
+        )
+
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry)
+        self.assertFalse(entry[1], "Section should not be full when checked-in students count is 0")
+
+        created_regs = []
+        for i in range(capacity):
+            reg = StudentRegistration.objects.create(
+                section=section,
+                user=attn_users[i],
+                relationship=rt_enrolled,
+            )
+            created_regs.append(reg)
+        self.addCleanup(
+            StudentRegistration.objects.filter(id__in=[r.id for r in created_regs]).delete
+        )
+
+        resp = self._call()
+        data = json.loads(resp.content)
+        entry = next((e for e in data if e[0] == section.id), None)
+        self.assertIsNotNone(entry)
+        self.assertTrue(entry[1], "Section should be full when checked-in students >= capacity")
+
 
 class StudentsStatusTests(ProgramFrameworkTest):
     """Tests for OnSiteClassList.students_status"""
