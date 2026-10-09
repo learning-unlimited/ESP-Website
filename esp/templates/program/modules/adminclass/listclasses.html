@@ -33,18 +33,13 @@ json_data = {};
   function filterClassRows() {
     var $tbody = $j('#classes_anchor');
 
-    // While the initial AJAX fetch is still in progress, the only row
-    // present is the "Loading classes..." placeholder. Skip filtering so
-    // it stays visible instead of being hidden or replaced by a
-    // misleading "no results" message before real data arrives.
+    // Skip filtering when the "Loading classes..." placeholder is present
     if ($j('#loading_row').length > 0) {
       return;
     }
 
     // fillClasses() rebuilds the tbody's contents on load, which can wipe
     // out our "no results" row, so re-create it here if it's missing.
-    // The table has 5 columns normally, 6 when TeacherModeratorModule is
-    // enabled, so compute the colspan instead of hard-coding it.
     var $noResultsRow = $j('#no_results_row');
     if ($noResultsRow.length === 0) {
       var colspan = (has_moderator_module === "True") ? 6 : 5;
@@ -58,10 +53,7 @@ json_data = {};
     var visibleCount = 0;
 
     $tbody.children('tr').not('#no_results_row').each(function() {
-      // Exclude the Management Options column (last cell) from the
-      // searchable text, since it only contains button labels
-      // (Delete/Edit/Manage/Status) that would otherwise match on
-      // common words and hide unrelated rows.
+      // Exclude the Management Options column from the searchable text
       var rowText = $j(this).find('td').not(':last').text().toLowerCase();
       var matches = rowText.indexOf(filter) !== -1;
       $j(this).toggle(matches);
@@ -74,9 +66,7 @@ json_data = {};
   $j(document).ready(function() {
     $j('#classSearch').on('input', filterClassRows);
 
-    // Re-apply filter when classes finish loading via AJAX (json_fetch
-    // replaces the tbody contents asynchronously after this script runs).
-    // Debounced so a batch of row insertions only triggers one filter pass.
+    // Re-apply filter when classes finish loading via AJAX
     if (window.MutationObserver) {
       var filterDebounceTimer;
       var debouncedFilter = function() {
@@ -134,6 +124,7 @@ json_data = {};
                placeholder="Search by title, teacher, code..."
                aria-label="Search classes by title, teacher, or code" />
       </div>
+      <br />
     </div>
 
     <div id="battlescreen">
