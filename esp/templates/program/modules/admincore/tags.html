@@ -71,8 +71,9 @@
     <table class="contact table">
     {% for field in fieldset %}
       {% if field.is_hidden %}
-     <tr>
-       <td style="padding-bottom: 15px;"> {{ field }} </td>
+     {# Still submitted, so the tag keeps its value, but it has nothing to show #}
+     <tr class="d-none">
+       <td> {{ field }} </td>
      </tr>
        {% else %}
      <tr class="tag-row" data-search-text="{{ field.name|escape }} {{ field.label|escape }} {{ field.help_text|striptags|escape }}">

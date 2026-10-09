@@ -1370,6 +1370,15 @@ class FormattedTagValueTest(SimpleTestCase):
         field = self._field(all_program_tags, 'switch_time_program_attendance')
         self.assertEqual(field.widget.input_type, 'time')
 
+    def test_switch_time_pads_the_hour(self):
+        """A time input shows nothing unless the hour is zero padded, so a
+        value saved before this was a picker still has to appear in it."""
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        self.assertEqual(field.prepare_value('9:05'), '09:05')
+        self.assertEqual(field.clean('9:05'), '09:05')
+        for value in ('13:30', '', None):
+            self.assertEqual(field.prepare_value(value), value)
+
     def test_home_pages_take_a_path_or_a_url(self):
         for value in ('/learn/index.html', '/', '/a/b?c=d#e',
                       'https://example.com/page', 'http://example.com'):
@@ -1455,3 +1464,45 @@ class MonthDayWidgetTest(TestCase):
         """So that saving an unchanged value still counts as the default."""
         self.assertEqual(MonthDayWidget().year,
                          all_global_tags['grade_increment_date']['default'].year)
+
+
+class HiddenTagRowTest(ProgramFrameworkTest):
+    """
+    Tests the rows for tags the program tag form hides.
+
+    Class registration tags whose field is not in the teacher registration form
+    get a HiddenInput, which still has to submit the tag's current value, but
+    must not leave a blank row in the table.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _page(self):
+        url = '/manage/%s/tags/' % self.program.getUrlBase()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def test_hidden_tags_are_still_submitted(self):
+        """Dropping the input would make the next save clear the tag."""
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        form = ProgramTagSettingsForm(program=self.program)
+        hidden = [key for key, field in form.fields.items()
+                  if isinstance(field.widget, forms.HiddenInput)]
+        self.assertTrue(hidden, 'No class registration tags were hidden')
+
+        content = self._page()
+        for key in hidden:
+            self.assertIn('name="%s"' % key, content)
+
+    def test_hidden_tags_do_not_leave_a_blank_row(self):
+        rows = re.findall(r'<tr([^>]*)>\s*<td[^>]*>\s*<input type="hidden"', self._page())
+        self.assertTrue(rows, 'No hidden tag rows were rendered')
+        for attrs in rows:
+            self.assertIn('d-none', attrs)
+

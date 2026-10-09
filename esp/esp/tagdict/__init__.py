@@ -22,6 +22,27 @@ class JSONValidatedCharField(forms.CharField):
     # single-line input
     widget = forms.Textarea(attrs={'rows': 3})
 
+class TimeOfDayField(forms.CharField):
+    """A time of day, picked with a time input and stored as 24-hour HH:MM.
+
+    The control shows whatever the viewer's locale uses (AM/PM in the US) but
+    always submits 24 hour HH:MM, which is what the tag's consumers parse.
+    """
+
+    widget = forms.TimeInput(attrs={'type': 'time'})
+    default_validators = [RegexValidator(r'^([01]?\d|2[0-3]):[0-5]\d$',
+                                         'Enter a time of day, such as 13:30.')]
+
+    def prepare_value(self, value):
+        # A time input shows nothing unless the hour is zero padded
+        if isinstance(value, str) and re.match(r'^\d:\d\d$', value):
+            return '0' + value
+        return value
+
+    def clean(self, value):
+        return self.prepare_value(super().clean(value))
+
+
 class MultilineCharField(forms.CharField):
     """A CharField for tag values that hold prose, shown as a small textarea."""
     widget = forms.Textarea(attrs={'rows': 2})
@@ -1461,13 +1482,11 @@ all_program_tags = {
     },
     'switch_time_program_attendance': {
         'is_boolean': False,
-        'help_text': 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used. Format: HH:MM where HH is in 24 hour time.',
+        'help_text': 'At what time should the student onsite webapp use program attendance if available (instead of enrollment) to determine if a class is full? If blank, program attendance numbers will not be used.',
         'default': None,
         'category': 'onsite',
         'is_setting': True,
-        'field': forms.CharField(widget=forms.TimeInput(attrs={'type': 'time'}),
-                                validators=[RegexValidator(r'^([01]?\d|2[0-3]):[0-5]\d$',
-                                                           'Enter a time in 24-hour HH:MM format (e.g. 13:30).')]),
+        'field': TimeOfDayField(),
     },
     'switch_lag_class_attendance': {
         'is_boolean': False,
