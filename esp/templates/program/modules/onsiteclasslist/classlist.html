@@ -22,7 +22,7 @@ var refresh_interval_ms = {{ refresh }} * 1000;
 //   causing a visible jump the way a mid-scroll page reload would.
 var pending_html = null;
 var fetch_in_progress = false;
-var fragment_url = window.location.pathname.replace(/\/classList\/?$/, "/classlist_fragment") + window.location.search;
+var fragment_url = window.location.pathname.replace(/\/classlist\/?$/i, "/classlist_fragment") + window.location.search;
 
 function prefetch_fragment() {
     if (fetch_in_progress) return;
