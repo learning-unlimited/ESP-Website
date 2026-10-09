@@ -161,19 +161,21 @@
           // Another handler has taken over, so it owns the form from here.
           if (event.isDefaultPrevented() ||
               (event.originalEvent && event.originalEvent.defaultPrevented)) return;
-          // Submissions that open a new tab leave this page usable, so there is
-          // nothing to lock.
-          if (target) return;
           // Already on its way; drop the repeat.
           if ($j.data(form, 'espSubmitting')) {
             event.preventDefault();
             return;
           }
-          // Make sure there is a csrf token.
+          // Make sure there is a csrf token. A target changes where the
+          // response lands, not whether the POST needs one, so this comes
+          // first.
           if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
             event.preventDefault();
             return;
           }
+          // Submissions that open a new tab leave this page usable, so there is
+          // nothing to lock.
+          if (target) return;
           // Mark the form and submit button to prevent multiple submissions.
           $j.data(form, 'espSubmitting', true);
           $j.data(form, 'espMarked', $j(submitter || $j(form).find(':submit'))
