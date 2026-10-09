@@ -46,7 +46,7 @@ from django.db import transaction
 from django.db.models import Sum, Q
 from django.utils.text import slugify
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class BaseAccountingController(object):
@@ -623,7 +623,15 @@ class IndividualAccountingController(ProgramAccountingController):
                 discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
 
-        return aid_amount
+        # Round to the nearest cent using ROUND_HALF_UP (.5 rounds up, per
+        # maintainer guidance). Percentage-based grants can produce fractional
+        # cents (e.g. 25% of $47.50 = $11.875), which makes amount_due() a
+        # non-integer number of cents. That causes int(amount_due * 100) in
+        # payonline() to disagree with Decimal(amount_due()) * 100 in
+        # charge_payment(), triggering a spurious "inconsistent_amount" error
+        # that prevents the student from paying online at all.
+        # See: https://github.com/learning-unlimited/ESP-Website/issues/6055
+        return aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
