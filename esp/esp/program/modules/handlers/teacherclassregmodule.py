@@ -146,10 +146,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
-        #   Drafts have not been submitted, so no teacher list should count them.
-        classes_qs = self.program.classes().defer(*fields_to_defer).exclude(status=ClassStatus.DRAFT)
+        classes_qs = self.program.classes().defer(*fields_to_defer)
+        draft_classes_qs = self.program.classes(include_drafts=True).filter(status=ClassStatus.DRAFT)
 
         Q_isteacher = Q(classsubject__in=classes_qs)
+        Q_draft_teacher = Q(classsubject__in=draft_classes_qs)
         Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__in=[ClassStatus.REJECTED, ClassStatus.CANCELLED])) & Q_isteacher
         Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0, sections__status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
@@ -183,6 +184,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         qobjects = {
                 'class_submitted': Q_isteacher,
+                'class_draft': Q_draft_teacher,
                 'class_approved': Q_approved_teacher,
                 'class_proposed': Q_proposed_teacher,
                 'class_rejected': Q_rejected_teacher,
@@ -207,6 +209,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         capacity_factor = ClassSubject.get_capacity_factor()
         result = {
             'class_submitted': """Teachers who have submitted at least one class""",
+            'class_draft': """Teachers with an unsubmitted class draft""",
             'class_approved': """Teachers teaching an approved class""",
             'class_proposed': """Teachers teaching an unreviewed class""",
             'class_rejected': """Teachers teaching a rejected class""",

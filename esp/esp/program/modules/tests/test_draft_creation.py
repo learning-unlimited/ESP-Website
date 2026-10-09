@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 import datetime
+import json
 
 from django.test import Client
 
@@ -865,3 +866,118 @@ class MakeAClassDraftTest(DraftCreationTestMixin, ProgramFrameworkTest):
         )
         draft.refresh_from_db()
         self.assertEqual(draft.status, ClassStatus.UNREVIEWED)
+
+    def test_draft_hidden_from_admin_dashboard(self):
+        """Drafts are excluded from the dashboard class list and the catalog JSON."""
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        from esp.program.modules.base import ProgramModule, ProgramModuleObj
+        pm = ProgramModule.objects.get(handler='AdminClass')
+        adminclass = ProgramModuleObj.getFromProgModule(self.program, pm)
+        self.assertNotIn(draft.id, [c.id for c in adminclass.getClasses()],
+                         "Drafts must not appear in the dashboard class list")
+
+        admin = self.admins[0]
+        self.assertTrue(
+            self.client.login(username=admin.username, password='password'),
+            "Couldn't log in as admin %s" % admin.username
+        )
+        response = self.client.get('/json/%s/class_subjects' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        ids = [c['id'] for c in json.loads(response.content)['classes']]
+        self.assertNotIn(draft.id, ids,
+                         "Drafts must not appear in the class_subjects JSON")
+
+    def test_draft_counted_as_its_own_statistic(self):
+        """The vitals stats report drafts separately without inflating the totals."""
+        from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+
+        teacher = self.teachers[0]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        JSONDataModule.class_nums.delete_all()
+        before = dict(JSONDataModule.class_nums(self.program))
+
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        self.assertIsNotNone(
+            ClassSubject.objects.filter(
+                parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+            ).first(),
+            "Draft class should have been created"
+        )
+
+        JSONDataModule.class_nums.delete_all()
+        after = dict(JSONDataModule.class_nums(self.program))
+
+        draft_key = [k for k in after if 'Draft' in k]
+        self.assertEqual(len(draft_key), 1, "Expected exactly one draft statistic")
+        self.assertEqual(after[draft_key[0]], before[draft_key[0]] + 1,
+                         "The draft statistic should count the new draft")
+        self.assertEqual(after["Total # of Classes"], before["Total # of Classes"],
+                         "A draft must not inflate the total class count")
+
+    def test_draft_teacher_list(self):
+        """Teachers with an unsubmitted draft get their own searchable list."""
+        teacher = self.teachers[0]
+        other = self.teachers[1]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        # The framework gives every teacher a class; drop this one's so the
+        # draft is their only class.
+        ClassSubject.objects.filter(parent_program=self.program, teachers=teacher).delete()
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        self.assertIsNotNone(
+            ClassSubject.objects.filter(
+                parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+            ).first(),
+            "Draft class should have been created"
+        )
+
+        moduleobj = self._get_teacherclassreg_module()
+        lists = moduleobj.teachers()
+        self.assertIn('class_draft', lists)
+        self.assertIn('class_draft', moduleobj.teacherDesc())
+        self.assertIn(teacher, lists['class_draft'])
+        self.assertNotIn(other, lists['class_draft'])
+        # A draft is not a submission.
+        self.assertNotIn(teacher, lists['class_submitted'])
+
+    def test_draft_not_exposed_by_catalog_preview(self):
+        """A draft is not a catalog entry, so no teacher can preview it."""
+        teacher = self.teachers[0]
+        other = self.teachers[1]
+        self.assertTrue(
+            self.client.login(username=teacher.username, password='password'),
+            "Couldn't log in as teacher %s" % teacher.username
+        )
+        self.client.post(self._makeaclass_url(), self._make_draft_form_data(teacher))
+        draft = ClassSubject.objects.filter(
+            parent_program=self.program, teachers=teacher, status=ClassStatus.DRAFT
+        ).first()
+        self.assertIsNotNone(draft, "Draft class should have been created")
+
+        preview_url = '%scatalogpreview/%d' % (self.program.get_teach_url(), draft.id)
+        self.assertEqual(self.client.get(preview_url).status_code, 404,
+                         "A teacher's own draft is not previewable")
+
+        # catalogpreview has no ownership check, so this would otherwise leak
+        # one teacher's unsubmitted draft to every other teacher.
+        self.assertTrue(
+            self.client.login(username=other.username, password='password'),
+            "Couldn't log in as teacher %s" % other.username
+        )
+        self.assertEqual(self.client.get(preview_url).status_code, 404,
+                         "Another teacher must not be able to read the draft")

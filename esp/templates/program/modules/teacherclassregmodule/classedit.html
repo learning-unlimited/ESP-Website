@@ -49,7 +49,7 @@
         {% load modules %}
         <center>
         <a class="btn btn-primary btn-lg" title="Modify Coteachers" href="/teach/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">Modify Coteachers</a>
-        {% if program|hasModule:"TeacherPreviewModule" %}
+        {% if program|hasModule:"TeacherPreviewModule" and not class.isDraft %}
         <a class="btn btn-primary btn-lg" title="Catalog Preview" href="/teach/{{ program.getUrlBase }}/catalogpreview/{{ class.id }}">Catalog Preview</a>
         {% endif %}
         <br /><br />
