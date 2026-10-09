@@ -1,5 +1,10 @@
 {% extends "program/modules/teacheronsite/webapp.html" %}
 
+{% block head %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/survey.css" type="text/css" />
+{% endblock %}
+
 {% block body %}
 {% load survey %}
 <center>
@@ -31,15 +36,15 @@
   <table style="height:8vh; border:none;"><tr style="border:none;"><td style="border:none; background: none;"></td></tr></table>
   </div>
 </center>
-<div class="navbar bottom">
-  <table>
-    <tr>
-      <td{% if survey_page == "survey" %} class="selected"{% endif %}><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitesurvey/" style="display:block;"><i class="material-icons md-5">ballot</i>
-        <br>Teacher Survey</td>
-      <td{% if survey_page == "review" %} class="selected"{% endif %}><a class="no-dec" href="/teach/{{one}}/{{two}}/onsitesurvey/review" style="display:block;"><i class="material-icons md-5">receipt</i>
-        <br>Student Survey Results</td>
-    </tr>
-  </table>
-</div>
+<nav class="navbar bottom" aria-label="Survey pages">
+  <a class="navbar-item{% if survey_page == 'survey' %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitesurvey/"{% if survey_page == 'survey' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">ballot</i>
+    <span>Teacher Survey</span>
+  </a>
+  <a class="navbar-item{% if survey_page == 'review' %} selected{% endif %}" href="/teach/{{one}}/{{two}}/onsitesurvey/review"{% if survey_page == 'review' %} aria-current="page"{% endif %}>
+    <i class="material-icons md-5" aria-hidden="true">receipt</i>
+    <span>Student Survey Results</span>
+  </a>
+</nav>
 
 {% endblock %}

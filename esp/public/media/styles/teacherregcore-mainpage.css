@@ -1,0 +1,149 @@
+/* Layout for program/modules/teacherregcore/mainpage.html.  Only spacing and
+   sizing here; colours come from the compiled theme so dark themes still work. */
+
+.teacher-reg-hero {
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+}
+
+.teacher-reg-hero h1 {
+    line-height: 1.2;
+    margin: 0 0 0.5rem;
+    text-align: center;
+}
+
+.teacher-reg-hero p:last-child {
+    margin-bottom: 0;
+}
+
+.teacher-reg-progressbar {
+    margin-bottom: 1.5rem;
+}
+
+/* Steps checklist and other requirements sit in a narrow left column beside the
+   registration content; they stack on top below the lg breakpoint. */
+@media (min-width: 992px) {
+    .teacher-reg-columns {
+        align-items: flex-start;
+        display: flex;
+        gap: 1.5rem;
+    }
+
+    .teacher-reg-checklist-col {
+        flex: 0 0 20rem;
+        max-height: calc(100vh - var(--teacher-reg-sticky-top, 1rem)
+                         - var(--teacher-reg-sticky-bottom, 1rem));
+        overflow-y: auto;
+        position: sticky;
+        top: var(--teacher-reg-sticky-top, 1rem);
+    }
+
+    .teacher-reg-main-col {
+        flex: 1 1 auto;
+        /* Stops wide module tables from stretching the flex item. */
+        min-width: 0;
+    }
+}
+
+.teacher-reg-panel {
+    margin-bottom: 1.5rem;
+}
+
+.teacher-reg-checklist .card-body {
+    padding: 0;
+}
+
+.teacher-reg-checklist .table > * > tr > :first-child {
+    padding-left: 1rem;
+}
+
+.teacher-reg-checklist .table > * > tr > :last-child {
+    padding-right: 1rem;
+}
+
+.teacher-reg-checklist .qsd_header,
+.teacher-reg-checklist .qsd_view_visible {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.teacher-reg-panel .table {
+    margin-bottom: 0;
+}
+
+/* The requirements table shares the checklist card, so it gets a rule instead
+   of a second card border. */
+.teacher-reg-records {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+}
+
+/* Keep both tables compact enough to fit without an inner scrollbar. */
+.teacher-reg-checklist .table td,
+.teacher-reg-checklist .table th {
+    padding: 0.3rem 0.4rem;
+}
+
+.teacher-reg-checklist .table th {
+    background-color: var(--bs-secondary-bg, #ecf0f1);
+    font-size: 1.1rem;
+}
+
+/* checkboxes.html appends "(not required)", a required_label, and "(below)" as
+   bare <i> elements inside the link cell, which wraps every long step onto
+   three lines.  Give them their own muted line; the done/not-done icons are
+   <i class="bi ..."> and so are excluded. */
+.teacher-reg-checklist .table td i:not([class]) {
+    display: block;
+    font-size: 0.85em;
+    opacity: 0.75;
+}
+
+.teacher-reg-checklist .row {
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.teacher-reg-checklist .row > [class*="col-"] {
+    flex: 0 0 100%;
+    margin-left: 0;
+    max-width: 100%;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.teacher-reg-checklist .table {
+    width: 100%;
+}
+
+.teacher-reg-module-block {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    scroll-margin-top: 1rem;
+}
+
+.teacher-reg-module-block:first-child {
+    border-top: 0;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+@media (max-width: 767.98px) {
+    #main .teacher-reg-hero h1 {
+        font-size: 1.75rem;
+    }
+
+}
+
+/* Calculate sticky offsets for the checklist if the page has a fixed navbar. */
+body.has-fixed-navbar,
+body:has(.navbar.fixed-top) {
+    --teacher-reg-sticky-top: 5.5rem;
+}
+
+body:has(.navbar.fixed-bottom) {
+    --teacher-reg-sticky-bottom: 5.5rem;
+}

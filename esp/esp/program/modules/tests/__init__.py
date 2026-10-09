@@ -40,7 +40,7 @@ from esp.program.modules.tests.studentregprofilemodule import StudentRegProfileM
 from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
-from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
+from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest, TeacherScheduleDeadlineTest
 from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
@@ -49,6 +49,9 @@ from esp.program.modules.tests.resourcemodule import ResourceModuleTest
 from esp.program.modules.tests.admincore import RegistrationTypeManagementTest, ModuleManagementConstraintsTest, ModuleManagementLinkTitleTest
 from esp.program.modules.tests.adminclass import CancelClassTest
 from esp.program.modules.tests.studentregmodules import StudentExtraCostsTest, StudentRegCoreTest, StudentRegPhaseZeroTest, StudentRegConfirmTest, LotteryStudentRegTest, StudentAcknowledgementTest, StudentLunchSelectionTest, StudentSurveyModuleTest, StudentCertModuleTest, StudentOnsiteTest, StudentClassRegModuleTest
+from esp.program.modules.tests.studentextracosts import (
+    StudentExtraCostsTest as StudentExtraCostsCustomAmountTest,
+)
 from esp.program.modules.tests.classsearchmodule import ClassSearchModuleTest
 from esp.program.modules.tests.classflagmodule import ClassFlagModuleTest
 from esp.program.modules.tests.auth import ProgramModuleAuthTest
@@ -97,3 +100,8 @@ from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
+from esp.program.modules.tests.surveymanagement import SurveyManagementTest
+from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleTest
+from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest
+
+from esp.program.modules.tests.test_donationmodule import DonationFormTest, DonationModuleTest

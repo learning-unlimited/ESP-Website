@@ -207,14 +207,14 @@ def archive_classes(request, category, options, sortorder = None):
 
     return render_to_response('program/archives.html', request, context)
 
-def archive_teachers(request, category, options):
+def archive_teachers(request, category, options, sortorder=None):
     context = {'selection': 'Teachers'}
     context['category'] = category
     context['options'] = options
 
     return render_to_response('program/archives.html', request, context)
 
-def archive_programs(request, category, options):
+def archive_programs(request, category, options, sortorder=None):
     context = {'selection': 'Programs'}
     context['category'] = category
     context['options'] = options
