@@ -126,7 +126,7 @@ class AllViewsTest(ProgramFrameworkTest):
         Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
 
         # The second step of each USC module expects the id of a filter saved
-        # by the first step. Target a student so the admin doesn't get deactivated.
+        # by the first step. Use a student so the admin doesn't get deactivated.
         self.filter_user = self.students[-1]
         self.user_filter = PersistentQueryFilter.create_from_Q(
             ESPUser, Q(id=self.filter_user.id), 'All views test filter')
@@ -157,10 +157,9 @@ class AllViewsTest(ProgramFrameworkTest):
         # clean up surveys
         Survey.objects.all().delete()
 
-    #   Views deliberately left out of the sweep
+    # Views deliberately left out of the sweep
     SKIP_VIEWS = {
-        #   Logs the admin out and logs in as the test user, which would break
-        #   every view swept after it.  Covered by tests/admintestingmodule.py.
+        # Logs the admin out which would break later views
         ('manage', 'start_testing'),
     }
 
@@ -183,8 +182,7 @@ class AllViewsTest(ProgramFrameworkTest):
                 for view in module.views:
                     if (tl, view) in self.SKIP_VIEWS:
                         continue
-                    # Report each view separately so one broken view neither
-                    # hides the others nor requires reading a single blob.
+                    # Report each view separately
                     with self.subTest(tl = tl, module = module.module.handler, view = view):
                         self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id, job_id)
 
@@ -195,9 +193,7 @@ class AllViewsTest(ProgramFrameworkTest):
         # In case the user has been unregistered, reregister them
         sec.preregister_student(self.adminUser)
 
-        # Likewise, deactivatefinal really deactivates the users the filter
-        # matches, and get_Q() only ever returns active ones -- so without
-        # this every later view handed the filter sees an empty user list.
+        # Reactivate any users that may have been deactivated by previous actions.
         ESPUser.objects.filter(id=self.filter_user.id).update(is_active=True)
 
         def post_fcfs():
@@ -205,10 +201,7 @@ class AllViewsTest(ProgramFrameworkTest):
             sec.unpreregister_student(self.adminUser)
             return self.client.post(url, {'class_id': cls_id, 'section_id': sec_id, 'json_data': '{}'})
 
-        # Identifiers that views pick out of the query string by name.  Views
-        # that ignore them are unaffected, so every GET below carries all of
-        # them; several views want both an extra path segment and a query
-        # parameter (accept_student and view_app, for instance).
+        # Identifiers that views pick out of the query string by name
         query = '&'.join([
             'cls=' + cls_id, 'clsid=' + cls_id, 'name=Admin', 'username=admin',
             'student=' + user_id,       # accept_student, reject_student, view_app
@@ -269,13 +262,9 @@ class AllViewsTest(ProgramFrameworkTest):
         ]
 
         # Stop as soon as a request is actually served.  A 4xx also counts as
-        # handled -- the AJAX endpoints answer a request they can't use with
-        # HttpResponseBadRequest, and a POST-only view answers a GET with 405,
-        # which means the view resolved, loaded and ran its own validation --
-        # but it does not end the search, or a GET that 405s would cancel the
-        # POST written for that very view.  What this test is looking for is a
-        # view that cannot serve anything at all: an unhandled exception, or
-        # the 500 that ESPErrorMiddleware renders for an ESPError.
+        # handled (e.g., a POST-only view answers a GET with 405) but it does
+        # not end the search. This test is specifically looking for a view that
+        # cannot serve anything at all: an unhandled exception or ESPError.
         handled = False
         failures = []
         for label, attempt in attempts:
