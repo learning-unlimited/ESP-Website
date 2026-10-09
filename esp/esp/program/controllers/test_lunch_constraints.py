@@ -79,7 +79,7 @@ class LunchConstraintGeneratorInitializationTest(SimpleTestCase):
 
         program = MagicMock()
         program.getTimeSlots.return_value = [
-            early_lunch, late_lunch,
+            late_lunch, early_lunch,
         ]
 
         generator = LunchConstraintGenerator(
