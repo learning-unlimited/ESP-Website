@@ -24,7 +24,14 @@ from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, ESPUser, Record, RecordType, StudentInfo
 
 
-class StudentRegTwoPhaseTest(ProgramFrameworkTest):
+class StudentRegTwoPhaseBaseTest(ProgramFrameworkTest):
+    """
+    Shared fixture for the TwoPhase tests. Contains no tests itself.
+
+    Subclasses can override customize_program() to alter the freshly created
+    program (e.g. to simulate a misconfiguration) before it is scheduled.
+    """
+
     def setUp(self, *args, **kwargs):
         # Set up the program with enough timeslots, teachers, rooms, and classes
         kwargs.update({
@@ -33,6 +40,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             'num_rooms': 6,
         })
         super().setUp(*args, **kwargs)
+
+        self.customize_program()
 
         self.schedule_randomly()
 
@@ -56,6 +65,10 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
         RegistrationType.objects.get_or_create(name='Priority/2', category='student')
         RegistrationType.objects.get_or_create(name='Priority/3', category='student')
+
+    def customize_program(self):
+        """Hook for subclasses; called right after the program is created."""
+        pass
 
     @property
     def program_content_type(self):
@@ -83,6 +96,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         StudentRegistration.objects.create(
             user=student, section=section, relationship=reg_type)
 
+
+class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
     # ---------------------------------------------------------------
     # Test: Main registration page loads
     # ---------------------------------------------------------------
@@ -709,3 +724,67 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(props['link_title'], 'Two-Phase Student Registration')
         self.assertTrue(props['required'])
 
+
+class StudentRegTwoPhaseMisconfiguredTest(StudentRegTwoPhaseBaseTest):
+    """
+    Tests for #1082: the catalog pages (view_classes, mark_classes,
+    rank_classes) depend on the JSON Data module to fetch class data. If
+    that module isn't enabled for the program, these pages should fail with
+    a clear, actionable error instead of silently rendering a broken page.
+    """
+
+    def customize_program(self):
+        # JSONDataModule has choosable=1 ("include by default"), so
+        # ProgramCreationForm.clean_program_modules() always force-adds it
+        # at creation time -- it can't be excluded up front via the
+        # 'modules' kwarg. Simulate an admin disabling it *after* the
+        # program was created (e.g. via the module management page),
+        # which is how this misconfiguration actually happens in practice.
+        json_mod = ProgramModule.objects.get(handler='JSONDataModule')
+        self.program.program_modules.remove(json_mod)
+
+    def _login_student(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username)
+        return student
+
+    def test_json_data_module_not_enabled(self):
+        """Sanity check that the test program really has JSONDataModule disabled."""
+        self.assertFalse(self.program.hasModule('JSONDataModule'))
+
+    def test_main_page_still_loads(self):
+        """
+        The overview page itself doesn't call any JSON endpoints directly,
+        so it should still load normally even when misconfigured.
+        """
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_classes_fails_usefully(self):
+        """view_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/view_classes' % self.program.getUrlBase())
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)
+
+    def test_mark_classes_fails_usefully(self):
+        """mark_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/mark_classes' % self.program.getUrlBase())
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)
+
+    def test_rank_classes_fails_usefully(self):
+        """rank_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        timeslot = self.program.getTimeSlots()[0]
+        response = self.client.get(
+            '/learn/%s/rank_classes/%d' % (self.program.getUrlBase(), timeslot.id))
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)
