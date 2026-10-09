@@ -79,6 +79,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserA
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
+from esp.accounting.cybersource import verify_signature
 from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
@@ -892,6 +893,15 @@ def submit_transaction(request):
 
 @transaction.atomic
 def _submit_transaction(request, log_record):
+    secret_key = settings.CYBERSOURCE_CONFIG['secret_key']
+    if not secret_key:
+        # Fail closed: without a configured secret we cannot distinguish a
+        # genuine Cybersource postback from a forged one, so refuse to act
+        # on it rather than silently trusting unauthenticated POST data.
+        raise ESPError("The Cybersource module is not configured (missing secret_key)")
+    if not verify_signature(request.POST, secret_key):
+        raise ESPError("Invalid or missing Cybersource signature; refusing to process postback")
+
     decision = request.POST['decision']
     if decision == "ACCEPT":
         # Handle payment
@@ -900,7 +910,7 @@ def _submit_transaction(request, log_record):
         transaction_id = request.POST['transaction_id']
 
         payment = IndividualAccountingController.record_payment_from_identifier(
-            identifier, amount_paid, transaction_id)
+            identifier, amount_paid, transaction_id, trusted=True)
 
         # Link payment to log record
         log_record.transfer = payment

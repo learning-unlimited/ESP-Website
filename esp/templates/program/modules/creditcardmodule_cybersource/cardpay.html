@@ -37,10 +37,17 @@
 <br />
 {% if itemizedcosttotal > 0 %}
 <form action="{{ post_url }}" method="post" autocomplete="off">
+<input type="hidden" name="access_key" value="{{ access_key }}" />
+<input type="hidden" name="profile_id" value="{{ profile_id }}" />
+<input type="hidden" name="transaction_uuid" value="{{ transaction_uuid }}" />
+<input type="hidden" name="signed_date_time" value="{{ signed_date_time }}" />
+<input type="hidden" name="signed_field_names" value="{{ signed_field_names }}" />
+<input type="hidden" name="unsigned_field_names" value="{{ unsigned_field_names }}" />
+<input type="hidden" name="signature" value="{{ signature }}" />
 <input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
 <input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
-<input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
+<input type="hidden" name="comments" value="{{ comments }}" />
 <input type="hidden" name="billTo_country" value="US" />
 <div role="alert" class="alert alert-warning">
     <strong>Note:</strong> This payment will appear on your credit card statement as <strong>SPLASH LEARNING UNLIMT</strong>.
