@@ -53,6 +53,13 @@ function Matrix(
         return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
     }.bind(this);
 
+    
+    $j("#room-filter-threshold").on("input", function() {
+        var val = parseInt($j(this).val(), 10);
+        var label = val === 0 ? "0% (show all)" : val + "%";
+        $j("#room-filter-threshold-label").text(label);
+        $j("body").trigger("room-filters-changed");
+    });
     $j.each(this.filter, function(filterName, filterObject) {
         filterObject.el.on("change", function() {
             filterObject.val = filterObject.el.val().trim();
@@ -77,42 +84,94 @@ function Matrix(
     /**
      * Get the rooms satisfying the search criteria.
      */
-    this.filteredRooms = function(){
-        var returnedRooms = [];
-        $j.each(this.rooms, function(index, room) {
-            var roomValid;
-            // check every criterion in the room filter tab, short-circuiting if possible
-            roomValid = true;
-            for (var filterName in this.filter) {
-                if (this.filter.hasOwnProperty(filterName)) {
-                    var filterObject = this.filter[filterName];
-                    // this loops over properties in this.filter
-                    if (filterObject.active && !filterObject.valid(room)) {
-                        roomValid = false;
-                        break;
-                    }
+    this.roomMatchScore = function(room) {
+        var totalWeight = 0;
+        var totalPenalty = 0;
+        if (this.filter.roomCapacityMin.active) {
+            totalWeight += 1;
+            if (room.num_students < this.filter.roomCapacityMin.val) {
+                if (this.filter.roomCapacityMin.val > 0) {
+                    var dist = (this.filter.roomCapacityMin.val - room.num_students) / this.filter.roomCapacityMin.val;
+                    totalPenalty += dist * dist;
+                } else {
+                    totalPenalty += 1;
                 }
             }
-            if (roomValid) {
-                returnedRooms.push(room);
+        }
+        if (this.filter.roomCapacityMax.active) {
+            totalWeight += 1;
+            if (room.num_students > this.filter.roomCapacityMax.val) {
+                if (this.filter.roomCapacityMax.val > 0) {
+                    var dist = (room.num_students - this.filter.roomCapacityMax.val) / this.filter.roomCapacityMax.val;
+                    totalPenalty += dist * dist;
+                } else {
+                    totalPenalty += 1;
+                }
             }
-        }.bind(this));
-        return returnedRooms;
+        }
+        if (this.filter.roomResource.active) {
+            totalWeight += 1;
+            if (!this.filter.roomResource.valid(room)) { totalPenalty += 1; }
+        }
+        if (this.filter.roomName.active) {
+            totalWeight += 1;
+            if (!this.filter.roomName.valid(room)) { totalPenalty += 1; }
+        }
+        if (totalWeight === 0) return 1.0;
+        return Math.max(0, Math.min(1, 1.0 - (totalPenalty / totalWeight)));
     };
-    
-    this.updateRooms = function(){
-        var filtRooms = this.filteredRooms()
+    this.filteredRooms = function(){
+        var threshold = parseFloat($j("#room-filter-threshold").val()) / 100 || 0;
+        var scoredRooms = [];
         $j.each(this.rooms, function(index, room) {
-            // get rows to show or hide
-            var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filtRooms.includes(room)) {
-                rows.css("display", "table-row");
+            var score = this.roomMatchScore(room);
+            if (score >= threshold) {
+                scoredRooms.push({room: room, score: score});
+            }
+        }.bind(this));
+        scoredRooms.sort(function(a, b) { return b.score - a.score; });
+        return scoredRooms.map(function(item) { return item.room; });
+    };
+    this.updateRooms = function(){
+        var anyFilterActive = false;
+        $j.each(this.filter, function(filterName, filterObject) {
+            if (filterObject.active) anyFilterActive = true;
+        });
+        var filtRooms = this.filteredRooms();
+        // Build a Set of visible room ids for O(1) lookup
+        var filtRoomIds = {};
+        $j.each(filtRooms, function(index, room) {
+            filtRoomIds[room.id] = true;
+        });
+        // Hide rooms not in filtered set
+        $j.each(this.rooms, function(index, room) {
+            if (!filtRoomIds[room.id]) {
+                $j(".room[data-id='" + room.id + "']").parent().css("display", "none");
+                $j(".room[data-id='" + room.id + "'] .room-match-badge").remove();
+            }
+        }.bind(this));
+        // Show and reorder rooms by score, appending in sorted order
+        $j.each(filtRooms, function(index, room) {
+            var roomEl = $j(".room[data-id='" + room.id + "']");
+            var rows = roomEl.parent();
+            var score = this.roomMatchScore(room);
+            rows.css("display", "table-row");
+            rows.parent().append(rows);
+            if (anyFilterActive) {
+                var pct = Math.round(score * 100);
+                var color = score === 1.0 ? "#28a745" : score >= 0.6 ? "#ffc107" : "#dc3545";
+                var textColor = (score >= 0.6 && score < 1.0) ? "#212529" : "#fff";
+                var badge = roomEl.find(".room-match-badge");
+                if (badge.length === 0) {
+                    roomEl.append("<span class='room-match-badge' style='font-size:10px;padding:1px 4px;border-radius:3px;color:" + textColor + ";margin-left:4px;background:" + color + "'>" + pct + "%</span>");
+                } else {
+                    badge.css({"background": color, "color": textColor}).text(pct + "%");
+                }
             } else {
-                rows.css("display", "none");
+                roomEl.find(".room-match-badge").remove();
             }
         }.bind(this));
     };
-
     this.sections = sections;
     this.sections.bindMatrix(this);
     this.moderatorDirectory = moderatorDirectory;
