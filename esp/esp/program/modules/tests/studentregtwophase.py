@@ -7,7 +7,6 @@ import json
 import random
 from datetime import datetime
 
-from django.contrib.contenttypes.models import ContentType
 from django.core import mail
 
 from esp.program.class_status import ClassStatus
@@ -25,7 +24,14 @@ from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, ESPUser, Record, RecordType, StudentInfo
 
 
-class StudentRegTwoPhaseTest(ProgramFrameworkTest):
+class StudentRegTwoPhaseBaseTest(ProgramFrameworkTest):
+    """
+    Shared fixture for the TwoPhase tests. Contains no tests itself.
+
+    Subclasses can override customize_program() to alter the freshly created
+    program (e.g. to simulate a misconfiguration) before it is scheduled.
+    """
+
     def setUp(self, *args, **kwargs):
         # Set up the program with enough timeslots, teachers, rooms, and classes
         kwargs.update({
@@ -34,6 +40,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             'num_rooms': 6,
         })
         super().setUp(*args, **kwargs)
+
+        self.customize_program()
 
         self.schedule_randomly()
 
@@ -57,6 +65,10 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
         RegistrationType.objects.get_or_create(name='Priority/2', category='student')
         RegistrationType.objects.get_or_create(name='Priority/3', category='student')
+
+    def customize_program(self):
+        """Hook for subclasses; called right after the program is created."""
+        pass
 
     @property
     def program_content_type(self):
@@ -84,6 +96,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         StudentRegistration.objects.create(
             user=student, section=section, relationship=reg_type)
 
+
+class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
     # ---------------------------------------------------------------
     # Test: Main registration page loads
     # ---------------------------------------------------------------
@@ -711,7 +725,7 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertTrue(props['required'])
 
 
-class StudentRegTwoPhaseMisconfiguredTest(ProgramFrameworkTest):
+class StudentRegTwoPhaseMisconfiguredTest(StudentRegTwoPhaseBaseTest):
     """
     Tests for #1082: the catalog pages (view_classes, mark_classes,
     rank_classes) depend on the JSON Data module to fetch class data. If
@@ -719,14 +733,7 @@ class StudentRegTwoPhaseMisconfiguredTest(ProgramFrameworkTest):
     a clear, actionable error instead of silently rendering a broken page.
     """
 
-    def setUp(self, *args, **kwargs):
-        kwargs.update({
-            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 1,
-            'num_rooms': 6,
-        })
-        super().setUp(*args, **kwargs)
-
+    def customize_program(self):
         # JSONDataModule has choosable=1 ("include by default"), so
         # ProgramCreationForm.clean_program_modules() always force-adds it
         # at creation time -- it can't be excluded up front via the
@@ -735,21 +742,6 @@ class StudentRegTwoPhaseMisconfiguredTest(ProgramFrameworkTest):
         # which is how this misconfiguration actually happens in practice.
         json_mod = ProgramModule.objects.get(handler='JSONDataModule')
         self.program.program_modules.remove(json_mod)
-
-        self.schedule_randomly()
-
-        Tag.objects.get_or_create(
-            key='num_stars', value='3',
-            content_type=ContentType.objects.get_for_model(self.program),
-            object_id=self.program.id
-        )
-
-        for pmo in self.program.getModules():
-            pmo.__class__ = ProgramModuleObj
-            pmo.required = False
-            pmo.save()
-
-        RecordType.objects.get_or_create(name='twophase_reg_done')
 
     def _login_student(self):
         student = random.choice(self.students)
