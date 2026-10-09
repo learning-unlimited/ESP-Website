@@ -1,5 +1,7 @@
 {# expects obj: a ClassSubject or ClassSection #}
-{% if obj.isReviewed %}
+{% if obj.isDraft %}
+<span style="font-weight: bold; color: #888;">Draft &ndash; not yet submitted</span>
+{% elif obj.isReviewed %}
     {% if obj.isAccepted %}
     <span style="font-weight: bold; color: #0C0;">Accepted{% if obj.isHidden %} (Hidden){% endif %}</span>
     {% elif obj.isCancelled %}

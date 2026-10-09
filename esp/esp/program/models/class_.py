@@ -90,6 +90,7 @@ __all__ = ['ClassSection', 'ClassSubject', 'ClassManager', 'ClassCategories', 'C
 STATUS_CHOICES = (
         (ClassStatus.CANCELLED, "cancelled"),
         (ClassStatus.REJECTED, "rejected"),
+        (ClassStatus.DRAFT, "draft"),
         (ClassStatus.UNREVIEWED, "unreviewed"),
         (ClassStatus.HIDDEN, "accepted but hidden"),
         (ClassStatus.ACCEPTED, "accepted"),
@@ -149,18 +150,18 @@ class ClassManager(Manager):
 
         return self.filter(status = ClassStatus.ACCEPTED)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None, include_drafts=False):
         # Try getting the catalog straight from cache
-        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True, order_args_override=order_args_override)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True, order_args_override=order_args_override, include_drafts=include_drafts)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override, include_drafts=include_drafts)
 
         return catalog
 
 
     @cache_function
-    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None):
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None, include_drafts=False):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -178,6 +179,9 @@ class ClassManager(Manager):
 
         if not force_all:
             classes = classes.filter(self.approved(return_q_obj=True))
+
+        if not include_drafts:
+            classes = classes.exclude(status = ClassStatus.DRAFT)
 
         classes = classes.select_related('category')
 
@@ -1410,7 +1414,8 @@ class ClassSection(models.Model):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled
@@ -2026,7 +2031,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def isAccepted(self): return self.status > 0
     def isHidden(self): return self.status == ClassStatus.HIDDEN
-    def isReviewed(self): return self.status != ClassStatus.UNREVIEWED
+    def isDraft(self): return self.status == ClassStatus.DRAFT
+    def isReviewed(self): return self.status not in (ClassStatus.UNREVIEWED, ClassStatus.DRAFT)
     def isRejected(self): return self.status == ClassStatus.REJECTED
     def isCancelled(self): return self.status == ClassStatus.CANCELLED
     isCanceled = isCancelled    # Yay alternative spellings
@@ -2298,7 +2304,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.status < ClassStatus.UNREVIEWED: #ie, all rejected or cancelled classes.
+        if self.status in (ClassStatus.REJECTED, ClassStatus.CANCELLED):
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.get_teachers()
             for t in teachers:

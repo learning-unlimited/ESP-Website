@@ -850,10 +850,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @cache_function
     def class_nums(prog):
+        drafts = prog.classes(include_drafts=True).filter(status=ClassStatus.DRAFT)
         classes = prog.classes().select_related()
         sections = prog.sections().select_related()
         class_num_list = []
         class_num_list.append(("Total # of Classes", classes.distinct().count()))
+        class_num_list.append(("Total # of Classes <span style='color: #888;'>Draft (unsubmitted)</span>", drafts.distinct().count()))
         class_num_list.append(("Total # of Classes Scheduled", classes.filter(sections__meeting_times__isnull=False).distinct().count()))
         class_num_list.append(("Total # of Class Sections", sections.distinct().count()))
         class_num_list.append(("Total # of Class Sections Scheduled", sections.filter(meeting_times__isnull=False).distinct().count()))
