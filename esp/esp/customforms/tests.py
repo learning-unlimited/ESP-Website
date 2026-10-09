@@ -48,7 +48,7 @@ from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.views import hasPerm
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_NoLog
-from esp.users.models import ESPUser, AnonymousESPUser
+from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -1204,3 +1204,102 @@ class RequiredFieldValidationTest(TestCase):
         self.assertIn(self.question('Required Text'), response.context['form'].errors)
         self.assertContains(response, 'This field is required.')
         self.client.logout()
+
+
+class AddLinkFieldToExistingFormTest(TestCase):
+    """
+    Adding a linked field to a form that already has a response table must
+    leave the table matching the dynamic model (issue #3762).
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='linkfield_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='linkfield_admin', password='password')
+
+        self.form_data = {
+            'title': 'Link Field Form',
+            'desc': 'Test',
+            'perms': '',
+            'link_type': '-1',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': -1},
+                    'fields': [{'data': {
+                        'field_type': 'textField', 'question_text': 'Plain',
+                        'seq': 0, 'required': False, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(self.form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Link Field Form')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_readable_after_adding_link_field(self):
+        modify_data = dict(self.form_data, form_id=self.form.id)
+        page = Page.objects.get(form=self.form)
+        section = Section.objects.get(page=page)
+        plain = Field.objects.get(form=self.form)
+        modify_data['pages'] = [{
+            'parent_id': page.id,
+            'seq': 0,
+            'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': section.id},
+                'fields': [
+                    {'data': {'field_type': 'textField', 'question_text': 'Plain',
+                              'seq': 0, 'required': False, 'parent_id': plain.id,
+                              'attrs': {}, 'help_text': ''}},
+                    {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Email',
+                              'seq': 1, 'required': False, 'parent_id': -1,
+                              'attrs': {}, 'help_text': ''}},
+                ],
+            }],
+        }]
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+
+        email = Field.objects.get(form=self.form, label='Email')
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{plain.id}': 'hello',
+            f'question_{email.id}': 'test@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        answers = json.loads(response.content.decode('UTF-8'))['answers']
+        self.assertEqual(len(answers), 1)
+        self.assertEqual(answers[0][f'question_{email.id}'], 'test@example.com')
+
+        #   Removing the linked field again should drop the column cleanly.
+        #   Flush deferred FK checks first, as committing the response would.
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+        modify_data['pages'][0]['sections'][0]['fields'].pop()
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
