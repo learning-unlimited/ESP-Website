@@ -52,7 +52,7 @@ from esp.program.models import VolunteerOffer
 
 from django import forms
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.db.models import IntegerField, Case, When, Count
 from django.template import loader
 from django.template.loader import render_to_string, get_template
@@ -1209,8 +1209,14 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
-        if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+        if onsite or tl == 'onsite':
+            try:
+                userid = request.GET.get('userid') or request.GET.get('user')
+                if not userid:
+                    raise Http404("User ID is required.")
+                students = [ESPUser.objects.get(id=int(userid))]
+            except (KeyError, ValueError, TypeError, ESPUser.DoesNotExist):
+                raise Http404("Student not found.")
         else:
             filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
@@ -1260,8 +1266,14 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'module': self }
 
-        if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+        if onsite or tl == 'onsite':
+            try:
+                userid = request.GET.get('userid') or request.GET.get('user')
+                if not userid:
+                    raise Http404("User ID is required.")
+                students = [ESPUser.objects.get(id=int(userid))]
+            except (KeyError, ValueError, TypeError, ESPUser.DoesNotExist):
+                raise Http404("Student not found.")
         else:
             if extra:
                 file_type = extra.strip()

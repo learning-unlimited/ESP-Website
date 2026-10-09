@@ -33,9 +33,11 @@ Learning Unlimited, Inc.
 """
 
 import os
-import warnings
 import tempfile
+import warnings
+import inspect
 import django
+import django.dispatch
 
 PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
 # Django expects BASE_DIR

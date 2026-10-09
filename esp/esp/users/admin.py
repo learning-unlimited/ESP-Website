@@ -144,17 +144,21 @@ class EducatorInfoAdmin(UserInfoAdmin):
 admin_site.register(EducatorInfo, EducatorInfoAdmin)
 
 class K12SchoolAdmin(admin.ModelAdmin):
-    list_display = ['name', 'city', 'state', 'grades', 'contact_title', 'contact_name', 'school_type']
+    list_display = ['name', 'city', 'state', 'grades', 'contact_title', 'contact_name', 'contact_email', 'school_type']
     formfield_overrides = {
         models.TextField: {'widget': forms.TextInput(attrs={'size': '50',}),},
     }
-    search_fields = ['name', 'city', 'state', 'contact__first_name', 'contact__last_name']
+    search_fields = ['name', 'city', 'state', 'contact__first_name', 'contact__last_name', 'contact__e_mail']
     list_filter = ['school_type', 'state']
     def contact_name(self, obj):
         if obj.contact:
             return f"{obj.contact.first_name} {obj.contact.last_name}"
         return None
     contact_name.short_description = 'Contact name'
+
+    def contact_email(self, obj):
+        return obj.get_contact_email()
+    contact_email.short_description = 'Contact email'
 
 admin_site.register(K12School, K12SchoolAdmin)
 
