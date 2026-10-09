@@ -263,7 +263,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 if stats[grade]['in_lottery'] == 0:
                     stats[grade]['per_accepted'] = "NA"
                 else:
-                    stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'], 1)//stats[grade]['in_lottery']*100
+                    stats[grade]['per_accepted'] = round((stats[grade]['num_accepted'] / stats[grade]['in_lottery']) * 100, 1)
         context['stats'] = stats
         context['invalid_grades'] = invalid_grades
         context['num_allowed_users'] = num_allowed_users

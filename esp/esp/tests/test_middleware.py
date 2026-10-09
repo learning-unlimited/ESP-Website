@@ -94,3 +94,30 @@ class ESPAuthMiddlewareProcessResponseTest(TestCase):
         self.assertIn('cur_username', cookie_names)
         self.assertIn('cur_userid', cookie_names)
         self.assertIn('cur_email', cookie_names)
+
+    def test_process_response_without_session_attribute_anonymous(self):
+        """Should handle requests without session attribute for anonymous users without error."""
+        request = self.factory.get('/')
+        request._cached_user = AnonymousESPUser()
+        request.COOKIES = {}
+        response = HttpResponse()
+        result = self.middleware.process_response(request, response)
+        self.assertIs(result, response)
+
+    def test_process_response_without_session_attribute_authenticated(self):
+        """Should handle requests without session attribute for authenticated users without error."""
+        user = ESPUser.objects.create_user(
+            username='nosessionuser',
+            password='password',
+            email='nosession@test.com',
+            first_name='NoSession',
+            last_name='User',
+        )
+        request = self.factory.get('/')
+        request._cached_user = user
+        request.COOKIES = {}
+        request.encoding = None
+        response = HttpResponse()
+        result = self.middleware.process_response(request, response)
+        self.assertIs(result, response)
+        self.assertIn('cur_username', result.cookies.keys())

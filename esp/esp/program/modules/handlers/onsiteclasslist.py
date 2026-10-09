@@ -518,9 +518,9 @@ class OnSiteClassList(ProgramModuleObj):
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
         strings = [f"""<div class="module_button">\
-                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}"><button type="button" class="module_link_large">
+                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}" class="module_link_large">
                                     <div class="module_link_main">{call[1]}</div>
-                                </button></a>
+                                </a>
                             </div>""" for call in calls]
         return "".join(strings)
 
