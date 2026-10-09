@@ -93,7 +93,7 @@ class ProgramSettingsForm(ProgramCreationForm):
         }
         model = Program
 _ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', r'\.')
-ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)?learningu\.org$)"})
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)*learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """

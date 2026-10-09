@@ -218,7 +218,7 @@ class ProgramModuleObj(ExpirableModel):
                 return module.get_full_path()
 
     def goToCore(self, tl):
-        return HttpResponseRedirect(self.getCoreURL(tl))
+        return HttpResponseRedirect(self.getCoreURL(tl) or '/')
 
     def require_auth(self):
         return True
@@ -419,9 +419,9 @@ class ProgramModuleObj(ExpirableModel):
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
             link = f"""<div class="module_button">\
-                                <a href="{self.get_full_path()}"><button type="button" class="module_link_large">
+                                <a href="{self.get_full_path()}" class="module_link_large">
                                     <div class="module_link_main">{self.module.link_title}</div>
-                                </button></a>
+                                </a>
                             </div>"""
         else:
             link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
