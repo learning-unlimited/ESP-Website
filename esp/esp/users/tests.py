@@ -518,6 +518,11 @@ class AccountCreationTest(TestCase):
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
         self.assertContains(response2, "do_reg_no_really")
 
+        #test duplicate account detection with differing casing
+        response2_case = self.client.post("/myesp/register/", data={"email":"TSUTTON125@GMAIL.COM", "confirm_email":"TSUTTON125@GMAIL.COM", "initial_role":"Teacher"}, follow=True)
+        self.assertTemplateUsed(response2_case, 'registration/newuser_phase1.html')
+        self.assertContains(response2_case, "do_reg_no_really")
+
         #check when there's a user awaiting activation
         #(the account is inactive with an outstanding PendingActivation row,
         #which is what registration leaves behind before the user clicks the
@@ -603,6 +608,17 @@ class AccountCreationTest(TestCase):
             self.assertTrue(taken_payload['valid'])
             self.assertFalse(taken_payload['available'])
             self.assertTrue(taken_payload['message'])
+
+            # Case-insensitive check for existing active account
+            taken_case_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'LiveCheck@EXAMPLE.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(taken_case_response.status_code, 200)
+            taken_case_payload = json.loads(taken_case_response.content.decode('utf-8'))
+            self.assertTrue(taken_case_payload['valid'])
+            self.assertFalse(taken_case_payload['available'])
+            self.assertTrue(taken_case_payload['message'])
 
             no_role_response = self.client.get('/myesp/register/check-email/', {
                 'email': 'newaddress@example.com',
@@ -691,6 +707,38 @@ class AccountCreationTest(TestCase):
         self.assertTrue(valid_payload['valid'])
         self.assertTrue(valid_payload['available'])
         self.assertEqual(valid_payload['message'], '')
+
+    def test_email_only_account_upgrade_case_insensitive(self):
+        email_user = ESPUser.objects.create(
+            username='email_user_upgrade',
+            email='EmailOnlyUser@example.com',
+            password='emailuser'
+        )
+        email_user.makeRole('Teacher')
+        initial_user_count = ESPUser.objects.count()
+
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
+        Tag.setTag('require_email_validation', value='false')
+
+        response = self.client.post('/myesp/register/', data={
+            'username': 'upgraded_user',
+            'password': 'Str0ng!Pass',
+            'confirm_password': 'Str0ng!Pass',
+            'first_name': 'Upgraded',
+            'last_name': 'User',
+            'email': 'emailonlyuser@example.com',
+            'confirm_email': 'emailonlyuser@example.com',
+            'initial_role': 'Teacher'
+        })
+        self.assertEqual(response.status_code, 302)
+
+        # Confirm no duplicate user was created and the original user was upgraded
+        self.assertEqual(ESPUser.objects.count(), initial_user_count)
+        email_user.refresh_from_db()
+        self.assertEqual(email_user.username, 'upgraded_user')
+        self.assertEqual(email_user.email, 'emailonlyuser@example.com')
+        self.assertNotEqual(email_user.password, 'emailuser')
+        self.assertTrue(email_user.check_password('Str0ng!Pass'))
 
 from esp.users.models import GradeChangeRequest
 
