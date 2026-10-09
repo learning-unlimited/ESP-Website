@@ -87,8 +87,14 @@ $font-family-sans-serif:    $sansFontFamily !default;
 // vanish on a dark background — e.g. the "Theme Editor" title on Darkly/Slate/
 // Solar).  Themes that render content on a fixed white surface (fruitsalad) set
 // their content heading colour explicitly via $headingsColor, so are unaffected.
+// $headings-color must be declared at top-level so assignments inside @if are not
+// treated as block-local variables in Sass.
+$headings-color:        null !default;
 @if not $bootswatch-active {
-    $headings-color:        $headingsColor !default;
+    $headings-color:    $headingsColor;
+}
+@if index($esp-overridden, 'headingsColor') {
+    $headings-color:    $headingsColor;
 }
 $primary:                   $btnPrimaryBackground !default;
 $secondary:                 $btnInverseBackground !default;

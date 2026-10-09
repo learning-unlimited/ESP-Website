@@ -520,6 +520,10 @@ def editor(request):
         category_vars = []
         keys = sorted(adv_vars[filename].keys())
         for key in keys:
+            # Skip variables that already have dedicated inputs in the editor
+            # to avoid duplicate inputs with the same name overwriting user choices.
+            if key in ('contentBackground', 'bodyBackground'):
+                continue
             #   Detect type of variable based on default value
             initial_val = adv_vars[filename][key]
             if key in context:

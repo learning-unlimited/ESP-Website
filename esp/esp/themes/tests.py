@@ -602,6 +602,136 @@ class DropletsFooterStylingTest(TestCase):
             )
 
 
+class DropletsContentBackgroundTest(TestCase):
+    """Main content background vs page background colors in droplets theme (Issue #3939)."""
+
+    def setUp(self):
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        self.tc = ThemeController()
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
+        if not self.tc.has_scss('droplets'):
+            self.skipTest('droplets theme has no SCSS sources')
+
+    def tearDown(self):
+        themes_settings.COMPILED_CSS_FILE = self._css_file
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
+
+    def test_content_background_default_no_main_override(self):
+        """With contentBackground and bodyBackground untouched, no #main
+        background rule is emitted, preserving the default appearance."""
+        self.tc.compile_css('droplets', {}, self.css_filename)
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('#main {\n  background-color:', css)
+
+    def test_content_background_customized_independently(self):
+        """Setting contentBackground must style #main with that color."""
+        self.tc.compile_css(
+            'droplets',
+            {'contentBackground': '#fafafa'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#main {\n  background-color: #fafafa !important;', css)
+
+    def test_content_background_when_body_background_differs(self):
+        """When bodyBackground is changed to differ from contentBackground,
+        #main receives contentBackground to maintain contrast."""
+        self.tc.compile_css(
+            'droplets',
+            {'bodyBackground': '#e0e0e0'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#main {\n  background-color: #ffffff !important;', css)
+
+    def test_content_background_bootswatch_default_has_no_override(self):
+        """Under an active Bootswatch theme, an untouched contentBackground
+        must not emit a #main background rule."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css('droplets', {}, self.css_filename, bootswatch_theme=bw_themes[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('#main {\n  background-color:', css)
+
+    def test_content_background_bootswatch_explicit_override(self):
+        """Under an active Bootswatch theme, explicitly setting contentBackground
+        must emit the #main background override."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'contentBackground': '#fefefe'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#main {\n  background-color: #fefefe !important;', css)
+
+    def test_content_background_bootswatch_body_background_override(self):
+        """Under an active Bootswatch theme, customizing bodyBackground must emit
+        a #main background rule with contentBackground to preserve readability."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'bodyBackground': '#123456'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('#main {\n  background-color: #ffffff !important;', css)
+
+    def test_bootswatch_labels_not_forced_dark_by_default(self):
+        """Under an active Bootswatch theme, default labels must not be forced to
+        $textColor so dark skins retain readable light labels."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css('droplets', {}, self.css_filename, bootswatch_theme=bw_themes[0])
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('label,\n.control-label,\n.form-label {\n  color:', css)
+
+    def test_bootswatch_customized_text_color_applies_to_labels(self):
+        """Under an active Bootswatch theme, explicitly customizing textColor must
+        still apply to form labels."""
+        bw_themes = self.tc.get_bootswatch_themes()
+        if not bw_themes:
+            self.skipTest('Bootswatch 5 npm package not installed')
+        self.tc.compile_css(
+            'droplets', {'textColor': '#abcdef'}, self.css_filename, bootswatch_theme=bw_themes[0],
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('label, .control-label, .form-label {\n  color: #abcdef;', css)
+
+    def test_content_background_variable_is_literal_hex(self):
+        """contentBackground must be declared as a literal hex in variables.scss
+        so the theme editor recognizes it as a color picker input."""
+        variables = self.tc.find_theme_variables('droplets', theme_only=True, flat=True)
+        self.assertIn('contentBackground', variables)
+        self.assertTrue(
+            variables['contentBackground'].startswith('#'),
+            f"contentBackground = {variables['contentBackground']!r} does not start with '#'",
+        )
+
+    def test_headings_color_customized(self):
+        """Setting headingsColor must update --bs-heading-color in the compiled stylesheet."""
+        self.tc.compile_css(
+            'droplets',
+            {'headingsColor': '#0088cc'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('--bs-heading-color: #0088cc;', css)
+
+
 class RecompileThemeCommandTest(TestCase):
     """recompile_theme management command must resolve names before retry."""
 

@@ -10,6 +10,13 @@
 body {
     font-size: $baseFontSize;
 }
+@if not $bootswatch-active {
+    label,
+    .control-label,
+    .form-label {
+        color: $textColor;
+    }
+}
 .navbar-brand {
     font-size: $navbarBrandFontSize;
 }
@@ -65,6 +72,7 @@ body {
     }
     @if index($esp-overridden, 'textColor') {
         body { color: $textColor; }
+        label, .control-label, .form-label { color: $textColor; }
     }
     @if index($esp-overridden, 'headingsColor') {
         h1, .h1, h2, .h2, h3, .h3, h4, .h4, h5, .h5, h6, .h6 { color: $headingsColor; }
