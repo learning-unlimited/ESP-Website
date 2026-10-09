@@ -172,19 +172,169 @@ color: #006600;
     text-align: center;
 }
 
-.add-class-cell {
+.class-list-panel {
+    margin-bottom: 1.5rem;
+}
+
+.class-list-panel .card-body {
+    padding: 0;
+}
+
+.class-list-panel .card-body > p {
+    margin: 0;
+    padding: 0.75rem 1rem;
+}
+
+#battlescreen .class-list-panel .class-list-table {
+    background-color: var(--bs-tertiary-bg, #fefef8);
+}
+
+#battlescreen .class-list-table tr {
+    border-bottom: 0;
+}
+
+/* Prevent the dropdown caret from shifting to a new line. */
+#battlescreen .dropdown-toggle {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    justify-content: center;
+    white-space: normal;
+}
+
+#battlescreen .dropdown-toggle::after {
+    margin-left: 0;
+}
+
+/* Never let a button push past its column. */
+#battlescreen .btn-group,
+#battlescreen .btn {
+    max-width: 100%;
+}
+
+#battlescreen .class-list-panel .card-header h2 {
+    color: inherit;
+    font-family: inherit;
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0;
+}
+
+/* Fixed layout so the columns do not resize as classes are expanded and
+   collapsed. */
+.class-list-table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.class-list-classes col:nth-child(1) { width: 16%; }
+.class-list-classes col:nth-child(2) { width: 11%; }
+.class-list-classes col:nth-child(3) { width: 11%; }
+.class-list-classes col:nth-child(4) { width: 11%; }
+.class-list-classes col:nth-child(5) { width: 11%; }
+.class-list-classes col:nth-child(6) { width: 20%; }
+.class-list-classes col:nth-child(7) { width: 10%; }
+.class-list-classes col:nth-child(8) { width: 10%; }
+
+.class-list-copy col:nth-child(1) { width: 16%; }
+.class-list-copy col:nth-child(2) { width: 6%; }
+.class-list-copy col:nth-child(3) { width: 6%; }
+.class-list-copy col:nth-child(4) { width: 6%; }
+.class-list-copy col:nth-child(5) { width: 6%; }
+.class-list-copy col:nth-child(6) { width: 20%; }
+.class-list-copy col:nth-child(7) { width: 20%; }
+.class-list-copy col:nth-child(8) { width: 20%; }
+
+.class-list-sections col:nth-child(1) { width: 16%; }
+.class-list-sections col:nth-child(2) { width: 8%; }
+.class-list-sections col:nth-child(3) { width: 12%; }
+.class-list-sections col:nth-child(4) { width: 12%; }
+.class-list-sections col:nth-child(5) { width: 12%; }
+.class-list-sections col:nth-child(6) { width: 20%; }
+.class-list-sections col:nth-child(7) { width: 20%; }
+
+.copy-class-action {
     text-align: center;
+    white-space: nowrap;
 }
 
-.create-class-link {
-    font-size: large;
-    padding: 5px;
-    display: inline-block;
-    background-color: inherit;
+#battlescreen > table + table {
+    margin-top: 18px;
 }
 
-.create-class-link:hover {
-    background-color: inherit;
+/* #battlescreen a:hover sets a background that outranks .dropdown-item:hover. */
+#battlescreen a.dropdown-item:hover {
+    background-color: var(--bs-dropdown-link-hover-bg, #e9ecef);
+}
+
+/* Bootstrap 5 has no submenus; reveal the nested student-list menus on hover,
+   and on keyboard focus via the parent button. */
+.dropdown-submenu {
+    position: relative;
+}
+
+.dropdown-submenu > .dropdown-menu {
+    left: 100%;
+    margin-left: 2px;
+    right: auto;
+    top: 0;
+}
+
+.dropdown-submenu:hover > .dropdown-menu,
+.dropdown-submenu:focus-within > .dropdown-menu {
+    display: block;
+}
+
+.dropdown-item-parent::after {
+    border-bottom: 0.3em solid transparent;
+    border-left: 0.3em solid;
+    border-top: 0.3em solid transparent;
+    content: "";
+    float: right;
+    margin-top: 0.45em;
+}
+
+#battlescreen tbody.collapsing {
+    transition: none;
+}
+
+#battlescreen .class-row-unreviewed {
+    color: gray;
+}
+
+#battlescreen .class-row-rejected {
+    color: red;
+}
+
+.create-class-cell {
+    padding: 12px 8px;
+}
+
+/* Stacked, full-width class actions. */
+.create-class-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 0 auto;
+    max-width: 32rem;
+}
+
+.create-class-btn {
+    font-size: 1.05rem;
+    padding: 10px 12px;
+    white-space: normal;
+}
+
+.create-class-btn small {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+/* #battlescreen a:hover sets a background that outranks .btn:hover by ID. */
+#battlescreen a.btn:hover {
+    background-color: var(--bs-btn-hover-bg, transparent);
 }
 
 td.button_td {

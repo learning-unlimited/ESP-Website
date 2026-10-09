@@ -3,7 +3,7 @@
 #page.tabcolor0 .backcolor { color: $tabcolor0_accent1_color; }
 #page.tabcolor0 .accentcolor { color: $tabcolor0_accent2_color; }
 #page.tabcolor0 #body { background: $tabcolor0_base_color; }
-.tabcolor0 a:not(.btn) { color: $tabcolor0_accent2_color; }
+.tabcolor0 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor0_accent2_color; }
 #page.tabcolor0 #search_box { background: $tabcolor0_base_color; }
 #page.tabcolor0 #login_submit { background: $tabcolor0_accent1_color; color: $tabcolor0_accent2_color; }
 #page.tabcolor0 #login_signup { background: $tabcolor0_accent2_color; color: $tabcolor0_base_color; }
@@ -24,7 +24,7 @@ li.tabcolor0 a { background-color: $tabcolor0_base_color; }
 #page.tabcolor1 .backcolor { color: $tabcolor1_accent1_color; }
 #page.tabcolor1 .accentcolor { color: $tabcolor1_accent2_color; }
 #page.tabcolor1 #body { background: $tabcolor1_base_color; }
-.tabcolor1 a:not(.btn) { color: $tabcolor1_accent2_color; }
+.tabcolor1 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor1_accent2_color; }
 #page.tabcolor1 #search_box { background: $tabcolor1_base_color; }
 #page.tabcolor1 #login_submit { background: $tabcolor1_accent1_color; color: $tabcolor1_accent2_color; }
 #page.tabcolor1 #login_signup { background: $tabcolor1_accent2_color; color: $tabcolor1_base_color; }
@@ -45,7 +45,7 @@ li.tabcolor1 a { background-color: $tabcolor1_base_color; }
 #page.tabcolor2 .backcolor { color: $tabcolor2_accent1_color; }
 #page.tabcolor2 .accentcolor { color: $tabcolor2_accent2_color; }
 #page.tabcolor2 #body { background: $tabcolor2_base_color; }
-.tabcolor2 a:not(.btn) { color: $tabcolor2_accent2_color; }
+.tabcolor2 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor2_accent2_color; }
 #page.tabcolor2 #search_box { background: $tabcolor2_base_color; }
 #page.tabcolor2 #login_submit { background: $tabcolor2_accent1_color; color: $tabcolor2_accent2_color; }
 #page.tabcolor2 #login_signup { background: $tabcolor2_accent2_color; color: $tabcolor2_base_color; }
@@ -66,7 +66,7 @@ li.tabcolor2 a { background-color: $tabcolor2_base_color; }
 #page.tabcolor3 .backcolor { color: $tabcolor3_accent1_color; }
 #page.tabcolor3 .accentcolor { color: $tabcolor3_accent2_color; }
 #page.tabcolor3 #body { background: $tabcolor3_base_color; }
-.tabcolor3 a:not(.btn) { color: $tabcolor3_accent2_color; }
+.tabcolor3 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor3_accent2_color; }
 #page.tabcolor3 #search_box { background: $tabcolor3_base_color; }
 #page.tabcolor3 #login_submit { background: $tabcolor3_accent1_color; color: $tabcolor3_accent2_color; }
 #page.tabcolor3 #login_signup { background: $tabcolor3_accent2_color; color: $tabcolor3_base_color; }
@@ -87,7 +87,7 @@ li.tabcolor3 a { background-color: $tabcolor3_base_color; }
 #page.tabcolor4 .backcolor { color: $tabcolor4_accent1_color; }
 #page.tabcolor4 .accentcolor { color: $tabcolor4_accent2_color; }
 #page.tabcolor4 #body { background: $tabcolor4_base_color; }
-.tabcolor4 a:not(.btn) { color: $tabcolor4_accent2_color; }
+.tabcolor4 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor4_accent2_color; }
 #page.tabcolor4 #search_box { background: $tabcolor4_base_color; }
 #page.tabcolor4 #login_submit { background: $tabcolor4_accent1_color; color: $tabcolor4_accent2_color; }
 #page.tabcolor4 #login_signup { background: $tabcolor4_accent2_color; color: $tabcolor4_base_color; }
@@ -108,7 +108,7 @@ li.tabcolor4 a { background-color: $tabcolor4_base_color; }
 #page.tabcolor5 .backcolor { color: $tabcolor5_accent1_color; }
 #page.tabcolor5 .accentcolor { color: $tabcolor5_accent2_color; }
 #page.tabcolor5 #body { background: $tabcolor5_base_color; }
-.tabcolor5 a:not(.btn) { color: $tabcolor5_accent2_color; }
+.tabcolor5 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor5_accent2_color; }
 #page.tabcolor5 #search_box { background: $tabcolor5_base_color; }
 #page.tabcolor5 #login_submit { background: $tabcolor5_accent1_color; color: $tabcolor5_accent2_color; }
 #page.tabcolor5 #login_signup { background: $tabcolor5_accent2_color; color: $tabcolor5_base_color; }
@@ -129,7 +129,7 @@ li.tabcolor5 a { background-color: $tabcolor5_base_color; }
 #page.tabcolor6 .backcolor { color: $tabcolor6_accent1_color; }
 #page.tabcolor6 .accentcolor { color: $tabcolor6_accent2_color; }
 #page.tabcolor6 #body { background: $tabcolor6_base_color; }
-.tabcolor6 a:not(.btn) { color: $tabcolor6_accent2_color; }
+.tabcolor6 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor6_accent2_color; }
 #page.tabcolor6 #search_box { background: $tabcolor6_base_color; }
 #page.tabcolor6 #login_submit { background: $tabcolor6_accent1_color; color: $tabcolor6_accent2_color; }
 #page.tabcolor6 #login_signup { background: $tabcolor6_accent2_color; color: $tabcolor6_base_color; }
@@ -150,7 +150,7 @@ li.tabcolor6 a { background-color: $tabcolor6_base_color; }
 #page.tabcolor7 .backcolor { color: $tabcolor7_accent1_color; }
 #page.tabcolor7 .accentcolor { color: $tabcolor7_accent2_color; }
 #page.tabcolor7 #body { background: $tabcolor7_base_color; }
-.tabcolor7 a:not(.btn) { color: $tabcolor7_accent2_color; }
+.tabcolor7 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor7_accent2_color; }
 #page.tabcolor7 #search_box { background: $tabcolor7_base_color; }
 #page.tabcolor7 #login_submit { background: $tabcolor7_accent1_color; color: $tabcolor7_accent2_color; }
 #page.tabcolor7 #login_signup { background: $tabcolor7_accent2_color; color: $tabcolor7_base_color; }
@@ -171,7 +171,7 @@ li.tabcolor7 a { background-color: $tabcolor7_base_color; }
 #page.tabcolor8 .backcolor { color: $tabcolor8_accent1_color; }
 #page.tabcolor8 .accentcolor { color: $tabcolor8_accent2_color; }
 #page.tabcolor8 #body { background: $tabcolor8_base_color; }
-.tabcolor8 a:not(.btn) { color: $tabcolor8_accent2_color; }
+.tabcolor8 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor8_accent2_color; }
 #page.tabcolor8 #search_box { background: $tabcolor8_base_color; }
 #page.tabcolor8 #login_submit { background: $tabcolor8_accent1_color; color: $tabcolor8_accent2_color; }
 #page.tabcolor8 #login_signup { background: $tabcolor8_accent2_color; color: $tabcolor8_base_color; }
@@ -192,7 +192,7 @@ li.tabcolor8 a { background-color: $tabcolor8_base_color; }
 #page.tabcolor9 .backcolor { color: $tabcolor9_accent1_color; }
 #page.tabcolor9 .accentcolor { color: $tabcolor9_accent2_color; }
 #page.tabcolor9 #body { background: $tabcolor9_base_color; }
-.tabcolor9 a:not(.btn) { color: $tabcolor9_accent2_color; }
+.tabcolor9 a:not(.btn):where(:not(.module_link_large, .link_button)) { color: $tabcolor9_accent2_color; }
 #page.tabcolor9 #search_box { background: $tabcolor9_base_color; }
 #page.tabcolor9 #login_submit { background: $tabcolor9_accent1_color; color: $tabcolor9_accent2_color; }
 #page.tabcolor9 #login_signup { background: $tabcolor9_accent2_color; color: $tabcolor9_base_color; }
@@ -308,8 +308,9 @@ li.tabcolor9 a { background-color: $tabcolor9_base_color; }
  */
 
 /*  Undo some of Bootstrap's defaults   */
-/*  Exclude .btn so buttons rendered as links don't get link underline/colour. */
-a:not(.btn) {
+/*  Exclude .btn and .module_link_large so anchors rendered as buttons don't
+    get link underline/colour. */
+a:not(.btn):where(:not(.module_link_large, .link_button)) {
     text-decoration: underline;
 }
 
@@ -865,18 +866,18 @@ background: #bbb;
 }
 /*  :not(.btn) keeps the content link colour/underline off buttons that are
     rendered as <a class="btn ...">, so themed button text stays legible. */
-#content a:not(.btn),
-#content a:not(.btn):link {
+#content a:not(.btn):where(:not(.module_link_large, .link_button)),
+#content a:not(.btn):where(:not(.module_link_large, .link_button)):link {
   color: $linkColor;
   text-decoration: underline;
 }
-#content a:not(.btn):visited {
+#content a:not(.btn):where(:not(.module_link_large, .link_button)):visited {
   color: $linkColor;
   text-decoration: underline;
 }
-#content a:not(.btn):active,
-#content a:not(.btn):hover,
-#content a:not(.btn):focus {
+#content a:not(.btn):where(:not(.module_link_large, .link_button)):active,
+#content a:not(.btn):where(:not(.module_link_large, .link_button)):hover,
+#content a:not(.btn):where(:not(.module_link_large, .link_button)):focus {
   color: $linkColorHover;
   text-decoration: underline;
 }
@@ -886,7 +887,7 @@ background: #bbb;
   // alert link colours, making links nearly invisible against alert backgrounds
   // (e.g. Solar's cyan alert-info with blue link text).  Defer to the alert's
   // own colour — which each bootswatch sets deliberately — inside .alert blocks.
-  #content .alert a:not(.btn) {
+  #content .alert a:not(.btn):where(:not(.module_link_large, .link_button)) {
     color: inherit;
   }
 }
