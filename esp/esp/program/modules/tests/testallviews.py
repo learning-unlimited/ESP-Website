@@ -38,7 +38,7 @@ from django.db.models import Q
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
 from esp.program.tests import ProgramFrameworkTest
-from esp.program.models import ProgramModule
+from esp.program.models import PrintableJob, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 from esp.survey.models import Survey, Question, QuestionType
 from esp.tagdict.models import Tag
@@ -125,14 +125,15 @@ class AllViewsTest(ProgramFrameworkTest):
         Tag.setTag(key='teach_extraform_id', value=form.id, target=self.program)
         Tag.setTag(key='quiz_form_id', value=form.id, target=self.program)
 
-        # The second step of each user-search flow (communications, user
-        # records, mass deactivation, ...) expects to be handed the id of a
-        # filter saved by the first step.  Target a student rather than the
-        # admin: deactivatefinal really does deactivate everyone it matches,
-        # and losing the admin would break every later view.
+        # The second step of each USC module expects the id of a filter saved
+        # by the first step. Target a student so the admin doesn't get deactivated.
         self.filter_user = self.students[-1]
         self.user_filter = PersistentQueryFilter.create_from_Q(
             ESPUser, Q(id=self.filter_user.id), 'All views test filter')
+
+        # Set up a printable job for testing
+        self.printable_job = PrintableJob.objects.create(
+            program=self.program, user=self.adminUser, job_type='all views test')
 
         # Set up credit card test keys
         settings.STRIPE_CONFIG = {
@@ -156,24 +157,16 @@ class AllViewsTest(ProgramFrameworkTest):
         # clean up surveys
         Survey.objects.all().delete()
 
-    #   Views the generic requests below cannot reach.  Each needs data
-    #   specific enough that supplying it here would amount to writing the
-    #   view's own test, so they are named rather than worked around.
+    #   Views deliberately left out of the sweep
     SKIP_VIEWS = {
-        #   Wants a PrintableJob whose id is the extra path segment.
-        ('manage', 'printable_job_status'),
-        #   Wants POST 'progname'; every other field its form reads is already
-        #   covered by the user search request below.
-        ('manage', 'generatetags'),
-        #   Must not be covered: on success it logs the admin out and logs in
-        #   as the test user, which would break every view after it.
+        #   Logs the admin out and logs in as the test user, which would break
+        #   every view swept after it.  Covered by tests/admintestingmodule.py.
         ('manage', 'start_testing'),
     }
 
     def testAllViews(self):
         # Check all views of all modules
-        # These are the same for every view, so look them up once rather than
-        # re-querying inside the loop.
+        # These are the same for every view
         cls = self.program.classes()[0]
         cls_id = str(cls.id)
         sec = cls.get_sections()[0]
@@ -182,10 +175,8 @@ class AllViewsTest(ProgramFrameworkTest):
         event_id = str(event.id)
         user_id = str(self.adminUser.id)
         filter_id = str(self.user_filter.id)
+        job_id = str(self.printable_job.id)
 
-        # Every module_type any module declares.  The admin-facing modules use
-        # 'manage'; no module uses 'admin', so the previous 'admin' entry here
-        # matched nothing.
         for tl in ['learn', 'teach', 'manage', 'volunteer', 'onsite', 'json']:
             modules = self.program.getModules(tl = tl)
             for module in modules:
@@ -195,9 +186,9 @@ class AllViewsTest(ProgramFrameworkTest):
                     # Report each view separately so one broken view neither
                     # hides the others nor requires reading a single blob.
                     with self.subTest(tl = tl, module = module.module.handler, view = view):
-                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id)
+                        self.check_view(tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id, job_id)
 
-    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id):
+    def check_view(self, tl, view, sec, cls_id, sec_id, event_id, user_id, filter_id, job_id):
         """Fail unless this view handles at least one of our candidate requests."""
         url = '/' + tl + '/' + self.program.getUrlBase() + '/' + view
 
@@ -242,6 +233,8 @@ class AllViewsTest(ProgramFrameworkTest):
             ('GET event', lambda: self.client.get(url + '/' + event_id + '?' + query)),
             # Use a user ID as the extra argument
             ('GET user', lambda: self.client.get(url + '/' + user_id + '?' + query)),
+            # Use a printable job UUID as the extra argument
+            ('GET job', lambda: self.client.get(url + '/' + job_id + '?' + query)),
             # Various POST data
             ('POST FCFS', post_fcfs),
             # Student lottery POST data
@@ -263,6 +256,7 @@ class AllViewsTest(ProgramFrameworkTest):
                 'records': 'attended',
                 'section_id': sec_id,
                 'type': 'students',
+                'progname': self.program.niceName(),
             })),
             # Scheduling AJAX endpoints, which key off an action plus a section
             ('POST ajax', lambda: self.client.post(url, {
