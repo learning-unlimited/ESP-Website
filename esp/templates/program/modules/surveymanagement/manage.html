@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/survey.css" type="text/css" />
 {% endblock %}
@@ -30,19 +29,11 @@ Each step below is a form that you can expand or contract by clicking on the hea
 </p>
 
 <div id="program_form">
-    {% if open_section == "survey" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "survey" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#survey-section" aria-expanded="{% if open_section == "survey" %}true{% else %}false{% endif %}" aria-controls="survey-section">
        <b>Step 1: Add Surveys</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Step 1: Surveys</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="survey-section" class="accordion-collapse collapse{% if open_section == "survey" %} show{% endif %}">
     <form method="post" action="/manage/{{ program.url }}/surveys/manage?obj=survey&op=import">
     <table align="center" cellpadding="0" cellspacing="0" width="100%">
         <tr><th colspan="2">Import a survey from a previous program</th></tr>
@@ -84,19 +75,11 @@ Each step below is a form that you can expand or contract by clicking on the hea
         </table></td></tr>
     </table>
     </div>
-    {% if open_section == "question" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "question" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#question-section" aria-expanded="{% if open_section == "question" %}true{% else %}false{% endif %}" aria-controls="question-section">
        <b>Step 2: Add Questions</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Step 2: Add Questions</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="question-section" class="accordion-collapse collapse{% if open_section == "question" %} show{% endif %}">
     <form method="post" action="/manage/{{ program.url }}/surveys/csv_import" enctype="multipart/form-data">
         <table align="center" cellpadding="0" cellspacing="0" width="100%">
             <tr><th colspan="2">Import questions from a CSV file</th></tr>
@@ -193,6 +176,5 @@ Each step below is a form that you can expand or contract by clicking on the hea
 <a class="btn" href="/manage/{{ program.getUrlBase }}/surveys">Return to the main survey page</a>
 
 <script type="text/javascript" src="/media/scripts/program/modules/survey_manage.js"></script>
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% endblock %}

@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/admin.css" type="text/css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/spectrum-colorpicker2/dist/spectrum.min.css">
 {% endblock %}
@@ -36,11 +35,11 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
 {% end_inline_program_qsd_block %}
 
 {% for title, section, form in forms %}
-<button class="dsphead{% if open_section == section %} active{% endif %}">
+<button class="accordion-button{% if open_section != section %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#settings-{{ section }}" aria-expanded="{% if open_section == section %}true{% else %}false{% endif %}" aria-controls="settings-{{ section }}">
    <b>{{ title }}</b> (click to expand/collapse)
 </button>
 
-<div class="dspcont{% if open_section == section %} active{% endif %}">
+<div id="settings-{{ section }}" class="accordion-collapse collapse{% if open_section == section %} show{% endif %}">
   <div id="settings_form">
     <form action="/manage/{{ program.getUrlBase }}/settings/{{ section }}" method="post">
     {% autoescape off %}
@@ -100,7 +99,6 @@ Welcome to the program settings page for {{ program.niceName }}. This page lists
 </div>
 {% endfor %}
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 <script src="/media/scripts/program/modules/modulequestions.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}

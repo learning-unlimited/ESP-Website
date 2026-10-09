@@ -1,16 +1,8 @@
-{% if open_section == "timeslot" %}
-<button class="dsphead active">
-   <b>Step 1: Create Timeslots</b> (click to expand/contract)
+<button class="accordion-button{% if open_section != "timeslot" %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#timeslot-section" aria-expanded="{% if open_section == "timeslot" %}true{% else %}false{% endif %}" aria-controls="timeslot-section">
+    <b>Step 1: Create Timeslots</b>
 </button>
 
-<div class="dspcont active">
-{% else %}
-<button class="dsphead">
-   <b>Step 1: Create Timeslots</b> (click to expand/contract)
-</button>
-
-<div class="dspcont">
-{% endif %}
+<div id="timeslot-section" class="accordion-collapse collapse{% if open_section == "timeslot" %} show{% endif %}">
 
 <p>Timeslots represent each of the class periods for your program, at the finest scale if overlapping classes will be allowed (e.g., 1 hour).  Each resource is available for a particular range of times (resources will not become available until you select a set of times).  Please add all necessary timeslots below.</p>
 
