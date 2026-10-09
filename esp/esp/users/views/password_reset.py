@@ -65,8 +65,8 @@ class ESPPasswordResetConfirmView(PasswordResetConfirmView):
 
     def form_valid(self, form):
         user = form.save()
-        # Activate the user (in case they were inactive)
-        if not user.is_active:
+        # Activate the user (if they were awaiting email activation)
+        if not user.is_active and ESPUser.objects.filter(pk=user.pk).filter(ESPUser.awaiting_activation_Q()).exists():
             user.is_active = True
             user.save()
             PendingActivation.objects.filter(user=user).delete()
