@@ -1725,6 +1725,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         if duration is None:
             duration = self.duration
+        if duration is None:
+            #   ClassSubject.duration is nullable, but callers that total up
+            #   section durations assume a number, so fall back to the same
+            #   default add_default_section uses rather than formatting None.
+            duration = 0.0
         if status is None:
             status = self.status
 
