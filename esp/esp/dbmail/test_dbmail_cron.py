@@ -130,6 +130,4 @@ class DbmailCronTest(CacheFlushTestCase):
         ])
 
         state['lock_handle'].close.assert_called_once_with()
-        self.assertIsNone(state['system_exit'])
-        
-        
+        self.assertIsNone(state['system_exit']
