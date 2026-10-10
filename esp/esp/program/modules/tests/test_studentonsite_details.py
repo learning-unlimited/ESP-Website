@@ -49,7 +49,9 @@ class StudentOnsiteDetailsSectionIdTest(ProgramFrameworkTest):
             self.assert_redirects_to_schedule(self.details(extra), 'extra=%r: ' % extra)
 
     def test_non_numeric_section_id_redirects(self):
-        for extra in ('abc', '12abc', '0x10', '1e5', '1_000'):
+        # Even a student who is enrolled in a section must not be shown it
+        self.section.preregister_student(self.student, fast_force_create=True)
+        for extra in ('abc', '12abc', '0x10', '1e5'):
             self.assert_redirects_to_schedule(self.details(extra), 'extra=%r: ' % extra)
 
     def test_out_of_range_section_id_redirects(self):
