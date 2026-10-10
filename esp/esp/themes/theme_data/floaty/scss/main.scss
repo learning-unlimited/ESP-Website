@@ -174,12 +174,14 @@ body {
     margin: 5px;
 }
 
-a {
+/*  Anchors rendered as buttons keep their button colours; :where() means
+    the exclusions add no specificity. */
+a:where(:not(.btn, .module_link_large, .link_button)) {
     text-decoration: none;
     color: $linkColor;
 }
 
-a:hover {
+a:where(:not(.btn, .module_link_large, .link_button)):hover {
     text-decoration: underline;
     color: $linkColorHover;
 }

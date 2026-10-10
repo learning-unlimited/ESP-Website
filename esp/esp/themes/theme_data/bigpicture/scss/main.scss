@@ -19,7 +19,9 @@
         font-weight: normal;
         margin-bottom: 0.3em;
     }
-    a {
+    /*  Anchors rendered as buttons keep their button colours; :where()
+        means the exclusions add no specificity. */
+    a:where(:not(.btn, .module_link_large, .link_button)) {
         @if not $bootswatch-active { color: $accent2; }
         text-decoration: underline;
     }
