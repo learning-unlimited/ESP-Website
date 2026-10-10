@@ -91,8 +91,11 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         user = request.user
         context['webapp_page'] = 'schedule'
         if extra:
-            secid = extra
-            sections = ClassSection.objects.filter(id = secid)
+            try:
+                sections = ClassSection.objects.filter(id = int(extra))
+            except ValueError:
+                #   Not a number, so treat it like a section that doesn't exist
+                sections = ClassSection.objects.none()
             if len(sections) == 1:
                 section = sections[0]
                 if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):
