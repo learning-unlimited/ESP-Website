@@ -37,7 +37,9 @@ table {
         justify-content: center;
         column-gap: 10px;
     }
-    button {
+    /* These links carry the `link_button` marker class, which the theme
+       stylesheets exclude from their link colour/underline rules. */
+    button, a {
         width: calc(100% - 20px);
         min-width: 200px;
         margin: 10px;
@@ -48,6 +50,21 @@ table {
         border-radius: 4px;
         font-weight: bold;
     }
+    a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        background-color: ButtonFace;
+        border: 2px outset ButtonBorder;
+        color: ButtonText;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    /* Restore the pressed-in flip the user agent gave a <button>. */
+    a:active {
+        border-style: inset;
+    }
 }
 
 #student_schedule_wrapper, #other_schedule_wrapper, #line_item_list_wrapper, #teacher_list_wrapper, #teacher_list_options {
@@ -57,6 +74,10 @@ table {
     flex-wrap: wrap;
     gap: 10px;
     
+    /* The tiles are flex containers, so keep this rule off their contents. */
+    .module_link_large > div {
+        flex: 0 0 auto;
+    }
     div {
         flex: 1 1 0;
         text-align: center;
