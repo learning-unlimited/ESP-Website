@@ -1556,6 +1556,20 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.assertTrue(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
 
+    def testRemoveLunchWithEnrolledStudent(self):
+        # Removing a lunch block whose section has an enrolled student should
+        # leave the section in place and report it, not fail silently
+        kept_ts, removed_ts = self.timeslots[0], self.timeslots[1]
+        LunchConstraintGenerator(self.program, [kept_ts, removed_ts]).generate_all_constraints()
+        removed_sec = ClassSection.objects.get(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=removed_ts)
+        removed_sec.preregister_student(self.students[0], overridefull=True)
+
+        lcg = LunchConstraintGenerator(self.program, [kept_ts])
+        lcg.generate_all_constraints()
+
+        self.assertEqual(lcg.undeleted_sections, [removed_sec])
+        self.assertTrue(ClassSection.objects.filter(id=removed_sec.id).exists())
+
     #   Helpers for the lunch assignment tests below
 
     def make_lunches(self, timeslots, clear_classes=False):

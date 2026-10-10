@@ -58,6 +58,7 @@ class LunchConstraintsForm(forms.Form):
         timeslots = Event.objects.filter(id__in=self.cleaned_data['timeslots']).order_by('start')
         cg = LunchConstraintGenerator(self.program, timeslots, generate_constraints=(self.cleaned_data['generate_constraints'] is True), autocorrect=(self.cleaned_data['autocorrect'] is True), include_conditions=(self.cleaned_data['include_conditions'] is True))
         cg.generate_all_constraints()
+        return cg.undeleted_sections
 
     timeslots = forms.MultipleChoiceField(choices=[], required=False, widget=forms.CheckboxSelectMultiple)
 
