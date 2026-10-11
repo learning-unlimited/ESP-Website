@@ -76,11 +76,11 @@ body {
     // specificity (0,1,1) and would beat the navbar's `.nav-link` colour (0,1,0),
     // leaking the body-link colour onto the navbar.
     @if index($esp-overridden, 'linkColor') {
-        a:not(.btn):not(.nav-link):not(.navbar-brand) { color: $linkColor; }
+        a:not(.btn):not(.nav-link):not(.navbar-brand):where(:not(.module_link_large, .link_button)) { color: $linkColor; }
     }
     @if index($esp-overridden, 'linkColorHover') {
-        a:not(.btn):not(.nav-link):not(.navbar-brand):hover,
-        a:not(.btn):not(.nav-link):not(.navbar-brand):focus { color: $linkColorHover; }
+        a:not(.btn):not(.nav-link):not(.navbar-brand):where(:not(.module_link_large, .link_button)):hover,
+        a:not(.btn):not(.nav-link):not(.navbar-brand):where(:not(.module_link_large, .link_button)):focus { color: $linkColorHover; }
     }
     @if index($esp-overridden, 'btnPrimaryBackground') {
         .btn-primary {

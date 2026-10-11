@@ -73,6 +73,7 @@ from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
+from esp.db.autocomplete import allow_non_staff_autocomplete
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -749,10 +750,13 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=None):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event, EventType
+
+        if ignore_sections is None:
+            ignore_sections = []
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
@@ -1344,7 +1348,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, class_subject=subject, reviewer__in=subject.get_teachers(), score__isnull=False).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
@@ -2245,6 +2249,7 @@ class K12School(models.Model):
     AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
 
     @classmethod
+    @allow_non_staff_autocomplete
     def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
         """
         Server-side autocomplete for K12 schools. Requires a minimum query length
@@ -2657,6 +2662,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Schedule", "View class schedule (room/time assignments)"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),

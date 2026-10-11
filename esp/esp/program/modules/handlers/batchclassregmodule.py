@@ -119,7 +119,10 @@ class BatchClassRegModule(ProgramModuleObj):
         except (ClassSection.DoesNotExist, ValueError):
             raise ESPError()('Invalid class section selected')
 
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        except (PersistentQueryFilter.DoesNotExist, ValueError):
+            raise ESPError()('The specified filter no longer exists or is invalid. Please restart the batch class registration process.')
         override_full = 'override_full' in request.POST
 
         result = self.batch_register(filterObj, section, override_full)
@@ -179,11 +182,7 @@ class BatchClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def batch_register(filterobj, section, override_full=False):
-        users = filterobj.getList(ESPUser)
-        try:
-            users = users.distinct()
-        except:
-            pass
+        users = filterobj.getList(ESPUser).distinct()
 
         if not users.exists():
             raise ESPError()("Your query did not match any users")
