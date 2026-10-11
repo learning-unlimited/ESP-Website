@@ -535,6 +535,11 @@ class AccountCreationTest(TestCase):
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
 
+        #check awaiting activation duplicate detection with differing casing
+        response3_case = self.client.post("/myesp/register/", data={"email":"TSUTTON125@GMAIL.COM", "confirm_email":"TSUTTON125@GMAIL.COM", "initial_role":"Teacher"}, follow=True)
+        self.assertTemplateUsed(response3_case, 'registration/newuser_phase1.html')
+        self.assertContains(response3_case, "do_reg_no_really")
+
         #check when you send do_reg_no_really it proceeds
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
         self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com&initial_role=Teacher")
@@ -619,6 +624,21 @@ class AccountCreationTest(TestCase):
             self.assertTrue(taken_case_payload['valid'])
             self.assertFalse(taken_case_payload['available'])
             self.assertTrue(taken_case_payload['message'])
+
+            # Case-insensitive check for pending account awaiting activation
+            pending_user = ESPUser.objects.create(email='pendingcheck@example.com', is_active=False)
+            pending_user.makeRole('Teacher')
+            PendingActivation.objects.create(user=pending_user)
+
+            pending_case_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'PendingCheck@EXAMPLE.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(pending_case_response.status_code, 200)
+            pending_case_payload = json.loads(pending_case_response.content.decode('utf-8'))
+            self.assertTrue(pending_case_payload['valid'])
+            self.assertFalse(pending_case_payload['available'])
+            self.assertTrue(pending_case_payload['message'])
 
             no_role_response = self.client.get('/myesp/register/check-email/', {
                 'email': 'newaddress@example.com',
@@ -739,6 +759,45 @@ class AccountCreationTest(TestCase):
         self.assertEqual(email_user.email, 'emailonlyuser@example.com')
         self.assertNotEqual(email_user.password, 'emailuser')
         self.assertTrue(email_user.check_password('Str0ng!Pass'))
+
+    def test_email_only_account_upgrade_ambiguous_casing(self):
+        user_upper = ESPUser.objects.create(
+            username='legacy_upper',
+            email='AmbiguousUser@example.com',
+            password='emailuser'
+        )
+        user_upper.makeRole('Teacher')
+        user_lower = ESPUser.objects.create(
+            username='legacy_lower',
+            email='ambiguoususer@example.com',
+            password='emailuser'
+        )
+        user_lower.makeRole('Teacher')
+        initial_user_count = ESPUser.objects.count()
+
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
+        Tag.setTag('require_email_validation', value='false')
+
+        response = self.client.post('/myesp/register/', data={
+            'username': 'upgraded_ambiguous',
+            'password': 'Str0ng!Pass',
+            'confirm_password': 'Str0ng!Pass',
+            'first_name': 'Ambiguous',
+            'last_name': 'User',
+            'email': 'ambiguoususer@example.com',
+            'confirm_email': 'ambiguoususer@example.com',
+            'initial_role': 'Teacher'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ESPUser.objects.count(), initial_user_count)
+
+        user_lower.refresh_from_db()
+        self.assertEqual(user_lower.username, 'upgraded_ambiguous')
+        self.assertNotEqual(user_lower.password, 'emailuser')
+
+        user_upper.refresh_from_db()
+        self.assertEqual(user_upper.username, 'legacy_upper')
+        self.assertEqual(user_upper.password, 'emailuser')
 
 from esp.users.models import GradeChangeRequest
 

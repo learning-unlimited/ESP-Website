@@ -207,20 +207,30 @@ This function is overloaded to handle either one or two phase reg"""
         form = UserRegForm(request.POST)
 
     if form.is_valid():
-        try:
-            #there is an email-only account with that email address to upgrade
-            user = ESPUser.objects.get(email__iexact=form.cleaned_data['email'],
-                                       password = 'emailuser')
-        except ESPUser.DoesNotExist:
+        # Look for an email-only account to upgrade, preferring an exact-case
+        # match and falling back to latest case-insensitive match without
+        # raising MultipleObjectsReturned on case-variant duplicates.
+        email_candidates = ESPUser.objects.filter(
+            email__iexact=form.cleaned_data['email'],
+            password='emailuser'
+        )
+        user = email_candidates.filter(email=form.cleaned_data['email']).first()
+        if user is None and email_candidates.exists():
+            user = email_candidates.latest('date_joined')
+
+        if user is None:
             try:
-                #there is an inactive account with that username
+                # there is an inactive account with that username
                 user = ESPUser.objects.filter(
-                    username = form.cleaned_data['username'],
-                    is_active = False).latest('date_joined')
+                    username=form.cleaned_data['username'],
+                    is_active=False
+                ).latest('date_joined')
 
             except ESPUser.DoesNotExist:
-                user = ESPUser.objects.create_user(username=form.cleaned_data['username'],
-                                                   email=form.cleaned_data['email'])
+                user = ESPUser.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    email=form.cleaned_data['email']
+                )
 
         user.username   = form.cleaned_data['username']
         user.email      = form.cleaned_data['email']
