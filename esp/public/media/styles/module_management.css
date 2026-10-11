@@ -41,6 +41,8 @@
     border-bottom: 1px solid var(--brand-border);
     background-color: #fff;
     flex-shrink: 0;
+    position: relative;
+    z-index: 25;
 }
 
 .tl-tabs {
@@ -62,7 +64,6 @@
     color: #64748b;
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
 }
 
 .tl-tab:hover {
@@ -622,7 +623,6 @@
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid transparent;
-    white-space: nowrap;
 }
 
 .tl-btn-primary {
@@ -642,6 +642,184 @@
 
 .tl-btn-secondary:hover {
     background-color: #f8fafc;
+}
+
+.tl-actions {
+    max-width: 100%;
+}
+
+.tl-action-dropdown {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.tl-action-dropdown-toggle {
+    height: 38px;
+    min-width: 40px;
+    padding: 0 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+    border-color: #3b82f6;
+    color: #111827;
+    box-shadow: none;
+}
+
+.tl-action-dropdown-toggle:hover,
+.tl-action-dropdown-toggle:focus-visible {
+    background-color: #eff6ff;
+    border-color: #2563eb;
+}
+
+.tl-dropdown-icon {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    display: inline-block;
+}
+
+.tl-dropdown-icon::before,
+.tl-dropdown-icon::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    width: 8px;
+    height: 2px;
+    background-color: #111827;
+    border-radius: 999px;
+    transition: transform 0.2s ease;
+}
+
+.tl-dropdown-icon::before {
+    left: 0;
+    transform: rotate(45deg);
+}
+
+.tl-dropdown-icon::after {
+    right: 0;
+    transform: rotate(-45deg);
+}
+
+.tl-action-dropdown.open .tl-dropdown-icon::before {
+    transform: rotate(-45deg);
+}
+
+.tl-action-dropdown.open .tl-dropdown-icon::after {
+    transform: rotate(45deg);
+}
+
+.tl-action-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    bottom: auto;
+    min-width: 180px;
+    padding: 6px;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 18px 30px rgba(15, 23, 42, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 80;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+}
+
+.tl-action-dropdown.open .tl-action-dropdown-menu {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.tl-action-dropdown-menu::after {
+    content: '';
+    position: absolute;
+    right: 14px;
+    bottom: 100%;
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent #bfdbfe transparent;
+}
+
+.tl-action-dropdown-down .tl-action-dropdown-menu {
+    top: auto;
+    bottom: calc(100% + 8px);
+}
+
+.tl-action-dropdown-down .tl-action-dropdown-menu::after {
+    top: 100%;
+    bottom: auto;
+    border-width: 8px 8px 0 8px;
+    border-color: #bfdbfe transparent transparent transparent;
+}
+
+.tl-action-dropdown-item {
+    appearance: none;
+    border: 1px solid transparent;
+    background: #fff;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.tl-action-dropdown-item:hover,
+.tl-action-dropdown-item:focus-visible {
+    background-color: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+@media (max-width: 1180px) {
+    .tl-nav {
+        height: auto;
+        padding-top: 10px;
+        padding-bottom: 10px;
+        gap: 12px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .tl-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 720px) {
+    .tl-nav {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .tl-tabs {
+        flex-wrap: wrap;
+        row-gap: 4px;
+    }
+
+    .tl-actions {
+        justify-content: stretch;
+    }
+
+    .tl-actions > .tl-btn-primary {
+        flex: 1 1 100%;
+    }
+
+    .tl-action-dropdown {
+        margin-left: auto;
+    }
 }
 
 /* Add Drawer (Side Panel) */

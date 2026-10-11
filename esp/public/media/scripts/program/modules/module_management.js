@@ -52,6 +52,9 @@ $j(document).ready(function() {
     var $editPanel   = $j('#editPanel');
     var $addOverlay  = $j('#addOverlay');
     var $addDrawer   = $j('#addDrawer');
+    var $scheduleDropdown = $j('[data-actions-dropdown]');
+    var $scheduleDropdownToggle = $j('[data-actions-dropdown-toggle]');
+    var $scheduleDropdownMenu = $j('[data-actions-dropdown-menu]');
 
     function safeFocus($el) {
         if (!$el || !$el.length) return;
@@ -71,6 +74,80 @@ $j(document).ready(function() {
         if (!($editPanel.hasClass('active') || $addDrawer.hasClass('active'))) return;
         if (this.scrollLeft !== 0) {
             this.scrollLeft = 0;
+        }
+    });
+
+    function positionScheduleDropdown() {
+        if (!$scheduleDropdown.length || !$scheduleDropdownMenu.length) return;
+
+        var dropdownEl = $scheduleDropdown.get(0);
+        var menuEl = $scheduleDropdownMenu.get(0);
+        var triggerEl = $scheduleDropdownToggle.get(0);
+        if (!dropdownEl || !menuEl || !triggerEl) return;
+
+        var dropdownRect = dropdownEl.getBoundingClientRect();
+        var triggerRect = triggerEl.getBoundingClientRect();
+        var menuHeight = menuEl.offsetHeight || 0;
+        var aboveSpace = dropdownRect.top;
+        var belowSpace = window.innerHeight - dropdownRect.bottom;
+
+        var openDown = !(menuHeight > 0 && belowSpace < menuHeight + 12 && aboveSpace > belowSpace);
+        $scheduleDropdown.toggleClass('tl-action-dropdown-down', openDown);
+
+        var openUp = !openDown;
+        menuEl.style.left = 'auto';
+        menuEl.style.right = '0';
+        menuEl.style.top = openUp ? 'auto' : 'calc(100% + 8px)';
+        menuEl.style.bottom = openUp ? 'calc(100% + 8px)' : 'auto';
+
+        if (openUp) {
+            menuEl.style.transformOrigin = 'bottom right';
+        } else {
+            menuEl.style.transformOrigin = 'top right';
+        }
+
+        return { openUp: openUp, triggerRect: triggerRect };
+    }
+
+    function openScheduleDropdown() {
+        if (!$scheduleDropdown.length) return;
+        positionScheduleDropdown();
+        $scheduleDropdown.addClass('open');
+        $scheduleDropdownToggle.attr('aria-expanded', 'true');
+    }
+
+    function closeScheduleDropdown() {
+        if (!$scheduleDropdown.length) return;
+        $scheduleDropdown.removeClass('open tl-action-dropdown-down');
+        $scheduleDropdownToggle.attr('aria-expanded', 'false');
+    }
+
+    window.closeScheduleDropdown = closeScheduleDropdown;
+
+    $scheduleDropdownToggle.on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if ($scheduleDropdown.hasClass('open')) {
+            closeScheduleDropdown();
+        } else {
+            openScheduleDropdown();
+        }
+    });
+
+    $scheduleDropdownMenu.on('click', function(e) {
+        e.stopPropagation();
+    });
+
+    $j(document).on('click', function(e) {
+        if (!$scheduleDropdown.length) return;
+        if ($scheduleDropdown.hasClass('open') && !e.target.closest('[data-actions-dropdown]')) {
+            closeScheduleDropdown();
+        }
+    });
+
+    $j(window).on('resize scroll', function() {
+        if ($scheduleDropdown.hasClass('open')) {
+            positionScheduleDropdown();
         }
     });
 
@@ -897,6 +974,9 @@ $j(document).ready(function() {
     // Global Escape key handler to close modals
     $j(document).on('keydown', function(e) {
         if (e.key === 'Escape') {
+            if ($scheduleDropdown.hasClass('open')) {
+                closeScheduleDropdown();
+            }
             if ($editPanel.hasClass('active')) {
                 closeEditPanel();
             }

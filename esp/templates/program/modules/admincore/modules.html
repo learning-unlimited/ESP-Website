@@ -5,13 +5,13 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/module_management.css?v=20261011a" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js"></script>
+    <script type="text/javascript" src="/media/scripts/program/modules/module_management.js?v=20261011a"></script>
 {% endblock %}
 
 {% block content %}
@@ -61,10 +61,17 @@
                 <span>All Modules</span>
             </button>
         </div>
-        <div class="tl-actions" style="display: flex; gap: 8px;">
-            <button class="tl-btn tl-btn-secondary" onclick="openExportModal()">Save Schedule</button>
-            <button class="tl-btn tl-btn-secondary" onclick="openImportModal()">Import Schedule</button>
+        <div class="tl-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
             <button class="tl-btn tl-btn-primary" onclick="openAddDrawer()">+ Add Module</button>
+            <div class="tl-action-dropdown" data-actions-dropdown>
+                <button type="button" class="tl-btn tl-btn-secondary tl-action-dropdown-toggle" aria-haspopup="menu" aria-expanded="false" aria-label="Module schedule actions" data-actions-dropdown-toggle>
+                    <span class="tl-dropdown-icon" aria-hidden="true"></span>
+                </button>
+                <div class="tl-action-dropdown-menu" role="menu" aria-label="Module schedule actions" data-actions-dropdown-menu>
+                    <button type="button" class="tl-action-dropdown-item" role="menuitem" onclick="closeScheduleDropdown(); openExportModal()">Save Schedule</button>
+                    <button type="button" class="tl-action-dropdown-item" role="menuitem" onclick="closeScheduleDropdown(); openImportModal()">Import Schedule</button>
+                </div>
+            </div>
         </div>
 
     </nav>
