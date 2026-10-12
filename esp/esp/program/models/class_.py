@@ -599,7 +599,7 @@ class ClassSection(models.Model):
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
 
-        super().delete()
+        return super().delete()
 
     def getResourceAssignments(self):
         return self.resourceassignment_set.all()
@@ -1844,17 +1844,19 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             return f"{self.id}: (none)"
 
-    def delete(self, adminoverride = False):
+    def delete(self, adminoverride=False):
         if self.num_students() > 0 and not adminoverride:
             return False
 
         for sec in self.sections.all():
-            sec.delete()
+            deleted = sec.delete(adminoverride=adminoverride)
+            if deleted is False:
+                return False
 
         #   Remove indirect dependencies
         self.documents.clear()
 
-        super().delete()
+        return super().delete()
 
     def numStudentAppQuestions(self):
         # This field may be prepopulated by .objects.catalog()

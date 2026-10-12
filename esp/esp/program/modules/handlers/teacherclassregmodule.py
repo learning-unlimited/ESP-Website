@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 """
 from collections import defaultdict
 
+from django.contrib import messages
+
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call, user_passes_test
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.class_status import ClassStatus
@@ -950,6 +952,15 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass = ccc.editclass(request.user, request.POST, extra)
                 elif action == 'editopenclass':
                     newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+
+                if getattr(newclass, 'failed_sections', None):
+                    for sec in newclass.failed_sections:
+                        num_students = sec.num_students()
+                        student_str = "student is" if num_students == 1 else "students are"
+                        messages.error(
+                            request,
+                            f"Could not remove section {sec.index()} — {num_students} {student_str} registered for it. Clear those registrations before removing this section."
+                        )
 
                 do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 

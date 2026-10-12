@@ -99,7 +99,7 @@ class ClassCreationController(object):
 
     def make_class_happen(self, cls, user, reg_form, resource_formset, editing=False):
         self.set_class_data(cls, reg_form)
-        self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
+        cls.failed_sections = self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
         #   Associate current user with class if it is being created.
         if user and not editing:
@@ -145,12 +145,16 @@ class ClassCreationController(object):
             section_list.append(cls.add_section(duration=cls.duration))
 
         # If the teacher wants to decrease the number of sections that they're teaching
+        failed_sections = []
         if num_sections < len(section_list):
             for class_section in section_list[num_sections:]:
-                class_section.delete()
+                if class_section.delete() is False:
+                    failed_sections.append(class_section)
 
         # Set duration of sections
         cls.sections.update(duration = cls.duration)
+
+        return failed_sections
 
     def attach_class_to_program(self, cls):
         cls.parent_program = self.program

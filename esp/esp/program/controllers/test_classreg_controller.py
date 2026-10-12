@@ -21,6 +21,7 @@ from esp.program.controllers.classreg import (
     ClassCreationController,
     get_custom_fields,
 )
+from esp.program.models import ClassSection, ClassSubject, RegistrationType, StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.factories import make_class
@@ -72,6 +73,7 @@ class ClassregControllerTestBase(ProgramFrameworkTest):
         kwargs.setdefault('timeslot_length', 50)
         super().setUp(*args, **kwargs)
         self.add_user_profiles()
+        self.enrolled_rt, _ = RegistrationType.objects.get_or_create(name='Enrolled')
         self.controller = ClassCreationController(self.program)
 
     def _make_mock_form(self, extra_fields=None):
@@ -330,3 +332,85 @@ class UpdateClassSectionsTest(ClassregControllerTestBase):
         self.controller.update_class_sections(cls, 0)
 
         self.assertEqual(cls.sections.count(), 0)
+
+    def test_section_delete_returns_truthy_when_unoccupied(self):
+        """ClassSection.delete() returns truthy tuple when no students are enrolled."""
+        cls = self._make_saved_class(num_sections=1)
+        sec = cls.sections.first()
+        res = sec.delete()
+        self.assertNotEqual(res, False)
+        self.assertTrue(bool(res))
+        self.assertEqual(cls.sections.count(), 0)
+
+    def test_section_delete_returns_false_when_occupied(self):
+        """ClassSection.delete() returns False when enrolled students exist and section is preserved."""
+        cls = self._make_saved_class(num_sections=1)
+        sec = cls.sections.first()
+        StudentRegistration.objects.create(
+            user=self.students[0], section=sec, relationship=self.enrolled_rt
+        )
+        sec.refresh_from_db()
+        self.assertEqual(sec.num_students(), 1)
+        res = sec.delete()
+        self.assertIs(res, False)
+        self.assertEqual(cls.sections.count(), 1)
+        self.assertEqual(sec.num_students(), 1)
+
+    def test_subject_delete_returns_truthy_when_unoccupied(self):
+        """ClassSubject.delete() returns truthy tuple when no students are enrolled."""
+        cls = self._make_saved_class(num_sections=2)
+        res = cls.delete()
+        self.assertNotEqual(res, False)
+        self.assertTrue(bool(res))
+        self.assertFalse(ClassSubject.objects.filter(id=cls.id).exists())
+
+    def test_subject_delete_returns_false_when_occupied(self):
+        """ClassSubject.delete() returns False when enrolled students exist."""
+        cls = self._make_saved_class(num_sections=2)
+        sec = cls.sections.first()
+        StudentRegistration.objects.create(
+            user=self.students[0], section=sec, relationship=self.enrolled_rt
+        )
+        res = cls.delete()
+        self.assertIs(res, False)
+        self.assertTrue(ClassSubject.objects.filter(id=cls.id).exists())
+        self.assertEqual(cls.sections.count(), 2)
+
+    def test_reduces_sections_with_enrolled_students_preserves_section_and_registrations(self):
+        """Reducing section count detects occupied sections, preserves them and returns failed list."""
+        cls = self._make_saved_class(num_sections=2)
+        sec1 = cls.sections.all()[0]
+        sec2 = cls.sections.all()[1]
+        StudentRegistration.objects.create(
+            user=self.students[0], section=sec2, relationship=self.enrolled_rt
+        )
+
+        failed = self.controller.update_class_sections(cls, 1)
+
+        self.assertEqual(len(failed), 1)
+        self.assertEqual(failed[0].id, sec2.id)
+        self.assertEqual(cls.sections.count(), 2)
+        self.assertEqual(sec2.num_students(), 1)
+
+    def test_reduces_sections_mixed_occupied_and_unoccupied(self):
+        """Unoccupied surplus sections are deleted, occupied sections are preserved."""
+        cls = self._make_saved_class(num_sections=3)
+        sections = list(cls.sections.all())
+        sec1, sec2, sec3 = sections[0], sections[1], sections[2]
+        # sec2 has 0 students; sec3 has 1 student
+        StudentRegistration.objects.create(
+            user=self.students[0], section=sec3, relationship=self.enrolled_rt
+        )
+
+        failed = self.controller.update_class_sections(cls, 1)
+
+        self.assertEqual(len(failed), 1)
+        self.assertEqual(failed[0].id, sec3.id)
+        # sec2 deleted, sec1 and sec3 remain
+        remaining_ids = set(cls.sections.values_list('id', flat=True))
+        self.assertIn(sec1.id, remaining_ids)
+        self.assertNotIn(sec2.id, remaining_ids)
+        self.assertIn(sec3.id, remaining_ids)
+        self.assertEqual(cls.sections.count(), 2)
+        self.assertEqual(sec3.num_students(), 1)
+

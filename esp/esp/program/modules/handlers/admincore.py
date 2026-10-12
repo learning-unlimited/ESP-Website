@@ -367,14 +367,41 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_admin
     def lunch_constraints(self, request, tl, one, two, module, extra, prog):
+        from django.contrib import messages
         from esp.program.modules.forms.admincore import LunchConstraintsForm
         context = {}
         if request.method == 'POST':
             context['POST'] = True
             form = LunchConstraintsForm(prog, request.POST)
             if form.is_valid():
-                form.save_data()
-                context['saved'] = True
+                failed_sections, failed_subjects = form.save_data()
+                if failed_sections or failed_subjects:
+                    context['saved'] = False
+                    for sec in failed_sections:
+                        timeslot_names = [ts.short_description for ts in sec.meeting_times.all() if ts.short_description]
+                        block_desc = ', '.join(timeslot_names) if timeslot_names else 'lunch'
+                        num_students = sec.num_students()
+                        student_str = "student is" if num_students == 1 else "students are"
+                        messages.error(
+                            request,
+                            f"Could not remove the {block_desc} lunch block — {num_students} {student_str} registered for it. Clear those registrations before changing this lunch section."
+                        )
+                    for subj in failed_subjects:
+                        num_students = subj.num_students()
+                        student_str = "student is" if num_students == 1 else "students are"
+                        messages.error(
+                            request,
+                            f"Could not remove lunch class {subj.title} — {num_students} {student_str} registered for it. Clear those registrations before removing this lunch class."
+                        )
+                    post_data = request.POST.copy()
+                    current_ts = set(post_data.getlist('timeslots'))
+                    for sec in failed_sections:
+                        for ts in sec.meeting_times.all():
+                            current_ts.add(str(ts.id))
+                    post_data.setlist('timeslots', list(current_ts))
+                    form = LunchConstraintsForm(prog, post_data)
+                else:
+                    context['saved'] = True
             else:
                 context['saved'] = False
         else:

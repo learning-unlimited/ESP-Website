@@ -49,6 +49,9 @@ class LunchConstraintGenerator(object):
         self.include_conditions = include_conditions
         self.autocorrect = autocorrect
 
+        self.failed_sections = []
+        self.failed_subjects = []
+
         #   Figure out which timeslots are before, during and after lunch on each day
         self.days = {}
         all_timeslots = self.program.getTimeSlots()
@@ -70,16 +73,21 @@ class LunchConstraintGenerator(object):
                     self.days[day]['before'].append(timeslot)
 
     def clear_existing_constraints(self):
+        self.failed_sections = []
+        self.failed_subjects = []
         # Delete any sections that we don't need anymore
         for lunch_section in ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category=self.get_lunch_category()).exclude(meeting_times__in=self.lunch_timeslots):
-            lunch_section.delete()
+            if lunch_section.delete() is False:
+                self.failed_sections.append(lunch_section)
         # Delete any classes that no longer have sections
         for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
-            lunch_subject.delete()
+            if lunch_subject.delete() is False:
+                self.failed_subjects.append(lunch_subject)
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
             constraint.delete()
+        return self.failed_sections, self.failed_subjects
 
     def apply_binary_op_to_list(self, expression, operator_text, identity_value, tokens):
         """ Add the appropriate boolean tokens to 'expression' so
@@ -269,4 +277,5 @@ else:
             self.get_lunch_sections(day)
             if self.generate_constraints:
                 self.generate_constraint(day)
+        return self.failed_sections, self.failed_subjects
 

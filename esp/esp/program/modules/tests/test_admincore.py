@@ -2,11 +2,14 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group
+from django.contrib.messages import get_messages
 from django.utils import timezone
 
-from esp.program.models import Program, ProgramModule
+from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+from esp.program.models import ClassSection, ClassSubject, Program, ProgramModule, RegistrationType, StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, Permission
+
 
 
 class AdminCoreSettingsTest(ProgramFrameworkTest):
@@ -177,4 +180,201 @@ class AdminCoreWipeTestDataTest(ProgramFrameworkTest):
             self.assertTrue(response.context['success'])
             self.assertEqual(response.context['target_user'], self.testUser)
             mock_execute.assert_called_once()
+
+
+class AdminCoreLunchConstraintsTest(ProgramFrameworkTest):
+    def setUp(self):
+        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        super().setUp(
+            modules=modules,
+            num_teachers=1,
+            num_students=3,
+            num_timeslots=3,
+            timeslot_length=50,
+        )
+        self.add_user_profiles()
+        self.adminUser, _ = ESPUser.objects.get_or_create(username='admin_lunch')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.client.login(username='admin_lunch', password='password')
+        self.enrolled_rt, _ = RegistrationType.objects.get_or_create(
+            name='Enrolled', category='student'
+        )
+
+    def test_unoccupied_lunch_section_deleted_successfully(self):
+        """Unoccupied lunch section is deleted and saved=True when unchecked."""
+        ts = self.timeslots[0]
+        lcg = LunchConstraintGenerator(self.program, [ts])
+        lcg.generate_all_constraints()
+        self.assertEqual(self.program.lunch_sections().count(), 1)
+
+        url = f"/manage/{self.program.url}/lunch_constraints"
+        response = self.client.post(url, {'timeslots': []})
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['saved'])
+        self.assertEqual(self.program.lunch_sections().count(), 0)
+        self.assertFalse(
+            ClassSubject.objects.filter(parent_program=self.program, category__is_lunch=True).exists()
+        )
+
+    def test_occupied_lunch_section_deletion_refused_with_error(self):
+        """Occupied lunch section cannot be deleted; actionable error shown, box kept checked."""
+        ts = self.timeslots[0]
+        lcg = LunchConstraintGenerator(self.program, [ts])
+        lcg.generate_all_constraints()
+        lunch_sec = self.program.lunch_sections().first()
+
+        StudentRegistration.objects.create(
+            user=self.students[0], section=lunch_sec, relationship=self.enrolled_rt
+        )
+        lunch_sec.refresh_from_db()
+        self.assertEqual(lunch_sec.num_students(), 1)
+
+        url = f"/manage/{self.program.url}/lunch_constraints"
+        response = self.client.post(url, {'timeslots': []})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['saved'])
+        self.assertEqual(self.program.lunch_sections().count(), 1)
+        self.assertTrue(
+            StudentRegistration.objects.filter(section=lunch_sec, user=self.students[0]).exists()
+        )
+
+        messages = list(response.context['messages'])
+        self.assertEqual(len(messages), 1)
+        msg_text = str(messages[0])
+        self.assertIn("Could not remove the", msg_text)
+        self.assertIn("1 student is registered for it", msg_text)
+        self.assertIn("Clear those registrations before changing this lunch section", msg_text)
+
+        # The form should keep the occupied lunch timeslot checked
+        form_timeslots = response.context['form']['timeslots'].value()
+        self.assertIn(str(ts.id), form_timeslots)
+
+    def test_multiple_occupied_lunch_sections_handled_clearly(self):
+        """Multiple occupied lunch sections report clear errors and preserve all sections."""
+        ts1, ts2 = self.timeslots[0], self.timeslots[1]
+        lcg = LunchConstraintGenerator(self.program, [ts1, ts2])
+        lcg.generate_all_constraints()
+        secs = list(self.program.lunch_sections().order_by('id'))
+        self.assertEqual(len(secs), 2)
+
+        StudentRegistration.objects.create(
+            user=self.students[0], section=secs[0], relationship=self.enrolled_rt
+        )
+        StudentRegistration.objects.create(
+            user=self.students[1], section=secs[1], relationship=self.enrolled_rt
+        )
+        StudentRegistration.objects.create(
+            user=self.students[2], section=secs[1], relationship=self.enrolled_rt
+        )
+
+        url = f"/manage/{self.program.url}/lunch_constraints"
+        response = self.client.post(url, {'timeslots': []})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['saved'])
+        self.assertEqual(self.program.lunch_sections().count(), 2)
+
+        messages = [str(m) for m in response.context['messages']]
+        self.assertEqual(len(messages), 2)
+        self.assertTrue(any("1 student is registered" in m for m in messages))
+        self.assertTrue(any("2 students are registered" in m for m in messages))
+
+        form_timeslots = response.context['form']['timeslots'].value()
+        self.assertIn(str(ts1.id), form_timeslots)
+        self.assertIn(str(ts2.id), form_timeslots)
+
+    def test_mixed_occupied_and_unoccupied_lunch_sections(self):
+        """Unoccupied section is deleted while occupied section is preserved."""
+        ts1, ts2 = self.timeslots[0], self.timeslots[1]
+        lcg = LunchConstraintGenerator(self.program, [ts1, ts2])
+        lcg.generate_all_constraints()
+        secs = list(self.program.lunch_sections().order_by('id'))
+
+        # Only sec 2 has enrolled students
+        StudentRegistration.objects.create(
+            user=self.students[0], section=secs[1], relationship=self.enrolled_rt
+        )
+
+        url = f"/manage/{self.program.url}/lunch_constraints"
+        response = self.client.post(url, {'timeslots': []})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['saved'])
+
+        # Section 1 was deleted, section 2 was preserved
+        remaining_secs = list(self.program.lunch_sections())
+        self.assertEqual(len(remaining_secs), 1)
+        self.assertEqual(remaining_secs[0].id, secs[1].id)
+
+        form_timeslots = response.context['form']['timeslots'].value()
+        self.assertIn(str(ts2.id), form_timeslots)
+        self.assertNotIn(str(ts1.id), form_timeslots)
+
+    def test_clear_existing_constraints_returns_failed_objects(self):
+        """Direct call to clear_existing_constraints returns failed sections and subjects."""
+        ts = self.timeslots[0]
+        lcg = LunchConstraintGenerator(self.program, [ts])
+        lcg.generate_all_constraints()
+        lunch_sec = self.program.lunch_sections().first()
+
+        StudentRegistration.objects.create(
+            user=self.students[0], section=lunch_sec, relationship=self.enrolled_rt
+        )
+
+        # Create a new generator with empty timeslots
+        new_lcg = LunchConstraintGenerator(self.program, [])
+        failed_secs, failed_subjs = new_lcg.clear_existing_constraints()
+
+        self.assertEqual(len(failed_secs), 1)
+        self.assertEqual(failed_secs[0].id, lunch_sec.id)
+        # ClassSubject is also preserved because its section could not be deleted
+        self.assertTrue(ClassSubject.objects.filter(id=lunch_sec.parent_class.id).exists())
+
+
+class AdminClassDeleteSectionTest(ProgramFrameworkTest):
+    def setUp(self):
+        modules = [
+            ProgramModule.objects.get(handler='AdminCore'),
+            ProgramModule.objects.get(handler='AdminClass'),
+        ]
+        super().setUp(
+            modules=modules,
+            num_teachers=1,
+            num_students=2,
+            classes_per_teacher=1,
+            sections_per_class=2,
+        )
+        self.add_user_profiles()
+        self.adminUser, _ = ESPUser.objects.get_or_create(username='admin_class')
+        self.adminUser.set_password('password')
+        self.adminUser.makeAdmin()
+        self.client.login(username='admin_class', password='password')
+        self.enrolled_rt, _ = RegistrationType.objects.get_or_create(
+            name='Enrolled', category='student'
+        )
+
+    def test_deletesection_occupied_fails_with_error_message(self):
+        cls = self.program.classes().first()
+        sec = cls.sections.first()
+        StudentRegistration.objects.create(
+            user=self.students[0], section=sec, relationship=self.enrolled_rt
+        )
+        url = f"/manage/{self.program.url}/deletesection/{cls.id}?sec_id={sec.id}"
+        response = self.client.post(url, {'sure': 'True'})
+        self.assertEqual(response.status_code, 302)
+        # Section should still exist
+        self.assertTrue(ClassSection.objects.filter(id=sec.id).exists())
+        # Message should be present
+        messages = [str(m) for m in get_messages(response.wsgi_request)]
+        self.assertTrue(any("Could not delete section" in m for m in messages))
+        self.assertTrue(any("1 student is registered for it" in m for m in messages))
+
+    def test_deletesection_unoccupied_succeeds(self):
+        cls = self.program.classes().first()
+        sec = cls.sections.first()
+        sec_id = sec.id
+        url = f"/manage/{self.program.url}/deletesection/{cls.id}?sec_id={sec_id}"
+        response = self.client.post(url, {'sure': 'True'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ClassSection.objects.filter(id=sec_id).exists())
+
 

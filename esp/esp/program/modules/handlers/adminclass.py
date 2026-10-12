@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from django.contrib import messages
+
 from esp.program.class_status import ClassStatus
 from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
@@ -179,7 +181,13 @@ class AdminClass(ProgramModuleObj):
             if request.POST.get('sure') == 'True':
                 try:
                     s = ClassSection.objects.get(id=int(request.GET['sec_id']))
-                    s.delete()
+                    if s.delete() is False:
+                        num_students = s.num_students()
+                        student_str = "student is" if num_students == 1 else "students are"
+                        messages.error(
+                            request,
+                            f"Could not delete section {s.index()}: {num_students} {student_str} registered for it. Clear those registrations before deleting this section."
+                        )
                     return HttpResponseRedirect(f'/manage/{one}/{two}/manageclass/{extra}')
                 except (ValueError, ClassSection.DoesNotExist):
                     raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
