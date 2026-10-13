@@ -12,6 +12,31 @@
 #divmaintext table, #divmaintext th, #divmaintext td {
   border: 1px solid black; border-collapse: collapse;
 }
+#sortable-classes td.reorder {
+  white-space: nowrap;
+}
+#sortable-classes .drag-handle {
+  cursor: move;
+  font-size: 1.5em;
+  font-weight: bold;
+  padding: 0 10px;
+}
+#sortable-classes .drag-handle:hover {
+  color: #007bff;
+}
+#sortable-classes tr.sortable-placeholder td {
+  height: 2em;
+  background-color: #f8f9fa;
+  border: 2px dashed #adb5bd;
+}
+#sortable-classes tr.ui-sortable-helper {
+  background-color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+#sortable-classes tr.just-moved td,
+#sortable-classes tr.just-moved th {
+  background-color: #fff3cd;
+}
 </style>
 
 <h1>Catalog order for {{program.niceName}}</h1>
@@ -20,12 +45,15 @@
 Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
 </p>
 <p>
+To reorder classes, drag a row by its &equiv; handle. Changes apply immediately to the catalog links below; changing the filters or sort options will reset the order.
+</p>
+<p>
 <a href="{{request.path}}">Reset Order</a> (default is by category, timeblock, title)
 <br /><br />
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
+<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
+<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 
 <div id="program_form">
 <form action="" method="get">
@@ -94,26 +122,22 @@ Get Catalog:
   <th>Teachers</th>
   <th>Time</th>
   <th>Short Title</th>
-  <th>Up or down?</th>
+  <th>Reorder</th>
 </tr>
+<tbody id="sortable-classes">
 {% for cls in classes %}
-<tr>
+<tr data-id="{{cls.id}}">
   <th>{{forloop.counter}}</th>
   <td>{{cls.emailcode}}</td>
   <td>{{cls.getTeacherNames|join:", "}}</td>
   <td>{{cls.friendly_times|join:", "}}</td>
   <td>{{cls.title|truncatewords:3}}</td>
-  <td>
-    {% if not forloop.first %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&clsid={{cls.id}}&op=up&ids={{clsids|urlencode}}"
-      title="Move Class up one!">[up]</a>
-    {% endif %} {% if not forloop.last %}
-    <a href="{{request.path}}?sort_name_list={{ sort_name_list }}&op=down&ids={{clsids|urlencode}}&clsid={{cls.id}}"
-     title="Move Class down one!">[down]</a>
-    {% endif %}
+  <td class="reorder">
+    <span class="drag-handle" title="Drag to reorder">&equiv;</span>
   </td>
 </tr>
 {% endfor %}
+</tbody>
 
 </table>
 </form>
@@ -121,11 +145,62 @@ Get Catalog:
 
 <p>
 Get Catalog: 
-(<a href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
-<a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
+(<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/pdf?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">pdf</a>, 
+<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/tex?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">tex</a>, 
+<a class="catalog-link" href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 </p>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
+{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+  $j(function() {
+    var $tbody = $j("#sortable-classes");
+
+    function flash($row) {
+      $row.addClass('just-moved');
+      setTimeout(function() { $row.removeClass('just-moved'); }, 800);
+    }
+
+    // Renumber rows and point the catalog links at the new order.
+    function refreshOrder() {
+      var ids = [];
+      $tbody.children('tr').each(function(index) {
+        var $row = $j(this);
+        $row.children('th:first').text(index + 1);
+        ids.push($row.data('id'));
+      });
+      var clsids = ids.join(',');
+      $j('a.catalog-link').each(function() {
+        var href = $j(this).attr('href').replace(/([?&])clsids=[^&]*/, '$1clsids=' + clsids);
+        $j(this).attr('href', href);
+      });
+    }
+
+    $tbody.sortable({
+      handle: '.drag-handle',
+      axis: 'y',
+      containment: 'parent',
+      tolerance: 'pointer',
+      placeholder: 'sortable-placeholder',
+      // Keep column widths while the row is detached from the table.
+      helper: function(e, $row) {
+        var $helper = $row.clone();
+        $helper.children().each(function(i) {
+          $j(this).width($row.children().eq(i).width());
+        });
+        return $helper;
+      },
+      start: function(e, ui) {
+        ui.placeholder.html('<td colspan="' + ui.item.children().length + '">&nbsp;</td>');
+      },
+      update: function(e, ui) {
+        refreshOrder();
+        flash(ui.item);
+      }
+    });
+  });
+</script>
 {% endblock %}
