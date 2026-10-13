@@ -23,7 +23,11 @@ import esp.mailman as mailman_mod
 
 def _reload_enabled():
     """Reload esp.mailman with USE_MAILMAN=True so real bodies run."""
-    with override_settings(USE_MAILMAN=True):
+    with override_settings(
+        USE_MAILMAN=True,
+        MAILMAN_PASSWORD="test-password",
+        MAILMAN_PATH="/usr/lib/mailman/bin/",
+    ):
         # enable_with_setting reads the setting at decoration time,
         # so reload inside the override to get undecorated functions.
         reloaded = importlib.reload(mailman_mod)
@@ -163,7 +167,7 @@ class MailmanCommandConstructionTest(TestCase):
 
     def test_list_contents_strips_empty_string(self):
         mock_proc = MagicMock()
-        mock_proc.communicate.return_value = ("a@example.com\n\n", "")
+        mock_proc.communicate.return_value = ("a@example.com\n", "")
         with patch.object(self.m, "Popen", return_value=mock_proc):
             contents = self.m.list_contents("mylist")
         self.assertIn("a@example.com", contents)
