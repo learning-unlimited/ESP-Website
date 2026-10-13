@@ -12,7 +12,7 @@ from unittest.mock import MagicMock
 from django.db.models import ProtectedError
 
 from esp.cal.models import Event
-from esp.middleware import ESPError
+from esp.middleware import ESPError_NoLog
 from esp.program.controllers.resources import ResourceController
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType
@@ -35,8 +35,9 @@ class ResourceControllerTimeslotTest(ProgramFrameworkTest):
         slot = self.controller.add_or_edit_timeslot(form)
         form.save_timeslot.assert_called_once()
         self.assertEqual(form.save_timeslot.call_args[0][0], self.program)
-        # New unsaved Event passed through
-        self.assertEqual(form.save_timeslot.call_args[0][1], slot)
+        # New unsaved Event passed through (use identity: Event.__eq__
+        # compares start datetimes and raises TypeError when both are None)
+        self.assertIs(form.save_timeslot.call_args[0][1], slot)
 
     def test_add_or_edit_timeslot_edit_loads_existing(self):
         slot = self.program.getTimeSlots().first()
@@ -71,7 +72,10 @@ class ResourceControllerRestypeTest(ProgramFrameworkTest):
 
         ResourceType.delete = failing_delete
         try:
-            with self.assertRaises(ESPError):
+            # ESPError is a factory function returning ESPError_NoLog
+            # (log=False), not an exception class, so assert on the
+            # concrete class.
+            with self.assertRaises(ESPError_NoLog):
                 self.controller.delete_restype(rt.id)
         finally:
             ResourceType.delete = original_delete
@@ -84,7 +88,7 @@ class ResourceControllerRestypeTest(ProgramFrameworkTest):
         result = self.controller.add_or_edit_restype(form, choices=[])
         form.save_restype.assert_called_once()
         self.assertEqual(form.save_restype.call_args[0][0], self.program)
-        self.assertEqual(form.save_restype.call_args[0][1], result)
+        self.assertIs(form.save_restype.call_args[0][1], result)
 
     def test_add_or_edit_restype_edit(self):
         rt = ResourceType.objects.create(
