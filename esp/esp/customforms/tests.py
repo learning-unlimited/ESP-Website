@@ -900,8 +900,11 @@ class SetAttributeUpdateOrCreateTest(TestCase):
             seq=0, label='Q',
         )
         Attribute.objects.create(field=field, attr_type='charlimits', value='0,100')
+        # Wrap in atomic so the expected IntegrityError doesn't break the
+        # outer TestCase transaction (which would poison subsequent tests).
         with self.assertRaises(IntegrityError):
-            Attribute.objects.create(field=field, attr_type='charlimits', value='0,200')
+            with transaction.atomic():
+                Attribute.objects.create(field=field, attr_type='charlimits', value='0,200')
 
 class CustomFormModelOrderingTest(TestCase):
     def test_page_section_field_default_order_is_seq(self):
