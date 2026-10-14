@@ -1571,9 +1571,9 @@ all_program_tags = {
     },
     'student_certificate': {
         'is_boolean': False,
-        'help_text': 'Which students will be offered a completion certificate via the student certificate module \
-                      following the end of the program? If based on class attendance, the certificate will be filtered to \
-                      only attended classes (as will the program printable version).',
+        'help_text': 'Which students will be offered a completion certificate via the student certificate module '
+                     'following the end of the program? If based on class attendance, the certificate will be filtered to '
+                     'only attended classes (as will the program printable version).',
         'default': 'program_attendance',
         'category': 'learn',
         'is_setting': True,
@@ -1583,13 +1583,13 @@ all_program_tags = {
     },
     'student_self_checkin': {
         'is_boolean': False,
-        'help_text': 'Which student self checkin mode would you like to use? Note that, when enabled, \
-                      students must have completed all required steps of student registration before \
-                      they can check themselves in. The self checkin page is intentionally not linked \
-                      to from anywhere in student registration. If this is enabled, you will need to \
-                      provide the <a href="{{ program.get_learn_url }}selfcheckin">URL</a> to students somehow \
-                      (e.g., via a printed QR code). If unique codes are required, these can be printed \
-                      on nametags via the <a href="{{ program.get_manage_url }}selectidoptions">nametag module</a>.',
+        'help_text': 'Which student self checkin mode would you like to use? Note that, when enabled, '
+                     'students must have completed all required steps of student registration before '
+                     'they can check themselves in. The self checkin page is intentionally not linked '
+                     'to from anywhere in student registration. If this is enabled, you will need to '
+                     'provide the <a href="{{ program.get_learn_url }}selfcheckin">URL</a> to students somehow '
+                     '(e.g., via a printed QR code). If unique codes are required, these can be printed '
+                     'on nametags via the <a href="{{ program.get_manage_url }}selectidoptions">nametag module</a>.',
         'default': 'none',
         'category': 'onsite',
         'is_setting': True,
@@ -1614,11 +1614,11 @@ all_program_tags = {
     'already_paid_extracosts_text': {
         'is_boolean': False,
         'help_text': 'The message that will be shown to users who have already paid by credit card and have returned to the extra costs page, if allowed.',
-        'default': 'You have already paid for this program via credit card. You are welcome to change your \
-                    selections below. If your new balance is larger than what you have already paid, \
-                    you can pay the remaining balance via credit card. If your new balance is smaller \
-                    than what you have already paid, we will treat the negative balance as a donation \
-                    to our program (thanks!).',
+        'default': 'You have already paid for this program via credit card. You are welcome to change your '
+                   'selections below. If your new balance is larger than what you have already paid, '
+                   'you can pay the remaining balance via credit card. If your new balance is smaller '
+                   'than what you have already paid, we will treat the negative balance as a donation '
+                   'to our program (thanks!).',
         'category': 'learn',
         'is_setting': True,
         'field': MultilineCharField(widget=forms.Textarea(attrs={'rows': 4})),

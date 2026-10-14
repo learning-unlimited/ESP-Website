@@ -1121,6 +1121,25 @@ class ProseTagFieldTest(SimpleTestCase):
             checked += 1
         self.assertTrue(checked, 'No prose tags were found')
 
+    def test_prose_values_have_no_runs_of_spaces(self):
+        """A textarea shows whitespace as typed, and the tag search matches
+        help text without collapsing it, so neither may be padded out."""
+        import re as _re
+
+        checked = 0
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if not info.get('is_setting', False):
+                    continue
+                for attr in ('default', 'help_text'):
+                    value = info.get(attr)
+                    if isinstance(value, str):
+                        self.assertIsNone(
+                            _re.search(r'  +', value),
+                            "The %s of '%s' has a run of spaces in it" % (attr, key))
+                        checked += 1
+        self.assertTrue(checked, 'No tag text was checked')
+
     def test_label_tags_stay_single_line(self):
         """Label overrides are a few words, so they keep the default input."""
         checked = 0
