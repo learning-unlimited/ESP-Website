@@ -71,7 +71,6 @@
     <table class="contact table">
     {% for field in fieldset %}
       {% if field.is_hidden %}
-     {# Still submitted, so the tag keeps its value, but it has nothing to show #}
      <tr class="d-none">
        <td> {{ field }} </td>
      </tr>

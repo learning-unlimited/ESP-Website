@@ -18,20 +18,16 @@ def validate_JSON(value):
 
 class JSONValidatedCharField(forms.CharField):
     default_validators = [validate_JSON]
-    # JSON values are structured and often long, so don't cram them into a
-    # single-line input
     widget = forms.Textarea(attrs={'rows': 3})
 
 class TimeOfDayField(forms.CharField):
     """A time of day, picked with a time input and stored as 24-hour HH:MM.
-
-    The control shows whatever the viewer's locale uses (AM/PM in the US) but
-    always submits 24 hour HH:MM, which is what the tag's consumers parse.
+       The control shows whatever the viewer's locale uses (AM/PM in the US).
     """
 
     widget = forms.TimeInput(attrs={'type': 'time'})
     default_validators = [RegexValidator(r'^([01]?\d|2[0-3]):[0-5]\d$',
-                                         'Enter a time of day, such as 13:30.')]
+                                         'Enter a time of day, such as 12:30.')]
 
     def prepare_value(self, value):
         # A time input shows nothing unless the hour is zero padded
