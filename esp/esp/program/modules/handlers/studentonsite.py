@@ -42,13 +42,14 @@ from esp.utils.web import render_to_response
 from esp.users.models    import Record, RecordType, Permission
 from esp.cal.models import Event
 from esp.middleware   import ESPError, ESPError_NoLog
+from django.contrib import messages
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule, ScheduleConstraintError, check_schedule_constraints
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
     doc = """Serves a mobile-friendly interface for common onsite functions for students."""
@@ -174,10 +175,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                         if section:
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            check_schedule_constraints(request, prog, add_sections=[section],
+                                                       remove_sections=conflicts)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)
                     if not success:
@@ -187,6 +187,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
             if success:
                 return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
         except ESPError_NoLog as inst:
             error_message = inst.args[0] if inst.args else "An error occurred."
             if "conflicts with your schedule" in error_message:
