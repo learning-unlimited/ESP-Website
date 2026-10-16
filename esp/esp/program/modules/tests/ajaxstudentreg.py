@@ -396,10 +396,13 @@ class ScheduleConstraintWarningBlockingTest(ProgramFrameworkTest):
         timeslot = sec.meeting_times.all()[0]
         self.require_class_during(timeslot, enforce=True)
 
-        #   ESPError_NoLog currently renders as a 500 error page.
+        #   Refused as a form error rather than an error page.
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (self.program.getUrlBase(), timeslot.id),
                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
-        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.status_code, 200)
+        resp_data = json.loads(str(response.content, encoding='UTF-8'))
+        self.assertIn('error', resp_data, 'Expected a JSON error, got %r' % resp_data)
+        self.assertNotIn('student_schedule_html', resp_data)
         self.assertTrue(student.getSections(self.program).filter(id=sec.id).exists(),
                         'Enforced constraint should have prevented the removal')
 

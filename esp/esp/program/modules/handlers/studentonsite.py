@@ -42,13 +42,14 @@ from esp.utils.web import render_to_response
 from esp.users.models    import Record, RecordType, Permission
 from esp.cal.models import Event
 from esp.middleware   import ESPError, ESPError_NoLog
+from django.contrib import messages
 from esp.survey.views   import survey_view
 from esp.tagdict.models  import Tag
 from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from esp.program.modules.handlers.studentregcore import StudentRegCore
-from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule, check_schedule_constraints
+from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule, ScheduleConstraintError, check_schedule_constraints
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
     doc = """Serves a mobile-friendly interface for common onsite functions for students."""
@@ -186,6 +187,9 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
 
             if success:
                 return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
         except ESPError_NoLog as inst:
             error_message = inst.args[0] if inst.args else "An error occurred."
             if "conflicts with your schedule" in error_message:

@@ -54,6 +54,7 @@ from esp.program.controllers.studentclassregmodule import RegistrationTypeContro
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest, autocorrect_schedule, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, ESPError_NoLog
+from django.contrib import messages
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -130,6 +131,10 @@ def json_encode(obj):
 CATALOG_CACHE_MAX_AGE = 120
 
 # student class picker module
+class ScheduleConstraintError(ESPError_NoLog):
+    """ A schedule change that an enforced constraint does not allow. """
+    pass
+
 def check_schedule_constraints(request, prog, add_sections=(), remove_sections=()):
     """ Refuse a schedule change that an enforced constraint does not allow.
     Taking a class on is judged on repairability. Onsite-morphed admins are exempt.
@@ -139,8 +144,8 @@ def check_schedule_constraints(request, prog, add_sections=(), remove_sections=(
     blocked = schedule_change_blockers(request.user, prog, add_sections=add_sections,
                                        remove_sections=remove_sections)
     if blocked:
-        raise ESPError("This change would leave your schedule in violation of the requirement "
-                       f"that you {blocked[0]}.  You can go back and correct this.", log=False)
+        raise ScheduleConstraintError("This change would leave your schedule in violation of "
+                                      f"the requirement that you {blocked[0]}.")
 
 def apply_schedule_autocorrect(request, prog):
     """ Repair whatever an autocorrecting constraint is missing, remembering
@@ -505,10 +510,12 @@ class StudentClassRegModule(ProgramModuleObj):
                 cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
                 error = cobj_error or section_error
 
-            if not error:
+            if not error and not request.user.onsite_local:
                 blocked = schedule_change_blockers(request.user, prog, add_sections=[section])
                 if blocked:
-                    error = f"Adding <i>{section.title()}</i> to your schedule would leave you no way to {blocked[0]}.  You can go back and correct this."
+                    raise ScheduleConstraintError(
+                        f"Adding {section.title()} to your schedule would leave you no way to "
+                        f"{blocked[0]}.")
 
             if scrmi.use_priority:
                 priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
@@ -553,6 +560,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
             if success:
                 return self.goToCore(tl)
+
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return self.goToCore(tl)
 
         except ESPError_NoLog as inst:
             # Check for schedule conflicts
@@ -908,7 +919,10 @@ class StudentClassRegModule(ProgramModuleObj):
     @meets_any_deadline(['/Classes', '/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        try:
+            self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
         return self.goToCore(tl)
 
     @aux_call
@@ -919,7 +933,12 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
-        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        try:
+            cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            #   Matches the shape ajax_addclass uses, so the page can show it inline.
+            return HttpResponse(json.dumps({'status': 200, 'error': str(inst)}),
+                                content_type='application/json')
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(content_type='application/json')
@@ -957,7 +976,11 @@ class StudentClassRegModule(ProgramModuleObj):
         if not sections.exists():
             raise ESPError("No registrations found for this day.", log=False)
 
-        check_schedule_constraints(request, prog, remove_sections=sections)
+        try:
+            check_schedule_constraints(request, prog, remove_sections=sections)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return self.goToCore(tl)
 
         for sec in sections:
             sec.unpreregister_student(request.user, verbs)
