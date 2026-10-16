@@ -10,6 +10,7 @@ from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USStateSelect
 from phonenumber_field.formfields import PhoneNumberField
+from phonenumber_field.phonenumber import PhoneNumber
 from esp.customforms.forms import NameField, AddressField, RequiredNullBooleanField
 from esp.customforms.DynamicModel import DMH
 from esp.tagdict.models import Tag
@@ -24,6 +25,16 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+
+
+def _response_value(value):
+    """
+    Returns a linked model's value in a form that JSON and Excel can handle
+    """
+    if isinstance(value, PhoneNumber):
+        return str(value)
+    return value
+
 
 class BaseCustomForm(BetterForm):
     """
@@ -726,12 +737,12 @@ class FormHandler:
                     if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(model, data[1])]
+                        response[qname] = [_response_value(link_instances_cache[model_name].__dict__[x]) for x in cf_cache.getCompoundLinkFields(model, data[1])]
                 else:
                     if link_instances_cache[model_name] is None:
                         response[qname]=''
                     else:
-                        response[qname] = link_instances_cache[model_name].__dict__[data[1]]
+                        response[qname] = _response_value(link_instances_cache[model_name].__dict__[data[1]])
 
         # Add responses to response_data
         response_data['answers'].extend(responses)

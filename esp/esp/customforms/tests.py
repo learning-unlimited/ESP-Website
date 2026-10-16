@@ -1362,3 +1362,60 @@ class FixLinkFieldColumnNamesMigrationTest(TestCase):
         before = self.columns()
         self.run_migration()
         self.assertEqual(self.columns(), before)
+
+
+class LinkedPhoneFieldResponsesTest(TestCase):
+    """
+    Responses with a linked phone number field can be viewed and exported.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='phone_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='phone_admin', password='password')
+
+        form_data = {
+            'title': 'Linked Phone Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [{'data': {
+                        'field_type': 'ContactInfo_phone_day', 'question_text': 'Phone',
+                        'seq': 0, 'required': False, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Linked Phone Form')
+        self.phone = Field.objects.get(form=self.form)
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.phone.id}': '(201) 426-5797',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_can_be_viewed(self):
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        answers = json.loads(response.content.decode('UTF-8'))['answers']
+        self.assertEqual(answers[0][f'question_{self.phone.id}'], '(201) 426-5797')
+
+    def test_responses_can_be_exported(self):
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
