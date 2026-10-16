@@ -1419,3 +1419,59 @@ class LinkedPhoneFieldResponsesTest(TestCase):
     def test_responses_can_be_exported(self):
         response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
         self.assertEqual(response.status_code, 200)
+
+
+class LinkedAddressFieldExportTest(TestCase):
+    """
+    Responses can be exported when a linked compound field has blank parts.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='address_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        #   No address on file, as for many existing users
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='address_admin', password='password')
+
+        form_data = {
+            'title': 'Linked Address Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Email',
+                                  'seq': 0, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}},
+                        {'data': {'field_type': 'ContactInfo_address', 'question_text': 'Address',
+                                  'seq': 1, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}},
+                    ],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Linked Address Form')
+        email = Field.objects.get(form=self.form, label='Email')
+        #   The optional address is left blank
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{email.id}': 'test@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_can_be_exported(self):
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)

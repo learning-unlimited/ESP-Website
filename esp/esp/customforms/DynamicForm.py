@@ -787,9 +787,9 @@ class FormHandler:
                     col = ques_cols[ques]
                 except KeyError:
                     continue
-                # Join together responses from compound fields
+                # Join together responses from compound fields, skipping blank parts
                 if isinstance(ans, list):
-                    write_ans = " ".join(ans)
+                    write_ans = " ".join(part for part in ans if part)
                 else:
                     write_ans = ans
 
