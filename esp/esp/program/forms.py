@@ -478,7 +478,9 @@ class StatisticsQueryForm(forms.Form):
     def disable_field(self, field_name):
         self.fields[field_name].widget.attrs['disabled'] = 'disabled'
 
-    def disable_if_useless(self, field_name, linked_fields=[]):
+    def disable_if_useless(self, field_name, linked_fields=None):
+        if linked_fields is None:
+            linked_fields = []
         if hasattr(self.fields[field_name], 'choices') and len(self.fields[field_name].choices) == 1:
             self.fields[field_name].initial = self.fields[field_name].choices[0][0]
             self.disable_field(field_name)
