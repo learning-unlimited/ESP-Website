@@ -13,7 +13,7 @@ from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import (all_program_tags, tag_categories, initial_choices,
-                         join_choices, preserve_current_choice)
+                         is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
 from esp.utils.models import TemplateOverride
 
@@ -207,7 +207,7 @@ class ProgramTagSettingsForm(BetterForm):
         for key in all_program_tags:
             # generate field for each tag
             tag_info = all_program_tags[key]
-            if tag_info.get('is_setting', False):
+            if tag_info.get('is_setting', False) and is_visible(tag_info, key, self.program):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 if callable(field):
@@ -248,6 +248,9 @@ class ProgramTagSettingsForm(BetterForm):
             # Update tags if necessary
             tag_info = all_program_tags[key]
             if tag_info.get('is_setting', False):
+                if key not in self.fields:
+                    # Not shown, so not submitted; leave the tag as it is
+                    continue
                 set_val = self.cleaned_data[key]
                 if isinstance(set_val, list):
                     set_val = join_choices(set_val, tag_info.get('json_list', False))

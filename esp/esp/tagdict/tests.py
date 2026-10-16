@@ -11,6 +11,7 @@ from esp.tagdict import (
     all_program_tags,
     initial_choices,
     join_choices,
+    is_visible,
     preserve_current_choice,
     validate_page_url,
     JSONValidatedCharField,
@@ -1525,3 +1526,60 @@ class HiddenTagRowTest(ProgramFrameworkTest):
         for attrs in rows:
             self.assertIn('d-none', attrs)
 
+
+class VisibleIfTest(TestCase):
+    """
+    Tests the 'visible_if' tag entry, which leaves a setting off the page when
+    it does not currently apply.
+
+    fruitsalad_sounds is the only user-facing tag in the theme category, so
+    hiding it hides that section of the page.
+    """
+
+    KEY = 'fruitsalad_sounds'
+
+    def _global_form(self, data=None):
+        from esp.program.forms import TagSettingsForm
+        return TagSettingsForm(data)
+
+    def _set_theme(self, name):
+        Tag.setTag('current_theme_name', value=name)
+
+    def test_the_setting_is_offered_on_its_own_theme(self):
+        self._set_theme('fruitsalad')
+        form = self._global_form()
+        self.assertIn(self.KEY, form.fields)
+        self.assertIn('theme', form.categories)
+
+    def test_the_setting_and_its_section_are_gone_on_another_theme(self):
+        self._set_theme('bigpicture')
+        form = self._global_form()
+        self.assertNotIn(self.KEY, form.fields)
+        self.assertNotIn('theme', form.categories,
+                         'The theme section has nothing left to show')
+
+    def test_a_hidden_tag_keeps_its_value_when_the_page_is_saved(self):
+        """A tag that is not on the page is not submitted, so saving the page
+        must leave it alone rather than read it as empty and unset it."""
+        self._set_theme('fruitsalad')
+        save_form = self._global_form({self.KEY: 'on'})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertTrue(Tag.getBooleanTag(self.KEY))
+
+        self._set_theme('bigpicture')
+        save_form = self._global_form({})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertTrue(Tag.getBooleanTag(self.KEY),
+                        'Saving the page cleared a tag it does not show')
+
+    def test_a_tag_without_the_entry_is_always_visible(self):
+        self.assertTrue(is_visible(all_global_tags['full_group_name'],
+                                   'full_group_name'))
+
+    def test_the_entry_decides_visibility(self):
+        self.assertFalse(is_visible({'visible_if': lambda key, program: False},
+                                    'whatever'))
+        self.assertTrue(is_visible({'visible_if': lambda key, program: True},
+                                   'whatever'))

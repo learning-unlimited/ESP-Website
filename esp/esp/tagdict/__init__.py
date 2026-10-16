@@ -191,6 +191,18 @@ def validate_catalog_sort_fields(value):
             'The catalog cannot be sorted by %s.' % ', '.join(unsortable))
 
 
+def on_fruitsalad_theme(key, program):
+    """Whether the site is on the theme whose own settings these are."""
+    from esp.themes.controllers import ThemeController
+    return ThemeController().get_current_theme() == 'fruitsalad'
+
+
+def is_visible(tag_info, key, program=None):
+    """Whether a tag's setting applies right now (see 'visible_if' above)."""
+    visible_if = tag_info.get('visible_if')
+    return visible_if is None or visible_if(key, program)
+
+
 def initial_choices(value, json_list=False):
     """Split a stored tag value into the list a multiple choice field wants."""
     if json_list:
@@ -240,7 +252,10 @@ def preserve_current_choice(field, value):
 #                  or a callable taking (key, program) that returns one, for
 #                  choices that aren't known when this module is imported,
 #       (optional) 'json_list': store a multiple choice value as a JSON list
-#                  instead of a comma-separated one? (boolean)
+#                  instead of a comma-separated one? (boolean),
+#       (optional) 'visible_if': a callable taking (key, program) that says
+#                  whether the setting applies right now; when it doesn't, the
+#                  tag is left off the settings page and its value is left alone
 #   }
 
 # Any tag used with Tag.getTag()
@@ -267,6 +282,7 @@ all_global_tags = {
         'default': False,
         'category': 'theme',
         'is_setting': True,
+        'visible_if': on_fruitsalad_theme,
     },
     'full_group_name': {
         'is_boolean': False,

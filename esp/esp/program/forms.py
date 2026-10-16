@@ -49,7 +49,7 @@ from django.contrib.sites.models import Site
 from form_utils.forms import BetterModelForm, BetterForm
 from django.utils.safestring import mark_safe
 from esp.tagdict import (all_global_tags, tag_categories, initial_choices,
-                         join_choices, preserve_current_choice)
+                         is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
 from collections import OrderedDict
 
@@ -621,7 +621,7 @@ class TagSettingsForm(BetterForm):
         for key in all_global_tags:
             # generate field for each tag
             tag_info = all_global_tags[key]
-            if tag_info.get('is_setting', False):
+            if tag_info.get('is_setting', False) and is_visible(tag_info, key):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
                 if callable(field):
@@ -651,6 +651,9 @@ class TagSettingsForm(BetterForm):
             # Update tags if necessary
             tag_info = all_global_tags[key]
             if tag_info.get('is_setting', False):
+                if key not in self.fields:
+                    # Not shown, so not submitted; leave the tag as it is
+                    continue
                 set_val = self.cleaned_data[key]
                 if isinstance(set_val, list):
                     set_val = join_choices(set_val, tag_info.get('json_list', False))
