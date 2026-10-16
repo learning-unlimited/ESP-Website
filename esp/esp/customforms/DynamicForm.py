@@ -10,7 +10,7 @@ from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USStateSelect
 from phonenumber_field.formfields import PhoneNumberField
-from esp.customforms.forms import NameField, AddressField
+from esp.customforms.forms import NameField, AddressField, RequiredNullBooleanField
 from esp.customforms.DynamicModel import DMH
 from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
@@ -200,7 +200,11 @@ class CustomFormHandler():
                         else:
                             raise Exception(f'Could not find linked field: {model_field}')
 
-                    # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
+                    # Django's NullBooleanField.validate() ignores `required`; ours doesn't.
+                    if field['required'] and isinstance(form_field, forms.NullBooleanField):
+                        form_field = RequiredNullBooleanField(widget=form_field.widget)
+
+                    # `required` arrives in field_attrs and is enforced by Django's field validation.
                     form_field.__dict__.update(field_attrs)
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
