@@ -162,6 +162,67 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         self.assertEqual(pdf_response.status_code, 200)
         self.assertTrue(pdf_response['Content-Type'].startswith('application/pdf'))
 
+    def _coursecatalog_tex_response(self):
+        self._login_admin()
+        tex_request = self.factory.get('/learn/%s/catalog/tex' % self.program.getUrlBase())
+        tex_request.user = self.admins[0]
+        tex_request.session = self.client.session
+        return self.moduleobj.coursecatalog(tex_request, None, None, None, self.moduleobj, 'tex', self.program)
+
+    def testCatalogSortFieldsEarliestStart(self):
+        """The documented 'earliest_start' sort value must not 500 (issue #6043)."""
+        from esp.tagdict.models import Tag
+        Tag.setTag('catalog_sort_fields', target=self.program, value='earliest_start')
+        response = self._coursecatalog_tex_response()
+        self.assertEqual(response.status_code, 200)
+
+    def testCatalogSortFieldsWhitespaceAndLegacyNames(self):
+        """Spaces after commas and legacy field names shouldn't break the catalog (issue #6043)."""
+        from esp.tagdict.models import Tag
+        Tag.setTag('catalog_sort_fields', target=self.program,
+                   value='category__symbol, sections__meeting_times__start, id')
+        response = self._coursecatalog_tex_response()
+        self.assertEqual(response.status_code, 200)
+
+    def testCatalogSortFieldsInvalidFallsBackToId(self):
+        """An unresolvable sort field should degrade gracefully instead of a 500 (issue #6043)."""
+        from esp.tagdict.models import Tag
+        Tag.setTag('catalog_sort_fields', target=self.program, value='not_a_real_field')
+        response = self._coursecatalog_tex_response()
+        self.assertEqual(response.status_code, 200)
+
+    def testCatalogSignedUnsortableFieldDroppedNotIdFallback(self):
+        """A '-_num_students' prefix must drop just that unsupported field and
+        keep the remaining valid ordering, rather than triggering the id
+        fallback (issue #6043 review)."""
+        from esp.tagdict.models import Tag
+        Tag.setTag('catalog_sort_fields', target=self.program, value='category__symbol')
+        baseline = self._coursecatalog_tex_response().content
+        Tag.setTag('catalog_sort_fields', target=self.program,
+                   value='-_num_students, category__symbol')
+        with_signed = self._coursecatalog_tex_response().content
+        #   Dropping the signed, unsupported _num_students must leave the same
+        #   category-ordered output; an id fallback would differ.
+        self.assertEqual(with_signed, baseline)
+
+    def testCatalogTimeblockSortUsesTimeblockTemplate(self):
+        """The legacy 'timeblock' sort value must still select
+        catalog_timeblock.tex (not silently fall back to the default
+        category template) now that it's translated to 'earliest_start'."""
+        self._login_admin()
+        tex_request = self.factory.get(
+            '/learn/%s/catalog/tex' % self.program.getUrlBase(),
+            {'sort_name_list': 'timeblock'},
+        )
+        tex_request.user = self.admins[0]
+        tex_request.session = self.client.session
+        response = self.moduleobj.coursecatalog(tex_request, None, None, None, self.moduleobj, 'tex', self.program)
+        self.assertEqual(response.status_code, 200)
+        #   Marker text unique to catalog_timeblock.tex's per-timeblock
+        #   section headers (built from context['sections']); this is only
+        #   emitted when the 'timeblock'/'earliest_start' branch is taken.
+        self.assertIn('Courses starting at', response.content.decode('utf-8'))
+
     def test_all_classes_spreadsheet_loads(self):
         """
         User must be admin to access the spreadsheet via GET method and that the field selection template
