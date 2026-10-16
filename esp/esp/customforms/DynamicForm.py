@@ -569,10 +569,11 @@ class FormHandler:
         """
         if not self.handlers:
             self._getHandlers()
-        for handler in self.handlers:
+        # Keyed by step number as a string, as the form wizard expects
+        for step, handler in enumerate(self.handlers):
             initial = handler.getInitialLinkDataFields()
             if initial:
-                initial_data[handler.seq] = {}
+                initial_data[str(step)] = {}
                 for k, v in initial.items():
                     if v['model'].__name__ not in link_models_cache:
                         # Get the corresponding instance, and get its values
@@ -588,10 +589,10 @@ class FormHandler:
                     if link_models_cache[v['model'].__name__] is not None:
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            initial_data[str(step)].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[str(step)].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data
 
     def get_initial_data(self, initial_data=None):

@@ -40,7 +40,7 @@ from unittest.mock import patch
 import psycopg2
 from django.db import connection, transaction
 from django.db.utils import OperationalError
-from django.test import TransactionTestCase, override_settings
+from django.test import RequestFactory, TransactionTestCase, override_settings
 
 from esp.customforms.models import Form, Field, Page, Section
 from esp.customforms.DynamicModel import (
@@ -49,7 +49,7 @@ from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.views import hasPerm
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_NoLog
-from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo
+from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo, TeacherInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -1475,3 +1475,58 @@ class LinkedAddressFieldExportTest(TestCase):
     def test_responses_can_be_exported(self):
         response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
         self.assertEqual(response.status_code, 200)
+
+
+class LinkedFieldPrefillTest(TestCase):
+    """
+    Linked fields are pre-filled from the user's existing records, so
+    submitting the form doesn't blank them out.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='prefill_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin, e_mail='old@example.com')
+        TeacherInfo.objects.create(user=self.admin, college='Harvard')
+        self.client.login(username='prefill_admin', password='password')
+
+        def page(seq, ftype, label):
+            return {'parent_id': -1, 'seq': seq, 'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                'fields': [{'data': {'field_type': ftype, 'question_text': label,
+                                     'seq': 0, 'required': False, 'parent_id': -1,
+                                     'attrs': {}, 'help_text': ''}}],
+            }]}
+
+        #   Page seqs needn't be contiguous; wizard steps are numbered by position
+        form_data = {
+            'title': 'Prefill Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [page(0, 'ContactInfo_e_mail', 'Email'), page(5, 'TeacherInfo_college', 'College')],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Prefill Form')
+        self.email = Field.objects.get(form=self.form, label='Email')
+        self.college = Field.objects.get(form=self.form, label='College')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_initial_data_is_keyed_by_step(self):
+        fh = FormHandler(form=self.form, request=RequestFactory().get('/'), user=self.admin)
+        fh.request.user = self.admin
+        initial = fh.get_initial_data()
+        self.assertEqual(initial['0'][f'question_{self.email.id}'], 'old@example.com')
+        self.assertEqual(initial['1'][f'question_{self.college.id}'], 'Harvard')
+
+    def test_form_renders_existing_values(self):
+        response = self.client.get(f"/customforms/view/{self.form.id}/")
+        self.assertContains(response, 'value="old@example.com"')
