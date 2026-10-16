@@ -158,10 +158,10 @@ class DynamicModelHandler:
     }
 
 
-    def __init__(self, form, fields=[]):
+    def __init__(self, form, fields=None):
         self.form = form
         self.field_list = []
-        self.fields = fields
+        self.fields = fields if fields is not None else []
         self._tname = f'customforms"."customforms_response_{form.id}'
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
