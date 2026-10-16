@@ -1,6 +1,6 @@
 """
 Tests for the StudentRegTwoPhase module, specifically the confirmation
-button (#1166) and minimum class requirement (#2535) features.
+button and minimum class requirement features.
 """
 
 import json
@@ -26,7 +26,7 @@ from esp.users.models import ContactInfo, ESPUser, Record, RecordType, StudentIn
 
 class StudentRegTwoPhaseBaseTest(ProgramFrameworkTest):
     """
-    Shared fixture for the TwoPhase tests. Contains no tests itself.
+    Shared fixture for TwoPhase tests.
 
     Subclasses can override customize_program() to alter the freshly created
     program (e.g. to simulate a misconfiguration) before it is scheduled.
@@ -219,7 +219,7 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
 
     # ---------------------------------------------------------------
 
-    # save_priorities: unapproved classes must be skipped (#bugfix)
+    # save_priorities: unapproved classes must be skipped
     # ---------------------------------------------------------------
     LOGGER_NAME = 'esp.program.modules.handlers.studentregtwophase'
 
@@ -727,19 +727,10 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
 
 class StudentRegTwoPhaseMisconfiguredTest(StudentRegTwoPhaseBaseTest):
     """
-    Tests for #1082: the catalog pages (view_classes, mark_classes,
-    rank_classes) depend on the JSON Data module to fetch class data. If
-    that module isn't enabled for the program, these pages should fail with
-    a clear, actionable error instead of silently rendering a broken page.
+    TwoPhase must fail cleanly if the JSON Data Module isn't enabled.
     """
 
     def customize_program(self):
-        # JSONDataModule has choosable=1 ("include by default"), so
-        # ProgramCreationForm.clean_program_modules() always force-adds it
-        # at creation time -- it can't be excluded up front via the
-        # 'modules' kwarg. Simulate an admin disabling it *after* the
-        # program was created (e.g. via the module management page),
-        # which is how this misconfiguration actually happens in practice.
         json_mod = ProgramModule.objects.get(handler='JSONDataModule')
         self.program.program_modules.remove(json_mod)
 
