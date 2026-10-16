@@ -61,6 +61,11 @@
       .skip-nav:focus-visible {
         top: 0;
       }
+
+      .esp-submitting {
+        pointer-events: none;
+        opacity: 0.65;
+      }
     </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
@@ -109,6 +114,7 @@
     </script>
     {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+    <script type="text/javascript" src="/media/scripts/csrf_check.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -130,40 +136,59 @@
     <!-- prevent forms from being submitted twice -->
     <script type="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
-          <!-- prevent any other behaviors -->
-          event.preventDefault();
-          event.stopPropagation();
-          
-          <!-- disable the submit button -->
-          $j(this).prop('disabled', true);
-          var form = $j(this).parents('form');
-          <!-- this adds a hidden field in case we care what the button name/value are -->
-          $j('<input>', {
-              type: 'hidden',
-              name: $j(this).prop('name'),
-              value: $j(this).prop('value')
-          }).appendTo(form);
-          <!-- check csrf cookie in form (we prevented this above) -->
-          check_csrf_cookie(form[0]);
-          var submitted = false;
-          <!-- check form validity -->
-          if(form[0].reportValidity()) {
-            <!-- run form's onsubmit if it has one -->
-            if(form[0].hasAttribute("onsubmit")) {
-              if(form[0].onsubmit()) {
-                form[0].submit();
-                submitted = true;
-              }
-            } else {
-              form[0].submit();
-              submitted = true;
-            }
+        // A submission that downloads a file leaves the page in place, so the
+        // lock has to be released here: as soon as the form is edited again,
+        // and after this long regardless.
+        var ESP_SUBMIT_TIMEOUT = 10000;
+
+        function espRelease(form) {
+          window.clearTimeout($j.data(form, 'espTimer'));
+          var marked = $j.data(form, 'espMarked');
+          if (marked) { marked.removeClass('esp-submitting').removeAttr('aria-disabled'); }
+          $j(form).off('.espSubmit');
+          $j.removeData(form, 'espSubmitting espTimer espMarked');
+        }
+
+        // Delegated on document so this runs after any handler bound to the
+        // form itself, and so it also covers forms added to the page later.
+        $j(document).on('submit', 'form', function(event) {
+          var form = this;
+          // A submit button's formmethod/formtarget override the form's own.
+          var submitter = event.originalEvent && event.originalEvent.submitter;
+          var method = (submitter && submitter.formMethod) || form.method;
+          var target = (submitter && submitter.formTarget) || form.target;
+          if (method.toLowerCase() !== 'post') return;
+          // Another handler has taken over, so it owns the form from here.
+          if (event.isDefaultPrevented() ||
+              (event.originalEvent && event.originalEvent.defaultPrevented)) return;
+          // Already on its way; drop the repeat.
+          if ($j.data(form, 'espSubmitting')) {
+            event.preventDefault();
+            return;
           }
-          <!-- if we didn't end up submitting the form, reenable the submit button -->
-          if(!submitted) {
-            $j(this).prop('disabled', false);
+          // Make sure there is a csrf token. A target changes where the
+          // response lands, not whether the POST needs one, so this comes
+          // first.
+          if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
+            event.preventDefault();
+            return;
           }
+          // Submissions that open a new tab leave this page usable, so there is
+          // nothing to lock.
+          if (target) return;
+          // Mark the form and submit button to prevent multiple submissions.
+          $j.data(form, 'espSubmitting', true);
+          $j.data(form, 'espMarked', $j(submitter || $j(form).find(':submit'))
+            .addClass('esp-submitting').attr('aria-disabled', 'true'));
+          $j.data(form, 'espTimer',
+                  window.setTimeout(function() { espRelease(form); }, ESP_SUBMIT_TIMEOUT));
+          $j(form).on('input.espSubmit change.espSubmit', function() { espRelease(form); });
+        });
+
+        // Restore the form submission state on Back.
+        $j(window).on('pageshow', function() {
+          $j('form').each(function() { espRelease(this); });
+          $j('.esp-submitting').removeClass('esp-submitting').removeAttr('aria-disabled');
         });
       });
     </script>

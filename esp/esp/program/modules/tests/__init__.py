@@ -40,7 +40,7 @@ from esp.program.modules.tests.studentregprofilemodule import StudentRegProfileM
 from esp.program.modules.tests.studentreg import StudentRegTest, RegistrationTypeVisibilityTest
 from esp.program.modules.tests.survey import SurveyTest
 from esp.program.modules.tests.teachercheckinmodule import TeacherCheckinModuleTest
-from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
+from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest, TeacherScheduleDeadlineTest
 from esp.program.modules.tests.jsondatamodule import JSONDataModuleTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
@@ -96,7 +96,7 @@ from esp.program.modules.tests.test_teachereventsmanage_module import (
     TeacherEventsManageModuleIsCompletedTest,
     TeacherEventsManageModuleViewTest,
 )
-from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest, StudentRegTwoPhaseMisconfiguredTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
