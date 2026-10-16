@@ -1592,3 +1592,67 @@ class LinkedFieldNewRecordTest(TestCase):
         response = DynamicModelHandler(self.form).createDynModel().objects.get(user=self.admin)
         self.assertEqual(response.link_ContactInfo_id, contact.id)
         self.assertEqual(response.link_TeacherInfo_id, teacher.id)
+
+
+class AnonymousFormLinkedFieldTest(TestCase):
+    """
+    Anonymous forms can't contain linked fields, since there's no user whose
+    records the answers could be stored in.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='anonlink_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='anonlink_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def form_data(self, field_types, **extra):
+        data = {
+            'title': 'Anonymous Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': True,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': -1},
+                    'fields': [
+                        {'data': {'field_type': ftype, 'question_text': ftype,
+                                  'seq': seq, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}}
+                        for seq, ftype in enumerate(field_types)
+                    ],
+                }],
+            }],
+        }
+        data.update(extra)
+        return data
+
+    def post(self, url, data):
+        return self.client.post(url, json.dumps(data), content_type='application/json',
+                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_cannot_create_with_linked_fields(self):
+        response = self.post("/customforms/submit/", self.form_data(['textField', 'ContactInfo_e_mail']))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('linked', json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Anonymous Form').exists())
+
+    def test_can_create_without_linked_fields(self):
+        response = self.post("/customforms/submit/", self.form_data(['textField']))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Form.objects.get(title='Anonymous Form').anonymous)
+
+    def test_cannot_add_linked_fields_to_existing_form(self):
+        self.post("/customforms/submit/", self.form_data(['textField']))
+        form = Form.objects.get(title='Anonymous Form')
+        response = self.post("/customforms/modify/",
+                             self.form_data(['ContactInfo_e_mail'], form_id=form.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('linked', json.loads(response.content)['message'])
+        self.assertFalse(Field.objects.filter(form=form, field_type='ContactInfo_e_mail').exists())
