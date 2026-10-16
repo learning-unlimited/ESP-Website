@@ -107,9 +107,8 @@ class AutoschedulerFrontendModuleTestCase(TestCase):
 
         self.assertEqual(response, "rendered_page")
         mock_controller.search_options.assert_called_once_with(self.prog, section="42")
-        self.assertTrue(mock_render.called)
-        _, kwargs_or_args = mock_render.call_args[0], mock_render.call_args[0]
-        context = kwargs_or_args[2]
+        mock_render.assert_called_once()
+        context = mock_render.call_args[0][2]
         self.assertEqual(context["constraints"], ["c1"])
         self.assertEqual(context["scorers"], ["s1"])
         self.assertEqual(context["resources"], ["r1"])
