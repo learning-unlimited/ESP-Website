@@ -18,6 +18,7 @@ Required environment variables:
 import json
 import os
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -35,11 +36,15 @@ REPO_OWNER = os.environ.get("REPO_OWNER", "learning-unlimited")
 REPO_NAME = os.environ.get("REPO_NAME", "ESP-Website")
 
 GRAPHQL_URL = "https://api.github.com/graphql"
+# Retry transient GitHub failures (e.g. 502 when a query times out server-side)
+MAX_ATTEMPTS = 4
+RETRY_STATUSES = {502, 503, 504}
 
 # ---------------------------------------------------------------------------
 # GraphQL helpers
 # ---------------------------------------------------------------------------
 
+import urllib.error
 import urllib.request
 
 
@@ -59,8 +64,19 @@ def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = 
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req) as resp:
-        data = json.loads(resp.read())
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read())
+            break
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+            retryable = not isinstance(exc, urllib.error.HTTPError) or exc.code in RETRY_STATUSES
+            if not retryable or attempt == MAX_ATTEMPTS:
+                raise
+            delay = 2 ** attempt
+            print(f"  GraphQL request failed ({exc}); retrying in {delay}s "
+                  f"(attempt {attempt}/{MAX_ATTEMPTS}) ...", file=sys.stderr)
+            time.sleep(delay)
     if "errors" in data:
         if allow_partial and data.get("data"):
             # Log but continue — some entries (e.g. bots) may not resolve
@@ -103,7 +119,7 @@ def paginate(query: str, path: list[str], variables: dict | None = None) -> list
 PR_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(states: OPEN, first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: 20, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number
