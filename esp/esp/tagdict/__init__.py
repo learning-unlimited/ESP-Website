@@ -1369,7 +1369,7 @@ all_program_tags = {
     },
     'autoscheduler_constraint_overrides': {
         'is_boolean': False,
-        'help_text': 'See the autoscheduler module for details',
+        'help_text': 'See the <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/program/controllers/autoscheduler/README.rst" target="_blank">autoscheduler documentation</a> for details.',
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
@@ -1377,7 +1377,7 @@ all_program_tags = {
     },
     'autoscheduler_scorer_weight_overrides': {
         'is_boolean': False,
-        'help_text': 'See the autoscheduler module for details',
+        'help_text': 'See the <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/program/controllers/autoscheduler/README.rst" target="_blank">autoscheduler documentation</a> for details.',
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
@@ -1385,7 +1385,7 @@ all_program_tags = {
     },
     'autoscheduler_resource_constraint_overrides': {
         'is_boolean': False,
-        'help_text': 'See the autoscheduler module for details',
+        'help_text': 'See the <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/program/controllers/autoscheduler/README.rst" target="_blank">autoscheduler documentation</a> for details.',
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
@@ -1393,7 +1393,7 @@ all_program_tags = {
     },
     'autoscheduler_resource_scoring_overrides': {
         'is_boolean': False,
-        'help_text': 'See the autoscheduler module for details',
+        'help_text': 'See the <a href="https://github.com/learning-unlimited/ESP-Website/blob/main/esp/esp/program/controllers/autoscheduler/README.rst" target="_blank">autoscheduler documentation</a> for details.',
         'default': '{}',
         'category': 'manage',
         'is_setting': True,
