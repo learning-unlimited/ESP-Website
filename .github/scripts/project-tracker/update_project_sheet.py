@@ -44,6 +44,7 @@ RETRY_STATUSES = {502, 503, 504}
 # GraphQL helpers
 # ---------------------------------------------------------------------------
 
+import http.client
 import urllib.error
 import urllib.request
 
@@ -69,7 +70,7 @@ def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = 
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.loads(resp.read())
             break
-        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+        except (OSError, http.client.HTTPException) as exc:
             retryable = not isinstance(exc, urllib.error.HTTPError) or exc.code in RETRY_STATUSES
             if not retryable or attempt == MAX_ATTEMPTS:
                 raise
