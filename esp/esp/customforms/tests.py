@@ -1530,3 +1530,65 @@ class LinkedFieldPrefillTest(TestCase):
     def test_form_renders_existing_values(self):
         response = self.client.get(f"/customforms/view/{self.form.id}/")
         self.assertContains(response, 'value="old@example.com"')
+
+
+class LinkedFieldNewRecordTest(TestCase):
+    """
+    Answering linked fields creates the user's ContactInfo/TeacherInfo if
+    they don't have one yet, and links it to the response.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='newrecord_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='newrecord_admin', password='password')
+
+        form_data = {
+            'title': 'New Record Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': ftype, 'question_text': label,
+                                  'seq': seq, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}}
+                        for seq, (ftype, label) in enumerate([
+                            ('ContactInfo_e_mail', 'Email'), ('TeacherInfo_college', 'College')])
+                    ],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='New Record Form')
+        self.email = Field.objects.get(form=self.form, label='Email')
+        self.college = Field.objects.get(form=self.form, label='College')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_records_are_created_for_the_user(self):
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+            f'question_{self.college.id}': 'MIT',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+        contact = ContactInfo.objects.get(user=self.admin)
+        teacher = TeacherInfo.objects.get(user=self.admin)
+        self.assertEqual(contact.e_mail, 'new@example.com')
+        self.assertEqual(teacher.college, 'MIT')
+
+        response = DynamicModelHandler(self.form).createDynModel().objects.get(user=self.admin)
+        self.assertEqual(response.link_ContactInfo_id, contact.id)
+        self.assertEqual(response.link_TeacherInfo_id, teacher.id)

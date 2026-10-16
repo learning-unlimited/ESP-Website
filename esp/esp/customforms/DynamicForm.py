@@ -417,11 +417,8 @@ class ComboForm(SessionWizardView):
                 v['instance'].save()
                 curr_instance = v['instance']
             else:
-                try:
-                    new_instance = v['model'].objects.create(**v['data'])
-                except Exception:
-                    # show some error message
-                    pass
+                # The user has no record yet, so create one for them
+                v['instance'] = v['model'].objects.create(user=self.curr_request.user, **v['data'])
             if v['instance'] is not None:
                 data[f'link_{v["model"].__name__}'] = v['instance']
 
