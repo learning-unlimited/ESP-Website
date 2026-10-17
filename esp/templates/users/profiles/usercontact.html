@@ -1,11 +1,14 @@
 <!-- User ContactInfo -->
 
 {% load render_qsd %}
-
+<div class="profile-card">
+   <div class="profile-card-header">
 <h3>{{ profiletype|capfirst }} Contact Information</h3>
+</div>
 
+<div class="profile-card-body">
 {% if form.first_name %}
- <div class="control-group">
+ <div class="control-group profile-field">
  <label class="control-label" for="id_first_name">First Name:</label>
  <div class="controls">
  {{ form.first_name }} {% if form.first_name.errors %}
@@ -16,7 +19,7 @@
 {% endif %}
 
 {% if form.last_name %}
-<div class="control-group">
+<div class="control-group profile-field">
  <label class="control-label" for="id_last_name">Last Name:</label>
  <div class="controls">
  {{ form.last_name }} {% if form.last_name.errors %}
@@ -28,16 +31,17 @@
 
 {% if form.e_mail %}
 {% if profiletype == "student" %}
-<div role="alert" class="alert alert-dismissible">
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    {% inline_program_qsd_block program "student_email_instructions" %}
+<div role="alert" class="alert alert-info profile-alert">
+<button type="button" class=" close btn-close" data-bs-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+</button>    {% inline_program_qsd_block program "student_email_instructions" %}
     <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
     {% end_inline_program_qsd_block %}
 </div>
 {% endif %}
 
-<div class="control-group">
- <label class="control-label" for="id_e_mail">Email address:</label>
+<div class="control-group profile-field">
+     <label class="control-label" for="id_e_mail">Email address:</label>
  <div class="controls">
  {{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error" role="alert">{{ form.e_mail.errors|join:", " }}</span>
@@ -47,11 +51,11 @@
 {% endif %}
 
 {% if form.address_street or form.address_city or form.address_state or form.address_zip %}
-<h4>Address:</h4>
+<h4 class="section-subtitle">Address:</h4>
 {% endif %}
 
 {% if form.address_street %}
-<div class="control-group">
+<div class="control-group profile-field">
     <label class="control-label" for="id_address_street">
     <small><i>street</i></small>
     </label>
@@ -64,7 +68,7 @@
 {% endif %}
 
 {% if form.address_city or form.address_state or form.address_zip %}
-<div class="control-group">
+<div class="control-group profile-field">
     <label class="control-label" for="id_address_city">
     <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip %}zip{% endif %}</i></small>
     </label>
@@ -89,19 +93,21 @@
 {% endif %}
 
 {% if form.phone_day or form.phone_cell %}
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
+<h4 class="section-subtitle">
+  Phone Number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
 
 {% if profiletype == "student" %}
-<div role="alert" class="alert alert-dismissible">
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    {% inline_program_qsd_block program "student_phone_instructions" %}
+<div role="alert" class="alert alert-info profile-alert">
+<button type="button" class=" close btn-close" data-bs-dismiss="alert" aria-label="Close">
+    <span aria-hidden="true">&times;</span>
+</button>    {% inline_program_qsd_block program "student_phone_instructions" %}
     <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
     {% end_inline_program_qsd_block %}
 </div>
 {% endif %}
 
 {% if form.phone_day %}
-<div class="control-group">
+<div class="control-group profile-field">
  <small><i><label class="control-label" for="id_phone_day">home</label></i></small>
  <div class="controls">
  {{ form.phone_day }} {% if form.phone_day.errors %}
@@ -112,7 +118,7 @@
 {% endif %}
 
 {% if form.phone_cell %}
-<div class="control-group">
+<div class="control-group profile-field">
  <small><i><label class="control-label" for="id_phone_cell">cell</label></i></small>
  <div class="controls">
  {{ form.phone_cell }} {% if form.phone_cell.errors %}
@@ -124,7 +130,7 @@
 {% endif %}
 
 {% if form.receive_txt_message and form.phone_cell %}
-<div class="control-group">
+<div class="control-group profile-field">
  <small><i><label class="control-label" for="id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
  <div class="controls">
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
@@ -133,5 +139,6 @@
  </div>
 </div>
 {% endif %}
-
+</div>
+</div>
 <!-- End User ContactInfo -->
