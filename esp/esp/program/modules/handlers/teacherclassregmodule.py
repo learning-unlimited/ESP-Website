@@ -50,6 +50,7 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
+from django.contrib              import messages
 from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db                   import models
 from django.forms.utils          import ErrorDict
@@ -950,6 +951,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                     newclass = ccc.editclass(request.user, request.POST, extra)
                 elif action == 'editopenclass':
                     newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+
+                for sec in ccc.undeleted_sections:
+                    num_students = sec.num_students()
+                    messages.warning(request, f"Could not remove section {sec.emailcode()}: {num_students} student{'s are' if num_students != 1 else ' is'} enrolled in it.")
 
                 do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 

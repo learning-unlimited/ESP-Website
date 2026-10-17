@@ -40,6 +40,7 @@ class ClassCreationController(object):
     def __init__(self, prog):
         self.program = prog
         self.crmi = prog.classregmoduleinfo
+        self.undeleted_sections = []
 
     @transaction.atomic
     def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
@@ -145,9 +146,11 @@ class ClassCreationController(object):
             section_list.append(cls.add_section(duration=cls.duration))
 
         # If the teacher wants to decrease the number of sections that they're teaching
+        # (delete() refuses and returns False if students are enrolled)
         if num_sections < len(section_list):
             for class_section in section_list[num_sections:]:
-                class_section.delete()
+                if class_section.delete() is False:
+                    self.undeleted_sections.append(class_section)
 
         # Set duration of sections
         cls.sections.update(duration = cls.duration)
