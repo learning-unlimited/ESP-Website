@@ -818,7 +818,19 @@ class ClassSection(models.Model):
     def assign_room(self, base_room, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
         # Ignore duplicates (ordered by "id" to be deterministic)
-        rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all())).order_by("name", "event", "id").distinct("name", "event")
+        from django.db import connection
+        if connection.features.can_distinct_on_fields:
+            rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all())).order_by("name", "event", "id").distinct("name", "event")
+        else:
+            matching_rooms = base_room.identical_resources().filter(event__in=list(self.meeting_times.all())).order_by("name", "event", "id")
+            seen = set()
+            distinct_ids = []
+            for r in matching_rooms:
+                key = (r.name, r.event_id)
+                if key not in seen:
+                    seen.add(key)
+                    distinct_ids.append(r.id)
+            rooms_to_assign = base_room.identical_resources().filter(id__in=distinct_ids)
 
         status = True
         errors = []
