@@ -152,8 +152,8 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         # rendered into the payment form must be listed in
         # signed_field_names, in the same order used here, or verification
         # will fail.
-        context['access_key'] = settings.CYBERSOURCE_CONFIG['access_key']
-        context['profile_id'] = settings.CYBERSOURCE_CONFIG['profile_id']
+        context['access_key'] = settings.CYBERSOURCE_CONFIG.get('access_key', '')
+        context['profile_id'] = settings.CYBERSOURCE_CONFIG.get('profile_id', '')
         context['transaction_uuid'] = uuid.uuid4().hex
         context['signed_date_time'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
         context['comments'] = '%s Invoice %s/%s (for %s)' % (
@@ -174,15 +174,15 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['unsigned_field_names'] = ''
         context['signature'] = compute_signature(
             signed_fields, context['signed_field_names'],
-            settings.CYBERSOURCE_CONFIG['secret_key'])
+            settings.CYBERSOURCE_CONFIG.get('secret_key', ''))
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     def isStep(self):
         config = settings.CYBERSOURCE_CONFIG
-        return bool(config['post_url'] and config['merchant_id']
-                    and config['access_key'] and config['profile_id']
-                    and config['secret_key'])
+        return bool(config.get('post_url') and config.get('merchant_id')
+                    and config.get('access_key') and config.get('profile_id')
+                    and config.get('secret_key'))
 
     class Meta:
         proxy = True

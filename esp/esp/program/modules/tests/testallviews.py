@@ -133,6 +133,9 @@ class AllViewsTest(ProgramFrameworkTest):
         settings.CYBERSOURCE_CONFIG = {
             'post_url': 'https://apitest.cybersource.com/pts/v2/payments',
             'merchant_id': 'test',
+            'access_key': 'test_access_key',
+            'profile_id': 'test_profile_id',
+            'secret_key': 'test_secret_key',
         }
 
     def tearDown(self):

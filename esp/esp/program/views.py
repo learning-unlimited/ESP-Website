@@ -893,7 +893,7 @@ def submit_transaction(request):
 
 @transaction.atomic
 def _submit_transaction(request, log_record):
-    secret_key = settings.CYBERSOURCE_CONFIG['secret_key']
+    secret_key = settings.CYBERSOURCE_CONFIG.get('secret_key', '')
     if not secret_key:
         # Fail closed: without a configured secret we cannot distinguish a
         # genuine Cybersource postback from a forged one, so refuse to act
