@@ -265,9 +265,12 @@ class BigBoardModule(ProgramModuleObj):
                     series.append(sec_dict)
                 popular_classes.append((description, series))
         return popular_classes
+    popular_classes.get_or_create_token(('prog',))
     popular_classes.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program},
                                                        filter = lambda sr: (sr.relationship.name.startswith("Priority") or sr.relationship.name == "Enrolled"))
     popular_classes.depend_on_row(StudentSubjectInterest, lambda ssi: {'prog': ssi.subject.parent_program})
+    popular_classes.depend_on_m2m(ClassSection, 'meeting_times',
+                                  lambda sec, event: {'prog': sec.parent_class.parent_program})
 
     @cache_function_for(105)
     def times_medical(self, prog):
