@@ -36,4 +36,6 @@ urlpatterns = [
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/preview/?$', views.module_schedule_preview_api, name='module_schedule_preview_api'),
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/conflicts/?$', views.module_schedule_conflicts_api, name='module_schedule_conflicts_api'),
     re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/reorder/?$', views.module_schedule_reorder_api, name='module_schedule_reorder_api'),
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/export/?$', views.module_schedule_export_api, name='module_schedule_export_api'),
+    re_path(r'^manage/(?P<program_type>[^/]+)/(?P<program_term>[^/]+)/module_schedule/import/?$', views.module_schedule_import_api, name='module_schedule_import_api'),
 ]
