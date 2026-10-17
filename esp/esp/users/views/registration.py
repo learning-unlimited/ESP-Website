@@ -236,6 +236,11 @@ This function is overloaded to handle either one or two phase reg"""
 
         if require_activation:
             PendingActivation.objects.get_or_create(user=user)
+        elif PendingActivation.objects.filter(user=user).exists():
+            # Re-registering an account that was still awaiting activation
+            # when activation is no longer required: finish activating it,
+            # or the auth backend would keep rejecting it.
+            _finish_activation(user)
 
         user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 
