@@ -37,6 +37,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 from esp.accounting.models import LineItemType
+from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.cybersource import compute_signature
+from unittest import mock
 from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
@@ -51,7 +54,7 @@ from django.db.models import ProtectedError
 
 from django.core.management import call_command
 
-from django.test import LiveServerTestCase
+from django.test import LiveServerTestCase, override_settings
 from django.test.client import Client
 from django.urls import reverse
 from django import forms
@@ -2623,6 +2626,107 @@ class SubmitTransactionRequiresPostTest(TestCase):
     def test_get_returns_405(self):
         response = self.client.get(reverse('manage_submit_transaction'))
         self.assertEqual(response.status_code, 405)
+
+
+@override_settings(CYBERSOURCE_CONFIG={
+    'post_url': 'https://example.invalid/post',
+    'merchant_id': 'esp_test',
+    'access_key': 'ak_test',
+    'profile_id': 'pid_test',
+    'secret_key': 'unit-test-secret',
+})
+class SubmitTransactionAuthenticationTest(ProgramFrameworkTest):
+    """Regression tests for the Cybersource postback authenticity check in
+    submit_transaction. Without this check, an unauthenticated, unsigned
+    POST could mark a student's account as paid (see the first assertion
+    below, which documents the previously-vulnerable behavior)."""
+
+    def setUp(self):
+        super(SubmitTransactionAuthenticationTest, self).setUp(
+            num_students=1, room_capacity=5)
+        self.student = self.students[0]
+        self.lit = LineItemType.objects.create(
+            program=self.program, text='Admission',
+            amount_dec=Decimal('25.00'), required=True)
+        self.iac = IndividualAccountingController(self.program, self.student)
+        self.iac.ensure_required_transfers()
+        self.identifier = self.iac.get_identifier()
+        self.amount = self.iac.amount_requested()
+        self.client.logout()
+
+    def _post(self, extra=None):
+        data = {
+            'decision': 'ACCEPT',
+            'req_merchant_defined_data1': self.identifier,
+            'req_amount': str(self.amount),
+            'transaction_id': 'TEST-TXN-ID',
+        }
+        if extra:
+            data.update(extra)
+        with mock.patch('esp.program.views.transaction.commit'):
+            return self.client.post(reverse('manage_submit_transaction'), data)
+
+    def _signed_fields(self, identifier=None, amount=None):
+        """Build a full, correctly-signed set of the fields the real
+        checkout form would post (see creditcardmodule_cybersource.py),
+        including the signature bookkeeping fields themselves."""
+        fields = {
+            'access_key': 'ak_test',
+            'profile_id': 'pid_test',
+            'transaction_uuid': 'test-uuid',
+            'signed_date_time': '2024-01-01T00:00:00Z',
+            'merchant_id': 'esp_test',
+            'amount': str(amount if amount is not None else self.amount),
+            'merchantDefinedData1': identifier if identifier is not None else self.identifier,
+            'comments': 'test',
+            'billTo_country': 'US',
+        }
+        signed_field_names = ','.join(fields.keys())
+        fields['signed_field_names'] = signed_field_names
+        fields['unsigned_field_names'] = ''
+        fields['signature'] = compute_signature(fields, signed_field_names, 'unit-test-secret')
+        return fields
+
+    def test_unsigned_postback_is_rejected(self):
+        """An anonymous, unsigned POST must not record a payment."""
+        self.assertEqual(self.iac.amount_paid(), 0)
+        self._post()
+        self.assertEqual(
+            self.iac.amount_paid(), 0,
+            "An unsigned Cybersource postback was able to record a payment")
+
+    def test_correctly_signed_postback_is_accepted(self):
+        """A properly signed postback should still work end-to-end."""
+        self.assertEqual(self.iac.amount_paid(), 0)
+        response = self._post(self._signed_fields())
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.iac.amount_paid(), self.amount)
+
+    def test_tampered_amount_is_rejected(self):
+        """A correctly-signed payload, with the signed 'amount' field edited
+        after the fact, must fail verification."""
+        extra = self._signed_fields()
+        extra['amount'] = '0.01'  # tampered after signing
+        self._post(dict(extra, req_amount='0.01'))
+        self.assertEqual(self.iac.amount_paid(), 0)
+
+    def test_tampered_identifier_is_rejected(self):
+        """A correctly-signed payload, with the signed identifier field
+        edited after the fact, must fail verification -- otherwise an
+        attacker could sign a payment for their own (small) line item and
+        then redirect it to pay off someone else's larger balance."""
+        extra = self._signed_fields()
+        extra['merchantDefinedData1'] = extra['merchantDefinedData1'] + ';tampered'
+        self._post(dict(extra, req_merchant_defined_data1=extra['merchantDefinedData1']))
+        self.assertEqual(self.iac.amount_paid(), 0)
+
+    def test_missing_secret_key_fails_closed(self):
+        with override_settings(CYBERSOURCE_CONFIG={
+                'post_url': 'https://example.invalid/post',
+                'merchant_id': 'esp_test', 'access_key': 'ak_test',
+                'profile_id': 'pid_test', 'secret_key': ''}):
+            self._post(self._signed_fields())
+        self.assertEqual(self.iac.amount_paid(), 0)
 
 
 class NewProgramModulePermissionsTest(TestCase):
