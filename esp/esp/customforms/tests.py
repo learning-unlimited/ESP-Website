@@ -263,21 +263,29 @@ class CustomFormsTest(TestCase):
         email_field = fields.get(label='Your Email')
         bio_field = fields.get(label='Your Bio')
 
+        # Pre-create contact info for student so cf_link_instance finds it
+        contact = ContactInfo.objects.create(
+            user=self.student,
+            first_name='Test',
+            last_name='Student',
+            e_mail='original@example.com'
+        )
+
         self.client.login(username=self.student.username, password='password')
 
         post_dict = {'combo_form-current_step': '0'}
-        post_dict[f'question_{email_field.id}'] = 'test@example.com'
+        post_dict[f'question_{email_field.id}'] = 'updated@example.com'
         post_dict[f'question_{bio_field.id}'] = 'Some bio'
-
-        initial_contact_count = ContactInfo.objects.filter(user=self.student).count()
 
         with patch('esp.users.models.TeacherInfo.objects.create', side_effect=Exception("Simulated DB failure")):
             with self.assertRaises(Exception) as cm:
                 self.client.post(f"/customforms/view/{form.id}/", post_dict)
             self.assertEqual(str(cm.exception), "Simulated DB failure")
 
-        final_contact_count = ContactInfo.objects.filter(user=self.student).count()
-        self.assertEqual(initial_contact_count, final_contact_count, "ContactInfo was not rolled back!")
+        # Verify that ContactInfo was rolled back and not updated
+        contact.refresh_from_db()
+        self.assertEqual(contact.e_mail, 'original@example.com', "ContactInfo change was not rolled back!")
+        self.assertEqual(ContactInfo.objects.filter(user=self.student).count(), 1)
 
 
 class LandingViewTest(TestCase):
