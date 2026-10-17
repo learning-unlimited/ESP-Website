@@ -35,13 +35,14 @@ Learning Unlimited, Inc.
 import json
 import random
 
+from django.contrib.auth.models import Group
 from django.db import transaction
 
 from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject, RegistrationType
+from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
 from esp.resources.models import ResourceType, ResourceRequest
@@ -328,3 +329,180 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'no valid class meeting timeslots or durations are available')
+    @transaction.atomic
+    def test_ajaxstudentattendance_rejects_unrelated_teacher(self):
+        """A teacher with no relationship to a section must not be able to
+        mutate its attendance/enrollment via ajaxstudentattendance.
+
+        Regression test for missing object-level authorization: the view is
+        guarded by @needs_teacher (a global role check), but unlike its sibling
+        views (section_attendance, section_students, class_students) it never
+        verifies canEdit()/canMod() on the target section.
+        """
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        victim_section = victim_cls.get_sections()[0]
+        student = self.students[0]
+
+        # Precondition: attacker genuinely lacks rights to the section
+        self.assertNotIn(attacker, victim_cls.get_teachers())
+        self.assertFalse(attacker.canEdit(victim_section.parent_class),
+                         "Test setup invalid: attacker can edit victim class")
+        self.assertFalse(attacker.canMod(victim_section),
+                         "Test setup invalid: attacker can moderate victim section")
+
+        attended = RegistrationType.objects.get_or_create(
+            name='Attended', category='student')[0]
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=victim_section, relationship=attended
+            ).exists())
+
+        # Exploit: POST as attacker against the victim's secid
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'),
+            "Couldn't log in as attacker %s" % attacker.username)
+
+        url = '%sajaxstudentattendance' % self.program.get_teach_url()
+        response = self.client.post(url, {
+            'student': student.username,
+            'secid': victim_section.id,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+
+        # Desired (post-fix) behaviour: mutation refused, student NOT attended
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student, section=victim_section, relationship=attended
+            ).exists(),
+            "SECURITY: unrelated teacher was able to mark a student as "
+            "attending a section they do not teach (secid=%s). Response: %r"
+            % (victim_section.id, payload))
+
+    @transaction.atomic
+    def test_section_students_rejects_unrelated_teacher(self):
+        """Control: the sibling view section_students DOES enforce the check,
+        confirming the expected authorization model for this module."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        victim_section = victim_cls.get_sections()[0]
+
+        self.assertFalse(attacker.canEdit(victim_section.parent_class))
+        self.assertFalse(attacker.canMod(victim_section))
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%ssection_students' % self.program.get_teach_url()
+        response = self.client.post(url, {'secid': victim_section.id})
+        self.assertContains(response, 'do not have privileges to edit', status_code=200)
+
+
+class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
+    """Tests for the Teacher/Classes/Schedule deadline."""
+
+    #   Permissions that grant Teacher/Classes/Schedule, directly or by
+    #   implication.  Deleting exactly these closes the schedule deadline while
+    #   leaving the rest of teacher reg reachable.
+    SCHEDULE_PERMS = ['Teacher/All', 'Teacher/Classes/All',
+                      'Teacher/Classes/Schedule']
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+
+        self.add_user_profiles()
+
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
+        self.teacher = self.teachers[0]
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
+        self.moduleobj.user = self.teacher
+
+        #   Give the sections real room/time assignments, so the templates have
+        #   something to hide.
+        self.schedule_randomly()
+
+    def close_schedule_deadline(self):
+        """Remove every permission that would grant Teacher/Classes/Schedule."""
+        Permission.objects.filter(
+            permission_type__in=self.SCHEDULE_PERMS,
+            program=self.program,
+        ).delete()
+
+    @transaction.atomic
+    def test_schedule_permission_seeded_for_new_program(self):
+        """New programs get the deadline default-open, so it is discoverable."""
+        perm = Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role__name='Teacher',
+        ).first()
+        self.assertIsNotNone(
+            perm, "prepare_program() should seed Teacher/Classes/Schedule")
+        self.assertIsNone(perm.end_date,
+                          "The seeded schedule deadline should not expire")
+
+    @transaction.atomic
+    def test_can_view_schedule_by_implication(self):
+        """Teacher/All implies Teacher/Classes/Schedule."""
+        Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+        ).delete()
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_can_view_schedule_with_specific_permission(self):
+        """Teacher/Classes/Schedule on its own is enough."""
+        self.close_schedule_deadline()
+        Permission.objects.create(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role=Group.objects.get(name='Teacher'),
+        )
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_cannot_view_schedule_when_deadline_closed(self):
+        self.close_schedule_deadline()
+        self.assertFalse(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_admin_always_sees_schedule(self):
+        """Admins bypass the deadline check."""
+        self.close_schedule_deadline()
+        self.moduleobj.user = self.admins[0]
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_teacherreg_shows_schedule_when_open(self):
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Room:', status_code=200)
+        self.assertNotContains(response, 'Schedule not yet available.')
+
+    @transaction.atomic
+    def test_teacherreg_hides_schedule_when_closed(self):
+        self.close_schedule_deadline()
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Schedule not yet available.', status_code=200)
+        self.assertNotContains(response, 'Room:')
+
+    @transaction.atomic
+    def test_class_status_hides_time_blocks_when_closed(self):
+        cls = self.teacher.getTaughtClasses(self.program)[0]
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        url = '%sclass_status/%d' % (self.program.get_teach_url(), cls.id)
+
+        self.assertContains(self.client.get(url), 'Time Blocks', status_code=200)
+
+        self.close_schedule_deadline()
+        self.assertNotContains(self.client.get(url), 'Time Blocks', status_code=200)
