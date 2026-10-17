@@ -35,6 +35,7 @@ Now your printer will now automatically print from Firefox. Test this by printin
 
 <strong>MAKE SURE YOU DO THIS ON ONE COMPUTER. IF YOU DON'T KNOW WHAT YOU ARE DOING, PLEASE <a href="javascript:history.go(-1);">GO BACK</a> NOW!</strong>
 <br /><br />
+<a href="{{request.path}}?sure">I am ready to check in students and print schedules automatically!</a>
 <a href="{{request.path}}?sure">I am ready to go print schedules automatically!</a>
 <form action="{{ request.path }}" method="post" style="display: inline; margin: 0; padding: 0;">
 {% csrf_token %}
@@ -44,8 +45,9 @@ Now your printer will now automatically print from Firefox. Test this by printin
 <button type="submit">Start fresh (clear all pending requests first)</button>
 </form>
 <br /><br />
-I want to print schedules for:
+I want to check in students and print schedules for:
 {% for printer in printers %}
+    <a href="{{ request.path }}/{{ printer }}?sure">{{ printer }}</a>
 <a href="{{ request.path }}/{{ printer|urlencode }}?sure">{{ printer }}</a>
 &nbsp;|&nbsp;
 <form action="{{ request.path }}/{{ printer|urlencode }}" method="post" style="display: inline; margin: 0; padding: 0;">
