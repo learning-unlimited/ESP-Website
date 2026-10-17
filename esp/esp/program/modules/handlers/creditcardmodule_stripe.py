@@ -302,6 +302,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         context = {'postdata': request.POST.copy()}
 
         group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
+        # Stripe rejects the charge if the statement descriptor contains any of
+        # < > \ ' " * (https://docs.stripe.com/get-started/account/statement-descriptors).
+        # Commas are stripped too, to be safe. group_name comes from the
+        # full_group_name Tag or institution settings, which aren't guaranteed to
+        # avoid these, so strip them before truncating to Stripe's 22-character limit.
+        statement_descriptor = re.sub(r'[<>\\\'"*,]', '', group_name)[0:22]
 
         iac = IndividualAccountingController(self.program, request.user)
 
@@ -381,7 +387,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                         currency="usd",
                         source=stripe_token,
                         description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
-                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        statement_descriptor=statement_descriptor,
                         metadata={
                             'ponumber': request.POST.get('ponumber', ''),
                         },
@@ -413,7 +419,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
-        context['statement_descriptor'] = group_name[0:22]
+        context['statement_descriptor'] = statement_descriptor
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
 

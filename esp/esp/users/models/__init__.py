@@ -750,10 +750,13 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=None):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event, EventType
+
+        if ignore_sections is None:
+            ignore_sections = []
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
