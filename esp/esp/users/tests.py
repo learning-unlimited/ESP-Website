@@ -601,7 +601,7 @@ class AccountCreationTest(TestCase):
         try:
             Tag.setTag('ask_about_duplicate_accounts', value='true')
 
-            user = ESPUser.objects.create(email='livecheck@example.com')
+            user = ESPUser.objects.create(username='livecheck', email='livecheck@example.com')
             user.makeRole('Teacher')
 
             taken_response = self.client.get('/myesp/register/check-email/', {
@@ -626,7 +626,7 @@ class AccountCreationTest(TestCase):
             self.assertTrue(taken_case_payload['message'])
 
             # Case-insensitive check for pending account awaiting activation
-            pending_user = ESPUser.objects.create(email='pendingcheck@example.com', is_active=False)
+            pending_user = ESPUser.objects.create(username='pendingcheck', email='pendingcheck@example.com', is_active=False)
             pending_user.makeRole('Teacher')
             PendingActivation.objects.create(user=pending_user)
 
@@ -741,7 +741,7 @@ class AccountCreationTest(TestCase):
         Tag.setTag('require_email_validation', value='false')
 
         response = self.client.post('/myesp/register/', data={
-            'username': 'upgraded_user',
+            'username': 'upgradeduser',
             'password': 'Str0ng!Pass',
             'confirm_password': 'Str0ng!Pass',
             'first_name': 'Upgraded',
@@ -755,7 +755,7 @@ class AccountCreationTest(TestCase):
         # Confirm no duplicate user was created and the original user was upgraded
         self.assertEqual(ESPUser.objects.count(), initial_user_count)
         email_user.refresh_from_db()
-        self.assertEqual(email_user.username, 'upgraded_user')
+        self.assertEqual(email_user.username, 'upgradeduser')
         self.assertEqual(email_user.email, 'emailonlyuser@example.com')
         self.assertNotEqual(email_user.password, 'emailuser')
         self.assertTrue(email_user.check_password('Str0ng!Pass'))
@@ -779,7 +779,7 @@ class AccountCreationTest(TestCase):
         Tag.setTag('require_email_validation', value='false')
 
         response = self.client.post('/myesp/register/', data={
-            'username': 'upgraded_ambiguous',
+            'username': 'upgradedambiguous',
             'password': 'Str0ng!Pass',
             'confirm_password': 'Str0ng!Pass',
             'first_name': 'Ambiguous',
@@ -792,7 +792,7 @@ class AccountCreationTest(TestCase):
         self.assertEqual(ESPUser.objects.count(), initial_user_count)
 
         user_lower.refresh_from_db()
-        self.assertEqual(user_lower.username, 'upgraded_ambiguous')
+        self.assertEqual(user_lower.username, 'upgradedambiguous')
         self.assertNotEqual(user_lower.password, 'emailuser')
 
         user_upper.refresh_from_db()
