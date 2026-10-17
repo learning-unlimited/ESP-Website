@@ -38,6 +38,7 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
 from datetime import datetime
+from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -45,6 +46,7 @@ __all__ = ['TeacherReviewApps']
 
 class TeacherReviewApps(ProgramModuleObj):
     doc = """Allows teachers to review student applications for their classes."""
+    permission_types = ('Teacher/AppReview',)
 
     @classmethod
     def module_properties(cls):
@@ -60,7 +62,7 @@ class TeacherReviewApps(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @meets_deadline("/AppReview")
-    @never_cache
+    @method_decorator(never_cache)
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
             cls = ClassSubject.objects.get(id = extra)
@@ -78,14 +80,15 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+            reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=request.user, score__isnull=False)
+                reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls, score__isnull=False)
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
@@ -103,7 +106,7 @@ class TeacherReviewApps(ProgramModuleObj):
                         student.app_completed = True
 
         students = list(students)
-        students.sort(key=lambda s: s.added_class)
+        students.sort(key=lambda s: s.added_class or datetime.min)
 
         if 'prev' in request.GET:
             prev_id = int(request.GET.get('prev'))
@@ -213,13 +216,14 @@ class TeacherReviewApps(ProgramModuleObj):
             student.app = None
             raise ESPError('Error: Student did not start an application.', log=False)
 
-        student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
+        reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
+        student.added_class = reg.start_date if reg else None
 
-        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
+        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls)
         if teacher_reviews.count() > 0:
             this_review = teacher_reviews.order_by('id')[0]
         else:
-            this_review = StudentAppReview(reviewer=request.user)
+            this_review = StudentAppReview(reviewer=request.user, class_subject=cls)
             this_review.save()
             student.app.reviews.add(this_review)
 
@@ -241,7 +245,7 @@ class TeacherReviewApps(ProgramModuleObj):
                                   request,
                                   {'class': cls,
                                    'reviews': teacher_reviews,
-                                  'program': prog,
+                                   'program': prog,
                                    'student':student,
                                    'form': form})
 

@@ -146,7 +146,7 @@ class ResourceRequest(models.Model):
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)
-    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     desired_value = models.TextField()
 
     def __str__(self):
@@ -163,7 +163,7 @@ class Resource(models.Model):
     res_type, attach to a user if necessary. """
 
     name = models.CharField(max_length=80)
-    res_type = models.ForeignKey(ResourceType, on_delete=models.PROTECT)
+    res_type = models.ForeignKey(ResourceType, on_delete=models.CASCADE)
     num_students = models.IntegerField(blank=True, default=-1)
     # do not use group_id, use res_group instead
     # group_id can be removed with a future migration after all sites
@@ -338,8 +338,9 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
+    is_available.get_or_create_token(('self',))
     is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
-    is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
+    is_available.depend_on_row('cal.Event', lambda instance: {})
 
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -379,8 +380,7 @@ class AssignmentGroup(models.Model):
 class ResourceAssignment(models.Model):
     """ The binding of a resource to the class that it belongs to. """
 
-    resource = models.ForeignKey(Resource, on_delete=models.CASCADE)     #   Note: this really points to a bunch of Resources.
-                                                                         #   See resources() below.
+    resource = models.ForeignKey(Resource, on_delete=models.CASCADE) #   Note: this really points to a bunch of Resources. See resources() below.
 
     target = models.ForeignKey('program.ClassSection', null=True, on_delete=models.CASCADE)
     target_subj = models.ForeignKey('program.ClassSubject', null=True, on_delete=models.CASCADE)

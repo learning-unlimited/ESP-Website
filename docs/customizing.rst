@@ -77,10 +77,10 @@ Custom Themes / Adding a New Theme
 
 To contribute a fully custom front-end design for other chapters to use,
 package it as a theme inside ``esp/themes/theme_data/``.  The themes app
-compiles LESS → CSS with user-supplied parameters at runtime.  A theme
-consists of pre-defined template overrides, images, and LESS stylesheets.
+compiles SCSS → CSS with user-supplied parameters at runtime.  A theme
+consists of pre-defined template overrides, images, and SCSS stylesheets.
 
-* Full developer guide (architecture, file layout, LESS pipeline, adding a
+* Full developer guide (architecture, file layout, SCSS pipeline, adding a
   theme): `dev/themes.rst <dev/themes.rst>`_
 
 Contributing to the Codebase
