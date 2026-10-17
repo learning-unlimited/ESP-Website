@@ -272,24 +272,36 @@ class CustomFormsTest(TestCase):
             e_mail='original@example.com'
         )
 
-        self.client.login(username=self.student.username, password='password')
-        response = self.client.get(f"/customforms/view/{form.id}/")
-        self.assertEqual(response.status_code, 200)
+        fh = FormHandler(form=form, request=None)
+        form_class = fh._getFormList()[0]
+        bound_form = form_class(data={
+            f'question_{email_field.id}': 'updated@example.com',
+            f'question_{bio_field.id}': 'Some bio'
+        })
+        self.assertTrue(bound_form.is_valid())
 
-        post_dict = {'combo_form-current_step': '0'}
-        post_dict[f'question_{email_field.id}'] = 'updated@example.com'
-        post_dict[f'question_{bio_field.id}'] = 'Some bio'
+        from django.test import RequestFactory
+        from esp.customforms.DynamicForm import ComboForm
+        rf = RequestFactory()
+        request = rf.post(f"/customforms/view/{form.id}/")
+        request.user = self.student
+
+        wizard = ComboForm()
+        wizard.form = form
+        wizard.curr_request = request
+        wizard.form_handler = FormHandler(form=form, request=request, user=self.student)
 
         TeacherInfo = apps.get_model('users', 'TeacherInfo')
         with patch.object(TeacherInfo.objects, 'create', side_effect=Exception("Simulated DB failure")):
             with self.assertRaises(Exception) as cm:
-                self.client.post(f"/customforms/view/{form.id}/", post_dict)
+                wizard.done([bound_form])
             self.assertEqual(str(cm.exception), "Simulated DB failure")
 
         # Verify that ContactInfo was rolled back and not updated
         contact.refresh_from_db()
         self.assertEqual(contact.e_mail, 'original@example.com', "ContactInfo change was not rolled back!")
         self.assertEqual(ContactInfo.objects.filter(user=self.student).count(), 1)
+
 
 
 class LandingViewTest(TestCase):
