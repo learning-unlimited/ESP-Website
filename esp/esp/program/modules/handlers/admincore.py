@@ -702,6 +702,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required_label = ""
                     if "default_link_title" in request.POST: # Reset module link title override values
                         pmo.link_title = ""
+                    pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                     pmo.save()
                 for pmo in [mod for mod in prog.getModules(tl = 'teach') if mod.inModulesList()]:
                     pmo = ProgramModuleObj.objects.get(id=pmo.id) # Get the uncached object to make sure we trigger the cache
@@ -713,6 +714,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         pmo.required_label = ""
                     if "default_link_title" in request.POST: # Reset module link title override values
                         pmo.link_title = ""
+                    pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                     pmo.save()
 
             # If the sequence form was submitted, process it and update program modules
@@ -730,6 +732,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             for mod_id in learn_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -738,6 +741,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # Set teacher registration module sequence and requiredness
             seq = 12 # In case there are other modules that aren't steps and should be earlier
@@ -748,6 +752,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = True
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             for mod_id in teach_not_req:
                 pmo = ProgramModuleObj.objects.get(id=mod_id)
@@ -756,6 +761,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 pmo.required = False
                 pmo.required_label = request.POST.get("%s_label" % mod_id, "")
                 pmo.link_title = request.POST.get("%s_link_title" % mod_id, "")
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # Override some settings that shouldn't be changed
             # Profile modules should always be required and always first
@@ -763,33 +769,39 @@ class AdminCore(ProgramModuleObj, CoreModule):
             for pmo in pmos:
                 pmo.seq = 0
                 pmo.required = True
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # Credit card modules should never be required and always be after everything except confirm reg
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "CreditCardModule_")
             for pmo in pmos:
                 pmo.seq = 10000
                 pmo.required = False
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # The confirm reg module should never be required and should always be last
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegConfirm")
             for pmo in pmos:
                 pmo.seq = 99999
                 pmo.required = False
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # The availability module should always be required
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "AvailabilityModule")
             for pmo in pmos:
                 pmo.required = True
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # The acknowledgment modules should always be required
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler__contains = "AcknowledgementModule")
             for pmo in pmos:
                 pmo.required = True
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
             # The two phase lottery module should always be required
             pmos = ProgramModuleObj.objects.filter(program = prog, module__handler = "StudentRegTwoPhase")
             for pmo in pmos:
                 pmo.required = True
+                pmo.version += 1 # bump OCC token so the timeline scheduler detects this write
                 pmo.save()
 
         learn_modules = [mod for mod in prog.getModules(tl = 'learn') if mod.inModulesList()]

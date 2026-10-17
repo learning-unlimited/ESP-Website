@@ -12,6 +12,10 @@ $j(document).ready(function() {
 
     var currentView = 'student'; // 'student', 'teacher', 'split'
     var allModules = { learn: [], teach: [] };
+    var undoStack = [];
+    var redoStack = [];
+    var MAX_HISTORY = 20; // issue #6001: keep a rolling history of the last 20 operations
+    var historyBusy = false;
     var activeModule = null;    // currently editing
     var activeModuleType = null; // 'student' or 'teacher'
     var lastFocusBeforeModal = null;
@@ -74,10 +78,221 @@ $j(document).ready(function() {
         }, 3000);
     }
 
+    function findModule(moduleId) {
+        var found = null;
+        $j.each(allModules.learn.concat(allModules.teach), function(i, mod) {
+            if (mod.id === moduleId) found = mod;
+        });
+        return found;
+    }
+
+    function sortModulesBySequence() {
+        allModules.learn.sort(function(a, b) { return a.seq - b.seq; });
+        allModules.teach.sort(function(a, b) { return a.seq - b.seq; });
+    }
+
+    function renderModuleViews() {
+        computeTimelineDates();
+        renderGridHeaders();
+        renderTimeline('student');
+        renderTimeline('teacher');
+        updateTabCounts();
+    }
+
+    function updateHistoryControls() {
+        $j('#undoBtn').prop('disabled', historyBusy || undoStack.length === 0);
+        $j('#redoBtn').prop('disabled', historyBusy || redoStack.length === 0);
+    }
+
+    // Push a command onto a history stack, trimming the oldest entries so the
+    // in-memory history never grows past MAX_HISTORY operations.
+    function recordHistory(stack, command) {
+        stack.push(command);
+        while (stack.length > MAX_HISTORY) {
+            stack.shift();
+        }
+    }
+
+    // Module ids touched by a command, used to surgically purge only the
+    // conflicted module's history on a 409 rather than wiping everything.
+    function commandModuleIds(command) {
+        if (command && command.type === 'reorder') {
+            return command.after.map(function(state) { return state.id; });
+        }
+        if (command && command.after) {
+            return [command.after.id];
+        }
+        return [];
+    }
+
+    function purgeHistoryFor(affectedIds) {
+        if (!affectedIds || !affectedIds.length) {
+            undoStack = [];
+            redoStack = [];
+            return;
+        }
+        var affected = {};
+        affectedIds.forEach(function(id) { affected[id] = true; });
+        function involvesAffected(command) {
+            return commandModuleIds(command).some(function(id) { return affected[id]; });
+        }
+        undoStack = undoStack.filter(function(command) { return !involvesAffected(command); });
+        redoStack = redoStack.filter(function(command) { return !involvesAffected(command); });
+    }
+
+    function moduleState(mod) {
+        return {
+            id: mod.id,
+            version: mod.version,
+            start_date: mod.start_date,
+            end_date: mod.end_date,
+            seq: mod.seq,
+            link_title: mod.link_title,
+            required: mod.required,
+            required_label: mod.required_label
+        };
+    }
+
+    function applyModuleResponse(response) {
+        var mod = findModule(response.module_id);
+        if (!mod) return;
+        mod.start_date = response.start_date;
+        mod.end_date = response.end_date;
+        mod.seq = response.seq;
+        mod.link_title = response.link_title;
+        mod.display_title = response.display_title;
+        mod.required = response.required;
+        mod.required_label = response.required_label;
+        mod.version = response.version;
+    }
+
+    function historyRequestFailed(xhr, affectedIds) {
+        var msg = 'Unable to apply history change.';
+        try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
+        showToast(msg, 'error');
+        // issue #6001: surgically purge only the conflicted module's history,
+        // then resync the UI with the database's true state. Without affected
+        // ids (e.g. a generic network error) fall back to clearing both stacks.
+        purgeHistoryFor(affectedIds);
+        // Keep the timeline locked until the resync finishes (on both its
+        // success and error paths) so another undo/redo can't run against the
+        // still-stale state and have the pending GET overwrite the newer render.
+        loadModules(function() {
+            historyBusy = false;
+            updateHistoryControls();
+        });
+    }
+
+    function runModuleCommand(command, direction, callback) {
+        var target = direction === 'undo' ? command.before : command.after;
+        var source = direction === 'undo' ? command.after : command.before;
+        var payload = {
+            module_id: target.id,
+            version: source.version,
+            start_date: target.start_date,
+            end_date: target.end_date,
+            seq: target.seq,
+            link_title: target.link_title,
+            required: target.required,
+            required_label: target.required_label
+        };
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/update',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(response) {
+                if (!response.success) {
+                    historyRequestFailed({ responseText: JSON.stringify(response) }, [target.id]);
+                    return;
+                }
+                target.version = response.version;
+                applyModuleResponse(response);
+                callback();
+            },
+            error: function(xhr) { historyRequestFailed(xhr, [target.id]); }
+        });
+    }
+
+    function runReorderCommand(command, direction, callback) {
+        var target = direction === 'undo' ? command.before : command.after;
+        var source = direction === 'undo' ? command.after : command.before;
+        var payload = { order: target.map(function(state, index) {
+            return { id: state.id, seq: state.seq, version: source[index].version };
+        }) };
+
+        $j.ajax({
+            url: '/manage/' + programUrlBase + '/module_schedule/reorder',
+            method: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': csrfToken },
+            success: function(response) {
+                if (!response.success) {
+                    historyRequestFailed({ responseText: JSON.stringify(response) }, target.map(function(state) { return state.id; }));
+                    return;
+                }
+                target.forEach(function(state) {
+                    state.version = response.updated_versions[state.id];
+                    var mod = findModule(state.id);
+                    if (mod) {
+                        mod.seq = state.seq;
+                        mod.version = state.version;
+                    }
+                });
+                sortModulesBySequence();
+                callback();
+            },
+            error: function(xhr) { historyRequestFailed(xhr, target.map(function(state) { return state.id; })); }
+        });
+    }
+
+    function undo() {
+        if (historyBusy || undoStack.length === 0) return;
+        historyBusy = true;
+        updateHistoryControls();
+        var command = undoStack[undoStack.length - 1];
+        var run = command.type === 'reorder' ? runReorderCommand : runModuleCommand;
+        run(command, 'undo', function() {
+            undoStack.pop();
+            recordHistory(redoStack, command);
+            historyBusy = false;
+            if (command.type === 'reorder') {
+                loadModules();
+            } else {
+                renderModuleViews();
+            }
+            updateHistoryControls();
+            showToast('Change undone.', 'success');
+        });
+    }
+
+    function redo() {
+        if (historyBusy || redoStack.length === 0) return;
+        historyBusy = true;
+        updateHistoryControls();
+        var command = redoStack[redoStack.length - 1];
+        var run = command.type === 'reorder' ? runReorderCommand : runModuleCommand;
+        run(command, 'redo', function() {
+            redoStack.pop();
+            recordHistory(undoStack, command);
+            historyBusy = false;
+            if (command.type === 'reorder') {
+                loadModules();
+            } else {
+                renderModuleViews();
+            }
+            updateHistoryControls();
+            showToast('Change redone.', 'success');
+        });
+    }
+
     // ──────────────────────────────────────────────────────────────
     // API: Load modules
     // ──────────────────────────────────────────────────────────────
-    function loadModules() {
+    function loadModules(onComplete) {
         $j.ajax({
             url: '/manage/' + programUrlBase + '/module_schedule',
             method: 'GET',
@@ -85,11 +300,8 @@ $j(document).ready(function() {
                 if (response.modules) {
                     allModules.learn = response.modules.learn || [];
                     allModules.teach = response.modules.teach || [];
-                    computeTimelineDates();
-                    renderGridHeaders();
-                    renderTimeline('student');
-                    renderTimeline('teacher');
-                    updateTabCounts();
+                    renderModuleViews();
+                    updateHistoryControls();
                     if (lastFocusedModuleId) {
                         var $targetBlock = $j('.tl-block[data-module-id="' + lastFocusedModuleId + '"], .tl-row-label[data-module-id="' + lastFocusedModuleId + '"]');
                         if ($targetBlock.length) {
@@ -113,6 +325,11 @@ $j(document).ready(function() {
             },
             error: function() {
                 showToast('Network error while loading modules.', 'error');
+            },
+            complete: function() {
+                if (typeof onComplete === 'function') {
+                    onComplete();
+                }
             }
         });
     }
@@ -298,7 +515,7 @@ $j(document).ready(function() {
             var pos     = calculatePosition(mod);
 
             // ── Sidebar row ──────────────────────────────────────
-            var rowTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
+            var rowTitle = mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $row = $j('<div>').addClass('tl-row-label')
                 .attr('tabindex', '0')
                 .attr('role', 'button')
@@ -338,7 +555,7 @@ $j(document).ready(function() {
             });
             
             var $title = $j('<span>').addClass('tl-row-title').text(
-                mod.link_title || mod.admin_title || ('Module ' + mod.id)
+                mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id)
             );
             $titleWrapper.append($title);
 
@@ -373,7 +590,7 @@ $j(document).ready(function() {
             $sidebar.append($row);
 
             // ── Grid block ───────────────────────────────────────
-            var blockTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
+            var blockTitle = mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $blockRow = $j('<div>').addClass('tl-block-row');
             var $block    = $j('<div>').addClass('tl-block')
                 .attr('data-module-id', mod.id)
@@ -389,7 +606,7 @@ $j(document).ready(function() {
                     }
                 });
 
-            var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title).css({
+            var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.display_title || mod.link_title || mod.admin_title).css({
                 position: 'sticky',
                 left: '12px'
             });
@@ -456,9 +673,11 @@ $j(document).ready(function() {
 
                 var modMap = {};
                 $j.each(modules, function(index, m) { modMap[m.id] = m; });
+                var before = newOrder.map(function(order) { return moduleState(modMap[order.id]); });
                 newOrder.forEach(function(o) {
                     modMap[o.id].seq = o.seq;
                 });
+                var after = newOrder.map(function(order) { return moduleState(modMap[order.id]); });
                 var reordered = modules.slice().sort(function(a, b) {
                     return a.seq - b.seq;
                 });
@@ -469,19 +688,30 @@ $j(document).ready(function() {
                     allModules.teach = reordered;
                 }
 
-                computeTimelineDates();
-                renderGridHeaders();
-                renderTimeline('student');
-                renderTimeline('teacher');
+                renderModuleViews();
 
                 $j.ajax({
                     url: '/manage/' + programUrlBase + '/module_schedule/reorder',
                     method: 'POST',
-                    data: JSON.stringify({ order: newOrder }),
+                    data: JSON.stringify({ order: newOrder.map(function(order) {
+                        return { id: order.id, seq: order.seq, version: before.filter(function(state) { return state.id === order.id; })[0].version };
+                    }) }),
                     contentType: 'application/json',
                     headers: { 'X-CSRFToken': csrfToken },
                     success: function(res) {
                         if (res.success) {
+                            after.forEach(function(state) {
+                                state.version = res.updated_versions[state.id];
+                                // Keep the live module objects in sync so the next
+                                // edit or reorder sends the current version rather than
+                                // a stale one (which would wrongly 409).
+                                if (modMap[state.id]) {
+                                    modMap[state.id].version = state.version;
+                                }
+                            });
+                            recordHistory(undoStack, { type: 'reorder', before: before, after: after });
+                            redoStack = [];
+                            updateHistoryControls();
                             showToast('Order saved.', 'success');
                         } else {
                             showToast('Error: ' + (res.error || 'Unknown error'), 'error');
@@ -568,7 +798,7 @@ $j(document).ready(function() {
         var c = constraints[String(mod.id)] || {};
 
         $j('#editPanel').removeClass('theme-student theme-teacher').addClass('theme-' + type);
-        $j('#editSubtitle').text('Editing: ' + (mod.link_title || mod.admin_title || ('Module ' + mod.id)));
+        $j('#editSubtitle').text('Editing: ' + (mod.display_title || mod.link_title || mod.admin_title || ('Module ' + mod.id)));
         $j('#editLabel').val(mod.link_title || '');
         $j('#editReqLabel').val(mod.required_label || '');
 
@@ -635,8 +865,10 @@ $j(document).ready(function() {
             start_date:     $j('#editStart').val() || null,
             end_date:       $j('#editEnd').val()   || null,
             required:       $j('#reqToggle').hasClass('on'),
-            seq:            activeModule.seq
+            seq:            activeModule.seq,
+            version:        activeModule.version
         };
+        var before = moduleState(activeModule);
 
         $j('#editSaveBtn').prop('disabled', true).text('Saving…');
 
@@ -649,6 +881,10 @@ $j(document).ready(function() {
             success: function(res) {
                 $j('#editSaveBtn').prop('disabled', false).text('Save Changes');
                 if (res.success) {
+                    var after = moduleState($j.extend({}, before, res));
+                    recordHistory(undoStack, { type: 'update', before: before, after: after });
+                    redoStack = [];
+                    updateHistoryControls();
                     showToast('Module saved successfully.', 'success');
                     closeEditPanel(true);
                     loadModules();
@@ -661,6 +897,17 @@ $j(document).ready(function() {
                 var msg = 'An error occurred while saving.';
                 try { msg = JSON.parse(xhr.responseText).error || msg; } catch(e) {}
                 showToast(msg, 'error');
+                // On a version conflict the form and allModules hold a stale
+                // version, so a repeat save would just conflict again. Drop this
+                // module's now-stale history, close the panel, and resync so the
+                // next edit starts from the other administrator's state.
+                if (xhr.status === 409) {
+                    if (activeModule) {
+                        purgeHistoryFor([activeModule.id]);
+                    }
+                    closeEditPanel(true);
+                    loadModules();
+                }
             }
         });
     });
@@ -774,6 +1021,16 @@ $j(document).ready(function() {
 
     // Global Escape key handler to close modals
     $j(document).on('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !$j(e.target).is('input, textarea, select')) {
+            e.preventDefault();
+            undo();
+            return;
+        }
+        if ((e.ctrlKey || e.metaKey) && ((e.key.toLowerCase() === 'y') || (e.shiftKey && e.key.toLowerCase() === 'z')) && !$j(e.target).is('input, textarea, select')) {
+            e.preventDefault();
+            redo();
+            return;
+        }
         if (e.key === 'Escape') {
             if ($editPanel.hasClass('active')) {
                 closeEditPanel();
@@ -783,4 +1040,8 @@ $j(document).ready(function() {
             }
         }
     });
+
+    $j('#undoBtn').on('click', undo);
+    $j('#redoBtn').on('click', redo);
+    updateHistoryControls();
 });
