@@ -34,18 +34,16 @@ Learning Unlimited, Inc.
 """
 import json
 from collections import Counter, OrderedDict, defaultdict
-from numpy import mean
 
-from django.db.models import Count, Sum, F, DecimalField, Min, Max
+from django.db.models import Count, Sum, F, DecimalField, Min, Max, Q
 from django.template.loader import render_to_string
 
 from esp.accounting.models import FinancialAidGrant
-from esp.program.models import ClassSection, FinancialAidRequest, Program, StudentRegistration
+from esp.program.models import (ClassSection, ClassSubject, FinancialAidRequest,
+                                StudentRegistration, StudentSubjectInterest)
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.users.models import ESPUser, Record
-from esp.program.modules.handlers.bigboardmodule import BigBoardModule
-from esp.program.modules.handlers.teacherbigboardmodule import TeacherBigBoardModule
 
 """
 This file contains a set of functions used to perform statistics queries
@@ -55,7 +53,8 @@ will try to call one or more of these functions based on the query specified
 in the form.
 
 Do not place a top-level function in this file if you would not like it to
-be supported as a type of query.
+be supported as a type of query, unless its name starts with an underscore
+(private helpers are never dispatched as queries).
 """
 
 def zipcodes(form, programs, students, profiles, result_dict=None):
@@ -131,23 +130,17 @@ def demographics(form, programs, students, profiles, result_dict=None):
     #   Get financial aid info using bulk queries instead of per-student loops.
 
     #   1. All students who applied (have a done=True financial aid request)
-    applied_user_ids = set(
-        FinancialAidRequest.objects.filter(
-            user__in=students,
-            program__in=programs,
-            done=True,
-        ).values_list('user_id', flat=True)
-    )
-
     #   2. Of those, students with reduced_lunch=True
-    lunch_user_ids = set(
-        FinancialAidRequest.objects.filter(
-            user__in=students,
-            program__in=programs,
-            done=True,
-            reduced_lunch=True,
-        ).values_list('user_id', flat=True)
-    )
+    applied_user_ids = set()
+    lunch_user_ids = set()
+    for user_id, reduced_lunch in FinancialAidRequest.objects.filter(
+        user__in=students,
+        program__in=programs,
+        done=True,
+    ).values_list('user_id', 'reduced_lunch'):
+        applied_user_ids.add(user_id)
+        if reduced_lunch:
+            lunch_user_ids.add(user_id)
 
     #   3. Students who have been approved (have a FinancialAidGrant)
     approved_user_ids = set(
@@ -157,10 +150,6 @@ def demographics(form, programs, students, profiles, result_dict=None):
         ).values_list('request__user_id', flat=True)
     )
 
-    finaid_applied = list(applied_user_ids)
-    finaid_lunch = list(lunch_user_ids)
-    finaid_approved = list(applied_user_ids & approved_user_ids)
-
     #   Compile and render
     grad_years = sorted(gradyear_dict.keys())
     grad_counts = [gradyear_dict[key] for key in grad_years]
@@ -168,9 +157,9 @@ def demographics(form, programs, students, profiles, result_dict=None):
     birth_years = sorted(birthyear_dict.keys())
     birth_counts = [birthyear_dict[key] for key in birth_years]
     result_dict['birthyear_data'] = list(zip(birth_years, birth_counts))
-    result_dict['finaid_applied'] = len(set(finaid_applied))
-    result_dict['finaid_lunch'] = len(set(finaid_lunch))
-    result_dict['finaid_approved'] = len(set(finaid_approved))
+    result_dict['finaid_applied'] = len(applied_user_ids)
+    result_dict['finaid_lunch'] = len(lunch_user_ids)
+    result_dict['finaid_approved'] = len(applied_user_ids & approved_user_ids)
     return render_to_string('program/statistics/demographics.html', result_dict)
 
 def schools(form, programs, students, profiles, result_dict=None):
@@ -334,78 +323,57 @@ def hours(form, programs, students, profiles, result_dict=None):
         result_dict = {}
 
     #   Bin students by registered timeslots per program.
-    #   Uses bulk queries instead of per-student per-section loops.
+    #   Uses bulk queries across all programs instead of per-program, per-student loops.
     enrolled_list = []
     attended_list = []
     students_list = []
     timeslots_enrolled_list = []
     timeslots_attended_list = []
-    student_ids = set(students.values_list('id', flat=True))
+
+    def timeslots_by_program_and_user(registrations):
+        #   Group (program_id, user_id, timeslot_id) triples into {program_id: {user_id: {timeslot_ids}}}
+        result = defaultdict(lambda: defaultdict(set))
+        for program_id, user_id, timeslot_id in (
+            registrations
+            .filter(user__in=students, section__parent_class__parent_program__in=programs)
+            .values_list('section__parent_class__parent_program_id', 'user_id', 'section__meeting_times')
+            .distinct()
+        ):
+            if timeslot_id is not None:
+                result[program_id][user_id].add(timeslot_id)
+        return result
+
+    #   Bulk-fetch timeslots for enrolled students
+    enrolled_timeslots = timeslots_by_program_and_user(
+        StudentRegistration.valid_objects().filter(relationship__name='Enrolled'))
+    #   Bulk-fetch timeslots for attended students
+    attended_timeslots = timeslots_by_program_and_user(
+        StudentRegistration.objects.filter(relationship__name='Attended'))
+
+    #   We also need actual Event objects for timeslots_enrolled/attended dicts.
+    #   Fetch all relevant timeslot events in one query.
+    all_timeslot_ids = set()
+    for by_user in list(enrolled_timeslots.values()) + list(attended_timeslots.values()):
+        for ts_set in by_user.values():
+            all_timeslot_ids |= ts_set
+    timeslot_lookup = {e.id: e for e in Event.objects.filter(id__in=all_timeslot_ids)}
+
     for program in programs:
-        #   Bulk-fetch all (user_id, timeslot_id) pairs for enrolled students
-        enrolled_pairs = (
-            StudentRegistration.valid_objects()
-            .filter(
-                user_id__in=student_ids,
-                section__parent_class__parent_program=program,
-                relationship__name='Enrolled',
-            )
-            .values_list('user_id', 'section__meeting_times')
-            .distinct()
-        )
-        #   Group enrolled timeslots by user
-        user_enrolled_timeslots = defaultdict(set)
-        for user_id, timeslot_id in enrolled_pairs:
-            if timeslot_id is not None:
-                user_enrolled_timeslots[user_id].add(timeslot_id)
-
-        #   Bulk-fetch all (user_id, timeslot_id) pairs for attended students
-        attended_pairs = (
-            StudentRegistration.objects
-            .filter(
-                user_id__in=student_ids,
-                section__parent_class__parent_program=program,
-                relationship__name='Attended',
-            )
-            .values_list('user_id', 'section__meeting_times')
-            .distinct()
-        )
-        #   Group attended timeslots by user
-        user_attended_timeslots = defaultdict(set)
-        for user_id, timeslot_id in attended_pairs:
-            if timeslot_id is not None:
-                user_attended_timeslots[user_id].add(timeslot_id)
-
-        #   We also need actual Event objects for timeslots_enrolled/attended dicts.
-        #   Fetch all relevant timeslot events in one query.
-        all_timeslot_ids = set()
-        for ts_set in user_enrolled_timeslots.values():
-            all_timeslot_ids |= ts_set
-        for ts_set in user_attended_timeslots.values():
-            all_timeslot_ids |= ts_set
-        timeslot_lookup = {e.id: e for e in Event.objects.filter(id__in=all_timeslot_ids)}
-
-        #   Build the same dicts as the original code
-        prog_students = 0
+        #   Build the same dicts as the original code (students with no timeslots are not counted)
         enrolled_dict = defaultdict(int)
         attended_dict = defaultdict(int)
         timeslots_enrolled_dict = defaultdict(int)
         timeslots_attended_dict = defaultdict(int)
 
-        for sid in student_ids:
-            enrolled_ts = user_enrolled_timeslots.get(sid, set())
-            num_enrolled = len(enrolled_ts)
-            enrolled_dict[num_enrolled] += 1
-            if num_enrolled > 0:
-                prog_students += 1
+        for enrolled_ts in enrolled_timeslots[program.id].values():
+            enrolled_dict[len(enrolled_ts)] += 1
             for ts_id in enrolled_ts:
                 ts = timeslot_lookup.get(ts_id)
                 if ts:
                     timeslots_enrolled_dict[ts] += 1
 
-            attended_ts = user_attended_timeslots.get(sid, set())
-            num_attended = len(attended_ts)
-            attended_dict[num_attended] += 1
+        for attended_ts in attended_timeslots[program.id].values():
+            attended_dict[len(attended_ts)] += 1
             for ts_id in attended_ts:
                 ts = timeslot_lookup.get(ts_id)
                 if ts:
@@ -415,8 +383,7 @@ def hours(form, programs, students, profiles, result_dict=None):
         timeslots_attended_list.append(dict(timeslots_attended_dict))
         enrolled_list.append(dict(enrolled_dict))
         attended_list.append(dict(attended_dict))
-        students_list.append(prog_students)
-
+        students_list.append(len(enrolled_timeslots[program.id]))
 
     #   Compile and render
     enrolled_flat = []
@@ -443,7 +410,12 @@ def hours(form, programs, students, profiles, result_dict=None):
         slots = sorted(timeslots_dict.keys())
         counts = [timeslots_dict[key] for key in slots]
         timeslots_attended_flat.append(list(zip(slots, counts)))
-    program_timeslots = [prog.getTimeSlots() for prog in programs]
+    #   Class timeslots for all programs in one query (same filter and order as Program.getTimeSlots())
+    timeslots_by_program = defaultdict(list)
+    for ts in (Event.objects.filter(program__in=programs, event_type__description='Class Time Block')
+               .select_related('event_type').order_by('start')):
+        timeslots_by_program[ts.program_id].append(ts)
+    program_timeslots = [timeslots_by_program[prog.id] for prog in programs]
     result_dict['hours_data'] = list(zip(programs, enrolled_flat, attended_flat, program_timeslots, timeslots_enrolled_flat, timeslots_attended_flat, students_list))
     return render_to_string('program/statistics/hours.html', result_dict)
 
@@ -459,33 +431,58 @@ def student_reg(form, programs, students, profiles, result_dict=None):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
-    student_id_set = {p.user_id for p in profiles if p.user_id}
-    # Bulk-fetch phase-zero (program_id, user_id) pairs across all programs in
-    # one query, replacing one SQL INTERSECT query per program inside the loop.
-    phasezero_by_program = defaultdict(set)
-    for program_id, user_id in (
+    # Bulk-fetch (program_id, user_id) pairs for each stat across all programs,
+    # one query per stat (two for class lottery), instead of several queries
+    # per program inside the loop. Uses the same criteria as BigBoardModule.
+    def users_by_program(pairs):
+        result = defaultdict(set)
+        for program_id, user_id in pairs.distinct():
+            result[program_id].add(user_id)
+        return result
+    phasezero_by_program = users_by_program(
         ESPUser.objects
-        .filter(phasezerorecord__program__in=programs)
+        .filter(phasezerorecord__program__in=programs, id__in=students)
         .values_list('phasezerorecord__program_id', 'id')
-        .distinct()
-    ):
-        phasezero_by_program[program_id].add(user_id)
+    )
+    lottery_by_program = users_by_program(
+        StudentSubjectInterest.valid_objects()
+        .filter(subject__parent_program__in=programs, user__in=students)
+        .values_list('subject__parent_program_id', 'user_id')
+    )
+    for program_id, user_ids in users_by_program(
+        StudentRegistration.valid_objects()
+        .filter(Q(relationship__name='Interested') | Q(relationship__name__contains='Priority/'),
+                section__parent_class__parent_program__in=programs, user__in=students)
+        .values_list('section__parent_class__parent_program_id', 'user_id')
+    ).items():
+        lottery_by_program[program_id] |= user_ids
+    enrolled_by_program = users_by_program(
+        StudentRegistration.valid_objects()
+        .filter(relationship__name='Enrolled',
+                section__parent_class__parent_program__in=programs, user__in=students)
+        .values_list('section__parent_class__parent_program_id', 'user_id')
+    )
+    checked_in_by_program = users_by_program(
+        Record.objects
+        .filter(event__name='attended', program__in=programs, user__in=students)
+        .values_list('program_id', 'user_id')
+    )
     for program in programs:
         stats_list = []
         # entered student lottery
-        stud_lott_num = len(phasezero_by_program.get(program.id, set()) & student_id_set)
+        stud_lott_num = len(phasezero_by_program[program.id])
         series_data['Student Lottery'].append([program.name, stud_lott_num])
         stats_list.append(stud_lott_num)
         # set class lottery preferences
-        class_lott_num = len(BigBoardModule.users_with_lottery(program) & student_id_set)
+        class_lott_num = len(lottery_by_program[program.id])
         series_data['Class Lottery'].append([program.name, class_lott_num])
         stats_list.append(class_lott_num)
         # enrolled in at least one class
-        enroll_num = len(set(BigBoardModule.users_enrolled(program)) & student_id_set)
+        enroll_num = len(enrolled_by_program[program.id])
         series_data['Enrolled'].append([program.name, enroll_num])
         stats_list.append(enroll_num)
         # students checked in
-        checked_num = len(set(BigBoardModule.checked_in_users(program)) & student_id_set)
+        checked_num = len(checked_in_by_program[program.id])
         series_data['Checked In'].append([program.name, checked_num])
         stats_list.append(checked_num)
         prog_stats.append(stats_list)
@@ -501,6 +498,54 @@ def student_reg(form, programs, students, profiles, result_dict=None):
                        })
     return render_to_string('program/statistics/student_reg.html', result_dict)
 
+def _class_reg_stats(programs, teachers):
+    """ Per-program stats for classes taught by `teachers` (excluding lunch),
+        using the same criteria as TeacherBigBoardModule, in a fixed number of
+        queries. Returns {program_id: {level: {'classes', 'teachers',
+        'student_hours'}}} for levels 'registered', 'approved' and 'scheduled'.
+    """
+    teacher_ids = set(teachers.values_list('id', flat=True))
+    classes = ClassSubject.objects.filter(parent_program__in=programs).exclude(category__is_lunch=True)
+
+    class_teachers = defaultdict(set)
+    for class_id, teacher_id in classes.values_list('id', 'teachers'):
+        if teacher_id in teacher_ids:
+            class_teachers[class_id].add(teacher_id)
+    sections_by_class = defaultdict(list)
+    for section_id, class_id, status, duration in (
+        ClassSection.objects.filter(parent_class__in=classes)
+        .values_list('id', 'parent_class_id', 'status', 'duration')
+    ):
+        sections_by_class[class_id].append((section_id, status, duration or 0))
+    scheduled_section_ids = set(
+        ClassSection.objects.filter(parent_class__in=classes, meeting_times__isnull=False)
+        .values_list('id', flat=True)
+    )
+
+    stats = defaultdict(lambda: {level: {'classes': 0, 'teachers': set(), 'student_hours': 0}
+                                 for level in ('registered', 'approved', 'scheduled')})
+    for class_id, program_id, status, class_size_max in classes.values_list(
+            'id', 'parent_program_id', 'status', 'class_size_max'):
+        taught_by = class_teachers.get(class_id)
+        if not taught_by:
+            continue
+        sections = sections_by_class[class_id]
+        #   Approved: an approved class with at least one approved section
+        #   (only approved sections count towards hours); scheduled: of those,
+        #   sections with meeting times.
+        approved_sections = [sec for sec in sections if sec[1] > 0] if status > 0 else []
+        scheduled_sections = [sec for sec in approved_sections if sec[0] in scheduled_section_ids]
+        for level, level_sections in (('registered', sections),
+                                      ('approved', approved_sections),
+                                      ('scheduled', scheduled_sections)):
+            if level != 'registered' and not level_sections:
+                continue
+            level_stats = stats[program_id][level]
+            level_stats['classes'] += 1
+            level_stats['teachers'] |= taught_by
+            level_stats['student_hours'] += sum(sec[2] for sec in level_sections) * (class_size_max or 0)
+    return stats
+
 def teacher_reg(form, programs, teachers, profiles, result_dict=None):
     if result_dict is None:
         result_dict = {}
@@ -512,18 +557,19 @@ def teacher_reg(form, programs, teachers, profiles, result_dict=None):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
+    class_stats = _class_reg_stats(programs, teachers)
     for program in programs:
         stats_list = []
         # teachers that registered a class
-        teach_reg = TeacherBigBoardModule.num_teachers_teaching(program, teachers = teachers)
+        teach_reg = len(class_stats[program.id]['registered']['teachers'])
         series_data['Class Registered'].append([program.name, teach_reg])
         stats_list.append(teach_reg)
         # teachers with an approved class
-        teach_app = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, teachers = teachers)
+        teach_app = len(class_stats[program.id]['approved']['teachers'])
         series_data['Class Approved'].append([program.name, teach_app])
         stats_list.append(teach_app)
         # teachers with a scheduled class
-        teach_sch = TeacherBigBoardModule.num_teachers_teaching(program, approved = True, scheduled = True, teachers = teachers)
+        teach_sch = len(class_stats[program.id]['scheduled']['teachers'])
         series_data['Class Scheduled'].append([program.name, teach_sch])
         stats_list.append(teach_sch)
         prog_stats.append(stats_list)
@@ -554,26 +600,27 @@ def class_reg(form, programs, teachers, profiles, result_dict=None):
     prog_stats = []
     # ordered dictionary so the legend is in order
     series_data = OrderedDict((stat, []) for stat in stat_names)
+    class_stats = _class_reg_stats(programs, teachers)
     for program in programs:
         stats_list = []
         # registered classes
-        class_reg = TeacherBigBoardModule.num_class_reg(program, teachers = teachers)
+        class_reg = class_stats[program.id]['registered']['classes']
         series_data['Classes Registered'].append([program.name, class_reg])
         stats_list.append(class_reg)
-        # teachers with an approved class
-        class_app = TeacherBigBoardModule.num_class_reg(program, approved = True, teachers = teachers)
+        # approved classes
+        class_app = class_stats[program.id]['approved']['classes']
         series_data['Classes Approved'].append([program.name, class_app])
         stats_list.append(class_app)
-        class_sch = TeacherBigBoardModule.num_class_reg(program, approved = True, scheduled = True, teachers = teachers)
+        class_sch = class_stats[program.id]['scheduled']['classes']
         series_data['Classes Scheduled'].append([program.name, class_sch])
         stats_list.append(class_sch)
-        class_hours, student_hours = TeacherBigBoardModule.static_hours(program, teachers = teachers)
+        student_hours = class_stats[program.id]['registered']['student_hours']
         series_data['Class-student-hours Registered'].append([program.name, float(student_hours)])
         stats_list.append(float(student_hours))
-        class_hours_approved, student_hours_approved = TeacherBigBoardModule.static_hours(program, approved = True, teachers = teachers)
+        student_hours_approved = class_stats[program.id]['approved']['student_hours']
         series_data['Class-student-hours Approved'].append([program.name, float(student_hours_approved)])
         stats_list.append(float(student_hours_approved))
-        class_hours_scheduled, student_hours_scheduled = TeacherBigBoardModule.static_hours(program, approved = True, scheduled = True, teachers = teachers)
+        student_hours_scheduled = class_stats[program.id]['scheduled']['student_hours']
         series_data['Class-student-hours Scheduled'].append([program.name, float(student_hours_scheduled)])
         stats_list.append(float(student_hours_scheduled))
         prog_stats.append(stats_list)
