@@ -65,6 +65,7 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
 from esp.middleware import ESPError
+from esp.program.class_status import ClassStatus
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -949,11 +950,17 @@ class Program(models.Model, CustomFormsLinkModel):
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
 
-    def classes(self):
-        return ClassSubject.objects.filter(parent_program = self).order_by('id')
+    def classes(self, include_drafts = False):
+        classes = ClassSubject.objects.filter(parent_program = self)
+        if not include_drafts:
+            classes = classes.exclude(status = ClassStatus.DRAFT)
+        return classes.order_by('id')
 
-    def sections(self):
-        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
+    def sections(self, include_drafts = False):
+        sections = ClassSection.objects.filter(parent_class__parent_program=self)
+        if not include_drafts:
+            sections = sections.exclude(status = ClassStatus.DRAFT)
+        return sections.distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self, types=None, exclude_types=None):
         """ Get the time slots for a program.
