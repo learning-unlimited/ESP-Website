@@ -23,6 +23,7 @@ from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.forms.password_reset import PasswordResetForm
 from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
 from esp.users.models import (
     User,
@@ -272,6 +273,58 @@ class PasswordRecoveryTest(TestCase):
         # Other user's password is unaffected
         self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
                         "User innocent's old password no longer works")
+
+
+class PasswordResetFormTest(TestCase):
+    """Validation errors shown by the 'forgot your password' request form."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(
+            username='forgetful', defaults={'email': 'forgetful@example.org'})
+
+    def test_blank_form_asks_for_something(self):
+        form = PasswordResetForm(data={'email': '', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.non_field_errors(), ["You need to specify something."])
+        self.assertNotIn('email', form.errors)
+        self.assertNotIn('username', form.errors)
+
+    def test_unknown_email_shows_only_email_error(self):
+        form = PasswordResetForm(data={'email': 'nobody@example.org', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['email'], ['No user has email nobody@example.org'])
+        self.assertNotIn('username', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_unknown_username_shows_only_username_error(self):
+        form = PasswordResetForm(data={'email': '', 'username': 'nobody'})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['username'], ["User 'nobody' does not exist."])
+        self.assertNotIn('email', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_malformed_email_does_not_ask_for_something(self):
+        form = PasswordResetForm(data={'email': 'not-an-email', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_known_email_is_valid(self):
+        form = PasswordResetForm(data={'email': 'FORGETFUL@example.org', 'username': ''})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['username'], '')
+
+    def test_known_username_is_valid(self):
+        form = PasswordResetForm(data={'email': '', 'username': 'forgetful'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['username'], 'forgetful')
+
+    def test_view_does_not_show_contradictory_errors(self):
+        response = self.client.post('/myesp/passwdrecover/',
+                                    {'email': 'nobody@example.org', 'username': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No user has email nobody@example.org')
+        self.assertNotContains(response, 'You need to specify something.')
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
