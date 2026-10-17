@@ -1,0 +1,12 @@
+{# expects obj: a ClassSubject or ClassSection #}
+{% if obj.isReviewed %}
+    {% if obj.isAccepted %}
+    <span style="font-weight: bold; color: #0C0;">Accepted{% if obj.isHidden %} (Hidden){% endif %}</span>
+    {% elif obj.isCancelled %}
+    <span style="font-weight: bold; color: #C00;">Cancelled</span>
+    {% else %}
+    <span style="font-weight: bold; color: #C00;">Rejected</span>
+    {% endif %}
+{% else %}
+<span style="font-weight: bold; color: #00C;">Unreviewed</span>
+{% endif %}

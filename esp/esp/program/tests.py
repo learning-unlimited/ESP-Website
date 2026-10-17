@@ -68,7 +68,6 @@ from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from datetime import datetime, timedelta
 from decimal import Decimal
 from random import sample
-import hashlib
 import numpy
 import random
 import re
@@ -335,9 +334,6 @@ class ViewUserInfoTest(TestCase):
         self.fake_admin.delete()
 
 class ProfileTest(TestCase):
-
-    def setUp(self):
-        self.salt = hashlib.sha1(str(random.random()).encode("UTF-8")).hexdigest()[:5]
 
     def testAcctCreate(self):
         self.u=ESPUser.objects.create_user(
@@ -932,6 +928,21 @@ class ProgramCapTest(ProgramFrameworkTest):
         self.program.save()
         for user in self.students:
             # Assert that everyone can join the program.
+            self.assertTrue(self.program.user_can_join(user))
+
+    def test_cap_without_classreg_module(self):
+        # Without StudentClassRegModule there is no 'classreg' key, which the
+        # cap checks used to index unconditionally and 500 the reg page.
+        classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
+        self.assertTrue(classreg_modules)
+        self.program.program_modules.remove(*classreg_modules)
+        self.program.save()
+
+        self.assertNotIn('classreg', self.program.students())
+        self.assertEqual(self.program._students_in_program(), 0)
+        self.assertEqual(self.program._students_in_program_in_grades([10]), 0)
+        self.assertFalse(self.program._student_is_in_program(self.students[0]))
+        for user in self.students:
             self.assertTrue(self.program.user_can_join(user))
 
     def test_simple_cap(self):
@@ -1544,6 +1555,158 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.assertTrue(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
+
+    #   Helpers for the lunch assignment tests below
+
+    def make_lunches(self, timeslots, clear_classes=False):
+        """ Turn the given timeslots into lunch periods and return their lunch sections.
+
+            If clear_classes is set, any other section meeting during one of those
+            timeslots is unscheduled first, so that every student is free for lunch.
+        """
+
+        if clear_classes:
+            for sec in self.program.sections():
+                if set(sec.get_meeting_times()) & set(timeslots):
+                    #   Drop the registrations too: the lottery refuses to run when a
+                    #   student has a preference for a section that isn't scheduled.
+                    StudentRegistration.objects.filter(section=sec).delete()
+                    sec.clear_meeting_times()
+
+        lcg = LunchConstraintGenerator(self.program, timeslots)
+        lcg.generate_all_constraints()
+        lunch_secs = list(ClassSection.objects.filter(parent_class__category=lcg.get_lunch_category()))
+        self.assertEqual(len(lunch_secs), len(timeslots),
+                         "Expected one lunch section per lunch timeslot")
+        return lunch_secs
+
+    def enrolled_sections(self, student):
+        """ The sections a student was enrolled in by the lottery. """
+
+        return {sr.section for sr in StudentRegistration.valid_objects().filter(
+            user=student, relationship=self.enrolled_rt,
+            section__parent_class__parent_program=self.program)}
+
+    def testLunchAssignmentSingleLunchPeriod(self):
+        """ Every student who got a class should be put in the day's only lunch. """
+
+        lunch_secs = self.make_lunches([random.choice(self.timeslots)])
+        lunch_sec = lunch_secs[0]
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        attending = 0
+        for student in self.students:
+            sections = self.enrolled_sections(student)
+            classes = sections - set(lunch_secs)
+            lunches = sections & set(lunch_secs)
+            if classes:
+                attending += 1
+                self.assertEqual(lunches, {lunch_sec},
+                                 "Student with classes was not assigned to lunch")
+            else:
+                self.assertEqual(lunches, set(),
+                                 "Student with no classes was assigned to lunch")
+
+        self.assertGreater(attending, 0, "No student got any class, so the test proves nothing")
+
+    def testLunchAssignmentWithClassDuringLunch(self):
+        """ A student taking a class during one lunch period gets the other one.
+
+            The lottery deliberately allows a class to run during a lunch period as
+            long as another lunch period stays free, so filling that other period with
+            lunch has to be accepted by check_assignments().
+        """
+
+        lunch_timeslots = random.sample(list(self.timeslots), 2)
+        lunch_secs = self.make_lunches(lunch_timeslots)
+        (busy_lunch, free_lunch) = lunch_secs
+        busy_timeslot = busy_lunch.meeting_times.all()[0]
+
+        #   Give one student a single class, running during one of the lunch periods,
+        #   and make sure nobody else is competing for it, so they are certain to get it.
+        during_lunch = [sec for sec in self.program.sections()
+                        if busy_timeslot in sec.get_meeting_times() and sec not in lunch_secs]
+        self.assertTrue(during_lunch, "No class is scheduled during the lunch period")
+        section = during_lunch[0]
+        student = self.students[0]
+        StudentRegistration.objects.filter(section=section).delete()
+        StudentRegistration.objects.filter(
+            user=student, section__parent_class__parent_program=self.program).delete()
+        StudentRegistration.objects.create(
+            user=student, section=section, relationship=self.priority_rt)
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        sections = self.enrolled_sections(student)
+        self.assertIn(section, sections, "Student did not get their only priority class")
+        self.assertEqual(sections & set(lunch_secs), {free_lunch},
+                         "Student was not given the lunch period they had free")
+
+    def testLunchAssignmentBalance(self):
+        """ Students who are free for either lunch period are split evenly. """
+
+        lunch_timeslots = random.sample(list(self.timeslots), 2)
+        #   Unschedule the classes during lunch, so every student can take either lunch
+        lunch_secs = self.make_lunches(lunch_timeslots, clear_classes=True)
+
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        counts = []
+        assigned = 0
+        for lunch_sec in lunch_secs:
+            count = StudentRegistration.valid_objects().filter(
+                section=lunch_sec, relationship=self.enrolled_rt).count()
+            counts.append(count)
+            assigned += count
+
+        attending = [student for student in self.students
+                     if self.enrolled_sections(student) - set(lunch_secs)]
+        self.assertGreater(len(attending), 1, "Not enough students got classes to test balance")
+        self.assertEqual(assigned, len(attending),
+                         "Every attending student should have exactly one lunch")
+        self.assertLessEqual(max(counts) - min(counts), 1,
+                             "Lunch periods were not evenly balanced: %s" % counts)
+
+    def testLunchAssignmentRespectsCapacity(self):
+        """ Lunch sections are never filled past capacity, even if that leaves students out. """
+
+        lunch_secs = self.make_lunches(random.sample(list(self.timeslots), 2))
+        for lunch_sec in lunch_secs:
+            lunch_sec.max_class_capacity = 1
+            lunch_sec.save()
+
+        #   check_assignments() asserts that no section is overfilled, so this would
+        #   raise rather than fail quietly if capacity were ignored.
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        for lunch_sec in lunch_secs:
+            self.assertLessEqual(
+                StudentRegistration.valid_objects().filter(
+                    section=lunch_sec, relationship=self.enrolled_rt).count(),
+                1, "Lunch section was filled past its capacity")
+
+    def testLunchAssignmentCanBeDisabled(self):
+        """ The assign_lunches option turns the new behavior off. """
+
+        lunch_secs = self.make_lunches(random.sample(list(self.timeslots), 2))
+
+        lotteryController = LotteryAssignmentController(self.program, assign_lunches=False)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                section__in=lunch_secs, relationship=self.enrolled_rt).exists(),
+            "Lunches were assigned even though assign_lunches was off")
 
     def testLotteryMultiplePriorities(self):
         """Creates some more priorities, then runs testLottery again."""
