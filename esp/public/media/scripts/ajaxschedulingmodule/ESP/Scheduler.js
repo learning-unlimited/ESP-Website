@@ -223,17 +223,19 @@ function Scheduler(
         });
 
         // set up handler for legend button
-        $j("body").on("click", "#legend_button", function(evt, ui) {
+        $j("body").on("click", "#legend_button", function(evt) {
+            evt.stopPropagation();
             $j("#legend").toggle();
-            if ($j("#legend_button").html() == "Show Legend") {
+            if ($j("#legend").is(":visible")) {
                 $j("#legend_button").html("Hide Legend");
             } else {
                 $j("#legend_button").html("Show Legend");
             }
         });
-        $j("body").on("click", "#legend", function(evt, ui) {
-            $j("#legend").hide();
-            $j("#legend_button").html("Show Legend");
+
+        // Explicitly prevent click inside legend from hiding it
+        $j("body").on("click", "#legend", function(evt) {
+            evt.stopPropagation();
         });
     };
 
