@@ -595,3 +595,108 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
             db_interface.check_can_schedule_sections = \
                 db_interface_can_schedule
             raise
+
+    def test_repeated_room_swaps(self):
+        """Swapping two scheduled sections repeatedly should always succeed."""
+        sections = [self.schedule.class_sections[i] for i in range(
+                self.initial_section_id, self.initial_section_id + 2)]
+        room = self.schedule.classrooms["Room 1"]
+        roomslots = room.availability[1:3]
+        for s, r in zip(sections, roomslots):
+            s.assign_roomslots([r])
+        db_interface.save(self.schedule)
+
+        section_objs = [ClassSection.objects.get(id=s.id) for s in sections]
+        for _ in range(5):
+            for s in sections:
+                s.clear_roomslots()
+            roomslots = list(reversed(roomslots))
+            for s, r in zip(sections, roomslots):
+                s.assign_roomslots([r])
+            try:
+                db_interface.save(self.schedule)
+            except SchedulingError:
+                self.fail(
+                    "Repeated swap save crashed with error: \n"
+                    f"{traceback.format_exc()}")
+            for r, so in zip(roomslots, section_objs):
+                self.assertEqual(
+                    so.meeting_times.get().id, r.timeslot.id,
+                    "Section was assigned to wrong timeslot after swap")
+
+    def test_save_rejects_genuine_room_conflict(self):
+        """Saving must still reject a real room conflict with a section that
+        is not part of the save batch."""
+        # Schedule section 0 in Room 1 / timeslot 1 via the DB only, so it is
+        # not part of the in-memory schedule's changed set.
+        self.schedule_class_simple_db()
+
+        # Try to place a different section into the same occupied roomslot.
+        other = self.schedule.class_sections[self.initial_section_id + 1]
+        room = self.schedule.classrooms["Room 1"]
+        roomslot = room.availability[1]
+        other.assign_roomslots([roomslot])
+
+        with self.assertRaises(SchedulingError) as ctx:
+            db_interface.save(self.schedule)
+        self.assertIn("already occupied", str(ctx.exception))
+
+    def test_save_mixed_scheduled_and_unscheduled_batch(self):
+        """Regression for intermittent swap/save failures (#5763).
+
+        Previously, the unschedule loop checked the wrong section's meeting
+        times (a leftover loop variable). When the queryset's last section was
+        previously unscheduled, *no* sections were cleared, so a valid move
+        into a room vacated by another section in the same batch falsely
+        failed with "room is already occupied". Queryset order made this
+        intermittent.
+        """
+        from django.db.models import Case, When
+
+        # Put section 0 in Room 1 / timeslot 1 and save.
+        section_a, roomslot_a = self.schedule_class_simple_model()
+        db_interface.save(self.schedule)
+
+        # Move section 0 to Room 2 / same timeslot, and schedule a previously
+        # unscheduled section into the vacated Room 1 slot — in one save.
+        room2 = self.schedule.classrooms["Room 2"]
+        roomslot_b = room2.availability[1]
+        section_a.clear_roomslots()
+        section_a.assign_roomslots([roomslot_b])
+
+        section_b = self.schedule.class_sections[self.initial_section_id + 1]
+        section_b.assign_roomslots([roomslot_a])
+
+        # Force the queryset order so the previously-unscheduled section is
+        # last — the order that triggered the old bug.
+        original_filter = ClassSection.objects.filter
+        target_ids = [section_a.id, section_b.id]
+
+        def filter_unscheduled_last(*args, **kwargs):
+            qs = original_filter(*args, **kwargs)
+            return qs.filter(id__in=target_ids).order_by(
+                Case(*[When(id=pk, then=pos)
+                       for pos, pk in enumerate(target_ids)])
+            )
+
+        try:
+            ClassSection.objects.filter = filter_unscheduled_last
+            try:
+                db_interface.save(self.schedule)
+            except SchedulingError:
+                self.fail(
+                    "Mixed batch save crashed with error: \n"
+                    f"{traceback.format_exc()}")
+        finally:
+            ClassSection.objects.filter = original_filter
+
+        so_a = ClassSection.objects.get(id=section_a.id)
+        so_b = ClassSection.objects.get(id=section_b.id)
+        self.assertEqual(
+            so_a.meeting_times.get().id, roomslot_b.timeslot.id)
+        self.assertEqual(
+            so_b.meeting_times.get().id, roomslot_a.timeslot.id)
+        self.assertEqual(
+            set(so_a.classrooms().values_list("name", flat=True)), {"Room 2"})
+        self.assertEqual(
+            set(so_b.classrooms().values_list("name", flat=True)), {"Room 1"})
