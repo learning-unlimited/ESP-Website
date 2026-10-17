@@ -226,6 +226,7 @@ class CustomFormsTest(TestCase):
     def test_comboform_done_transaction_rollback(self):
         """ Test that a linked model creation failure rolls back the entire transaction. """
         from unittest.mock import patch
+        from django.apps import apps
         from esp.users.models import ContactInfo
         import json
 
@@ -272,12 +273,15 @@ class CustomFormsTest(TestCase):
         )
 
         self.client.login(username=self.student.username, password='password')
+        response = self.client.get(f"/customforms/view/{form.id}/")
+        self.assertEqual(response.status_code, 200)
 
         post_dict = {'combo_form-current_step': '0'}
         post_dict[f'question_{email_field.id}'] = 'updated@example.com'
         post_dict[f'question_{bio_field.id}'] = 'Some bio'
 
-        with patch('esp.users.models.TeacherInfo.objects.create', side_effect=Exception("Simulated DB failure")):
+        TeacherInfo = apps.get_model('users', 'TeacherInfo')
+        with patch.object(TeacherInfo.objects, 'create', side_effect=Exception("Simulated DB failure")):
             with self.assertRaises(Exception) as cm:
                 self.client.post(f"/customforms/view/{form.id}/", post_dict)
             self.assertEqual(str(cm.exception), "Simulated DB failure")
