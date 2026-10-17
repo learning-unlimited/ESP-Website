@@ -202,10 +202,18 @@ class CommModule(ProgramModuleObj):
         from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
-        filterid, listcount, subject, body = [request.POST['filterid'],
-                                              request.POST['listcount'],
-                                              request.POST['subject'],
-                                              request.POST['body']    ]
+        required_fields = ['filterid', 'listcount', 'subject', 'body']
+        missing_fields = [field for field in required_fields if field not in request.POST]
+
+        if missing_fields:
+            raise ESPError(
+                f"Missing required POST fields: {', '.join(missing_fields)}"
+            )
+
+        filterid = request.POST['filterid']
+        listcount = request.POST['listcount']
+        subject = request.POST['subject']
+        body = request.POST['body']
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -315,12 +323,19 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest # noqa: F811
         from esp.users.models import PersistentQueryFilter # noqa: F811
 
-        filterid, fromemail, replytoemail, subject, body = [
-                                    request.POST['filterid'],
-                                    request.POST['from'],
-                                    request.POST['replyto'],
-                                    request.POST['subject'],
-                                    request.POST['body']    ]
+        required_fields = ['filterid', 'from', 'replyto', 'subject', 'body']
+        missing_fields = [field for field in required_fields if field not in request.POST]
+
+        if missing_fields:
+            raise ESPError(
+                f"Missing required POST fields: {', '.join(missing_fields)}"
+            )
+
+        filterid = request.POST['filterid']
+        fromemail = request.POST['from']
+        replytoemail = request.POST['replyto']
+        subject = request.POST['subject']
+        body = request.POST['body']
         body, _ = strip_base64_images(body)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
@@ -490,13 +505,20 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def maincomm2(self, request, tl, one, two, module, extra, prog):
 
-        filterid, listcount, fromemail, replytoemail, subject, body = [
-                                                         request.POST['filterid'],
-                                                         request.POST['listcount'],
-                                                         request.POST['from'],
-                                                         request.POST['replyto'],
-                                                         request.POST['subject'],
-                                                         request.POST['body']    ]
+        required_fields = ['filterid', 'listcount', 'from', 'replyto', 'subject', 'body']
+        missing_fields = [field for field in required_fields if field not in request.POST]
+
+        if missing_fields:
+            raise ESPError(
+                f"Missing required POST fields: {', '.join(missing_fields)}"
+            )
+
+        filterid = request.POST['filterid']
+        listcount = request.POST['listcount']
+        fromemail = request.POST['from']
+        replytoemail = request.POST['replyto']
+        subject = request.POST['subject']
+        body = request.POST['body']
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
         public_view = 'public_view' in request.POST
