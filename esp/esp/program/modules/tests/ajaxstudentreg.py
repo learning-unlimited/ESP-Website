@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.program.models import ClassSubject, Program
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
 
@@ -65,7 +66,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
         self.assertTrue('student_schedule_html' in resp_data)
         search_str = 'Your schedule for %s is empty.  Please add classes below!' % self.program.niceName()
-        self.assertTrue(search_str in resp_data['student_schedule_html'], 'Could not find empty fragment "%s" in response "%s"' % (search_str, resp_data['student_schedule_html']))
+        self.assertTrue(search_str in resp_data['student_schedule_html'], f'Could not find empty fragment "{search_str}" in response "{resp_data["student_schedule_html"]}"')
 
     def expect_sections_in_schedule(self, response, sections=[]):
         resp_data = json.loads(str(response.content, encoding='UTF-8'))
@@ -86,7 +87,7 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.assertTrue(int(resp_data['status']) == 200)
         error_msg = resp_data['error']
 
-        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
+        self.assertTrue(error_msg == error_str, f'Unexpected Ajax error: "{error_msg}", expected "{error_str}"')
 
     def test_ajax_schedule(self):
         program = self.program
@@ -167,6 +168,81 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec4.parent_class.id, 'section_id': sec4.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec1, sec4])
 
+    def _create_other_program_section(self):
+        """Minimal second program + accepted class/section for cross-program 404 checks."""
+        other_prog = Program.objects.create(
+            url='TestProgram/OtherAddClass',
+            name='TestProgram Other AddClass',
+            grade_min=7,
+            grade_max=12,
+            director_email='info@test.learningu.org',
+            program_size_max=3000,
+        )
+        other_prog.program_modules.set(self.program.program_modules.all())
+        other_prog.class_categories.set(self.program.class_categories.all())
+
+        category = self.program.class_categories.first()
+        other_class = ClassSubject.objects.create(
+            title='Other Program Class',
+            category=category,
+            grade_min=7,
+            grade_max=12,
+            parent_program=other_prog,
+            class_size_max=30,
+            class_info='Cross-program section for ajax_addclass auth checks',
+        )
+        other_class.makeTeacher(self.teachers[0])
+        other_class.accept()
+        if not other_class.get_sections().exists():
+            other_class.add_section(duration=50 / 60.0)
+        return other_class.get_sections()[0]
+
+    def test_ajax_addclass_mismatched_ids(self):
+        """Mismatched section/class/program IDs must 404; valid addclass must still enroll.
+
+        Covers the ownership checks restored alongside select_for_update():
+        section id, parent class id, and parent program.
+        """
+        program = self.program
+
+        student = random.choice(self.students)
+        self.assertTrue( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+
+        sec1 = random.choice(program.sections())
+        other_class_sections = list(program.sections().exclude(parent_class=sec1.parent_class))
+        if not other_class_sections:
+            self.skipTest("Skipping test_ajax_addclass_mismatched_ids: no section from a different class found.")
+        sec_other = random.choice(other_class_sections)
+
+        #   invalid / nonexistent section_id
+        response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec1.parent_class.id, 'section_id': 999999}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 404)
+
+        #   section belonging to a different class in the same program
+        response = self.client.post('/learn/%s/ajax_addclass' % program.getUrlBase(), {'class_id': sec_other.parent_class.id, 'section_id': sec1.id}, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 404)
+
+        #   section belonging to a different program
+        foreign_sec = self._create_other_program_section()
+        response = self.client.post(
+            '/learn/%s/ajax_addclass' % program.getUrlBase(),
+            {'class_id': foreign_sec.parent_class.id, 'section_id': foreign_sec.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 404)
+
+        #   none of the bad requests should have enrolled the student
+        response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.expect_empty_schedule(response)
+
+        #   valid registration still succeeds after the constrained lookup
+        response = self.client.post(
+            '/learn/%s/ajax_addclass' % program.getUrlBase(),
+            {'class_id': sec1.parent_class.id, 'section_id': sec1.id},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.expect_sections_in_schedule(response, [sec1])
+
     def test_ajax_clearslot(self):
         program = self.program
 
@@ -190,9 +266,9 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         self.expect_sections_in_schedule(response, [sec1, sec2])
 
         #   Clear 1 timeslot and check that only the desired class remains
-        response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec1.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec1.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec2])
 
         #   Clear other timeslot and check that the schedule is empty
-        response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.get(f'/learn/{program.getUrlBase()}/ajax_clearslot/{sec2.meeting_times.all()[0].id}', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)

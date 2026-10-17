@@ -33,12 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.utils.web import render_to_response
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from esp.users.forms.generic_search_form import StudentSearchForm
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.program.models import StudentRegistration, PhaseZeroRecord, SplashInfo
 from django import forms
 
@@ -224,7 +224,7 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             dob = self.profile.student_info.dob
             if dob:
-                return '{:%Y-%m-%d}'.format(dob)
+                return f'{dob:%Y-%m-%d}'
 
     def get_gender(self):
         if self.profile.student_info:
@@ -314,7 +314,7 @@ class ListGenModule(ProgramModuleObj):
             id="manage_selectList",
             url="/manage/%s/selectList" % base,
             title="Arbitrary User List",
-            category="Coordinate",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
             keywords=["user list", "search users", "export", "mailing list"],
         )
 
@@ -326,7 +326,10 @@ class ListGenModule(ProgramModuleObj):
 
         if filterObj is None:
             if 'filterid' in request.GET:
-                filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                try:
+                    filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                except (PersistentQueryFilter.DoesNotExist, ValueError):
+                    raise ESPError('The specified filter no longer exists or is invalid. Please restart the process.', log=False)
             else:
                 raise ESPError('Could not determine the query filter ID.', log=False)
 
@@ -441,7 +444,12 @@ class ListGenModule(ProgramModuleObj):
         if request.method == 'POST':
             data = self.processPost(request)
 
-            filterObj = usc.filter_from_postdata(prog, data)
+            try:
+                filterObj = usc.filter_from_postdata(prog, data)
+            except (ESPError_Log, ESPError_NoLog) as e:
+                context.update(usc.prepare_context(prog, target_path=request.path))
+                context['error'] = str(e)
+                return render_to_response(self.baseDir()+'search.html', request, context)
 
             #   Display list generation options filtered by recipient type
             #   If there is no receipient_type, we submitted a combo list
@@ -456,7 +464,7 @@ class ListGenModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'options.html', request, context)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
+        context.update(usc.prepare_context(prog, target_path=request.path))
         return render_to_response(self.baseDir()+'search.html', request, context)
 
     @aux_call
@@ -472,7 +480,13 @@ class ListGenModule(ProgramModuleObj):
             filterObj, found = get_user_list(request, self.program.getLists(True))
         else:
             filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            #   A stale or malformed filterid (e.g. from an old bookmark or
+            #   expired session) should surface a friendly error instead of
+            #   an unhandled 500 traceback.
+            try:
+                filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            except (AssertionError, PersistentQueryFilter.DoesNotExist, TypeError, ValueError):
+                raise ESPError("Your recipient filter is invalid or expired. Please go back and rebuild your recipient list.", log=False)
             found     = True
         if not found:
             return filterObj

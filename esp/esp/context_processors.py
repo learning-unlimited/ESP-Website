@@ -29,8 +29,9 @@ def program(request):
         path_parts = request.path.lstrip('/').split('/')
         if len(path_parts) > 3:
             program_url = '/'.join(path_parts[1:3])
-            if Program.objects.filter(url=program_url).count() == 1:
-                return {'program': Program.objects.get(url=program_url)}
+            prog = Program.objects.filter(url=program_url).first()
+            if prog:
+                return {'program': prog}
     return {}
 
 def schoolyear(request):
@@ -43,8 +44,7 @@ def schoolyear(request):
         path_parts = request.path.lstrip('/').split('/')
         if len(path_parts) > 3:
             program_url = '/'.join(path_parts[1:3])
-            if Program.objects.filter(url=program_url).count() == 1:
-                program = Program.objects.get(url=program_url)
+            program = Program.objects.filter(url=program_url).first()
     if program:
         return {'schoolyear': ESPUser.program_schoolyear(program)}
     else:

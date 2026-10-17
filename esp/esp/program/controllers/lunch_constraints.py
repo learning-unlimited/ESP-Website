@@ -40,7 +40,9 @@ import datetime
 
 class LunchConstraintGenerator(object):
     """ A class for finding issues with the scheduling of a program. """
-    def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+    def __init__(self, program, lunch_timeslots=None, generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+        if lunch_timeslots is None:
+            lunch_timeslots = []
         self.program = program
         self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
@@ -110,11 +112,9 @@ class LunchConstraintGenerator(object):
         return expression
 
     def get_lunch_category(self):
-        qs = ClassCategories.objects.filter(category='Lunch', symbol='L').order_by('-id')
-        if qs.exists():
-            lunch_category = qs[0]
-        else:
-            lunch_category, created = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is None:
+            lunch_category = ClassCategories.objects.create(category='Lunch', is_lunch=True, symbol='L')
         self.program.class_categories.add(lunch_category)
         return lunch_category
 
@@ -188,7 +188,7 @@ if len(time_options) == 0:
     return (schedule_map, 'Unable to autoschedule lunch.')
 else:
     dest_sec = None
-    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__category='Lunch')
+    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__is_lunch=True)
     if dest_qs.count() == 0:
         return (schedule_map, 'Unable to autoschedule lunch.')
     elif dest_qs.count() == 1:

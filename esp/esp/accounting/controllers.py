@@ -74,6 +74,40 @@ class GlobalAccountingController(BaseAccountingController):
             result.append(account)
         return result
 
+    def _global_donation_line_item(self):
+        '''Get donation line items for all programs'''
+        if hasattr(self, '_cached_donation_lits'): # check cache
+            return self._cached_donation_lits
+
+        donation_texts = set()
+        for program in Program.objects.all():
+            for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
+                other_module = program.getModule(module_name)
+                if other_module and other_module.get_setting('offer_donation', default=True):
+                    donation_texts.add(other_module.get_setting('donation_text'))
+                    break
+        donation_lits = list(LineItemType.objects.filter(text__in=donation_texts))
+
+        self._cached_donation_lits = donation_lits # set per-request cache
+        return donation_lits
+
+    def global_donation_summary(self):
+        lits = self._global_donation_line_item()
+        payments = Transfer.objects.filter(line_item__in=lits, paid_in__isnull=False)
+        total = payments.aggregate(total=Sum('amount_dec'))['total'] or Decimal('0')
+
+        return (payments.count(), total)
+
+    def global_donation_times(self):
+        lits = self._global_donation_line_item()
+        if not lits:
+            return []
+        transfers = Transfer.objects.filter(line_item__in=lits, paid_in__isnull=False) \
+        .annotate(total_amount=Sum('amount_dec')) \
+        .order_by('timestamp')
+
+        return list(map(lambda transfer: (transfer.total_amount, transfer.timestamp), transfers))
+
 class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
@@ -85,8 +119,8 @@ class ProgramAccountingController(BaseAccountingController):
     def clear_all_data(self):
         #   Clear all financial data for the program
         FinancialAidGrant.objects.filter(request__program=self.program).delete()
-        self.all_transfers().delete()
-        self.get_lineitemtypes().delete()
+        Transfer.objects.filter(pk__in=self.all_transfers()).delete()
+        LineItemType.objects.filter(pk__in=self.get_lineitemtypes()).delete()
         self.all_accounts().delete()
 
     def setup_accounts(self):
@@ -267,6 +301,36 @@ class ProgramAccountingController(BaseAccountingController):
         payments = Transfer.objects.filter(line_item=payment_li_type)
         return (payments.count(), payments.aggregate(total=Sum('amount_dec'))['total'])
 
+    def _program_accounting_summary(self, line_item):
+        if line_item is None:
+            return (0, Decimal('0'))
+        payments = Transfer.objects.filter(
+            line_item=line_item,
+            paid_in__isnull=False
+        )
+        total = payments.aggregate(total=Sum('amount_dec'))['total'] or Decimal('0')
+        return (payments.count(), total)
+
+    def donation_summary(self):
+        return self._program_accounting_summary(self.donation_lineitemtype())
+
+    def admission_summary(self):
+        return self._program_accounting_summary(self.default_admission_lineitemtype())
+
+    def _program_accounting_times(self, line_item):
+        if line_item is None:
+            return []
+        transfers = Transfer.objects.filter(line_item=line_item, paid_in__isnull=False) \
+        .annotate(total_amount=Sum('amount_dec')) \
+        .order_by('timestamp')
+        return list(map(lambda transfer: (transfer.total_amount, transfer.timestamp), transfers))
+
+    def donation_times(self):
+        return self._program_accounting_times(self.donation_lineitemtype())
+
+    def admission_times(self):
+        return self._program_accounting_times(self.default_admission_lineitemtype())
+
     def classify_transfer(self, transfer):
         """Give a short human-readable description of a transfer.
 
@@ -352,10 +416,7 @@ class IndividualAccountingController(ProgramAccountingController):
         Transfer.objects.filter(user=self.user, line_item__in=line_items).delete()
 
         #   Delegate each item to set_preference(), which handles transfer creation.
-        #   set_preference()'s own per-item delete is a no-op here since we
-        #   already cleared all transfers above.
-        for item_tup in optional_items:
-            (item_name, quantity, cost, option_id) = item_tup
+        for item_name, quantity, cost, option_id in optional_items:
             result.extend(self.set_preference(item_name, quantity or 0, amount=cost, option_id=option_id))
 
         return result
@@ -364,22 +425,23 @@ class IndividualAccountingController(ProgramAccountingController):
     def set_preference(self, lineitem_name, quantity, amount=None, option_id=None):
         #   Sets a single preference, after removing any exactly matching transfers.
         line_item = self.get_lineitemtypes().get(text=lineitem_name)
+
+        kwargs = {'line_item': line_item}
+        if amount is not None:
+            kwargs['amount_dec'] = amount
+        if option_id is not None:
+            kwargs['option_id'] = option_id
+        self.get_transfers().filter(**kwargs).delete()
+
         option = None
-        if amount is not None and option_id:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount, option__id=option_id).delete()
-        elif option_id:
-            self.get_transfers().filter(line_item=line_item, option__id=option_id).delete()
-            #   Pull the amount from the line item options, if it has one
+        if option_id is not None:
             option = LineItemOptions.objects.get(id=option_id)
-            if option.amount_dec is not None:
-                amount = option.amount_dec
+
+        if amount is None:
+            if option is not None:
+                amount = option.amount_dec_inherited
             else:
                 amount = line_item.amount_dec
-        elif amount is not None:
-            self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
-        else:
-            self.get_transfers().filter(line_item=line_item).delete()
-            amount = line_item.amount_dec
 
         result = []
         program_account = self.default_program_account()
@@ -398,16 +460,15 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def get_preferences(self, line_items=None):
         #   Return a list of 4-tuples: (item name, quantity, cost, options)
-        result = []
         transfers = self.get_transfers(line_items)
-        seen = {}
+        counts = {}
         for transfer in transfers:
-            li_name = transfer.line_item.text
-            key = (li_name, transfer.amount_dec, transfer.option_id)
-            if key not in seen:
-                seen[key] = len(result)
-                result.append([li_name, 0, transfer.amount_dec, transfer.option_id])
-            result[seen[key]][1] += 1
+            key = (transfer.line_item.text, transfer.amount_dec, transfer.option_id)
+            counts[key] = counts.get(key, 0) + 1
+
+        result = []
+        for (li_name, amount_dec, option_id), quantity in counts.items():
+            result.append([li_name, quantity, amount_dec, option_id])
         return result
 
     ##  Functions to turn a user's account status for a program into a string
