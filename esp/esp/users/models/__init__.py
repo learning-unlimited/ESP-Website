@@ -750,10 +750,13 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=None):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event, EventType
+
+        if ignore_sections is None:
+            ignore_sections = []
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
@@ -2659,6 +2662,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Schedule", "View class schedule (room/time assignments)"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),

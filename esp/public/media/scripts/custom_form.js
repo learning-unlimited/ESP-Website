@@ -339,7 +339,7 @@ var initUI=function(){
 var clearPermsArea=function(){
 	//Initializes the permissions area
 	$j('#id_prog_belong').prop('checked', false).parent().hide();
-	$j('#id_perm_program').val("-1").hide();
+	$j('#id_perm_program').val("-1").parent().hide();
 	$j('#id_sub_perm').children().remove();
 	$j('#id_sub_perm').parent().hide();
 };
@@ -478,22 +478,25 @@ var onChangeMainPerm=function(){
 var onChangeProgBelong=function(){
 	var belongs=$j(this).prop('checked');
 	if(belongs){
-		$j('#id_perm_program').show();
+		$j('#id_perm_program').parent().show();
 	}
 	else {
 		$j('#id_sub_perm').parent().hide();
-		$j('#id_perm_program').val("-1").hide();
+		$j('#id_perm_program').val("-1").parent().hide();
 	}
 };
 
 var onChangePermProg=function(){
-	var prog=$j('#id_perm_program');
+	var prog=$j('#id_perm_program').val();
 	if(prog!="-1"){
+		perms={};
 		setPerms();
 		$j('#id_sub_perm').parent().show();
 	}
-	else
+	else {
+		$j('#id_sub_perm').children().remove();
 		$j('#id_sub_perm').parent().hide();
+	}
 };
 
 var onChangeMainCatSpec=function() {
