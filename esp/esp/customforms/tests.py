@@ -291,8 +291,16 @@ class CustomFormsTest(TestCase):
         wizard.curr_request = request
         wizard.form_handler = FormHandler(form=form, request=request, user=self.student)
 
-        TeacherInfo = apps.get_model('users', 'TeacherInfo')
-        with patch.object(TeacherInfo.objects, 'create', side_effect=Exception("Simulated DB failure")):
+        from esp.customforms.linkfields import cf_cache
+        AppsTeacherInfo = apps.get_model('users', 'TeacherInfo')
+        TeacherInfo = cf_cache.modelForLinkField('TeacherInfo_bio') or AppsTeacherInfo
+        TeacherInfo.objects.filter(user=self.student).delete()
+        AppsTeacherInfo.objects.filter(user=self.student).delete()
+
+        with patch.object(TeacherInfo.objects, 'create', side_effect=Exception("Simulated DB failure")), \
+             patch.object(AppsTeacherInfo.objects, 'create', side_effect=Exception("Simulated DB failure")), \
+             patch.object(TeacherInfo, 'save', side_effect=Exception("Simulated DB failure")), \
+             patch.object(AppsTeacherInfo, 'save', side_effect=Exception("Simulated DB failure")):
             with self.assertRaises(Exception) as cm:
                 wizard.done([bound_form])
             self.assertEqual(str(cm.exception), "Simulated DB failure")
