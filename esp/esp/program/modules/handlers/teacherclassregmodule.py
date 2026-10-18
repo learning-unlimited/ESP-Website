@@ -58,6 +58,8 @@ from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
+from esp.utils.ids import filter_by_id
+
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
     permission_types = ('Teacher/Classes/All',)
@@ -265,7 +267,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = request.GET['secid']
         else:
             secid = extra
-        sections = ClassSection.objects.filter(id = secid)
+        sections = filter_by_id(ClassSection.objects, secid)
         if len(sections) == 1:
             if not request.user.canEdit(sections[0].parent_class) and not request.user.canMod(sections[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
@@ -430,7 +432,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             secid = request.POST['secid']
         else:
             secid = extra
-        sections = ClassSection.objects.filter(id = secid)
+        sections = filter_by_id(ClassSection.objects, secid)
         if len(sections) != 1 or not (request.user.canEdit(sections[0].parent_class) or request.user.canMod(sections[0])):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         section = sections[0]
@@ -446,7 +448,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -494,8 +496,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -519,8 +520,7 @@ class TeacherClassRegModule(ProgramModuleObj):
             clsid = request.POST['clsid']
         else:
             clsid = extra
-
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 

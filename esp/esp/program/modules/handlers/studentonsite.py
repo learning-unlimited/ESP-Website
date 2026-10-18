@@ -49,6 +49,7 @@ from django.http import HttpResponseRedirect
 
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+from esp.utils.ids import filter_by_id
 
 class StudentOnsite(ProgramModuleObj, CoreModule):
     doc = """Serves a mobile-friendly interface for common onsite functions for students."""
@@ -91,11 +92,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
         user = request.user
         context['webapp_page'] = 'schedule'
         if extra:
-            try:
-                sections = ClassSection.objects.filter(id = int(extra))
-            except ValueError:
-                #   Not a number, so treat it like a section that doesn't exist
-                sections = ClassSection.objects.none()
+            sections = filter_by_id(ClassSection.objects, extra)
             if len(sections) == 1:
                 section = sections[0]
                 if StudentRegistration.valid_objects().filter(section=section, user=user, relationship__name="Enrolled"):

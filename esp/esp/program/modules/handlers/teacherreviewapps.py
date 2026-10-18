@@ -41,6 +41,8 @@ from datetime import datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.utils.ids import get_by_id_or_404
+from django.http import Http404
 
 __all__ = ['TeacherReviewApps']
 
@@ -65,8 +67,8 @@ class TeacherReviewApps(ProgramModuleObj):
     @method_decorator(never_cache)
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError(f'Cannot find class with ID {extra}.', log=False)
 
         if not request.user.canEdit(cls):
@@ -190,8 +192,8 @@ class TeacherReviewApps(ProgramModuleObj):
             return self.goToCore(tl)
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
