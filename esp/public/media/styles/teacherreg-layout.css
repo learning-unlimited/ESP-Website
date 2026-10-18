@@ -187,11 +187,9 @@
 }
 
 /* The requirements table shares the checklist card, so it gets a rule instead
-   of a second card border. */
+   of a second card border, directly below the steps table. */
 .teacher-reg-records {
     border-top: 1px solid var(--bs-border-color, #dee2e6);
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
 }
 
 /* Keep both tables compact enough to fit without an inner scrollbar. */
