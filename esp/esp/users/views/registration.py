@@ -128,11 +128,11 @@ def _email_live_validation(email, initial_role):
 
     accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(role, True))
     existing_accounts = accounts_role.filter(
-        email=candidate_email,
+        email__iexact=candidate_email,
         is_active=True,
     ).exclude(password='emailuser')
     awaiting_activation_accounts = accounts_role.filter(
-        email=candidate_email,
+        email__iexact=candidate_email,
     ).filter(ESPUser.awaiting_activation_Q()).exclude(password='emailuser')
 
     if existing_accounts.exists() or awaiting_activation_accounts.exists():
@@ -207,22 +207,33 @@ This function is overloaded to handle either one or two phase reg"""
         form = UserRegForm(request.POST)
 
     if form.is_valid():
-        try:
-            #there is an email-only account with that email address to upgrade
-            user = ESPUser.objects.get(email=form.cleaned_data['email'],
-                                       password = 'emailuser')
-        except ESPUser.DoesNotExist:
+        # Look for an email-only account to upgrade, preferring an exact-case
+        # match and falling back to latest case-insensitive match without
+        # raising MultipleObjectsReturned on case-variant duplicates.
+        email_candidates = ESPUser.objects.filter(
+            email__iexact=form.cleaned_data['email'],
+            password='emailuser'
+        )
+        user = email_candidates.filter(email=form.cleaned_data['email']).first()
+        if user is None and email_candidates.exists():
+            user = email_candidates.latest('date_joined')
+
+        if user is None:
             try:
-                #there is an inactive account with that username
+                # there is an inactive account with that username
                 user = ESPUser.objects.filter(
-                    username = form.cleaned_data['username'],
-                    is_active = False).latest('date_joined')
+                    username=form.cleaned_data['username'],
+                    is_active=False
+                ).latest('date_joined')
 
             except ESPUser.DoesNotExist:
-                user = ESPUser.objects.create_user(username=form.cleaned_data['username'],
-                                                   email=form.cleaned_data['email'])
+                user = ESPUser.objects.create_user(
+                    username=form.cleaned_data['username'],
+                    email=form.cleaned_data['email']
+                )
 
         user.username   = form.cleaned_data['username']
+        user.email      = form.cleaned_data['email']
         user.last_name  = form.cleaned_data['last_name']
         user.first_name = form.cleaned_data['first_name']
         user.set_password(form.cleaned_data['password'])
@@ -266,8 +277,8 @@ When there are already accounts with this email address (depending on some tags)
         ## First, check to see if we have any users with the same email
         if not 'do_reg_no_really' in request.POST and Tag.getBooleanTag('ask_about_duplicate_accounts'):
             accounts_role = ESPUser.objects.filter(ESPUser.getAllOfType(form.cleaned_data['initial_role'], True))
-            existing_accounts = accounts_role.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-            awaiting_activation_accounts = accounts_role.filter(email=form.cleaned_data['email']).filter(ESPUser.awaiting_activation_Q()).exclude(password='emailuser')
+            existing_accounts = accounts_role.filter(email__iexact=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
+            awaiting_activation_accounts = accounts_role.filter(email__iexact=form.cleaned_data['email']).filter(ESPUser.awaiting_activation_Q()).exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
                 #they have accounts. go back to the same page, but ask them
                 #if they want to try to log in
@@ -391,10 +402,20 @@ def resend_activation_view(request):
         if not form.is_valid():
             return render_to_response('registration/resend.html', request,
                                       {'form':form, 'site': Site.objects.get_current()})
-        #   The form has already established that this username belongs to an
-        #   account awaiting activation; it matches case-insensitively, so
-        #   look the user up the same way.
-        user=ESPUser.objects.get(username__iexact=form.cleaned_data['username'])
+        #   The form matches case-insensitively and excludes email-only
+        #   accounts awaiting activation; look the user up the same way to
+        #   avoid 500s from DoesNotExist/MultipleObjectsReturned (usernames
+        #   are case-sensitive in the DB) or a race between validation and
+        #   lookup.
+        user = (
+            ESPUser.objects
+            .filter(username__iexact=form.cleaned_data['username'])
+            .exclude(password='emailuser')
+            .filter(ESPUser.awaiting_activation_Q())
+            .first()
+        )
+        if user is None:
+            raise ESPError("That username isn't waiting to be activated.", log=False)
         send_activation_email(user)
         return render_to_response('registration/resend_done.html', request,
                                   {'form':form, 'site': Site.objects.get_current()})

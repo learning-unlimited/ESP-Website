@@ -28,4 +28,6 @@ jobs:
           # Set these to your repo, or override via repository variables
           REPO_OWNER: ${{ vars.REPO_OWNER }}
           REPO_NAME: ${{ vars.REPO_NAME }}
+          # Keep stdout/stderr ordered in the job log
+          PYTHONUNBUFFERED: '1'
         run: python .github/scripts/project-tracker/update_project_sheet.py
