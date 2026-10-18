@@ -43,11 +43,11 @@ from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.utils.http import url_has_allowed_host_and_scheme
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-from esp.utils.ids import filter_by_id
+from esp.utils.ids import filter_by_id, get_by_id_or_404
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -151,10 +151,10 @@ class AdminClass(ProgramModuleObj):
 
             class_id = request.POST['class_id']
             try:
-                class_subject = ClassSubject.objects.get(pk=class_id)
+                class_subject = get_by_id_or_404(ClassSubject, class_id)
             except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
-            except ClassSubject.DoesNotExist:
+            except Http404:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
             review_status = request.POST['review_status']
@@ -185,8 +185,7 @@ class AdminClass(ProgramModuleObj):
                 except (ValueError, ClassSection.DoesNotExist):
                     raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
         else:
-            section_id = int(request.GET['sec_id'])
-            section = ClassSection.objects.get(id=section_id)
+            section = get_by_id_or_404(ClassSection, request.GET.get('sec_id'))
             context = {'sec': section, 'module': self}
 
             return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
@@ -332,7 +331,7 @@ class AdminClass(ProgramModuleObj):
         else:
             ajax = True
 
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 

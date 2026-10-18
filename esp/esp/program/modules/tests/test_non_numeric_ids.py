@@ -105,3 +105,30 @@ class BadIdInUrlTest(ProgramFrameworkTest):
     def test_accounting_valid_user_id_still_works(self):
         response = self.client.get(self.url('manage', 'accounting', self.students[0].id))
         self.assertEqual(response.status_code, 200)
+
+    def test_bad_id_in_manage_request_parameters_does_not_crash(self):
+        self.assert_nothing_raises([
+            ('get', self.url('manage', 'coteachers'), {'clsid': 'abc'}),
+            ('post', self.url('manage', 'coteachers'), {'clsid': 'abc'}),
+            ('post', self.url('manage', 'reviewClass'), {'class_id': 'abc', 'review_status': 'ACCEPT'}),
+        ])
+
+    def test_flag_views_bad_id_is_400(self):
+        requests = (
+            ('editflag', 'abc', {'comment': 'x'}),
+            ('resolveflag', 'abc', {'action': 'resolve'}),
+            ('deleteflag', '', {'id': 'abc'}),
+        )
+        for view, extra, data in requests:
+            response = self.client.post(self.url('manage', view, extra), data)
+            self.assertEqual(response.status_code, 400, view)
+
+    def test_deletesection_bad_id_is_404(self):
+        for bad_id in BAD_IDS:
+            response = self.client.get(self.url('manage', 'deletesection'), {'sec_id': bad_id})
+            self.assertEqual(response.status_code, 404, bad_id)
+
+    def test_deletesection_valid_id_shows_confirmation(self):
+        section = self.program.sections()[0]
+        response = self.client.get(self.url('manage', 'deletesection'), {'sec_id': section.id})
+        self.assertEqual(response.status_code, 200)
