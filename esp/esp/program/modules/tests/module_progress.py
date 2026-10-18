@@ -35,11 +35,11 @@ Learning Unlimited, Inc.
 from unittest import mock
 
 from django.template import Context
-from django.test import RequestFactory
+from django.test import RequestFactory, SimpleTestCase
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.checklist import get_module_page_checklist_context
+from esp.program.modules.checklist import get_checklist_progress, get_module_page_checklist_context
 from esp.program.templatetags.modules import registration_progress, teacher_checklist
 from esp.program.tests import ProgramFrameworkTest
 from esp.themes.controllers import ThemeController
@@ -313,6 +313,8 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
             response = self.client.get('/teach/%s/%s' % (self.program.url, view))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, self.SIDEBAR_MARKER)
+            self.assertContains(response, 'required steps done')
+            self.assertContains(response, 'id="teacher-reg-checklist-steps"')
 
     def test_class_registration_form_has_no_checklist(self):
         response = self.client.get('/teach/%s/makeaclass' % self.program.url)
@@ -340,3 +342,39 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         main_start = html.index('id="main"')
         self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
         self.assertNotIn('teacher-reg-columns', html)
+
+
+class ChecklistProgressTest(SimpleTestCase):
+    """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""
+
+    @staticmethod
+    def _module(completed, required=True, step=True):
+        return mock.Mock(**{'isCompleted.return_value': completed,
+                            'isRequired.return_value': required,
+                            'isStep.return_value': step})
+
+    def test_counts_required_steps_and_records(self):
+        todo = self._module(False)
+        checklist = {
+            'modules': [self._module(True), todo, self._module(False, required=False),
+                        self._module(False, step=False)],
+            'records': [{'isCompleted': True}, {'isCompleted': False}],
+        }
+        progress = get_checklist_progress(checklist)
+        self.assertEqual((progress['done'], progress['total'], progress['percent']), (2, 4, 50))
+        self.assertIs(progress['next_step'], todo)
+        self.assertIsNone(progress['next_record'])
+
+    def test_next_record_once_steps_are_done(self):
+        record = {'isCompleted': False}
+        progress = get_checklist_progress({'modules': [self._module(True)], 'records': [record]})
+        self.assertIsNone(progress['next_step'])
+        self.assertIs(progress['next_record'], record)
+
+    def test_records_only_without_checklist(self):
+        """With the checklist off, only the other requirements are counted."""
+        progress = get_checklist_progress({'modules': [self._module(False)], 'records': [{'isCompleted': True}]},
+                                          include_steps=False)
+        self.assertEqual((progress['done'], progress['total'], progress['percent']), (1, 1, 100))
+        self.assertIsNone(progress['next_step'])
+        self.assertIsNone(progress['next_record'])

@@ -1,7 +1,7 @@
 from django import template
 from django.core.exceptions import ObjectDoesNotExist
 
-from esp.program.modules.checklist import get_module_page_checklist_context
+from esp.program.modules.checklist import get_checklist_progress, get_module_page_checklist_context
 from esp.themes.controllers import ThemeController
 
 register = template.Library()
@@ -87,8 +87,9 @@ def teacher_checklist(context):
     plain pages there.
 
     Also sets ``show_list`` (whether there is a checklist or other
-    requirements to list) and ``in_theme_sidebar`` (whether that list goes in
-    the theme's own sidebar, per the theme's checklist_in_sidebar setting).
+    requirements to list), ``in_theme_sidebar`` (whether that list goes in
+    the theme's own sidebar, per the theme's checklist_in_sidebar setting)
+    and, with the list, ``progress`` (see get_checklist_progress).
     The result is cached for the rest of the render, because
     teacher_module_base.html calls this from both its sidebar_extra and content
     blocks.
@@ -98,8 +99,11 @@ def teacher_checklist(context):
 
     checklist = context.get('checklist') or _lookup_teacher_checklist(context)
     if checklist:
-        checklist['show_list'] = checklist['options'].progress_mode == 1 or bool(checklist.get('records'))
+        show_steps = checklist['options'].progress_mode == 1
+        checklist['show_list'] = show_steps or bool(checklist.get('records'))
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
+        if checklist['show_list']:
+            checklist['progress'] = get_checklist_progress(checklist, include_steps=show_steps)
 
     context.render_context['teacher_checklist'] = checklist
     return checklist

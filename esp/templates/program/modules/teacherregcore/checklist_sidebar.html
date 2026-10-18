@@ -2,10 +2,53 @@
 Registration checklist column for teacher_module_base.html; expects the
 teacher_checklist context as ``checklist``, and ``in_theme_sidebar`` when it
 is placed in the theme's own sidebar rather than beside the content.
+
+A progress bar sits above the list.  Where the card is stacked above the
+page content, the list starts collapsed behind a Bootstrap collapse toggle;
+teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
 {% endcomment %}
 {% load render_qsd %}
 <aside class="teacher-reg-checklist-col{% if in_theme_sidebar %} teacher-reg-in-theme-sidebar{% endif %}" aria-label="Registration checklist">
   <section class="card teacher-reg-panel teacher-reg-checklist">
+
+    {% with progress=checklist.progress %}
+    {% if progress.total %}
+    <div class="teacher-reg-progress">
+      <div class="teacher-reg-progress-label">
+        <strong>{{ progress.done }} of {{ progress.total }} required steps done</strong>
+        <span>{{ progress.percent }}%</span>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Required registration steps done" aria-valuemin="0" aria-valuemax="{{ progress.total }}" aria-valuenow="{{ progress.done }}">
+        <div class="progress-bar" style="width: {{ progress.percent }}%"></div>
+      </div>
+      <p class="teacher-reg-next">
+        {% if progress.next_step %}
+        {% with step=progress.next_step %}
+        Next:
+        {% if not step.useTemplate %}
+        <a href="{{ step.get_full_path }}">{{ step.module.link_title }}</a>
+        {% elif checklist.is_module_page %}
+        <a href="{{ checklist.mainpage_url }}">{{ step.module.link_title }}</a>
+        {% else %}
+        <a href="#module-{{ step.id }}">{{ step.module.link_title }}</a>
+        {% endif %}
+        {% endwith %}
+        {% elif progress.next_record %}
+        Next: {{ progress.next_record.full_event }}
+        {% else %}
+        All required steps are done.
+        {% endif %}
+      </p>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <button type="button" class="teacher-reg-checklist-toggle" data-bs-toggle="collapse" data-bs-target="#teacher-reg-checklist-steps" aria-expanded="false" aria-controls="teacher-reg-checklist-steps">
+      <span class="teacher-reg-toggle-show">Show all steps</span>
+      <span class="teacher-reg-toggle-hide">Hide steps</span>
+    </button>
+
+    <div class="collapse teacher-reg-checklist-steps" id="teacher-reg-checklist-steps">
     <div class="card-body">
 
       {% if checklist.options.progress_mode == 1 %}
@@ -40,6 +83,7 @@ is placed in the theme's own sidebar rather than beside the content.
       </div>
       {% endif %}
 
+    </div>
     </div>
   </section>
 </aside>

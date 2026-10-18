@@ -51,6 +51,19 @@
         /* Stops wide module tables from stretching the flex item. */
         min-width: 0;
     }
+
+    /* Beside the content there is room for the whole list, so it stays open. */
+    .teacher-reg-checklist-toggle {
+        display: none;
+    }
+
+    .teacher-reg-checklist-steps.collapse:not(.show) {
+        display: block;
+    }
+
+    .teacher-reg-checklist-toggle:first-child + .teacher-reg-checklist-steps {
+        border-top: 0;
+    }
 }
 
 /* In a theme's own sidebar (theme setting checklist_in_sidebar), the list sits
@@ -64,6 +77,21 @@
     top: var(--teacher-reg-sticky-top, 1rem);
 }
 
+/* Bootstrap's md breakpoint, where bigpicture's sidebar column stops stacking. */
+@media (min-width: 768px) {
+    .teacher-reg-in-theme-sidebar .teacher-reg-checklist-toggle {
+        display: none;
+    }
+
+    .teacher-reg-in-theme-sidebar .teacher-reg-checklist-steps.collapse:not(.show) {
+        display: block;
+    }
+
+    .teacher-reg-in-theme-sidebar .teacher-reg-checklist-toggle:first-child + .teacher-reg-checklist-steps {
+        border-top: 0;
+    }
+}
+
 .teacher-reg-in-theme-sidebar .teacher-reg-checklist .table th {
     font-size: 0.95rem;
 }
@@ -74,6 +102,55 @@
 
 .teacher-reg-panel {
     margin-bottom: 1.5rem;
+}
+
+/* Progress summary at the top of the checklist card; it counts required steps
+   and other registration requirements. */
+.teacher-reg-progress {
+    display: grid;
+    gap: 0.4rem;
+    padding: 0.75rem 1rem;
+}
+
+.teacher-reg-progress-label {
+    display: flex;
+    font-variant-numeric: tabular-nums;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.teacher-reg-progress .progress {
+    height: 0.5rem;
+}
+
+.teacher-reg-next {
+    font-size: 0.9em;
+    margin: 0;
+}
+
+/* Where the card is stacked above the content, the list starts collapsed
+   behind this toggle; Bootstrap's collapse keeps aria-expanded current. */
+.teacher-reg-checklist-toggle {
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+    color: var(--bs-link-color, #0d6efd);
+    padding: 0.5rem 1rem;
+    text-align: left;
+    width: 100%;
+}
+
+.teacher-reg-checklist-toggle[aria-expanded="true"] .teacher-reg-toggle-show,
+.teacher-reg-checklist-toggle[aria-expanded="false"] .teacher-reg-toggle-hide {
+    display: none;
+}
+
+.teacher-reg-checklist-steps {
+    border-top: 1px solid var(--bs-border-color, #dee2e6);
+}
+
+.teacher-reg-checklist > :first-child {
+    border-top: 0;
 }
 
 .teacher-reg-checklist .card-body {
