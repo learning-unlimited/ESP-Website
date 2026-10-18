@@ -9,9 +9,11 @@ module_header for its full-width heading.
 
 In teacher registration, the registration checklist (and any other
 registration requirements) is shown in a sticky column beside the content
-on wide screens and above it on narrow ones; in progress bar mode the bar
-is shown full width above the content instead.  Elsewhere (e.g. templates
-shared with student or account pages) the content renders as a plain page.
+when there is room and above it otherwise; in progress bar mode the bar is
+shown full width above the content instead.  Themes whose main.html has a
+sidebar_extra block can put the list there instead, via a
+checklist_in_sidebar theme setting (as bigpicture does).  Elsewhere (e.g. templates shared with
+student or account pages) the content renders as a plain page.
 
 The checklist context comes from the teacher_checklist tag (defined in
 esp/program/templatetags/modules.py).
@@ -20,6 +22,13 @@ esp/program/templatetags/modules.py).
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/teacherreg-layout.css" />
+{% endblock %}
+
+{% block sidebar_extra %}
+{% teacher_checklist as checklist %}
+{% if checklist.in_theme_sidebar %}
+{% include "program/modules/teacherregcore/checklist_sidebar.html" with in_theme_sidebar=True %}
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -31,7 +40,7 @@ esp/program/templatetags/modules.py).
 
   {% include "program/modules/teacherregcore/checklist_progressbar.html" %}
 
-  {% if checklist.options.progress_mode == 1 or checklist.records %}
+  {% if checklist.show_list and not checklist.in_theme_sidebar %}
   <div class="teacher-reg-columns">
     {% include "program/modules/teacherregcore/checklist_sidebar.html" %}
     <div class="teacher-reg-main-col">
@@ -39,7 +48,7 @@ esp/program/templatetags/modules.py).
 
       {% block module_content %}{% endblock %}
 
-  {% if checklist.options.progress_mode == 1 or checklist.records %}
+  {% if checklist.show_list and not checklist.in_theme_sidebar %}
     </div>
   </div>
   {% endif %}

@@ -53,6 +53,25 @@
     }
 }
 
+/* In a theme's own sidebar (theme setting checklist_in_sidebar), the list sits
+   below the theme's navigation and sticks once that scrolls away. */
+.teacher-reg-in-theme-sidebar {
+    margin-top: 1rem;
+    max-height: calc(100vh - var(--teacher-reg-sticky-top, 1rem)
+                     - var(--teacher-reg-sticky-bottom, 1rem));
+    overflow-y: auto;
+    position: sticky;
+    top: var(--teacher-reg-sticky-top, 1rem);
+}
+
+.teacher-reg-in-theme-sidebar .teacher-reg-checklist .table th {
+    font-size: 0.95rem;
+}
+
+.teacher-reg-in-theme-sidebar .teacher-reg-checklist .table td {
+    font-size: 0.85rem;
+}
+
 .teacher-reg-panel {
     margin-bottom: 1.5rem;
 }

@@ -1,9 +1,10 @@
 {% comment %}
 Registration checklist column for teacher_module_base.html; expects the
-teacher_checklist context as ``checklist``.
+teacher_checklist context as ``checklist``, and ``in_theme_sidebar`` when it
+is placed in the theme's own sidebar rather than beside the content.
 {% endcomment %}
 {% load render_qsd %}
-<aside class="teacher-reg-checklist-col" aria-label="Registration checklist">
+<aside class="teacher-reg-checklist-col{% if in_theme_sidebar %} teacher-reg-in-theme-sidebar{% endif %}" aria-label="Registration checklist">
   <section class="card teacher-reg-panel teacher-reg-checklist">
     <div class="card-body">
 

@@ -32,12 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from unittest import mock
+
+from django.template import Context
 from django.test import RequestFactory
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.checklist import get_module_page_checklist_context
 from esp.program.templatetags.modules import registration_progress, teacher_checklist
 from esp.program.tests import ProgramFrameworkTest
+from esp.themes.controllers import ThemeController
 
 
 class RegistrationProgressTagTest(ProgramFrameworkTest):
@@ -248,11 +253,11 @@ class TeacherChecklistTagTest(ProgramFrameworkTest):
     def test_returns_empty_outside_teacher_registration(self):
         """Shared templates render as plain pages for student and admin pages."""
         for tl in ('learn', 'manage'):
-            self.assertEqual(teacher_checklist({'request': self._make_request(tl)}), {})
+            self.assertEqual(teacher_checklist(Context({'request': self._make_request(tl)})), {})
 
     def test_returns_module_page_context_for_teach_tl(self):
         """Checklist links point back to the main page on teacher module pages."""
-        result = teacher_checklist({'request': self._make_request('teach')})
+        result = teacher_checklist(Context({'request': self._make_request('teach')}))
         self.assertEqual(result['options'], self.crmi)
         self.assertEqual(result['extra_steps'], 'teach:extra_steps')
         self.assertTrue(result['is_module_page'])
@@ -263,8 +268,30 @@ class TeacherChecklistTagTest(ProgramFrameworkTest):
     def test_reuses_checklist_from_view(self):
         """The main page passes its own checklist, which the tag must not replace."""
         checklist = {'modules': [], 'options': self.crmi}
-        result = teacher_checklist({'request': self._make_request('teach'), 'checklist': checklist})
+        result = teacher_checklist(Context({'request': self._make_request('teach'), 'checklist': checklist}))
         self.assertIs(result, checklist)
+
+    def test_looks_up_checklist_once_per_render(self):
+        """teacher_module_base.html calls the tag from two blocks."""
+        context = Context({'request': self._make_request('teach')})
+        with mock.patch('esp.program.templatetags.modules.get_module_page_checklist_context',
+                        wraps=get_module_page_checklist_context) as lookup:
+            first = teacher_checklist(context)
+            second = teacher_checklist(context)
+        self.assertIs(first, second)
+        self.assertEqual(lookup.call_count, 1)
+
+    def _in_theme_sidebar(self, theme_name, settings):
+        with mock.patch.object(ThemeController, 'get_current_theme', return_value=theme_name), \
+                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
+            return teacher_checklist(Context({'request': self._make_request('teach')}))['in_theme_sidebar']
+
+    def test_theme_sidebar_setting(self):
+        """Only themes with a checklist_in_sidebar setting can move the list there."""
+        self.assertTrue(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': True}))
+        self.assertFalse(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': False}))
+        # The setting can linger in the theme settings after switching themes.
+        self.assertFalse(self._in_theme_sidebar('droplets', {'checklist_in_sidebar': True}))
 
 
 class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
@@ -300,3 +327,16 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         response = self.client.get('/teach/%s/availability' % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.SIDEBAR_MARKER)
+
+    def test_bigpicture_shows_checklist_in_its_sidebar(self):
+        settings = dict(ThemeController().get_template_settings(), checklist_in_sidebar=True)
+        with mock.patch.object(ThemeController, 'get_current_theme', return_value='bigpicture'), \
+                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
+            response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertEqual(html.count(self.SIDEBAR_MARKER), 1)
+        sidebar_start = html.index('id="sidebar"')
+        main_start = html.index('id="main"')
+        self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
+        self.assertNotIn('teacher-reg-columns', html)

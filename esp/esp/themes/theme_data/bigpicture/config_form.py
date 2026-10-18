@@ -19,3 +19,5 @@ class ConfigForm(ThemeConfigurationForm):
     faq_link = forms.CharField(required=False, initial='/faq.html',
                                help_text='Leave blank to omit an FAQ link.')
     show_footer_textbox = forms.BooleanField(initial = False, required = False, help_text='Should there be an editable text field in the footer?')
+    checklist_in_sidebar = forms.BooleanField(initial = True, required = False, label='Registration checklist in sidebar',
+                                              help_text='Should the teacher registration checklist be shown in the sidebar instead of above the page content?')
