@@ -24,12 +24,13 @@
 
 /* Steps checklist and other requirements sit in a narrow left column beside the
    registration content; they stack on top when the theme's content area is
-   too narrow for both, so this queries the page width rather than the viewport. */
+   too narrow for both, so this queries the page width rather than the viewport.
+   62rem leaves the content about 40rem beside the 20rem checklist column. */
 .teacher-reg-page {
     container-type: inline-size;
 }
 
-@container (min-width: 48rem) {
+@container (min-width: 62rem) {
     .teacher-reg-columns {
         align-items: flex-start;
         display: flex;
