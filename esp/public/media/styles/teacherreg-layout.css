@@ -78,6 +78,17 @@
     margin-bottom: 0;
 }
 
+/* The card's own border closes the last row, and render_qsd.html follows each
+   inline QSD with a bare <br> that would leave an empty band in the card. */
+.teacher-reg-checklist .table tr:last-child > * {
+    border-bottom-width: 0;
+}
+
+.teacher-reg-checklist .card-body > br,
+.teacher-reg-records > br {
+    display: none;
+}
+
 /* The requirements table shares the checklist card, so it gets a rule instead
    of a second card border. */
 .teacher-reg-records {

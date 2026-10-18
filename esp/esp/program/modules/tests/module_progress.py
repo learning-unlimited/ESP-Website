@@ -287,11 +287,11 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, self.SIDEBAR_MARKER)
 
-    def test_class_registration_form_keeps_top_checklist(self):
+    def test_class_registration_form_has_no_checklist(self):
         response = self.client.get('/teach/%s/makeaclass' % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.SIDEBAR_MARKER)
-        self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+        self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
 
     def test_no_checklist_column_when_progress_mode_disabled(self):
         crmi = self.program.classregmoduleinfo
