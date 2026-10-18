@@ -14,6 +14,11 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Teacher Registration Layout
+===========================
+
+The teacher registration module pages (profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, surveys, and the class management pages such as coteachers, class documents and rosters) now share the layout of the teacher registration main page. When the checklist is enabled, it (along with any other registration requirements) stays visible in a column beside the page content on wide screens, or above the content on narrow screens, so teachers can see their progress from any step. In progress bar mode, the progress bar is still shown across the top of these pages. The class registration form keeps its existing layout. Nothing about how the modules work has changed.
+
 Bug Fixes
 =========
 
@@ -24,3 +29,4 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+- Teacher registration templates now extend ``program/modules/teacherregcore/teacher_module_base.html`` (content goes in the ``module_content`` block) instead of ``program/modules/module_base.html``, which is still used by student module pages and the class registration form. The checklist context for both the teacher main page and module pages comes from ``esp.program.modules.checklist.get_checklist_context``. The ``teacherregcore-mainpage.css`` stylesheet was renamed to ``teacherreg-layout.css``.

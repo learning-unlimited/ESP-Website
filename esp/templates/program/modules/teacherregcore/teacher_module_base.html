@@ -1,0 +1,48 @@
+{% extends "main.html" %}
+{% load modules %}
+
+{% comment %}
+Shared base template for teacher registration pages (the main page and
+module pages, except the class registration form).  Templates extending it
+place their content in the module_content block; the main page also uses
+module_header for its full-width heading.
+
+In teacher registration, the registration checklist (and any other
+registration requirements) is shown in a sticky column beside the content
+on wide screens and above it on narrow ones; in progress bar mode the bar
+is shown full width above the content instead.  Elsewhere (e.g. templates
+shared with student or account pages) the content renders as a plain page.
+
+The checklist context comes from the teacher_checklist tag (defined in
+esp/program/templatetags/modules.py).
+{% endcomment %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/teacherreg-layout.css" />
+{% endblock %}
+
+{% block content %}
+{% teacher_checklist as checklist %}
+
+<div class="teacher-reg-page">
+
+  {% block module_header %}{% endblock %}
+
+  {% include "program/modules/teacherregcore/checklist_progressbar.html" %}
+
+  {% if checklist.options.progress_mode == 1 or checklist.records %}
+  <div class="teacher-reg-columns">
+    {% include "program/modules/teacherregcore/checklist_sidebar.html" %}
+    <div class="teacher-reg-main-col">
+  {% endif %}
+
+      {% block module_content %}{% endblock %}
+
+  {% if checklist.options.progress_mode == 1 or checklist.records %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

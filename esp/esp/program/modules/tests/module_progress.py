@@ -36,7 +36,7 @@ from django.test import RequestFactory
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.templatetags.modules import registration_progress
+from esp.program.templatetags.modules import registration_progress, teacher_checklist
 from esp.program.tests import ProgramFrameworkTest
 
 
@@ -226,3 +226,77 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         # Progress bar mode: no "Steps for Registration" table header
         self.assertNotContains(response, self.CHECKLIST_MARKER)
+
+
+class TeacherChecklistTagTest(ProgramFrameworkTest):
+    """Unit tests for the teacher_checklist template tag used by
+    teacher_module_base.html."""
+
+    def setUp(self):
+        super().setUp()
+        self.crmi = self.program.classregmoduleinfo
+        self.crmi.progress_mode = 1
+        self.crmi.save()
+
+    def _make_request(self, tl):
+        request = RequestFactory().get('/')
+        request.user = self.teachers[0]
+        request.program = self.program
+        request.tl = tl
+        return request
+
+    def test_returns_empty_outside_teacher_registration(self):
+        """Shared templates render as plain pages for student and admin pages."""
+        for tl in ('learn', 'manage'):
+            self.assertEqual(teacher_checklist({'request': self._make_request(tl)}), {})
+
+    def test_returns_module_page_context_for_teach_tl(self):
+        """Checklist links point back to the main page on teacher module pages."""
+        result = teacher_checklist({'request': self._make_request('teach')})
+        self.assertEqual(result['options'], self.crmi)
+        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
+        self.assertTrue(result['is_module_page'])
+        self.assertEqual(result['mainpage_url'], '/teach/%s/teacherreg' % self.program.url)
+        self.assertIn('modules', result)
+        self.assertIn('records', result)
+
+    def test_reuses_checklist_from_view(self):
+        """The main page passes its own checklist, which the tag must not replace."""
+        checklist = {'modules': [], 'options': self.crmi}
+        result = teacher_checklist({'request': self._make_request('teach'), 'checklist': checklist})
+        self.assertIs(result, checklist)
+
+
+class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
+    """Integration tests: teacher module pages show the checklist column."""
+
+    SIDEBAR_MARKER = 'teacher-reg-checklist-col'
+
+    def setUp(self):
+        super().setUp()
+        self.add_user_profiles()
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 1
+        crmi.save()
+        self.teacher = self.teachers[0]
+        self.client.login(username=self.teacher.username, password='password')
+
+    def test_mainpage_and_module_page_show_checklist_column(self):
+        for view in ('teacherreg', 'availability'):
+            response = self.client.get('/teach/%s/%s' % (self.program.url, view))
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, self.SIDEBAR_MARKER)
+
+    def test_class_registration_form_keeps_top_checklist(self):
+        response = self.client.get('/teach/%s/makeaclass' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.SIDEBAR_MARKER)
+        self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+
+    def test_no_checklist_column_when_progress_mode_disabled(self):
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 0
+        crmi.save()
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.SIDEBAR_MARKER)

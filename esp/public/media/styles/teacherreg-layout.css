@@ -1,5 +1,6 @@
-/* Layout for program/modules/teacherregcore/mainpage.html.  Only spacing and
-   sizing here; colours come from the compiled theme so dark themes still work. */
+/* Layout for program/modules/teacherregcore/teacher_module_base.html (the
+   teacher registration main page and module pages).  Only spacing and sizing
+   here; colours come from the compiled theme so dark themes still work. */
 
 .teacher-reg-hero {
     border-bottom: 1px solid var(--bs-border-color, #dee2e6);

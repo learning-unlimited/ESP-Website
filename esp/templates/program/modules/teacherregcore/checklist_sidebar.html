@@ -1,0 +1,44 @@
+{% comment %}
+Registration checklist column for teacher_module_base.html; expects the
+teacher_checklist context as ``checklist``.
+{% endcomment %}
+{% load render_qsd %}
+<aside class="teacher-reg-checklist-col" aria-label="Registration checklist">
+  <section class="card teacher-reg-panel teacher-reg-checklist">
+    <div class="card-body">
+
+      {% if checklist.options.progress_mode == 1 %}
+      {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url %}
+      {% endif %}
+
+      {% if checklist.records %}
+      <div class="teacher-reg-records">
+        {% render_inline_program_qsd checklist.program record_steps %}
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th scope="col">Other Registration Requirements</th>
+              <th scope="col">Done?</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in checklist.records %}
+            <tr>
+              <td>{{ record.full_event }}</td>
+              <td>
+                {% if record.isCompleted %}
+                  <i class="bi bi-check done-sign" aria-label="Done"></i>
+                {% else %}
+                  <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+    </div>
+  </section>
+</aside>
