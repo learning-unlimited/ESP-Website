@@ -48,6 +48,7 @@ from esp.tagdict.models import Tag
 from esp.accounting.models import Transfer
 from esp.accounting.controllers import ProgramAccountingController
 import datetime
+from esp.utils.ids import get_by_id_or_404
 
 class AccountingModule(ProgramModuleObj):
     doc = """Lists accounting information for the program for a single user."""
@@ -210,7 +211,7 @@ class AccountingModule(ProgramModuleObj):
         user = None
         context = {}
         if extra:
-            user = ESPUser.objects.get(id=extra)
+            user = get_by_id_or_404(ESPUser, extra)
         elif 'target_user' in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():

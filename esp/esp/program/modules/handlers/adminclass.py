@@ -47,6 +47,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import filter_by_id
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -306,7 +307,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = ClassSubject.objects.filter(id = extra)
+        classes = filter_by_id(ClassSubject.objects, extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -345,7 +346,7 @@ class AdminClass(ProgramModuleObj):
         """ Hand over to the teacher class reg module so we only have this code in one place. """
         from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-        classes = ClassSubject.objects.filter(id = extra)
+        classes = filter_by_id(ClassSubject.objects, extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
