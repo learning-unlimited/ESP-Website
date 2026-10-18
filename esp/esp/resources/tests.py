@@ -199,6 +199,7 @@ class FloatingResourceAvailabilityTest(TestCase):
         # Assign to different section in timeslot2 — should raise
         with self.assertRaises(ESPError_Log):
             self.res_ts2.assign_to_section(other_section)
+
     def test_is_unique_survives_resave(self):
         """is_unique must not be flipped by an unrelated later save (issue #5976)."""
         rt = ResourceType.get_or_create('Projector')
