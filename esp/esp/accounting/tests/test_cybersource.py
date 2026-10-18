@@ -65,3 +65,25 @@ class CybersourceSignatureTest(TestCase):
 
     def test_verify_signature_rejects_empty_post(self):
         self.assertFalse(verify_signature({}, self.secret))
+
+
+class RequiredSignedFieldsTest(TestCase):
+    SECRET = 'test_secret'
+    REQUIRED = ('decision', 'req_amount')
+
+    def _signed_post(self, signed_names, extra=None):
+        fields = {'decision': 'DECLINE', 'req_amount': '10.00'}
+        fields.update(extra or {})
+        fields['signed_field_names'] = signed_names
+        fields['signature'] = compute_signature(fields, signed_names, self.SECRET)
+        return fields
+
+    def test_accepts_when_required_fields_are_signed(self):
+        post = self._signed_post('decision,req_amount')
+        self.assertTrue(verify_signature(post, self.SECRET, self.REQUIRED))
+
+    def test_rejects_valid_signature_missing_required_field(self):
+        # Signature is valid, but req_amount is not covered by it.
+        post = self._signed_post('decision', extra={'req_amount': '999.00'})
+        self.assertTrue(verify_signature(post, self.SECRET))
+        self.assertFalse(verify_signature(post, self.SECRET, self.REQUIRED))

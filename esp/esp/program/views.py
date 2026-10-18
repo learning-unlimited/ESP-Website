@@ -891,6 +891,12 @@ def submit_transaction(request):
         send_mail(subject, message, from_addr, recipients)
         raise
 
+# Every postback field _submit_transaction relies on must be covered by the
+# signature, or an attacker could pair a genuine signed reply with forged values.
+CYBERSOURCE_REQUIRED_SIGNED_FIELDS = (
+    'decision', 'req_amount', 'req_merchant_defined_data1', 'transaction_id',
+)
+
 @transaction.atomic
 def _submit_transaction(request, log_record):
     secret_key = settings.CYBERSOURCE_CONFIG.get('secret_key', '')
@@ -899,7 +905,8 @@ def _submit_transaction(request, log_record):
         # genuine Cybersource postback from a forged one, so refuse to act
         # on it rather than silently trusting unauthenticated POST data.
         raise ESPError("The Cybersource module is not configured (missing secret_key)")
-    if not verify_signature(request.POST, secret_key):
+    if not verify_signature(request.POST, secret_key,
+                            required_fields=CYBERSOURCE_REQUIRED_SIGNED_FIELDS):
         raise ESPError("Invalid or missing Cybersource signature; refusing to process postback")
 
     decision = request.POST['decision']

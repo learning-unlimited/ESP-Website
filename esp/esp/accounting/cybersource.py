@@ -37,13 +37,16 @@ def compute_signature(fields, signed_field_names, secret_key):
     return base64.b64encode(digest).decode('ascii')
 
 
-def verify_signature(post_data, secret_key):
+def verify_signature(post_data, secret_key, required_fields=()):
     """
     Verify an incoming Cybersource postback. `post_data` is a
     dict-like (e.g. a Django QueryDict) of the posted fields.
 
     Returns True only if:
       - `signed_field_names` and `signature` are both present,
+      - every name in `required_fields` is listed in `signed_field_names`
+        (so a validly signed reply cannot be combined with unsigned,
+        attacker-supplied values for fields the caller relies on),
       - every field listed in `signed_field_names` is present, and
       - the recomputed signature matches the one supplied, using a
         constant-time comparison.
@@ -55,6 +58,9 @@ def verify_signature(post_data, secret_key):
     signed_field_names = post_data.get('signed_field_names')
     supplied_signature = post_data.get('signature')
     if not signed_field_names or not supplied_signature:
+        return False
+    signed_names = set(n.strip() for n in signed_field_names.split(','))
+    if not set(required_fields) <= signed_names:
         return False
     try:
         expected_signature = compute_signature(post_data, signed_field_names, secret_key)
