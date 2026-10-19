@@ -57,12 +57,11 @@ function DateValidator(txtDate, element){
 	if (this.optional(element)) return true;
 	let objDate, mSeconds, day, month, year;
 
-	if (txtDate.length !== 10) return false;
-	if (txtDate.substring(4, 5) === '-' && txtDate.substring(7, 8) === '-') {
+	if (/^\d{4}-\d{2}-\d{2}$/.test(txtDate)) {
 		year = txtDate.substring(0, 4) - 0;
 		month = txtDate.substring(5, 7) - 1;
 		day = txtDate.substring(8, 10) - 0;
-	} else if (txtDate.substring(2, 3) === '/' && txtDate.substring(5, 6) === '/') {
+	} else if (/^\d{2}\/\d{2}\/\d{4}$/.test(txtDate)) {
 		month = txtDate.substring(0, 2) - 1;
 		day = txtDate.substring(3, 5) - 0;
 		year = txtDate.substring(6, 10) - 0;
