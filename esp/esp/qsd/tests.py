@@ -46,8 +46,6 @@ from reversion.models import Version
 import esp.qsd.admin  # noqa: F401
 import json
 
-from esp.qsd.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
-
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
 
