@@ -13,6 +13,11 @@ CUSTOM_FORM_ASSETS = (
     'customforms-validation.js',
     'qtip.js',
 )
+# Browsers block a CDN script whose integrity hash doesn't match the file.
+JQUERY_VALIDATE_SRI = {
+    'jquery.validate.min.js': 'sha512-rstIgDs0xPgmG6RX1Aba4KV5cWJbAMcvRCVmglpam9SoHZiUCyQVDdH2LPlxoHtrv17XWblE/V/PP+Tr04hbtA==',
+    'additional-methods.min.js': 'sha512-6S5LYNn3ZJCIm0f9L6BCerqFlQ4f5MwNKq+EthDXabtaJvg3TuFLhpno9pcm+5Ynm6jdA9xfpQoMz2fcjVMk9g==',
+}
 
 
 class CustomFormAssetsTest(ProgramFrameworkTest):
@@ -53,6 +58,9 @@ class CustomFormAssetsTest(ProgramFrameworkTest):
         content = response.content.decode()
         for asset in CUSTOM_FORM_ASSETS:
             self.assertEqual(content.count(asset), 1, asset)
+        for asset, integrity in JQUERY_VALIDATE_SRI.items():
+            self.assertIn('src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/%s" integrity="%s"'
+                          % (asset, integrity), content)
 
     def test_standalone_form_page(self):
         self.client.login(username=self.teachers[0].username, password='password')
