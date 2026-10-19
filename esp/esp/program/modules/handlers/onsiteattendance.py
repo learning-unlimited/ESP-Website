@@ -212,7 +212,6 @@ class OnSiteAttendance(ProgramModuleObj):
     def section_attendance(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
-        timeslot_id = extra
         timeslots = filter_by_id(Event.objects, extra, program=prog)
         if len(timeslots) == 1:
             timeslot = timeslots[0]

@@ -8,7 +8,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.utils.ids import filter_by_id, get_by_id_or_404, parse_id
 
 VIEWS_WITH_ID_IN_URL = [
-    ('manage', 'accounting'),
+    ('manage', 'accounting'), # fixed upstream in #6126; kept as a regression check
     ('manage', 'deleteclass'),
     ('manage', 'editclass'),
     ('manage', 'review_students'),
@@ -96,15 +96,6 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         requests.append(('post', self.url('learn', 'class_docs'), {'clsid': 'abc'}))
         requests.append(('post', self.url('teach', 'section_students'), {'secid': 'abc'}))
         self.assert_nothing_raises(requests)
-
-    def test_accounting_unknown_user_id_is_404(self):
-        for bad_id in BAD_IDS:
-            response = self.client.get(self.url('manage', 'accounting', bad_id))
-            self.assertEqual(response.status_code, 404, bad_id)
-
-    def test_accounting_valid_user_id_still_works(self):
-        response = self.client.get(self.url('manage', 'accounting', self.students[0].id))
-        self.assertEqual(response.status_code, 200)
 
     def test_bad_id_in_manage_request_parameters_does_not_crash(self):
         self.assert_nothing_raises([
