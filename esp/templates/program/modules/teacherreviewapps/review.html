@@ -1,4 +1,4 @@
-{% extends "program/modules/teacherregcore/teacher_module_base.html" %}
+{% extends "main.html" %}
 {% load users %}
 
 {% block title %}Review Student {{ student.name }}{% endblock %}
@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css"/>
 {% endblock %}
 
-{% block module_content %}
+{% block content %}
 
 <h1>{{ program.niceName }} application for {{ student.name }}</h1>
 

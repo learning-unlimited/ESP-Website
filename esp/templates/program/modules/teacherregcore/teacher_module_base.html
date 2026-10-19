@@ -2,8 +2,10 @@
 {% load modules %}
 
 {% comment %}
-Shared base template for teacher registration pages (the main page and
-module pages, except the class registration form, which shows no checklist).  Templates extending it
+Shared base template for teacher registration pages: the main page and the
+pages of the checklist steps.  The class registration form and the class
+tools (class status, rosters, documents, coteachers, attendance, etc.) extend
+main.html instead, so they show no checklist.  Templates extending it
 place their content in the module_content block; the main page also uses
 module_header for its full-width heading.
 

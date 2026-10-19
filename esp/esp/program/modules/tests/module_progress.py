@@ -322,6 +322,14 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         self.assertNotContains(response, self.SIDEBAR_MARKER)
         self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
 
+    def test_class_tool_pages_have_no_checklist(self):
+        cls = self.teacher.getTaughtClasses(self.program)[0]
+        for view in ('copyclasses', 'class_status/%d' % cls.id, 'coteachers?clsid=%d' % cls.id):
+            response = self.client.get('/teach/%s/%s' % (self.program.url, view))
+            self.assertEqual(response.status_code, 200)
+            self.assertNotContains(response, self.SIDEBAR_MARKER)
+            self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+
     def test_no_checklist_column_when_progress_mode_disabled(self):
         crmi = self.program.classregmoduleinfo
         crmi.progress_mode = 0
