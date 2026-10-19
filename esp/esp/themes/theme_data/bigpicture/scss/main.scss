@@ -337,6 +337,25 @@ div.navbar-collapse.collapse {
     }
 }
 
+//  On phones the login bar sits above the header instead of floating over the
+//  logo, and the header drops its wide desktop spacing.
+@media (max-width: 767px) {
+    .navbar {
+        position: static;
+        display: block;
+    }
+    .jumbotron {
+        padding-left: min(#{$jumbotronPaddingHorizontal}, 16px);
+        padding-right: min(#{$jumbotronPaddingHorizontal}, 16px);
+    }
+    .header-cell {
+        display: block;
+    }
+    .logo {
+        margin-right: 0;
+    }
+}
+
 .contact-form {
     th, td {
         padding: 4px 3px;

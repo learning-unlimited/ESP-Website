@@ -17,7 +17,6 @@ Example stylesheet inclusion tag:
 
 {% block javascript %}
 {{ block.super }}
-<script type="text/javascript" src="/media/scripts/theme/sidebar.js"></script>
 {# Customize your scripts here #}
 {% endblock %}
 
@@ -26,7 +25,7 @@ Example stylesheet inclusion tag:
 <a href="#main" class="skip-nav">Skip to main content</a>
 
 {% block navbar %}
-<nav class="navbar navbar-light bg-light navbar-expand-md fixed-top" role="navigation" aria-label="Main navigation">
+<nav class="navbar navbar-light bg-light navbar-expand-md sticky-top" role="navigation" aria-label="Main navigation">
   <div class="container">
     <a class="navbar-brand" href="/">{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}</a>
     <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -49,10 +48,11 @@ Example stylesheet inclusion tag:
 
 {% block main %}
 
-<div class="container">
+<div class="container mt-3">
   <div class="row">
     {% block sidebar %}
-    <div class="hidden" id="sidebar">
+    {# Shown only to logged-in users; on phones it follows the page content. #}
+    <div class="col-md-3 logged_in order-last order-md-first" id="sidebar">
       <ul class="nav flex-column sidebar">
         {% include "sidebar/me.html" %}
         {% include "sidebar/programs.html" %}
@@ -62,7 +62,7 @@ Example stylesheet inclusion tag:
     </div>
     {% endblock %}
 
-    <main id="main" class="col-md-12 resizable" tabindex="-1">
+    <main id="main" class="col-md" tabindex="-1">
       {% if request.COOKIES.esp_testing_role %}
       <div style="background: #fcf8e3; border: 1px solid #c09853; color: #c09853; padding: 8px 15px; margin-bottom: 15px; border-radius: 4px; text-align: center;">
         <strong>Testing Mode ({{ request.COOKIES.esp_testing_role }})</strong> &mdash;
