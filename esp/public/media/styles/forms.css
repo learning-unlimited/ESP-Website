@@ -226,6 +226,23 @@ input.fancybutton:active
    }
 }
 
+/* Class registration form on phones: stack each label above its field and let
+   fields shrink to the screen, instead of a two-column table wider than the screen. */
+@media (max-width: 575.98px) {
+    #clsform table, #clsform tbody, #clsform tr, #clsform th, #clsform td {
+        display: block;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    #clsform input[type="text"], #clsform input[type="number"],
+    #clsform select, #clsform textarea {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+
 #program_form td {
     font-family: Arial, Helvetica, sans-serif;
     vertical-align: middle;
