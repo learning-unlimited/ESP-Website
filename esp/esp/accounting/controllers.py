@@ -237,7 +237,7 @@ class ProgramAccountingController(BaseAccountingController):
         for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
             other_module = self.program.getModule(module_name)
             if other_module and other_module.get_setting('offer_donation', default=True):
-                return LineItemType.objects.get_or_create(program=self.program, text=other_module.get_setting('donation_text'))[0]
+                return LineItemType.get_or_create_by_text(self.program, other_module.get_setting('donation_text'))
         return None
 
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):

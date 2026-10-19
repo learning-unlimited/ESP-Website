@@ -40,7 +40,7 @@ from esp.users.models import ESPUser
 from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum
 
 from decimal import Decimal
@@ -59,6 +59,25 @@ class LineItemType(models.Model):
         choices=[('single', 'Single'), ('multiple', 'Multiple')],
         help_text='For line items with options, whether students may select one option (single) or multiple options (multiple).',
     )
+
+    @classmethod
+    def get_or_create_by_text(cls, program, text):
+        """
+        Return this program's line item type with the given text, creating it
+        if there is none. Unlike get_or_create(), this is safe when concurrent
+        requests race to create it, and if earlier races left duplicates it
+        returns the oldest instead of raising MultipleObjectsReturned.
+        """
+        lit = cls.objects.filter(program=program, text=text).order_by('id').first()
+        if lit is None:
+            with transaction.atomic():
+                # Serialize creation per program: a concurrent caller waits
+                # here, then finds the row created by the first one.
+                Program.objects.select_for_update(no_key=True).get(pk=program.pk)
+                lit = cls.objects.filter(program=program, text=text).order_by('id').first()
+                if lit is None:
+                    lit = cls.objects.create(program=program, text=text)
+        return lit
 
     @property
     def amount(self):

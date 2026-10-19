@@ -540,3 +540,32 @@ class IndividualAccountingControllerTest(TestCase):
         prefs = self.iac.get_preferences()
         self.assertEqual(len(prefs), 1)
         self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
+
+
+class LineItemTypeGetOrCreateByTextTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_creates_when_missing(self):
+        lit = LineItemType.get_or_create_by_text(self.program, 'Donation')
+        self.assertEqual(lit.program, self.program)
+        self.assertEqual(lit.text, 'Donation')
+        self.assertEqual(LineItemType.objects.filter(program=self.program).count(), 1)
+
+    def test_returns_existing(self):
+        existing = LineItemType.objects.create(program=self.program, text='Donation', required=True)
+        lit = LineItemType.get_or_create_by_text(self.program, 'Donation')
+        self.assertEqual(lit, existing)
+        self.assertEqual(LineItemType.objects.filter(program=self.program).count(), 1)
+
+    def test_returns_oldest_of_duplicates(self):
+        oldest = LineItemType.objects.create(program=self.program, text='Donation')
+        LineItemType.objects.create(program=self.program, text='Donation')
+        self.assertEqual(LineItemType.get_or_create_by_text(self.program, 'Donation'), oldest)
+
+    def test_ignores_other_programs(self):
+        other = Program.objects.create(url='other', grade_min=7, grade_max=12)
+        LineItemType.objects.create(program=other, text='Donation')
+        lit = LineItemType.get_or_create_by_text(self.program, 'Donation')
+        self.assertEqual(lit.program, self.program)
