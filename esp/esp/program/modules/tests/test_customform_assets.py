@@ -61,3 +61,9 @@ class CustomFormAssetsTest(ProgramFrameworkTest):
     def test_teacher_module_form_page(self):
         self.client.login(username=self.teachers[0].username, password='password')
         self._assert_assets_once(self.client.get('/teach/%s/extraform' % self.program.url))
+
+    def test_teacher_module_form_uses_client_validation(self):
+        """customforms-validation.js attaches to #cstform, so the module form needs that id."""
+        self.client.login(username=self.teachers[0].username, password='password')
+        response = self.client.get('/teach/%s/extraform' % self.program.url)
+        self.assertContains(response, 'id="cstform"', count=1)
