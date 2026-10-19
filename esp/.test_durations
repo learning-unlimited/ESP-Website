@@ -1,5 +1,8 @@
 {
-    "esp/accounting/tests/test_lineitemtype_concurrency.py::GetOrCreateForProgramConcurrencyTest::test_concurrent_callers_create_one_row": 1.68,
+    "esp/accounting/tests/test_concurrency.py::AccountingConcurrencyTest::test_admission_charged_once": 1.36,
+    "esp/accounting/tests/test_concurrency.py::AccountingConcurrencyTest::test_double_submitted_preference_kept_once": 2.37,
+    "esp/accounting/tests/test_concurrency.py::AccountingConcurrencyTest::test_financial_aid_granted_once": 2.31,
+    "esp/accounting/tests/test_concurrency.py::AccountingConcurrencyTest::test_line_item_type_created_once": 1.76,
     "esp/accounting/tests/test_models.py::AccountTest::test_balance_empty": 0.05504703000042355,
     "esp/accounting/tests/test_models.py::AccountTest::test_balance_with_incoming_transfer": 0.030873531000452203,
     "esp/accounting/tests/test_models.py::AccountTest::test_balance_with_outgoing_transfer": 0.03027481900062412,

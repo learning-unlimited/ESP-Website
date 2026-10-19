@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 from esp.users.models import ESPUser
 from esp.program.models import Program, FinancialAidRequest
 from esp.db.fields import AjaxForeignKey
+from esp.db.locking import get_or_create_locked, lock_row
 
 from django.db import models, transaction
 from django.db.models import Sum
@@ -64,23 +65,11 @@ class LineItemType(models.Model):
     def get_or_create_for_program(cls, program, defaults=None, **kwargs):
         """
         Like LineItemType.objects.get_or_create(program=program, **kwargs),
-        returning (line_item_type, created), but safe when concurrent requests
-        race to create the same row. If earlier races left duplicates, it
-        returns the newest, as the default_*_lineitemtype() lookups do,
-        instead of raising MultipleObjectsReturned.
+        but safe when concurrent requests race to create the same row; see
+        get_or_create_locked(). Its newest-duplicate choice matches the
+        default_*_lineitemtype() lookups.
         """
-        matches = cls.objects.filter(program=program, **kwargs).order_by('-id')
-        lit = matches.first()
-        if lit is not None:
-            return lit, False
-        with transaction.atomic():
-            # Serialize creation per program: a concurrent caller waits here,
-            # then finds the row created by the first one.
-            Program.objects.select_for_update(no_key=True).get(pk=program.pk)
-            lit = matches.first()
-            if lit is not None:
-                return lit, False
-            return cls.objects.create(program=program, **dict(kwargs, **(defaults or {}))), True
+        return get_or_create_locked(cls, program, defaults=defaults, program=program, **kwargs)
 
     @property
     def amount(self):
@@ -194,15 +183,23 @@ class FinancialAidGrant(models.Model):
             return
 
         from esp.accounting.controllers import IndividualAccountingController
-        iac = IndividualAccountingController(self.program, self.user)
-        source_account = iac.default_finaid_account()
-        dest_account = iac.default_source_account()
-        line_item_type = iac.default_finaid_lineitemtype()
+        with transaction.atomic():
+            # Serialize concurrent finalize() calls for this user, then re-check
+            # the flag, which may have been set since this instance was loaded.
+            lock_row(self.user)
+            if self.pk and FinancialAidGrant.objects.filter(pk=self.pk, finalized=True).exists():
+                self.finalized = True
+                return
 
-        (transfer, created) = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
-        self.finalized = True
-        self.save()
-        return transfer
+            iac = IndividualAccountingController(self.program, self.user)
+            source_account = iac.default_finaid_account()
+            dest_account = iac.default_source_account()
+            line_item_type = iac.default_finaid_lineitemtype()
+
+            (transfer, created) = get_or_create_locked(Transfer, self.user, source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
+            self.finalized = True
+            self.save()
+            return transfer
 
     def __str__(self):
         if self.percent and self.amount_max_dec:
