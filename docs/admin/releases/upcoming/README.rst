@@ -17,6 +17,7 @@ The deadline is created default-open for new programs, and is backfilled default
 Bug Fixes
 =========
 
+- Custom forms load their stylesheet and scripts again. Browsers had been refusing the jQuery Validation scripts on every custom form page because their integrity hashes were wrong, so client-side validation stopped working on custom forms. The teacher custom form, teacher quiz and student custom form module pages had also stopped loading the stylesheet and scripts altogether, which removed their styled help tooltips and the blue highlighting of required fields.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 
 Developer Notes
