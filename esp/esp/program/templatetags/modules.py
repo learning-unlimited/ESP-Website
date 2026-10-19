@@ -99,7 +99,9 @@ def teacher_checklist(context):
 
     checklist = context.get('checklist') or _lookup_teacher_checklist(context)
     if checklist:
-        show_steps = checklist['options'].progress_mode == 1
+        # Teacher pages show the checklist (with its progress bar) for mode 2 too.
+        show_steps = checklist['options'].progress_mode in (1, 2)
+        checklist['show_steps'] = show_steps
         checklist['show_list'] = show_steps or bool(checklist.get('records'))
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
         if checklist['show_list']:

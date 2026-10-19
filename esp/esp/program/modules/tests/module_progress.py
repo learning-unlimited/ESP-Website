@@ -343,6 +343,17 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
         self.assertNotIn('teacher-reg-columns', html)
 
+    def test_progress_bar_mode_shows_the_checklist(self):
+        """Teacher pages show the checklist card for progress mode 2, not the old progress bar."""
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 2
+        crmi.save()
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.SIDEBAR_MARKER)
+        self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+        self.assertNotContains(response, 'class="progressbar"')
+
 
 class ChecklistProgressTest(SimpleTestCase):
     """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""
@@ -378,3 +389,4 @@ class ChecklistProgressTest(SimpleTestCase):
         self.assertEqual((progress['done'], progress['total'], progress['percent']), (1, 1, 100))
         self.assertIsNone(progress['next_step'])
         self.assertIsNone(progress['next_record'])
+

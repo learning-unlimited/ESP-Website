@@ -8,9 +8,9 @@ place their content in the module_content block; the main page also uses
 module_header for its full-width heading.
 
 In teacher registration, the registration checklist (and any other
-registration requirements) is shown in a sticky column beside the content
-when there is room and above it otherwise; in progress bar mode the bar is
-shown full width above the content instead.  Themes whose main.html has a
+registration requirements) is shown, with a progress bar, in a sticky column
+beside the content when there is room and above it otherwise; progress mode
+2 (formerly the separate progress bar) shows the same checklist.  Themes whose main.html has a
 sidebar_extra block can put the list there instead, via a
 checklist_in_sidebar theme setting (as bigpicture does).  Elsewhere (e.g. templates shared with
 student or account pages) the content renders as a plain page.
@@ -37,8 +37,6 @@ esp/program/templatetags/modules.py).
 <div class="teacher-reg-page">
 
   {% block module_header %}{% endblock %}
-
-  {% include "program/modules/teacherregcore/checklist_progressbar.html" %}
 
   {% if checklist.show_list and not checklist.in_theme_sidebar %}
   <div class="teacher-reg-columns">

@@ -18,10 +18,6 @@
     margin-bottom: 0;
 }
 
-.teacher-reg-progressbar {
-    margin-bottom: 1.5rem;
-}
-
 /* Steps checklist and other requirements sit in a narrow left column beside the
    registration content; they stack on top when the theme's content area is
    too narrow for both, so this queries the page width rather than the viewport.

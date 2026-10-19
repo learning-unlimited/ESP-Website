@@ -51,7 +51,7 @@ teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
     <div class="collapse teacher-reg-checklist-steps" id="teacher-reg-checklist-steps">
     <div class="card-body">
 
-      {% if checklist.options.progress_mode == 1 %}
+      {% if checklist.show_steps %}
       {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url %}
       {% endif %}
 

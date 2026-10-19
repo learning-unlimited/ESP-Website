@@ -17,7 +17,19 @@ The deadline is created default-open for new programs, and is backfilled default
 Teacher Registration Layout
 ===========================
 
-The teacher registration module pages (profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, surveys, and the class management pages such as coteachers, class documents and rosters) now share the layout of the teacher registration main page. When the checklist is enabled, it (along with any other registration requirements) stays visible in a column beside the page content when the theme's content area is wide enough, or above the content otherwise (for example on phones and in the fruitsalad theme), so teachers can see their progress from any step. In the bigpicture theme, the list is instead shown in the theme's left sidebar, below the navigation links; this can be turned off with the new "Registration checklist in sidebar" theme setting, in which case the list is shown above the page content. The checklist now starts with a progress bar counting the required steps and other registration requirements that are done, and a link to the next one. Wherever the checklist is shown above the page content, the list of steps starts collapsed behind a "Show all steps" button, so the page content stays near the top. In progress bar mode, the old progress bar is still shown across the top of these pages. The class registration form no longer shows the checklist, so the form has the full page width. Nothing about how the modules work has changed.
+The teacher registration module pages (profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, surveys, and the class management pages such as coteachers, class documents and rosters) now share the layout of the teacher registration main page. When the checklist is enabled, it (along with any other registration requirements) stays visible in a column beside the page content when the theme's content area is wide enough, or above the content otherwise (for example on phones and in the fruitsalad theme), so teachers can see their progress from any step. In the bigpicture theme, the list is instead shown in the theme's left sidebar, below the navigation links; this can be turned off with the new "Registration checklist in sidebar" theme setting, in which case the list is shown above the page content. The checklist now starts with a progress bar counting the required steps and other registration requirements that are done, and a link to the next one. Wherever the checklist is shown above the page content, the list of steps starts collapsed behind a "Show all steps" button, so the page content stays near the top. Teacher registration no longer uses the old image-based progress bar: the teacher "Progress mode" setting 2 (progress bar) now shows the same checklist as setting 1. The class registration form no longer shows the checklist, so the form has the full page width. Nothing about how the modules work has changed.
+
+.. figure:: ../../images/teacherreg/checklist_beside_content.png
+
+   Figure 1: Checklist beside the page content (droplets theme)
+
+.. figure:: ../../images/teacherreg/checklist_bigpicture_sidebar.png
+
+   Figure 2: Checklist in the bigpicture theme's sidebar
+
+.. figure:: ../../images/teacherreg/checklist_collapsed_phone.png
+
+   Figure 3: Checklist collapsed above the page content on a phone
 
 Bug Fixes
 =========
