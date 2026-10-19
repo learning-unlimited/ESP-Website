@@ -120,7 +120,7 @@ class OnSiteRegister(ProgramModuleObj):
 
                 return render_to_response(self.baseDir()+'reg_success.html', request, {
                     'student': new_user,
-                    'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
+                    'retUrl': f'/onsite/{self.program.getUrlBase()}/classchange_grid?student_id={new_user.id}'
                     })
 
         else:

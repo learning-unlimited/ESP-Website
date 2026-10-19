@@ -92,7 +92,7 @@ class Event(models.Model):
         return self.start - buffer
 
     def end_w_buffer(self, buffer = timedelta(minutes=15)):
-        #Adds a buffer to the start time
+        #Adds a buffer to the end time
         return self.end + buffer
 
     def duration_str(self):

@@ -1,0 +1,51 @@
+#!/bin/bash
+set -euf -o pipefail
+
+# Seed the per-worker test databases from a schema dump to save time.
+# Any new migrations are applied separately by each worker.
+
+CACHE_DIR="${TEST_DB_CACHE_DIR:-$HOME/testdb-cache}"
+DUMP="$CACHE_DIR/testdb.dump"
+
+# If a tool is missing, have Django build the test databases itself.
+for tool in pg_dump pg_restore createdb dropdb; do
+    if ! command -v "$tool" > /dev/null 2>&1; then
+        echo ">>> $tool not found; skipping the seed step."
+        echo ">>> Django will create the test databases itself instead."
+        exit 0
+    fi
+done
+
+export PGHOST="${DATABASE_HOST:-localhost}"
+export PGPORT="${DATABASE_PORT:-5432}"
+export PGUSER="${DATABASE_USER:-testuser}"
+export PGPASSWORD="${DATABASE_PASSWORD:-testpassword}"
+
+# Django prefixes the configured database name with test_ for the test run.
+BASE_DB="test_${DATABASE_NAME:-test_django}"
+
+mkdir -p "$CACHE_DIR"
+
+if [ ! -f "$DUMP" ]; then
+    # Cache miss. Run the migrations once here.
+    echo ">>> No cached dump. Building one (runs all migrations once)..."
+    BUILD_DB="${BASE_DB}_dumpsrc"
+    dropdb --if-exists "$BUILD_DB"
+    createdb "$BUILD_DB"
+    (cd esp && DATABASE_NAME="$BUILD_DB" ./manage.py migrate --noinput > /dev/null)
+    pg_dump -Fc -f "$DUMP" "$BUILD_DB"
+    dropdb "$BUILD_DB"
+    echo ">>> Built dump ($(du -h "$DUMP" | cut -f1))."
+else
+    echo ">>> Reusing cached dump ($(du -h "$DUMP" | cut -f1))."
+fi
+
+# makes one database per core, suffixed _gw0 .. _gwN-1.
+WORKERS="$(nproc)"
+for db in "$BASE_DB" $(seq -f "${BASE_DB}_gw%g" 0 $((WORKERS - 1))); do
+    dropdb --if-exists "$db"
+    createdb "$db"
+    pg_restore -d "$db" "$DUMP"
+done
+
+echo ">>> Seeded $((WORKERS + 1)) test databases."

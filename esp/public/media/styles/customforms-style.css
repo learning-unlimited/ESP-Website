@@ -13,7 +13,6 @@ form {
 	margin:0 auto;
 	margin-top:5px;
 	background-color:#FFF;
-	
 }
 
 /* Form Preview Area */
@@ -140,7 +139,7 @@ form {
 }
 
 .page_break {
-	height: 2px; 
+	height: 2px;
 	background-color: black; 
 	text-align: center;
 	cursor:pointer;
@@ -148,7 +147,7 @@ form {
 
 .page_break span {
 	background-color: white;
-	position: relative; 
+	position: relative;
 	top: -0.5em;
 	cursor:pointer;
     z-index: 1000;
@@ -170,7 +169,6 @@ form {
     height: 100%;
 	width:360px;
 	background-color:#d2f8ff;
-	
 	padding:0px;
 }
 
@@ -193,7 +191,6 @@ form {
 #toolbox_content {
 	margin:0px;
 	padding:0px 0px;
-	
 }
 
 #form_information p{
@@ -207,6 +204,24 @@ form {
 	padding-top:10px;
 	font-size:0.9em;
 	font-weight:bold;
+}
+
+.char-limits {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 5px;
+}
+
+.char-limit-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.char-limit-row label {
+    min-width: 40px;
+    text-align: right;
 }
 
 #field_selector {
