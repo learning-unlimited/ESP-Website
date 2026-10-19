@@ -19,11 +19,6 @@ class PasswordResetForm(forms.Form):
 
 
     def clean_username(self):
-
-        if self.cleaned_data.get('username', '').strip() == '' and \
-           self.cleaned_data.get('email', '').strip() == '':
-            raise forms.ValidationError("You need to specify something.")
-
         if self.cleaned_data['username'].strip() == '': return ''
 
         try:
@@ -41,6 +36,15 @@ class PasswordResetForm(forms.Form):
             return self.cleaned_data['email'].strip()
 
         raise forms.ValidationError(f'No user has email {self.cleaned_data["email"]}')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Check the raw input rather than cleaned_data: a field that failed its
+        # own validation is dropped from cleaned_data, but it wasn't left blank.
+        if self.data.get('email', '').strip() == '' and \
+           self.data.get('username', '').strip() == '':
+            raise forms.ValidationError("You need to specify something.")
+        return cleaned_data
 
 class UserPasswdForm(FormWithRequiredCss):
     password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput(), label="Current password")
