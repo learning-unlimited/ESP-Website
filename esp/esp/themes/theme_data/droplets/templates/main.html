@@ -140,7 +140,11 @@
 	};
 	function headerResize() {
 		if (window.innerWidth > parseInt($j(":root").css("--width-breakpoint"))){
-			$j('body').css('padding-top', $j("#navbar").innerHeight());
+			// Measure the fixed-top nav itself, not the #navbar container inside
+			// it, so the padding also covers the nav's own vertical padding.
+			var $headerNav = $j("#navbar").closest(".navbar");
+			var h = $headerNav.length ? $headerNav.outerHeight(false) : $j("#navbar").outerHeight(false);
+			$j('body').css('padding-top', h);
 		} else {
 			$j('body').css('padding-top', "inherit");
 		}
