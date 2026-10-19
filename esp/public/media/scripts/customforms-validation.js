@@ -23,8 +23,7 @@ $j(function(){
 	});
 
 	$j.validator.addMethod('USZip', USZipValidator, "Please enter a valid US zip-code");
-	$j.validator.addMethod('USPhone', USPhoneValidator, "Please enter a 10-digit phone number, e.g. 617-555-0101");
-	$j.validator.addMethod('ddate', DateValidator, "Must be of the format mm/dd/yyyy");
+	$j.validator.addMethod('ddate', DateValidator, "Please enter a valid date, e.g. 11/14/2026");
 
 	// Initializing the tool-tips
 	$j('img.qmark').qtip({
@@ -51,11 +50,6 @@ $j(function(){
 
 function USZipValidator(value, element){
 	return this.optional(element) || /^\d{5}$/.test(value);
-}
-
-// Also accepts the formats the phone widget re-displays, e.g. "(617) 555-0101".
-function USPhoneValidator(value, element){
-	return this.optional(element) || /^(\+?1[\s.-]?)?(\(\d{3}\)|\d{3})[\s.-]?\d{3}[\s.-]?\d{4}$/.test(value);
 }
 
 // Accepts mm/dd/yyyy, and yyyy-mm-dd, which is how saved dates are re-displayed.
