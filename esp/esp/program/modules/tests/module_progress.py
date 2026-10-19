@@ -267,7 +267,7 @@ class TeacherChecklistTagTest(ProgramFrameworkTest):
 
     def test_reuses_checklist_from_view(self):
         """The main page passes its own checklist, which the tag must not replace."""
-        checklist = {'modules': [], 'options': self.crmi}
+        checklist = {'modules': [], 'options': self.crmi, 'completedAll': True, 'program': self.program}
         result = teacher_checklist(Context({'request': self._make_request('teach'), 'checklist': checklist}))
         self.assertIs(result, checklist)
 
@@ -354,6 +354,30 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
         self.assertNotContains(response, 'class="progressbar"')
 
+    def _require_acknowledgement(self, force_show):
+        """Make the (unfinished) teacher acknowledgement a required step."""
+        pm = ProgramModule.objects.get(handler='TeacherAcknowledgementModule')
+        pmo = ProgramModuleObj.getFromProgModule(self.program, pm)
+        pmo.__class__ = ProgramModuleObj
+        pmo.required = True
+        pmo.save()
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = force_show
+        scrmi.save()
+
+    def test_steps_are_not_links_while_required_modules_are_forced(self):
+        """Teachers shouldn't be able to click past the required modules."""
+        self._require_acknowledgement(force_show=True)
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Teacher Acknowledgement')
+        self.assertNotContains(response, 'class="vModuleLink"')
+
+    def test_steps_are_links_when_required_modules_are_not_forced(self):
+        self._require_acknowledgement(force_show=False)
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="vModuleLink"')
 
 class ChecklistProgressTest(SimpleTestCase):
     """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""

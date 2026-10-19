@@ -3,7 +3,9 @@ Registration checklist column for teacher_module_base.html; expects the
 teacher_checklist context as ``checklist``, and ``in_theme_sidebar`` when it
 is placed in the theme's own sidebar rather than beside the content.
 
-A progress bar sits above the list.  Where the card is stacked above the
+A progress bar sits above the list.  While registration still forces the
+teacher through unfinished required modules, the steps are shown without
+links (``checklist.lock_links``).  Where the card is stacked above the
 page content, the list starts collapsed behind a Bootstrap collapse toggle;
 teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
 {% endcomment %}
@@ -25,7 +27,9 @@ teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
         {% if progress.next_step %}
         {% with step=progress.next_step %}
         Next:
-        {% if not step.useTemplate %}
+        {% if checklist.lock_links %}
+        {{ step.get_link_title }}
+        {% elif not step.useTemplate %}
         <a href="{{ step.get_full_path }}">{{ step.module.link_title }}</a>
         {% elif checklist.is_module_page %}
         <a href="{{ checklist.mainpage_url }}">{{ step.module.link_title }}</a>
@@ -52,7 +56,7 @@ teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
     <div class="card-body">
 
       {% if checklist.show_steps %}
-      {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url %}
+      {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url lock_links=checklist.lock_links %}
       {% endif %}
 
       {% if checklist.records %}

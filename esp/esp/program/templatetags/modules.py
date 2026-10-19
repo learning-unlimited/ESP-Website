@@ -88,8 +88,9 @@ def teacher_checklist(context):
 
     Also sets ``show_list`` (whether there is a checklist or other
     requirements to list), ``in_theme_sidebar`` (whether that list goes in
-    the theme's own sidebar, per the theme's checklist_in_sidebar setting)
-    and, with the list, ``progress`` (see get_checklist_progress).
+    the theme's own sidebar, per the theme's checklist_in_sidebar setting),
+    ``lock_links`` (whether steps are shown without links) and, with the
+    list, ``progress`` (see get_checklist_progress).
     The result is cached for the rest of the render, because
     teacher_module_base.html calls this from both its sidebar_extra and content
     blocks.
@@ -106,9 +107,21 @@ def teacher_checklist(context):
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
         if checklist['show_list']:
             checklist['progress'] = get_checklist_progress(checklist, include_steps=show_steps)
+        # Until the required modules are done, findModule sends the teacher
+        # through them in order, so the checklist shouldn't link around that.
+        checklist['lock_links'] = (not checklist['completedAll']
+                                   and _forces_required_modules(checklist['program']))
 
     context.render_context['teacher_checklist'] = checklist
     return checklist
+
+
+def _forces_required_modules(program):
+    """True if registration makes users complete required modules in order."""
+    try:
+        return program.studentclassregmoduleinfo.force_show_required_modules
+    except (AttributeError, ObjectDoesNotExist):
+        return False
 
 
 def _theme_has_checklist_sidebar(context):
