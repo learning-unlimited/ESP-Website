@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from argcache            import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
@@ -66,13 +66,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def get_admin_search_entry(cls, program, tl, view_name, pmo):
         if tl != "learn" or view_name != "studentreg":
             return None
-        from esp.program.modules.admin_search import AdminSearchEntry
+        from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
         base = program.getUrlBase()
         return AdminSearchEntry(
             id="learn_studentreg",
             url="/learn/%s/studentreg" % base,
             title="Student Registration",
-            category="Quick Links",
+            # Grouped under the dashboard section where the "Student Reg" button appears in directory.html.
+            category=SEARCH_CATEGORY_REGISTRATION,
             keywords=["student registration", "signup", "enroll"],
         )
 
@@ -81,6 +82,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.has_paid())
+    have_paid.get_or_create_token(('user',))
     have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
     have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
@@ -144,8 +146,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                                          user=request.user,
                                          program=prog)
 
-        if waitlist.count() <= 0:
-            Record.objects.create(event__name="waitlist", user=request.user,
+        if not waitlist.exists():
+            rt = RecordType.objects.get(name="waitlist")
+            Record.objects.create(event=rt, user=request.user,
                                   program=prog)
             already_on_list = False
         else:
@@ -273,6 +276,19 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             for sec in sections:
                 sec.unpreregister_student(request.user, verbs)
 
+        # Remove from the program *-students Mailman list only when the student
+        # has no remaining valid Enrolled registrations in this program (covers
+        # cancel_button_dereg=False, where sections are not dropped here).
+        from esp.program.models import StudentRegistration
+        from esp.mailman import remove_list_member
+
+        if not StudentRegistration.valid_objects(datetime.now()).filter(
+                user=request.user,
+                section__parent_class__parent_program=prog,
+                relationship__name='Enrolled',
+        ).exists():
+            remove_list_member("%s_%s-students" % (prog.program_type, prog.program_instance), request.user.email)
+
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='cancel').receipt
@@ -341,12 +357,47 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         iac = IndividualAccountingController(prog, request.user)
         context['has_external_payment'] = iac.get_transfers().exclude(transaction_id='').exists()
 
+        # Pass the invoice ID and paper schedule opt-out status for the barcode and toggle
+        context['invoice_id'] = iac.get_id()
+        context['opt_out_paper_schedule'] = Record.user_completed(request.user, 'opt_out_paper_schedule', prog)
+
         if context['scrmi'] and context['scrmi'].use_priority:
             context['no_confirm'] = True
         else:
             context['no_confirm'] = False
 
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
+
+    @aux_call
+    @needs_student_in_grade
+    def optout_paper_schedule(self, request, tl, one, two, module, extra, prog):
+        """AJAX handler to toggle a student's paper schedule opt-out preference.
+
+        A POST with opt_out=true creates an opt_out_paper_schedule Record for
+        the student in this program; a POST with opt_out=false removes it.
+        Returns JSON: { "opted_out": <bool> }
+        """
+        import json as _json
+        if request.method != 'POST':
+            return HttpResponse(status=405)
+
+        opt_out_str = request.POST.get('opt_out', 'false').lower()
+        opt_out = opt_out_str in ('true', '1', 'yes')
+
+        if opt_out:
+            rt, _ = RecordType.objects.get_or_create(
+                name='opt_out_paper_schedule',
+                defaults={'description': 'Opted out of paper schedule printing'}
+            )
+            Record.objects.get_or_create(user=request.user, event=rt, program=prog)
+        else:
+            Record.objects.filter(
+                user=request.user,
+                event__name='opt_out_paper_schedule',
+                program=prog
+            ).delete()
+
+        return HttpResponse(_json.dumps({'opted_out': opt_out}), content_type='application/json')
 
     def isStep(self):
         return False

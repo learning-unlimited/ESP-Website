@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_PARTICIPANTS
 from esp.program.modules.handlers.listgenmodule import ListGenModule
 from esp.utils.web import render_to_response
 from esp.dbmail.models import MessageRequest, PlainRedirect
@@ -45,7 +45,7 @@ from esp.tagdict.models import Tag
 from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
-from esp.middleware import ESPError
+from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
 from esp.utils.sanitize import strip_base64_images
 
 import re
@@ -132,14 +132,36 @@ class CommModule(ProgramModuleObj):
             id="manage_commpanel",
             url="/manage/%s/commpanel" % base,
             title="Email (Communications Panel)",
-            category="Coordinate",
+            category=SEARCH_CATEGORY_PARTICIPANTS,
             keywords=["email", "communications", "commpanel", "messages"],
         )
 
     @staticmethod
+    def _q_has_grade_filter(q_obj):
+        """Recursively check whether a Q object contains a grade filter.
+
+        Grade filters (grade_min/grade_max) are translated into
+        ``student_info__graduation_year`` lookups in
+        ``UserSearchController.query_from_criteria``.  This method walks the
+        Q-object tree to detect such lookups.
+        """
+        from django.db.models.query import Q
+        if not isinstance(q_obj, Q):
+            return False
+        for child in q_obj.children:
+            if isinstance(child, Q):
+                if CommModule._q_has_grade_filter(child):
+                    return True
+            elif isinstance(child, tuple) and len(child) >= 1:
+                lookup = str(child[0])
+                if 'student_info__graduation_year' in lookup:
+                    return True
+        return False
+
+    @staticmethod
     def get_mailer_warnings(listcount, filterid, sendto_fn_name):
-        from esp.users.models import ESPUser, PersistentQueryFilter
-        from esp.dbmail.models import MessageRequest
+        from esp.users.models import ESPUser, PersistentQueryFilter # noqa: F811
+        from esp.dbmail.models import MessageRequest # noqa: F811
         mailer_warnings = []
 
         # a. Warn if massive mailer (over 2000 recipients)
@@ -152,10 +174,15 @@ class CommModule(ProgramModuleObj):
             mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
 
         # b. Warn if no grade range filter is used
-        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        filter_name = getattr(filter_obj, 'useful_name', '') or ''
+        try:
+            filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            mailer_warnings.append(
+                "Warning: The selected recipient filter is no longer valid. Please go back and reselect your recipient list."
+            )
+            filter_obj = None
 
-        if filter_name and 'grade' not in filter_name.lower():
+        if filter_obj is not None and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
             mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
@@ -176,10 +203,19 @@ class CommModule(ProgramModuleObj):
 
         return mailer_warnings
 
+    @staticmethod
+    def get_valid_filter_or_error(filterid):
+        """ Return the PersistentQueryFilter for filterid, or raise an
+            ESPError if the filter does not exist or the id is invalid. """
+        try:
+            return PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError("The selected recipient filter is no longer valid.  "
+                           "Please go back and reselect your recipient list.")
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter
         from django.conf import settings
 
         filterid, listcount, subject, body = [request.POST['filterid'],
@@ -195,7 +231,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)', fromemail):
+            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)', fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -220,7 +256,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
 
-        userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
+        userlist = CommModule.get_valid_filter_or_error(filterid).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
@@ -292,8 +328,7 @@ class CommModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
-        from esp.dbmail.models import MessageRequest
-        from esp.users.models import PersistentQueryFilter
+        from esp.dbmail.models import MessageRequest # noqa: F811
 
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
@@ -345,7 +380,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
 
-        filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filterobj = CommModule.get_valid_filter_or_error(filterid)
 
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -396,7 +431,7 @@ class CommModule(ProgramModuleObj):
         prs = PlainRedirect.objects.filter(original = "info")
 
         if not prs.exists():
-           redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
+            redirect = PlainRedirect.objects.create(original = "info", destination = settings.DEFAULT_EMAIL_ADDRESSES['default'])
 
         return render_to_response(self.baseDir()+'step2.html', request, context)
 
@@ -419,7 +454,12 @@ class CommModule(ProgramModuleObj):
             if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
 
                 selected = usc.selected_list_from_postdata(data)
-                filterObj = usc.filter_from_postdata(prog, data)
+                try:
+                    filterObj = usc.filter_from_postdata(prog, data)
+                except (ESPError_Log, ESPError_NoLog) as e:
+                    context.update(usc.prepare_context(prog, target_path=request.path))
+                    context['error'] = str(e)
+                    return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
@@ -457,7 +497,7 @@ class CommModule(ProgramModuleObj):
                 raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
 
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context(prog))
+        context.update(usc.prepare_context(prog, target_path=request.path))
 
         return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 

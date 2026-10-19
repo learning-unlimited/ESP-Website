@@ -17,7 +17,7 @@ Your account, <b>{{ user.username }}</b>, has been properly deactivated and you 
 </p>
 
 <p>
-Thank you for your interest in {{ settings.ORGANIZATION_SHORT_NAME }}!  If you have any questions, please <a href="/contact/">contact us</a>.
+Thank you for your interest in {{ settings.ORGANIZATION_SHORT_NAME }}!  If you have any questions, please <a href="{% url 'contact' %}">contact us</a>.
 </p>
 {% else %}
 <p>We're sorry to see you go. If you are sure you would like to deactivate your account (<b>{{ user.username }}</b>) and unsubscribe from emails from {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}, please click the confirmation button below:</p>

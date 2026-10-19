@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
 from esp.program.modules.handlers.volunteersignup import VolunteerSignup
 from esp.users.models import ESPUser
@@ -67,9 +67,9 @@ class VolunteerManage(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_volunteering",
             url="/manage/%s/volunteering" % base,
-            title="Volunteers",
-            category="Logistics",
-            keywords=["volunteers", "shifts", "signups"],
+            title="Manage Volunteers",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["volunteers", "shifts", "signups", "registration"],
         )
 
     """
