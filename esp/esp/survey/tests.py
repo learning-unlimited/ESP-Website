@@ -1,12 +1,17 @@
 """
 Tests for esp.survey
+
 - Model tests: ListField descriptor, Survey, SurveyResponse, QuestionType, Question, Answer
+- CSV Import tests: parse_csv utility function for bulk question import
 - View tests: Cross-program teacher survey responses page
 """
 import datetime
 
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.test import RequestFactory
 from unittest.mock import MagicMock, patch
 
 from esp.program.models import Program
@@ -20,6 +25,7 @@ from esp.survey.models import (
     Survey,
     SurveyResponse,
 )
+from esp.survey.views import survey_review
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 
@@ -28,7 +34,7 @@ def _setup_roles():
         Group.objects.get_or_create(name=name)
 
 
-# ===== Model Tests (from main) =====
+# ===== Model Tests =====
 
 class ListFieldTest(TestCase):
     """Test the ListField descriptor used in QuestionType."""
@@ -171,6 +177,71 @@ class QuestionTest(TestCase):
         self.assertIsInstance(params, dict)
 
 
+class LongAnswerQuestionValidationTest(TestCase):
+    """Long Answer questions store textarea height in _param_values (Rows)."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='Long Answer Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.la_type, _ = QuestionType.objects.get_or_create(
+            name='Long Answer',
+            defaults={
+                '_param_names': 'Rows',
+                'is_numeric': False,
+                'is_countable': False,
+            },
+        )
+
+    def _question(self, param_values):
+        return Question(
+            survey=self.survey,
+            name='Tell us more',
+            question_type=self.la_type,
+            _param_values=param_values,
+            seq=0,
+        )
+
+    def test_full_clean_accepts_positive_rows(self):
+        q = self._question('8')
+        q.full_clean()
+
+    def test_full_clean_rejects_negative_rows(self):
+        q = self._question('-3')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_zero_rows(self):
+        q = self._question('0')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_empty_param(self):
+        q = self._question('')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_non_integer_rows(self):
+        q = self._question('abc')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_whitespace_only_rows(self):
+        q = self._question('   ')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_float_string_rows(self):
+        q = self._question('3.5')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
@@ -210,6 +281,136 @@ class AnswerTest(TestCase):
         self.answer.save()
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
+
+    def testAnswerCleanValidation(self):
+        '''Test that Answer.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
+        ans_null.clean()  # Should not raise
+
+        # Both set -> OK
+        ct = ContentType.objects.get_for_model(self.program)
+        ans_set = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=self.program.id)
+        ans_set.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError on save()
+        ans_ct_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_ct_only.save()
+
+        # content_type null, object_id set -> ValidationError on save()
+        ans_id_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=self.program.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_id_only.save()
+
+
+# ===== CSV Import Tests =====
+
+class CSVImportTest(TestCase):
+    """Test the parse_csv utility function for CSV survey question import."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='CSV Test Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.qt_yesno = QuestionType.objects.create(
+            name='test yes-no response',
+            _param_names='',
+            is_numeric=False,
+            is_countable=False,
+        )
+        self.qt_rating = QuestionType.objects.create(
+            name='test numeric rating',
+            _param_names='Number of ratings|Lower text|Upper text',
+            is_numeric=True,
+            is_countable=True,
+        )
+
+    def _make_csv_file(self, content):
+        """Create a file-like object from CSV string content."""
+        import io
+        return io.BytesIO(content.encode('utf-8'))
+
+    def test_csv_parse_valid(self):
+        """Valid CSV with all columns produces correct parsed rows."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class,seq,param_values\n'
+            'Do you like it?,test yes-no response,false,1,\n'
+            'Rate the class,test numeric rating,true,2,5|Low|High\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(errors), 0)
+        self.assertEqual(len(parsed_rows), 2)
+        self.assertEqual(parsed_rows[0]['question_text'], 'Do you like it?')
+        self.assertEqual(parsed_rows[0]['question_type'], self.qt_yesno)
+        self.assertFalse(parsed_rows[0]['per_class'])
+        self.assertEqual(parsed_rows[0]['seq'], 1)
+        self.assertEqual(parsed_rows[1]['question_text'], 'Rate the class')
+        self.assertEqual(parsed_rows[1]['question_type'], self.qt_rating)
+        self.assertTrue(parsed_rows[1]['per_class'])
+        self.assertEqual(parsed_rows[1]['param_values'], '5|Low|High')
+
+    def test_csv_parse_missing_required_column(self):
+        """CSV missing question_text column returns header-level error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = 'question_type,per_class,seq\nyes-no response,false,1\n'
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]['row_number'], 0)
+        self.assertIn('question_text', errors[0]['message'])
+
+    def test_csv_parse_invalid_question_type(self):
+        """Unrecognized question_type is flagged as error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type\n'
+            'Some question,nonexistent_type\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('nonexistent_type', errors[0]['message'])
+
+    def test_csv_parse_invalid_per_class(self):
+        """Non-boolean per_class value is flagged as error."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class\n'
+            'Some question,yes-no response,maybe\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 0)
+        self.assertEqual(len(errors), 1)
+        self.assertIn('per_class', errors[0]['message'])
+
+    def test_csv_parse_partial_errors(self):
+        """Mix of valid/invalid rows: valid rows succeed, invalid rows reported."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,per_class,seq\n'
+            'Good question,yes-no response,false,1\n'
+            ',yes-no response,false,2\n'
+            'Another good one,numeric rating,true,3\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 2)
+        self.assertEqual(len(errors), 1)
+        self.assertEqual(errors[0]['row_number'], 3)
+        self.assertIn('question_text is empty', errors[0]['message'])
 
 
 # ===== View Tests (cross-program teacher survey page, #3228) =====
@@ -460,3 +661,99 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
                          "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
+
+
+# ===== View Tests (regressions for #5991) =====
+
+class SurveyReviewSingleErrorHandlingTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `survey_review_single` used to pass an
+    unvalidated query-string key straight into `SurveyResponse.objects.filter
+    (id=...)`, raising an unhandled ValueError (-> 500 with no friendly
+    message) for a non-numeric key instead of falling through to the
+    existing "pick an individual response" ESPError message.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Review Single Survey', program=self.program, category='learn')
+        self.response = SurveyResponse.objects.create(survey=self.survey)
+
+        self.admin = self.admins[0]
+        self.review_single_url = '/manage/%s/surveys/review_single' % self.program.getUrlBase()
+
+    def test_non_numeric_key_shows_friendly_error(self):
+        """A non-numeric query-string key no longer raises an unhandled ValueError."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?not-a-number=' % self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+    def test_valid_response_id_still_works(self):
+        """A valid numeric response id still resolves to that response's page."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?%d=' % (self.review_single_url, self.response.id))
+        self.assertEqual(response.status_code, 200)
+
+    def test_missing_response_id_shows_friendly_error(self):
+        """No query string at all still hits the pre-existing friendly error path."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+
+class SurveyViewsContextIsolationTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `context = {}` as a default argument is a
+    single dict created once at function-definition time, so every call
+    that doesn't pass its own `context` used to mutate and reuse the exact
+    same shared dict across requests. This class asserts each call now gets
+    its own fresh dict.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        Survey.objects.get_or_create(
+            name='Context Isolation Survey', program=self.program, category='learn')
+
+        self.admin = self.admins[0]
+        self.factory = RequestFactory()
+
+    def _manage_request(self):
+        request = self.factory.get('/')
+        request.user = self.admin
+        request.session = {}
+        return request
+
+    @patch('esp.survey.views.render_to_response')
+    def test_context_dict_not_shared_across_calls(self, mock_render):
+        """Two calls to survey_review get two distinct context dict objects."""
+        mock_render.return_value = HttpResponse('')
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        first_context = mock_render.call_args[0][2]
+
+        # Simulate data one request left behind in its context dict.
+        first_context['leaked_from_first_request'] = True
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        second_context = mock_render.call_args[0][2]
+
+        self.assertIsNot(first_context, second_context)
+        self.assertNotIn('leaked_from_first_request', second_context)

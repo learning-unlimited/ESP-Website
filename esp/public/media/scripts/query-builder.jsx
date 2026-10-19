@@ -158,19 +158,19 @@ var QueryBuilder = React.createClass({
                  filterNames={this.allFilterNames()}
                  onSubmit={this.submit} />
       <button onClick={this.submit} className="qb-input btn btn-primary">
-        <span className="glyphicon glyphicon-search" aria-hidden="true" />
+        <span className="bi bi-search" aria-hidden="true" />
         &nbsp;Search
       </button>
       <button title="search and randomize results"
               onClick={this.submitRandom}
-              className="qb-input btn btn-default">
-        <span className="glyphicon glyphicon-random" aria-hidden="true" />
+              className="qb-input btn btn-secondary">
+        <span className="bi bi-shuffle" aria-hidden="true" />
         &nbsp;Randomize
       </button>
       <button title="jump to manage page for a random result"
               onClick={this.submitLucky}
-              className="qb-input btn btn-default">
-        <span className="glyphicon glyphicon-gift" aria-hidden="true" />
+              className="qb-input btn btn-secondary">
+        <span className="bi bi-gift" aria-hidden="true" />
         &nbsp;I'm Feeling Lucky
       </button>
     </div>;
@@ -264,7 +264,7 @@ var QueryNode = React.createClass({
       removeButton = <button onClick={this.props.onRemove}
                              aria-label="Remove"
                              className="qb-input btn btn-danger">
-        <span className="glyphicon glyphicon-trash glyphicon-btn-height" aria-hidden="true" />
+        <span className="bi bi-dash-lg bi-btn-height" aria-hidden="true" />
       </button>;
     }
     return <div>
@@ -519,7 +519,7 @@ var OptionalInput = React.createClass({
       inner = <InnerClass ref="inner" input={this.props.input.inner} />;
       buttonClasses = buttonClasses + "active btn-success"
     } else {
-      buttonClasses = buttonClasses + "btn-default"
+      buttonClasses = buttonClasses + "btn-secondary"
     }
     return <div>
       <button onClick={this.handleClick} className={buttonClasses}>
@@ -718,7 +718,7 @@ var BooleanOp = React.createClass({
           <button onClick={this.handleAdd}
                   aria-label="Add"
                   className="qb-input btn btn-success">
-            <span className="glyphicon glyphicon-plus glyphicon-btn-height" aria-hidden="true" />
+            <span className="bi bi-plus-lg bi-btn-height" aria-hidden="true" />
           </button>
         </li>
       </ul>

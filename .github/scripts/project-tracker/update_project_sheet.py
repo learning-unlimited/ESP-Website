@@ -18,6 +18,7 @@ Required environment variables:
 import json
 import os
 import sys
+import time
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -35,11 +36,16 @@ REPO_OWNER = os.environ.get("REPO_OWNER", "learning-unlimited")
 REPO_NAME = os.environ.get("REPO_NAME", "ESP-Website")
 
 GRAPHQL_URL = "https://api.github.com/graphql"
+# Retry transient GitHub failures (e.g. 502 when a query times out server-side)
+MAX_ATTEMPTS = 4
+RETRY_STATUSES = {502, 503, 504}
 
 # ---------------------------------------------------------------------------
 # GraphQL helpers
 # ---------------------------------------------------------------------------
 
+import http.client
+import urllib.error
 import urllib.request
 
 
@@ -59,8 +65,19 @@ def graphql(query: str, variables: dict | None = None, *, allow_partial: bool = 
             "Content-Type": "application/json",
         },
     )
-    with urllib.request.urlopen(req) as resp:
-        data = json.loads(resp.read())
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.loads(resp.read())
+            break
+        except (OSError, http.client.HTTPException) as exc:
+            retryable = not isinstance(exc, urllib.error.HTTPError) or exc.code in RETRY_STATUSES
+            if not retryable or attempt == MAX_ATTEMPTS:
+                raise
+            delay = 2 ** attempt
+            print(f"  GraphQL request failed ({exc}); retrying in {delay}s "
+                  f"(attempt {attempt}/{MAX_ATTEMPTS}) ...", file=sys.stderr)
+            time.sleep(delay)
     if "errors" in data:
         if allow_partial and data.get("data"):
             # Log but continue — some entries (e.g. bots) may not resolve
@@ -103,7 +120,7 @@ def paginate(query: str, path: list[str], variables: dict | None = None) -> list
 PR_QUERY = """
 query($owner: String!, $repo: String!, $cursor: String) {
   repository(owner: $owner, name: $repo) {
-    pullRequests(states: OPEN, first: 50, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
+    pullRequests(states: OPEN, first: 20, after: $cursor, orderBy: {field: UPDATED_AT, direction: DESC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number
@@ -153,6 +170,48 @@ query($owner: String!, $repo: String!, $cursor: String) {
 def fetch_pull_requests() -> list[dict]:
     variables = {"owner": REPO_OWNER, "repo": REPO_NAME}
     return paginate(PR_QUERY, ["repository", "pullRequests"], variables)
+
+
+# ---------------------------------------------------------------------------
+# Fetch repository collaborators with triage+ permissions
+# ---------------------------------------------------------------------------
+
+COLLABORATORS_QUERY = """
+query($owner: String!, $repo: String!, $cursor: String) {
+  repository(owner: $owner, name: $repo) {
+    collaborators(first: 100, after: $cursor) {
+      pageInfo { hasNextPage endCursor }
+      edges {
+        permission
+        node { login }
+      }
+    }
+  }
+}
+"""
+
+TRIAGE_PLUS = {"ADMIN", "MAINTAIN", "WRITE", "TRIAGE"}
+
+
+def fetch_privileged_logins() -> set[str]:
+    """Return the set of logins with triage or higher permissions."""
+    variables = {"owner": REPO_OWNER, "repo": REPO_NAME}
+    # collaborators returns edges (not nodes) since we need the permission
+    all_edges: list = []
+    variables["cursor"] = None
+    while True:
+        data = graphql(COLLABORATORS_QUERY, variables)
+        conn = data["repository"]["collaborators"]
+        all_edges.extend(conn["edges"])
+        if conn["pageInfo"]["hasNextPage"]:
+            variables["cursor"] = conn["pageInfo"]["endCursor"]
+        else:
+            break
+    return {
+        edge["node"]["login"]
+        for edge in all_edges
+        if edge["permission"] in TRIAGE_PLUS
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -236,7 +295,7 @@ def link_profile(login: str) -> str:
     return f'=HYPERLINK("https://github.com/{login}", "{login}")'
 
 
-def build_pr_rows(prs: list[dict]) -> list[list[str]]:
+def build_pr_rows(prs: list[dict], privileged: set[str]) -> list[list[str]]:
     """Build the rows for the Pull Requests sheet."""
     header = [
         "PR #", "Title", "Author", "Opened", "Last Updated",
@@ -275,12 +334,12 @@ def build_pr_rows(prs: list[dict]) -> list[list[str]]:
         )
 
         # Determine the overall review state from the most recent
-        # non-PENDING review per reviewer (latest wins)
+        # non-PENDING review per privileged reviewer (triage+ only)
         reviewer_states: dict[str, str] = {}
         for rv in pr["reviews"]["nodes"]:
             rv_author = (rv.get("author") or {}).get("login", "")
             state = rv.get("state", "")
-            if rv_author and state != "PENDING":
+            if rv_author in privileged and state != "PENDING":
                 reviewer_states[rv_author] = state
         states = set(reviewer_states.values())
         if "CHANGES_REQUESTED" in states:
@@ -758,6 +817,10 @@ def main() -> None:
     prs = fetch_pull_requests()
     print(f"    Found {len(prs)} open PRs")
 
+    print("  Fetching privileged collaborators ...")
+    privileged = fetch_privileged_logins()
+    print(f"    Found {len(privileged)} users with triage+ permissions")
+
     print("  Fetching open issues ...")
     issues = fetch_issues()
     print(f"    Found {len(issues)} open issues")
@@ -767,7 +830,7 @@ def main() -> None:
     all_pr_authors = fetch_pr_authors_since(year_start)
     print(f"    Found {len(all_pr_authors)} unique PR authors")
 
-    pr_rows = build_pr_rows(prs)
+    pr_rows = build_pr_rows(prs, privileged)
     issue_rows = build_issue_rows(issues)
     contributor_rows = build_contributor_rows(prs, issues, all_pr_authors)
 

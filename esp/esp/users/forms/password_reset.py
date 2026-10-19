@@ -1,6 +1,8 @@
 
 
 from django import forms
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from esp.users.models import ESPUser
 from django.utils.html import conditional_escape, mark_safe
 from esp.utils.forms import FormWithRequiredCss, SizedCharField
@@ -17,11 +19,6 @@ class PasswordResetForm(forms.Form):
 
 
     def clean_username(self):
-
-        if self.cleaned_data.get('username', '').strip() == '' and \
-           self.cleaned_data.get('email', '').strip() == '':
-            raise forms.ValidationError("You need to specify something.")
-
         if self.cleaned_data['username'].strip() == '': return ''
 
         try:
@@ -40,10 +37,19 @@ class PasswordResetForm(forms.Form):
 
         raise forms.ValidationError(f'No user has email {self.cleaned_data["email"]}')
 
+    def clean(self):
+        cleaned_data = super().clean()
+        # Check the raw input rather than cleaned_data: a field that failed its
+        # own validation is dropped from cleaned_data, but it wasn't left blank.
+        if self.data.get('email', '').strip() == '' and \
+           self.data.get('username', '').strip() == '':
+            raise forms.ValidationError("You need to specify something.")
+        return cleaned_data
+
 class UserPasswdForm(FormWithRequiredCss):
-    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswd = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
-    newpasswdconfirm = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput())
+    password = SizedCharField(length=12, max_length=32, widget=forms.PasswordInput(), label="Current password")
+    newpasswd = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="New password")
+    newpasswdconfirm = SizedCharField(length=12, min_length=8, max_length=32, widget=forms.PasswordInput(), label="Confirm new password")
 
     def __init__(self, user, *args, **kwargs):
         self.user = user
@@ -65,4 +71,8 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+        try:
+            validate_password(new_passwd, self.user)
+        except ValidationError as e:
+            raise forms.ValidationError(e.messages[0])
         return new_passwd
