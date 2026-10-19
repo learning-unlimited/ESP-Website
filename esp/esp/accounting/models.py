@@ -61,23 +61,26 @@ class LineItemType(models.Model):
     )
 
     @classmethod
-    def get_or_create_by_text(cls, program, text):
+    def get_or_create_for_program(cls, program, defaults=None, **kwargs):
         """
-        Return this program's line item type with the given text, creating it
-        if there is none. Unlike get_or_create(), this is safe when concurrent
-        requests race to create it, and if earlier races left duplicates it
-        returns the oldest instead of raising MultipleObjectsReturned.
+        Like LineItemType.objects.get_or_create(program=program, **kwargs),
+        returning (line_item_type, created), but safe when concurrent requests
+        race to create the same row. If earlier races left duplicates, it
+        returns the newest, as the default_*_lineitemtype() lookups do,
+        instead of raising MultipleObjectsReturned.
         """
-        lit = cls.objects.filter(program=program, text=text).order_by('id').first()
-        if lit is None:
-            with transaction.atomic():
-                # Serialize creation per program: a concurrent caller waits
-                # here, then finds the row created by the first one.
-                Program.objects.select_for_update(no_key=True).get(pk=program.pk)
-                lit = cls.objects.filter(program=program, text=text).order_by('id').first()
-                if lit is None:
-                    lit = cls.objects.create(program=program, text=text)
-        return lit
+        matches = cls.objects.filter(program=program, **kwargs).order_by('-id')
+        lit = matches.first()
+        if lit is not None:
+            return lit, False
+        with transaction.atomic():
+            # Serialize creation per program: a concurrent caller waits here,
+            # then finds the row created by the first one.
+            Program.objects.select_for_update(no_key=True).get(pk=program.pk)
+            lit = matches.first()
+            if lit is not None:
+                return lit, False
+            return cls.objects.create(program=program, **dict(kwargs, **(defaults or {}))), True
 
     @property
     def amount(self):

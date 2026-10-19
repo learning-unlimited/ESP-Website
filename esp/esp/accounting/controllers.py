@@ -142,47 +142,47 @@ class ProgramAccountingController(BaseAccountingController):
         if select_items is None:
             select_items = ()
 
-        (lit_required, created) = LineItemType.objects.get_or_create(
+        (lit_required, created) = LineItemType.get_or_create_for_program(
+            program,
             text='Program admission',
             amount_dec=Decimal('%.2f' % base_cost),
             required=True,
             max_quantity=1,
-            program=program,
             for_payments=False,
             for_finaid=True
         )
         result.append(lit_required)
 
-        (lit_payments, created) = LineItemType.objects.get_or_create(
+        (lit_payments, created) = LineItemType.get_or_create_for_program(
+            program,
             text='Student payment',
-            program=program,
             for_payments=True
         )
         result.append(lit_payments)
 
-        (lit_finaid, created) = LineItemType.objects.get_or_create(
-            text='Financial aid grant',
-            program=program
+        (lit_finaid, created) = LineItemType.get_or_create_for_program(
+            program,
+            text='Financial aid grant'
         )
         result.append(lit_finaid)
 
         for item in optional_items:
-            (lit_optional, created) = LineItemType.objects.get_or_create(
+            (lit_optional, created) = LineItemType.get_or_create_for_program(
+                program,
                 text=item[0],
                 amount_dec=Decimal('%.2f' % item[1]),
                 required=False,
                 max_quantity=item[2],
-                program=program,
                 for_payments=False
             )
             result.append(lit_optional)
 
         for item in select_items:
-            (lit_select, created) = LineItemType.objects.get_or_create(
+            (lit_select, created) = LineItemType.get_or_create_for_program(
+                program,
                 text=item[0],
                 required=False,
                 max_quantity=1,
-                program=program,
             )
             for option in item[1]:
                 (lio, created) = LineItemOptions.objects.get_or_create(
@@ -226,8 +226,8 @@ class ProgramAccountingController(BaseAccountingController):
 
     def default_refund_lineitemtype(self):
         """Get or create a line item type for refunds."""
-        lineitem, created = LineItemType.objects.get_or_create(
-            program=self.program,
+        lineitem, created = LineItemType.get_or_create_for_program(
+            self.program,
             text='Student refund',
             defaults={'for_payments': False}
         )
@@ -237,7 +237,7 @@ class ProgramAccountingController(BaseAccountingController):
         for module_name in ['CreditCardModule_Stripe', 'DonationModule']:
             other_module = self.program.getModule(module_name)
             if other_module and other_module.get_setting('offer_donation', default=True):
-                return LineItemType.get_or_create_by_text(self.program, other_module.get_setting('donation_text'))
+                return LineItemType.get_or_create_for_program(self.program, text=other_module.get_setting('donation_text'))[0]
         return None
 
     def get_lineitemtypes_Q(self, include_donations=True, required_only=False, optional_only=False, payment_only=False, lineitemtype_id=None):

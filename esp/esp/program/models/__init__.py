@@ -1505,7 +1505,7 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             self._sibling_discount = Decimal('0.00')
         Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
-        LineItemType.objects.get_or_create(text='Sibling discount', program=self, amount_dec = self._sibling_discount)
+        LineItemType.get_or_create_for_program(self, text='Sibling discount', amount_dec = self._sibling_discount)
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 

@@ -1,5 +1,5 @@
 """
-Concurrency test for LineItemType.get_or_create_by_text().
+Concurrency test for LineItemType.get_or_create_for_program().
 
 Uses TransactionTestCase so each worker thread commits on its own database
 connection, as concurrent requests do in production.
@@ -16,7 +16,7 @@ from esp.accounting.models import LineItemType
 from esp.program.models import Program
 
 
-class GetOrCreateByTextConcurrencyTest(TransactionTestCase):
+class GetOrCreateForProgramConcurrencyTest(TransactionTestCase):
 
     def setUp(self):
         # SQLite ignores row locks; this regression targets backends used in production.
@@ -44,7 +44,7 @@ class GetOrCreateByTextConcurrencyTest(TransactionTestCase):
             close_old_connections()
             try:
                 barrier.wait()
-                lit = LineItemType.get_or_create_by_text(self.program, 'Donation')
+                lit, created = LineItemType.get_or_create_for_program(self.program, text='Donation')
                 with lock:
                     results.append(lit.id)
             except Exception as e:

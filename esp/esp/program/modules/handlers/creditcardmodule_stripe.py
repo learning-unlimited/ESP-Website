@@ -120,7 +120,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        return LineItemType.get_or_create_by_text(self.program, self.get_setting('donation_text'))
+        return LineItemType.get_or_create_for_program(self.program, text=self.get_setting('donation_text'))[0]
 
     def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
