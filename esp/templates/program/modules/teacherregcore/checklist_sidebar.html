@@ -15,10 +15,10 @@ teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
     {% if progress.total %}
     <div class="teacher-reg-progress">
       <div class="teacher-reg-progress-label">
-        <strong>{{ progress.done }} of {{ progress.total }} required steps done</strong>
+        <strong>{{ progress.done }} of {{ progress.total }} registration requirements done</strong>
         <span>{{ progress.percent }}%</span>
       </div>
-      <div class="progress" role="progressbar" aria-label="Required registration steps done" aria-valuemin="0" aria-valuemax="{{ progress.total }}" aria-valuenow="{{ progress.done }}">
+      <div class="progress" role="progressbar" aria-label="Registration requirements done" aria-valuemin="0" aria-valuemax="{{ progress.total }}" aria-valuenow="{{ progress.done }}">
         <div class="progress-bar" style="width: {{ progress.percent }}%"></div>
       </div>
       <p class="teacher-reg-next">
@@ -36,7 +36,7 @@ teacherreg-layout.css keeps it open (and hides the toggle) everywhere else.
         {% elif progress.next_record %}
         Next: {{ progress.next_record.full_event }}
         {% else %}
-        All required steps are done.
+        All registration requirements are done.
         {% endif %}
       </p>
     </div>

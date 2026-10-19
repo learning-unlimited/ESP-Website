@@ -313,7 +313,7 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
             response = self.client.get('/teach/%s/%s' % (self.program.url, view))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, self.SIDEBAR_MARKER)
-            self.assertContains(response, 'required steps done')
+            self.assertContains(response, 'registration requirements done')
             self.assertContains(response, 'id="teacher-reg-checklist-steps"')
 
     def test_class_registration_form_has_no_checklist(self):
