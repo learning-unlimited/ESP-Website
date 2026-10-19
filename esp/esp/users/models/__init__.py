@@ -3189,9 +3189,11 @@ class GradeChangeRequest(TimeStampedModel):
         This email is sent when the administrator confirms a change grade change request.
         """
         subject, message = self._confirmation_email_content()
+        from_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
+        from_email = f'{from_name} <info@{settings.SITE_INFO[1]}>'
         send_mail(subject,
                   message,
-                  Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}' + ' <info@' + settings.SITE_INFO[1] + '>',
+                  from_email,
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):
