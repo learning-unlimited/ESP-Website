@@ -75,7 +75,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         for module in modules:
             context = module.prepare(context)
 
-        # Same checklist context as the teacher module pages; see teacher_module_base.html.
+        # Same checklist context as the teacher module pages; see module_base.html.
         checklist = get_checklist_context(request.user, prog, 'teach', modules)
         checklist['options'] = prog.classregmoduleinfo
         context.update(checklist)

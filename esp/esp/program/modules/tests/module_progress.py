@@ -40,13 +40,14 @@ from django.test import RequestFactory, SimpleTestCase
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.checklist import get_checklist_progress, get_module_page_checklist_context
-from esp.program.templatetags.modules import registration_progress, teacher_checklist
+from esp.program.templatetags.modules import registration_checklist
 from esp.program.tests import ProgramFrameworkTest
 from esp.themes.controllers import ThemeController
 
 
-class RegistrationProgressTagTest(ProgramFrameworkTest):
-    """Unit tests for the registration_progress template tag.
+class RegistrationChecklistTagTest(ProgramFrameworkTest):
+    """Unit tests for the registration_checklist template tag used by
+    module_base.html.
 
     These tests call the tag function directly using a RequestFactory-built
     request, so no URL routing or permission setup is required.
@@ -54,75 +55,53 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
 
     def setUp(self):
         super().setUp()
-        # Enable checkboxes (progress_mode=1) so the tag has something to render
         self.scrmi = self.program.studentclassregmoduleinfo
         self.scrmi.progress_mode = 1
         self.scrmi.save()
+        self.crmi = self.program.classregmoduleinfo
+        self.crmi.progress_mode = 1
+        self.crmi.save()
 
     def _make_request(self, tl=None, with_program=True):
-        rf = RequestFactory()
-        request = rf.get('/')
-        request.user = self.students[0]
+        request = RequestFactory().get('/')
+        request.user = self.teachers[0] if tl == 'teach' else self.students[0]
         if with_program:
             request.program = self.program
         if tl is not None:
             request.tl = tl
         return request
 
+    def _checklist(self, tl=None, with_program=True, **extra):
+        return registration_checklist(Context(dict(extra, request=self._make_request(tl, with_program))))
+
     def test_returns_empty_without_request_in_context(self):
-        """Tag returns empty dict when there is no request in the template context."""
-        result = registration_progress({})
-        self.assertEqual(result, {})
+        self.assertEqual(registration_checklist(Context({})), {})
 
     def test_returns_empty_without_program_on_request(self):
-        """Tag returns empty dict when request has no program attribute."""
-        request = self._make_request(with_program=False, tl='learn')
-        result = registration_progress({'request': request})
-        self.assertEqual(result, {})
+        self.assertEqual(self._checklist('learn', with_program=False), {})
 
-    def test_returns_empty_without_tl_on_request(self):
-        """Tag returns empty dict when request.tl is not set."""
-        request = self._make_request()  # no tl
-        result = registration_progress({'request': request})
-        self.assertEqual(result, {})
+    def test_returns_empty_outside_registration(self):
+        """Shared templates render as plain pages without a tl or for admin pages."""
+        for tl in (None, 'manage'):
+            self.assertEqual(self._checklist(tl), {})
 
-    def test_returns_empty_for_manage_tl(self):
-        """Tag returns empty dict for admin/manage tl (not a registration flow)."""
-        request = self._make_request(tl='manage')
-        result = registration_progress({'request': request})
-        self.assertEqual(result, {})
+    def test_returns_module_page_context(self):
+        """Checklist links point back to the main page on module pages."""
+        for tl, options, mainpage in (('learn', self.scrmi, 'studentreg'), ('teach', self.crmi, 'teacherreg')):
+            result = self._checklist(tl)
+            self.assertEqual(result['options'], options)
+            self.assertEqual(result['extra_steps'], '%s:extra_steps' % tl)
+            self.assertEqual(result['program'], self.program)
+            self.assertTrue(result['is_module_page'])
+            self.assertEqual(result['mainpage_url'], '/%s/%s/%s' % (tl, self.program.url, mainpage))
+            self.assertIn('modules', result)
+            self.assertIn('records', result)
+            self.assertTrue(result['show_list'])
 
-    def test_returns_empty_when_progress_mode_disabled(self):
-        """Tag returns empty dict when progress_mode is 0 (none)."""
+    def test_no_list_when_progress_mode_disabled(self):
         self.scrmi.progress_mode = 0
         self.scrmi.save()
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
-        self.assertEqual(result, {})
-
-    def test_returns_context_for_learn_tl(self):
-        """Tag returns the expected context keys for a student (learn) tl."""
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
-        self.assertIn('modules', result)
-        self.assertIn('scrmi', result)
-        self.assertIn('completedAll', result)
-        self.assertIn('program', result)
-        self.assertIn('extra_steps', result)
-        self.assertEqual(result['extra_steps'], 'learn:extra_steps')
-        self.assertEqual(result['program'], self.program)
-        self.assertEqual(result['scrmi'], self.scrmi)
-
-    def test_returns_correct_extra_steps_for_teach_tl(self):
-        """Tag uses 'teach:extra_steps' for the teacher registration tl."""
-        crmi = self.program.classregmoduleinfo
-        crmi.progress_mode = 1
-        crmi.save()
-        request = self._make_request(tl='teach')
-        result = registration_progress({'request': request})
-        self.assertNotEqual(result, {})
-        self.assertIn('extra_steps', result)
-        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
+        self.assertFalse(self._checklist('learn')['show_list'])
 
     def test_completedAll_false_when_required_module_incomplete(self):
         """completedAll is False when a required module has not been completed."""
@@ -132,13 +111,8 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
         pmo.__class__ = ProgramModuleObj
         pmo.required = True
         pmo.save()
-
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
-
-        self.assertIn('completedAll', result)
         # student0 has not submitted the acknowledgement, so completedAll should be False
-        self.assertFalse(result['completedAll'])
+        self.assertFalse(self._checklist('learn')['completedAll'])
 
     def test_completedAll_true_when_no_required_modules(self):
         """completedAll is True when no required modules exist for the program."""
@@ -147,16 +121,42 @@ class RegistrationProgressTagTest(ProgramFrameworkTest):
             pmo.__class__ = ProgramModuleObj
             pmo.required = False
             pmo.save()
+        self.assertTrue(self._checklist('learn')['completedAll'])
 
-        request = self._make_request(tl='learn')
-        result = registration_progress({'request': request})
+    def test_reuses_checklist_from_view(self):
+        """The main pages pass their own checklist, which the tag must not replace."""
+        checklist = {'modules': [], 'options': self.crmi, 'completedAll': True, 'program': self.program}
+        self.assertIs(self._checklist('teach', checklist=checklist), checklist)
 
-        self.assertIn('completedAll', result)
-        self.assertTrue(result['completedAll'])
+    def test_view_can_turn_off_checklist(self):
+        """The student main page passes an empty checklist for onsite registration."""
+        self.assertEqual(self._checklist('learn', checklist={}), {})
+
+    def test_looks_up_checklist_once_per_render(self):
+        """module_base.html calls the tag from two blocks."""
+        context = Context({'request': self._make_request('teach')})
+        with mock.patch('esp.program.templatetags.modules.get_module_page_checklist_context',
+                        wraps=get_module_page_checklist_context) as lookup:
+            first = registration_checklist(context)
+            second = registration_checklist(context)
+        self.assertIs(first, second)
+        self.assertEqual(lookup.call_count, 1)
+
+    def _in_theme_sidebar(self, theme_name, settings):
+        with mock.patch.object(ThemeController, 'get_current_theme', return_value=theme_name), \
+                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
+            return self._checklist('teach')['in_theme_sidebar']
+
+    def test_theme_sidebar_setting(self):
+        """Only themes with a checklist_in_sidebar setting can move the list there."""
+        self.assertTrue(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': True}))
+        self.assertFalse(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': False}))
+        # The setting can linger in the theme settings after switching themes.
+        self.assertFalse(self._in_theme_sidebar('droplets', {'checklist_in_sidebar': True}))
 
 
 class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
-    """Integration tests: required module pages show the progress checklist.
+    """Integration tests: student registration pages show the checklist.
 
     These tests use the Django test client to make full HTTP requests.
     The program is set up with StudentAcknowledgementModule as the only
@@ -169,6 +169,7 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
 
     # Text that appears in the checklist table header (checkboxes.html)
     CHECKLIST_MARKER = 'Steps for Registration'
+    SIDEBAR_MARKER = 'reg-checklist-col'
 
     def setUp(self):
         super().setUp()
@@ -196,7 +197,14 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         serve the required module page including the registration checklist."""
         response = self.client.get('/learn/%s/studentreg' % self.program.url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.SIDEBAR_MARKER)
         self.assertContains(response, self.CHECKLIST_MARKER)
+
+    def test_steps_are_not_links_while_required_modules_are_forced(self):
+        """Students shouldn't be able to click past the required modules."""
+        response = self.client.get('/learn/%s/studentreg' % self.program.url)
+        self.assertContains(response, 'Student Acknowledgement')
+        self.assertNotContains(response, 'class="vModuleLink"')
 
     def test_no_checklist_when_progress_mode_disabled(self):
         """When progress_mode is 0, the acknowledgement page has no checklist."""
@@ -205,99 +213,52 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, self.CHECKLIST_MARKER)
+        self.assertNotContains(response, self.SIDEBAR_MARKER)
 
     def test_mainpage_shows_checklist_when_force_show_disabled(self):
         """When force_show_required_modules is False, hitting studentreg shows
-        the regular mainpage (which has its own checkboxes via context['modules']).
-        The required module page itself should also show the checklist when visited
-        directly (because registration_progress reads request.tl and request.program)."""
+        the main page, with the checklist column and linked steps.  The
+        required module page itself also shows the checklist when visited
+        directly (because registration_checklist reads request.tl and
+        request.program)."""
         self.scrmi.force_show_required_modules = False
         self.scrmi.save()
-        # Direct visit to studentreg now shows the mainpage (no redirect)
         response = self.client.get('/learn/%s/studentreg' % self.program.url)
         self.assertEqual(response.status_code, 200)
-        # The mainpage has its own checkboxes section (not from module_base.html)
-        self.assertContains(response, self.CHECKLIST_MARKER)
-        # Direct visit to the required module page also shows the checklist
+        self.assertContains(response, 'Student registration for')
+        self.assertContains(response, self.SIDEBAR_MARKER)
+        self.assertContains(response, 'registration requirements done')
+        self.assertContains(response, 'class="vModuleLink"')
         ack_response = self.client.get('/learn/%s/acknowledgement' % self.program.url)
         self.assertEqual(ack_response.status_code, 200)
-        self.assertContains(ack_response, self.CHECKLIST_MARKER)
+        self.assertContains(ack_response, self.SIDEBAR_MARKER)
 
-    def test_progress_bar_mode_shows_no_checkbox_table(self):
-        """When progress_mode is 2 (progress bar), the checkbox table is absent."""
+    def test_progress_bar_mode_shows_the_checklist(self):
+        """Progress mode 2 shows the checklist card, not the old progress bar."""
         self.scrmi.progress_mode = 2
         self.scrmi.save()
         response = self.client.get('/learn/%s/studentreg' % self.program.url)
         self.assertEqual(response.status_code, 200)
-        # Progress bar mode: no "Steps for Registration" table header
-        self.assertNotContains(response, self.CHECKLIST_MARKER)
+        self.assertContains(response, self.CHECKLIST_MARKER)
+        self.assertNotContains(response, 'class="progressbar"')
 
-
-class TeacherChecklistTagTest(ProgramFrameworkTest):
-    """Unit tests for the teacher_checklist template tag used by
-    teacher_module_base.html."""
-
-    def setUp(self):
-        super().setUp()
-        self.crmi = self.program.classregmoduleinfo
-        self.crmi.progress_mode = 1
-        self.crmi.save()
-
-    def _make_request(self, tl):
-        request = RequestFactory().get('/')
-        request.user = self.teachers[0]
-        request.program = self.program
-        request.tl = tl
-        return request
-
-    def test_returns_empty_outside_teacher_registration(self):
-        """Shared templates render as plain pages for student and admin pages."""
-        for tl in ('learn', 'manage'):
-            self.assertEqual(teacher_checklist(Context({'request': self._make_request(tl)})), {})
-
-    def test_returns_module_page_context_for_teach_tl(self):
-        """Checklist links point back to the main page on teacher module pages."""
-        result = teacher_checklist(Context({'request': self._make_request('teach')}))
-        self.assertEqual(result['options'], self.crmi)
-        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
-        self.assertTrue(result['is_module_page'])
-        self.assertEqual(result['mainpage_url'], '/teach/%s/teacherreg' % self.program.url)
-        self.assertIn('modules', result)
-        self.assertIn('records', result)
-
-    def test_reuses_checklist_from_view(self):
-        """The main page passes its own checklist, which the tag must not replace."""
-        checklist = {'modules': [], 'options': self.crmi, 'completedAll': True, 'program': self.program}
-        result = teacher_checklist(Context({'request': self._make_request('teach'), 'checklist': checklist}))
-        self.assertIs(result, checklist)
-
-    def test_looks_up_checklist_once_per_render(self):
-        """teacher_module_base.html calls the tag from two blocks."""
-        context = Context({'request': self._make_request('teach')})
-        with mock.patch('esp.program.templatetags.modules.get_module_page_checklist_context',
-                        wraps=get_module_page_checklist_context) as lookup:
-            first = teacher_checklist(context)
-            second = teacher_checklist(context)
-        self.assertIs(first, second)
-        self.assertEqual(lookup.call_count, 1)
-
-    def _in_theme_sidebar(self, theme_name, settings):
-        with mock.patch.object(ThemeController, 'get_current_theme', return_value=theme_name), \
-                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
-            return teacher_checklist(Context({'request': self._make_request('teach')}))['in_theme_sidebar']
-
-    def test_theme_sidebar_setting(self):
-        """Only themes with a checklist_in_sidebar setting can move the list there."""
-        self.assertTrue(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': True}))
-        self.assertFalse(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': False}))
-        # The setting can linger in the theme settings after switching themes.
-        self.assertFalse(self._in_theme_sidebar('droplets', {'checklist_in_sidebar': True}))
+    def test_class_pages_have_no_checklist(self):
+        """Pages students open on purpose to pick classes show no checklist."""
+        self.scrmi.force_show_required_modules = False
+        self.scrmi.save()
+        cls = self.program.classes()[0]
+        timeslot = self.program.getTimeSlots()[0]
+        for view in ('fillslot/%d' % timeslot.id, 'class_docs/%d' % cls.id):
+            response = self.client.get('/learn/%s/%s' % (self.program.url, view))
+            self.assertEqual(response.status_code, 200)
+            self.assertNotContains(response, self.SIDEBAR_MARKER)
+            self.assertNotContains(response, self.CHECKLIST_MARKER)
 
 
 class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
     """Integration tests: teacher module pages show the checklist column."""
 
-    SIDEBAR_MARKER = 'teacher-reg-checklist-col'
+    SIDEBAR_MARKER = RequiredModuleProgressIntegrationTest.SIDEBAR_MARKER
 
     def setUp(self):
         super().setUp()
@@ -314,7 +275,7 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, self.SIDEBAR_MARKER)
             self.assertContains(response, 'registration requirements done')
-            self.assertContains(response, 'id="teacher-reg-checklist-steps"')
+            self.assertContains(response, 'id="reg-checklist-steps"')
 
     def test_class_registration_form_has_no_checklist(self):
         response = self.client.get('/teach/%s/makeaclass' % self.program.url)
@@ -349,7 +310,7 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         sidebar_start = html.index('id="sidebar"')
         main_start = html.index('id="main"')
         self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
-        self.assertNotIn('teacher-reg-columns', html)
+        self.assertNotIn('reg-columns', html)
 
     def test_progress_bar_mode_shows_the_checklist(self):
         """Teacher pages show the checklist card for progress mode 2, not the old progress bar."""
@@ -386,6 +347,7 @@ class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
         response = self.client.get('/teach/%s/availability' % self.program.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'class="vModuleLink"')
+
 
 class ChecklistProgressTest(SimpleTestCase):
     """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""

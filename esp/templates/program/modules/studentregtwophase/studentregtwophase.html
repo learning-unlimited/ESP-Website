@@ -1,4 +1,4 @@
-{% extends "program/modules/module_base.html" %}
+{% extends "main.html" %}
 {% load render_qsd %}
 
 {% block title %} Student Registration for {{program.niceName}} {% endblock %}
@@ -64,7 +64,7 @@
 </style>
 {% endblock %}
 
-{% block module_content %}
+{% block content %}
 <h1>Student Registration for {{program.niceName}}</h1>
 
 {% if messages %}

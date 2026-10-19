@@ -1,7 +1,5 @@
-"""Context helpers for the registration checklist (checkboxes.html and
-progressbar.html), shared by the registration main pages and module pages."""
-
-from esp.program.modules.handlers.studentregcore import StudentRegCore
+"""Context helpers for the registration checklist (checklist_sidebar.html and
+checkboxes.html), shared by the registration main pages and module pages."""
 
 MAINPAGE_VIEWS = {'learn': 'studentreg', 'teach': 'teacherreg'}
 
@@ -12,6 +10,9 @@ def get_checklist_context(user, prog, tl, modules=None):
 
     Pass ``modules`` to reuse a list already fetched with prog.getModules().
     """
+    # Imported here because studentregcore uses this module for its main page.
+    from esp.program.modules.handlers.studentregcore import StudentRegCore
+
     if modules is None:
         modules = prog.getModules(user, tl)
 
