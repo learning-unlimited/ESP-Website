@@ -163,6 +163,28 @@ class StudentOnsiteDetailsTest(StudentOnsiteBaseTest):
         response = self.client.get(self.url('onsitedetails/999999'))
         self.assertRedirects(response, self.url('studentonsite'), fetch_redirect_response=False)
 
+    def assert_details_redirects(self, extra):
+        response = self.client.get(self.url('onsitedetails/' + extra))
+        self.assertRedirects(response, self.url('studentonsite'), fetch_redirect_response=False,
+                             msg_prefix='extra=%r: ' % extra)
+
+    def test_details_for_non_numeric_section_id_redirects(self):
+        # Even a student who is enrolled in a section must not be shown it
+        section = self.program.sections().first()
+        section.preregister_student(self.student, fast_force_create=True)
+        self.login(self.student)
+        for extra in ('abc', '12abc', '0x10', '1e5'):
+            self.assert_details_redirects(extra)
+
+    def test_details_for_zero_and_negative_section_id_redirects(self):
+        self.login(self.student)
+        for extra in ('0', '-1'):
+            self.assert_details_redirects(extra)
+
+    def test_details_for_out_of_range_section_id_redirects(self):
+        self.login(self.student)
+        self.assert_details_redirects('99999999999999999999')
+
 
 class StudentOnsiteCatalogTimeslotTest(StudentOnsiteBaseTest):
 
