@@ -978,7 +978,7 @@
     "esp/program/modules/tests/test_accountingmodule.py::AccountingModuleTest::test_invalid_user_lookup": 0.05951309200099786,
     "esp/program/modules/tests/test_accountingmodule.py::AccountingModuleTest::test_user_lookup_via_post_data": 0.019189870999980485,
     "esp/program/modules/tests/test_accountingmodule.py::AccountingModuleTest::test_user_lookup_via_url_target_user": 0.017656103998888284,
-    "esp/program/modules/tests/test_addclass_concurrency.py::AddClassConcurrencyRegressionTest::test_concurrent_addclass_last_seat": 1.229655146999903,
+    "esp/program/modules/tests/test_addclass_concurrency.py::AddClassConcurrencyRegressionTest::test_concurrent_addclass_last_seat": 2.26,
     "esp/program/modules/tests/test_admin_search.py::AdminSearchEntriesTest::test_entries_have_required_fields": 1.0664856469993538,
     "esp/program/modules/tests/test_admin_search.py::AdminSearchEntriesTest::test_excluded_views_not_in_results": 0.9991949259992907,
     "esp/program/modules/tests/test_admin_search.py::AdminSearchEntriesTest::test_humanize_view_name": 0.7200085709991981,
