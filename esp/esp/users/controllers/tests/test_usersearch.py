@@ -1,3 +1,7 @@
+from unittest import mock
+
+from django.test.client import RequestFactory
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, StudentInfo, Record, RecordType
 from esp.program.models import RegistrationProfile
@@ -69,6 +73,32 @@ class TestUserSearchController(ProgramFrameworkTest):
         post_data['base_list'] = 'all_Student'
         with self.assertRaises(ESPError_NoLog):
             self.controller.query_from_postdata(self.program, post_data)
+
+    def test_empty_list_selection_raises_esperror(self):
+        # Empty values are kept by ListGenModule.processPost and used to fail
+        # with KeyError (base_list) or ValueError (combo_base_list).
+        post_data = self._get_combination_post_data('Student', 'confirmed')
+        post_data['combo_base_list'] = ''
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_postdata(self.program, post_data)
+
+        post_data = self._get_combination_post_data('Student', 'confirmed')
+        del post_data['combo_base_list']
+        post_data['base_list'] = ''
+        post_data['recipient_type'] = 'Student'
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_postdata(self.program, post_data)
+
+    def test_create_filter_shows_error_when_no_list_selected(self):
+        # The basic search form always sends recipient_type, but base_list is
+        # a radio button and is left out when nothing is picked.
+        request = RequestFactory().post('/manage/test/selectList', {'recipient_type': 'Student'})
+        request.user = self.admins[0]
+        with mock.patch('esp.users.controllers.usersearch.render_to_response') as render:
+            _, found = self.controller.create_filter(request, self.program)
+        self.assertFalse(found)
+        context = render.call_args[0][2]
+        self.assertEqual(context['error'], 'Please select a list to search.')
 
     def test_overlap_bug(self):
         """
