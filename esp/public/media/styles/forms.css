@@ -226,17 +226,21 @@ input.fancybutton:active
    }
 }
 
-/* Class registration form on phones: stack each label above its field and let
-   fields shrink to the screen, instead of a two-column table wider than the screen. */
+/* Class registration form, and other label/field tables marked .stack-on-phone, on
+   phones: stack each label above its field and let fields shrink to the screen,
+   instead of a two-column table wider than the screen. */
 @media (max-width: 575.98px) {
-    #clsform table, #clsform tbody, #clsform tr, #clsform th, #clsform td {
+    #clsform table, #clsform tbody, #clsform tr, #clsform th, #clsform td,
+    table.stack-on-phone, .stack-on-phone > tbody, .stack-on-phone > tbody > tr,
+    .stack-on-phone > tbody > tr > th, .stack-on-phone > tbody > tr > td {
         display: block;
         width: 100% !important;
         box-sizing: border-box;
     }
 
     #clsform input[type="text"], #clsform input[type="number"],
-    #clsform select, #clsform textarea {
+    #clsform select, #clsform textarea,
+    .stack-on-phone input[type="text"], .stack-on-phone select, .stack-on-phone textarea {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
