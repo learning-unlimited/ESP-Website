@@ -112,6 +112,29 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
             '/learn/%s/studentreg2phase' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
 
+    def test_forced_page_shows_registration_checklist(self):
+        """When required modules are forced, studentreg serves the TwoPhase
+        page in place of the main page, so it shows the checklist (#1167)."""
+        twophase = ProgramModuleObj.objects.get(
+            program=self.program, module__handler='StudentRegTwoPhase')
+        twophase.required = True
+        twophase.save()
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = True
+        scrmi.save()
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+        response = self.client.get(
+            '/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Star all classes you are interested in taking')
+        self.assertContains(response, 'reg-checklist-col')
+        self.assertContains(response, 'Steps for Registration')
+        # The later steps stay locked until the lottery step is done
+        self.assertNotContains(response, 'class="vModuleLink"')
+
     # ---------------------------------------------------------------
     # Test: GET on confirm_registration redirects (must be POST)
     # ---------------------------------------------------------------
