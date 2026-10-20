@@ -195,8 +195,9 @@ div.nav_button :hover {
     max-width: 100%;
 }
 
+/*  Readable on light and dark sidebars alike. */
 #loginbox label {
-    color: #FFFFFF;
+    color: color-contrast($sidebarBackground);
     width: 50px;
     font-size: 0.9em;
 }
@@ -208,6 +209,12 @@ div.nav_button :hover {
 
 #loginbox form {
     margin: 0px;
+}
+
+/*  Compact, so the login table still fits the 192px sidebar at 768px. */
+#loginbox #gologin {
+    padding: 2px 8px;
+    font-size: 0.9em;
 }
 
 #chicago_main {
