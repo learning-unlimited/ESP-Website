@@ -89,6 +89,19 @@ class TestUserSearchController(ProgramFrameworkTest):
         with self.assertRaises(ESPError_NoLog):
             self.controller.query_from_postdata(self.program, post_data)
 
+    def test_empty_unused_list_field_is_ignored(self):
+        # A valid basic-list selection should still work when the combination
+        # list field is also posted with an empty value, and vice versa.
+        post_data = self._get_combination_post_data('Student', 'confirmed')
+        post_data['combo_base_list'] = ''
+        post_data['base_list'] = 'all_Student'
+        post_data['recipient_type'] = 'Student'
+        self.assertIsNotNone(self.controller.query_from_postdata(self.program, post_data))
+
+        post_data = self._get_combination_post_data('Teacher', 'allTeacher')
+        post_data['base_list'] = ''
+        self.assertIsNotNone(self.controller.query_from_postdata(self.program, post_data))
+
     def test_create_filter_shows_error_when_no_list_selected(self):
         # The basic search form always sends recipient_type, but base_list is
         # a radio button and is left out when nothing is picked.

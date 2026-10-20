@@ -271,9 +271,15 @@ class UserSearchController(object):
 
         subquery = None
 
-        #   An empty selection would otherwise fail with a KeyError (base_list)
-        #   or a ValueError when splitting combo_base_list.
-        if ('base_list' in data and not data['base_list']) or                 ('combo_base_list' in data and not data['combo_base_list']):
+        #   Only check the list field of the branch that will run below, so an
+        #   empty field left over from the other search form is ignored.  A
+        #   missing or empty selection would otherwise fail with an
+        #   UnboundLocalError, KeyError (base_list) or ValueError (combo_base_list).
+        if 'base_list' in data and 'recipient_type' in data:
+            selected_list = data['base_list']
+        else:
+            selected_list = data.get('combo_base_list')
+        if not selected_list:
             raise ESPError('Please select a list to search.', log=False)
 
         if 'base_list' in data and 'recipient_type' in data:
@@ -342,9 +348,6 @@ class UserSearchController(object):
 
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria('any', data, program)
-
-        else:
-            raise ESPError('Please select a list to search.', log=False)
 
         qobject = (q_extra & q_program & Q(is_active=True))
 
