@@ -904,6 +904,26 @@ class TestChangeRequestModel(TestCase):
         self.assertIn(student.last_name, message)
         self.assertIn(student.name(), subject)
 
+    def test_confirmation_email_sender_with_full_group_name(self):
+        """Verifies that send_confirmation_email includes email address when full_group_name is set."""
+        Tag.setTag('full_group_name', value='MIT Educational Studies Program')
+        student = ESPUser.objects.create_user(
+            'student_bob', email='student@example.com', first_name='bob', last_name='dobbs'
+        )
+        change_request = GradeChangeRequest.objects.create(
+            claimed_grade=12,
+            grade_before_request=8,
+            reason="hello",
+            requesting_student=student,
+        )
+        mail.outbox = []
+        change_request.send_confirmation_email()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(
+            mail.outbox[0].from_email,
+            f'MIT Educational Studies Program <info@{settings.SITE_INFO[1]}>',
+        )
+
 
 class TestChangeRequestView(TestCase):
 
