@@ -2,6 +2,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, StudentInfo, Record, RecordType
 from esp.program.models import RegistrationProfile
 from esp.users.controllers.usersearch import UserSearchController
+from esp.middleware import ESPError_NoLog
 
 
 class TestUserSearchController(ProgramFrameworkTest):
@@ -53,6 +54,21 @@ class TestUserSearchController(ProgramFrameworkTest):
         result = ESPUser.objects.filter(query)
         self.assertEqual(result.model, ESPUser)
         self.assertGreater(result.count(), 0)
+
+    def test_missing_base_list_raises_esperror(self):
+        # No base_list/recipient_type and no combo_base_list: the controller
+        # should raise an ESPError the views can show, not an UnboundLocalError.
+        post_data = self._get_combination_post_data('Student', 'confirmed')
+        del post_data['combo_base_list']
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_postdata(self.program, post_data)
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.filter_from_postdata(self.program, post_data)
+
+        # base_list on its own (without recipient_type) is also incomplete.
+        post_data['base_list'] = 'all_Student'
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_postdata(self.program, post_data)
 
     def test_overlap_bug(self):
         """

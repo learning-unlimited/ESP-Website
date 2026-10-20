@@ -338,6 +338,9 @@ class UserSearchController(object):
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria('any', data, program)
 
+        else:
+            raise ESPError('Please select a list to search.', log=False)
+
         qobject = (q_extra & q_program & Q(is_active=True))
 
         #strip out duplicate clauses
