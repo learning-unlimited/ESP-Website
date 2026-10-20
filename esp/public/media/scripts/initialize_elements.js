@@ -10,7 +10,6 @@ function initializeElements(selector, callback, target) {
             callback.call(el);
         }
     }
-    target.querySelectorAll(selector).forEach(init);
     new MutationObserver(function (mutations) {
         mutations.forEach(function (mutation) {
             mutation.addedNodes.forEach(function (node) {
@@ -20,4 +19,5 @@ function initializeElements(selector, callback, target) {
             });
         });
     }).observe(target, { childList: true, subtree: true });
+    target.querySelectorAll(selector).forEach(init);
 }
