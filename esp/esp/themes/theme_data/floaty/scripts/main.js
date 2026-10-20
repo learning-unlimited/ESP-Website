@@ -1,10 +1,12 @@
 /*  Javascript code for generic2 theme UI
     So far this just handles switching between the secondary nav links
-    to be displayed.
+    to be displayed: on hover, on keyboard focus, and on a first tap on
+    touch screens (which have no hover).
 */
 
 var primary_divs = [];
 var secondary_divs = [];
+var tap_reveals_links = false;
 
 var primary_to_secondary = function(primary_div)
 {
@@ -45,6 +47,27 @@ var setup_nav = function() {
     {
         primary_div = $j('div.toplevel_link:eq(' + i + ')');
         primary_div.hover(function (event) {make_active(event);}, function (event) {make_inactive(i);});
+        primary_div.on('focusin', function (event) {make_active(event);});
+
+        //  A tap fires emulated hover events before the click, so decide on
+        //  pointerdown whether this tap should reveal the links instead of
+        //  following the section's own link.
+        primary_div.on('pointerdown', function (event) {
+            var secondary_div = primary_to_secondary(event.currentTarget);
+            tap_reveals_links = event.originalEvent.pointerType != 'mouse' &&
+                secondary_div.hasClass("sublink_hidden") &&
+                secondary_div.children('a').length > 0;
+        });
+        //  A touch that turns into a scroll never clicks.
+        primary_div.on('pointercancel', function () {tap_reveals_links = false;});
+        primary_div.on('click', function (event) {
+            if (tap_reveals_links)
+            {
+                event.preventDefault();
+                make_active(event);
+            }
+            tap_reveals_links = false;
+        });
     }
     
     //  Hide all secondary navigation items except those for the primary one that has focus
