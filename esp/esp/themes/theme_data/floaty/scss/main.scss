@@ -218,7 +218,9 @@ a:where(:not(.btn, .module_link_large, .link_button)):hover {
     background-color: $sidebarHover;
 }
 
-input, textarea, .uneditable-input {
+/*  Checkboxes and radio buttons keep their own size: at 94% they push their
+    labels aside and off the page.  :where() keeps the selector's specificity. */
+input:where(:not([type="checkbox"], [type="radio"])), textarea, .uneditable-input {
   width: 94%;
 }
 
