@@ -65,7 +65,7 @@ body {
   height: auto;
 }
 
-.sidebar_jump {
+.sidebar_toggle {
   display: none;
 }
 
@@ -362,23 +362,19 @@ div .error {
   }
 }
 
-/*  Phones: one column.  Logo, the four buttons in a row, the page, then the
-    sidebar (news and login), which the "Log in" link at the top jumps to. */
+/*  Phones: one column.  Logo, the four buttons in a row, the sidebar (news
+    and login) collapsed under one bar, then the page. */
 @media (max-width: 767.98px) {
   #content {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "logo"
       "nav"
-      "main"
-      "side";
+      "side"
+      "main";
   }
 
   #topleft {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     padding: 8px 12px;
   }
 
@@ -387,13 +383,39 @@ div .error {
     width: auto;
   }
 
-  .sidebar_jump {
-    display: inline-block;
-    flex: none;
-    padding: 4px 12px;
-    border: 1px solid $linkColor;
-    border-radius: 16px;
-    font-weight: bold;
+  #navbar.sidebar_collapsible .sidebar_toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 0;
+    background: $sidebarHeader;
+    color: inherit;
+    font: inherit;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  #navbar.sidebar_collapsible .sidebar_toggle::after {
+    content: "\25BE";
+  }
+
+  #navbar.sidebar_open .sidebar_toggle::after {
+    content: "\25B4";
+  }
+
+  #navbar.sidebar_collapsible #navbar_header {
+    display: none;
+  }
+
+  #navbar.sidebar_collapsible:not(.sidebar_open) #navbar_content {
+    display: none;
+  }
+
+  #navbar_content {
+    padding: 8px 12px;
   }
 
   div.nav_button_spacer {
