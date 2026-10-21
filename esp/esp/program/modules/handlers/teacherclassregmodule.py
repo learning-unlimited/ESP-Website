@@ -54,13 +54,13 @@ from django.http                 import HttpResponse, HttpResponseRedirect, Json
 from django.db                   import models
 from django.forms.utils          import ErrorDict
 from django.template.loader      import render_to_string
-from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.admin_search import AdminSearchEntry
 import json
 import re
 import datetime
 class TeacherClassRegModule(ProgramModuleObj):
     doc = """Allows teachers to register and manage classes and view their enrolled students."""
+    permission_types = ('Teacher/Classes/All',)
 
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
@@ -106,17 +106,19 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     def prepare(self, context={}):
         """ prepare returns the context for the main teacherreg page. """
+        user = self._resolve_user(None)
 
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.any_reg_is_open()
         context['can_create_class'] = self.class_reg_is_open()
         context['can_create_open_class'] = self.open_class_reg_is_open()
         context['can_req_cancel'] = self.deadline_met('/Classes/CancelReq')
+        context['can_view_schedule'] = self.deadline_met('/Classes/Schedule')
         context['survey_results'] = (self.program.getSurveys().filter(category = "learn", questions__per_class=True).exists() and
                                      self.program.getTimeSlots()[0].start < datetime.datetime.now())
         context['crmi'] = self.crmi
-        context['clslist'] = self.clslist(get_current_request().user)
-        context['modlist'] = get_current_request().user.getModeratingSectionsFromProgram(self.program)
+        context['clslist'] = self.clslist(user)
+        context['modlist'] = user.getModeratingSectionsFromProgram(self.program)
         context['friendly_times_with_date'] = Tag.getBooleanTag('friendly_times_with_date', self.program)
         context['open_class_category'] = self.program.open_class_category.category
         return context
@@ -370,16 +372,25 @@ class TeacherClassRegModule(ProgramModuleObj):
                     json_data['error'] = 'Section with ID %s not found!' % request.POST['secid']
                 else:
                     section = sections[0]
+                    if not (request.user.canEdit(section.parent_class) or request.user.canMod(section)):
+                        json_data['error'] = 'You do not have permission to modify attendance for this section.'
+                        return HttpResponse(json.dumps(json_data), content_type='text/json')
                     json_data['secid'] = section.id
                     if request.POST.get('undo', 'false').lower() == 'true':
-                        #should we also delete the program attendance record?
                         srs = StudentRegistration.valid_objects().filter(user = student, section = section, relationship = attended)
                         if srs.exists():
                             for sr in srs:
-                                sr.expire() #or delete??
+                                sr.expire()
                             json_data['message'] = '%s is no longer marked as attending.' % student.name()
                         else:
                             json_data['message'] = '%s was not marked as attending.' % student.name()
+                        if request.POST.get('undo_checkin', 'false').lower() == 'true':
+                            rt = RecordType.objects.get(name="attended")
+                            # Undo only the most recent check-in
+                            rec = Record.objects.filter(user=student, program=prog, event=rt).order_by('-id').first()
+                            if rec is not None:
+                                rec.delete()
+                                json_data['uncheckedin'] = True
                     else:
                         if not prog.isCheckedIn(student):
                             rt = RecordType.objects.get(name="attended")
@@ -486,10 +497,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        context = {'cls': cls, 'module': self,}
+        context = {'cls': cls, 'module': self,
+                   'can_view_schedule': self.deadline_met('/Classes/Schedule')}
 
         return render_to_response(self.baseDir()+'class_status.html', request, context)
 
@@ -510,7 +522,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         target_class = classes[0]
         context_form = FileUploadForm()
@@ -1018,13 +1030,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                     context['class'] = newclass
 
                 if action=='edit':
-                    reg_form = TeacherClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherClassRegForm(self.crmi, initial=current_data)
                 elif action=='editopenclass':
-                    reg_form = TeacherOpenClassRegForm(self.crmi, current_data)
-                    # TODO: remove private API use
-                    if populateonly: reg_form._errors = ErrorDict()
+                    reg_form = TeacherOpenClassRegForm(self.crmi, initial=current_data)
 
                 #   Todo...
                 ds = newclass.default_section()
