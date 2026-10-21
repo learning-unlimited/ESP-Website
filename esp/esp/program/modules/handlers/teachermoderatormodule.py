@@ -95,7 +95,12 @@ class TeacherModeratorModule(ProgramModuleObj):
         limit = 10
         from esp.web.views.json_utils import JsonResponse
 
-        queryset = prog.teachers()['will_moderate']
+        # If voluntary signup is disabled, no one can offer to moderate,
+        # so let admins search all teachers instead
+        if Tag.getBooleanTag('moderator_disable_signup', program=prog):
+            queryset = ESPUser.objects.filter(groups__name="Teacher").distinct()
+        else:
+            queryset = prog.teachers()['will_moderate']
 
         if 'name' not in request.GET:
             startswith = request.POST['name']
