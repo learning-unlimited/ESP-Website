@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser
+from esp.users.models    import ESPUser, Record, RecordType
 from django.db.models.query       import Q
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
@@ -48,6 +48,11 @@ from django              import forms
 
 class FinancialAidAppModule(ProgramModuleObj):
     doc = """Serve a financial aid application to students."""
+
+    #   Students who don't need financial aid can say so, which completes this
+    #   step without an application.
+    DECLINE_LABEL = "I don't need financial aid"
+    DECLINED_EVENT = 'finaid_declined'
 
     @classmethod
     def module_properties(cls):
@@ -82,7 +87,10 @@ class FinancialAidAppModule(ProgramModuleObj):
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
-        return user.appliedFinancialAid(self.program)
+        return user.appliedFinancialAid(self.program) or self.declined(user)
+
+    def declined(self, user):
+        return Record.user_completed(user, self.DECLINED_EVENT, self.program)
 
     @main_call
     @needs_student_in_grade
@@ -109,6 +117,14 @@ class FinancialAidAppModule(ProgramModuleObj):
                 else:
                     fields = '__all__'
 
+        if request.method == 'POST' and request.POST.get('submitform') == self.DECLINE_LABEL:
+            if not app.done:
+                app.delete()
+                rt, _ = RecordType.objects.get_or_create(
+                    name=self.DECLINED_EVENT, defaults={'description': 'Said they did not need financial aid'})
+                Record.objects.get_or_create(user=request.user, event=rt, program=prog)
+            return self.goToCore(tl)
+
         if request.method == 'POST':
             form = Form(request.POST, initial = app.__dict__)
             if form.is_valid():
@@ -123,6 +139,9 @@ class FinancialAidAppModule(ProgramModuleObj):
                     raise ESPError("Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'.")
 
                 app.save()
+                if app.done:
+                    # Applying replaces an earlier "I don't need financial aid".
+                    Record.objects.filter(user=request.user, program=prog, event__name=self.DECLINED_EVENT).delete()
 
                 # Send an email announcing the application
                 date_str = str(datetime.now())
@@ -162,7 +181,8 @@ This request can be (re)viewed at:
 
         return render_to_response(self.baseDir()+'application.html',
                                   request,
-                                  {'form': form, 'app': app})
+                                  {'form': form, 'app': app, 'declined': self.declined(request.user),
+                                   'decline_label': self.DECLINE_LABEL})
 
     def isStep(self):
         # Only show this module if there are things (with costs) for financial aid to cover

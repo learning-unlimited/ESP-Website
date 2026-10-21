@@ -2482,6 +2482,7 @@ class RecordType(models.Model):
         "paid", "med", "med_bypass", "liab", "onsite", "schedule_printed", "teacheracknowledgement", "studentacknowledgement",
         "lunch_selected", "student_extra_form_done", "teacher_extra_form_done", "extra_costs_done", "donation_done", "waitlist",
         "interview", "teacher_training", "teacher_checked_in", "twophase_reg_done", "opt_out_paper_schedule",
+        "finaid_declined",
     ]
 
     @classmethod
