@@ -1,6 +1,8 @@
 """Context helpers for the registration checklist (checklist_sidebar.html and
 checkboxes.html), shared by the registration main pages and module pages."""
 
+from django.core.exceptions import ObjectDoesNotExist
+
 MAINPAGE_VIEWS = {'learn': 'studentreg', 'teach': 'teacherreg'}
 
 
@@ -9,12 +11,16 @@ def get_checklist_context(user, prog, tl, modules=None):
     'teach') registration for ``prog``.
 
     Pass ``modules`` to reuse a list already fetched with prog.getModules().
+    The modules are listed in the order users meet them: when registration
+    forces required modules, those come first; otherwise by seq.
     """
     # Imported here because studentregcore uses this module for its main page.
     from esp.program.modules.handlers.studentregcore import StudentRegCore
 
     if modules is None:
         modules = prog.getModules(user, tl)
+    forced = forces_required_modules(prog)
+    modules = sorted(modules, key=lambda m: (forced and not m.isRequired(), m.seq))
 
     return {
         'modules': modules,
@@ -26,6 +32,14 @@ def get_checklist_context(user, prog, tl, modules=None):
         'extra_steps': '%s:extra_steps' % tl,
         'program': prog,
     }
+
+
+def forces_required_modules(prog):
+    """True if registration makes users complete required modules in order."""
+    try:
+        return prog.studentclassregmoduleinfo.force_show_required_modules
+    except (AttributeError, ObjectDoesNotExist):
+        return False
 
 
 def get_checklist_progress(checklist, include_steps=True):
