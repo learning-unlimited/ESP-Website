@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
     There are many useful and magical functions provided in here, most of which can be called
     from within the program handler.
 """
+from datetime import datetime
 from functools import wraps
 import logging
 logger = logging.getLogger(__name__)
@@ -275,7 +276,7 @@ class ProgramModuleObj(ExpirableModel):
                     m.request = request
                     if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
-                    if not isinstance(m, CoreModule) and not m.isCompleted(request.user) and m.main_view:
+                    if not isinstance(m, CoreModule) and m.main_view and m.gate_status(request.user) != 'passed':
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
@@ -537,6 +538,37 @@ class ProgramModuleObj(ExpirableModel):
 
     def isStep(self):
         return True
+
+    #   Gating modules (the lotteries) hold users on their page in the
+    #   required-module flow until the gate lifts: 'closed' once the module's
+    #   window ends, even for users who have completed it; 'completed' only
+    #   once the user completes it, even after the module closes.
+    gate_lifts = None
+    #   How the checklist refers to a gating module, e.g. 'the class lottery'.
+    gate_label = ''
+
+    def has_ended(self):
+        return self.end_date is not None and self.end_date < datetime.now()
+
+    def gate_status(self, user=None):
+        """Where the user stands with this module in the required-module flow.
+
+        'todo': the user has something to do here.  'waiting': the user has
+        done their part, but the gate hasn't lifted yet.  'refused': the gate
+        won't lift for this user.  'passed': findModule moves on.  Modules that
+        aren't gates are passed once completed or while outside their window.
+        """
+        if self.gate_lifts == 'completed':
+            return 'passed' if self.isCompleted(user) else self.gate_pending_status(user)
+        if self.gate_lifts == 'closed':
+            if self.has_ended():
+                return 'passed'
+            return 'waiting' if not self.is_valid() or self.isCompleted(user) else 'todo'
+        return 'passed' if not self.is_valid() or self.isCompleted(user) else 'todo'
+
+    def gate_pending_status(self, user=None):
+        """gate_status for an incomplete 'completed' gate; see StudentRegPhaseZero."""
+        return 'todo'
 
     def inModulesList(self):
         return self.isStep()
@@ -839,7 +871,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
         user = request.user
         program = request.program
         canView = user.updateOnsite(request)
-        request.mod_required = moduleObj.isRequired()
+        request.mod_required = moduleObj.isRequired() and moduleObj.gate_status(user) == 'todo'
         request.tl = tl
         if not canView:
             canView = Permission.user_has_perm(user,

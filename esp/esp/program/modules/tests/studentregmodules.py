@@ -253,8 +253,9 @@ class StudentRegPhaseZeroTest(ProgramFrameworkTest):
         self.assertIn('phasezero', desc)
 
     def test_is_step(self):
+        """The student lottery is listed in the registration checklist."""
         module = self.program.getModule('StudentRegPhaseZero')
-        self.assertFalse(module.isStep())
+        self.assertTrue(module.isStep())
 
     def test_in_modules_list(self):
         module = self.program.getModule('StudentRegPhaseZero')

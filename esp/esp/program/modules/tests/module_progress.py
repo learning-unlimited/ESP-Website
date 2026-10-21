@@ -333,8 +333,9 @@ class ChecklistProgressTest(SimpleTestCase):
     """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""
 
     @staticmethod
-    def _module(completed, required=True, step=True):
-        return mock.Mock(**{'isCompleted.return_value': completed,
+    def _module(completed, required=True, step=True, schedule_state='open'):
+        return mock.Mock(hide_in_checklist=False, schedule_state=schedule_state, gate_lifts=None,
+                         **{'isCompleted.return_value': completed,
                             'isRequired.return_value': required,
                             'isStep.return_value': step})
 
@@ -370,12 +371,17 @@ class ChecklistOrderTest(SimpleTestCase):
 
     @staticmethod
     def _module(seq, required, completed=False):
-        return mock.Mock(seq=seq, **{'isRequired.return_value': required,
-                                     'isCompleted.return_value': completed})
+        return mock.Mock(id=seq, seq=seq, gate_lifts=None, main_view=None,
+                         **{'isRequired.return_value': required,
+                            'isCompleted.return_value': completed,
+                            'gate_status.return_value': 'passed' if completed else 'todo',
+                            'has_ended.return_value': False,
+                            'is_valid.return_value': True})
 
     def _order(self, forced):
         prog = mock.Mock()
         prog.studentclassregmoduleinfo.force_show_required_modules = forced
+        prog.getModules.return_value = []
         modules = [self._module(4, False), self._module(20, True, completed=True),
                    self._module(0, True), self._module(35, False, completed=True)]
         with mock.patch('esp.program.modules.handlers.studentregcore.StudentRegCore.get_reg_records', return_value=[]):

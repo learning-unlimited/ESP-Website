@@ -85,7 +85,7 @@
 
 <section class="reg-modules">
 {% for module in modules %}
-{% if module.useTemplate %}
+{% if module.useTemplate and not module.checklist_only %}
 <div class="reg-module-block" id="module-{{ module.id }}">
 {% include module.getTemplate %}
 </div>
