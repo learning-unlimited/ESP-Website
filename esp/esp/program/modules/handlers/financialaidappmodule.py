@@ -37,6 +37,7 @@ from esp.accounting.controllers import ProgramAccountingController
 from esp.utils.web import render_to_response, secure_required
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, Record, RecordType
+from django.db import transaction
 from django.db.models.query       import Q
 from django.utils.decorators import method_decorator
 from esp.program.models  import FinancialAidRequest
@@ -127,12 +128,17 @@ class FinancialAidAppModule(ProgramModuleObj):
         can_decline = not app.done and not (app.pk and app.approved)
 
         if request.method == 'POST' and request.POST.get('submitform') == self.DECLINE_LABEL:
-            if can_decline:
-                if app.pk:
-                    app.delete()
-                rt, _ = RecordType.objects.get_or_create(
-                    name=self.DECLINED_EVENT, defaults={'description': 'Said they did not need financial aid'})
-                Record.objects.get_or_create(user=request.user, event=rt, program=prog)
+            # Recheck under a row lock: a grant saved meanwhile either shows up
+            # here or waits for this to finish (and then fails), rather than
+            # being deleted with the application.
+            with transaction.atomic():
+                locked = FinancialAidRequest.objects.select_for_update().filter(pk=app.pk).first() if app.pk else None
+                if locked is None or not (locked.done or locked.approved):
+                    if locked is not None:
+                        locked.delete()
+                    rt, _ = RecordType.objects.get_or_create(
+                        name=self.DECLINED_EVENT, defaults={'description': 'Said they did not need financial aid'})
+                    Record.objects.get_or_create(user=request.user, event=rt, program=prog)
             return self.goToCore(tl)
 
         if request.method == 'POST':
