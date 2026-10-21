@@ -33,6 +33,7 @@ class BigBoardModuleTests(ProgramFrameworkTest):
         self.factory = RequestFactory()
         self.admin = self.admins[0]
         self.module = BigBoardModule()
+        self.module.program = self.program
 
         self._flush_cache()
 
@@ -502,6 +503,7 @@ class BigBoardModuleTests(ProgramFrameworkTest):
             request, 'manage', None, None, None, None, self.program
         )
         self.assertEqual(response.status_code, 200)
+        response.render()
         content = response.content.decode('utf-8')
         self.assertIn("not an administrator", content.lower())
 
