@@ -71,6 +71,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return {'twophase_star_students': "Students who have starred classes in the two-phase lottery",
                 'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
 
+    #   The module's schedule is the class lottery's: students who have
+    #   submitted their preferences stay here until it closes.
+    permission_types = ('Student/Classes/Lottery',)
+    gate_lifts = 'closed'
+    gate_label = 'the class lottery'
+
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
         records = Record.objects.filter(user=user,
@@ -175,6 +181,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         context['timeslots'] = schedule
         context['is_confirmed'] = self.isCompleted()
+        context['twophase_closes'] = self.end_date
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
@@ -501,7 +508,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         if min_classes > 0 and total_classes < min_classes:
             messages.error(
                 request,
-                'You must star at least %d classes before confirming your preferences. '
+                'You must star at least %d classes before submitting your preferences. '
                 'You currently have %d starred.' % (min_classes, total_classes)
             )
             return self.goToCore(tl)

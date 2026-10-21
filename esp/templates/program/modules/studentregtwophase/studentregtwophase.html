@@ -159,27 +159,28 @@ recommend you have at least {{num_star}} classes starred for every priority slot
 <br>
 <hr>
 
-<h1>Step 3 &ndash; Confirmation Email</h1>
+<h1>Step 3 &ndash; Submit your preferences</h1>
 
-<div class="alert alert-success"
-    style="border: 1px solid #3c763d; padding: 10px; background-color: #dff0d8; margin-bottom: 15px;">
-    <strong>Your preferences have been automatically saved.</strong>
+{% if is_confirmed %}
+<div class="alert alert-success">
+    <strong>Your preferences are submitted.</strong> Changes are saved automatically, and you can keep changing them until the class lottery{% if twophase_closes %} closes on {{ twophase_closes|date:"l, F j" }}{% endif %}.
 </div>
-
+{% else %}
 <p>
-    If you would like to receive a confirmation email with a summary of your selections, click the button below.
+    When you're happy with your choices, submit them and we'll email you a summary. You can keep changing them until the class lottery{% if twophase_closes %} closes on {{ twophase_closes|date:"l, F j" }}{% endif %}.
 </p>
+{% endif %}
 
 {% if min_classes > 0 %}
 <div class="alert alert-warning">
-    <strong>Note:</strong> You must star at least {{ min_classes }} classes before you can confirm your preferences.
+    <strong>Note:</strong> You must star at least {{ min_classes }} classes before you can submit your preferences.
 </div>
 {% endif %}
 
 <center>
     <form method="post" action="/learn/{{program.getUrlBase}}/confirm_registration">{% csrf_token %}
         <button type="submit" class="btn btn-primary" style="font-size: 16px; padding: 10px 30px;">
-            Send Me a Confirmation Email
+            {% if is_confirmed %}Email me an updated summary{% else %}Submit my preferences{% endif %}
         </button>
     </form>
 </center>

@@ -19,7 +19,7 @@ Registration Layout
 
 The student and teacher registration main pages and the pages of their registration steps (for students: profile, custom form, acknowledgement, extra costs, lunch selection, applications, medical forms, donations, payment, surveys and the two-phase lottery page; for teachers: profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, and surveys) have a new layout. When the checklist is enabled, it (along with any other registration requirements) is shown in a column beside the page content when the theme's content area is wide enough, or above the content otherwise (for example on phones and in the fruitsalad theme), so students and teachers can see their progress from any step. In the bigpicture theme, the list is instead shown in the theme's left sidebar, below the navigation links; this can be turned off with the new "Registration checklist in sidebar" theme setting, in which case the list is shown above the page content. The checklist starts with a progress bar counting the required steps and other registration requirements that are done, and a link to the next one. While "Force show required modules" is on and a student or teacher still has required modules to finish, the steps in the checklist are not links, so the required modules are completed in order rather than skipped. Wherever the checklist is shown above the page content, the list of steps starts collapsed behind a "Show all steps" button, so the page content stays near the top. The steps are listed in the order students and teachers go through them: while "Force show required modules" is on, the required steps come first, then the optional ones; otherwise all steps are listed in their module order. Finished steps are no longer moved to the top. Registration no longer has the old image-based progress bar. The student and teacher "Progress mode" settings are replaced by a "Show checklist" checkbox in the student and teacher registration settings; programs that had progress mode 1 (checkboxes) or 2 (progress bar) have it checked, and programs that had 0 have it unchecked.
 
-Nothing about how the modules work has changed.
+Apart from the changes under Lotteries and Module Schedules below, nothing about how the modules work has changed.
 
 .. figure:: ../../images/teacherreg/checklist_beside_content.png
 
@@ -36,6 +36,28 @@ Nothing about how the modules work has changed.
 .. figure:: ../../images/studentreg/checklist_student_mainpage.png
 
    Figure 4: Checklist on the student registration main page (droplets theme)
+
+Lotteries and Module Schedules
+==============================
+
+While "Force show required modules" is on:
+
+- **Class lottery (two-phase registration):** students stay on the two-phase page from before the module opens until it closes on the module schedule, including after they submit their preferences, so the module no longer needs to be disabled once the class lottery is over. Its open and close times also set the ``Student/Classes/Lottery`` deadline. The "Send Me a Confirmation Email" button is now "Submit my preferences".
+- **Student lottery (phase zero):** students stay on the lottery page until they are selected, even after the module closes. It is now listed in the registration checklist.
+- **Registration checklist:** it tells students when they are waiting on a lottery, lists the steps that open after each lottery, and hides the later steps (and the other registration requirements) from students who weren't selected in the student lottery.
+- **Closed modules:** required modules outside their time window on the module schedule are no longer forced on students. The checklist lists modules outside their window as "(closed)", or with the date they open.
+
+.. figure:: ../../images/studentreg/lottery_steps_after_lotteries.png
+
+   Figure 5: The student lottery page, with the steps that open after each lottery
+
+.. figure:: ../../images/studentreg/lottery_all_set.png
+
+   Figure 6: After submitting class preferences, while the class lottery is open
+
+.. figure:: ../../images/studentreg/lottery_not_selected.png
+
+   Figure 7: A student who wasn't selected in the student lottery
 
 Bug Fixes
 =========

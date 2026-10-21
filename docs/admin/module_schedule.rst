@@ -213,6 +213,15 @@ Certain modules require continuous availability or locked sequencing:
 * ``always_enabled = True``: Handler class property indicating the module remains active regardless of timestamp.
 * ``seq_locked = True``: Handler class property preventing reordering of the module sequence position.
 
+Required Modules and Lottery Gates
+----------------------------------
+While "Force show required modules" is on, students are sent through the program's required modules in order (``findModule``). A required module outside its time window isn't forced; the registration checklist still lists it, marked "(closed)" or with its opening date. Two handlers are gates, set by their ``gate_lifts`` class property:
+
+* ``StudentRegTwoPhase`` (``'closed'``): holds students from before the module opens until its window ends, even once they have submitted their preferences.
+* ``StudentRegPhaseZero`` (``'completed'``): holds students until they are selected in the student lottery, even after its window ends.
+
+``ProgramModuleObj.gate_status(user)`` reports where a user stands with a module, for both ``findModule`` and the checklist.
+
 Schedule Conflict Detection Engine
 -----------------------------------
 Phase-based registration programs use mutual exclusion rules (e.g. lottery signup and FCFS registration cannot run concurrently):

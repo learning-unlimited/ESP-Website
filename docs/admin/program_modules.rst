@@ -99,6 +99,13 @@ Also provides various situational templates (e.g. to explain if students didn't
 win the lottery).  To enable these, this module should NOT be disabled upon the
 conclusion of the student lottery.
 
+While "Force show required modules" is on, the module holds students until they
+are selected in the lottery (the ``OverridePhaseZero`` permission, which the
+lottery gives the winners), even after it closes on the module schedule.  The
+registration checklist tells students that they're entered in the lottery, or
+that they weren't selected; students who weren't selected don't see the later
+steps.
+
 Student Profile Editor (RegProfileModule)
 -----------------------------------------
 
@@ -229,18 +236,18 @@ This is a new mode of student registration which functions much like the lottery
 Admin Setup
 ~~~~~~~~~~~
 
-To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as "completed" for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supersede the normal student reg landing page (the page with the checkboxes indicating steps completed).
+To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with LotteryStudentRegModule. The module is required, and while "Force show required modules" is on, the Two-Phase landing page (Fig. 1) supersedes the normal student reg landing page (the page with the registration checklist) from before the module opens until it closes. Students who have submitted their preferences stay on the landing page too, and can keep changing them until it closes.
+
+Set the module's open and close times on the module schedule to the class lottery's; they also set the ``Student/Classes/Lottery`` deadline. Once the module closes, students land at the normal student reg landing page, so the module doesn't need to be disabled.
 
 .. figure:: images/fig1.png
    :width: 30 %
 
    Figure 1: Two-Phase Student Reg landing page
 
-Once the Two-Phase Student Reg portion of registration is complete for students, **the Two-Phase Student Reg module should be disabled**. This allows students to now land at the normal checkboxes landing page and make edits to their schedule.
-
 To control the number of priority slots listed in the rank classes interface, set the 'priority_limit' property of the Student Class Reg Module Info associated with the program. This can be edited through the admin panel by visiting /admin/modules/studentclassregmoduleinfo/ and selecting the Student Class Reg Module Info object associated with the program.
 
-*Future work: We'd like to change this to interact better with the checkboxpage, so steps that need to be revisited can be used during the Two-Phase stage of registration, and so that the module doesn't have the be disabled to land at the main student reg page.*
+*Future work: We'd like to let students revisit earlier steps during the Two-Phase stage of registration.*
 
 
 Student flow
@@ -248,7 +255,7 @@ Student flow
 
 While Two-Phase registration is enabled, students will see the following workflow:
 1. Interact with any module enabled before Two-Phase (Medical form, Student Profile, etc.)
-2. Land at the Two-Phase landing page (Fig. 1 above), which links directly to steps 1 and 2 of registration.
+2. Land at the Two-Phase landing page (Fig. 1 above), which links directly to steps 1 and 2 of registration. The registration checklist beside it lists the steps that open after the class lottery.
 3. Step 1 of registration: view the catalog, filter by catalog, and star interested classes (Fig. 2).
 *Note: Classes starred are saved as "Interested" in the back-end, and DO affect the outcome of the lottery.*
 
@@ -263,6 +270,8 @@ While Two-Phase registration is enabled, students will see the following workflo
    :width: 30 %
 
    Figure 3: Step 2 of registration -- rank classes for each timeslot
+
+5. Step 3 of registration: submit their preferences ("Submit my preferences"), which emails them a summary. They stay on the landing page, where they can keep changing their preferences, until the class lottery closes.
 
 
 Views provided
