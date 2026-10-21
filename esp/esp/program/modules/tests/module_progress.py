@@ -39,7 +39,7 @@ from django.test import RequestFactory, SimpleTestCase
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.checklist import get_checklist_progress, get_module_page_checklist_context
+from esp.program.modules.checklist import get_checklist_context, get_checklist_progress, get_module_page_checklist_context
 from esp.program.templatetags.modules import registration_checklist
 from esp.program.tests import ProgramFrameworkTest
 from esp.themes.controllers import ThemeController
@@ -384,3 +384,27 @@ class ChecklistProgressTest(SimpleTestCase):
         self.assertIsNone(progress['next_step'])
         self.assertIsNone(progress['next_record'])
 
+
+class ChecklistOrderTest(SimpleTestCase):
+    """The checklist lists modules in the order users meet them."""
+
+    @staticmethod
+    def _module(seq, required, completed=False):
+        return mock.Mock(seq=seq, **{'isRequired.return_value': required,
+                                     'isCompleted.return_value': completed})
+
+    def _order(self, forced):
+        prog = mock.Mock()
+        prog.studentclassregmoduleinfo.force_show_required_modules = forced
+        modules = [self._module(4, False), self._module(20, True, completed=True),
+                   self._module(0, True), self._module(35, False, completed=True)]
+        with mock.patch('esp.program.modules.handlers.studentregcore.StudentRegCore.get_reg_records', return_value=[]):
+            checklist = get_checklist_context(mock.Mock(), prog, 'learn', modules)
+        return [m.seq for m in checklist['modules']]
+
+    def test_required_modules_first_when_forced(self):
+        self.assertEqual(self._order(forced=True), [0, 20, 4, 35])
+
+    def test_seq_order_when_not_forced(self):
+        """Finished modules aren't moved to the top."""
+        self.assertEqual(self._order(forced=False), [0, 4, 20, 35])
