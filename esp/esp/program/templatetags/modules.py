@@ -1,7 +1,7 @@
 from django import template
 from django.core.exceptions import ObjectDoesNotExist
 
-from esp.program.modules.checklist import get_checklist_progress, get_module_page_checklist_context
+from esp.program.modules.checklist import forces_required_modules, get_checklist_progress, get_module_page_checklist_context
 from esp.themes.controllers import ThemeController
 
 register = template.Library()
@@ -110,18 +110,10 @@ def teacher_checklist(context):
         # Until the required modules are done, findModule sends the teacher
         # through them in order, so the checklist shouldn't link around that.
         checklist['lock_links'] = (not checklist['completedAll']
-                                   and _forces_required_modules(checklist['program']))
+                                   and forces_required_modules(checklist['program']))
 
     context.render_context['teacher_checklist'] = checklist
     return checklist
-
-
-def _forces_required_modules(program):
-    """True if registration makes users complete required modules in order."""
-    try:
-        return program.studentclassregmoduleinfo.force_show_required_modules
-    except (AttributeError, ObjectDoesNotExist):
-        return False
 
 
 def _theme_has_checklist_sidebar(context):
