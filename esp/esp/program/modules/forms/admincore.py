@@ -99,7 +99,6 @@ ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attr
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
-    progress_mode = forms.IntegerField( min_value=0, max_value=2, help_text=ClassRegModuleInfo._meta.get_field('progress_mode').help_text)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -110,7 +109,7 @@ class TeacherRegSettingsForm(BetterModelForm):
                      ('Class Duration and Size Options', {'fields': ['class_max_duration', 'class_min_cap', 'class_max_size', 'class_size_step', 'class_other_sizes']}),
                      ('Section Options', {'fields': ['allowed_sections', 'session_counts']}),
                      ('Other Options', {'fields': ['allow_lateness', 'ask_for_room', 'use_class_size_max', 'use_class_size_optimal', 'use_optimal_class_size_range', 'use_allowable_class_size_ranges', 'open_class_registration']}),
-                     ('Visual Options', {'fields': ['color_code', 'progress_mode']}),
+                     ('Visual Options', {'fields': ['color_code', 'show_checklist']}),
                     ]# Here you can also add description for each fieldset.
         model = ClassRegModuleInfo
 
@@ -119,7 +118,6 @@ class StudentRegSettingsForm(BetterModelForm):
     class_cap_multiplier = forms.DecimalField(min_value=0, max_digits=3, decimal_places=2, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_multiplier').help_text)
     class_cap_offset = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_offset').help_text)
     priority_limit = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('priority_limit').help_text)
-    progress_mode = forms.IntegerField(min_value=0,max_value=2, help_text=StudentClassRegModuleInfo._meta.get_field('progress_mode').help_text)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -130,7 +128,7 @@ class StudentRegSettingsForm(BetterModelForm):
                      ('Priority Registration Settings', {'fields': ['priority_limit']}), # use_priority is not included here to prevent confusion; to my knowledge, only HSSP uses this setting - WG
                      ('Enrollment Settings', {'fields': ['register_from_catalog', 'visible_enrollments', 'visible_meeting_times', 'show_emailcodes']}), # use_grade_range_exceptions is excluded until there is an interface for it - WG 5/25/23
                      ('Button Settings', {'fields': ['confirm_button_text', 'view_button_text', 'cancel_button_text', 'temporarily_full_text', 'cancel_button_dereg', 'send_confirmation']}),
-                     ('Visual Options', {'fields': ['progress_mode', 'force_show_required_modules']}),
+                     ('Visual Options', {'fields': ['show_checklist', 'force_show_required_modules']}),
                     ]# Here you can also add description for each fieldset.
         model = StudentClassRegModuleInfo
 
