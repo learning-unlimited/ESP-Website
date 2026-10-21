@@ -46,6 +46,7 @@ from django.utils import timezone
 
 class TeacherEventsModule(ProgramModuleObj):
     doc = """Allows teachers to sign up for one or more teacher events (e.g. interviews, training)."""
+    permission_types = ('Teacher/Events',)
 
     # Initialization
     def __init__(self, *args, **kwargs):
