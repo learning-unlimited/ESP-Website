@@ -32,6 +32,9 @@ class FinancialAidDeclineTest(ProgramFrameworkTest):
         self.assertIn(self.studentreg, response['Location'])
         self.assertTrue(self._module().isCompleted(self.student))
         self.assertFalse(FinancialAidRequest.objects.filter(user=self.student, program=self.program).exists())
+        # Coming back to the page doesn't start a new application.
+        self.client.get(self.finaid_url, secure=True)
+        self.assertFalse(FinancialAidRequest.objects.filter(user=self.student, program=self.program).exists())
 
     def test_page_offers_declining_until_the_student_applies(self):
         response = self.client.get(self.finaid_url, secure=True)

@@ -105,8 +105,13 @@ class FinancialAidAppModule(ProgramModuleObj):
         from datetime import datetime
         from esp.dbmail.models import send_mail
 
-        app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
-                                                                program = self.program)
+        app = FinancialAidRequest.objects.filter(user=request.user, program=self.program).first()
+        if app is None:
+            app = FinancialAidRequest(user=request.user, program=self.program)
+            # After "I don't need financial aid", only an application the
+            # student saves is stored.
+            if not self.declined(request.user):
+                app.save()
 
         class Form(forms.ModelForm):
             class Meta:
@@ -119,7 +124,8 @@ class FinancialAidAppModule(ProgramModuleObj):
 
         if request.method == 'POST' and request.POST.get('submitform') == self.DECLINE_LABEL:
             if not app.done:
-                app.delete()
+                if app.pk:
+                    app.delete()
                 rt, _ = RecordType.objects.get_or_create(
                     name=self.DECLINED_EVENT, defaults={'description': 'Said they did not need financial aid'})
                 Record.objects.get_or_create(user=request.user, event=rt, program=prog)
