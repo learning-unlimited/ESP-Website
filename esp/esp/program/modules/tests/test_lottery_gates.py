@@ -106,6 +106,30 @@ class LotteryGateTest(StudentRegTwoPhaseBaseTest):
         self.assertContains(response, 'Two-Phase Student Registration')
         self.assertContains(response, '(closed)')
 
+    def test_closing_the_lottery_deadline_lets_students_through(self):
+        """Without a close time of its own, the class lottery ends with its deadline."""
+        self._select_student()
+        self.client.post('/learn/%s/confirm_registration' % self.program.getUrlBase())
+        Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery').delete()
+        Permission.objects.create(role=Group.objects.get(name='Student'), permission_type='Student/Classes/Lottery',
+                                  program=self.program, start_date=datetime.now() - timedelta(days=7),
+                                  end_date=datetime.now() - timedelta(hours=1))
+        self.assertEqual(self._gate_status('StudentRegTwoPhase'), 'passed')
+        response = self.client.get(self.studentreg)
+        self.assertContains(response, 'Student registration for')
+
+    def test_steps_after_the_class_lottery_show_when_they_open(self):
+        """A step opening after the lottery closes shows its own opening date."""
+        self._select_student()
+        self.twophase.end_date = datetime(2099, 11, 10)
+        self.twophase.save()
+        ack = self._module('StudentAcknowledgementModule')
+        ack.start_date = datetime(2099, 11, 12)
+        ack.save()
+        response = self.client.get(self.studentreg)
+        self.assertContains(response, 'After the class lottery')
+        self.assertContains(response, 'Opens Nov 12')
+
 
 class ScheduledRequiredModuleTest(StudentRegTwoPhaseBaseTest):
     """Required modules outside their schedule window aren't forced, but are

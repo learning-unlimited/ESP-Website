@@ -34,6 +34,7 @@ def get_checklist_context(user, prog, tl, modules=None):
     modules = sorted(open_modules + others, key=lambda m: (forced and not m.isRequired(), m.seq))
     for m in modules:
         m.schedule_state = 'closed' if m.has_ended() else ('upcoming' if not m.is_valid() else 'open')
+        m.opens_on = m.start_date if m.schedule_state == 'upcoming' else None
         m.after_gate = None
         m.hide_in_checklist = False
 
@@ -59,7 +60,8 @@ def _add_gates(checklist, user):
 
     Sets ``gate`` and ``gate_status`` when the required-module flow is
     holding the user at a gating module, and marks each module with the last
-    unpassed gate listed before it (``after_gate``).  Once a gate refuses the
+    unpassed gate listed before it (``after_gate``), moving its ``opens_on``
+    date to when that gate closes if that is later.  Once a gate refuses the
     user, the steps after it and the other requirements are hidden.
     """
     from esp.program.modules.base import CoreModule
@@ -75,6 +77,8 @@ def _add_gates(checklist, user):
     gate = None
     for m in checklist['modules']:
         m.after_gate = gate
+        if gate is not None and gate.gate_lifts == 'closed' and gate.end_date:
+            m.opens_on = max(m.opens_on or gate.end_date, gate.end_date)
         if m.gate_lifts and statuses.get(m.id, 'passed') != 'passed':
             gate = m
     if checklist['gate_status'] == 'refused':

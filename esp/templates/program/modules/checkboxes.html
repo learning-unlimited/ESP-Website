@@ -42,10 +42,10 @@ links.
 {% endif %}
 {% if module.isCompleted %}
     <i class="bi bi-check done-sign" aria-label="Done"></i>
-{% elif module.after_gate %}
-    <span class="reg-step-status">{% if module.after_gate.gate_lifts == 'completed' %}If selected{% elif module.after_gate.end_date %}Opens {{ module.after_gate.end_date|date:"M j" }}{% else %}Later{% endif %}</span>
-{% elif module.schedule_state == 'upcoming' %}
-    <span class="reg-step-status">{% if module.start_date %}Opens {{ module.start_date|date:"M j" }}{% else %}Later{% endif %}</span>
+{% elif module.after_gate.gate_lifts == 'completed' %}
+    <span class="reg-step-status">If selected</span>
+{% elif module.after_gate or module.schedule_state == 'upcoming' %}
+    <span class="reg-step-status">{% if module.opens_on %}Opens {{ module.opens_on|date:"M j" }}{% else %}Later{% endif %}</span>
 {% elif gate and module.id == gate.id and gate_status == 'waiting' %}
     <span class="reg-step-status">Entered</span>
 {% elif gate and module.id == gate.id and gate_status == 'refused' %}

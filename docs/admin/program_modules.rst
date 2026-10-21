@@ -238,7 +238,7 @@ Admin Setup
 
 To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with LotteryStudentRegModule. The module is required, and while "Force show required modules" is on, the Two-Phase landing page (Fig. 1) supersedes the normal student reg landing page (the page with the registration checklist) from before the module opens until it closes. Students who have submitted their preferences stay on the landing page too, and can keep changing them until it closes.
 
-Set the module's open and close times on the module schedule to the class lottery's; they also set the ``Student/Classes/Lottery`` deadline. Once the module closes, students land at the normal student reg landing page, so the module doesn't need to be disabled.
+Set the module's open and close times on the module schedule to the class lottery's; they also set the ``Student/Classes/Lottery`` deadline. Closing that deadline on the deadlines page also ends the class lottery. Once the module closes, students land at the normal student reg landing page, so the module doesn't need to be disabled.
 
 .. figure:: images/fig1.png
    :width: 30 %

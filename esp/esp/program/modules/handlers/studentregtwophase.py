@@ -48,7 +48,7 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
-from esp.users.models import Record, RecordType, ESPUser
+from esp.users.models import Permission, Record, RecordType, ESPUser
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
@@ -76,6 +76,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
     permission_types = ('Student/Classes/Lottery',)
     gate_lifts = 'closed'
     gate_label = 'the class lottery'
+
+    def has_ended(self):
+        """The class lottery also ends once its deadline has closed with none
+        open or still to come, since a deadline closed on the deadlines page
+        doesn't change the module's own close time."""
+        if super().has_ended():
+            return True
+        now = datetime.datetime.now()
+        lottery = Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery',
+                                            user__isnull=True)
+        return lottery.filter(end_date__lt=now).exists() and not lottery.exclude(end_date__lt=now).exists()
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)

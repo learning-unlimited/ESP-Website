@@ -217,7 +217,7 @@ Required Modules and Lottery Gates
 ----------------------------------
 While "Force show required modules" is on, students are sent through the program's required modules in order (``findModule``). A required module outside its time window isn't forced; the registration checklist still lists it, marked "(closed)" or with its opening date. Two handlers are gates, set by their ``gate_lifts`` class property:
 
-* ``StudentRegTwoPhase`` (``'closed'``): holds students from before the module opens until its window ends, even once they have submitted their preferences.
+* ``StudentRegTwoPhase`` (``'closed'``): holds students from before the module opens until its window ends (or its ``Student/Classes/Lottery`` deadline closes), even once they have submitted their preferences.
 * ``StudentRegPhaseZero`` (``'completed'``): holds students until they are selected in the student lottery, even after its window ends.
 
 ``ProgramModuleObj.gate_status(user)`` reports where a user stands with a module, for both ``findModule`` and the checklist.
