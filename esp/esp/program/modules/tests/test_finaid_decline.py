@@ -3,6 +3,7 @@ Tests for the "I don't need financial aid" option of the financial aid
 application, which lets students complete that step without applying.
 """
 
+from esp.accounting.models import FinancialAidGrant
 from esp.program.models import FinancialAidRequest
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
@@ -53,6 +54,20 @@ class FinancialAidDeclineTest(ProgramFrameworkTest):
         self.assertFalse(Record.user_completed(self.student, FinancialAidAppModule.DECLINED_EVENT, self.program))
         self.assertTrue(self.student.appliedFinancialAid(self.program))
         self.assertTrue(self._module().isCompleted(self.student))
+
+    def test_approved_application_cannot_be_declined(self):
+        """A grant added on the admin page leaves the application incomplete;
+        declining mustn't delete it with its grant."""
+        self.client.post(self.finaid_url, {'household_income': '12345', 'submitform': 'Save Progress'})
+        request = FinancialAidRequest.objects.get(user=self.student, program=self.program)
+        FinancialAidGrant.objects.create(request=request, percent=100)
+        self.assertFalse(request.done)
+        self.assertTrue(request.approved)
+        response = self.client.get(self.finaid_url, secure=True)
+        self.assertNotContains(response, "Don't need financial aid?")
+        self._decline()
+        self.assertTrue(FinancialAidRequest.objects.get(id=request.id).approved)
+        self.assertFalse(Record.user_completed(self.student, FinancialAidAppModule.DECLINED_EVENT, self.program))
 
     def test_required_financial_aid_can_be_declined_to_continue(self):
         for pmo in self.program.getModules():

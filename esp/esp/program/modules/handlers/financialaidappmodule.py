@@ -122,8 +122,12 @@ class FinancialAidAppModule(ProgramModuleObj):
                 else:
                     fields = '__all__'
 
+        # An application with a grant (e.g. one added on the admin page) keeps
+        # it, so it can't be declined.
+        can_decline = not app.done and not (app.pk and app.approved)
+
         if request.method == 'POST' and request.POST.get('submitform') == self.DECLINE_LABEL:
-            if not app.done:
+            if can_decline:
                 if app.pk:
                     app.delete()
                 rt, _ = RecordType.objects.get_or_create(
@@ -188,7 +192,7 @@ This request can be (re)viewed at:
         return render_to_response(self.baseDir()+'application.html',
                                   request,
                                   {'form': form, 'app': app, 'declined': self.declined(request.user),
-                                   'decline_label': self.DECLINE_LABEL})
+                                   'can_decline': can_decline, 'decline_label': self.DECLINE_LABEL})
 
     def isStep(self):
         # Only show this module if there are things (with costs) for financial aid to cover

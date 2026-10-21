@@ -110,7 +110,7 @@
     <input type="submit" class="button" name="submitform" value="Save Progress" />
  </th>
 </tr>
-{% if not app.done %}
+{% if can_decline %}
 <tr>
  <td colspan="2" style="text-align: center;">
     {% if declined %}
