@@ -197,7 +197,7 @@ class ClassRegModuleInfo(models.Model):
 
     #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
-    progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checkboxes, 2=progress bar, 0=neither.')
+    progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checklist with a progress bar (2 does the same), 0=neither.')
 
     @property
     def module(self):
