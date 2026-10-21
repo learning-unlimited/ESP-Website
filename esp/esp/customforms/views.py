@@ -114,12 +114,15 @@ def onSubmit(request):
 
                 # Set up tag to associate form with registration module
                 if 'link_module' in metadata:
+                    if not metadata['link_module']:
+                        raise ESPError('This form is linked to a program, so you must select a registration module for it. '
+                                       'If none are listed, enable the module for the program first.', log=False)
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        raise ESPError('No program with ID %s' % (metadata['link_id']), log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        raise ESPError('Program does not have %s enabled' % (metadata['link_module']), log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -127,7 +130,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        raise ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']), log=False)
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -157,6 +160,8 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
@@ -207,12 +212,15 @@ def onModify(request):
 
                 # Set up tag to associate form with registration module
                 if 'link_module' in metadata:
+                    if not metadata['link_module']:
+                        raise ESPError('This form is linked to a program, so you must select a registration module for it. '
+                                       'If none are listed, enable the module for the program first.', log=False)
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError('No program with ID %i' % (metadata['link_id']))
+                        raise ESPError('No program with ID %s' % (metadata['link_id']), log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError('Program does not have %s enabled' % (metadata['link_module']))
+                        raise ESPError('Program does not have %s enabled' % (metadata['link_module']), log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -220,7 +228,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']))
+                        raise ESPError('Module %s does not use a custom form or is not implemented' % (metadata['link_module']), log=False)
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -281,6 +289,8 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def hasPerm(user, form):

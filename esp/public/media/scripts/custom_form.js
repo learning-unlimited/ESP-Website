@@ -1615,6 +1615,11 @@ var submit=function() {
         if($j("#links_id_main").val()=="Program"){
             form['link_tl'] = $j("#links_id_tl").val();
             form['link_module'] = $j("#links_id_module").val();
+            if(!form['link_module']){
+                $j("#submit_error").html("This form is linked to a program, so you must select a registration module for it. " +
+                                         "If none are listed, enable the module for the program first.").show();
+                return;
+            }
         }
 	} else {
         form['link_id']=-1;
@@ -1697,6 +1702,7 @@ var submit=function() {
 		},
         error: function(error) {
             $j("#submit_error").html(error.responseJSON.message).show();
+            $j('#submit').removeAttr("disabled");
         }
 	});
 	$j('#submit').attr("disabled","true");
