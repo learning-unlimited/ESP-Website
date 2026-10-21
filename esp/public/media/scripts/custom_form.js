@@ -678,6 +678,14 @@ var clearSpecificOptions=function() {
 		$other_options.empty();
 };
 
+// Numeric responses are stored in 32-bit integer columns, so keep limits within that range
+var NUMERIC_MIN_VALUE=-2147483648, NUMERIC_MAX_VALUE=2147483647;
+
+var clampNumericLimit=function(val) {
+    if(val==='' || isNaN(val)) return val;
+    return Math.max(NUMERIC_MIN_VALUE, Math.min(NUMERIC_MAX_VALUE, Number(val)));
+};
+
 var addSpecificOptions=function(elem, options) {
     //Adds in specific options for some fields
 
@@ -687,8 +695,8 @@ var addSpecificOptions=function(elem, options) {
 			limits=options.split(',');
 		else limits=[0,10];
 		frag='<div class="toolboxText">';
-		frag+='<p>Min <input type="number" id="id_minVal" value="'+limits[0]+'">';
-		frag+='&nbsp;&nbsp;Max <input type="number" id="id_maxVal" value="'+limits[1]+'">';
+		frag+='<p>Min <input type="number" id="id_minVal" min="'+NUMERIC_MIN_VALUE+'" max="'+NUMERIC_MAX_VALUE+'" value="'+limits[0]+'">';
+		frag+='&nbsp;&nbsp;Max <input type="number" id="id_maxVal" min="'+NUMERIC_MIN_VALUE+'" max="'+NUMERIC_MAX_VALUE+'" value="'+limits[1]+'">';
 		frag+='</p></div>';
 	 	$div=$j(frag);
 		$div.appendTo($j('#other_options'));	
@@ -1231,7 +1239,7 @@ var renderNormalField=function(item, field_options, data){
             $new_elem = $new_elem.add($j("<span class='correct_answer'> Correct answer: " + $j('#numeric_correct_answer').val() + "</span>"));
             data['attrs']['correct_answer']=$j('#numeric_correct_answer').val();
         }
-		data['attrs']['limits']=$j('#id_minVal').val() + ',' + $j('#id_maxVal').val();
+		data['attrs']['limits']=clampNumericLimit($j('#id_minVal').val()) + ',' + clampNumericLimit($j('#id_maxVal').val());
 	}
 	else if(item=='date'){
 		$new_elem=$j('<input>').attr({
@@ -1771,8 +1779,14 @@ var rebuild=function(metadata) {
 		$j('#links_id_specify').val('particular').trigger("change");
 		$j('#links_id_pick').val(metadata['link_id']).trigger("change");
         if(metadata['link_type'] == "Program"){
-            $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
-            $j('#links_id_module').val(metadata['link_module']);
+            if(metadata['link_tl']){
+                $j('#links_id_tl').val(metadata['link_tl']).trigger("change");
+                $j('#links_id_module').val(metadata['link_module']);
+            } else {
+                // Linked to a program but not to any of its modules (no tag found);
+                // don't preselect a module, so the admin must choose one explicitly
+                $j('#links_id_module').val('');
+            }
         }
 	}
 	else $j('#links_id_specify').val('userdef');

@@ -28,6 +28,11 @@ from six.moves import map
 import six
 from six.moves import range
 
+# Numeric responses are stored in IntegerField (32-bit) columns, so values
+# outside this range can't be saved
+NUMERIC_MIN_VALUE = -2147483648
+NUMERIC_MAX_VALUE = 2147483647
+
 class BaseCustomForm(BetterForm):
     """
     Base class for all custom forms.
@@ -229,6 +234,11 @@ class CustomFormHandler():
                 if 'widget_attrs' in self._field_types[field['field_type']]:
                     widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
                 typeMap = self._field_types[field['field_type']]['typeMap']
+
+                # Clamp numeric limits to what the response column can store
+                if field['field_type'] == 'numeric':
+                    field_attrs['min_value'] = max(field_attrs.get('min_value', NUMERIC_MIN_VALUE), NUMERIC_MIN_VALUE)
+                    field_attrs['max_value'] = min(field_attrs.get('max_value', NUMERIC_MAX_VALUE), NUMERIC_MAX_VALUE)
 
                 # Setting classes required for front-end validation
                 if field['required']:
