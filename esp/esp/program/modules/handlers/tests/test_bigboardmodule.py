@@ -5,8 +5,6 @@ from django.test import RequestFactory
 from django.utils import timezone
 
 from esp.program.models import (
-    ClassSection,
-    ClassSubject,
     RegistrationType,
     StudentRegistration,
     StudentSubjectInterest,
@@ -124,6 +122,12 @@ class BigBoardModuleTests(ProgramFrameworkTest):
             user=self.students[0],
             section=self.sec0,
             relationship=self.interested_rt,
+        )
+        # Enrolled-only negative control: student 2 should not be counted
+        StudentRegistration.objects.create(
+            user=self.students[2],
+            section=self.sec0,
+            relationship=self.enrolled_rt,
         )
 
         self._flush_cache()
@@ -371,12 +375,12 @@ class BigBoardModuleTests(ProgramFrameworkTest):
         chunks_cum = BigBoardModule.chunk_times(
             times, start, end, delta=datetime.timedelta(hours=1), cumulative=True
         )
-        self.assertEqual(chunks_cum, [0.0, 3.0, 4.0, 4.0])
+        self.assertEqual(chunks_cum, [0.0, 3.0, 4.0])
 
         chunks_non_cum = BigBoardModule.chunk_times(
             times, start, end, delta=datetime.timedelta(hours=1), cumulative=False
         )
-        self.assertEqual(chunks_non_cum, [0.0, 3.0, 1.0, 0.0])
+        self.assertEqual(chunks_non_cum, [0.0, 3.0, 1.0])
 
     def test_make_graph_data(self):
         graph_data, start = BigBoardModule.make_graph_data([], cutoff=1)
@@ -460,11 +464,24 @@ class BigBoardModuleTests(ProgramFrameworkTest):
         request.user = self.admin
         request.program = self.program
         request.prog = self.program
+        request.session = {}
 
-        fn = getattr(BigBoardModule.bigboard, 'method', BigBoardModule.bigboard)
-        response = fn(
-            self.module, request, 'manage', None, None, None, None, self.program
+        response = self.module.bigboard(
+            request, 'manage', None, None, None, None, self.program
         )
+
+        expected_keys = [
+            'type',
+            'numbers',
+            'popular_classes',
+            'first_hour',
+            'left_axis_data',
+            'loads',
+            'timeslots',
+            'categories',
+        ]
+        for key in expected_keys:
+            self.assertIn(key, response.context_data)
 
         response.context_data['prog'] = self.program
         response.render()
@@ -473,6 +490,20 @@ class BigBoardModuleTests(ProgramFrameworkTest):
         content = response.content.decode('utf-8')
         self.assertIn("Registration Summary", content)
         self.assertIn("Student", content)
+
+    def test_bigboard_view_non_admin_denied(self):
+        request = self.factory.get('/manage/bigboard')
+        request.user = self.students[0]
+        request.program = self.program
+        request.prog = self.program
+        request.session = {}
+
+        response = self.module.bigboard(
+            request, 'manage', None, None, None, None, self.program
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode('utf-8')
+        self.assertIn("not an administrator", content.lower())
 
     def test_bigboard_no_registrations_edge_case(self):
         StudentRegistration.objects.filter(
@@ -488,11 +519,24 @@ class BigBoardModuleTests(ProgramFrameworkTest):
         request.user = self.admin
         request.program = self.program
         request.prog = self.program
+        request.session = {}
 
-        fn = getattr(BigBoardModule.bigboard, 'method', BigBoardModule.bigboard)
-        response = fn(
-            self.module, request, 'manage', None, None, None, None, self.program
+        response = self.module.bigboard(
+            request, 'manage', None, None, None, None, self.program
         )
+
+        expected_keys = [
+            'type',
+            'numbers',
+            'popular_classes',
+            'first_hour',
+            'left_axis_data',
+            'loads',
+            'timeslots',
+            'categories',
+        ]
+        for key in expected_keys:
+            self.assertIn(key, response.context_data)
 
         response.context_data['prog'] = self.program
         response.render()
