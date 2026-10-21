@@ -4,7 +4,7 @@ import json
 from django.test import RequestFactory
 
 from esp.middleware.threadlocalrequest import ThreadLocals, clear_current_request
-from esp.program.models import ClassCategories, ProgramModule
+from esp.program.models import ClassCategories, ModeratorRecord, ProgramModule
 from esp.program.modules.admin_search import SEARCH_CATEGORY_CLASSES
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.handlers.schedulingcheckmodule import (
@@ -14,7 +14,12 @@ from esp.program.modules.handlers.schedulingcheckmodule import (
     SchedulingCheckRunner,
 )
 from esp.program.tests import ProgramFrameworkTest
-from esp.resources.models import Resource, ResourceRequest, ResourceType
+from esp.resources.models import (
+    Resource,
+    ResourceAssignment,
+    ResourceRequest,
+    ResourceType,
+)
 from esp.tagdict.models import Tag
 from esp.tests.factories import make_class as _make_class
 
@@ -165,7 +170,7 @@ class SchedulingCheckModuleViewTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         if hasattr(response, 'render'):
             response.render()
-        self.assertIn(b'Scheduling Diagnostics', response.content)
+        self.assertIn(b'Schedule Diagnostic Output', response.content)
 
     def test_scheduling_checks_unreviewed_flag_in_template_context(self):
         request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase(), {'unreviewed': '1'})
@@ -181,6 +186,8 @@ class SchedulingCheckModuleViewTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         if hasattr(response, 'render'):
             response.render()
+        self.assertTrue(response.context_data['unreviewed'])
+        self.assertIn(b'Exclude unreviewed classes', response.content)
 
     def test_scheduling_checks_requires_admin(self):
         request = RequestFactory().get('/manage/%s/scheduling_checks' % self.program.getUrlBase())
@@ -193,7 +200,10 @@ class SchedulingCheckModuleViewTest(ProgramFrameworkTest):
         moduleobj.program = self.program
 
         response = moduleobj.scheduling_checks(request, 'manage', None, None, None, None, self.program)
-        self.assertIn(response.status_code, [302, 403])
+        self.assertEqual(response.status_code, 200)
+        if hasattr(response, 'render'):
+            response.render()
+        self.assertIn(b'you are not an administrator of this program', response.content)
 
 
 class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
@@ -242,8 +252,8 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self.assertEqual(len(res), 1)
 
     def test_all_diagnostics_with_teacher_moderator_module(self):
-        mod_module = ProgramModule.objects.get(name='TeacherModeratorModule')
-        self.program.modules.add(mod_module)
+        mod_module = ProgramModule.objects.get(handler='TeacherModeratorModule')
+        self.program.program_modules.add(mod_module)
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         diags = runner.all_diagnostics()
         diag_keys = [d[0] for d in diags]
@@ -342,8 +352,8 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self.assertTrue(any(row['Username'] == teacher and row['Timeslot'] == self.timeslots[0] for row in conflicts))
 
     def test_teachers_teaching_two_classes_with_moderator_module(self):
-        mod_module = ProgramModule.objects.get(name='TeacherModeratorModule')
-        self.program.modules.add(mod_module)
+        mod_module = ProgramModule.objects.get(handler='TeacherModeratorModule')
+        self.program.program_modules.add(mod_module)
 
         sections = list(self.program.sections()[:2])
         user = self.teachers[0]
@@ -363,7 +373,10 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         sections[1].clearRooms()
         sections[1].clear_meeting_times()
         sections[1].assign_meeting_times([self.timeslots[0]])
-        sections[1].assignClassRoom(self._room('Room 0', self.timeslots[0]))
+        ResourceAssignment.objects.create(
+            target=sections[1],
+            resource=self._room('Room 0', self.timeslots[0]),
+        )
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         conflicts = runner.multiple_classes_same_resource_same_time()
@@ -462,7 +475,9 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self._schedule_section(sec, self.timeslots[0], 'Room 0')
 
         classroom_space_type, _ = ResourceType.objects.get_or_create(
-            name='Classroom space', program=self.program
+            name='Classroom space',
+            program=self.program,
+            defaults={'description': 'Classroom space'},
         )
         ResourceRequest.objects.create(
             desired_value='Auditorium',
@@ -471,7 +486,9 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         )
 
         projector_type, _ = ResourceType.objects.get_or_create(
-            name='Projector', program=self.program
+            name='Projector',
+            program=self.program,
+            defaults={'description': 'Projector'},
         )
         ResourceRequest.objects.create(
             desired_value='HD Projector',
@@ -521,10 +538,10 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self._schedule_section(sec0, self.timeslots[0], 'Room 0')
         self._schedule_section(sec1, self.timeslots[0], 'Room 1')
 
-        Tag.setProgramTag(
+        Tag.setTag(
             'no_overlap_classes',
-            json.dumps({'Overlap Check': [classes[0].id, classes[1].id]}),
-            program=self.program,
+            target=self.program,
+            value=json.dumps({'Overlap Check': [classes[0].id, classes[1].id]}),
         )
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
@@ -536,7 +553,9 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self._schedule_section(sec, self.timeslots[0], 'Room 0')
 
         comp_type, _ = ResourceType.objects.get_or_create(
-            name='Computer Lab', program=self.program
+            name='Computer Lab',
+            program=self.program,
+            defaults={'description': 'Computer Lab'},
         )
         ResourceRequest.objects.create(
             desired_value='computer cluster',
@@ -557,8 +576,8 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         self.assertTrue(any(row['Username'] == teacher.username for row in inflexible))
 
     def test_unavailable_and_mismatched_moderators(self):
-        mod_module = ProgramModule.objects.get(name='TeacherModeratorModule')
-        self.program.modules.add(mod_module)
+        mod_module = ProgramModule.objects.get(handler='TeacherModeratorModule')
+        self.program.program_modules.add(mod_module)
 
         moderator = self.teachers[1]
         moderator.clearAvailableTimes(self.program)
