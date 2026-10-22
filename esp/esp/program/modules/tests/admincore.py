@@ -8,6 +8,7 @@ from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, StudentRegistration, RegistrationProfile, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.handlers.admincore import EditPermissionForm, NewDeadlineForm, NewPermissionForm
 
 
 class RegistrationTypeManagementTest(ProgramFrameworkTest):
@@ -73,13 +74,11 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
 
 class ModuleManagementConstraintsTest(ProgramFrameworkTest):
     """Tests that backend enforces module ordering/required constraints on save,
-    and that the view exposes constraint metadata for the UI.  Issue #3656."""
+    and that the view exposes constraint metadata for the UI."""
 
     def setUp(self):
-        # RegProfileModule returns two module_properties entries (learn + teach),
-        # so there are two ProgramModule rows with that handler.
         modules = [ProgramModule.objects.get(handler='AdminCore')]
-        modules += list(ProgramModule.objects.filter(handler='RegProfileModule'))
+        modules += list(ProgramModule.objects.filter(handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']))
         modules.append(ProgramModule.objects.get(handler='AvailabilityModule'))
         modules.append(ProgramModule.objects.get(handler='StudentRegConfirm'))
 
@@ -106,15 +105,15 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIn(r.status_code, [200, 302])
 
     def test_reg_profile_enforced_after_illegal_post(self):
-        """RegProfileModule is always seq=0 and required=True after any save."""
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        """RegProfile modules are always seq=0 and required=True after any save."""
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             pmo.seq = 500
             pmo.required = False
             pmo.save()
 
         self._post_empty_order()
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             self.assertEqual(pmo.seq, 0)
             self.assertTrue(pmo.required)
 
@@ -151,13 +150,13 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIsInstance(r.context['module_constraints'], dict)
 
     def test_reg_profile_flagged_in_constraints(self):
-        """RegProfileModule appears in module_constraints as required_locked and position_locked."""
+        """RegProfile modules appear in module_constraints as required_locked and position_locked."""
         self.client.login(username='admin_constraints', password='password')
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
         constraints = r.context['module_constraints']
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             if pmo.inModulesList():
                 key = str(pmo.id)
                 self.assertIn(key, constraints)
@@ -187,13 +186,13 @@ class ModuleManagementConstraintsTest(ProgramFrameworkTest):
         self.assertIsInstance(r.context['position_locked_ids'], (set, frozenset))
 
     def test_reg_profile_in_position_locked_ids(self):
-        """RegProfileModule (position_locked) appears in position_locked_ids."""
+        """RegProfile modules (position_locked) appear in position_locked_ids."""
         self.client.login(username='admin_constraints', password='password')
         r = self.client.get(self._url())
         self.assertEqual(r.status_code, 200)
         position_locked_ids = r.context['position_locked_ids']
 
-        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler='RegProfileModule'):
+        for pmo in ProgramModuleObj.objects.filter(program=self.program, module__handler__in=['StudentRegProfileModule', 'TeacherRegProfileModule']):
             if pmo.inModulesList():
                 self.assertIn(pmo.id, position_locked_ids)
 
@@ -320,11 +319,11 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
         step_ids = [m.id for m in learn_mods + teach_mods]
 
         # The handler's override section always forces certain modules' seq/required
-        # (e.g. RegProfileModule -> seq=0, CreditCard -> seq=10000, etc.) on every
+        # (e.g. RegProfile modules -> seq=0, CreditCard -> seq=10000, etc.) on every
         # POST regardless of which reset flags are sent.  Exclude those so we can
         # test seq independence on unaffected modules.
         forced_override_names = frozenset({
-            'RegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
+            'StudentRegProfileModule', 'TeacherRegProfileModule', 'StudentRegConfirm', 'AvailabilityModule',
             'StudentRegTwoPhase',
         })
         non_override_ids = [
@@ -357,8 +356,113 @@ class ModuleManagementLinkTitleTest(ProgramFrameworkTest):
             self.assertEqual(pmo.seq, 999)
 
 
+class DeadlineDateValidationTest(ProgramFrameworkTest):
+    """Tests that deadline forms reject end dates that are not after start dates."""
+
+    def setUp(self):
+        modules = [ProgramModule.objects.get(handler='AdminCore')]
+        super().setUp(modules=modules)
+
+    def _deadline_data(self, start, end):
+        return {
+            'deadline_type': 'Student/All',
+            'role': 'Student',
+            'start_date': start,
+            'end_date': end,
+        }
+
+    def test_new_deadline_form_end_before_start_invalid(self):
+        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_new_deadline_form_end_equal_start_invalid(self):
+        data = self._deadline_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_new_deadline_form_valid_range(self):
+        data = self._deadline_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_new_deadline_form_no_end_date_valid(self):
+        data = self._deadline_data('2026-04-01 10:00:00', '')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_new_deadline_form_no_start_date_valid(self):
+        data = self._deadline_data('', '2026-04-20 10:00:00')
+        form = NewDeadlineForm(data)
+        self.assertTrue(form.is_valid())
+
+    def test_edit_permission_form_end_before_start_invalid(self):
+        form = EditPermissionForm({
+            'start_date': '2026-04-20 10:00:00',
+            'end_date': '2026-04-01 10:00:00',
+            'id': 1,
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+
+    def test_edit_permission_form_valid_range(self):
+        form = EditPermissionForm({
+            'start_date': '2026-04-01 10:00:00',
+            'end_date': '2026-04-20 10:00:00',
+            'id': 1,
+        })
+        self.assertTrue(form.is_valid())
+
+    def _new_permission_data(self, perm_start, perm_end, user_id=None):
+        """Build a minimal NewPermissionForm data dict."""
+        return {
+            'permission_type': 'Student/All',
+            'user': user_id or '',
+            'perm_start_date': perm_start,
+            'perm_end_date': perm_end,
+        }
+
+    def test_new_permission_form_end_before_start_invalid(self):
+        """NewPermissionForm rejects an end date that is before the start date."""
+        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-01 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+        self.assertIn('End date must be after start date.', form.errors['__all__'])
+
+    def test_new_permission_form_end_equal_start_invalid(self):
+        """NewPermissionForm rejects an end date that equals the start date."""
+        data = self._new_permission_data('2026-04-20 10:00:00', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('__all__', form.errors)
+        self.assertIn('End date must be after start date.', form.errors['__all__'])
+
+    def test_new_permission_form_valid_range(self):
+        """NewPermissionForm accepts an end date strictly after the start date."""
+        data = self._new_permission_data('2026-04-01 10:00:00', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        # The form may still fail on the required 'user' field; we only care
+        # that the date-range error is NOT present.
+        self.assertNotIn('__all__', form.errors)
+
+    def test_new_permission_form_no_end_date_valid(self):
+        """NewPermissionForm allows an open-ended permission (no end date)."""
+        data = self._new_permission_data('2026-04-01 10:00:00', '')
+        form = NewPermissionForm(data)
+        self.assertNotIn('__all__', form.errors)
+
+    def test_new_permission_form_no_start_date_valid(self):
+        """NewPermissionForm allows a permission with no start date."""
+        data = self._new_permission_data('', '2026-04-20 10:00:00')
+        form = NewPermissionForm(data)
+        self.assertNotIn('__all__', form.errors)
+
+
 class ModuleManagementCsrfTest(ProgramFrameworkTest):
-    """Regression tests for module-management CSRF enforcement. Issue #4637."""
+    """Regression tests for module-management CSRF enforcement."""
 
     def setUp(self):
         modules = []
@@ -440,3 +544,4 @@ class ModuleManagementCsrfTest(ProgramFrameworkTest):
             {'default_link_title': 'on', 'csrfmiddlewaretoken': token},
         )
         self.assertEqual(response.status_code, 200)
+

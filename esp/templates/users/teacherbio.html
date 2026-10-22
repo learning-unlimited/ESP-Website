@@ -26,8 +26,8 @@ img.biophoto { border: 1px solid black; }
 <a class="btn btn-primary" href="{{ bio.edit_url }}">Edit this biography</a>
 {% endif %}
 {% if request.user.isAdministrator %}
-    <a class="btn btn-primary" href="/manage/userview?username={{biouser.username}}">Go to teacher profile</a>
-    <form id="morphteacher-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+    <a class="btn btn-primary" href="{% url 'manage_userview' %}?username={{biouser.username}}">Go to teacher profile</a>
+    <form id="morphteacher-form" action="{% url 'morph_into_user' %}" method="post" style="display:inline">{% csrf_token %}
         <input type="hidden" name="morph_user" value="{{biouser.id}}"/>
         <button type="submit" class="btn btn-primary">Morph into teacher</button>
     </form>

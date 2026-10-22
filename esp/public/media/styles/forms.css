@@ -4,6 +4,42 @@
     
 }
 
+
+
+/* Custom User Auth Template Alignments */
+.form-submit-centered {
+    text-align: center;
+}
+
+.auth-header {
+    text-align: center;
+}
+
+.auth-subheader {
+    text-align: center;
+    margin-bottom: 0px;
+}
+
+.auth-instruction {
+    text-align: center;
+    font-weight: normal;
+    margin-top: 0px;
+}
+
+.auth-warning-text {
+    text-align: center;
+    color: #FF0000;
+    margin-bottom: 0px;
+}
+
+.form-table-label-top {
+    vertical-align: top;
+}
+
+.auth-role-select {
+    width: 95%;
+}
+
 /* Profile editor */
 #id_receive_txt_message {
     list-style:none
@@ -197,16 +233,18 @@ input.fancybutton:active
     border: none;
     font-weight: normal;
     font-style: normal;
-    color: black;
+    color: inherit;
     font-size: 12px;
 }
 
 #program_form td.compulsory_event_time {
     background-color: #CCC;
+    color: black;
 }
 
 #program_form td.compulsory_event_desc {
     background-color: #CCC;
+    color: black;
 }
 
 td .program_form_small{
@@ -244,6 +282,7 @@ th .program_form_small{
 
 #program_form td.colorful {
    background-color: #c6def7;
+   color: black;
 }
 
 #program_form input {

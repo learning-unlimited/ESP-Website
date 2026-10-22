@@ -23,7 +23,7 @@ td, th {
 </style>
 <a name="top"></a><h1>Survey Responses for {{ program.niceName }} </h1>
 {% if tl == "teach" %}
-<p>To view your survey results across all programs, <a href="/myesp/survey_responses">go here</a>.</p>
+<p>To view your survey results across all programs, <a href="{% url 'teacher_survey_all' %}">go here</a>.</p>
 {% endif %}
 
 {% if teacher_form %}

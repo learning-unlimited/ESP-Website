@@ -92,7 +92,7 @@ urlpatterns += [
     re_path(r'^admin/filebrowser/', filebrowser_site.urls),
     re_path(r'^admin/', admin_site.urls),
     re_path(r'^accounts/login/$', esp.users.views.CustomLoginView.as_view()),
-    re_path(r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
+    re_path(r'^(?P<subsection>(learn|teach|volunteer|program|help|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html', permanent=True)),
 ]
 
 # Adds missing trailing slash to any admin urls that haven't been matched yet.
@@ -133,6 +133,8 @@ urlpatterns += [
 urlpatterns += [
     re_path(r'^(faq|faq\.html)$', main.FAQView.as_view(), name='FAQ'),
     re_path(r'^(contact|contact\.html)$', main.ContactUsView.as_view(), name='Contact Us'),
+    re_path(r'^teach/index\.html$', main.TeachIndexView.as_view(), name='teach_index'),
+    re_path(r'^teach/register/?$', main.teach_register, name='teach_register'),
 ]
 
 urlpatterns += [

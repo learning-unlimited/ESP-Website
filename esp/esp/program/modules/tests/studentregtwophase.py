@@ -1,20 +1,37 @@
 """
 Tests for the StudentRegTwoPhase module, specifically the confirmation
-button (#1166) and minimum class requirement (#2535) features.
+button and minimum class requirement features.
 """
 
+import json
 import random
+from datetime import datetime
 
 from django.core import mail
 
-from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.class_status import ClassStatus
+from esp.program.models import (
+    ClassSection,
+    ClassSubject,
+    RegistrationProfile,
+    RegistrationType,
+    StudentRegistration,
+    StudentSubjectInterest,
+)
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
-from esp.users.models import Record, RecordType
+from esp.users.models import ContactInfo, ESPUser, Record, RecordType, StudentInfo
 
 
-class StudentRegTwoPhaseTest(ProgramFrameworkTest):
+class StudentRegTwoPhaseBaseTest(ProgramFrameworkTest):
+    """
+    Shared fixture for TwoPhase tests.
+
+    Subclasses can override customize_program() to alter the freshly created
+    program (e.g. to simulate a misconfiguration) before it is scheduled.
+    """
+
     def setUp(self, *args, **kwargs):
         # Set up the program with enough timeslots, teachers, rooms, and classes
         kwargs.update({
@@ -23,6 +40,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
             'num_rooms': 6,
         })
         super().setUp(*args, **kwargs)
+
+        self.customize_program()
 
         self.schedule_randomly()
 
@@ -46,6 +65,10 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         RegistrationType.objects.get_or_create(name='Priority/1', category='student')
         RegistrationType.objects.get_or_create(name='Priority/2', category='student')
         RegistrationType.objects.get_or_create(name='Priority/3', category='student')
+
+    def customize_program(self):
+        """Hook for subclasses; called right after the program is created."""
+        pass
 
     @property
     def program_content_type(self):
@@ -73,6 +96,8 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         StudentRegistration.objects.create(
             user=student, section=section, relationship=reg_type)
 
+
+class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
     # ---------------------------------------------------------------
     # Test: Main registration page loads
     # ---------------------------------------------------------------
@@ -193,6 +218,134 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertContains(response, 'Send Me a Confirmation Email')
 
     # ---------------------------------------------------------------
+
+    # save_priorities: unapproved classes must be skipped
+    # ---------------------------------------------------------------
+    LOGGER_NAME = 'esp.program.modules.handlers.studentregtwophase'
+
+    def _ensure_student_profile(self, student):
+        """Give student grade/YOG so getGrade() is within program class range."""
+        thisyear = ESPUser.program_schoolyear(self.program)
+        prof = RegistrationProfile.getLastForProgram(student, self.program)
+        prof.program = self.program
+        if not prof.contact_user:
+            prof.contact_user = ContactInfo.objects.create(
+                user=student,
+                first_name=student.first_name,
+                last_name=student.last_name,
+                e_mail=student.email,
+            )
+        if not prof.student_info:
+            prof.student_info = StudentInfo.objects.create(
+                user=student,
+                graduation_year=ESPUser.YOGFromGrade(10, thisyear),
+                dob=datetime(thisyear - 15, 1, 1),
+            )
+        prof.save()
+
+    def _find_class_and_section_for_timeslot(self, timeslot):
+        """Return (ClassSubject, ClassSection) with a meeting in ``timeslot``."""
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                times = list(sec.meeting_times.all())
+                if not times:
+                    continue
+                if times[0].start == timeslot.start:
+                    return cls, sec
+        return None, None
+
+    def _first_timeslot_with_scheduled_section(self):
+        """Return (timeslot, cls, sec) for the first timeslot containing a section."""
+        for timeslot in self.timeslots:
+            cls, sec = self._find_class_and_section_for_timeslot(timeslot)
+            if cls is not None and sec is not None:
+                return timeslot, cls, sec
+        self.fail('Expected at least one timeslot with a scheduled class/section')
+
+    def _save_priorities_post(self, student, timeslot, class_id):
+        self._ensure_student_profile(student)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+        )
+        payload = {str(timeslot.id): {'1': str(class_id)}}
+        return self.client.post(
+            '/learn/%s/save_priorities' % self.program.getUrlBase(),
+            {'json_data': json.dumps(payload)},
+        )
+
+    def test_save_priorities_approved_class_creates_priority_registration(self):
+        """When section and class are approved, save_priorities records Priority/1."""
+        self.schedule_randomly()
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        student = self.students[0]
+
+        RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        StudentRegistration.objects.filter(
+            user=student,
+            relationship__name='Priority/1',
+            section__parent_class__parent_program=self.program,
+        ).delete()
+
+        self.assertGreater(sec.status, 0)
+        self.assertGreater(sec.parent_class.status, 0)
+
+        response = self._save_priorities_post(student, timeslot, cls.id)
+        self.assertEqual(response.status_code, 302)
+
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(
+                user=student,
+                relationship__name='Priority/1',
+                section__parent_class=cls,
+            ).exists(),
+            'Expected Priority/1 registration for approved class',
+        )
+
+    def test_save_priorities_unapproved_class_skipped_and_warns(self):
+        """Unapproved section/class must not get a priority registration; log warning."""
+        self.schedule_randomly()
+        timeslot, cls, sec = self._first_timeslot_with_scheduled_section()
+        student = self.students[1]
+
+        RegistrationType.objects.get_or_create(name='Priority/1', category='student')
+        StudentRegistration.objects.filter(
+            user=student,
+            relationship__name='Priority/1',
+            section__parent_class__parent_program=self.program,
+        ).delete()
+
+        # Force unapproved (same condition as handler: status must be > 0)
+        ClassSubject.objects.filter(id=cls.id).update(status=ClassStatus.UNREVIEWED)
+        ClassSection.objects.filter(id=sec.id).update(status=ClassStatus.UNREVIEWED)
+        cls.refresh_from_db()
+        sec.refresh_from_db()
+
+        self._ensure_student_profile(student)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+        )
+        payload = {str(timeslot.id): {'1': str(cls.id)}}
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING') as log_ctx:
+            response = self.client.post(
+                '/learn/%s/save_priorities' % self.program.getUrlBase(),
+                {'json_data': json.dumps(payload)},
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            any('was not approved' in entry for entry in log_ctx.output),
+            'Expected warning log for unapproved class',
+        )
+        self.assertFalse(
+            StudentRegistration.valid_objects().filter(
+                user=student,
+                relationship__name='Priority/1',
+                section__parent_class=cls,
+            ).exists(),
+            'Must not create Priority/1 registration for unapproved class',
+        )
+
     # Tests: Minimum class requirement (twophase_min_classes tag)
     # ---------------------------------------------------------------
     def test_min_classes_rejects(self):
@@ -570,3 +723,59 @@ class StudentRegTwoPhaseTest(ProgramFrameworkTest):
         self.assertEqual(props['module_type'], 'learn')
         self.assertEqual(props['link_title'], 'Two-Phase Student Registration')
         self.assertTrue(props['required'])
+
+
+class StudentRegTwoPhaseMisconfiguredTest(StudentRegTwoPhaseBaseTest):
+    """
+    TwoPhase must fail cleanly if the JSON Data Module isn't enabled.
+    """
+
+    def customize_program(self):
+        json_mod = ProgramModule.objects.get(handler='JSONDataModule')
+        self.program.program_modules.remove(json_mod)
+
+    def _login_student(self):
+        student = random.choice(self.students)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'),
+            "Couldn't log in as student %s" % student.username)
+        return student
+
+    def test_json_data_module_not_enabled(self):
+        """Sanity check that the test program really has JSONDataModule disabled."""
+        self.assertFalse(self.program.hasModule('JSONDataModule'))
+
+    def test_main_page_still_loads(self):
+        """
+        The overview page itself doesn't call any JSON endpoints directly,
+        so it should still load normally even when misconfigured.
+        """
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/studentreg2phase' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_classes_fails_usefully(self):
+        """view_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/view_classes' % self.program.getUrlBase())
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)
+
+    def test_mark_classes_fails_usefully(self):
+        """mark_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        response = self.client.get(
+            '/learn/%s/mark_classes' % self.program.getUrlBase())
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)
+
+    def test_rank_classes_fails_usefully(self):
+        """rank_classes should show a clear error, not a broken/blank page."""
+        self._login_student()
+        timeslot = self.program.getTimeSlots()[0]
+        response = self.client.get(
+            '/learn/%s/rank_classes/%d' % (self.program.getUrlBase(), timeslot.id))
+        self.assertContains(
+            response, 'JSON Data Module', status_code=500)

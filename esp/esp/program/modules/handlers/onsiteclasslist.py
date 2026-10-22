@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 import json
+import math
 from datetime import datetime, timedelta
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -59,6 +60,47 @@ from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+
+MAX_SCHEDULE_SECTIONS = 200
+
+
+def sanitize_section_ids(section_ids, messages):
+    """ Cast requested section IDs to ints, dropping invalid entries and
+        duplicates (preserving order). Warnings for dropped entries are
+        appended to messages.
+
+        Strict: bools and floats (even 1.0) are rejected, since int(True)
+        == 1 and int(1.0) == 1 would silently accept non-integer IDs.
+        Strings are accepted only if they are decimal integer literals.
+    """
+    sanitized = []
+    for section_id in section_ids:
+        #   bool is a subclass of int: reject explicitly.
+        if isinstance(section_id, bool):
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+            continue
+        if isinstance(section_id, int):
+            sanitized.append(section_id)
+            continue
+        if isinstance(section_id, str):
+            stripped = section_id.strip()
+            #   Allow optional leading +/- then digits only (no '.', 'e', etc).
+            unsigned = stripped.lstrip('+-')
+            if unsigned.isdigit() and unsigned:
+                try:
+                    sanitized.append(int(stripped))
+                    continue
+                except ValueError:
+                    pass
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+            continue
+        #   floats (including 1.0), None, lists, dicts, etc. are invalid.
+        try:
+            messages.append(f'Warning: ignored invalid section ID {section_id!r}')
+        except Exception:
+            messages.append('Warning: ignored invalid section ID')
+    return list(dict.fromkeys(sanitized))
+
 
 class OnSiteClassList(ProgramModuleObj):
     doc = """Display lists of classes for onsite registration purposes."""
@@ -257,11 +299,36 @@ class OnSiteClassList(ProgramModuleObj):
             resp.status_code = 400
             json.dump({"messages": ["User not found"], "sections": []}, resp)
             return resp
-        try:
-            desired_sections = json.loads(request.GET['sections'])
-        except (KeyError, ValueError, TypeError):
-            result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
+        if 'sections' not in request.GET:
+            #   No schedule change requested (e.g. check_in-only call).
             desired_sections = None
+        else:
+            try:
+                desired_sections = json.loads(request.GET['sections'])
+            except (ValueError, TypeError):
+                #   Malformed JSON: refuse without side effects (no check_in).
+                resp.status_code = 400
+                result['messages'].append(f'Error: could not parse requested sections {request.GET.get("sections", None)}')
+                json.dump(result, resp)
+                return resp
+            if not isinstance(desired_sections, list):
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
+            raw_count = len(desired_sections)
+            desired_sections = sanitize_section_ids(desired_sections, result['messages'])
+            if not desired_sections and raw_count > 0:
+                #   Every entry was invalid; refuse rather than wipe the schedule
+                resp.status_code = 400
+                result['messages'].append('Error: sections must be a JSON list of section IDs')
+                json.dump(result, resp)
+                return resp
+            if len(desired_sections) > MAX_SCHEDULE_SECTIONS:
+                resp.status_code = 400
+                result['messages'].append(f'Error: too many sections requested; the limit is {MAX_SCHEDULE_SECTIONS}.')
+                json.dump(result, resp)
+                return resp
 
         #   Check in student if not currently checked in, since if they're using this view they must be onsite
         if request.GET.get('check_in') == 'true' and user and not prog.isCheckedIn(user):
@@ -403,12 +470,18 @@ class OnSiteClassList(ProgramModuleObj):
                 return render_to_response(self.baseDir() + 'classlist_options.html', request, {'prog': prog})
 
         context = {}
-        defaults = {'refresh': 120, 'scrollspeed': 1}
-        for key_option in defaults.keys():
-            if key_option in options:
-                context[key_option] = options[key_option]
-            else:
-                context[key_option] = defaults[key_option]
+        defaults = {'refresh': 120, 'scrollspeed': 1.0}
+
+        try:
+            context['refresh'] = int(options.get('refresh', defaults['refresh']) or defaults['refresh'])
+        except (ValueError, TypeError):
+            context['refresh'] = defaults['refresh']
+
+        try:
+            parsed_scrollspeed = float(options.get('scrollspeed', defaults['scrollspeed']) or defaults['scrollspeed'])
+            context['scrollspeed'] = parsed_scrollspeed if math.isfinite(parsed_scrollspeed) else defaults['scrollspeed']
+        except (ValueError, TypeError):
+            context['scrollspeed'] = defaults['scrollspeed']
 
         time_now = datetime.now()
 
@@ -455,7 +528,7 @@ class OnSiteClassList(ProgramModuleObj):
 
         #   Enforce a maximum refresh speed to avoid server overload.
         min_refresh = int(Tag.getTag('onsite_classlist_min_refresh'))
-        if int(context['refresh']) < min_refresh:
+        if context['refresh'] < min_refresh:
             context['refresh'] = min_refresh
 
         classes = []
@@ -468,10 +541,10 @@ class OnSiteClassList(ProgramModuleObj):
                     begin_time__gte=curtime.start, begin_time__lte=endtime.start
                     )
             else:
-                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                     status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
-                     begin_time__gte=curtime.start
-                     )
+                classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
+                    status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED,
+                    begin_time__gte=curtime.start
+                    )
             if sort_spec == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
             elif sort_spec == 'by_time':
@@ -518,9 +591,9 @@ class OnSiteClassList(ProgramModuleObj):
     def makeButtonLink(self):
         calls = [("classchange_grid", "Grid-based Class Changes Interface"), ("classList", "Scrolling Class List"), (self.get_main_view(), self.module.link_title)]
         strings = [f"""<div class="module_button">\
-                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}"><button type="button" class="module_link_large">
+                                <a href="/{self.module.module_type}/{self.program.url}/{call[0]}" class="module_link_large">
                                     <div class="module_link_main">{call[1]}</div>
-                                </button></a>
+                                </a>
                             </div>""" for call in calls]
         return "".join(strings)
 
