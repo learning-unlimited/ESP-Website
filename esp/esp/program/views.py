@@ -1869,7 +1869,7 @@ def module_schedule_reorder_api(request, program_type, program_term):
         updated_versions = {}
 
         with transaction.atomic():
-            module_map = {m.id: m for m in ProgramModuleObj.objects.select_for_update().filter(program=prog, id__in=update_ids).select_related('module')}
+            module_map = {m.id: m for m in ProgramModuleObj.objects.select_for_update(of=('self',)).filter(program=prog, id__in=update_ids).order_by('id').select_related('module')}
             for update in order:
                 mod_id = update.get("id")
                 new_seq = update.get("seq")

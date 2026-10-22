@@ -14,6 +14,11 @@ $j(document).ready(function() {
     var allModules = { learn: [], teach: [] };
     var undoStack = [];
     var redoStack = [];
+    // Version of each module after this admin's own last successful write.
+    // Undo/redo sends these instead of the command snapshot (which goes stale
+    // once a later command touches the same module) or the live allModules
+    // version (which a reload can advance past another admin's write).
+    var ownVersions = {};
     var MAX_HISTORY = 20; // issue #6001: keep a rolling history of the last 20 operations
     var historyBusy = false;
     var activeModule = null;    // currently editing
@@ -153,6 +158,10 @@ $j(document).ready(function() {
         };
     }
 
+    function historyVersion(state) {
+        return ownVersions.hasOwnProperty(state.id) ? ownVersions[state.id] : state.version;
+    }
+
     function applyModuleResponse(response) {
         var mod = findModule(response.module_id);
         if (!mod) return;
@@ -188,7 +197,7 @@ $j(document).ready(function() {
         var source = direction === 'undo' ? command.after : command.before;
         var payload = {
             module_id: target.id,
-            version: source.version,
+            version: historyVersion(source),
             start_date: target.start_date,
             end_date: target.end_date,
             seq: target.seq,
@@ -209,6 +218,7 @@ $j(document).ready(function() {
                     return;
                 }
                 target.version = response.version;
+                ownVersions[target.id] = response.version;
                 applyModuleResponse(response);
                 callback();
             },
@@ -220,7 +230,7 @@ $j(document).ready(function() {
         var target = direction === 'undo' ? command.before : command.after;
         var source = direction === 'undo' ? command.after : command.before;
         var payload = { order: target.map(function(state, index) {
-            return { id: state.id, seq: state.seq, version: source[index].version };
+            return { id: state.id, seq: state.seq, version: historyVersion(source[index]) };
         }) };
 
         $j.ajax({
@@ -236,6 +246,7 @@ $j(document).ready(function() {
                 }
                 target.forEach(function(state) {
                     state.version = response.updated_versions[state.id];
+                    ownVersions[state.id] = state.version;
                     var mod = findModule(state.id);
                     if (mod) {
                         mod.seq = state.seq;
@@ -702,6 +713,7 @@ $j(document).ready(function() {
                         if (res.success) {
                             after.forEach(function(state) {
                                 state.version = res.updated_versions[state.id];
+                                ownVersions[state.id] = state.version;
                                 // Keep the live module objects in sync so the next
                                 // edit or reorder sends the current version rather than
                                 // a stale one (which would wrongly 409).
@@ -882,6 +894,7 @@ $j(document).ready(function() {
                 $j('#editSaveBtn').prop('disabled', false).text('Save Changes');
                 if (res.success) {
                     var after = moduleState($j.extend({}, before, res));
+                    ownVersions[after.id] = after.version;
                     recordHistory(undoStack, { type: 'update', before: before, after: after });
                     redoStack = [];
                     updateHistoryControls();
