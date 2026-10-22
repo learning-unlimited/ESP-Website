@@ -317,16 +317,19 @@ def histogram(answer_list, args='format=html'):
     elif args_dict.get('format') == 'html':
         image_path = os.path.join(HISTOGRAM_DIR, png_filename)
     if not os.path.exists(image_path):
-        subprocess.call([
-            'gs',
-            '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
-            f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
-            f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
-            '-sDEVICE=png16m',
-            f'-r{HISTOGRAM_DPI}',
-            '-sOutputFile=' + image_path,
-            file_name
-        ])
+        try:
+            subprocess.call([
+                'gs',
+                '-dBATCH', '-dNOPAUSE', '-dTextAlphaBits=4',
+                f"-dDEVICEWIDTHPOINTS={context['bb_width']}",
+                f"-dDEVICEHEIGHTPOINTS={context['bb_height']}",
+                '-sDEVICE=png16m',
+                f'-r{HISTOGRAM_DPI}',
+                '-sOutputFile=' + image_path,
+                file_name
+            ])
+        except (FileNotFoundError, OSError):
+            pass
     if args_dict.get('format') == 'tex':
         return f'\\includegraphics[width={image_width}in]{{{image_path}}}'
     if args_dict.get('format') == 'html':

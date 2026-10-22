@@ -867,9 +867,21 @@ class Program(models.Model, CustomFormsLinkModel):
 
     """ Returns a queryset of students that are checked out of the program at the specified time """
     def checkedOutStudents(self, time_max = None):
+        from django.db import connection
+        from django.utils import timezone
         if time_max is None:
             time_max = timezone.now()
-        recs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time').distinct('user')
+        recs_qs = Record.objects.filter(program = self, event__name__in=["attended", "checked_out"], time__lt=time_max).order_by('user', '-time')
+        if connection.features.can_distinct_on_fields:
+            recs = recs_qs.distinct('user')
+        else:
+            seen_users = set()
+            rec_ids = []
+            for r in recs_qs:
+                if r.user_id not in seen_users:
+                    seen_users.add(r.user_id)
+                    rec_ids.append(r.id)
+            recs = Record.objects.filter(id__in=rec_ids)
         return ESPUser.objects.filter(record__id__in=recs, record__event__name="checked_out")
 
     """ Returns a queryset of students that are CURRENTLY checked out of the program at the specified time """
