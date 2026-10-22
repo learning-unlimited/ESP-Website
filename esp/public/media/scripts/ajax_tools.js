@@ -242,9 +242,10 @@ function CallbackForm(id, url)
 {
     this.id = id;
     this.url = url;
+    var callback_attrs = this;
     this.callback = function (e) {
         if (e && e.preventDefault) { e.preventDefault(); }
-        handle_submit('post', this, e);
+        handle_submit('post', callback_attrs, e);
         return false;
     };
 }
@@ -255,11 +256,12 @@ function CallbackLink(id, url, content, post_form)
     this.url = url;
     this.content = content;
     this.post_form = post_form;
+    var callback_attrs = this;
     if (this.post_form)
     {
         this.callback = function (e) {
             if (e && e.preventDefault) { e.preventDefault(); }
-            handle_submit('post', this, e);
+            handle_submit('post', callback_attrs, e);
             return false;
         };
     }
@@ -267,7 +269,7 @@ function CallbackLink(id, url, content, post_form)
     {
         this.callback = function (e) {
             if (e && e.preventDefault) { e.preventDefault(); }
-            handle_submit('get', this, e);
+            handle_submit('get', callback_attrs, e);
             return false;
         };
     }
