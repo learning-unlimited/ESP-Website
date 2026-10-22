@@ -3,7 +3,7 @@
 <script src="/media/scripts/jodit_base64_upload.js"></script>
 
 {% load markup %}
-<div class="qsd_header qsd_bits hidden" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
+<div class="qsd_header qsd_bits hidden" data-qsd-url="{{ qsdrec.url }}" id="inline_edit_msg_{{ qsdrec.edit_id }}" onclick="qsd_inline_edit('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');">
     <span class="bi bi-pencil" aria-hidden="true"></span>
     <span class="inline_edit_msg_text">
     {% if qsdrec.id %}
@@ -18,7 +18,7 @@
 <div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdrec.edit_id }}">
     {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
 </div>
-<div class="qsd_bits hidden">
+<div class="qsd_bits hidden" data-qsd-url="{{ qsdrec.url }}">
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
         <div class="qsd_buttons">
             <button type="button" onclick="qsd_inline_finish('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}', 'save');"
@@ -38,7 +38,7 @@
         </div>
         <div id="qsd_history_panel_{{ qsdrec.edit_id }}" class="qsd_history_panel" style="display:none;"></div>
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
-                  class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}"
+                  class="qsd_editor {% if not inline %}qsd_fullsize{% endif %} qsd_bits hidden {% if inline and not qsdrec.id %}qsd_halfsize{% endif %}" data-qsd-url="{{ qsdrec.url }}"
                   name="qsd_content">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}</textarea>
     </div>
 </div>
