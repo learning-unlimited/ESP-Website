@@ -80,6 +80,14 @@ class TestUserSearchController(ProgramFrameworkTest):
 
         self.assertEqual(self._usernames_for({'username': '  JoHn  '}), ['john'])
 
+    def test_blank_regex_flag_is_not_regex_mode(self):
+        """A blank username__regex value must not re-enable substring matching."""
+        ESPUser.objects.create_user(username='john', password='x')
+        ESPUser.objects.create_user(username='johnny', password='x')
+
+        self.assertEqual(
+            self._usernames_for({'username': 'john', 'username__regex': ''}), ['john'])
+
     def test_username_regex_mode_matches_patterns(self):
         """Checking "Regex?" restores pattern searches such as prefixes."""
         for username in ['esp_alice', 'esp_bob', 'carol']:

@@ -142,7 +142,7 @@ class UserSearchController(object):
                 if criteria.get(field, '').strip():
                     #   Usernames match literally unless regex mode is requested, so one
                     #   complete username selects exactly one account
-                    if field == 'username' and 'username__regex' not in criteria:
+                    if field == 'username' and not criteria.get('username__regex'):
                         filter_dict = {'username__iexact': criteria[field].strip()}
                     else:
                         #   Check that it's a valid regular expression
