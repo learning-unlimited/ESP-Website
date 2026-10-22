@@ -20,4 +20,4 @@ Then visit http://localhost:8000. See the [Docker setup guide](/docs/dev/docker.
 
 ## Looking to contribute?
 
-[Check out our wiki for details](https://github.com/learning-unlimited/ESP-Website/wiki#i-want-to-get-involved). We also have a strict [code of conduct](https://github.com/learning-unlimited/ESP-Website?tab=coc-ov-file).
+[Check out our wiki for details](https://github.com/learning-unlimited/ESP-Website/wiki#i-want-to-get-involved). We also have a strict [code of conduct](https://github.com/learning-unlimited/ESP-Website?tab=coc-ov-file). If you use an AI coding agent, point it at [`AGENTS.md`](AGENTS.md).
