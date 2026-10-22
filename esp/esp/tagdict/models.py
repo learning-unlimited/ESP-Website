@@ -15,6 +15,16 @@ from esp.tagdict import all_global_tags, all_program_tags
 # documentation, as described at
 # https://www.djangoproject.com/documentation/models/generic_relations/
 
+def _tag_key_set(tag):
+    """
+    Return the _getTag key set to evict when the given Tag changes.
+    A stale target can't be resolved, so evict by key alone; argcache rounds
+    this up to the whole _getTag cache.
+    """
+    if tag.has_stale_content_type():
+        return {'key': tag.key}
+    return {'key': tag.key, 'target': tag.target}
+
 class Tag(models.Model):
     """A tag on an item."""
     key = models.SlugField(db_index=True)
@@ -47,6 +57,16 @@ class Tag(models.Model):
 
     def __str__(self):
         return f"{self.key}: {self.value} ({self.target})"
+
+    def has_stale_content_type(self):
+        """
+        Return True if this Tag's content type refers to a model that no
+        longer exists, in which case accessing self.target raises
+        AttributeError (Issue #1959).
+        """
+        if self.content_type_id is None:
+            return False
+        return ContentType.objects.get_for_id(self.content_type_id).model_class() is None
 
     EMPTY_TAG = " "
 
@@ -130,7 +150,7 @@ class Tag(models.Model):
                 return default
             raise
     _getTag.get_or_create_token(('key', 'target',))
-    _getTag.depend_on_row('tagdict.Tag', lambda tag: {'key': tag.key, 'target': tag.target})
+    _getTag.depend_on_row('tagdict.Tag', _tag_key_set)
     _getTag = classmethod(_getTag)
 
     @classmethod

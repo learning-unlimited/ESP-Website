@@ -1453,7 +1453,8 @@ class Program(models.Model, CustomFormsLinkModel):
         See ESPUser.program_schoolyear.
         """
         return int(Tag.getBooleanTag('increment_default_grade_levels', self))
-    incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target})
+    incrementGrade.depend_on_row('tagdict.Tag', lambda tag: {'self' :  tag.target},
+                                 lambda tag: not tag.has_stale_content_type())
 
     def priorityLimit(self):
         studentregmodule = self.studentclassregmoduleinfo

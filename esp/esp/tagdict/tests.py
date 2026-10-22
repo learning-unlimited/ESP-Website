@@ -242,6 +242,34 @@ class TagTest(TestCase):
             self.assertFalse(Tag.getTag("test", target=user2))
             self.assertFalse(Tag.getTag("test", target=user2))
 
+    def testTagChangeKeepsOtherKeysCached(self):
+        '''Test that changing a global tag doesn't evict cached values for other keys.'''
+        Tag._getTag.delete_all()
+
+        Tag.setTag("test_a", value="a")
+        Tag.setTag("test_b", value="b")
+        self.assertEqual(Tag.getTag("test_a"), "a")
+
+        Tag.setTag("test_b", value="b2")
+        with self.assertNumQueries(0):
+            self.assertEqual(Tag.getTag("test_a"), "a")
+
+    def testStaleContentTypeDelete(self):
+        '''Test that deleting a stale ContentType cascades to its Tags without crashing (Issue #1959).'''
+        from django.contrib.contenttypes.models import ContentType
+        Tag._getTag.delete_all()
+
+        Tag.setTag("test", value="global value")
+        self.assertEqual(Tag.getTag("test"), "global value")
+
+        ct = ContentType.objects.create(app_label="tagdict", model="removedmodel")
+        ct_id = ct.id
+        Tag.objects.create(key="test", value="stale value", content_type=ct, object_id=1)
+        ct.delete()
+
+        self.assertFalse(Tag.objects.filter(content_type_id=ct_id).exists())
+        self.assertEqual(Tag.getTag("test"), "global value")
+
 class ProgramTagTest(ProgramFrameworkTest):
     def testProgramTag(self):
         '''Test the logic of getProgramTag in a bunch of different conditions.'''

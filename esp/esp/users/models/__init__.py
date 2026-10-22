@@ -1222,7 +1222,8 @@ class BaseESPUser(object):
         schoolyear = ESPUser.current_schoolyear(now)
         schoolyear += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
         return schoolyear
-    program_schoolyear.__func__.depend_on_row(Tag, lambda tag: {'program': tag.target})
+    program_schoolyear.__func__.depend_on_row(Tag, lambda tag: {'program': tag.target},
+                                              lambda tag: not tag.has_stale_content_type())
     program_schoolyear.__func__.depend_on_row(Event, lambda event: {'program': event.program})
 
     @cache_function
