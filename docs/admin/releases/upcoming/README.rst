@@ -18,6 +18,7 @@ Bug Fixes
 =========
 
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
+- The merge accounts page (``/manage/mergeaccounts/``) now rejects selecting the same account as both the absorber and the absorbee. Previously this reported "Merge successful" and, depending on the options chosen, could set up a login forwarder from the account to itself or deactivate the account.
 
 Developer Notes
 ===============

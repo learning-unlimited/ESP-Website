@@ -23,6 +23,8 @@ from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.controllers.merge import merge_users
+from esp.users.forms.merge import UserMergeForm
 from esp.users.forms.password_reset import PasswordResetForm
 from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
 from esp.users.models import (
@@ -2015,3 +2017,45 @@ class DisableAccountPostOnlyTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.user.refresh_from_db()
         self.assertTrue(self.user.is_active)
+
+class UserMergeFormSelfMergeTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+        self.admin = ESPUser.objects.create(username='merge_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeAdmin()
+        self.user_a = ESPUser.objects.create(username='merge_a')
+        self.user_b = ESPUser.objects.create(username='merge_b')
+        self.assertTrue(self.client.login(username='merge_admin', password='password'))
+
+    def test_form_rejects_same_account(self):
+        form = UserMergeForm({'absorber': self.user_a.id, 'absorbee': self.user_a.id})
+        self.assertFalse(form.is_valid())
+        self.assertIn('absorbee', form.errors)
+        self.assertNotIn('absorber', form.errors)
+
+    def test_form_accepts_different_accounts(self):
+        form = UserMergeForm({'absorber': self.user_a.id, 'absorbee': self.user_b.id})
+        self.assertTrue(form.is_valid(), form.errors)
+
+    def test_view_does_not_merge_same_account(self):
+        with mock.patch('esp.users.views.merge.merge_users') as mock_merge:
+            response = self.client.post('/manage/mergeaccounts/', {
+                'absorber': self.user_a.id,
+                'absorbee': self.user_a.id,
+                'deactivate': 'on',
+            })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'users/merge_accounts.html')
+        self.assertContains(response, 'An account cannot be merged with itself.')
+        mock_merge.assert_not_called()
+        self.user_a.refresh_from_db()
+        self.assertTrue(self.user_a.is_active)
+
+    def test_merge_users_rejects_same_account(self):
+        with self.assertRaises(ValueError):
+            merge_users(self.user_a, self.user_a, deactivate=True)
+        self.user_a.refresh_from_db()
+        self.assertTrue(self.user_a.is_active)
+        self.assertFalse(UserForwarder.objects.filter(source=self.user_a).exists())

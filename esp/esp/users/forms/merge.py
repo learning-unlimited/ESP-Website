@@ -11,3 +11,11 @@ class UserMergeForm(forms.Form):
         help_text='Should login forwarding be set up from the absorbee to the absorber?')
     deactivate = forms.BooleanField(label = 'Deactivate', required = False,
         help_text='Should the absorbee be deactivated?')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        absorber = cleaned_data.get('absorber')
+        absorbee = cleaned_data.get('absorbee')
+        if absorber and absorbee and absorber == absorbee:
+            self.add_error('absorbee', 'An account cannot be merged with itself. Please select two different accounts.')
+        return cleaned_data

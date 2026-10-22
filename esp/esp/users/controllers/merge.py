@@ -102,6 +102,8 @@ def merge_users(absorber, absorbee, forward=True, deactivate=False):
         deactivate: Deactivate the absorbee
 
     """
+    if absorber == absorbee:
+        raise ValueError('Cannot merge an account with itself.')
     merge(absorber, absorbee)
     # Set up forwarding
     if forward:
