@@ -39,6 +39,7 @@ import sys
 from datetime import datetime
 
 from django.conf import settings
+from django.core.exceptions import BadRequest, PermissionDenied, SuspiciousOperation
 from django.db.models.base import ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.utils.translation import gettext as _
@@ -120,6 +121,10 @@ class ESPErrorMiddleware(MiddlewareMixin):
             'Page Not Found',
             'The requested item or page could not be found.',
         ),
+        'BadRequest': (
+            'Invalid Request',
+            'Your request could not be processed due to invalid parameters.',
+        ),
     }
 
     def process_exception(self, request, exception):
@@ -151,7 +156,7 @@ class ESPErrorMiddleware(MiddlewareMixin):
             # bothering to log it we probably don't think it was our fault.
             status = 500
             error_type = 'ESPError_NoLog'
-        elif isinstance(exception, Http403):
+        elif isinstance(exception, (Http403, PermissionDenied)):
             log_level = logging.INFO
             template = '403.html'
             status = 403
@@ -161,6 +166,11 @@ class ESPErrorMiddleware(MiddlewareMixin):
             template = '404.html'
             status = 404
             error_type = 'Http404'
+        elif is_ajax and isinstance(exception, (BadRequest, SuspiciousOperation)):
+            log_level = logging.ERROR if isinstance(exception, SuspiciousOperation) else logging.INFO
+            template = 'error.html'
+            status = 400
+            error_type = 'BadRequest'
         elif is_ajax:
             log_level = logging.ERROR
             template = 'error.html'
@@ -181,7 +191,9 @@ class ESPErrorMiddleware(MiddlewareMixin):
                 error_msg = str(exception.args[0]) if exception.args else error_description
             elif isinstance(exception, (ObjectDoesNotExist, Http404)):
                 error_msg = str(exception.args[0]) if exception.args else error_description
-            elif isinstance(exception, Http403):
+            elif isinstance(exception, (Http403, PermissionDenied)):
+                error_msg = str(exception.args[0]) if exception.args else error_description
+            elif isinstance(exception, (BadRequest, SuspiciousOperation)):
                 error_msg = str(exception.args[0]) if exception.args else error_description
             else:
                 error_msg = error_description

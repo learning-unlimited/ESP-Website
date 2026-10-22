@@ -242,7 +242,11 @@ function CallbackForm(id, url)
 {
     this.id = id;
     this.url = url;
-    this.callback = function (e) {handle_submit('post', this, e)};
+    this.callback = function (e) {
+        if (e && e.preventDefault) { e.preventDefault(); }
+        handle_submit('post', this, e);
+        return false;
+    };
 }
     
 function CallbackLink(id, url, content, post_form)
@@ -253,11 +257,19 @@ function CallbackLink(id, url, content, post_form)
     this.post_form = post_form;
     if (this.post_form)
     {
-        this.callback = function (e) {handle_submit('post', this, e)};
+        this.callback = function (e) {
+            if (e && e.preventDefault) { e.preventDefault(); }
+            handle_submit('post', this, e);
+            return false;
+        };
     }
     else
     {
-        this.callback = function (e) {handle_submit('get', this, e)};
+        this.callback = function (e) {
+            if (e && e.preventDefault) { e.preventDefault(); }
+            handle_submit('get', this, e);
+            return false;
+        };
     }
 }
 

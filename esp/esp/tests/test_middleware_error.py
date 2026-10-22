@@ -7,6 +7,7 @@ Tests ESPError exception and AjaxExceptionReporter.
 import json
 
 from django.contrib.auth.models import Group
+from django.core.exceptions import BadRequest, PermissionDenied, SuspiciousOperation
 from django.http import Http404
 from django.test import RequestFactory
 
@@ -138,3 +139,33 @@ class ESPErrorMiddlewareTest(TestCase):
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['status'], 500)
         self.assertIn('website encountered an error', data['error'])
+
+    def test_process_exception_ajax_request_returns_json_for_permission_denied(self):
+        request = self.factory.post('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, PermissionDenied('Custom access denied'))
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 403)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 403)
+        self.assertEqual(data['error'], 'Custom access denied')
+
+    def test_process_exception_ajax_request_returns_json_for_bad_request(self):
+        request = self.factory.post('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, BadRequest('Malformed JSON data'))
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 400)
+        self.assertEqual(data['error'], 'Malformed JSON data')
+
+    def test_process_exception_ajax_request_returns_json_for_suspicious_operation(self):
+        request = self.factory.post('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, SuspiciousOperation('Invalid host'))
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 400)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 400)
+        self.assertEqual(data['error'], 'Invalid host')
