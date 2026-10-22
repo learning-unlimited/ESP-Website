@@ -237,6 +237,71 @@ div.navbar-collapse.collapse {
     }
 }
 
+@if $bootswatch-active {
+    // The theme editor shows Bootswatch-derived sidebar colours, but only
+    // customizer values changed from those defaults are substituted at compile
+    // time. Use the active Bootstrap palette for untouched fields and retain
+    // explicit sidebar customizations when present.
+    .sidebar {
+        color: if(index($esp-overridden, 'sidebarText'), $sidebarText, $body-color);
+        background: if(index($esp-overridden, 'sidebarBackground'), $sidebarBackground, $light);
+    }
+
+    .sidebar .nav-header,
+    .sidebar .dropdown-header,
+    #sidebar .nav-header,
+    #sidebar .dropdown-header {
+        color: if(index($esp-overridden, 'sidebarHeader'), $sidebarHeader, $primary);
+    }
+
+    .sidebar .nav-header a:hover,
+    .sidebar .nav-header a:focus,
+    .sidebar .dropdown-header a:hover,
+    .sidebar .dropdown-header a:focus,
+    #sidebar .nav-header a:hover,
+    #sidebar .nav-header a:focus,
+    #sidebar .dropdown-header a:hover,
+    #sidebar .dropdown-header a:focus {
+        color: if(index($esp-overridden, 'sidebarLinkHover'), $sidebarLinkHover, $link-hover-color);
+    }
+
+    .sidebar li:not(.dropdown-header):not(.nav-header) > a,
+    #sidebar li:not(.dropdown-header):not(.nav-header) > a,
+    #sidebar #nav_accordion .card-header > a {
+        color: if(index($esp-overridden, 'sidebarLink'), $sidebarLink, $link-color);
+    }
+
+    .sidebar li:not(.dropdown-header):not(.nav-header) > a:hover,
+    .sidebar li:not(.dropdown-header):not(.nav-header) > a:focus,
+    #sidebar li:not(.dropdown-header):not(.nav-header) > a:hover,
+    #sidebar li:not(.dropdown-header):not(.nav-header) > a:focus,
+    #sidebar #nav_accordion .card-header > a:hover,
+    #sidebar #nav_accordion .card-header > a:focus {
+        color: if(index($esp-overridden, 'sidebarLinkHover'), $sidebarLinkHover, $link-hover-color);
+        background-color: if(index($esp-overridden, 'sidebarHover'), $sidebarHover, tint-color($primary, 90%));
+    }
+
+    .sidebar > .active > a,
+    #sidebar > .active > a,
+    .sidebar li.active > a,
+    #sidebar li.active > a,
+    .sidebar > .active > a:hover,
+    .sidebar > .active > a:focus,
+    #sidebar > .active > a:hover,
+    #sidebar > .active > a:focus,
+    .sidebar li.active > a:hover,
+    .sidebar li.active > a:focus,
+    #sidebar li.active > a:hover,
+    #sidebar li.active > a:focus {
+        color: if(index($esp-overridden, 'sidebarActive'), $sidebarActive, color-contrast($primary));
+        background-color: if(index($esp-overridden, 'sidebarActiveBackground'), $sidebarActiveBackground, $primary);
+    }
+
+    #sidebar .active .bi {
+        color: if(index($esp-overridden, 'sidebarActive'), $sidebarActive, color-contrast($primary));
+    }
+}
+
 .btn:hover {
     background-position: 0;
 }
