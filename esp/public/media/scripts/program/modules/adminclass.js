@@ -16,11 +16,7 @@ var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
 function show_saving_popup() {
-  saving_popup
-    .dialog('option', 'title', 'Saving')
-    .html('Saving the class status...')
-    .dialog('option', 'buttons', [])
-    .dialog('open');
+  bootstrap.Modal.getOrCreateInstance(document.getElementById('saving_popup')).show();
 }
 
 //returns details (status string, action, and CSS classes) for a given status code
@@ -256,7 +252,7 @@ function update_class(clsid, statusId) {
       el.find("strong").text('[' + status_details['text'] + ']');
       
       // Close the dialog box
-      saving_popup.dialog("close");
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('saving_popup')).hide();
     }
   });
 }
