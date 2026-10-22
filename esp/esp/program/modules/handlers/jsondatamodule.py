@@ -1040,6 +1040,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 hours["class-registered-hours"] += float(sec['duration']) * float(sec['enrolled_students'])
         return hours
 
+    @staticmethod
+    def dashboard_excluded_categories(prog):
+        """IDs of the class categories left out of the dashboard hour and capacity counts."""
+        value = Tag.getProgramTag('dashboard_excluded_categories', prog) or ''
+        return [int(pk) for pk in value.split(',') if pk.strip().isdigit()]
+
     @cache_function
     def hour_nums(prog):
         ## Write this as a 'for' loop because PostgreSQL can't do it in
@@ -1051,15 +1057,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        reg_classes = prog.classes().exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        excluded_categories = JSONDataModule.dashboard_excluded_categories(prog)
+        reg_classes = prog.classes().exclude(category__is_lunch=True).exclude(category__in=excluded_categories).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in reg_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         reg_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in reg_classes])
-        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__is_lunch=True).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
+        app_classes = prog.classes().filter(status__gt=0, sections__status__gt=0).exclude(category__is_lunch=True).exclude(category__in=excluded_categories).annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students'))
         for cls in app_classes:
             cls.subject_checked_in_students = sum([sec.count_ever_checked_in_students() for sec in cls.get_sections()])
         app_hours = JSONDataModule.calc_hours([{'num_sections': cls.num_sections, 'subject_duration': cls.subject_duration, 'subject_students': cls.subject_students, 'subject_checked_in_students': cls.subject_checked_in_students, 'class_size_max': cls.class_size_max} for cls in app_classes])
-        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__is_lunch=True).values('duration', 'enrolled_students', 'id')
+        sched_sections = prog.sections().filter(status__gt=0, meeting_times__isnull=False).exclude(parent_class__category__is_lunch=True).exclude(parent_class__category__in=excluded_categories).values('duration', 'enrolled_students', 'id')
         sched_hours = JSONDataModule.calc_section_hours(sched_sections)
         hour_num_list = []
         hour_num_list.append(("Total # of Class-Hours (registered)", round(reg_hours["class-hours"], 2)))
@@ -1078,6 +1085,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     hour_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     hour_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
     hour_nums.depend_on_row(Record, lambda rec: {'prog': rec.program}, lambda rec: rec.event and rec.event.name == 'attended')
+    hour_nums.depend_on_row(Tag, lambda tag: {}, lambda tag: tag.key == 'dashboard_excluded_categories')
     hour_nums = staticmethod(hour_nums)
 
     @cache_function
@@ -1089,6 +1097,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             .select_related('parent_class', 'parent_class__category'))
 
         timeslots = prog.getTimeSlots()
+        excluded_categories = JSONDataModule.dashboard_excluded_categories(prog)
         timeslots_num_list = []
         ## Is it really faster to do this logic in Python?
         ## It'd be even faster to just write a raw SQL query to do it.
@@ -1105,11 +1114,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             def student_count(clslist):
-                lst = [0] + [x.num_students() for x in clslist if not x.category.is_lunch]
+                lst = [0] + [x.num_students() for x in clslist if not x.category.is_lunch and x.category.id not in excluded_categories]
                 return reduce(operator.add, lst)
 
             def student_max_count(clslist):
-                lst = [0] + [x.capacity for x in clslist if not x.category.is_lunch]
+                lst = [0] + [x.capacity for x in clslist if not x.category.is_lunch and x.category.id not in excluded_categories]
                 return reduce(operator.add, lst)
 
             curTimeslot['studentcount'] = {
@@ -1123,6 +1132,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     timeslots_nums.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     timeslots_nums.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
     timeslots_nums.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
+    timeslots_nums.depend_on_row(Tag, lambda tag: {}, lambda tag: tag.key == 'dashboard_excluded_categories')
     timeslots_nums = staticmethod(timeslots_nums)
 
     @aux_call

@@ -102,6 +102,13 @@ def class_category_field(key, program):
                  for cat in ClassCategories.objects.all().order_by('category')])
 
 
+def class_categories_field(key, program):
+    from esp.program.models import ClassCategories
+    return forms.MultipleChoiceField(
+        choices=[(str(cat.id), '%s (%s)' % (cat.category, cat.symbol))
+                 for cat in ClassCategories.objects.all().order_by('category')])
+
+
 class AnyOrNamesMultipleChoiceField(forms.MultipleChoiceField):
     """A multiple choice field where picking *any_value* means 'all of them'."""
 
@@ -813,6 +820,14 @@ all_program_tags = {
         'category': 'learn',
         'is_setting': True,
         'field': class_category_field,
+    },
+    'dashboard_excluded_categories': {
+        'is_boolean': False,
+        'help_text': 'Class categories (e.g., the open class category) to leave out of the class-hour, class-student-hour, and timeslot capacity counts on the program dashboard',
+        'default': '',
+        'category': 'manage',
+        'is_setting': True,
+        'field': class_categories_field,
     },
     'sibling_discount': {
         'is_boolean': False,

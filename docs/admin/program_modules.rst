@@ -501,7 +501,7 @@ Custom forms and Formstack may be used to augment or replace these features.
 Admin Module for showing basic vitals (AdminVitals)
 ---------------------------------------------------
 
-This module shows statistics about your program on the dashboard.
+This module shows statistics about your program on the dashboard. Lunch classes are left out of the hour and timeslot capacity counts, as are any class categories (e.g., the open class category) selected in the "dashboard_excluded_categories" program tag.
 
 AJAX Scheduling Module (AJAXSchedulingModule)
 ---------------------------------------------

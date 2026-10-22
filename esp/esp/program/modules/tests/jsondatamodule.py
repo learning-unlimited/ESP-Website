@@ -39,8 +39,10 @@ from django.utils.html import escape
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.program.models import ClassSubject
+from esp.program.modules.handlers.jsondatamodule import JSONDataModule
+from esp.program.models import ClassSection, ClassSubject
 from esp.resources.models import ResourceType
+from esp.tagdict.models import Tag
 
 class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -251,6 +253,36 @@ class JSONDataModuleTest(ProgramFrameworkTest):
                               "num_payments should be an int")
         self.assertIsInstance(data['total_payments'], float,
                               "total_payments should be a float")
+
+    def _registered_class_hours(self):
+        hour_nums = dict(JSONDataModule.hour_nums(self.program))
+        return hour_nums["Total # of Class-Hours (registered)"]
+
+    def testHourNumsExcludeTaggedCategories(self):
+        """Categories in the dashboard_excluded_categories tag are left out of the hour counts."""
+        excluded = self.categories[0]
+        sections = ClassSection.objects.filter(parent_class__parent_program=self.program).exclude(parent_class__category__is_lunch=True)
+        all_hours = round(sum(float(sec.duration or 0) for sec in sections), 2)
+        kept_hours = round(sum(float(sec.duration or 0) for sec in sections.exclude(parent_class__category=excluded)), 2)
+        self.assertGreater(all_hours, kept_hours, "test program needs classes in the excluded category")
+
+        self.assertEqual(self._registered_class_hours(), all_hours)
+        Tag.setTag('dashboard_excluded_categories', target=self.program, value=str(excluded.id))
+        self.assertEqual(self._registered_class_hours(), kept_hours)
+
+    def testTimeslotNumsExcludeTaggedCategories(self):
+        """Categories in the dashboard_excluded_categories tag are left out of the timeslot capacity counts."""
+        excluded = self.categories[0]
+        Tag.setTag('dashboard_excluded_categories', target=self.program, value=str(excluded.id))
+        timeslots_nums = JSONDataModule.timeslots_nums(self.program)
+        for timeslot, timeslot_nums in zip(self.program.getTimeSlots(), timeslots_nums):
+            sections = ClassSection.objects.filter(parent_class__parent_program=self.program, meeting_times=timeslot).exclude(
+                parent_class__category__is_lunch=True).exclude(parent_class__category=excluded).distinct()
+            self.assertEqual(timeslot_nums['studentcount']['max_count'], sum(sec.capacity for sec in sections))
+
+    def testDashboardExcludedCategoriesIgnoresInvalidValues(self):
+        Tag.setTag('dashboard_excluded_categories', target=self.program, value='%d, junk,,' % self.categories[1].id)
+        self.assertEqual(JSONDataModule.dashboard_excluded_categories(self.program), [self.categories[1].id])
 
     def testStatsRequiresAdmin(self):
         """Unauthenticated access to /json/.../stats must return a 302 redirect
