@@ -10,7 +10,7 @@ from form_utils.forms import BetterForm, BetterModelForm
 from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
-from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
+from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken, ScheduleTestSubject
 from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import (all_program_tags, tag_categories, initial_choices,
                          is_visible, join_choices, preserve_current_choice)
@@ -45,7 +45,8 @@ class LunchConstraintsForm(forms.Form):
     def load_data(self):
         lunch_timeslots = self.program.lunch_timeslots()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
-        sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
+        # Class constraints (from ClassConstraintsModule) are not lunch constraints
+        sched_constraints = ScheduleConstraint.objects.filter(program=self.program).exclude(condition_id__in=ScheduleTestSubject.objects.values('exp_id'))
         # If there are any schedule constraints for this program, check that box
         if sched_constraints.exists():
             self.fields['generate_constraints'].initial = True

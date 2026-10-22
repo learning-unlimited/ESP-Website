@@ -550,6 +550,26 @@ program in /admin/program/program/ and scrolling to the bottom of the page.
 (There is also a place to add them at program creation.) Now you can add and
 view class flags from the edit class or manage class pages.
 
+Class Constraints (ClassConstraintsModule)
+------------------------------------------
+
+This module provides one view, class_constraints, for setting up rules about
+which classes students may take together.  Each rule involves two classes in
+the program:
+
+* Requires: students taking Class A must also take Class B (e.g. part 1 of a
+  two-part class requires part 2).  Students must add Class B before Class A,
+  and cannot remove Class B while they are in Class A.
+* Mutual Exclusion: students cannot take both Class A and Class B.
+
+Constraints are checked when students add or remove classes during
+first-come-first-served registration.  They are not applied by the class
+lottery or when administrators change a student's schedule.  Set them up
+before registration opens: a student whose schedule already violates a
+constraint will not be able to add other classes until they fix it.  Deleting
+a class also deletes any constraints that involve it.  Regenerating lunch
+constraints does not affect class constraints.
+
 Class Search (ClassSearchModule)
 --------------------------------
 

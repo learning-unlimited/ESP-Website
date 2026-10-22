@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.class_status import ClassStatus
-from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ClassCategories
+from esp.program.models import Program, ClassSection, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSubject, ClassCategories
 
 import datetime
 
@@ -76,7 +76,9 @@ class LunchConstraintGenerator(object):
         # Delete any classes that no longer have sections
         for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
             lunch_subject.delete()
-        for constraint in ScheduleConstraint.objects.filter(program=self.program):
+        # Leave class constraints (from ClassConstraintsModule) alone
+        class_constraint_exps = ScheduleTestSubject.objects.values('exp_id')
+        for constraint in ScheduleConstraint.objects.filter(program=self.program).exclude(condition_id__in=class_constraint_exps):
             for boolexp in [constraint.condition, constraint.requirement]:
                 boolexp.delete()
             constraint.delete()

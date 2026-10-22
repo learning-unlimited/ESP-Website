@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0037_auto_20260402_2109'),
+        ('program', '0045_backfill_studentappreview_class_subject'),
     ]
 
     operations = [

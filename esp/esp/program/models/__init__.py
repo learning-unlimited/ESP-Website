@@ -53,7 +53,7 @@ from django.db import models
 from django.db.models import Count
 from django.db.models import Q, F
 from django.db.models.query import QuerySet
-from django.db.models.signals import m2m_changed
+from django.db.models.signals import m2m_changed, post_delete
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.utils import timezone
@@ -835,6 +835,7 @@ class Program(models.Model, CustomFormsLinkModel):
     getScheduleConstraints.depend_on_model('program.ScheduleTestOccupied')
     getScheduleConstraints.depend_on_model('program.ScheduleTestCategory')
     getScheduleConstraints.depend_on_model('program.ScheduleTestSectionList')
+    getScheduleConstraints.depend_on_model('program.ScheduleTestSubject')
 
     def lock_schedule(self, lock_level=1):
         """ Locks all schedule assignments for the program, for convenience
@@ -2000,8 +2001,6 @@ class BooleanExpression(models.Model):
     get_stack.depend_on_row('program.ScheduleTestOccupied', lambda token: {'self': token.exp})
     get_stack.depend_on_row('program.ScheduleTestCategory', lambda token: {'self': token.exp})
     get_stack.depend_on_row('program.ScheduleTestSectionList', lambda token: {'self': token.exp})
-    # Fix: ScheduleTestSubject rows were missing; changes to subject FK in admin
-    # would not invalidate the cached stack without this dependency.
     get_stack.depend_on_row('program.ScheduleTestSubject', lambda token: {'self': token.exp})
 
     def reset(self):
@@ -2142,6 +2141,15 @@ class ScheduleConstraint(models.Model):
             )
         return (None, None)
 
+    def delete_with_expressions(self):
+        """ Delete this constraint, plus its condition and requirement
+            expressions if no other constraint still uses them. """
+        exp_ids = (self.condition_id, self.requirement_id)
+        self.delete()
+        for exp_id in exp_ids:
+            if not ScheduleConstraint.objects.filter(Q(condition_id=exp_id) | Q(requirement_id=exp_id)).exists():
+                BooleanExpression.objects.filter(id=exp_id).delete()
+
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock.
         This is an abstract base class that doesn't define
@@ -2228,14 +2236,19 @@ class ScheduleTestSubject(BooleanToken):
 
     def boolean_value(self, *args, **kwargs):
         #   Check if subject is in the set of subjects the student is in.
-        #   Fix: use `or {}` so a None map (e.g. from a bare evaluate() call
-        #   without keyword arguments) is treated as an empty schedule rather
-        #   than raising AttributeError on .values().
+        #   A missing or None map is treated as an empty schedule.
         user_schedule_map = kwargs.get('map') or {}
         for sections in user_schedule_map.values():
             if any(sec.parent_class_id == self.subject_id for sec in sections):
                 return True
         return False
+
+@receiver(post_delete, sender=ScheduleTestSubject)
+def delete_class_constraints_for_token(sender, instance, **kwargs):
+    """ Remove constraints that relied on this token (e.g. because its class
+        was deleted); otherwise they would evaluate an empty expression. """
+    for constraint in ScheduleConstraint.objects.filter(Q(condition_id=instance.exp_id) | Q(requirement_id=instance.exp_id)):
+        constraint.delete_with_expressions()
 
 class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program, on_delete=models.CASCADE)

@@ -14,6 +14,11 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Class Constraints
+=================
+
+A new management module, Class Constraints (``ClassConstraintsModule``), lets administrators require that students taking one class also take another, or prevent students from taking two classes together. Constraints are enforced when students add or remove classes during first-come-first-served registration. See the program modules documentation for details.
+
 Bug Fixes
 =========
 

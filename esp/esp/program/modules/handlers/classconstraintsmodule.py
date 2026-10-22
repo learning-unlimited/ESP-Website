@@ -1,28 +1,57 @@
-import logging
+__author__    = "Individual contributors (see AUTHORS file)"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "AGPL v.3"
+__copyright__ = """
+This file is part of the ESP Web Site
+Copyright (c) 2026 by the individual contributors
+  (see AUTHORS file)
+
+The ESP Web Site is free software; you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@learningu.org
+"""
 from django import forms
 from django.db import transaction
-from django.db.models import Q
 from django.http import HttpResponseBadRequest, HttpResponseRedirect
 
 from esp.program.models import (
     BooleanExpression, BooleanToken, ClassSubject,
     ScheduleConstraint, ScheduleTestSubject,
 )
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_admin, main_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
-
-logger = logging.getLogger(__name__)
 
 
 class ClassConstraintsForm(forms.Form):
     CONSTRAINT_CHOICES = [
-        ('prereq', 'Prerequisite (Class A requires Class B)'),
-        ('mutual_exclusion', 'Mutual Exclusion (Class A and Class B cannot both be taken)'),
+        ('requires', 'Requires (students taking Class A must also take Class B)'),
+        ('mutual_exclusion', 'Mutual Exclusion (students cannot take both Class A and Class B)'),
     ]
 
     class_a = forms.ModelChoiceField(queryset=ClassSubject.objects.none(), label="Class A")
     class_b = forms.ModelChoiceField(queryset=ClassSubject.objects.none(), label="Class B")
-    constraint_type = forms.ChoiceField(choices=CONSTRAINT_CHOICES, initial='prereq')
+    constraint_type = forms.ChoiceField(choices=CONSTRAINT_CHOICES, initial='requires')
 
     def __init__(self, program, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -35,8 +64,8 @@ class ClassConstraintsForm(forms.Form):
         cleaned_data = super().clean()
         class_a = cleaned_data.get('class_a')
         class_b = cleaned_data.get('class_b')
-        # Fix: reject identical class selection to prevent always-unsatisfiable
-        # or vacuously-true constraints.
+        # A class constrained against itself is either redundant or blocks
+        # all enrollment in it.
         if class_a and class_b and class_a == class_b:
             raise forms.ValidationError(
                 "Class A and Class B must be different. "
@@ -45,17 +74,14 @@ class ClassConstraintsForm(forms.Form):
         return cleaned_data
 
 
-class ClassConstraintsModule(ProgramModuleObj, CoreModule):
-    """
-    Module for managing complex class constraints like prerequisites and
-    mutual exclusions. Constraints are represented as ScheduleConstraints
-    using BooleanExpressions composed of ScheduleTestSubject tokens.
-    """
+class ClassConstraintsModule(ProgramModuleObj):
+    doc = """Require or forbid taking one class together with another."""
 
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "Class Constraints",
+            "admin_title": "Class Constraints",
+            "link_title": "Manage Class Constraints",
             "module_type": "manage",
             "seq": 50,
             "choosable": 1,
@@ -63,16 +89,7 @@ class ClassConstraintsModule(ProgramModuleObj, CoreModule):
 
     @main_call
     @needs_admin
-    def main(self, request, tl, one, two, module, extra, prog):
-        context = {
-            'prog': prog,
-            # Fix: manage_base.html uses {{ program.getUrlBase }}; pass both
-            # so the breadcrumb link renders correctly.
-            'program': prog,
-            'one': one,
-            'two': two,
-        }
-
+    def class_constraints(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             if 'add' in request.POST:
                 form = ClassConstraintsForm(prog, request.POST)
@@ -80,114 +97,74 @@ class ClassConstraintsModule(ProgramModuleObj, CoreModule):
                     self.add_constraint(prog, form.cleaned_data)
                     return HttpResponseRedirect(request.path)
                 # Re-render with validation errors
-                context['form'] = form
-                subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
-                context['constraints'] = ScheduleConstraint.objects.filter(program=prog, condition_id__in=subject_exps)
-                return render_to_response(self.baseDir() + 'main.html', request, context)
+                return self._render(request, prog, form)
 
             elif 'delete' in request.POST:
-                raw_id = request.POST.get('constraint_id', '')
-                # Fix: validate/cast before querying to avoid ValueError 500s.
                 try:
-                    constraint_id = int(raw_id)
+                    constraint_id = int(request.POST.get('constraint_id', ''))
                 except (ValueError, TypeError):
                     return HttpResponseBadRequest("Invalid constraint ID.")
                 self._delete_constraint(constraint_id, prog)
                 return HttpResponseRedirect(request.path)
 
-        context['form'] = ClassConstraintsForm(prog)
-        subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
-        context['constraints'] = ScheduleConstraint.objects.filter(program=prog, condition_id__in=subject_exps)
+        return self._render(request, prog, ClassConstraintsForm(prog))
+
+    def _render(self, request, prog, form):
+        context = {
+            # manage_base.html builds its breadcrumb from `program`
+            'program': prog,
+            'form': form,
+            'constraints': self.get_constraints(prog).select_related('condition', 'requirement'),
+        }
         return render_to_response(self.baseDir() + 'main.html', request, context)
+
+    @staticmethod
+    def get_constraints(prog):
+        """ Constraints created by this module, i.e. built from ScheduleTestSubject tokens. """
+        subject_exps = ScheduleTestSubject.objects.values('exp_id')
+        return ScheduleConstraint.objects.filter(program=prog, condition_id__in=subject_exps)
 
     @transaction.atomic
     def _delete_constraint(self, constraint_id, prog):
-        """
-        Safely delete a ScheduleConstraint and its associated
-        BooleanExpressions only if they are not referenced by any other
-        ScheduleConstraint rows.
-
-        Fix: The previous implementation unconditionally deleted expressions,
-        which could cascade-kill unrelated constraints sharing an expression.
-        """
-        try:
-            subject_exps = ScheduleTestSubject.objects.values_list('exp_id', flat=True)
-            constraint = ScheduleConstraint.objects.get(id=constraint_id, program=prog, condition_id__in=subject_exps)
-        except ScheduleConstraint.DoesNotExist:
-            return
-
-        condition_id = constraint.condition_id
-        requirement_id = constraint.requirement_id
-
-        # Delete the constraint first; CASCADE on the FK goes the other way
-        # (expression → constraint), so this is safe.
-        constraint.delete()
-
-        # Only delete the expression if no other ScheduleConstraint now
-        # references it (condition or requirement).
-        for expr_id in (condition_id, requirement_id):
-            still_referenced = ScheduleConstraint.objects.filter(
-                Q(condition_id=expr_id) | Q(requirement_id=expr_id)
-            ).exists()
-            if not still_referenced:
-                BooleanExpression.objects.filter(id=expr_id).delete()
+        """ Delete one of this module's constraints, keeping any expression
+            that another constraint still uses. """
+        constraint = self.get_constraints(prog).filter(id=constraint_id).first()
+        if constraint is not None:
+            constraint.delete_with_expressions()
 
     @transaction.atomic
     def add_constraint(self, program, data):
         class_a = data['class_a']
         class_b = data['class_b']
-        ctype = data['constraint_type']
 
-        # Fix: BooleanExpression.label is max_length=80. Class titles are
-        # unbounded TextFields, so truncate to avoid DB errors.
-        def _make_label(prefix, cls):
-            label = f"{prefix} {cls.title} (id={cls.id})"
-            return label[:80]
-
-        # Fix: on_failure must be a syntactically valid Python function body
-        # so exec() inside ScheduleConstraint.handle_failure() doesn't raise
-        # SyntaxError on every constraint violation.
-        _on_failure = 'return (None, None)'
-
-        # Human-readable token text uses the class id (a short, stable value)
-        # so it also stays within the BooleanToken.text field length.
-        def _token_text(cls):
-            return f"enrolled_in_{cls.id}"
-
-        if ctype == 'prereq':
+        # Requirement labels complete the student-facing error message
+        # "Adding X to your schedule requires that you <label>."
+        if data['constraint_type'] == 'requires':
             # Encode: IF enrolled(A) THEN enrolled(B)
-            cond = BooleanExpression.objects.create(label=_make_label("Enrolled in", class_a))
-            req = BooleanExpression.objects.create(label=_make_label("Enrolled in", class_b))
-
-            ScheduleTestSubject.objects.create(exp=cond, subject=class_a,
-                                               text=_token_text(class_a), seq=0)
-            ScheduleTestSubject.objects.create(exp=req, subject=class_b,
-                                               text=_token_text(class_b), seq=0)
-
-            ScheduleConstraint.objects.create(
-                program=program, condition=cond, requirement=req,
-                on_failure=_on_failure,
-            )
-
-        elif ctype == 'mutual_exclusion':
+            requirement = self._subject_expression("also take", class_b)
+        elif data['constraint_type'] == 'mutual_exclusion':
             # Encode: IF enrolled(A) THEN NOT enrolled(B)
-            # Stack for requirement: [ScheduleTestSubject(B) at seq=0,
-            #                         BooleanToken("NOT")   at seq=10]
-            cond = BooleanExpression.objects.create(label=_make_label("Enrolled in", class_a))
-            req = BooleanExpression.objects.create(
-                label=_make_label("NOT enrolled in", class_b)
-            )
+            requirement = self._subject_expression("not take", class_b, negate=True)
 
-            ScheduleTestSubject.objects.create(exp=cond, subject=class_a,
-                                               text=_token_text(class_a), seq=0)
-            ScheduleTestSubject.objects.create(exp=req, subject=class_b,
-                                               text=_token_text(class_b), seq=0)
-            BooleanToken.objects.create(exp=req, text="NOT", seq=10)
+        ScheduleConstraint.objects.create(
+            program=program,
+            condition=self._subject_expression("take", class_a),
+            requirement=requirement,
+            # on_failure code is no longer executed; empty avoids a warning
+            on_failure='',
+        )
 
-            ScheduleConstraint.objects.create(
-                program=program, condition=cond, requirement=req,
-                on_failure=_on_failure,
-            )
+    @staticmethod
+    def _subject_expression(verb, subject, negate=False):
+        # BooleanExpression.label is max_length=80; truncate the title, not the code
+        label = f"{verb} {subject.emailcode()}: {subject.title}"[:80]
+        expression = BooleanExpression.objects.create(label=label)
+        ScheduleTestSubject.objects.create(exp=expression, subject=subject,
+                                           text=f"enrolled_in_{subject.id}", seq=0)
+        if negate:
+            # Stack: [ScheduleTestSubject at seq=0, "NOT" at seq=10]
+            BooleanToken.objects.create(exp=expression, text="NOT", seq=10)
+        return expression
 
     def isStep(self):
         return False
