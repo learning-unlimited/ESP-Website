@@ -19,8 +19,6 @@ Scheduling Check Legends
 
 The "Checks" tab of the AJAX scheduler now shows a legend below the list of scheduling checks that describes the selected check and explains what each cell color means (including the category colors for "Color by Class Category" and the orange corners on classes flagged as having special scheduling needs). Hovering over a check's name also shows its description.
 
-For consistency, the "Hungry Teachers" and "Moderators with Mismatched Categories" checks now stop darkening at 5 teachers/moderators, like the other counting checks, and "Moderators with Mismatched Categories" now colors classes with no mismatched moderators grey instead of white.
-
 Bug Fixes
 =========
 
