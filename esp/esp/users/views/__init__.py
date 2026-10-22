@@ -1,10 +1,12 @@
 from urllib.parse import urlencode
 
 from django.conf import settings
-from django.contrib.auth import login, logout
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -57,6 +59,41 @@ def mask_redirect(user, next):
     else:
         return HttpMetaRedirect('/')
 
+class CustomAuthenticationForm(AuthenticationForm):
+    """
+    Login form that lets inactive accounts log in, unless they are still
+    awaiting email activation.
+
+    ``is_active=False`` generally means "don't email this account" (bouncing
+    address, unsubscribed, or merged into another account), not "don't let
+    them log in". ``ESPAuthBackend`` rejects accounts matching
+    ``ESPUser.awaiting_activation_Q()``, so ``authenticate()`` returns None for
+    them; this form tells that case apart from a wrong password, but only when
+    the password is correct, so the activation state of an account isn't
+    revealed to someone who doesn't know its password.
+    """
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username is not None and password:
+            self.user_cache = authenticate(self.request, username=username, password=password)
+            if self.user_cache is None:
+                pending_user = ESPUser.objects.filter(username=username).filter(
+                    ESPUser.awaiting_activation_Q()).first()
+                if pending_user is not None and pending_user.check_password(password):
+                    raise ValidationError(self.error_messages['inactive'], code='inactive')
+                raise self.get_invalid_login_error()
+            self.confirm_login_allowed(self.user_cache)
+
+        return self.cleaned_data
+
+    def confirm_login_allowed(self, user):
+        # Inactive accounts may log in; awaiting-activation accounts were
+        # already rejected in clean().
+        pass
+
 class CustomLoginView(LoginView):
     """
     Custom login view extending Django's default LoginView.
@@ -67,6 +104,7 @@ class CustomLoginView(LoginView):
     """
 
     template_name = 'registration/login.html'
+    authentication_form = CustomAuthenticationForm
 
     def render_to_response(self, context, **response_kwargs):
         response_kwargs.setdefault("content_type", self.content_type)
@@ -109,9 +147,13 @@ class CustomLoginView(LoginView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Add context for wrong username/password feedback
-        if 'form' in context and not context['form'].is_valid():
+        form = context.get('form')
+        if form is not None and not form.is_valid():
             username = self.request.POST.get('username', '')
-            if username:
+            if form.has_error(NON_FIELD_ERRORS, 'inactive'):
+                # Only raised when the password was correct.
+                context['awaiting_activation'] = True
+            elif username:
                 if ESPUser.objects.filter(username=username).exists():
                     context['wrong_pw'] = True
                 else:
