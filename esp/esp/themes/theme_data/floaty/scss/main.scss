@@ -218,7 +218,9 @@ a:where(:not(.btn, .module_link_large, .link_button)):hover {
     background-color: $sidebarHover;
 }
 
-input, textarea, .uneditable-input {
+/*  Checkboxes and radio buttons keep their own size: at 94% they push their
+    labels aside and off the page.  :where() keeps the selector's specificity. */
+input:where(:not([type="checkbox"], [type="radio"])), textarea, .uneditable-input {
   width: 94%;
 }
 
@@ -269,17 +271,21 @@ input, textarea, .uneditable-input {
     background-color: $navbarActiveBackground;
 }
 
-.toplevel_link :hover {
-    background-color: $navbarHoverBackground;
-    background-image: -moz-linear-gradient(top,
-        hsla(0, 0%, 100%, 0.7),
-        hsla(0, 0%, 100%, 0)
-        40px);
-    background-image: -webkit-linear-gradient(top,
-        hsla(0, 0%, 100%, 0.7),
-        hsla(0, 0%, 100%, 0)
-        40px);
-    text-decoration: none;
+/*  Only where hover is real: touch screens keep :hover on a tapped tab, and
+    this pale background hides the tab's light text. */
+@media (hover: hover) {
+    .toplevel_link :hover {
+        background-color: $navbarHoverBackground;
+        background-image: -moz-linear-gradient(top,
+            hsla(0, 0%, 100%, 0.7),
+            hsla(0, 0%, 100%, 0)
+            40px);
+        background-image: -webkit-linear-gradient(top,
+            hsla(0, 0%, 100%, 0.7),
+            hsla(0, 0%, 100%, 0)
+            40px);
+        text-decoration: none;
+    }
 }
 
 #logo_image {
@@ -389,5 +395,125 @@ h2 {
 }
 
 #page {
+    margin: 0 auto;
+    width: 920px;
     overflow: hidden;
+}
+
+/*  Narrower than the 920px page: the same two columns, but fluid.
+    220px is the logo column (200px + padding); 240px the boxes column. */
+@media (max-width: 919.98px) {
+    #page {
+        width: auto;
+    }
+
+    #nav_area {
+        width: calc(100% - 220px);
+    }
+
+    #secondary_nav {
+        width: calc(100% - 14px);
+    }
+
+    #content_area {
+        width: calc(100% - 240px);
+    }
+}
+
+/*  Phones: one column.  Logos, title, tabs, links, the login box, then the
+    page. */
+@media (max-width: 767.98px) {
+    #logo_area {
+        float: none;
+        width: auto;
+        height: auto;
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #main_logo {
+        padding-left: 0;
+    }
+
+    #main_logo img {
+        max-height: 64px;
+        width: auto;
+    }
+
+    #lu_logo {
+        float: none;
+        padding-left: 0;
+        margin-left: auto;
+    }
+
+    #logo_blurb {
+        padding-left: 0;
+        font-size: 0.8em;
+    }
+
+    #nav_area {
+        float: none;
+        width: auto;
+    }
+
+    #nav_buffer {
+        height: auto;
+        padding: 0 12px 10px;
+    }
+
+    #nav_buffer_background {
+        padding-top: 0;
+        font-size: 1.8em;
+    }
+
+    #primary_nav {
+        display: flex;
+        gap: 6px;
+        padding: 0 12px;
+    }
+
+    #primary_nav + br {
+        display: none;
+    }
+
+    .toplevel_link {
+        flex: 1 1 0;
+        min-width: 0;
+    }
+
+    .toplevel_link a {
+        float: none;
+        display: block;
+        width: auto;
+        margin: 0;
+    }
+
+    #secondary_nav {
+        float: none;
+        width: auto;
+        margin: 0 12px;
+    }
+
+    #boxes_area {
+        float: none;
+        height: auto;
+    }
+
+    .box {
+        width: auto;
+        margin: 10px 12px;
+    }
+
+    #content_area {
+        float: none;
+        width: auto;
+        margin: 0 12px 20px;
+    }
+
+    .content_box {
+        float: none;
+        width: auto;
+    }
 }
