@@ -17,6 +17,12 @@ $j("th.selector").click(function() {
 if (typeof question_types != 'undefined') {
     var par_values = $j("#id__param_values").text().split("|");
 
+    //Parse a count input, falling back to the minimum if it isn't a whole number at or above it
+    function clampCount(val, min) {
+        var n = parseInt(val, 10);
+        return (isNaN(n) || n < min)? min : n;
+    }
+
     function updatePars(){
         var $td = $j("#id__param_values").parents("td");
         var quest_ind = $j("#id_question_type").val();
@@ -24,7 +30,7 @@ if (typeof question_types != 'undefined') {
         //Delete old fields and their labels
         $j(".param_field, .param_extra_field").remove();
         if (["Multiple Choice", "Checkboxes"].includes(quest_type)) {
-            var num_choices = (par_values.length > 1)? par_values.length : 5;
+            var num_choices = (par_values.length > 1 || par_values[0] !== "")? par_values.length : 5;
             //Add field for user to specify number of choices
             $td.append("<span class='param_extra_field'>Number of choices: <input type='number' id='num_choices' min='1' value='" + num_choices + "'><br/></span>");
             //We want to prevent people from submitting the form by pressing enter
@@ -36,8 +42,7 @@ if (typeof question_types != 'undefined') {
             }
             updateVals();
             $j("#num_choices").change(function() {
-                num_choices = parseInt($j(this).val(), 10);
-                if (isNaN(num_choices) || num_choices < 1) { num_choices = 1; }
+                num_choices = clampCount($j(this).val(), 1);
                 $j(this).val(num_choices);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
@@ -63,8 +68,7 @@ if (typeof question_types != 'undefined') {
             updateVals();
             //Update number of fields if requested
             $j("#num_ratings").change(function() {
-                num_ratings = parseInt($j(this).val(), 10);
-                if (isNaN(num_ratings) || num_ratings < 2) { num_ratings = 2; }
+                num_ratings = clampCount($j(this).val(), 2);
                 $j(this).val(num_ratings);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
@@ -83,12 +87,7 @@ if (typeof question_types != 'undefined') {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
                     if (params[i] === "Number of ratings") {
-                        var num_ratings = parseInt(par_value, 10);
-                        if (!par_value || isNaN(num_ratings)) {
-                            par_value = 5;
-                        } else {
-                            par_value = Math.max(num_ratings, 2);
-                        }
+                        par_value = isNaN(parseInt(par_value, 10))? 5 : clampCount(par_value, 2);
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
                     } else {
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
@@ -96,9 +95,7 @@ if (typeof question_types != 'undefined') {
                 }
                 $td.parents("tr").show();
                 $j(".num_ratings_input").change(function() {
-                    var val = parseInt($j(this).val(), 10);
-                    if (isNaN(val) || val < 2) { val = 2; }
-                    $j(this).val(val);
+                    $j(this).val(clampCount($j(this).val(), 2));
                     updateTextArea();
                 });
             } else {

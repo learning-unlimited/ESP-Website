@@ -307,160 +307,125 @@ class AnswerTest(TestCase):
             ans_id_only.save()
 
 
-# ===== QuestionForm Clean Tests =====
+# ===== Choice / Rating Question Validation Tests =====
 
-class QuestionFormCleanTest(TestCase):
-    """Test QuestionForm.clean() validation for _param_values."""
+class ChoiceAndRatingQuestionValidationTest(TestCase):
+    """Choice and rating questions store their choices / scale size in _param_values (#3858)."""
 
     def setUp(self):
         super().setUp()
         _setup_roles()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.survey = Survey.objects.create(
-            name='Form Test Survey',
+            name='Validation Test Survey',
             program=self.program,
             category='learn',
         )
-        self.qt_mc = QuestionType.objects.create(
-            name='Multiple Choice',
-            _param_names='',
-            is_numeric=False,
-            is_countable=False,
-        )
-        self.qt_cb = QuestionType.objects.create(
-            name='Checkboxes',
-            _param_names='',
-            is_numeric=False,
-            is_countable=False,
-        )
-        self.qt_nr = QuestionType.objects.create(
+        # Same definitions as the survey 0002 data migration
+        self.qt_mc, _ = QuestionType.objects.get_or_create(
+            name='Multiple Choice', defaults={'is_countable': True})
+        self.qt_cb, _ = QuestionType.objects.get_or_create(
+            name='Checkboxes', defaults={'is_countable': True})
+        self.qt_nr, _ = QuestionType.objects.get_or_create(
             name='Numeric Rating',
-            _param_names='Number of ratings|Lower text|Upper text',
-            is_numeric=True,
-            is_countable=True,
+            defaults={
+                '_param_names': 'Number of ratings|Lower text|Middle text|Upper text',
+                'is_numeric': True,
+                'is_countable': True,
+            },
         )
-        self.qt_lnr = QuestionType.objects.create(
+        self.qt_lnr, _ = QuestionType.objects.get_or_create(
             name='Labeled Numeric Rating',
-            _param_names='Number of ratings|Lower text|Middle text|Upper text',
-            is_numeric=True,
-            is_countable=True,
+            defaults={
+                '_param_names': 'Number of ratings',
+                'is_numeric': True,
+                'is_countable': True,
+            },
         )
 
-    def _make_form(self, qt, param_values='', **overrides):
+    def _question(self, qt, param_values):
+        return Question(
+            survey=self.survey,
+            name='Test Question',
+            question_type=qt,
+            _param_values=param_values,
+            seq=0,
+        )
+
+    def _assert_invalid(self, qt, param_values, message):
+        with self.assertRaisesMessage(ValidationError, message):
+            self._question(qt, param_values).full_clean()
+
+    def test_choices_valid(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._question(qt, 'Choice 1|Choice 2|Choice 3').full_clean()
+            self._question(qt, 'Only choice').full_clean()
+
+    def test_choices_rejects_empty(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._assert_invalid(qt, '', 'require at least one choice')
+            self._assert_invalid(qt, '   ', 'require at least one choice')
+
+    def test_choices_rejects_blank_choice(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._assert_invalid(qt, '  |  ', 'Choices cannot be blank')
+            self._assert_invalid(qt, 'A||B', 'Choices cannot be blank')
+            self._assert_invalid(qt, 'A|B|', 'Choices cannot be blank')
+
+    def test_choices_type_name_case_insensitive(self):
+        qt = QuestionType.objects.create(name='checkboxes')
+        self._assert_invalid(qt, '', 'require at least one choice')
+
+    def test_ratings_valid(self):
+        self._question(self.qt_nr, '5|Bad|OK|Good').full_clean()
+        self._question(self.qt_nr, '2').full_clean()
+        self._question(self.qt_lnr, '3|Bad|OK|Good').full_clean()
+
+    def test_ratings_rejects_missing(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            self._assert_invalid(qt, '', 'require a Number of ratings')
+            self._assert_invalid(qt, ' |Bad|Good', 'require a Number of ratings')
+
+    def test_ratings_rejects_non_integer(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            self._assert_invalid(qt, 'f|Bad|Good', 'must be a whole number')
+            self._assert_invalid(qt, '2.5|Bad|Good', 'must be a whole number')
+
+    def test_ratings_rejects_below_minimum(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            for val in ('1', '0', '-3'):
+                self._assert_invalid(qt, val + '|Bad|Good', 'must be at least 2')
+
+    def test_ratings_keyed_on_param_name_not_type_name(self):
+        qt = QuestionType.objects.create(
+            name='Custom Scale',
+            _param_names='Prompt|Number of ratings',
+            is_numeric=True,
+        )
+        self._question(qt, 'Rate it|4').full_clean()
+        self._assert_invalid(qt, 'Rate it|f', 'must be a whole number')
+        self._assert_invalid(qt, 'Rate it', 'require a Number of ratings')
+
+    def test_other_types_unaffected(self):
+        qt = QuestionType.objects.create(name='Free Response')
+        self._question(qt, '').full_clean()
+
+    def test_question_form_reports_error_on_param_values(self):
         data = {
             'name': 'Test Question',
-            'question_type': qt.id,
+            'question_type': self.qt_nr.id,
             'survey': self.survey.id,
-            '_param_values': param_values,
-            'per_class': False,
+            '_param_values': 'f|Bad|OK|Good',
             'seq': 1,
         }
-        data.update(overrides)
-        return QuestionForm(data=data, cur_prog=self.program)
-
-    def test_mc_valid_with_choices(self):
-        form = self._make_form(self.qt_mc, 'Choice 1|Choice 2|Choice 3')
-        self.assertTrue(form.is_valid())
-
-    def test_mc_valid_single_choice(self):
-        form = self._make_form(self.qt_mc, 'Only choice')
-        self.assertTrue(form.is_valid())
-
-    def test_mc_invalid_no_choices(self):
-        form = self._make_form(self.qt_mc, '')
+        form = QuestionForm(data=data, cur_prog=self.program)
         self.assertFalse(form.is_valid())
-        self.assertIn('Please provide at least one choice', str(form.errors))
+        self.assertIn('_param_values', form.errors)
+        self.assertIn('must be a whole number', str(form.errors['_param_values']))
 
-    def test_mc_invalid_empty_pipe(self):
-        form = self._make_form(self.qt_mc, '  |  ')
-        self.assertFalse(form.is_valid())
-        self.assertIn('Please provide at least one choice', str(form.errors))
-
-    def test_cb_valid_with_choices(self):
-        form = self._make_form(self.qt_cb, 'Option A|Option B')
-        self.assertTrue(form.is_valid())
-
-    def test_cb_invalid_no_choices(self):
-        form = self._make_form(self.qt_cb, '')
-        self.assertFalse(form.is_valid())
-        self.assertIn('Please provide at least one choice', str(form.errors))
-
-    def test_nr_valid(self):
-        form = self._make_form(self.qt_nr, '5|Bad|Good')
-        self.assertTrue(form.is_valid())
-
-    def test_nr_valid_minimum(self):
-        form = self._make_form(self.qt_nr, '2|Low|High')
-        self.assertTrue(form.is_valid())
-
-    def test_nr_invalid_below_minimum(self):
-        form = self._make_form(self.qt_nr, '1|Low|High')
-        self.assertFalse(form.is_valid())
-        self.assertIn('at least 2', str(form.errors))
-
-    def test_nr_invalid_zero(self):
-        form = self._make_form(self.qt_nr, '0|Low|High')
-        self.assertFalse(form.is_valid())
-        self.assertIn('at least 2', str(form.errors))
-
-    def test_nr_invalid_negative(self):
-        form = self._make_form(self.qt_nr, '-3|Low|High')
-        self.assertFalse(form.is_valid())
-        self.assertIn('at least 2', str(form.errors))
-
-    def test_nr_invalid_non_integer(self):
-        form = self._make_form(self.qt_nr, 'abc|Low|High')
-        self.assertFalse(form.is_valid())
-        self.assertIn('whole number', str(form.errors))
-
-    def test_nr_invalid_missing_param(self):
-        form = self._make_form(self.qt_nr, '')
-        self.assertFalse(form.is_valid())
-        self.assertIn('number of ratings to be specified', str(form.errors))
-
-    def test_lnr_valid(self):
-        form = self._make_form(self.qt_lnr, '5|Bad|OK|Great')
-        self.assertTrue(form.is_valid())
-
-    def test_lnr_invalid_below_minimum(self):
-        form = self._make_form(self.qt_lnr, '1|Bad|OK|Great')
-        self.assertFalse(form.is_valid())
-        self.assertIn('at least 2', str(form.errors))
-
-    def test_lnr_invalid_non_integer(self):
-        form = self._make_form(self.qt_lnr, 'five|Bad|OK|Great')
-        self.assertFalse(form.is_valid())
-        self.assertIn('whole number', str(form.errors))
-
-    def test_case_insensitive_qt_name_lowercase(self):
-        qt = QuestionType.objects.create(
-            name='numeric rating',
-            _param_names='Number of ratings|Lower text|Upper text',
-            is_numeric=True,
-            is_countable=True,
-        )
-        form = self._make_form(qt, '3|Low|High')
-        self.assertTrue(form.is_valid())
-
-    def test_case_insensitive_qt_name_mixed_case(self):
-        qt = QuestionType.objects.create(
-            name='NuMeRiC RaTiNg',
-            _param_names='Number of ratings|Lower text|Upper text',
-            is_numeric=True,
-            is_countable=True,
-        )
-        form = self._make_form(qt, '4|Low|High')
-        self.assertTrue(form.is_valid())
-
-    def test_irrelevant_qt_without_special_params(self):
-        qt = QuestionType.objects.create(
-            name='Free Response',
-            _param_names='',
-            is_numeric=False,
-            is_countable=False,
-        )
-        form = self._make_form(qt, 'whatever')
-        self.assertTrue(form.is_valid())
+        data['_param_values'] = '5|Bad|OK|Good'
+        form = QuestionForm(data=data, cur_prog=self.program)
+        self.assertTrue(form.is_valid(), form.errors)
 
 
 # ===== CSV Import Tests =====
