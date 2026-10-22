@@ -155,6 +155,29 @@ class ESPErrorMiddleware(MiddlewareMixin):
             error_type, ('An error has occurred', 'Please try again.')
         )
 
+        is_ajax = (
+            getattr(request, 'headers', {}).get('x-requested-with') == 'XMLHttpRequest' or
+            getattr(request, 'META', {}).get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or
+            'application/json' in getattr(request, 'headers', {}).get('accept', '') or
+            'application/json' in getattr(request, 'META', {}).get('HTTP_ACCEPT', '')
+        )
+
+        if is_ajax:
+            if isinstance(exception, Exception) and str(exception):
+                error_msg = str(exception)
+            elif exc_info[1] and str(exc_info[1]):
+                error_msg = str(exc_info[1])
+            else:
+                error_msg = error_description
+            return HttpResponse(
+                json.dumps({
+                    'status': status,
+                    'error': error_msg,
+                }),
+                content_type='application/json',
+                status=status,
+            )
+
         error_id = None
 
         context = {

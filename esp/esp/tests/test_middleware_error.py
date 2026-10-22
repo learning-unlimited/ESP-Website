@@ -4,11 +4,13 @@ Source: esp/esp/middleware/esperrormiddleware.py
 
 Tests ESPError exception and AjaxExceptionReporter.
 """
+import json
+
 from django.contrib.auth.models import Group
 from django.test import RequestFactory
 
 from esp.middleware import ESPError
-from esp.middleware.esperrormiddleware import ESPErrorMiddleware
+from esp.middleware.esperrormiddleware import ESPError_Log, ESPErrorMiddleware, Http403
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.users.models import AnonymousESPUser
 
@@ -57,3 +59,48 @@ class ESPErrorMiddlewareTest(TestCase):
         # Should return an HttpResponse with the error
         if response is not None:
             self.assertEqual(response.status_code, 500)
+
+    def test_process_exception_ajax_request_returns_json_for_esp_error(self):
+        request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        err = ESPError('Test AJAX error')
+        response = self.middleware.process_exception(request, err)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 500)
+        content_type = response.headers.get('Content-Type') if hasattr(response, 'headers') else response.get('Content-Type')
+        self.assertEqual(content_type, 'application/json')
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 500)
+        self.assertEqual(data['error'], 'Test AJAX error')
+
+    def test_process_exception_ajax_request_returns_json_for_http403(self):
+        request = self.factory.post('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, Http403())
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 403)
+        content_type = response.headers.get('Content-Type') if hasattr(response, 'headers') else response.get('Content-Type')
+        self.assertEqual(content_type, 'application/json')
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 403)
+        self.assertIn('permission', data['error'])
+
+    def test_process_exception_ajax_request_accept_header(self):
+        request = self.factory.get('/', HTTP_ACCEPT='application/json')
+        request.user = AnonymousESPUser()
+        err = ESPError('Test JSON Accept error', log=False)
+        response = self.middleware.process_exception(request, err)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['error'], 'Test JSON Accept error')
+
+    def test_process_exception_ajax_legacy_class_returns_friendly_description(self):
+        request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, ESPError_Log)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 500)
+        self.assertIn('website encountered an error', data['error'])
