@@ -86,6 +86,10 @@ var fetch_fragments = function()
 
 var apply_fragment_changes = function(data)
 {
+    if (!data || typeof data !== 'object')
+    {
+        return;
+    }
     //  console.log("Applying fragment changes from data: " + data);
 
     //  Rewrite DOM nodes first, so that anything registered below is applied to
@@ -179,7 +183,12 @@ var handle_failure = function(jqXHR, textStatus, errorThrown)
 
 var handle_success = function(data, textStatus, jqXHR)
 {
-    if (data && 'error' in data)
+    if (!data || typeof data !== 'object')
+    {
+        reset_forms();
+        return;
+    }
+    if ('error' in data)
     {
         //  Maybe this should be something more gentle like a floating div.
         alert(data['error']);

@@ -116,10 +116,21 @@ class ESPErrorMiddleware(MiddlewareMixin):
             'You do not have permission to view this page. '
             'Try logging in with an account that has the required access.',
         ),
+        'Http404': (
+            'Page Not Found',
+            'The requested item or page could not be found.',
+        ),
     }
 
     def process_exception(self, request, exception):
         from esp.utils.web import render_to_response
+
+        is_ajax = (
+            getattr(request, 'headers', {}).get('x-requested-with') == 'XMLHttpRequest' or
+            getattr(request, 'META', {}).get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or
+            'application/json' in getattr(request, 'headers', {}).get('accept', '') or
+            'application/json' in getattr(request, 'META', {}).get('HTTP_ACCEPT', '')
+        )
 
         if exception == ESPError_Log or exception == ESPError_NoLog:
             # TODO(benkraft): remove remaining instances of this.
@@ -145,28 +156,33 @@ class ESPErrorMiddleware(MiddlewareMixin):
             template = '403.html'
             status = 403
             error_type = 'Http403'
+        elif is_ajax and isinstance(exception, (ObjectDoesNotExist, Http404)):
+            log_level = logging.INFO
+            template = '404.html'
+            status = 404
+            error_type = 'Http404'
+        elif is_ajax:
+            log_level = logging.ERROR
+            template = 'error.html'
+            status = 500
+            error_type = 'ESPError_Log'
         else:
             return None
 
         exc_info = sys.exc_info()
-        logger.log(log_level, exc_info[1], exc_info=exc_info)
+        logger.log(log_level, exc_info[1] if exc_info[1] else exception, exc_info=exc_info)
 
         error_title, error_description = self._ERROR_MESSAGES.get(
             error_type, ('An error has occurred', 'Please try again.')
         )
 
-        is_ajax = (
-            getattr(request, 'headers', {}).get('x-requested-with') == 'XMLHttpRequest' or
-            getattr(request, 'META', {}).get('HTTP_X_REQUESTED_WITH') == 'XMLHttpRequest' or
-            'application/json' in getattr(request, 'headers', {}).get('accept', '') or
-            'application/json' in getattr(request, 'META', {}).get('HTTP_ACCEPT', '')
-        )
-
         if is_ajax:
-            if isinstance(exception, Exception) and str(exception):
-                error_msg = str(exception)
-            elif exc_info[1] and str(exc_info[1]):
-                error_msg = str(exc_info[1])
+            if isinstance(exception, ESPError_NoLog):
+                error_msg = str(exception.args[0]) if exception.args else error_description
+            elif isinstance(exception, (ObjectDoesNotExist, Http404)):
+                error_msg = str(exception.args[0]) if exception.args else error_description
+            elif isinstance(exception, Http403):
+                error_msg = str(exception.args[0]) if exception.args else error_description
             else:
                 error_msg = error_description
             return HttpResponse(

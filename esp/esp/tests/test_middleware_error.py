@@ -7,6 +7,7 @@ Tests ESPError exception and AjaxExceptionReporter.
 import json
 
 from django.contrib.auth.models import Group
+from django.http import Http404
 from django.test import RequestFactory
 
 from esp.middleware import ESPError
@@ -63,7 +64,7 @@ class ESPErrorMiddlewareTest(TestCase):
     def test_process_exception_ajax_request_returns_json_for_esp_error(self):
         request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         request.user = AnonymousESPUser()
-        err = ESPError('Test AJAX error')
+        err = ESPError('Test AJAX error', log=False)
         response = self.middleware.process_exception(request, err)
         self.assertIsNotNone(response)
         self.assertEqual(response.status_code, 500)
@@ -72,6 +73,29 @@ class ESPErrorMiddlewareTest(TestCase):
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['status'], 500)
         self.assertEqual(data['error'], 'Test AJAX error')
+
+    def test_process_exception_ajax_request_returns_json_for_internal_error(self):
+        request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        err = ESPError('Sensitive internal error', log=True)
+        response = self.middleware.process_exception(request, err)
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 500)
+        self.assertEqual(data['error'], self.middleware._ERROR_MESSAGES['ESPError_Log'][1])
+
+    def test_process_exception_ajax_request_returns_json_for_http404(self):
+        request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, Http404('Resource not found'))
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 404)
+        content_type = response.headers.get('Content-Type') if hasattr(response, 'headers') else response.get('Content-Type')
+        self.assertEqual(content_type, 'application/json')
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 404)
+        self.assertEqual(data['error'], 'Resource not found')
 
     def test_process_exception_ajax_request_returns_json_for_http403(self):
         request = self.factory.post('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -84,6 +108,16 @@ class ESPErrorMiddlewareTest(TestCase):
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['status'], 403)
         self.assertIn('permission', data['error'])
+
+    def test_process_exception_ajax_request_unhandled_exception(self):
+        request = self.factory.get('/', HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = AnonymousESPUser()
+        response = self.middleware.process_exception(request, ValueError('db crash'))
+        self.assertIsNotNone(response)
+        self.assertEqual(response.status_code, 500)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['status'], 500)
+        self.assertEqual(data['error'], self.middleware._ERROR_MESSAGES['ESPError_Log'][1])
 
     def test_process_exception_ajax_request_accept_header(self):
         request = self.factory.get('/', HTTP_ACCEPT='application/json')
