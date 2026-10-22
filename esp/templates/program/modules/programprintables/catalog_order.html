@@ -21,8 +21,25 @@
   font-weight: bold;
   padding: 0 10px;
 }
-#sortable-classes .drag-handle:hover {
+#sortable-classes .drag-handle:hover,
+#sortable-classes .drag-handle:focus {
   color: #007bff;
+}
+#sortable-classes .drag-handle:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+#sortable-classes tr.grabbed td,
+#sortable-classes tr.grabbed th {
+  background-color: #cfe2ff;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 #sortable-classes tr.sortable-placeholder td {
   height: 2em;
@@ -44,9 +61,10 @@
 <p>
 Before you can print off the catalog, please verify the order of the classes, this will allow you to make sure the generated PDF looks as good as it can. (Sometimes it will look unbalanced, etc.)
 </p>
-<p>
-To reorder classes, drag a row by its &equiv; handle. Changes apply immediately to the catalog links below; changing the filters or sort options will reset the order.
+<p id="reorder-help">
+To reorder classes, drag a row by its &equiv; handle. With a keyboard, tab to a &equiv; handle, press Enter or Space to pick the row up, use the up and down arrow keys to move it, then press Enter or Space to drop it (Escape cancels). Changes apply immediately to the catalog links below; changing the filters or sort options will reset the order.
 </p>
+<div id="reorder-status" class="visually-hidden" aria-live="assertive"></div>
 <p>
 <a href="{{request.path}}">Reset Order</a> (default is by category, timeblock, title)
 <br /><br />
@@ -133,7 +151,9 @@ Get Catalog:
   <td>{{cls.friendly_times|join:", "}}</td>
   <td>{{cls.title|truncatewords:3}}</td>
   <td class="reorder">
-    <span class="drag-handle" title="Drag to reorder">&equiv;</span>
+    <span class="drag-handle" role="button" tabindex="0" aria-pressed="false"
+      aria-label="Reorder {{cls.emailcode}}" aria-describedby="reorder-help"
+      title="Drag to reorder, or press Enter and use the arrow keys">&equiv;</span>
   </td>
 </tr>
 {% endfor %}
@@ -178,6 +198,99 @@ Get Catalog:
         $j(this).attr('href', href);
       });
     }
+
+    // Keyboard reordering: Enter/Space picks a row up or drops it, the
+    // arrow keys move it, and Escape puts it back where it started.
+    var $status = $j("#reorder-status");
+    var $grabbed = null;
+    var originalRows = null;
+
+    function announce(message) {
+      $status.text(message);
+    }
+
+    function rowName($row) {
+      return $row.children('td:first').text();
+    }
+
+    function position($row) {
+      return 'position ' + ($row.index() + 1) + ' of ' + $tbody.children('tr').length;
+    }
+
+    function setGrabbed($row) {
+      $row.toggleClass('grabbed', !!$row.is($grabbed));
+      $row.find('.drag-handle').attr('aria-pressed', $row.is($grabbed) ? 'true' : 'false');
+    }
+
+    function grab($row) {
+      $grabbed = $row;
+      originalRows = $tbody.children('tr').get();
+      setGrabbed($row);
+      announce('Picked up ' + rowName($row) + ', ' + position($row) +
+               '. Use the up and down arrow keys to move, Enter to drop, Escape to cancel.');
+    }
+
+    function drop() {
+      var $row = $grabbed;
+      $grabbed = null;
+      setGrabbed($row);
+      refreshOrder();
+      flash($row);
+      announce('Dropped ' + rowName($row) + ' at ' + position($row) + '.');
+    }
+
+    function cancel() {
+      var $row = $grabbed;
+      $grabbed = null;
+      setGrabbed($row);
+      $j.each(originalRows, function() { $tbody.append(this); });
+      refreshOrder();
+      // Re-appending the rows takes focus off the handle, so put it back.
+      $row.find('.drag-handle').focus();
+      announce('Reorder cancelled. ' + rowName($row) + ' is back at ' + position($row) + '.');
+    }
+
+    // Move the neighbouring row rather than the grabbed one, so the
+    // focused handle never leaves the DOM and keeps keyboard focus.
+    function move(direction) {
+      var $neighbor = direction < 0 ? $grabbed.prev('tr') : $grabbed.next('tr');
+      if (!$neighbor.length) {
+        announce(rowName($grabbed) + ' is already at the ' + (direction < 0 ? 'top' : 'bottom') + '.');
+        return;
+      }
+      if (direction < 0) {
+        $neighbor.insertAfter($grabbed);
+      } else {
+        $neighbor.insertBefore($grabbed);
+      }
+      refreshOrder();
+      announce('Moved to ' + position($grabbed) + '.');
+    }
+
+    $tbody.on('keydown', '.drag-handle', function(e) {
+      var $row = $j(this).closest('tr');
+      if (e.which === 13 || e.which === 32) {        // Enter, Space
+        e.preventDefault();
+        if ($grabbed) {
+          drop();
+        } else {
+          grab($row);
+        }
+      } else if ($grabbed && (e.which === 38 || e.which === 40)) {  // Up, Down
+        e.preventDefault();
+        move(e.which === 38 ? -1 : 1);
+      } else if ($grabbed && e.which === 27) {       // Escape
+        e.preventDefault();
+        cancel();
+      }
+    });
+
+    // Tabbing away from a picked-up row keeps it where it is.
+    $tbody.on('focusout', '.drag-handle', function() {
+      if ($grabbed) {
+        drop();
+      }
+    });
 
     $tbody.sortable({
       handle: '.drag-handle',
