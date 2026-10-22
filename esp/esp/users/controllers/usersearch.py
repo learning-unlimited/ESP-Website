@@ -140,18 +140,17 @@ class UserSearchController(object):
 
             for field in ['username', 'last_name', 'first_name', 'email']:
                 if criteria.get(field, '').strip():
-                    #   Usernames are matched in full, so surrounding whitespace is never meaningful.
-                    pattern = criteria[field].strip() if field == 'username' else criteria[field]
-                    #   Check that it's a valid regular expression
-                    try:
-                        re.compile(pattern)
-                    except re.error:
-                        raise ESPError(f'Invalid search expression, please check your syntax: {criteria[field]}', log=False)
-                    #   Anchor usernames so a plain username matches only that account,
-                    #   while patterns such as 'esp_.*' or 'alice|bob' still work
-                    if field == 'username':
-                        pattern = f'^(?:{pattern})$'
-                    filter_dict = {f'{field}__iregex': pattern}
+                    #   Usernames match literally unless regex mode is requested, so one
+                    #   complete username selects exactly one account
+                    if field == 'username' and 'username__regex' not in criteria:
+                        filter_dict = {'username__iexact': criteria[field].strip()}
+                    else:
+                        #   Check that it's a valid regular expression
+                        try:
+                            re.compile(criteria[field])
+                        except re.error:
+                            raise ESPError(f'Invalid search expression, please check your syntax: {criteria[field]}', log=False)
+                        filter_dict = {f'{field}__iregex': criteria[field]}
                     if f'{field}__not' in criteria:
                         Q_exclude |= Q(**filter_dict)
                     else:

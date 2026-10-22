@@ -68,22 +68,29 @@ class TestUserSearchController(ProgramFrameworkTest):
 
         self.assertEqual(self._usernames_for({'username': 'john'}), ['john'])
 
+    def test_username_treats_regex_characters_literally(self):
+        """'.' and '+' are legal in usernames, so they must not act as operators."""
+        ESPUser.objects.create_user(username='alice.bob', password='x')
+        ESPUser.objects.create_user(username='aliceXbob', password='x')
+
+        self.assertEqual(self._usernames_for({'username': 'alice.bob'}), ['alice.bob'])
+
     def test_username_is_case_insensitive_and_stripped(self):
         ESPUser.objects.create_user(username='john', password='x')
 
         self.assertEqual(self._usernames_for({'username': '  JoHn  '}), ['john'])
 
-    def test_username_supports_anchored_regexes(self):
-        """Regex searches keep working, but each alternative must match in full."""
-        for username in ['esp_alice', 'esp_bob', 'esp_bobby', 'carol']:
+    def test_username_regex_mode_matches_patterns(self):
+        """Checking "Regex?" restores pattern searches such as prefixes."""
+        for username in ['esp_alice', 'esp_bob', 'carol']:
             ESPUser.objects.create_user(username=username, password='x')
 
-        self.assertEqual(self._usernames_for({'username': 'esp_.*'}),
-                         ['esp_alice', 'esp_bob', 'esp_bobby'])
-        self.assertEqual(self._usernames_for({'username': 'esp_bob|carol'}),
-                         ['carol', 'esp_bob'])
-        #   Already-anchored patterns keep working
-        self.assertEqual(self._usernames_for({'username': '^carol$'}), ['carol'])
+        self.assertEqual(
+            self._usernames_for({'username': '^esp_', 'username__regex': 'true'}),
+            ['esp_alice', 'esp_bob'])
+        self.assertEqual(
+            self._usernames_for({'username': 'esp_bob|carol', 'username__regex': 'true'}),
+            ['carol', 'esp_bob'])
 
     def test_username_not_excludes_whole_username_only(self):
         ESPUser.objects.create_user(username='john', password='x')
@@ -93,9 +100,13 @@ class TestUserSearchController(ProgramFrameworkTest):
         self.assertNotIn('john', usernames)
         self.assertIn('johnny', usernames)
 
-    def test_invalid_username_regex_raises(self):
+    def test_invalid_regex_raises_only_in_regex_mode(self):
         with self.assertRaises(ESPError_NoLog):
-            self.controller.query_from_criteria('any', {'username': 'john('})
+            self.controller.query_from_criteria(
+                'any', {'username': 'john(', 'username__regex': 'true'})
+
+        #   Without regex mode it is just a username that happens to match nobody
+        self.assertEqual(self._usernames_for({'username': 'john('}), [])
 
     def test_overlap_bug(self):
         """
