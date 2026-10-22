@@ -1,9 +1,12 @@
 <!-- Begin Guardian Contact Info -->
-
+<div class="profile-card">
+    <div class="profile-card-header">
 <h3>Parent/Guardian Contact</h3>
+</div>
 
+ <div class="profile-card-body">
 {% if form.guard_first_name %}
-<div class="control-group">
+<div class="control-group profile-field">
  <label class="control-label" for="id_guard_first_name">First Name:</label>
  <div class="controls">
  {{ form.guard_first_name }} {% if form.guard_first_name.errors %}
@@ -14,7 +17,7 @@
 {% endif %}
 
 {% if form.guard_last_name %}
-<div class="control-group">
+<div class="control-group profile-field">
  <label class="control-label" for="id_guard_last_name">Last Name:</label>
  <div class="controls">
  {{ form.guard_last_name }} {% if form.guard_last_name.errors %}
@@ -25,7 +28,7 @@
 {% endif %}
 
 {% if form.guard_e_mail %}
-<div class="control-group">
+<div class="control-group profile-field">
  <label class="control-label" for="id_guard_e_mail">Email address:</label>
  <div class="controls">
  {{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
@@ -36,12 +39,14 @@
 {% endif %}
 
 {% if form.guard_phone_day or form.guard_phone_cell %}
-<h4>Phone numbers:</h4>
+<h4 class="section-subtitle">Phone Numbers</h4>
 {% endif %}
 
 {% if form.guard_phone_day %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_guard_phone_day">home</label></i></small>
+<div class="control-group profile-field">
+ <label class="control-label phone-label" for="id_guard_phone_day">
+    Home
+</label>
  <div class="controls">
  {{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
    <br /><span class="form_error" role="alert">{{ form.guard_phone_day.errors|join:", " }}</span>
@@ -51,8 +56,10 @@
 {% endif %}
 
 {% if form.guard_phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_guard_phone_cell">cell</label></i></small>
+<div class="control-group profile-field">
+<label class="control-label phone-label" for="id_guard_phone_cell">
+    Cell
+</label>
  <div class="controls">
  {{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
    <br /><span class="form_error" role="alert">{{ form.guard_phone_cell.errors|join:", " }}</span>
@@ -60,5 +67,7 @@
 </div>
 </div>
 {% endif %}
+</div>
+</div>
 
 <!-- End Guardian Contact Info -->
