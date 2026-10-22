@@ -111,6 +111,10 @@ DATABASES = {'default':
     }
 }
 
+# How long a custom form schema change (creating or altering a response table)
+# waits for a database lock before giving up (passed to PostgreSQL's lock_timeout)
+CUSTOMFORMS_LOCK_TIMEOUT = '5s'
+
 ##########################
 # Default email settings #
 ##########################
