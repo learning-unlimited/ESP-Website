@@ -1,4 +1,3 @@
-from pathlib import Path
 from io import open
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -41,7 +40,7 @@ from django.template import loader
 from esp.program.models import Program, ClassSubject, ClassSection
 from esp.utils.cache_inclusion_tag import cache_inclusion_tag
 
-import os
+from pathlib import Path
 import subprocess
 
 try:
@@ -299,8 +298,7 @@ def histogram(answer_list, args='format=html'):
     import hashlib
     file_base = hashlib.sha256(pickle.dumps(context)).hexdigest()
     file_name = str(Path(tempfile.gettempdir()) / (file_base + '.eps'))
-    template_file = os.path.join(settings.TEMPLATES[0]['DIRS'][0],
-                                 'survey', 'histogram_base.eps')
+    template_file = str(Path(settings.TEMPLATES[0]['DIRS'][0]) / 'survey' / 'histogram_base.eps')
 
     context['file_name'] = file_name # This guy depends on the hash
 
@@ -316,7 +314,7 @@ def histogram(answer_list, args='format=html'):
     if args_dict.get('format') == 'tex':
         image_path = str(Path(tempfile.gettempdir()) / png_filename)
     elif args_dict.get('format') == 'html':
-        image_path = os.path.join(HISTOGRAM_DIR, png_filename)
+        image_path = str(Path(HISTOGRAM_DIR) / png_filename)
     if not Path(image_path).exists():
         subprocess.call([
             'gs',

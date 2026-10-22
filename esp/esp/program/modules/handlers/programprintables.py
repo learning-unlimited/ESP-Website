@@ -1,4 +1,3 @@
-from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -68,7 +67,7 @@ import csv
 import json
 import traceback
 import sys
-import os
+from pathlib import Path
 import zipfile
 import tempfile
 import mimetypes

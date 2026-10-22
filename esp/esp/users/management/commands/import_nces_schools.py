@@ -1,4 +1,3 @@
-from pathlib import Path
 """
 Management command to import K12 schools from NCES (National Center for Education Statistics) data.
 
@@ -32,7 +31,7 @@ Usage:
 """
 
 import csv
-import os
+from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
 

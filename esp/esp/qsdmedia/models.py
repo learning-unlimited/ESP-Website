@@ -1,4 +1,3 @@
-from pathlib import Path
 
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
@@ -37,7 +36,7 @@ from django.db import models
 
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
-import os.path
+from pathlib import Path
 from esp.middleware import ESPError
 
 from django.contrib.contenttypes.models import ContentType
@@ -126,7 +125,6 @@ class Media(models.Model):
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
-        import os
         # If no file is associated, FileField.url can raise ValueError.
         try:
             uploaded = self.get_uploaded_filename()
@@ -134,7 +132,7 @@ class Media(models.Model):
             uploaded = None
 
         if uploaded and Path(uploaded).is_file():
-            os.remove(uploaded)
+            Path(uploaded).unlink()
 
         super().delete(*args, **kwargs)
 
