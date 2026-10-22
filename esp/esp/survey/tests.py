@@ -523,16 +523,37 @@ class CSVImportTest(TestCase):
         from esp.program.modules.forms.surveys import parse_csv
 
         csv_content = (
-            'question_text,question_type,per_class,seq\n'
-            'Good question,yes-no response,false,1\n'
-            ',yes-no response,false,2\n'
-            'Another good one,numeric rating,true,3\n'
+            'question_text,question_type,per_class,seq,param_values\n'
+            'Good question,yes-no response,false,1,\n'
+            ',yes-no response,false,2,\n'
+            'Another good one,numeric rating,true,3,5|Low|Mid|High\n'
         )
         parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
         self.assertEqual(len(parsed_rows), 2)
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0]['row_number'], 3)
         self.assertIn('question_text is empty', errors[0]['message'])
+
+    def test_csv_parse_invalid_param_values(self):
+        """param_values are checked with the same rules as the question form."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,param_values\n'
+            'Rate it,test numeric rating,f|Low|High\n'
+            'Rate it again,test numeric rating,1|Low|High\n'
+            'Pick one,multiple choice,\n'
+            'Pick some,checkboxes,A||C\n'
+            'Rate it well,test numeric rating,5|Low|High\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 1)
+        self.assertEqual(parsed_rows[0]['row_number'], 6)
+        self.assertEqual([e['row_number'] for e in errors], [2, 3, 4, 5])
+        self.assertIn('whole number', errors[0]['message'])
+        self.assertIn('at least 2', errors[1]['message'])
+        self.assertIn('at least one choice', errors[2]['message'])
+        self.assertIn('cannot be blank', errors[3]['message'])
 
 
 # ===== View Tests (cross-program teacher survey page, #3228) =====
