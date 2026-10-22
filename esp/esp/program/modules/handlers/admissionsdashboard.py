@@ -38,8 +38,9 @@ from esp.utils.web import render_to_response
 from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp
 
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 import json
+from esp.utils.ids import get_by_id_or_404, parse_id
 
 class AdmissionsDashboard(ProgramModuleObj):
     doc = """A dashboard for Junction core teachers to review applications for their class.
@@ -86,7 +87,11 @@ class AdmissionsDashboard(ProgramModuleObj):
             classes = request.user.getTaughtClassesFromProgram(prog)
             classapps = classapps.filter(subject__in=classes)
         if extra:
-            classapps = classapps.filter(subject__id=extra)
+            subject_id = parse_id(extra)
+            if subject_id is not None:
+                classapps = classapps.filter(subject__id=subject_id)
+            else:
+                classapps = classapps.none()
         if tl != 'manage':
             classapps = classapps.filter(app__admin_status=StudentProgramApp.APPROVED)
 
@@ -121,9 +126,9 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     def app(self, request, tl, one, two, module, extra, prog):
         try:
-            classapp = StudentClassApp.objects.get(id=extra)
-        except StudentClassApp.DoesNotExist:
-            return self.goToCore(tl) # XXX: more useful error here
+            classapp = get_by_id_or_404(StudentClassApp, extra)
+        except Http404:
+            return self.goToCore(tl) # XXX: more useful error here.
         if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
             return self.goToCore(tl)
         content = classapp.get_teacher_view(prog)
