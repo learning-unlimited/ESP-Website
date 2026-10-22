@@ -16,6 +16,7 @@ Both are covered below, along with the program lookup done on the request path.
 
 from unittest.mock import patch
 
+from django.core import mail
 from django.http import HttpResponse, HttpResponseForbidden
 from django.middleware.csrf import REASON_NO_REFERER
 from django.test import Client, RequestFactory, override_settings
@@ -113,6 +114,31 @@ class CsrfFailureViewTest(CacheFlushTestCase):
         content = response.content.decode('utf-8')
         self.assertIn('CSRF verification failed', content)
         self.assertIn('Web Team', content)
+
+    @override_settings(ADMINS=[('Admin', 'admin@example.com')])
+    def test_middleware_rejection_emails_the_admins(self):
+        client = Client(enforce_csrf_checks=True)
+        client.post('/accounts/login/', {'username': 'nobody'})
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('CSRF failure: /accounts/login/', mail.outbox[0].subject)
+        self.assertIn('User: anonymous', mail.outbox[0].body)
+        self.assertIn('Reason: CSRF cookie not set.', mail.outbox[0].body)
+
+    @override_settings(ADMINS=[('Admin', 'admin@example.com')])
+    def test_email_does_not_include_the_submitted_form_data(self):
+        """The request never reaches the login view, so nothing redacts its
+        POST data; the email must not include it."""
+        client = Client(enforce_csrf_checks=True)
+        client.post('/accounts/login/', {'username': 'nobody', 'password': 'hunter2-secret'})
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertNotIn('hunter2-secret', mail.outbox[0].message().as_string())
+
+    @override_settings(DEBUG=True, ADMINS=[('Admin', 'admin@example.com')])
+    def test_no_email_when_debug_is_on(self):
+        csrf_failure(self._request(), reason='CSRF token missing.')
+        self.assertEqual(len(mail.outbox), 0)
 
     def test_response_is_html(self):
         response = csrf_failure(self._request())
