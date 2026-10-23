@@ -3,10 +3,13 @@
 
 from __future__ import absolute_import
 
+import errno
+import fcntl
 import io
 import logging
 import os
 import sys
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +40,6 @@ def main():
     """Run the outgoing mail cron job."""
     lock_file = None
     lock_acquired = False
-    fcntl = None
     db = None
 
     try:
@@ -49,21 +51,14 @@ def main():
         db = django_db
         django.setup()
 
-        # Import after Django initialization.
+        # Import application code only after Django initialization.
         from esp.dbmail.cronmail import (
             process_messages,
             send_email_requests,
         )
 
-        # ESP settings may customize tempfile, so import it afterward.
-        import tempfile
-        import fcntl as fcntl_module
-
-        fcntl = fcntl_module
-
         lock_path = os.path.join(
-            tempfile.gettempdir(),
-            "espweb.dbmailcron.lock",
+            tempfile.gettempdir(), "espweb.dbmailcron.lock"
         )
         lock_file = io.open(lock_path, "w")
 
@@ -73,23 +68,23 @@ def main():
                 fcntl.LOCK_EX | fcntl.LOCK_NB,
             )
             lock_acquired = True
-        except BlockingIOError:
+        except OSError as exc:
+            if exc.errno not in (errno.EACCES, errno.EAGAIN):
+                raise
+
             logger.info(
                 "dbmail_cron: exiting because another instance "
                 "has the lock."
             )
             return 0
 
-        logger.info("dbmail_cron: beginning to process messages.")
+        logger.info("dbmail_cron: starting process_messages()")
         process_messages()
 
-        logger.info(
-            "dbmail_cron: message processing complete; sending emails."
-        )
+        logger.info("dbmail_cron: starting send_email_requests()")
         send_email_requests()
 
-        logger.info("dbmail_cron: sent emails.")
-        logger.info("dbmail_cron: done.")
+        logger.info("dbmail_cron: completed successfully")
         return 0
 
     except Exception:
@@ -99,12 +94,10 @@ def main():
     finally:
         if lock_file is not None:
             try:
-                if lock_acquired and fcntl is not None:
+                if lock_acquired:
                     fcntl.lockf(lock_file, fcntl.LOCK_UN)
             except Exception:
-                logger.exception(
-                    "dbmail_cron: failed to release lock"
-                )
+                logger.exception("dbmail_cron: failed to release lock")
             finally:
                 try:
                     lock_file.close()
