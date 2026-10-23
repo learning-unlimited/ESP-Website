@@ -1,16 +1,8 @@
-{% if open_section == "restype" %}
-<button class="dsphead active">
-   <b>Step 2: Resource Types</b> (click to expand/contract)
+<button class="accordion-button{% if open_section != "restype" %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#resource-type-section" aria-expanded="{% if open_section == "restype" %}true{% else %}false{% endif %}" aria-controls="resource-type-section">
+    <b>Step 2: Resource Types</b>
 </button>
 
-<div class="dspcont active">
-{% else %}
-<button class="dsphead">
-   <b>Step 2: Resource Types</b> (click to expand/contract)
-</button>
-
-<div class="dspcont">
-{% endif %}
+<div id="resource-type-section" class="accordion-collapse collapse{% if open_section == "restype" %} show{% endif %}">
 
 <p>The following types of resources will be available for teachers to select on the teacher registration page.</p>
 

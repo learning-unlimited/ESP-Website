@@ -1,16 +1,8 @@
-{% if open_section == "classroom" %}
-<button class="dsphead active">
-   <b>Step 3: Classrooms</b> (click to expand/contract)
+<button class="accordion-button{% if open_section != "classroom" %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#classroom-section" aria-expanded="{% if open_section == "classroom" %}true{% else %}false{% endif %}" aria-controls="classroom-section">
+    <b>Step 3: Classrooms</b>
 </button>
 
-<div class="dspcont active">
-{% else %}
-<button class="dsphead">
-   <b>Step 3: Classrooms</b> (click to expand/contract)
-</button>
-
-<div class="dspcont">
-{% endif %}
+<div id="classroom-section" class="accordion-collapse collapse{% if open_section == "classroom" %} show{% endif %}">
 
 <p>Resources may be grouped or may remain floating.  For example, an LCD projector built into the classroom would be grouped with that classroom, whereas one of the projectors that we can carry around would not be grouped with anything.  When you create a classroom, please select the types of resources that it has built in.  These resources will be created and grouped with the classroom itself.</p>
 
