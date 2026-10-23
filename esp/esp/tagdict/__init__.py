@@ -57,18 +57,31 @@ def _hideable_fields(form_class, use_labels=False):
             if not field.required]
 
 
+def _hide_fields_field(form_class, use_labels=False):
+    """A two-column selector for the fields of *form_class* that can be hidden.
+
+    Fields move between an 'Available' column (shown on the form) and a 'Chosen'
+    column (hidden from it), which is easier to read and to change than a plain
+    multiple select.  This is the admin's widget; it needs JS and CSS that the
+    tag settings template loads, and is imported here rather than at module
+    level so that importing tagdict doesn't pull in the admin app.
+    """
+    from django.contrib.admin.widgets import FilteredSelectMultiple
+    return forms.MultipleChoiceField(
+        choices=_hideable_fields(form_class, use_labels=use_labels),
+        widget=FilteredSelectMultiple('fields to hide', is_stacked=False))
+
+
 def profile_hide_fields_field(form_class_name):
     def field(key, program):
         from esp.users.forms import user_profile
-        return forms.MultipleChoiceField(
-            choices=_hideable_fields(getattr(user_profile, form_class_name)))
+        return _hide_fields_field(getattr(user_profile, form_class_name))
     return field
 
 
 def teacherreg_hide_fields_field(key, program):
     from esp.program.modules.forms.teacherreg import TeacherClassRegForm
-    return forms.MultipleChoiceField(
-        choices=_hideable_fields(TeacherClassRegForm, use_labels=True))
+    return _hide_fields_field(TeacherClassRegForm, use_labels=True)
 
 
 def record_types_field(key, program):

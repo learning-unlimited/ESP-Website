@@ -4,7 +4,7 @@ from esp.program.models import (
     Program, ClassSubject, ClassFlagType, ClassFlag, AutoClassFlagRule,
     ESPUser, ClassCategories
 )
-from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo
 from esp.program.modules.handlers.classsearchmodule import ClassSearchModule
 from esp.middleware.threadlocalrequest import clear_current_request
 
