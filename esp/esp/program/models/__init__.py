@@ -1012,12 +1012,16 @@ class Program(models.Model, CustomFormsLinkModel):
     getTimeSlotList.get_or_create_token(('self',))
     getTimeSlotList.depend_on_row('cal.Event', lambda e: {'self': e.program} if e.program_id else {})
 
-    def total_duration(self):
-        """ Returns the total length of the events in this program, as a timedelta object. """
-        ts_list = Event.collapse(list(self.getTimeSlots()), tol=timedelta(minutes=15))
+    def total_duration(self, round_to=0.0):
+        """ Returns the total length of the class timeslots in this program, as a timedelta object.
+            Gaps between timeslots are not counted, matching how teacher availability is totaled.
+            Rounds each timeslot to the nearest round_to hours (if zero, doesn't round at all). """
         time_sum = timedelta()
-        for t in ts_list:
-            time_sum = time_sum + t.duration()
+        for t in self.getTimeSlots():
+            hours = t.duration().total_seconds() / 3600.0
+            if round_to:
+                hours = round_to * round(hours / round_to)
+            time_sum = time_sum + timedelta(hours=hours)
         return time_sum
 
     def dates(self):

@@ -10,9 +10,11 @@ Test classes:
   - SetClassDataTest:          field routing, custom field separation,
                                section_ key exclusion
   - TeacherTimeTest:           teacher_has_time() and require_teacher_has_time()
+  - TeacherTimeGapTest:        teacher hour cap ignores gaps between timeslots
   - UpdateClassSectionsTest:   section count creation, reduction, duration propagation
 """
 
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -278,6 +280,36 @@ class TeacherTimeTest(ClassregControllerTestBase):
         with self.assertRaises(ESPError_NoLog) as ctx:
             self.controller.require_teacher_has_time(teacher, editor, 100.0)
         self.assertIn(teacher.name(), str(ctx.exception))
+
+
+class TeacherTimeGapTest(ClassregControllerTestBase):
+    """
+    Regression tests for #1780: the gaps between timeslots must not count
+    toward the hours a teacher may register for.
+    """
+
+    def setUp(self, *args, **kwargs):
+        #   7 one-hour blocks with 10-minute gaps, spanning 8 hours in total.
+        kwargs.setdefault('num_timeslots', 7)
+        kwargs.setdefault('timeslot_length', 60)
+        kwargs.setdefault('timeslot_gap', 10)
+        kwargs.setdefault('classes_per_teacher', 0)
+        super().setUp(*args, **kwargs)
+        self.teacher = self.teachers[0]
+
+    def test_total_duration_excludes_gaps(self):
+        self.assertEqual(self.program.total_duration(), timedelta(hours=7))
+
+    def test_cannot_register_for_more_hours_than_timeslots(self):
+        """The old cap allowed 8 one-hour sections in 7 one-hour blocks."""
+        self.assertTrue(self.controller.teacher_has_time(self.teacher, self.controller.time_requested(1.0, 7)))
+        self.assertFalse(self.controller.teacher_has_time(self.teacher, self.controller.time_requested(1.0, 8)))
+
+    def test_multi_block_sections_still_fit(self):
+        """Three 2-block sections (2:10 each, including a gap) plus one 1-block section fill all 7 blocks."""
+        make_class(program=self.program, teacher=self.teacher, duration=Decimal('2.17'), sections=3)
+        self.assertTrue(self.controller.teacher_has_time(self.teacher, self.controller.time_requested(1.0)))
+        self.assertFalse(self.controller.teacher_has_time(self.teacher, self.controller.time_requested(1.0, 2)))
 
 
 # ---------------------------------------------------------------------------

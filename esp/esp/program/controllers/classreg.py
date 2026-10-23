@@ -18,6 +18,9 @@ from decimal import Decimal
 import json
 from django.conf import settings
 
+#   Granularity (in hours) used when comparing teaching time to program time
+TEACHER_TIME_ROUND_TO = 0.5
+
 def get_custom_fields():
     result = OrderedDict()
     form_list_str = Tag.getTag('teacherreg_custom_forms')
@@ -50,7 +53,7 @@ class ClassCreationController(object):
             reg_form.cleaned_data['grade_min'] = self.program.grade_min
             reg_form.cleaned_data['grade_max'] = self.program.grade_max
 
-        self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
+        self.require_teacher_has_time(user, user, self.time_requested(reg_form.cleaned_data['duration'], reg_form.cleaned_data['num_sections']))
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
@@ -72,7 +75,8 @@ class ClassCreationController(object):
         except (TypeError, ClassSubject.DoesNotExist):
             raise ESPError(f"The class you're trying to edit (ID {repr(clsid)}) does not exist!", log=False)
 
-        extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
+        extra_time = self.time_requested(reg_form.cleaned_data['duration'], reg_form.cleaned_data['num_sections']) \
+                     - self.time_requested(cls.duration, cls.sections.count())
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, current_user, extra_time)
 
@@ -101,7 +105,7 @@ class ClassCreationController(object):
 
         #   The draft's own status is negative, so getTaughtTime() ignores it and
         #   the whole requested duration counts as new time for every teacher.
-        hours = reg_form._get_total_time_requested()
+        hours = self.time_requested(reg_form.cleaned_data['duration'], reg_form.cleaned_data['num_sections'])
         for teacher in cls.get_teachers():
             self.require_teacher_has_time(teacher, user, hours)
 
@@ -541,9 +545,16 @@ class ClassCreationController(object):
         email_to = [teacher.get_email_sendto_address()]
         send_mail(email_title, email_contents, email_from, email_to, False)
 
+    def time_requested(self, duration, num_sections=1):
+        """ Hours of teaching time needed for num_sections sections of the given duration,
+            rounded per section the same way as teacher_has_time(). """
+        return TEACHER_TIME_ROUND_TO * round(float(duration) / TEACHER_TIME_ROUND_TO) * int(num_sections)
+
     def teacher_has_time(self, user, hours):
-        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \
-                <= self.program.total_duration())
+        #   Round like AvailabilityModule.isCompleted(), so a teacher can't register
+        #   for more time than they could later mark themselves available for.
+        return (user.getTaughtTime(self.program, include_scheduled=True, round_to=TEACHER_TIME_ROUND_TO) + timedelta(hours=hours) \
+                <= self.program.total_duration(round_to=TEACHER_TIME_ROUND_TO))
 
     def require_teacher_has_time(self, user, current_user, hours):
         if not self.teacher_has_time(user, hours):
