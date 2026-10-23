@@ -60,6 +60,7 @@ tests:
       - any-glob-to-any-file:
           - '**/tests/**'
           - '**/seltests/**'
+          - '**/seltests.py'
           - '**/*_test.py'
           - '**/test_*.py'
 

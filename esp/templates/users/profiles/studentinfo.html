@@ -1,8 +1,8 @@
 <!-- Begin Student Info Portion -->
 <h3>Additional Student Information</h3>
 {% if not user.getGrade or form.allow_change_grade_level %}
-<div role="alert" class="alert">
-<button type="button" class="close" data-dismiss="alert">x</button>
+<div role="alert" class="alert alert-dismissible">
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade
@@ -144,8 +144,8 @@ Your grade level will update automatically every August.
 {% endif %}
 
 {% if form.shirt_size %}
-<div role="alert" class="alert">
-<button type="button" class="close" data-dismiss="alert">x</button>
+<div role="alert" class="alert alert-dismissible">
+<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
 </div>
 

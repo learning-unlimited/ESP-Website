@@ -39,7 +39,7 @@ from esp.program.models import (
     TeacherBio, ProgramModule, SplashInfo,
 )
 from esp.program.models.class_ import ClassSubject, ClassSection, ClassCategories
-from esp.program.modules.module_ext import (
+from esp.program.modules.program_settings import (
     ClassRegModuleInfo, StudentClassRegModuleInfo,
     AJAXChangeLog, AJAXSectionDetail, DBReceipt,
 )
@@ -269,21 +269,14 @@ class Command(BaseCommand):
             ('AdminVitals',           'Program Vitals',             'manage',        -2, False),
             # JSON data (needed by scheduling, catalog, etc.)
             ('JSONDataModule',        'JSON Data Module',           'json',           0, False),
+            # Profile modules
+            ('StudentRegProfileModule', 'Student Profile Editor',   'learn',          0, True),
+            ('TeacherRegProfileModule', 'Teacher Profile Editor',   'teach',          0, True),
         ]:
             ProgramModule.objects.get_or_create(
                 handler=handler, module_type=module_type,
                 defaults=dict(admin_title=admin_title, seq=seq,
                               required=required, choosable=1))
-
-        # RegProfileModule has two variants (learn + teach) with the same handler
-        ProgramModule.objects.get_or_create(
-            handler='RegProfileModule', module_type='learn',
-            defaults=dict(admin_title='Student Profile Editor',
-                          seq=0, required=True, choosable=1))
-        ProgramModule.objects.get_or_create(
-            handler='RegProfileModule', module_type='teach',
-            defaults=dict(admin_title='Teacher Profile Editor',
-                          seq=0, required=True, choosable=1))
 
         # Supplement with all other choosable=1 modules from the handlers directory
         from esp.program.modules import handlers as handlers_pkg
@@ -726,9 +719,7 @@ class Command(BaseCommand):
              f'- [{program_name}](/learn/{program_name.replace(" ", "")}/2026/studentreg)\n'),
 
             ('teach/index', 'index', 'Teach with Us',
-             '## Teach a Class\n\n'
-             'Share your knowledge by teaching at one of our programs.\n\n'
-             f'- [{program_name}](/teach/{program_name.replace(" ", "")}/2026/teacherreg)\n'),
+             'Want to share your knowledge? Click below to get started.\n'),
 
             ('volunteer/index', 'index', 'Volunteer',
              '## Volunteer Opportunities\n\n'

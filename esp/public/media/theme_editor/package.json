@@ -1,11 +1,12 @@
 {
   "name": "esp-theme-editor",
   "description": "Bootstrap and theme editor dependencies for ESP-Website",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "private": true,
   "dependencies": {
-    "bootstrap": "4.6.2",
+    "bootstrap": "5.3.3",
     "bootstrap-icons": "1.11.3",
+    "bootswatch": "5.3.3",
     "sass": "^1.58.0"
   }
 }
