@@ -21,6 +21,11 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Scheduling Check Legends
+========================
+
+The "Checks" tab of the AJAX scheduler now shows a legend below the list of scheduling checks that describes the selected check and explains what each cell color means (including the category colors for "Color by Class Category" and the orange corners on classes flagged as having special scheduling needs). Hovering over a check's name also shows its description.
+
 Form Field Selectors
 ====================
 
