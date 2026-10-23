@@ -195,24 +195,32 @@
                         <br />
                         <label for="room-filter-capacity-max">Max:</label>
                         <input id="room-filter-capacity-max" class="numeric"></input> Students
+                        <br />
+                        <label for="room-filter-capacity-weight">Weight:</label>
+                        <input id="room-filter-capacity-weight" class="numeric" type="number" min="0" step="any" value="1" />
                     </div>
                     <br />
                     <div id="room-filter-resource">
                         <label for="room-filter-resource-text"><b>Resource</b></label><br />
                         <input id="room-filter-resource-text"></input>
+                        <br />
+                        <label for="room-filter-resource-weight">Weight:</label>
+                        <input id="room-filter-resource-weight" class="numeric" type="number" min="0" step="any" value="1" />
                     </div>
                     <br />
                     <div id="room-filter-name">
                         <label for="room-filter-name-text"><b>Name</b></label><br />
                         <input id="room-filter-name-text"></input>
+                        <br />
+                        <label for="room-filter-name-weight">Weight:</label>
+                        <input id="room-filter-name-weight" class="numeric" type="number" min="0" step="any" value="1" />
                     </div>
                     <br />
                     <div id="room-filter-threshold-container">
                         <label for="room-filter-threshold"><b>Match Threshold</b></label><br />
                         <small>Hide rooms below this match score:</small><br />
-                        <input id="room-filter-threshold" type="range" min="0" max="100" value="0"
-                               style="width:100%;margin:6px 0 2px 0;" />
-                        <span id="room-filter-threshold-label" style="font-weight:bold;">0% (show all)</span>
+                        <input id="room-filter-threshold" type="range" min="0" max="100" value="0" />
+                        <span id="room-filter-threshold-label">0% (show all)</span>
                     </div>
                   </form>
                 </div>

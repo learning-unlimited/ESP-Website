@@ -33,6 +33,13 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Scheduler Room Filter Weights
+=============================
+
+The room filters in the AJAX scheduler no longer hide rooms that don't match. Instead, each room gets a match score and the rooms are sorted from best to worst match, so you can still find the closest available rooms when no room matches perfectly. A badge on each room shows its score (green for a full match, amber for 60% or more, red for less than 60%). Capacity filters score rooms by how far their capacity is from the requested limit; resource and name filters score rooms by whether they match.
+
+Each filter has a "Weight" input (default 1) for how much it counts toward the score; set a weight to 0 to ignore that filter. The new "Match Threshold" slider hides rooms below a given score (0%, the default, shows all rooms; 100% shows only full matches).
+
 Bug Fixes
 =========
 

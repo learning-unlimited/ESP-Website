@@ -180,3 +180,67 @@ describe("Matrix", function(){
     });
 
 });
+
+describe("Matrix room filter scoring", function() {
+    var filter, weights;
+    var room = {id: 1, text: "10-250", num_students: 20, resource_lines: ["Projector"]};
+
+    beforeEach(function() {
+        weights = {capacity: {val: 1}, resource: {val: 1}};
+        filter = {
+            roomCapacityMin: {active: false, weight: "capacity", penalty: function(a) {
+                return a.num_students >= 25 ? 0 : Matrix.capacityPenalty(a.num_students, 25);
+            }},
+            roomResource: {active: false, weight: "resource", valid: function(a) {
+                return a.resource_lines.indexOf("Whiteboard") > -1;
+            }},
+        };
+    });
+
+    describe("capacityPenalty", function() {
+        it("is the squared normalized distance from the limit", function() {
+            expect(Matrix.capacityPenalty(20, 25)).toBeCloseTo(0.04);
+            expect(Matrix.capacityPenalty(30, 25)).toBeCloseTo(0.04);
+        });
+
+        it("is capped at 1", function() {
+            expect(Matrix.capacityPenalty(100, 25)).toBe(1);
+        });
+
+        it("is 1 for a limit of 0", function() {
+            expect(Matrix.capacityPenalty(10, 0)).toBe(1);
+        });
+    });
+
+    describe("roomMatchScore", function() {
+        it("is 1 when no filters are active", function() {
+            expect(Matrix.roomMatchScore(room, filter, weights)).toBe(1);
+        });
+
+        it("averages the active filter penalties", function() {
+            filter.roomCapacityMin.active = true;
+            filter.roomResource.active = true;
+            expect(Matrix.roomMatchScore(room, filter, weights)).toBeCloseTo(1 - (0.04 + 1) / 2);
+        });
+
+        it("weights the active filter penalties", function() {
+            filter.roomCapacityMin.active = true;
+            filter.roomResource.active = true;
+            weights.resource.val = 3;
+            expect(Matrix.roomMatchScore(room, filter, weights)).toBeCloseTo(1 - (0.04 + 3) / 4);
+        });
+
+        it("ignores filters with a weight of 0", function() {
+            filter.roomCapacityMin.active = true;
+            filter.roomResource.active = true;
+            weights.resource.val = 0;
+            expect(Matrix.roomMatchScore(room, filter, weights)).toBeCloseTo(0.96);
+        });
+    });
+
+    describe("compareRoomNames", function() {
+        it("sorts room numbers numerically", function() {
+            expect(Matrix.compareRoomNames({text: "10-250"}, {text: "2-105"})).toBeGreaterThan(0);
+        });
+    });
+});

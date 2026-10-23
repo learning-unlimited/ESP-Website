@@ -271,6 +271,36 @@ button.sidetoolbar {
 	font-size: .7em;
 }
 
+.room-match-badge {
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    margin-left: 4px;
+    color: #fff;
+}
+
+.room-match-full {
+    background: #28a745;
+}
+
+.room-match-partial {
+    background: #ffc107;
+    color: #212529;
+}
+
+.room-match-poor {
+    background: #dc3545;
+}
+
+#room-filter-threshold {
+    width: 100%;
+    margin: 6px 0 2px 0;
+}
+
+#room-filter-threshold-label {
+    font-weight: bold;
+}
+
 .ft_c {
     height: unset !important; /* allows us to hide rows properly */
 }
