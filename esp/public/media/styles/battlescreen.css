@@ -364,3 +364,8 @@ td.button_td {
   font-weight:bold;
   color: #3333FF;
 }
+
+.dashboard_gray {
+  font-style: italic;
+  color: #888888;
+}

@@ -11,7 +11,7 @@ from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
 from esp.tagdict import (all_program_tags, tag_categories, initial_choices,
                          is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
