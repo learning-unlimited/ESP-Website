@@ -219,9 +219,9 @@ def disable_account(request):
 # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
 def unsubscribe(request, username, token, oneclick = False):
     """
-    User is immediately unsubscribed if they are logged in as username, or
-    if they came from an unexpired unsubscribe link. Otherwise, they are
-    redirected to the login page and unsubscribed as soon as they log in.
+    Deactivates the account named in the URL, once the request is authorized:
+    a one-click request needs an unexpired token, a request from the website
+    needs that token or the logged-in owner. Everyone else is sent to log in.
     """
 
     # render our own error message if the username doesn't match
@@ -235,24 +235,33 @@ def unsubscribe(request, username, token, oneclick = False):
     else:
         raise ESPError("No user matching that unsubscribe request.")
 
-    # first, we need to check that user is logged into the correct account or the token is valid
-    # if authorization is true, then we proceed
+    # the one-click endpoint is CSRF-exempt, so the signed token is the only
+    # acceptable authorization -- a session here would be forgeable by any site
+    if oneclick:
+        if not user.check_token(token):
+            # log=False: anyone can POST here, so don't email the admins
+            raise ESPError("That unsubscribe link is invalid or has expired.", log=False)
+        # "unsubscribe" them (deactivate their account)
+        user.is_active = False
+        user.save()
+        return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+
+    # someone logged into another account gets told to log out, rather than a
+    # confirmation page for an account that isn't theirs
+    if request.user.is_authenticated and request.user != user:
+        raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
+
+    # otherwise, authorize before touching the account:
+    # they must be logged into the correct account or have a valid token
     if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
         # if POSTing, they clicked the confirm button
-        # if oneclick=True, then they came here from an email client
-        if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick:
-            # "unsubscribe" them (deactivate their account)
+        if request.POST.get("List-Unsubscribe") == "One-Click":
             user.is_active = False
             user.save()
             return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
 
-        # if this isn't true, then show them the confirmation button
+        # otherwise show them a confirmation button
         return render_to_response('users/unsubscribe.html', request, context = {'user': user})
-
-    # if they are logged into a different account
-    # tell them to log out and try again
-    elif request.user.is_authenticated and request.user != user:
-        raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
     # otherwise they will need to log in (or find a more recent link)
     # so show the login page (with a custom alert message)
     else:
