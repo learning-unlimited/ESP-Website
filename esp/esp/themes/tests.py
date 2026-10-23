@@ -11,6 +11,7 @@ import unittest.mock as mock
 
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
+from django.urls import reverse
 
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
@@ -173,6 +174,25 @@ class ThemesTest(TestCase):
                 shutil.rmtree(images_dir)
             if os.path.exists(images_backup_dir):
                 os.rename(images_backup_dir, images_dir)
+
+    def testSharedBanners(self):
+        """ Check that the default template and every theme render the shared banners exactly once. """
+
+        tc = ThemeController()
+        self.client.login(username=self.admin.username, password='password')
+        self.client.cookies['esp_testing_role'] = 'student'
+
+        for theme_name in ['default'] + tc.get_theme_names():
+            with self.subTest(theme=theme_name):
+                Tag.setTag('current_theme_name', value=theme_name)
+                response = self.client.get('/themes/')
+                self.assertEqual(response.status_code, 200)
+                content = str(response.content, encoding='UTF-8')
+                self.assertEqual(content.count('Testing Mode (student)'), 1)
+                self.assertEqual(content.count(f'href="{reverse("myesp_stop_testing")}"'), 1)
+
+        Tag.unSetTag('current_theme_name')
+        self.client.logout()
 
     def testEditor(self):
         """ Check that the theme editor backend functionality is working. """

@@ -1,4 +1,5 @@
 import json
+import re
 
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.customforms.models import Form
@@ -22,7 +23,8 @@ JQUERY_VALIDATE_SRI = {
 
 class CustomFormAssetsTest(ProgramFrameworkTest):
     """Custom form pages load the custom form stylesheet and scripts once,
-    including module pages whose template overrides the content block."""
+    including module pages whose template overrides the content block, and
+    put the Next button before the navigation buttons."""
 
     def setUp(self):
         super().setUp()
@@ -35,12 +37,12 @@ class CustomFormAssetsTest(ProgramFrameworkTest):
             'title': 'Asset Test Form', 'perms': '', 'link_id': -1, 'link_type': '-1',
             'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
             'anonymous': False, 'desc': 'Test',
-            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{
+            'pages': [{'parent_id': -1, 'seq': seq, 'sections': [{
                 'data': {'help_text': '', 'question_text': '', 'seq': 0},
-                'fields': [{'data': {'field_type': 'textField', 'question_text': 'Name', 'seq': 0,
-                                     'required': True, 'parent_id': -1, 'help_text': 'Your name',
+                'fields': [{'data': {'field_type': 'textField', 'question_text': label, 'seq': 0,
+                                     'required': True, 'parent_id': -1, 'help_text': label,
                                      'attrs': {'correct_answer': '', 'charlimits': ','}}}],
-            }]}],
+            }]} for seq, label in enumerate(['Name', 'School'])],
         }
         self.client.post('/customforms/submit/', json.dumps(form_data), content_type='application/json',
                          HTTP_X_REQUESTED_WITH='XMLHttpRequest')
@@ -75,3 +77,23 @@ class CustomFormAssetsTest(ProgramFrameworkTest):
         self.client.login(username=self.teachers[0].username, password='password')
         response = self.client.get('/teach/%s/extraform' % self.program.url)
         self.assertContains(response, 'id="cstform"', count=1)
+
+    def _assert_enter_submits_next(self, url):
+        """On the second page, the submit button comes before Prev Step, since
+        pressing Enter submits the form with its first submit button."""
+        content = self.client.get(url).content.decode()
+        prefix = re.search(r'name="([\w-]+)-current_step"', content).group(1)
+        name = self.form.field_set.get(label='Name')
+        response = self.client.post(url, {'%s-current_step' % prefix: '0', 'question_%d' % name.id: 'Ann'})
+        content = response.content.decode()
+        self.assertIn('Step 2 of 2', content)
+        form = content[content.index('class="form-stacked"'):]
+        self.assertLess(form.index('type="submit"'), form.index('Prev Step'))
+
+    def test_standalone_form_enter_submits_next(self):
+        self.client.login(username=self.teachers[0].username, password='password')
+        self._assert_enter_submits_next('/customforms/view/%s/' % self.form.id)
+
+    def test_teacher_module_form_enter_submits_next(self):
+        self.client.login(username=self.teachers[0].username, password='password')
+        self._assert_enter_submits_next('/teach/%s/extraform' % self.program.url)
