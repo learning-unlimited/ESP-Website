@@ -21,6 +21,18 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Form Field Selectors
+====================
+
+The tag settings that choose which questions to drop from the profile forms and
+the teacher class registration form (``teacher_profile_hide_fields``,
+``student_profile_hide_fields``, ``volunteer_profile_hide_fields``,
+``educator_profile_hide_fields``, ``guardian_profile_hide_fields`` and
+``teacherreg_hide_fields``) are now two-column selectors: fields start in an
+"Available" column and the ones you move into the "Chosen" column are the ones
+hidden from the form. The settings themselves are unchanged, so any values you
+have set already carry over and keep working.
+
 Bug Fixes
 =========
 
