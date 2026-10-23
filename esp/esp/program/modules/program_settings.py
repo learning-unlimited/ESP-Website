@@ -52,7 +52,6 @@ from esp.users.models import ESPUser
 # module.  They still have a little to do with modules -- they're autocreated
 # when the corresponding program modules get added to a program (see
 # esp.program.models.maybe_create_module_ext), but that's about it.
-# TODO(benkraft): rename this to "program settings" or something.
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
     #   Allow multiple receipts per program.  Which one is used depends on the action.
