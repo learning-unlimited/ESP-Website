@@ -1,118 +1,111 @@
-#!/usr/bin/env python
-"""Cron entry-point for outgoing ESP mail."""
-
-from __future__ import absolute_import
-
-import io
-import logging
+import errno
+import importlib.util
 import os
-import sys
 import tempfile
+import unittest
+from unittest import mock
 
-logger = logging.getLogger(__name__)
+
+CRON_SCRIPT = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "..",
+        "dbmail_cron.py",
+    )
+)
+
+SPEC = importlib.util.spec_from_file_location(
+    "esp_dbmail_cron_entrypoint",
+    CRON_SCRIPT,
+)
+cron = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(cron)
 
 
-def setup_environment():
-    """Configure the project environment before importing Django."""
-    esp = os.path.dirname(os.path.abspath(__file__))
-    project = os.path.dirname(esp)
+class TestDbmailCron(unittest.TestCase):
+    def setUp(self):
+        self.lock_handle = mock.MagicMock()
+        self.lock_handle.__enter__.return_value = self.lock_handle
+        self.db = mock.MagicMock()
 
-    if os.environ.get("VIRTUAL_ENV") is None:
-        activate_this = os.path.join(
-            project, "env", "bin", "activate_this.py"
+        self.patches = [
+            mock.patch.object(cron, "setup_environment"),
+            mock.patch("django.setup"),
+            mock.patch("django.db.connections.close_all"),
+            mock.patch("fcntl.lockf"),
+            mock.patch("io.open", return_value=self.lock_handle),
+            mock.patch("tempfile.gettempdir", return_value="/tmp"),
+        ]
+
+        self.mocks = [patcher.start() for patcher in self.patches]
+        self.addCleanup(self._stop_patches)
+
+        self.setup_environment = self.mocks[0]
+        self.django_setup = self.mocks[1]
+        self.close_connections = self.mocks[2]
+        self.lockf = self.mocks[3]
+        self.open_file = self.mocks[4]
+        self.get_tempdir = self.mocks[5]
+
+        self.process_messages = mock.patch(
+            "esp.dbmail.cronmail.process_messages"
         )
-        if os.path.exists(activate_this):
-            with io.open(activate_this, "rb") as activation_file:
-                code = compile(
-                    activation_file.read(), activate_this, "exec"
-                )
-            exec(code, {"__file__": activate_this})
-
-    if project not in sys.path:
-        sys.path.insert(0, project)
-
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
-
-
-def main():
-    """Run the outgoing mail cron job."""
-    lock_file = None
-    lock_acquired = False
-    fcntl = None
-    db = None
-
-    try:
-        setup_environment()
-
-        import django
-        from django import db as django_db
-
-        db = django_db
-        django.setup()
-
-        # Import application code after Django initialization.
-        from esp.dbmail.cronmail import (
-            process_messages,
-            send_email_requests,
+        self.send_email_requests = mock.patch(
+            "esp.dbmail.cronmail.send_email_requests"
         )
 
-        import fcntl as fcntl_module
+    def _stop_patches(self):
+        for patcher in reversed(self.patches):
+            patcher.stop()
 
-        fcntl = fcntl_module
+    def test_lock_acquired_and_mail_functions_run(self):
+        with self.process_messages as process, \
+                self.send_email_requests as send:
+            result = cron.main()
 
-        lock_path = os.path.join(
-            tempfile.gettempdir(), "dbmail_cron.lock"
+        self.assertEqual(result, 0)
+        process.assert_called_once_with()
+        send.assert_called_once_with()
+        self.lock_handle.close.assert_called_once_with()
+        self.close_connections.assert_called_once_with()
+
+    def test_lock_contention_exits_cleanly_and_closes_handle(self):
+        self.lockf.side_effect = OSError(errno.EAGAIN, "Lock unavailable")
+
+        with self.process_messages as process, \
+                self.send_email_requests as send:
+            result = cron.main()
+
+        self.assertEqual(result, 0)
+        process.assert_not_called()
+        send.assert_not_called()
+        self.lock_handle.close.assert_called_once_with()
+        self.close_connections.assert_called_once_with()
+
+    def test_unexpected_lock_error_returns_failure(self):
+        self.lockf.side_effect = OSError(errno.EIO, "Unexpected lock error")
+
+        result = cron.main()
+
+        self.assertEqual(result, 1)
+        self.lock_handle.close.assert_called_once_with()
+        self.close_connections.assert_called_once_with()
+
+    def test_processing_error_still_releases_lock_and_closes_handle(self):
+        with self.process_messages as process:
+            process.side_effect = RuntimeError("Processing failed")
+
+            result = cron.main()
+
+        self.assertEqual(result, 1)
+        self.lockf.assert_any_call(
+            self.lock_handle,
+            cron.fcntl.LOCK_UN,
         )
-        lock_file = io.open(lock_path, "w")
-
-        try:
-            fcntl.lockf(
-                lock_file,
-                fcntl.LOCK_EX | fcntl.LOCK_NB,
-            )
-            lock_acquired = True
-        except BlockingIOError:
-            logger.info(
-                "dbmail_cron: exiting because another instance "
-                "has the lock."
-            )
-            return 0
-
-        logger.info("dbmail_cron: starting process_messages()")
-        process_messages()
-
-        logger.info("dbmail_cron: starting send_email_requests()")
-        send_email_requests()
-
-        logger.info("dbmail_cron: completed successfully")
-        return 0
-
-    except Exception:
-        # logger.exception logs at ERROR level and includes a traceback.
-        logger.exception("dbmail_cron: fatal error!")
-        return 1
-
-    finally:
-        if lock_file is not None:
-            try:
-                if lock_acquired and fcntl is not None:
-                    fcntl.lockf(lock_file, fcntl.LOCK_UN)
-            except Exception:
-                logger.exception("dbmail_cron: failed to release lock")
-            finally:
-                try:
-                    lock_file.close()
-                except Exception:
-                    logger.exception("dbmail_cron: failed to close lock file")
-
-        if db is not None:
-            try:
-                db.connections.close_all()
-            except Exception:
-                logger.exception(
-                    "dbmail_cron: failed to close database connections"
-                )
+        self.lock_handle.close.assert_called_once_with()
+        self.close_connections.assert_called_once_with()
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    unittest.main()
