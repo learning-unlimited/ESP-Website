@@ -21,6 +21,11 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
+Declining Financial Aid
+=======================
+
+The financial aid application now has an "I don't need financial aid" button. Students who click it complete the financial aid step without submitting an application, and no financial aid email is sent for them. This means the Financial Aid Application module can now be made a required step without every student having to apply. Students who change their mind can still apply later.
+
 Form Field Selectors
 ====================
 
