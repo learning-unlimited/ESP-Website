@@ -134,10 +134,14 @@ $j(document).ready(function() {
         if (!affectedIds || !affectedIds.length) {
             undoStack = [];
             redoStack = [];
+            ownVersions = {};
             return;
         }
         var affected = {};
-        affectedIds.forEach(function(id) { affected[id] = true; });
+        affectedIds.forEach(function(id) {
+            affected[id] = true;
+            delete ownVersions[id];
+        });
         function involvesAffected(command) {
             return commandModuleIds(command).some(function(id) { return affected[id]; });
         }
@@ -160,6 +164,27 @@ $j(document).ready(function() {
 
     function historyVersion(state) {
         return ownVersions.hasOwnProperty(state.id) ? ownVersions[state.id] : state.version;
+    }
+
+    // A reload that shows a module past this admin's last write means someone
+    // else changed it, so its older history no longer chains onto the
+    // database. Drop that history before a later own write advances
+    // ownVersions and lets an old undo overwrite the other change. History for
+    // a module no longer on the timeline is dropped too, so undo cannot edit
+    // a removed module. A lower version only means the response predates one
+    // of our own writes, which is not a conflict.
+    function dropHistoryChangedElsewhere(modules) {
+        var loaded = {};
+        modules.forEach(function(mod) { loaded[mod.id] = mod.version; });
+        var changedIds = Object.keys(ownVersions).filter(function(id) {
+            return !loaded.hasOwnProperty(id) || loaded[id] > ownVersions[id];
+        }).map(Number);
+        if (!changedIds.length) return;
+        var historySize = undoStack.length + redoStack.length;
+        purgeHistoryFor(changedIds);
+        if (undoStack.length + redoStack.length < historySize) {
+            showToast('Some undo history was cleared because those modules were changed elsewhere or removed.', 'error');
+        }
     }
 
     function applyModuleResponse(response) {
@@ -311,6 +336,7 @@ $j(document).ready(function() {
                 if (response.modules) {
                     allModules.learn = response.modules.learn || [];
                     allModules.teach = response.modules.teach || [];
+                    dropHistoryChangedElsewhere(allModules.learn.concat(allModules.teach));
                     renderModuleViews();
                     updateHistoryControls();
                     if (lastFocusedModuleId) {
