@@ -26,7 +26,7 @@ describe("MessagePanel", function () {
             mp.addMessage("new success", "success");
             expect($j("body .scheduler-toast").length).toEqual(1);
             expect($j("body .scheduler-toast").text()).toEqual("new success");
-            expect($j("body .scheduler-toast").hasClass("scheduler-toast-success")).toBeTrue();
+            expect($j("body .scheduler-toast").hasClass("scheduler-toast-success")).toBe(true);
             expect(mp.el[0].innerHTML).toEqual("");
         });
 
@@ -34,7 +34,7 @@ describe("MessagePanel", function () {
             mp.addMessage("Error: legacy error");
             expect($j("body .scheduler-toast").length).toEqual(1);
             expect($j("body .scheduler-toast").text()).toEqual("Error: legacy error");
-            expect($j("body .scheduler-toast").hasClass("scheduler-toast-error")).toBeTrue();
+            expect($j("body .scheduler-toast").hasClass("scheduler-toast-error")).toBe(true);
         });
 
         it("should not add a new text message", function () {
@@ -46,7 +46,7 @@ describe("MessagePanel", function () {
     describe("hide", function () {
         it("should add the ui-helper-hidden class", function () {
             mp.hide();
-            expect(mp.el.hasClass("ui-helper-hidden")).toBeTrue();
+            expect(mp.el.hasClass("ui-helper-hidden")).toBe(true);
         });
     });
 
@@ -54,7 +54,7 @@ describe("MessagePanel", function () {
         it("should remove the ui-helper-hidden class", function () {
             mp.hide();
             mp.show();
-            expect(mp.el.hasClass("ui-helper-hidden")).toBeFalse();
+            expect(mp.el.hasClass("ui-helper-hidden")).toBe(false);
         });
     });
 

@@ -352,6 +352,35 @@ Firefox installed; Selenium Manager (bundled with Selenium) finds or downloads
 a matching geckodriver. The Docker image does not include Firefox, so run
 these from an environment that has it.
 
+JavaScript (AJAX Scheduler) Tests
+---------------------------------
+
+The AJAX scheduler's scripts (``esp/public/media/scripts/ajaxschedulingmodule/ESP/``)
+have unit tests in the ``spec/`` directory next to them. They run with Jest in
+a simulated browser (jsdom) rather than in Docker, and need Node.js 18.14 or
+later. From the repository root::
+
+  npm ci
+  npm test
+
+To run a single file, pass part of its name::
+
+  npm test -- SectionsSpec
+
+``npm run test:coverage`` also prints a coverage table and writes an HTML
+report to ``coverage/``. CI runs ``npm test`` on every pull request; this
+coverage is not uploaded to Codecov.
+
+The tests load the scheduler scripts unmodified, the same way
+``ajax_scheduling.html`` does. ``spec/support/setup.js`` provides the
+libraries and template variables the page would, then loads the scripts in
+template order, and ``spec/support/exposeGlobals.js`` makes each script's
+top-level functions global, as they are in the browser. If you add a script to
+the template, add it to ``setup.js`` too. Shared test data lives in
+``spec/TestFixtures.js``: ``generateFakeMatrix()`` (``spec/FakeMatrix.js``)
+builds a rendered matrix from it, and ``FakeApiClient`` (``spec/FakeApiClient.js``)
+stands in for the server.
+
 Code Coverage
 -------------
 

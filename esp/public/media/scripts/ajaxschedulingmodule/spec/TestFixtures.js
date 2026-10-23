@@ -3,18 +3,18 @@
  *
  * Legend:
  *  xxxxx: disabled cell
- *  top row: timeslot ids (num_students)
- *  left column: room ids
+ *  top row: timeslot ids
+ *  left column: room ids (num_students)
  *  ||: boundary between days
- *  numbers in cells: IDs of sections
+ *  codes in cells: emailcodes of sections
  *
  *             |  3  |  5  ||  7  |  11  |  13  |
  * ----------------------------------------------
- * room-1 (30) |S11s1|     ||     |xxxxxx|xxxxxx|
+ * 101 (23)    |S11s1|     ||     |xxxxxx|xxxxxx|
  * ----------------------------------------------
- * room-2 (10) |     |     ||xxxxx|     A22     |
+ * 102 (7)     |     |     ||xxxxx|     A22     |
  * ----------------------------------------------
- * room-3 (100)|     |xxxxx||xxxxx|      |      |
+ * 103 (7)     |     |xxxxx||xxxxx|      |      |
  * ----------------------------------------------
  *
  * Classes:
@@ -24,8 +24,8 @@
  * - S11s2   1        3, 5               1, 2
  * - A22s1   2        11, 13             4
  * - S33s1   2        3, 5, 7, 11        1
- * - A44s1   1        7, 11, 13          3
- * - M55S1   1        7, 11              1, 3
+ * - A44s1   2        7, 11, 13          3
+ * - M55s1   2        7, 11              1, 3
  */
 
 function teacher_fixture() {
@@ -37,6 +37,7 @@ function teacher_fixture() {
             username: "aphacker",
             availability: [3, 5, 7, 11],
             sections: [1, 2, 4, 6],
+            is_admin: false,
         },
         2: {
             id: 2,
@@ -45,6 +46,7 @@ function teacher_fixture() {
             username: "bitdiddle",
             availability: [3, 5],
             sections: [1, 2],
+            is_admin: false,
         },
         3: {
             id: 3,
@@ -53,6 +55,7 @@ function teacher_fixture() {
             username: "esp",
             availability: [7, 11, 13],
             sections: [5, 6],
+            is_admin: false,
         },
         4: {
             id: 4,
@@ -61,6 +64,7 @@ function teacher_fixture() {
             username: "tbeaver",
             availability: [11, 13],
             sections: [3],
+            is_admin: false,
         },
     };
 };
@@ -73,7 +77,6 @@ function time_fixture() {
             start:  [2010, 4, 18, 10, 5, 0],
             end:  [2010, 4, 18, 10, 55, 0],
             id: 7,
-            order: 3,
         },
         5: {
             label:  "second timeslot",
@@ -81,7 +84,6 @@ function time_fixture() {
             start:  [2010, 4, 17, 11, 5, 0],
             end:  [2010, 4, 17, 11, 55, 0],
             id: 5,
-            order: 2,
         },
         3: {
             label:  "first timeslot",
@@ -89,7 +91,6 @@ function time_fixture() {
             start:  [2010, 4, 17, 10, 5, 0],
             end:  [2010, 4, 17, 10, 55, 0],
             id: 3,
-            order: 1,
         },
         11: {
             label:  "fourth timeslot",
@@ -97,7 +98,6 @@ function time_fixture() {
             start:  [2010, 4, 18, 11, 5, 0],
             end:  [2010, 4, 18, 11, 55, 0],
             id: 11,
-            order: 4,
         },
         13: {
             label:  "fifth timeslot",
@@ -105,34 +105,47 @@ function time_fixture() {
             start:  [2010, 4, 18, 12, 5, 0],
             end:  [2010, 4, 18, 12, 55, 0],
             id: 13,
-            order: 5,
         },
     };
 };
 
 function room_fixture() {
     return {
-        "room-1": {
+        101: {
             availability: [3, 5, 7],
             num_students: 23,
-            id: "room-1",
-            text: "room-1",
-            uid: "room-1",
+            id: 101,
+            uid: 101,
+            text: "Room 101",
+            associated_resources: [],
+            resource_lines: [],
         },
-        "room-2": {
+        102: {
             availability: [3, 5, 11, 13],
             num_students: 7,
-            id: "room-2",
-            text: "room-2",
-            uid: "room-2",
+            id: 102,
+            uid: 102,
+            text: "Room 102",
+            associated_resources: [],
+            resource_lines: [],
         },
-        "room-3": {
+        103: {
             availability: [3, 11, 13],
             num_students: 7,
-            id: "room-3",
-            text: "room-3",
-            uid: "room-3",
+            id: 103,
+            uid: 103,
+            text: "Room 103",
+            associated_resources: [],
+            resource_lines: [],
         },
+    };
+};
+
+function category_fixture() {
+    return {
+        1: {id: 1, name: "Science", symbol: "S"},
+        2: {id: 2, name: "Arts", symbol: "A"},
+        3: {id: 3, name: "Math", symbol: "M"},
     };
 };
 
@@ -145,6 +158,7 @@ function section_1() {
         index: 1,
         title: "Fascinating Science Phenomena",
         category_id: 1,
+        class_style: "",
         class_size_max: 150,
         length: .83,
         grade_min: 9,
@@ -152,7 +166,12 @@ function section_1() {
         grade_max: 12,
         id: 1,
         teachers: [1, 2],
-        resource_requests: {1: []}
+        moderators: [],
+        resource_requests: {1: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -165,6 +184,7 @@ function section_1b() {
         index: 1,
         title: "Fascinating Science Phenomena",
         category_id: 1,
+        class_style: "",
         class_size_max: 150,
         length: .83,
         grade_min: 9,
@@ -172,7 +192,12 @@ function section_1b() {
         grade_max: 12,
         id: 2,
         teachers: [1, 2],
-        resource_requests: {2: []}
+        moderators: [],
+        resource_requests: {2: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -185,6 +210,7 @@ function section_2() {
         index: 2,
         title: "Art History",
         category_id: 2,
+        class_style: "",
         class_size_max: 75,
         length: 1.83,
         grade_min: 10,
@@ -192,7 +218,12 @@ function section_2() {
         grade_max: 11,
         id: 3,
         teachers: [4],
-        resource_requests: {3: []}
+        moderators: [],
+        resource_requests: {3: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -205,6 +236,7 @@ function section_3() {
         index: 4,
         title: "Hands on Science",
         category_id: 1,
+        class_style: "",
         class_size_max: 3,
         length: 1.83,
         grade_min: 9,
@@ -212,7 +244,12 @@ function section_3() {
         grade_max: 10,
         id: 4,
         teachers: [1],
-        resource_requests: {4: []}
+        moderators: [],
+        resource_requests: {4: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -225,6 +262,7 @@ function section_4() {
         index: 5,
         title: "Drawing 101",
         category_id: 2,
+        class_style: "",
         class_size_max: 50,
         length: 1.83,
         grade_min: 9,
@@ -232,7 +270,12 @@ function section_4() {
         grade_max: 12,
         id: 5,
         teachers: [3],
-        resource_requests: {5: []}
+        moderators: [],
+        resource_requests: {5: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -245,6 +288,7 @@ function section_5() {
         index: 6,
         title: "Representation Theory",
         category_id: 3,
+        class_style: "",
         class_size_max: 25,
         length: 1.83,
         grade_min: 10,
@@ -252,7 +296,12 @@ function section_5() {
         grade_max: 12,
         id: 6,
         teachers: [1, 3],
-        resource_requests: {6: []}
+        moderators: [],
+        resource_requests: {6: []},
+        requested_room: "",
+        comments: "",
+        special_requests: "",
+        flags: "",
     };
 };
 
@@ -271,34 +320,49 @@ function section_fixture() {
 function schedule_assignment_fixture() {
     return {
         1: {
-            room_name: "room-1",
+            room_id: 101,
             id: 1,
             timeslots: [3]
         },
         2: {
-            room_name: null,
+            room_id: null,
             id: 2,
             timeslots: []
         },
         3: {
-            room_name: "room-2",
+            room_id: 102,
             id: 3,
             timeslots: [11, 13]
         },
         4: {
-            room_name: null,
+            room_id: null,
             id: 4,
             timeslots: []
         },
         5: {
-            room_name: null,
+            room_id: null,
             id: 5,
             timeslots: []
         },
         6: {
-            room_name: null,
+            room_id: null,
             id: 6,
             timeslots: []
         }
     };
+};
+
+module.exports = {
+    teacher_fixture,
+    time_fixture,
+    room_fixture,
+    category_fixture,
+    section_1,
+    section_1b,
+    section_2,
+    section_3,
+    section_4,
+    section_5,
+    section_fixture,
+    schedule_assignment_fixture,
 };

@@ -140,6 +140,8 @@ The full suite can be parallelized across CPU cores for faster runs::
 
 This is what CI uses. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
 
+The AJAX scheduler's JavaScript has its own unit tests, which run with Node.js instead of pytest. If you change the scheduler, run them from the repository root with ``npm ci`` followed by ``npm test``. See ``testing.rst`` for details.
+
 
 Test Suite Reference
 ~~~~~~~~~~~~~~~~~~~~

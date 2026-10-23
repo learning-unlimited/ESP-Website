@@ -143,15 +143,31 @@ jobs:
       env:
         CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+  js-test:
+    name: Test (JavaScript)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+    - name: Set up Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+      with:
+        node-version: '22'
+        cache: npm
+    - name: Install Dependencies
+      run: npm ci
+    - name: Run Tests
+      run: npm test
+
   tests-complete:
     # One stable status check to require in branch protection.
     name: Tests Complete
     runs-on: ubuntu-24.04
-    needs: test
+    needs: [test, js-test]
     if: always()
     steps:
-    - name: Check shard results
-      if: needs.test.result != 'success'
+    - name: Check test results
+      if: needs.test.result != 'success' || needs.js-test.result != 'success'
       run: |
-        echo "Test shards did not all succeed (result: ${{ needs.test.result }})"
+        echo "Tests did not all succeed (Python shards: ${{ needs.test.result }}, JavaScript: ${{ needs.js-test.result }})"
         exit 1

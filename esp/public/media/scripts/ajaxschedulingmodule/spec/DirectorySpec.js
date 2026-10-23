@@ -1,3 +1,6 @@
+const { generateFakeMatrix } = require("./FakeMatrix");
+const { schedule_assignment_fixture } = require("./TestFixtures");
+
 describe("Directory", function(){
     var d, m;
 
@@ -8,8 +11,8 @@ describe("Directory", function(){
     });
 
     it("should have a list of sections and an el", function(){
-        expect(d.sections).toBeObject();
-        expect(d.el[0]).toBeHtmlNode();
+        expect(d.sections).toBe(m.sections);
+        expect(d.el[0]).toBeInstanceOf(HTMLElement);
     });
 
     describe("render", function(){
@@ -18,18 +21,12 @@ describe("Directory", function(){
         });
 
         describe("when there are classes scheduled", function(){
-            beforeEach(function(){
-                d = new Directory(m.sections, $j("<div/>"), schedule_assignment_fixture(), m);
-                d.render();
-                })
-
             it("should not show them in the directory", function(){
                 expect(d.el.children().length).toEqual(1);
                 var table = d.el.children()[0];
                 expect(table.rows.length).toEqual(4);
-                expect(table.rows[0].innerHTML).toMatch("Fascinating Science Phenomena");
-                expect(table.rows[0].innerHTML).toMatch("manageclass/");
-                expect(table.rows[0].innerHTML).toMatch("editclass/");
+                expect(table.innerHTML).not.toMatch("S11s1");
+                expect(table.innerHTML).not.toMatch("A22s1");
             });
         });
 
@@ -39,19 +36,17 @@ describe("Directory", function(){
             expect(table.rows.length).toEqual(4);
             expect(table.rows[0].innerHTML).toMatch("Fascinating Science Phenomena");
             expect(table.rows[0].innerHTML).toMatch("S11s2");
+            expect(table.rows[0].innerHTML).toMatch("manageclass/");
+            expect(table.rows[0].innerHTML).toMatch("editclass/");
         });
 
-        it("should be able to render twice without duplicating content", function(){
-            runs(function(){
-                d.render();
-                d.render();
-            });
+        it("should be able to render twice without duplicating content", async function(){
+            d.render();
+            d.render();
             //since we delete the old nodes asynchronously
             //need to add some asynchrony here
-            waits(0);
-            runs(function(){
-                expect(d.el.children().length).toEqual(1);
-            });
+            await new Promise(function(resolve){ setTimeout(resolve, 0); });
+            expect(d.el.children().length).toEqual(1);
         });
     });
 });
@@ -62,19 +57,20 @@ describe("TableRow", function(){
     beforeEach(function(){
         m = generateFakeMatrix();
         d = new Directory(m.sections, $j("<div/>"), schedule_assignment_fixture(), m);
-        tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"), d);
+        tr = new TableRow({title: "my-title", emailcode: "M1234s1", parent_class: 1234, flags: ""}, $j("<tr/>"), d);
     })
 
     it("should have an el", function(){
-        expect(tr.el[0]).toBeHtmlNode();
+        expect(tr.el[0]).toBeInstanceOf(HTMLElement);
     });
 
     it("should have a section", function(){
-        expect(tr.section).toBeObject();
+        expect(tr.section.title).toEqual("my-title");
     });
 
     it("should have a cell", function(){
-        expect(tr.cell).toBeObject();
+        expect(tr.cell).toBeInstanceOf(Cell);
+        expect(tr.section.directoryCell).toBe(tr.cell);
     });
 
     describe("render", function(){
@@ -85,28 +81,14 @@ describe("TableRow", function(){
 
         it("should display the section email code", function(){
             tr.render();
-            expect(tr.el[0].innerHTML).toContain("my-emailcode");
+            expect(tr.el[0].innerHTML).toContain("M1234s1");
             });
 
-        it("has edit and manage links", function(){
+        it("has edit, manage, and class availability links", function(){
             tr.render();
-            expect(tr.el[0].innerHTML).toContain("editclass/");
-            expect(tr.el[0].innerHTML).toContain("manageclass/");
-        });
-    });
-
-    describe("hide", function(){
-        it("sets the display style to 'none'", function(){
-            tr.hide();
-            expect(tr.el[0].style.display).toEqual("none");
-        });
-    });
-
-    describe("unHide", function(){
-        it("unsets the display style from 'none'", function(){
-            tr.hide();
-            tr.unHide();
-            expect(tr.el[0].style.display).not.toEqual("none");
+            expect(tr.el[0].innerHTML).toContain("/manage/TestProgram/2026_Summer/editclass/1234");
+            expect(tr.el[0].innerHTML).toContain("/manage/TestProgram/2026_Summer/manageclass/1234");
+            expect(tr.el[0].innerHTML).toContain("/manage/TestProgram/2026_Summer/classavailability/1234");
         });
     });
 });

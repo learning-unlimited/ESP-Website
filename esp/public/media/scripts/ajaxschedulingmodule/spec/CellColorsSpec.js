@@ -1,3 +1,5 @@
+const { section_1, section_2 } = require("./TestFixtures");
+
 describe("CellColors", function(){
     var cc, section, section2;
 
@@ -10,16 +12,13 @@ describe("CellColors", function(){
     });
 
     describe("color", function(){
-        it("should return a valid color code", function(){
+        it("should return a valid rgb color", function(){
             var color = cc.color(section);
-            expect(color).toBeString();
-            expect(color).toBeSameLengthAs("#123456");
-            expect(color).toStartWith("#");
-            valid_characters = ["0", "1","2","3","4","5","6","7","8","9","A","B","C","D","E","F"];
-            characters = color.substr(1);
-            for (i in characters){
-                var c = characters[i];
-                expect(valid_characters.indexOf(c)).toBeGreaterThan(-1);
+            expect(Object.keys(color).sort()).toEqual(["b", "g", "r"]);
+            for (var channel in color){
+                expect(Number.isInteger(color[channel])).toBe(true);
+                expect(color[channel]).toBeGreaterThanOrEqual(0);
+                expect(color[channel]).toBeLessThanOrEqual(255);
             };
         });
 
@@ -27,6 +26,19 @@ describe("CellColors", function(){
             var color1 = cc.color(section);
             var color2 = cc.color(section2);
             expect(color1).not.toEqual(color2);
+        });
+    });
+
+    describe("hexToRGB", function(){
+        it("returns the correct color", function(){
+            expect(cc.hexToRGB("#55ff33")).toEqual({r: 85, g: 255, b: 51});
+        });
+    });
+
+    describe("textColor", function(){
+        it("returns white text on dark backgrounds and black text on light ones", function(){
+            expect(cc.textColor({r: 0, g: 0, b: 0})).toEqual("white");
+            expect(cc.textColor({r: 255, g: 255, b: 255})).toEqual("black");
         });
     });
 

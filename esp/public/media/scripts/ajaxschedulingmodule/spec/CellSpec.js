@@ -1,9 +1,16 @@
+const { generateFakeMatrix } = require("./FakeMatrix");
+
+// Normalize a CSS color the same way setting it with jQuery does
+function cssColor(value){
+    return $j("<div>").css("color", value)[0].style.color;
+}
+
 describe("Cell", function(){
     var c, section, section2;
 
     beforeEach(function(){
         var matrix = generateFakeMatrix();
-        c = new Cell($j("<td/>"), null, "1-115", 1, matrix);
+        c = new Cell($j("<td/>"), null, 101, 1, matrix);
         section = matrix.sections.getById(1);
         section.emailcode = 'S1111s1';
         section2 = matrix.sections.getById(3);
@@ -14,11 +21,11 @@ describe("Cell", function(){
 
     it("has an element with the matrix cell class", function(){
         expect(c.el).toBeDefined();
-        expect(c.el.hasClass("matrix-cell")).toBeTrue();
+        expect(c.el.hasClass("matrix-cell")).toBe(true);
     });
 
-    it("has a room attached as data on the el", function(){
-        expect(c.room_name).toEqual("1-115");
+    it("has a room", function(){
+        expect(c.room_id).toEqual(101);
     });
 
     it("has a timeslot", function(){
@@ -26,12 +33,12 @@ describe("Cell", function(){
     });
 
     it("attaches itself to its el", function(){
-        expect($j(c.el).data("cell")).toEqual(c);
+        expect($j(c.el).data("cell")).toBe(c);
     });
 
     describe("with a section", function(){
         it("has a section", function(){
-            spyOn(c, 'addSection');
+            jest.spyOn(c, 'addSection').mockImplementation(function(){});
             c.init(section);
             expect(c.addSection).toHaveBeenCalledWith(section);
         });
@@ -39,7 +46,7 @@ describe("Cell", function(){
 
     describe("without a section", function(){
         it("calls removeSection", function(){
-            spyOn(c, 'removeSection');
+            jest.spyOn(c, 'removeSection').mockImplementation(function(){});
             c.init(null);
             expect(c.removeSection).toHaveBeenCalled();
         });
@@ -50,7 +57,7 @@ describe("Cell", function(){
         it("adds the class selected-section", function() {
             c.addSection(section);
             c.select();
-            expect(c.el.hasClass("selected-section")).toBeTrue();
+            expect(c.el.hasClass("selected-section")).toBe(true);
 
         });
     });
@@ -60,13 +67,13 @@ describe("Cell", function(){
             c.addSection(section);
             c.select();
             c.unselect();
-            expect(c.el.hasClass("selected-section")).toBeFalse();
+            expect(c.el.hasClass("selected-section")).toBe(false);
         });
 
         it("does nothing if class was not already selected", function() {
             c.addSection(section);
             c.unselect();
-            expect(c.el.hasClass("selected-section")).toBeFalse();
+            expect(c.el.hasClass("selected-section")).toBe(false);
         });
 
     });
@@ -77,14 +84,15 @@ describe("Cell", function(){
             c.addSection(s);
             });
 
-        it("contains the emailcode, title, length, and max students", function(){
+        it("contains the emailcode, title, category, teachers, length, and max students", function(){
             var tooltip = c.tooltip();
             expect(tooltip).toContain("S1111s1");
             expect(tooltip).toContain("Ben Bitdiddle");
             expect(tooltip).toContain("Alyssa P. Hacker");
             expect(tooltip).toContain("Fascinating Science Phenomena");
+            expect(tooltip).toContain("Category</b>: Science");
             expect(tooltip).toContain("Class size max</b>: 150");
-            expect(tooltip).toContain("Length</b>: 1");
+            expect(tooltip).toContain("Length</b>:  50 minutes");
         });
     });
 
@@ -106,8 +114,8 @@ describe("Cell", function(){
 
         it("adds styling to the el", function(){
             c.addSection(section);
-            expect(c.el.hasClass("occupied-cell")).toBeTrue();
-            expect(c.el.hasClass("available-cell")).toBeFalse();
+            expect(c.el.hasClass("occupied-cell")).toBe(true);
+            expect(c.el.hasClass("available-cell")).toBe(false);
         });
 
         it("adds the section to the el data", function(){
@@ -139,8 +147,8 @@ describe("Cell", function(){
 
         it("changes the cell styling", function(){
             c.removeSection();
-            expect(c.el.hasClass("occupied-cell")).toBeFalse();
-            expect(c.el.hasClass("available-cell")).toBeTrue();
+            expect(c.el.hasClass("occupied-cell")).toBe(false);
+            expect(c.el.hasClass("available-cell")).toBe(true);
         });
     });
 
@@ -150,38 +158,38 @@ describe("Cell", function(){
             c.addGhostSection(section2);
             expect(c.el[0].innerHTML).toMatch(section2.emailcode);
             expect(c.el[0].innerHTML).not.toMatch(section.emailcode);
-            expect($j(c.el[0]).css('background-color')).toEqual('rgb(32, 32, 32)');
-            expect(c.el.hasClass("ghost-section")).toBeTrue();
+            expect(c.el[0].style.backgroundColor).toEqual(
+                cssColor(c.cellColors.RGBToString(c.cellColors.color(section2))));
+            expect(c.el.hasClass("ghost-section")).toBe(true);
         });
 
     });
 
     describe("removeGhostSection", function() {
-        var originalBackgroundColor;
         beforeEach(function() {
-            originalBackgroundColor = $j(c.el[0]).css('background-color');
             c.addSection(section);
             c.addGhostSection(section2);
         });
         it("removes the styling from the cell", function() {
             c.removeGhostSection();
             expect(c.el[0].innerHTML).not.toMatch(section2.emailcode);
-            expect(c.el.hasClass("ghost-section")).toBeFalse();
+            expect(c.el.hasClass("ghost-section")).toBe(false);
         });
 
         it("puts back the section previously scheduled if it exists", function() {
             c.removeGhostSection();
+            var color = c.cellColors.color(section);
             expect(c.el[0].innerHTML).toMatch(section.emailcode);
             expect(c.el[0].innerHTML).toMatch("</a>");
-            expect($j(c.el[0]).css('background-color')).toEqual('rgb(16, 16, 16)');
-            expect($j(c.el[0]).css('color')).toEqual('rgb(255, 255, 255)');
+            expect(c.el[0].style.backgroundColor).toEqual(cssColor(c.cellColors.RGBToString(color)));
+            expect(c.el[0].style.color).toEqual(cssColor(c.cellColors.textColor(color)));
         });
 
         it("returns the cell to its previous styling otherwise", function() {
-            c.removeSection(section);
+            c.removeSection();
             c.removeGhostSection();
             expect(c.el[0].innerHTML).toEqual("");
-            expect($j(c.el[0]).css('background-color')).toEqual(originalBackgroundColor);
+            expect(c.el[0].style.backgroundColor).toEqual("");
         });
     });
 

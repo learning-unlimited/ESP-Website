@@ -1,0 +1,18 @@
+{
+  "name": "esp-website",
+  "private": true,
+  "description": "JavaScript unit tests for the ESP website",
+  "license": "MIT",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage"
+  },
+  "devDependencies": {
+    "google-palette": "1.1.1",
+    "jest": "30.5.2",
+    "jest-environment-jsdom": "30.5.2",
+    "jquery": "3.6.0",
+    "jquery-migrate": "3.3.2",
+    "jquery-ui": "1.13.2"
+  }
+}

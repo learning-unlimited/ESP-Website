@@ -41,6 +41,10 @@ local_fabfile.py
 .espsettings
 
 
+# Node (JavaScript tests)
+node_modules/
+coverage/
+
 # Claude Code
 .claude/
 

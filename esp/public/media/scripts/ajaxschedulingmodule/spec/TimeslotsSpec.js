@@ -1,3 +1,5 @@
+const { section_1, section_2, time_fixture } = require("./TestFixtures");
+
 describe("Timeslots", function(){
     var t, times;
     var one_hour_section;
@@ -20,6 +22,17 @@ describe("Timeslots", function(){
         expect(t.get_by_order(1)).toEqual(times[5]);
     });
 
+    describe("helpers_add_timeslots_order", function(){
+        it("puts the timeslots in order", function() {
+            var original_timeslots = time_fixture();
+            var ordered_timeslots = t.helpers_add_timeslots_order(original_timeslots);
+            expect(original_timeslots[3].order).toEqual(0);
+            expect(original_timeslots[5].order).toEqual(1);
+            expect(ordered_timeslots[0].id).toEqual(3);
+            expect(ordered_timeslots[1].id).toEqual(5);
+        });
+    });
+
     describe("get_timeslots_to_schedule_section", function(){
         describe("a one hour class", function(){
             it("returns the timeslot passed", function(){
@@ -40,19 +53,35 @@ describe("Timeslots", function(){
         });
     });
 
-    describe("get_timeslot_length", function(){
-        it("returns 1 for a .83 hour timeslot", function(){
-            expect(t.get_hours_spanned(3, 3)).toEqual(1);
+    describe("are_timeslots_contiguous", function(){
+        it("accepts timeslots within contiguous_tolerance minutes of each other", function(){
+            expect(t.are_timeslots_contiguous([times[3], times[5]])).toBe(true);
+        });
+
+        it("rejects timeslots further apart than contiguous_tolerance minutes", function(){
+            times[5].start = [2010, 4, 17, 11, 30, 0];
+            t = new Timeslots(times);
+            expect(t.are_timeslots_contiguous([times[3], times[5]])).toBe(false);
+        });
+
+        it("rejects timeslots on different days", function(){
+            expect(t.are_timeslots_contiguous([times[5], times[7]])).toBe(false);
+        });
+    });
+
+    describe("get_hours_spanned", function(){
+        it("returns .83 for a 50 minute timeslot", function(){
+            expect(t.get_hours_spanned(3, 3)).toEqual(.83);
         });
 
         it("returns 1 for a 1 hour timeslot", function(){
-            times[3].length = 1;
+            times[3].end = [2010, 4, 17, 11, 5, 0];
             t = new Timeslots(times);
             expect(t.get_hours_spanned(3, 3)).toEqual(1);
         });
 
-        it("returns 2 for a 1.83 hour timeslot", function(){
-            expect(t.get_hours_spanned(3, 5)).toEqual(2);
+        it("returns 1.83 for two 50 minute timeslots", function(){
+            expect(t.get_hours_spanned(3, 5)).toEqual(1.83);
         });
     });
 });

@@ -1,26 +1,26 @@
+/**
+ * An ApiClient whose requests all succeed immediately, without a server.
+ */
 function FakeApiClient() {
-    this.schedule_section = function(a, b, c, callback){
-        callback();
-        return true;
+    this.get_change_log = function(index, callback, errorReporter){
+        callback({changelog: [], other: []});
     };
 
-    this.unschedule_section = function(a, callback){
+    this.set_comment = function(section_id, comment, locked, callback, errorReporter){
         callback();
-        return true;
     };
 
-    this.get_change_log = function(index, callback){
-        console.log("hi i'm here")
+    this.schedule_section = function(section_id, timeslot_ids, room_id, override, callback, errorReporter){
+        callback();
+    };
+
+    this.unschedule_section = function(section_id, callback, errorReporter){
+        callback();
+    };
+
+    this.swap_sections = function(assignments1, assignments2, override, callback, errorReporter){
         callback();
     };
 };
 
-function FakeFailingApiClient() {
-    this.schedule_section = function(a, b, c, callback){
-        return false;
-    };
-
-    this.unschedule_section = function(a, callback){
-        return false;
-    };
-};
+module.exports = { FakeApiClient };
