@@ -1527,6 +1527,60 @@ class HiddenTagRowTest(ProgramFrameworkTest):
             self.assertIn('d-none', attrs)
 
 
+class HideFieldsSelectorTest(ProgramFrameworkTest):
+    """
+    Tests the two-column selector for the *_hide_fields settings.
+
+    It is the admin's FilteredSelectMultiple, which only works if the page
+    serves the JS and CSS it expects, none of which the admin site is doing
+    for us out here.
+    """
+
+    PROFILE_TAGS = (
+        'teacher_profile_hide_fields', 'student_profile_hide_fields',
+        'volunteer_profile_hide_fields', 'educator_profile_hide_fields',
+        'guardian_profile_hide_fields',
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _page(self, url):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def test_hide_fields_tags_use_the_two_column_selector(self):
+        from django.contrib.admin.widgets import FilteredSelectMultiple
+        from esp.program.forms import TagSettingsForm
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        checks = [(TagSettingsForm(), self.PROFILE_TAGS),
+                  (ProgramTagSettingsForm(program=self.program), ('teacherreg_hide_fields',))]
+        for form, keys in checks:
+            for key in keys:
+                self.assertIsInstance(form.fields[key].widget, FilteredSelectMultiple, key)
+
+    def test_the_pages_serve_what_the_widget_needs(self):
+        """Without any one of these the selector silently stays a plain select."""
+        for url in ('/manage/tags/', '/manage/%s/tags/' % self.program.getUrlBase()):
+            content = self._page(url)
+            for asset in ('admin/js/SelectFilter2.js',   # from {{ form.media }}
+                          'admin/css/widgets.css',
+                          '/media/styles/admin_selector.css',
+                          '/jsi18n/'):                   # gettext() and interpolate()
+                self.assertIn(asset, content, '%s is missing from %s' % (asset, url))
+
+    def test_the_selector_is_rendered(self):
+        content = self._page('/manage/tags/')
+        for key in self.PROFILE_TAGS:
+            self.assertRegex(
+                content, r'<select[^>]*name="%s"[^>]*class="selectfilter"' % key)
+
+
 class VisibleIfTest(TestCase):
     """
     Tests the 'visible_if' tag entry, which leaves a setting off the page when
