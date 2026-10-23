@@ -271,6 +271,25 @@ button.sidetoolbar {
 	font-size: .7em;
 }
 
+.room.room-full-match {
+    background-color: #c6efce;
+}
+
+.room-match {
+    font-weight: normal;
+    font-size: .8em;
+    margin-left: 4px;
+}
+
+#filters2 label[for$="-weight"] {
+    margin-left: 1em;
+}
+
+.room-filter-help {
+    font-size: .8em;
+    margin-top: 0;
+}
+
 .ft_c {
     height: unset !important; /* allows us to hide rows properly */
 }

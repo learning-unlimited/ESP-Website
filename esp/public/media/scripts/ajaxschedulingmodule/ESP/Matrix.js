@@ -29,34 +29,43 @@ function Matrix(
     
     // Set up filtering
     this.filter = {
-        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), type: "number"},
-        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), type: "number"},
-        roomResource: {active: false, el: $j("input#room-filter-resource-text"), type: "string"},
-        roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
-        roomFitsSection: {active: false, el: $j("input#room-filter-fits-section"), type: "boolean"},
+        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), weightEl: $j("input#room-filter-capacity-min-weight"), type: "number"},
+        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), weightEl: $j("input#room-filter-capacity-max-weight"), type: "number"},
+        roomResource: {active: false, el: $j("input#room-filter-resource-text"), weightEl: $j("input#room-filter-resource-weight"), type: "string"},
+        roomName: {active: false, el: $j("input#room-filter-name-text"), weightEl: $j("input#room-filter-name-weight"), type: "string"},
+        roomFitsSection: {active: false, el: $j("input#room-filter-fits-section"), weightEl: $j("input#room-filter-fits-section-weight"), type: "boolean"},
     };
     // Rooms where the selected section has at least one valid placement (set by highlightTimeslots)
     this.placeableRoomIds = {};
-    this.filter.roomCapacityMin.valid = function(a) {
-        return a.num_students >= this.filter.roomCapacityMin.val;
+    // Rooms whose match score is below this percentage are hidden
+    this.matchThreshold = 100;
+
+    // Each filter's distance is 0 for a match and up to 1 for the worst mismatch (null if it doesn't apply)
+    this.filter.roomCapacityMin.distance = function(a) {
+        var min = this.filter.roomCapacityMin.val;
+        return a.num_students >= min ? 0 : (min - a.num_students) / min;
     }.bind(this);
-    this.filter.roomCapacityMax.valid = function(a) {
-        return a.num_students <= this.filter.roomCapacityMax.val;
+    this.filter.roomCapacityMax.distance = function(a) {
+        var max = this.filter.roomCapacityMax.val;
+        return a.num_students <= max ? 0 : (a.num_students - max) / Math.max(max, 1);
     }.bind(this);
-    this.filter.roomResource.valid = function(a) {
-        var result = false;
+    this.filter.roomResource.distance = function(a) {
+        var result = 1;
         $j.each(a.resource_lines, function(index, resource) {
             if((resource).toLowerCase().search(this.filter.roomResource.val)>-1) {
-                result = true;
+                result = 0;
             }
         }.bind(this));
         return result;
     }.bind(this);
-    this.filter.roomName.valid = function(a) {
-        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
+    this.filter.roomName.distance = function(a) {
+        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1 ? 0 : 1;
     }.bind(this);
-    this.filter.roomFitsSection.valid = function(a) {
-        return !this.sections.selectedSection || this.placeableRoomIds[a.id] === true;
+    this.filter.roomFitsSection.distance = function(a) {
+        if (!this.sections.selectedSection) {
+            return null;
+        }
+        return this.placeableRoomIds[a.id] === true ? 0 : 1;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -78,45 +87,101 @@ function Matrix(
             }
             $j("body").trigger("room-filters-changed");
         });
+        filterObject.weight = 1;
+        filterObject.weightEl.on("change", function() {
+            var weight = parseFloat(filterObject.weightEl.val());
+            filterObject.weight = isNaN(weight) ? 1 : Math.max(weight, 0);
+            $j("body").trigger("room-filters-changed");
+        });
     }.bind(this));
-    
+
+    var thresholdEl = $j("input#room-filter-threshold");
+    thresholdEl.on("input change", function() {
+        this.matchThreshold = parseInt(thresholdEl.val(), 10);
+        $j("#room-filter-threshold-value").text(this.matchThreshold + "%");
+        $j("body").trigger("room-filters-changed");
+    }.bind(this));
+
+    // Default room order: sort by building number
+    this.roomOrder = Object.keys(this.rooms).sort(function (room1, room2) {
+        return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
+            numeric: true,
+            sensitivity: 'base'
+        })
+    });
+
     /**
-     * Get the rooms satisfying the search criteria.
+     * Score how well a room matches the active filters: 1 minus the weighted mean of the
+     * squared filter distances, so 1 is a full match. Returns null if no filter applies.
+     */
+    this.roomMatch = function(room){
+        var penalty = 0;
+        var totalWeight = 0;
+        // score every active criterion in the room filter tab
+        $j.each(this.filter, function(filterName, filterObject) {
+            if (!filterObject.active || filterObject.weight <= 0) {
+                return;
+            }
+            var distance = filterObject.distance(room);
+            if (distance === null) {
+                return;
+            }
+            distance = Math.min(Math.max(distance, 0), 1);
+            penalty += filterObject.weight * distance * distance;
+            totalWeight += filterObject.weight;
+        });
+        return totalWeight > 0 ? 1 - penalty / totalWeight : null;
+    };
+
+    /**
+     * Get the rooms at or above the match threshold, best matches first, as {room, match} objects.
      */
     this.filteredRooms = function(){
         var returnedRooms = [];
-        $j.each(this.rooms, function(index, room) {
-            var roomValid;
-            // check every criterion in the room filter tab, short-circuiting if possible
-            roomValid = true;
-            for (var filterName in this.filter) {
-                if (this.filter.hasOwnProperty(filterName)) {
-                    var filterObject = this.filter[filterName];
-                    // this loops over properties in this.filter
-                    if (filterObject.active && !filterObject.valid(room)) {
-                        roomValid = false;
-                        break;
-                    }
-                }
-            }
-            if (roomValid) {
-                returnedRooms.push(room);
+        $j.each(this.roomOrder, function(index, room_id) {
+            var room = this.rooms[room_id];
+            var match = this.roomMatch(room);
+            if (match === null || match * 100 >= this.matchThreshold) {
+                returnedRooms.push({room: room, match: match});
             }
         }.bind(this));
+        // sort is stable, so equal matches keep the default room order
+        returnedRooms.sort(function(a, b) {
+            return b.match - a.match;
+        });
         return returnedRooms;
     };
-    
+
     this.updateRooms = function(){
-        var filtRooms = this.filteredRooms()
-        $j.each(this.rooms, function(index, room) {
-            // get rows to show or hide
-            var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filtRooms.includes(room)) {
+        var filtRooms = this.filteredRooms();
+        var matches = {};
+        $j.each(filtRooms, function(index, entry) {
+            matches[entry.room.id] = entry.match;
+        });
+        // shown rooms (best matches first), then hidden rooms in the default order
+        var orderedRooms = filtRooms.map(function(entry) {
+            return entry.room;
+        }).concat(this.roomOrder.map(function(room_id) {
+            return this.rooms[room_id];
+        }.bind(this)).filter(function(room) {
+            return !(room.id in matches);
+        }));
+        $j.each(orderedRooms, function(index, room) {
+            // get rows to show or hide, moving each to the end of its table to apply the order
+            var headers = $j(".room[data-id='" + room.id + "']");
+            var rows = headers.parent();
+            rows.each(function(i, row) {
+                row.parentNode.appendChild(row);
+            });
+            var match = matches[room.id];
+            if (match !== undefined) {
                 rows.css("display", "table-row");
             } else {
                 rows.css("display", "none");
             }
-        }.bind(this));
+            headers.toggleClass("room-full-match", match === 1);
+            headers.find(".room-match").text(match != null && match < 1 ? Math.floor(match * 100) + "%" : "");
+        });
     };
 
     /**
@@ -536,19 +601,13 @@ function Matrix(
         }.bind(this));
         //Room headers
         var rows = {}; //table rows by room name
-        var room_ids = Object.keys(this.rooms);
-        room_ids = room_ids.sort(function (room1, room2) {
-            // sort by building number
-            return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
-                numeric: true,
-                sensitivity: 'base'
-            })
-        });
+        var room_ids = this.roomOrder;
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td>")
                 .addClass('room')
                 .text(room.text + " [" + room['num_students'] + "]")
+                .append($j("<span>").addClass('room-match'))
                 .attr('data-id', id)
                 .css({"max-width": "140px", "min-width": "140px"});
             var row = $j("<tr></tr>");
@@ -589,6 +648,10 @@ function Matrix(
                     "Capacity: " + room.num_students + " students",
                     "Resources: " + ((room.resource_lines.length > 0) ? "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>" : "None"),
                 ];
+                var match = that.roomMatch(room);
+                if (match !== null) {
+                    tooltipParts.push("Filter match: " + Math.floor(match * 100) + "%");
+                }
                 return tooltipParts.join("</br>");
             },
             items: ".ft_c td, .occupied-cell",
