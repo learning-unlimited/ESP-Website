@@ -33,6 +33,11 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Scheduler Room Filter for the Selected Class
+============================================
+
+The Room Filters tab of the AJAX scheduler has a new "Only show rooms where the selected class fits" checkbox. While it is checked and a class is selected, the grid hides every room in which that class has no valid placement (i.e., no green square), on top of any other room filters you have set. The room the class is already scheduled in is always shown. Unselecting the class shows all rooms again. The checkbox is off by default, since hiding rooms also hides classes you may want to Ctrl/Cmd+click to swap with.
+
 Bug Fixes
 =========
 

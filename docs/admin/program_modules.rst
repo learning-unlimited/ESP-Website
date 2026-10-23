@@ -525,6 +525,7 @@ Instructions for using the scheduler:
 - When no class is selected, the pane in the upper right corner displays scheduling errors.
 - Hovering over a room cell or a class section gives you a tooltip with info about the classes.
 - The lower right pane is the directory. You can search using the search bar at the top and select how you want to search with the radio buttons. You can move to the filters tab of the directory and set bounds on different parameters such as capacity and length.
+- The room filters tab hides rooms from the grid by capacity, resource, or name. Check "Only show rooms where the selected class fits" to also hide rooms with no green square for the selected class (the room it is already scheduled in stays visible).
 - To set a comment on a class's scheduling, select it and click on "Set Comment" in the upper right pane. A dialog for entering a comment will appear.
 - To lock a class, follow the instructions to set a comment, and check the "Lock" box in the comment dialog. A red border will appear around it in the schedule or directory, and no one will be able to move it without unlocking it first. To unlock a class, select it and then click on "Edit Comment or Unlock". Any admin can lock or unlock any class.
 

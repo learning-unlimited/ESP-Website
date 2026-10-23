@@ -33,7 +33,10 @@ function Matrix(
         roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), type: "number"},
         roomResource: {active: false, el: $j("input#room-filter-resource-text"), type: "string"},
         roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
+        roomFitsSection: {active: false, el: $j("input#room-filter-fits-section"), type: "boolean"},
     };
+    // Rooms where the selected section has at least one valid placement (set by highlightTimeslots)
+    this.placeableRoomIds = {};
     this.filter.roomCapacityMin.valid = function(a) {
         return a.num_students >= this.filter.roomCapacityMin.val;
     }.bind(this);
@@ -51,6 +54,9 @@ function Matrix(
     }.bind(this);
     this.filter.roomName.valid = function(a) {
         return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
+    }.bind(this);
+    this.filter.roomFitsSection.valid = function(a) {
+        return !this.sections.selectedSection || this.placeableRoomIds[a.id] === true;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -111,6 +117,15 @@ function Matrix(
                 rows.css("display", "none");
             }
         }.bind(this));
+    };
+
+    /**
+     * Re-filter the rooms after the selected section changes, if the room filter depends on it.
+     */
+    this.refreshRoomsForSelection = function(){
+        if (this.filter.roomFitsSection.active) {
+            this.updateRooms();
+        }
     };
 
     this.sections = sections;
@@ -263,6 +278,12 @@ function Matrix(
         }
         
         if(section){
+            this.placeableRoomIds = {};
+            // Always keep the room the section is currently scheduled in
+            var assignment = this.sections.scheduleAssignments[section.id];
+            if(assignment && assignment.room_id) {
+                this.placeableRoomIds[assignment.room_id] = true;
+            }
             $j.each(available_timeslots, function(j, timeslot_id) {
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot_id);
@@ -271,6 +292,8 @@ function Matrix(
                         if(scheduleTimeslots == null || !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
                             cell.el.removeClass("teacher-available-cell");
                             cell.el.addClass("teacher-available-not-first-cell");
+                        } else {
+                            this.placeableRoomIds[room.id] = true;
                         }
                     }
                 }.bind(this));
@@ -278,6 +301,7 @@ function Matrix(
             for(var teacher of section.teacher_data) {
                 addClassToSections(_.difference(teacher.sections, [section.id]), "teacher-is-teaching-this-cell");
             }
+            this.refreshRoomsForSelection();
         }
     }
 
