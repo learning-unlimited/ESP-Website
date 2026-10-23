@@ -384,6 +384,19 @@ def ajax_qsd_preview(request):
     return HttpResponse(json.dumps(result))
 
 
+def ajax_qsd_can_edit(request):
+    """ Return the subset of the requested QSD URLs that the current user can edit.
+
+    QSD pages are publicly cached, so edit controls are rendered hidden for
+    everyone and revealed client-side based on this response. """
+    urls = list(dict.fromkeys(request.GET.getlist('url')))
+    editable = [url for url in urls if Permission.user_can_edit_qsd(request.user, url)]
+
+    response = JsonResponse({'editable': editable})
+    add_never_cache_headers(response)
+    return response
+
+
 def ajax_qsd_history(request):
     """ Return JSON list of versions for a QSD URL. """
     from reversion.models import Version
