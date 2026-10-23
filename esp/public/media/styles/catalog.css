@@ -39,6 +39,7 @@ div .class_teachers {
 
 div .class_content {
     padding: 8px;
+    display: flow-root;
 }
 
 .class_picture {

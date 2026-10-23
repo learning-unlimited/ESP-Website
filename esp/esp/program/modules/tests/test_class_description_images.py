@@ -1,11 +1,17 @@
 import io
 import json
+import shutil
+import tempfile
+
 from PIL import Image
-from django.test import Client
 from django.core.files.uploadedfile import SimpleUploadedFile
-from esp.program.tests import ProgramFrameworkTest
+from django.test import Client, override_settings
+
+from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
+from esp.program.templatetags.class_render import render_class_core
+from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 
 
@@ -31,18 +37,27 @@ class ClassDescriptionImagesTest(ProgramFrameworkTest):
 
     def setUp(self):
         super(ClassDescriptionImagesTest, self).setUp(**self.DEFAULT_SETTINGS)
+        # Keep uploaded test images out of the real media directory
+        media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media_root, ignore_errors=True)
+        media_override = override_settings(MEDIA_ROOT=media_root)
+        media_override.enable()
+        self.addCleanup(media_override.disable)
+
+        Tag.setTag('enable_class_description_images', self.program, 'True')
         self.client = Client()
         self.teacher = self.teachers[0]
         self.assertTrue(
             self.client.login(username=self.teacher.username, password='password'),
             "Couldn't log in as teacher %s" % self.teacher.username
         )
+        ClassSubject.objects.filter(parent_program=self.program, teachers=self.teacher).delete()
 
-    def _makeaclass_url(self):
-        return '{}{}'.format(self.program.get_teach_url(), 'makeaclass')
+    def _teach_url(self, extra):
+        return '{}{}'.format(self.program.get_teach_url(), extra)
 
-    def _valid_form_data(self):
-        return {
+    def _form_data(self, **extra):
+        data = {
             'title': 'Test Class',
             'category': self.categories[0].id,
             'class_info': 'A description.',
@@ -64,90 +79,108 @@ class ClassDescriptionImagesTest(ProgramFrameworkTest):
             'restype-INITIAL_FORMS': '0',
             'restype-MAX_NUM_FORMS': '1000',
         }
+        data.update(extra)
+        return data
 
-    def _make_image_file(self):
-        img = Image.new('RGB', (100, 100), color='red')
+    def _make_image_file(self, size=(800, 600)):
         buf = io.BytesIO()
-        img.save(buf, format='JPEG')
-        buf.seek(0)
-        return SimpleUploadedFile('test.jpg', buf.read(), content_type='image/jpeg')
+        Image.new('RGB', size, color='red').save(buf, format='PNG')
+        return SimpleUploadedFile('test.png', buf.getvalue(), content_type='image/png')
 
-    def test_picture_field_not_present_when_tag_disabled(self):
+    def _teacher_classes(self):
+        return ClassSubject.objects.filter(parent_program=self.program, teachers=self.teacher)
+
+    def _create_class_with_picture(self):
+        self.client.post(self._teach_url('makeaclass'), self._form_data(picture=self._make_image_file()))
+        cls = self._teacher_classes().get()
+        self.assertTrue(cls.picture, "Class picture should be saved after upload")
+        return cls
+
+    def test_picture_field_absent_when_tag_disabled(self):
         Tag.setTag('enable_class_description_images', self.program, 'False')
         form = TeacherClassRegForm(self.program.classregmoduleinfo)
-        self.assertNotIn('picture', form.fields,
-                         "Picture field should not be present when tag is disabled")
+        self.assertNotIn('picture', form.fields)
 
-    def test_picture_field_present_when_tag_enabled(self):
-        Tag.setTag('enable_class_description_images', self.program, 'True')
-        form = TeacherClassRegForm(self.program.classregmoduleinfo)
-        self.assertIn('picture', form.fields,
-                      "Picture field should be present when tag is enabled")
+    def test_picture_field_follows_description_when_tag_enabled(self):
+        names = list(TeacherClassRegForm(self.program.classregmoduleinfo).fields)
+        self.assertEqual(names[names.index('class_info') + 1], 'picture')
 
-    def test_picture_field_upload(self):
-        Tag.setTag('enable_class_description_images', self.program, 'True')
-        data = self._valid_form_data()
-        image = self._make_image_file()
-        response = self.client.post(self._makeaclass_url(), data, {'picture': image})
-        cls = ClassSubject.objects.filter(parent_program=self.program, title='Test Class').first()
-        if cls:
-            self.assertTrue(cls.picture, "Class picture should be saved after upload")
-            self.assertTrue(cls.picture.name.endswith('.jpg'),
-                            "Uploaded picture should have .jpg extension")
+    def test_upload_saves_resized_picture(self):
+        cls = self._create_class_with_picture()
+        self.assertTrue(cls.picture.name.startswith('uploaded/class_pictures/'))
+        self.assertEqual((cls.picture_width, cls.picture_height), (500, 375))
 
-    def test_picture_field_skip_upload_when_tag_disabled(self):
+    def test_upload_ignored_when_tag_disabled(self):
         Tag.setTag('enable_class_description_images', self.program, 'False')
-        data = self._valid_form_data()
-        image = self._make_image_file()
-        response = self.client.post(self._makeaclass_url(), data, {'picture': image})
-        cls = ClassSubject.objects.filter(parent_program=self.program, title='Test Class').first()
-        if cls:
-            self.assertFalse(cls.picture,
-                             "Class picture should not be saved when tag is disabled")
+        self.client.post(self._teach_url('makeaclass'), self._form_data(picture=self._make_image_file()))
+        self.assertFalse(self._teacher_classes().get().picture)
 
-    def test_model_fields_exist(self):
-        cls = ClassSubject.objects.filter(parent_program=self.program).first()
-        self.assertTrue(hasattr(cls, 'picture'),
-                        "ClassSubject should have a picture field")
-        self.assertTrue(hasattr(cls, 'picture_height'),
-                        "ClassSubject should have a picture_height field")
-        self.assertTrue(hasattr(cls, 'picture_width'),
-                        "ClassSubject should have a picture_width field")
+    def test_invalid_upload_rejected(self):
+        not_an_image = SimpleUploadedFile('test.png', b'not an image', content_type='image/png')
+        response = self.client.post(self._teach_url('makeaclass'), self._form_data(picture=not_an_image))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self._teacher_classes().exists())
 
-    def test_json_api_picture_url_present_when_enabled(self):
-        Tag.setTag('enable_class_description_images', self.program, 'True')
-        cls = ClassSubject.objects.filter(parent_program=self.program).first()
-        url = self.program.get_learn_url() + 'catalog_json'
-        response = self.client.get(url)
-        data = json.loads(response.content)
-        for entry in data:
-            if 'picture_url' in entry:
-                self.assertIsNone(entry['picture_url'],
-                                  "picture_url should be present in JSON API when tag is enabled")
+    def test_edit_form_shows_current_picture(self):
+        cls = self._create_class_with_picture()
+        response = self.client.get(self._teach_url('editclass/%d' % cls.id))
+        self.assertContains(response, cls.picture.url)
 
-    def test_json_api_picture_url_absent_when_disabled(self):
+    def test_edit_without_upload_keeps_picture(self):
+        cls = self._create_class_with_picture()
+        old_name = cls.picture.name
+        self.client.post(self._teach_url('editclass/%d' % cls.id), self._form_data(title='Renamed Class'))
+        cls.refresh_from_db()
+        self.assertEqual(cls.title, 'Renamed Class')
+        self.assertEqual(cls.picture.name, old_name)
+
+    def test_edit_with_clear_removes_picture(self):
+        cls = self._create_class_with_picture()
+        self.client.post(self._teach_url('editclass/%d' % cls.id), self._form_data(**{'picture-clear': 'on'}))
+        cls.refresh_from_db()
+        self.assertFalse(cls.picture)
+        self.assertIsNone(cls.picture_width)
+
+    def test_draft_keeps_picture_through_submit(self):
+        self.client.post(self._teach_url('makeaclass'),
+                         self._form_data(picture=self._make_image_file(), save_action='draft'))
+        draft = self._teacher_classes().get()
+        self.assertEqual(draft.status, ClassStatus.DRAFT)
+        self.assertTrue(draft.picture, "Draft should keep the uploaded picture")
+
+        self.client.post(self._teach_url('makeaclass'), self._form_data(class_id=draft.id))
+        draft.refresh_from_db()
+        self.assertEqual(draft.status, ClassStatus.UNREVIEWED)
+        self.assertTrue(draft.picture, "Submitting a draft should keep its picture")
+
+    def test_draft_with_invalid_upload_saves_without_picture(self):
+        not_an_image = SimpleUploadedFile('test.png', b'not an image', content_type='image/png')
+        self.client.post(self._teach_url('makeaclass'),
+                         self._form_data(picture=not_an_image, save_action='draft'))
+        draft = self._teacher_classes().get()
+        self.assertEqual(draft.status, ClassStatus.DRAFT)
+        self.assertFalse(draft.picture)
+
+    def _catalog_json_classes(self):
+        response = self.client.get('/json/%s/class_subjects/catalog' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        return {c['id']: c for c in json.loads(response.content)['classes']}
+
+    def test_catalog_json_picture_url_when_enabled(self):
+        cls = self._create_class_with_picture()
+        classes = self._catalog_json_classes()
+        self.assertEqual(classes[cls.id]['picture_url'], cls.picture.url)
+        other = ClassSubject.objects.filter(parent_program=self.program).exclude(id=cls.id).first()
+        self.assertIsNone(classes[other.id]['picture_url'])
+
+    def test_catalog_json_omits_picture_url_when_disabled(self):
+        cls = self._create_class_with_picture()
         Tag.setTag('enable_class_description_images', self.program, 'False')
-        url = self.program.get_learn_url() + 'catalog_json'
-        response = self.client.get(url)
-        data = json.loads(response.content)
-        for entry in data:
-            self.assertNotIn('picture_url', entry,
-                             "picture_url should not be in JSON API when tag is disabled")
+        self.assertNotIn('picture_url', self._catalog_json_classes()[cls.id])
 
-    def test_render_core_includes_enable_images(self):
-        from esp.program.templatetags.class_render import render_class_core
+    def test_render_class_core_follows_tag(self):
         cls = ClassSubject.objects.filter(parent_program=self.program).first()
-        ctx = render_class_core(cls)
-        self.assertIn('enable_images', ctx,
-                      "render_class_core context should include enable_images")
-        self.assertFalse(ctx['enable_images'],
-                         "enable_images should default to False")
-
-    def test_render_helper_includes_enable_images(self):
-        from esp.program.templatetags.class_render import _render_class_helper
-        cls = ClassSubject.objects.filter(parent_program=self.program).first()
-        ctx = _render_class_helper(cls)
-        self.assertIn('enable_images', ctx,
-                      "_render_class_helper context should include enable_images")
-        self.assertFalse(ctx['enable_images'],
-                         "enable_images should default to False")
+        self.assertTrue(render_class_core(cls)['enable_images'])
+        Tag.setTag('enable_class_description_images', self.program, 'False')
+        self.assertFalse(render_class_core(cls)['enable_images'],
+                         "Changing the tag should invalidate the cached catalog context")

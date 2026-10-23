@@ -972,7 +972,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     # The edit URL points at the class we just deleted.
                     return self.goToCore(tl)
                 elif save_action == 'draft':
-                    newclass = ccc.save_class_draft(request.user, request.POST, extra, action)
+                    newclass = ccc.save_class_draft(request.user, request.POST, extra, action, request.FILES)
                     # For drafts, return to the form with a success message.
                     # Use request.path (no query string) to avoid accumulating
                     # duplicate draft_saved params on repeated saves.
@@ -986,9 +986,9 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass = ccc.get_draft_by_id(request.user, request.POST.get('class_id'))
                     if newclass is not None and newclass.status == ClassStatus.DRAFT:
                         if action in ('create', 'edit'):
-                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id)
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id, request.FILES)
                         elif action in ('createopenclass', 'editopenclass'):
-                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id, form_class=TeacherOpenClassRegForm)
+                            newclass = ccc.submit_draft(request.user, request.POST, newclass.id, request.FILES, form_class=TeacherOpenClassRegForm)
                     elif action == 'create':
                         newclass = ccc.makeaclass(request.user, request.POST, request.FILES)
                     elif action == 'createopenclass':
@@ -1056,6 +1056,8 @@ class TeacherClassRegModule(ProgramModuleObj):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.title
                 current_data['url']   = newclass.emailcode()
+                # Uploaded files can't be carried over when copying a class
+                current_data['picture'] = None if populateonly else newclass.picture
                 min_grade = newclass.grade_min
                 max_grade = newclass.grade_max
                 if Tag.getProgramTag('grade_ranges', prog):

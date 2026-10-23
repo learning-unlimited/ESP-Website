@@ -277,10 +277,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
         if Tag.getBooleanTag('enable_class_description_images', prog):
             self.fields['picture'] = ResizeImageField(label='Class Description Image',
-                                                       help_text='A picture to be displayed with your class description. Max 500x500.',
+                                                       help_text='A picture to be displayed with your class description. Images larger than 500x500 pixels will be shrunk to fit.',
                                                        required=False, size=(500, 500))
-        elif 'picture' in self.fields:
-            del self.fields['picture']
+            # Show the picture right after the description
+            field_order = [name for name in self.fields if name != 'picture']
+            field_order.insert(field_order.index('class_info') + 1, 'picture')
+            self.order_fields(field_order)
         # plus subprogram section wizard
 
     def clean(self):

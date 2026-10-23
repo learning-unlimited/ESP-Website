@@ -33,9 +33,17 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Class Description Images
+========================
+
+Teachers can now add a picture to their class description. Turn this on per program with the new ``enable_class_description_images`` tag setting (off by default). While it is on, the class registration form gains an optional "Class Description Image" upload right below the description; images larger than 500x500 pixels are shrunk to fit. When editing a class, the current picture is kept unless a new one is uploaded or "Clear" is ticked, and pictures are kept when a class is saved as a draft. Pictures are not carried over when copying a class from a previous program.
+
+The picture appears alongside the description in the class catalog, the two-phase student registration catalog, and the onsite webapp catalog. Turning the setting off hides all pictures again without deleting them.
+
 Bug Fixes
 =========
 
+- Uploading a teacher bio picture no longer fails with a server error. The image resizing code used a Pillow constant that was removed in Pillow 10.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 

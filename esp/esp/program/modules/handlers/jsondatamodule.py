@@ -693,7 +693,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'difficulty': cls.hardness_rating,
             'difficulty_description': Tag.getDifficultyDescription(cls.hardness_rating),
             'prereqs': cls.prereqs,
-            'picture_url': cls.picture.url if cls.picture and Tag.getBooleanTag('enable_class_description_images', cls.parent_program) else None,
             'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
@@ -705,7 +704,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     class_info.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_info.cached_function.depend_on_row(ClassSection,
         lambda sec: {'prog': sec.parent_class.parent_program})
-    class_info.cached_function.depend_on_model(Tag)
 
     @aux_call
     @no_auth

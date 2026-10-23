@@ -94,6 +94,15 @@
 #catalog-new .catalog-entry-body {
     padding: 0.5em;
     font-family: serif;
+    display: flow-root;
+}
+#catalog-new .class_picture {
+    float: right;
+    margin: 0.5em 0 0.5em 1em;
+    padding: 2px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    max-width: 40%;
 }
 #catalog-new .catalog-entry-description {
     white-space: pre-wrap;

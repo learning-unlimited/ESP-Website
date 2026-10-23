@@ -9,6 +9,7 @@ from esp.tagdict.models import Tag
 from esp.users.models import ESPUser
 
 from esp.dbmail.models import send_mail
+from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from collections import OrderedDict
 from django.db import transaction
@@ -83,9 +84,9 @@ class ClassCreationController(object):
         return cls
 
     @transaction.atomic
-    def submit_draft(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
+    def submit_draft(self, user, reg_data, clsid, files=None, form_class=TeacherClassRegForm):
         """Validate and promote an existing draft to a proper class submission."""
-        reg_form, resource_formset = self.get_forms(reg_data, form_class=form_class)
+        reg_form, resource_formset = self.get_forms(reg_data, files=files, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -151,7 +152,7 @@ class ClassCreationController(object):
         return draft_qs.first()
 
     @transaction.atomic
-    def save_class_draft(self, user, reg_data, clsid=None, action='create'):
+    def save_class_draft(self, user, reg_data, clsid=None, action='create', files=None):
         """
         Save a class as a draft without validation.
         Handles ALL fields from ClassSubject model systematically.
@@ -349,6 +350,15 @@ class ClassCreationController(object):
             except (ValueError, TypeError):
                 pass
 
+        # Uploaded files arrive separately from reg_data
+        picture_field = TeacherClassRegForm(self.crmi).fields.get('picture')
+        if picture_field is not None:
+            try:
+                picture = picture_field.clean(picture_field.widget.value_from_datadict(reg_data, files or {}, 'picture'))
+            except ValidationError:
+                picture = None  # Skip invalid images for drafts
+            self.set_class_picture(cls, picture)
+
         # Save custom form data
         cls.custom_form_data = custom_data
 
@@ -472,6 +482,11 @@ class ClassCreationController(object):
         if user in cls.get_teachers():
             cls.propose()
 
+    def set_class_picture(self, cls, picture):
+        """Apply a cleaned picture upload: None keeps the current picture, False clears it."""
+        if picture is not None:
+            cls.picture = picture or None
+
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
         custom_data = {}
@@ -479,6 +494,8 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
+            elif k == 'picture':
+                self.set_class_picture(cls, v)
             elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] != 'section_':
                 cls.__dict__[k] = v
 
