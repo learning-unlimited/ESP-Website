@@ -1,11 +1,27 @@
 from __future__ import absolute_import
+import pytest
+from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-def noActiveAjaxJQuery(selenium):
-    return selenium.execute_script("return $j.active == 0")
+@pytest.mark.selenium
+class SeleniumTestCase(StaticLiveServerTestCase):
+    """
+    Base class for browser tests, run in headless Firefox. These are skipped
+    unless pytest is run with --selenium; once requested, a browser that
+    cannot start fails the test instead of skipping it.
+    """
+
+    def setUp(self):
+        super().setUp()
+        options = webdriver.FirefoxOptions()
+        options.add_argument("--headless")
+        self.selenium = webdriver.Firefox(options=options)
+        self.addCleanup(self.selenium.quit)
+        self.selenium.implicitly_wait(10)
 
 
 def try_login(selenium, username, password):

@@ -10,7 +10,7 @@ from esp.program.controllers.autoscheduler.exceptions import SchedulingError
 import esp.program.controllers.autoscheduler.util as util
 from esp.program.models.class_ import \
         ClassSubject, ClassSection, ClassCategories
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType, ResourceRequest
 
@@ -172,7 +172,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         capacity = settings["room_capacity"]
         for i in range(settings["num_rooms"]):
             classrooms.append(data_model.AS_Classroom(
-                "Room {}".format(str(i)), capacity, timeslots[:-1]))
+                f"Room {str(i)}", capacity, timeslots[:-1]))
         restype_id = ResourceType.objects.get(
             name=extra_settings["extra_resource_type_name"]).id
         extra_resource_type = data_model.AS_ResourceType(
@@ -392,7 +392,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         section_obj.assign_meeting_times([timeslot])
         section_obj.assign_room(room)
         if lock:
-            module_ext.AJAXSectionDetail.objects.get_or_create(
+            program_settings.AJAXSectionDetail.objects.get_or_create(
                 program=self.program, cls_id=section_obj.id, comment="locked",
                 locked=True)
         return section_obj, timeslot, room
@@ -431,8 +431,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         try:
             db_interface.save(self.schedule)
         except SchedulingError:
-            self.fail("Schedule saving crashed with error: \n{}"
-                      .format(traceback.format_exc()))
+            self.fail(f"Schedule saving crashed with error: \n{traceback.format_exc()}")
         self.assertEqual(len(section_obj.get_meeting_times()), 1,
                          "Section should have been scheduled for 1 timeslot")
         self.assertEqual(section_obj.get_meeting_times()[0].id,
@@ -445,20 +444,18 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         try:
             db_interface.save(self.schedule)
         except SchedulingError:
-            self.fail("Schedule saving crashed with error: \n{}"
-                      .format(traceback.format_exc()))
+            self.fail(f"Schedule saving crashed with error: \n{traceback.format_exc()}")
         try:
             db_interface.save(self.schedule)
         except SchedulingError:
-            self.fail("Schedule second save crashed with error: \n{}"
-                      .format(traceback.format_exc()))
+            self.fail(f"Schedule second save crashed with error: \n{traceback.format_exc()}")
 
     def test_load_lunch(self):
         """Make sure that lunch classes cause lunch timeslots to be loaded,
         but that we can exclude lunch classes. Note that we are NOT testing
         that we can successfully load lunch classes if we wanted."""
         lunch, created = ClassCategories.objects.get_or_create(
-                category="Lunch", symbol="L")
+                category="Lunch", is_lunch=True, symbol="L")
         subj, created = ClassSubject.objects.get_or_create(
                 title="Lunch!", category=lunch, grade_min=7, grade_max=12,
                 parent_program=self.program, class_size_max=2000,
@@ -539,13 +536,12 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         try:
             db_interface.save(self.schedule)
         except SchedulingError:
-            self.fail("Schedule saving crashed with error: \n{}"
-                      .format(traceback.format_exc()))
+            self.fail(f"Schedule saving crashed with error: \n{traceback.format_exc()}")
         for r, so in zip(roomslots, section_objs):
             self.assertEqual(
                     len(so.get_meeting_times()), 1,
                     "Section should have been scheduled for 1 timeslot but "
-                    "was scheduled for {}".format(len(so.get_meeting_times())))
+                    f"was scheduled for {len(so.get_meeting_times())}")
             self.assertEqual(so.get_meeting_times()[0].id,
                              r.timeslot.id,
                              "Section was assigned to wrong timeslot")
@@ -558,13 +554,12 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         try:
             db_interface.save(self.schedule)
         except SchedulingError:
-            self.fail("Schedule saving crashed with error: \n{}"
-                      .format(traceback.format_exc()))
+            self.fail(f"Schedule saving crashed with error: \n{traceback.format_exc()}")
         for r, so in zip(reversed(roomslots), section_objs):
             self.assertEqual(
                     len(so.get_meeting_times()), 1,
                     "Section should have been scheduled for 1 timeslot but "
-                    "was scheduled for {}".format(len(so.get_meeting_times())))
+                    f"was scheduled for {len(so.get_meeting_times())}")
             self.assertEqual(so.get_meeting_times()[0].id,
                              r.timeslot.id,
                              "Section was assigned to wrong timeslot")
@@ -590,8 +585,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 self.assertEqual(
                         len(so.get_meeting_times()), 1,
                         "Section should have been scheduled for 1 timeslot "
-                        "but was scheduled for {}".format(
-                            len(so.get_meeting_times())))
+                        f"but was scheduled for {len(so.get_meeting_times())}")
                 self.assertEqual(so.get_meeting_times()[0].id,
                                  r.timeslot.id,
                                  "Section was assigned to wrong timeslot")

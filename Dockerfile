@@ -1,14 +1,80 @@
-FROM python:3.7-bullseye
+FROM ubuntu:24.04 AS builder
 
-# Prevent Python from writing .pyc files and enable unbuffered output
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+# Build-time environment variables.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
 
-# Skip manage.py's virtualenv activation hack
-ENV VIRTUAL_ENV=/usr
+# Set the working directory
+WORKDIR /app
 
-# Prevent interactive popups during apt-get install (e.g., tzdata)
-ENV DEBIAN_FRONTEND=noninteractive
+# Skip dpkg fsync calls during package installs to speed up builder apt operations
+# (safe in a throwaway builder layer; not propagated to the runtime image)
+RUN printf '%s\n' 'force-unsafe-io' > /etc/dpkg/dpkg.cfg.d/docker-unsafe-io
+
+# Install only build-time dependencies (compilers, -dev headers).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3.12 \
+    python3.12-dev \
+    python3.12-venv \
+    libpq-dev \
+    git \
+    curl \
+    ca-certificates \
+    gnupg \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    libmemcached-dev \
+    zlib1g-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js from nodesource, then LESS.
+# The repo is added with a fingerprint-pinned key; no remote script runs.
+RUN echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries \
+    && install -d -m 0755 /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /tmp/nodesource.asc \
+    && gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg /tmp/nodesource.asc \
+    && gpg --show-keys --with-colons /etc/apt/keyrings/nodesource.gpg \
+       | awk -F: '/^fpr:/{print $10; exit}' \
+       | grep -qx 6F71F525282841EEDAF851B42F59B5F99B1BE0B4 \
+    && rm /tmp/nodesource.asc \
+    && echo 'deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main' \
+       > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/*
+RUN npm install -g --prefix /usr less@3.13.1
+
+# Pre-install Bootstrap 3 / Bootswatch theme dependencies so the runtime
+# image contains node_modules without needing npm at runtime.
+COPY esp/public/media/theme_editor/package.json \
+     esp/public/media/theme_editor/package-lock.json \
+     /tmp/theme-npm/
+RUN cd /tmp/theme-npm && npm ci
+
+# Install Python dependencies into the venv.
+# Docker layer caching speeds up rebuilds
+# --prefer-binary favors prebuilt wheels over slow source builds
+COPY esp/requirements.txt /tmp/requirements.txt
+RUN python3.12 -m venv /opt/venv && \
+    python -m pip install --upgrade pip setuptools wheel && \
+    python -m pip install --prefer-binary --no-cache-dir -r /tmp/requirements.txt
+
+# Runtime stage - smaller final image
+FROM ubuntu:24.04 AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH"
+
+WORKDIR /app
 
 # Configure apt-get retries and timeouts for heavy LaTeX downloads
 RUN printf '%s\n' \
@@ -17,35 +83,51 @@ RUN printf '%s\n' \
     'Acquire::ftp::Timeout "120";' \
     'Acquire::Retries "3";' > /etc/apt/apt.conf.d/99custom
 
-# Set the working directory
-WORKDIR /app
-
-# Install system dependencies from packages_base.txt to avoid duplication.
+# Install runtime dependencies:
+#   - Slim runtime libraries (counterparts of builder's -dev packages).
+#   - Runtime tools from packages_base.txt (filtering out build-essential, git,
+#     postgresql, memcached, python3-pip, and -dev packages).
 COPY esp/packages_base.txt /tmp/packages_base.txt
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    $(cat /tmp/packages_base.txt | grep -v '^python' | grep -v '^#' | tr '\n' ' ') \
+    libpq5 \
+    postgresql-client \
+    libmemcached11t64 \
+    libcurl4t64 \
+    libssl3t64 \
+    libjpeg-turbo8 \
+    libfreetype6 \
+    zlib1g \
+    ca-certificates \
+    $(grep -v -E '^(#|$|build-essential|git|postgresql|memcached|python3-pip)' /tmp/packages_base.txt | grep -v -- '-dev$' | tr '\n' ' ') \
     && rm -rf /var/lib/apt/lists/*
 
-# Install LESS via npm (from packages_base_manual_install.sh)
-RUN npm install --prefix /usr less@3.13.1 -g
+# Copy Node.js and LESS from builder
+COPY --from=builder /usr/bin/node /usr/bin/node
+COPY --from=builder /usr/lib/node_modules /usr/lib/node_modules
+RUN ln -s /usr/lib/node_modules/less/bin/lessc /usr/local/bin/lessc
 
-# Copy requirements first for better Docker layer caching
-COPY esp/requirements.txt /app/esp/requirements.txt
+# Copy pre-installed theme npm dependencies from builder.
+# Also bake a second copy at /opt/theme_node_modules_baked so the entrypoint
+# can restore a stale named volume without needing npm at runtime.
+COPY --from=builder /tmp/theme-npm/node_modules \
+     /app/esp/public/media/theme_editor/node_modules
+COPY --from=builder /tmp/theme-npm/node_modules /opt/theme_node_modules_baked
+COPY --from=builder /tmp/theme-npm/package-lock.json /tmp/theme-pkg-lock.json
+RUN sha256sum /tmp/theme-pkg-lock.json | cut -d' ' -f1 \
+      > /opt/theme_node_modules_baked/.lock-hash && \
+    rm /tmp/theme-pkg-lock.json
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir -r /app/esp/requirements.txt
+# Copy the Python venv from builder
+COPY --from=builder /opt/venv /opt/venv
 
-# Copy the rest of the application code
-COPY . /app
-
-# Copy the entrypoint script and make it executable
+# Copy entrypoint script
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /app/docker-entrypoint.sh && \
     chmod +x /app/docker-entrypoint.sh
 
-# Expose the Django development server port
-EXPOSE 8000
+# Copy application code (will be overridden by volume mount in dev)
+COPY esp /app/esp
 
+EXPOSE 8000
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["python", "manage.py", "runserver_plus", "0.0.0.0:8000"]

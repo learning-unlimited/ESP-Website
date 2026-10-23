@@ -97,14 +97,14 @@ class TeacherCheckinModule(ProgramModuleObj):
             if not checked_in_already:
                 rt = RecordType.objects.get(name="teacher_checked_in")
                 Record.objects.create(user=teacher, event=rt, program=prog, time=when)
-                return '%s is checked in until %s.' % (teacher.name(), str(endtime))
+                return f'{teacher.name()} is checked in until {endtime}.'
             else:
-                return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
+                return f'{teacher.name()} has already been checked in until {endtime}.'
         else:
             if prog.hasModule("TeacherModeratorModule"):
-                return '%s is not a teacher or %s for %s.' % (teacher.name(), prog.getModeratorTitle().lower(), prog.niceName())
+                return f'{teacher.name()} is not a teacher or {prog.getModeratorTitle().lower()} for {prog.niceName()}.'
             else:
-                return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
+                return f'{teacher.name()} is not a teacher for {prog.niceName()}.'
 
 
     def undoCheckIn(self, teacher, prog, when=None):
@@ -113,10 +113,10 @@ class TeacherCheckinModule(ProgramModuleObj):
             when = datetime.now()
         records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True)
         if records:
-            records.delete()
+            Record.objects.filter(pk__in=records).delete()
             return '%s is no longer checked in.' % teacher.name()
         else:
-            return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
+            return f'{teacher.name()} was not checked in for {prog.niceName()}.'
 
     @main_call
     @needs_onsite
@@ -244,7 +244,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         #   return default
 
         # Only Postgres supports the following fancy database operation! See
-        # http://stackoverflow.com/a/20129229/3243497 .
+        # https://stackoverflow.com/a/20129229/3243497 .
 
         profiles = (RegistrationProfile.objects
                 .filter(user__in=users)
@@ -291,12 +291,16 @@ class TeacherCheckinModule(ProgramModuleObj):
         and is used to filter the set of checked-in Records, so that the view
         shows who is not checked in yet for the day.
 
-        Returns the 2-tuple (sections, arrived):
+        Returns the 3-tuple (sections, arrived, previously_checked_in):
             sections: A list of all sections starting at the given time or on
                       the given date which do not have all teachers checked in,
                       with those with no teachers checked in first.
             arrived:  A dict of id -> teacher for all teachers who have already
                       checked in.
+            previously_checked_in: A set of user ids for teachers who checked
+                      in on the previous program day (but have not yet checked
+                      in today).  Useful for prioritising which missing
+                      teachers to call first.
         """
         if when is None:
             when = datetime.now()
@@ -414,7 +418,36 @@ class TeacherCheckinModule(ProgramModuleObj):
             if section.all_arrived
         ]
 
-        return sections, arrived
+        # Find teachers who checked in on the previous program day but have
+        # not yet checked in today.  This helps admins prioritise which
+        # missing teachers to contact first — a teacher who was present
+        # yesterday likely just needs a quick reminder.
+        previously_checked_in = set()
+        check_date = when.date() if date is None else date
+        prog_dates = sorted(prog.dates())
+        if check_date in prog_dates:
+            idx = prog_dates.index(check_date)
+            if idx > 0:
+                prev_date = prog_dates[idx - 1]
+                prev_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=prev_date.year,
+                    time__month=prev_date.month,
+                    time__day=prev_date.day,
+                ).values_list('user_id', flat=True))
+                # Exclude teachers who have already checked in today.
+                today_ids = set(Record.objects.filter(
+                    program=prog,
+                    event__name='teacher_checked_in',
+                    time__year=check_date.year,
+                    time__month=check_date.month,
+                    time__day=check_date.day,
+                    time__lte=when,
+                ).values_list('user_id', flat=True))
+                previously_checked_in = prev_ids - today_ids
+
+        return sections, arrived, previously_checked_in
 
     def getMissingResources(self, prog, date=None, starttime=None, default_phone = '(missing contact info)'):
         """Return a list of class sections that have ended but have not returned their floating resources.
@@ -478,8 +511,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                               parameter for getMissingTeachers().
                               Should be given as the id number of the Event.
           'when' (optional):  See documentation for getMissingTeachers().
-                              getMissingTeachers(). Should be given in the
-                              format "%m/%d/%Y %H:%M".
+                              Should be given in the format "%m/%d/%Y %H:%M".
+                              If it is not given and 'date' (or 'start')
+                              refers to a day other than today, it defaults to
+                              23:59 on that day, so that check-in status is
+                              reported for the day being viewed.
           'default_phone' (optional): A string that should be used if there
                               is no valid phone number for a teacher.
         """
@@ -506,16 +542,23 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['default_phone'] = default_phone
         context['text_configured'] = GroupTextModule.is_configured()
         form = TeacherCheckinForm(request.GET)
+        when = None
         if form.is_valid():
             when = form.cleaned_data['when']
-            if when is not None:
-                context['when'] = when
-                context['url_when'] = request.GET['when']
-        else:
-            when = None
+        if when is not None:
+            #   User asked for a particular date/time. Propogate that through
+            #   the page for the "previous/next day" and "back" links.
+            context['when'] = when
+            context['url_when'] = when.strftime('%m/%d/%Y %H:%M')
+        elif date is not None and date != datetime.now().date():
+            #   We are looking at a day other than today, so check-in status
+            #   should be reported as of the end of that day rather than as of
+            #   right now.
+            when = datetime.combine(date, time(23, 59))
+            context['when'] = when
         show_flags = self.program.program_modules.filter(handler='ClassFlagModule').exists()
         context['date'] = date
-        context['sections'], context['arrived'] = self.getMissingTeachers(
+        context['sections'], context['arrived'], context['previously_checked_in'] = self.getMissingTeachers(
             prog, date, starttime, when, show_flags, default_phone)
         context['missing_resources'] = self.getMissingResources(prog, date, getattr(starttime, "start", None))
         if show_flags:

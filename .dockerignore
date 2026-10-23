@@ -1,19 +1,97 @@
+# Version control
 .git
 .github
+.gitignore
+.gitattributes
+
+# Vagrant
 .vagrant
-.venv
-env
+*.box
+Vagrantfile
+deploy/vagrant_boxes
+
+# Python cache and artifacts
 __pycache__
+**/__pycache__
 *.pyc
 *.pyo
-node_modules
+*.pyd
+.Python
+*.so
+*.egg
 *.egg-info
 dist
 build
-*.box
-deploy/vagrant_boxes
-docs
+.eggs
+*.whl
+.pytest_cache
+.coverage
+htmlcov
+.tox
 
-# Symlinks created by the entrypoint — Docker can't follow these during build
-esp/public/media/images
-esp/public/media/styles
+# Virtual environments
+.venv
+venv
+env
+ENV
+.virtualenv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation
+docs
+!README.md
+*.rst
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs
+
+# Environment files
+.env
+.env.*
+*.local
+
+# Docker files
+docker-compose.override.yml
+
+# Static/media (generated). Exclude only paths with no git-tracked contents.
+esp/public/media/uploaded/*
+esp/public/media/images/theme
+esp/public/media/scripts/theme
+esp/public/media/styles/theme_compiled_test*.css
+static
+staticfiles
+
+# Node
+**/node_modules
+**/npm-debug.log
+
+# Temporary
+tmp
+temp
+*.tmp
+
+# Deployment
+deploy/ci
+fabfile.py
+*.wsgi
+codecov.yml

@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
+from esp.program.modules.program_settings import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.program.modules.base import ProgramModuleObj
 
 class Admin_DBReceipt(admin.ModelAdmin):
@@ -69,4 +69,10 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     )
     list_filter = ('program', 'module')
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title', 'link_title')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('program', 'module')
+        return self.readonly_fields
+
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)

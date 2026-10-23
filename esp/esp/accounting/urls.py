@@ -38,8 +38,8 @@ from esp.accounting.views import summary, user_summary
 from esp.accounting.refund_views import refund, process_refund
 
 urlpatterns = [
-    re_path(r'^$', summary),
-    re_path(r'^user$', user_summary),
+    re_path(r'^$', summary, name='accounting_summary'),
+    re_path(r'^user$', user_summary, name='accounting_user_summary'),
     re_path(r'^refund/?$', refund, name='accounting_refund'),
     re_path(r'^refund/process/?$', process_refund, name='accounting_refund_process'),
 ]

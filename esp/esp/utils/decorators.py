@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -39,7 +38,7 @@ from argcache.function import get_containing_class
 from django.http import HttpResponse
 from django.db.models import Model
 
-from inspect import getargspec
+from inspect import signature
 from functools import wraps
 import json
 
@@ -63,12 +62,16 @@ class OptionalDecorator(object):
 
 enable_with_setting = OptionalDecorator
 
-def json_response(field_map={}):
+_FIELD_MAP_UNSET = object()
+
+def json_response(field_map=_FIELD_MAP_UNSET):
     """ Converts a serializable data structure into the appropriate HTTP response.
         Allows changing the field names using field_map, which might be complicated
         if related lookups were used.
     """
 
+    if field_map is _FIELD_MAP_UNSET:
+        field_map = {}
     # Here instead of at the top because of circular imports
     from esp.utils.web import render_to_response
 
@@ -123,7 +126,11 @@ class CachedModuleViewDecorator(object):
         containing_class = get_containing_class()
 
         def prepare_dec(func):
-            self.params, xx, xxx, defaults = getargspec(func)
+            self.params = [
+                p.name
+                for p in signature(func).parameters.values()
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)
+            ]
             self.cached_function = cache_function(func, containing_class=containing_class)
 
             def actual_func(self, request, tl, one, two, module, extra, prog):

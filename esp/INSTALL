@@ -148,8 +148,6 @@ d) Set up media files
 Link the provided generic images and stylesheets to the active folders:
 
 $ cd ./public/media
-$ ln -s default_images images
-$ ln -s default_styles styles
 
 
 4) Explore your site

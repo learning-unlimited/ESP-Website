@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from collections import defaultdict
 import logging
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ def send_email_requests():
     # .iterator() to prevent that.  Second, even when django doesn't load the
     # whole query into django objects in memory, psycopg2 still loads it all
     # internally:
-    # http://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
+    # https://thebuild.com/blog/2010/12/13/very-large-result-sets-in-django-using-postgresql/
     # So we do our own batching on top of that.
     batch_size = 1000
     for i in range(int(math.ceil(float(mailtxts.count()) / batch_size))):
@@ -141,16 +142,22 @@ def send_email_requests():
 
     #   Report any errors
     if errors:
-        recipients = [mailtxt.send_from]
+        errors_by_sender = defaultdict(list)
+        for err in errors:
+            errors_by_sender[err['email'].send_from].append(err)
 
-        if 'bounces' in settings.DEFAULT_EMAIL_ADDRESSES:
-            recipients.append(settings.DEFAULT_EMAIL_ADDRESSES['bounces'])
+        for send_from, sender_errors in errors_by_sender.items():
+            recipients = [send_from] if send_from else []
 
-        mail_context = {'errors': errors}
-        delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
-        logger.warning('Mail delivery failure: %s', delivery_failed_string)
-        # TODO(benkraft): this is probably redundant with the logging now?  (or
-        # rather, it will be if we log at the right level?)
-        send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
+            if 'bounces' in settings.DEFAULT_EMAIL_ADDRESSES:
+                recipients.append(settings.DEFAULT_EMAIL_ADDRESSES['bounces'])
+
+            if recipients:
+                mail_context = {'errors': sender_errors}
+                delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
+                logger.warning('Mail delivery failure: %s', delivery_failed_string)
+                # TODO(benkraft): this is probably redundant with the logging now?  (or
+                # rather, it will be if we log at the right level?)
+                send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
     elif num_sent > 0:
         logger.info('No mail delivery failures')

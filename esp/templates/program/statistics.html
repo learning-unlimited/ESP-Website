@@ -10,9 +10,9 @@
 {% endblock %}
 
 {% block xtrajs %}
-  <script type="text/javascript" src="//code.highcharts.com/highcharts.js"></script>
-  <script type="text/javascript" src="//code.highcharts.com/highcharts-more.js"></script>
-  <script type="text/javascript" src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/highcharts.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/highcharts-more.js"></script>
+  <script type="text/javascript" src="https://cdn.learningu.org/highcharts/no-data-to-display.js"></script>
 {% endblock xtrajs %}
 
 {% block content %}
@@ -31,7 +31,7 @@ The default form rendering takes care of this, but the below might be a starting
 {% endif %}
 {% endcomment %}
 
-<form id="statistics_form" method="POST" action="/manage/statistics/">
+<form id="statistics_form" method="POST" action="{% url 'manage_statistics' %}">
 
 <div id="statistics_form_contents">
 {% include "program/statistics/form.html" %}
@@ -83,6 +83,9 @@ function setup_update(field_name)
         });
     });
 }
+
+//  Let Ajax responses re-attach the change handlers by name
+register_handler("setup_update", setup_update);
 
 function setup_callbacks()
 {

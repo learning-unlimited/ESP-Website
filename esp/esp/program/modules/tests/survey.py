@@ -89,7 +89,7 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question1', str(response.content, encoding='UTF-8'))
         #   Check the section-specific survey
-        response = self.client.get('/learn/%s/survey?sec=%s' % (self.program.url, sec.id))
+        response = self.client.get(f'/learn/{self.program.url}/survey?sec={sec.id}')
         self.assertEqual(response.status_code, 200)
         self.assertIn('Question2', str(response.content, encoding='UTF-8'))
         self.assertIn('Question3', str(response.content, encoding='UTF-8'))
@@ -99,8 +99,8 @@ class SurveyTest(ProgramFrameworkTest):
         form_settings = {
             'attendance_%d' % sec_timeslot.id: '%s' % sec.id,
             'question_%d' % question_base.id: 'Yes',
-            'question_%d_%d' % (question_perclass.id, sec_timeslot.id): 'No',
-            'question_%d_%d' % (question_number.id, sec_timeslot.id): '3',
+            f'question_{question_perclass.id}_{sec_timeslot.id}': 'No',
+            f'question_{question_number.id}_{sec_timeslot.id}': '3',
         }
 
         #   Submit the survey
@@ -140,3 +140,41 @@ class SurveyTest(ProgramFrameworkTest):
         self.assertContains(response, 'Question2')
         self.assertContains(response, 'Question3')
         self.assertNotContains(response, 'Question1')
+
+    def test_csv_template_download(self):
+        # Create various question types to cover all cases
+        QuestionType.objects.get_or_create(name='rating', is_numeric=True, is_countable=True)
+        QuestionType.objects.get_or_create(name='yes-no response')
+        QuestionType.objects.get_or_create(name='checkboxes')
+        QuestionType.objects.get_or_create(name='multiple choice')
+        QuestionType.objects.get_or_create(name='open response')
+
+        # Login as admin
+        admin = self.admins[0]
+        self.assertTrue(self.client.login(username=admin.username, password='password'))
+
+        # Download the template
+        response = self.client.get(f'/manage/{self.program.url}/surveys/csv_template')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+
+        content = response.content.decode('utf-8')
+        lines = content.strip().splitlines()
+        self.assertGreater(len(lines), 1)
+
+        # Check headers
+        self.assertEqual(lines[0], 'question_text,question_type,per_class,seq,param_values')
+
+        # Check content and make sure no "(example for" remains
+        self.assertNotIn('(example for', content)
+        self.assertNotIn('Sample question for', content)
+
+        # Check checkboxes and multiple choice have option values
+        for line in lines[1:]:
+            parts = line.split(',')
+            if len(parts) < 5:
+                continue
+            q_text, q_type, _, _, param_val = parts[0], parts[1], parts[2], parts[3], parts[4]
+            if q_type in ('checkboxes', 'multiple choice'):
+                self.assertEqual(param_val, 'Option 1|Option 2|Option 3')
+                self.assertEqual(q_text, 'Select from the options')

@@ -1,6 +1,7 @@
+import copy
+
 from django import forms
 from django.conf import settings
-from django.contrib import admin
 from django.template import Template, Context
 from django.template.loader import select_template
 from django.utils.safestring import mark_safe
@@ -10,8 +11,9 @@ from esp.cal.models import Event
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 from esp.program.forms import ProgramCreationForm
 from esp.program.models import RegistrationType, Program, ScheduleConstraint, BooleanToken
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
-from esp.tagdict import all_program_tags, tag_categories
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo, DBReceipt
+from esp.tagdict import (all_program_tags, tag_categories, initial_choices,
+                         is_visible, join_choices, preserve_current_choice)
 from esp.tagdict.models import Tag
 from esp.utils.models import TemplateOverride
 
@@ -19,7 +21,7 @@ def get_rt_choices():
     choices = [("All", "All")]
     for rt in RegistrationType.objects.all().order_by('name'):
         if rt.displayName:
-            choices.append((rt.name, '%s (displayed as "%s")' % (rt.name, rt.displayName)))
+            choices.append((rt.name, f'{rt.name} (displayed as "{rt.displayName}")'))
         else:
             choices.append((rt.name, rt.name))
     return choices
@@ -41,7 +43,7 @@ class LunchConstraintsForm(forms.Form):
         self.load_data()
 
     def load_data(self):
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         self.fields['timeslots'].initial = list(lunch_timeslots.values_list('id', flat=True))
         sched_constraints = ScheduleConstraint.objects.filter(program=self.program)
         # If there are any schedule constraints for this program, check that box
@@ -92,10 +94,13 @@ class ProgramSettingsForm(ProgramCreationForm):
             'flag_types': forms.CheckboxSelectMultiple(),
         }
         model = Program
-ProgramSettingsForm.base_fields['director_email'].widget = forms.EmailInput(attrs={'pattern': r'(^.+@{0}$)|(^.+@(\w+\.)?learningu\.org$)'.format(settings.SITE_INFO[1].replace('.', '\.'))})
+_ESCAPED_SITE_DOMAIN = settings.SITE_INFO[1].replace('.', r'\.')
+ProgramSettingsForm.base_fields["director_email"].widget = forms.EmailInput(attrs={"pattern": rf"(^.+@{_ESCAPED_SITE_DOMAIN}$)|(^.+@(\w+\.)*learningu\.org$)"})
 
 class TeacherRegSettingsForm(BetterModelForm):
     """ Form for changing teacher class registration settings. """
+    progress_mode = forms.IntegerField( min_value=0, max_value=2, help_text=ClassRegModuleInfo._meta.get_field('progress_mode').help_text)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -111,6 +116,11 @@ class TeacherRegSettingsForm(BetterModelForm):
 
 class StudentRegSettingsForm(BetterModelForm):
     """ Form for changing student class registration settings. """
+    class_cap_multiplier = forms.DecimalField(min_value=0, max_digits=3, decimal_places=2, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_multiplier').help_text)
+    class_cap_offset = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('class_cap_offset').help_text)
+    priority_limit = forms.IntegerField(min_value=0, help_text=StudentClassRegModuleInfo._meta.get_field('priority_limit').help_text)
+    progress_mode = forms.IntegerField(min_value=0,max_value=2, help_text=StudentClassRegModuleInfo._meta.get_field('progress_mode').help_text)
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -197,38 +207,40 @@ class ProgramTagSettingsForm(BetterForm):
         for key in all_program_tags:
             # generate field for each tag
             tag_info = all_program_tags[key]
-            if tag_info.get('is_setting', False):
+            if tag_info.get('is_setting', False) and is_visible(tag_info, key, self.program):
                 self.categories.add(tag_info.get('category'))
                 field = tag_info.get('field')
-                if key == 'teacherreg_hide_fields':
-                    self.fields[key] = forms.MultipleChoiceField(choices=[(field[0], field[1].label if field[1].label else field[0]) for field in TeacherClassRegForm.declared_fields.items() if not field[1].required])
-                elif key in ['student_reg_records', 'teacher_reg_records']:
-                    from esp.users.models import RecordType
-                    self.fields[key] = forms.MultipleChoiceField(choices=list(RecordType.desc()))
+                if callable(field):
+                    # A field whose choices aren't known at import time
+                    field = field(key, self.program)
                 elif field is not None:
-                    self.fields[key] = field
+                    # Copy it, since the form mutates the field (and the tag
+                    # dict's instance is shared by every program's form)
+                    field = copy.deepcopy(field)
                 elif tag_info.get('is_boolean', False):
-                    self.fields[key] = forms.BooleanField()
+                    field = forms.BooleanField()
                 else:
-                    self.fields[key] = forms.CharField()
+                    field = forms.CharField()
+                self.fields[key] = field
                 # some help texts need to be rendered
                 if key in ['student_self_checkin']:
                     template = Template(tag_info.get('help_text', ''))
-                    self.fields[key].help_text = template.render(Context({'program': self.program}))
+                    field.help_text = template.render(Context({'program': self.program}))
                 else:
-                    self.fields[key].help_text = tag_info.get('help_text', '')
-                self.fields[key].initial = self.fields[key].default = tag_info.get('default')
-                self.fields[key].required = False
+                    field.help_text = tag_info.get('help_text', '')
+                field.initial = field.default = tag_info.get('default')
+                field.required = False
                 set_val = Tag.getBooleanTag(key, program = self.program) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, program = self.program)
-                if set_val != None and set_val != self.fields[key].initial:
-                    if isinstance(self.fields[key], forms.MultipleChoiceField):
-                        set_val = set_val.split(",")
-                    self.fields[key].initial = set_val
+                if set_val != None and set_val != field.initial:
+                    if isinstance(field, forms.MultipleChoiceField):
+                        set_val = initial_choices(set_val, tag_info.get('json_list', False))
+                    preserve_current_choice(field, set_val)
+                    field.initial = set_val
                 # For class reg tags, hide them if the fields are not in the form
                 if key.startswith("teacherreg_label") and key.partition("teacherreg_label_")[2] not in classreg_fields:
-                    self.fields[key].widget = forms.HiddenInput()
+                    field.widget = forms.HiddenInput()
                 elif key.startswith("teacherreg_help_text") and key.partition("teacherreg_help_text_")[2] not in classreg_fields:
-                    self.fields[key].widget = forms.HiddenInput()
+                    field.widget = forms.HiddenInput()
 
     def save(self):
         prog = self.program
@@ -236,9 +248,12 @@ class ProgramTagSettingsForm(BetterForm):
             # Update tags if necessary
             tag_info = all_program_tags[key]
             if tag_info.get('is_setting', False):
+                if key not in self.fields:
+                    # Not shown, so not submitted; leave the tag as it is
+                    continue
                 set_val = self.cleaned_data[key]
                 if isinstance(set_val, list):
-                    set_val = ",".join(set_val)
+                    set_val = join_choices(set_val, tag_info.get('json_list', False))
                 global_val = Tag.getBooleanTag(key, default = tag_info.get('default')) if tag_info.get('is_boolean', False) else Tag.getProgramTag(key, default = tag_info.get('default'))
                 if not set_val in ("", "None", None, global_val):
                     # Set a [new] tag if a value was provided and the value is not the default (or if it is but there is also a global tag set)
