@@ -897,17 +897,25 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
-        if not 'cls' in request.GET:
+        cls_id = request.GET.get('cls')
+        if not cls_id:
             raise ESPError("No class specified!", log=False)
 
         # Select the class
-        cls_id = request.GET['cls']
+        try:
+            cls_id = int(cls_id)
+        except (ValueError, TypeError):
+            raise ESPError(f"Invalid integer for class ID! Got `{cls_id}`", log=False)
+
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
             raise ESPError("No class found matching this ID!", log=False)
         if len(classes) != 1:
             raise ESPError("Something weird happened, more than one class found matching this ID.", log=False)
         cls = classes[0]
+
+        if not request.user.canEdit(cls):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         # Select the correct action
         if cls.category == self.program.open_class_category:
