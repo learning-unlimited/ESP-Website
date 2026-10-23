@@ -92,6 +92,7 @@ urlpatterns += [
     re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
     re_path(r'^admin/ajax_qsd/?$', esp.qsd.views.ajax_qsd),
     re_path(r'^admin/ajax_qsd_preview/?$', esp.qsd.views.ajax_qsd_preview),
+    re_path(r'^admin/ajax_qsd_can_edit/?$', esp.qsd.views.ajax_qsd_can_edit),
     re_path(r'^admin/ajax_qsd_history/?$', esp.qsd.views.ajax_qsd_history),
     re_path(r'^admin/ajax_qsd_version_preview/?$', esp.qsd.views.ajax_qsd_version_preview),
     re_path(r'^admin/ajax_qsd_restore/?$', esp.qsd.views.ajax_qsd_restore),
