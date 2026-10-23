@@ -598,10 +598,13 @@ class FormHandler:
 
     def get_wizard(self, initial_data=None, wizard_view=ComboForm):
         combined_initial_data = self.get_initial_data(initial_data)
-        return wizard_view( form_list = self._getFormList(),
+        #   get_initkwargs() sets up form_list and condition_dict the way
+        #   as_view() would, which formtools needs to build the forms.
+        return wizard_view(**wizard_view.get_initkwargs(
+                            self._getFormList(),
                             initial_dict = combined_initial_data,
                             form_handler = self,
-                            form = self.form)
+                            form = self.form))
 
     def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
