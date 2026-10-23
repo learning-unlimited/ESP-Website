@@ -106,7 +106,7 @@ class StudentClassRegModuleInfo(models.Model):
 
     #   Choose which appears on student reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
-    progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checkboxes, 2=progress bar, 0=neither.')
+    progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checklist with a progress bar (2 does the same), 0=neither.')
 
     #   Choose whether an email is sent the first time a student confirms registration.
     send_confirmation = models.BooleanField(default=True, help_text='Check this box to send each student an email each time they confirm their registration. You can customize the text of the email using the "Confirmemail" registration receipt below.')
