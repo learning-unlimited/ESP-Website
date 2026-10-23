@@ -45,6 +45,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 from django.db.models.query import Q
+from django.utils.html import format_html
 
 class TeacherCustomComboForm(ComboForm):
     template_name = "program/modules/customformmodule/custom_form.html"
@@ -130,7 +131,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
             cf = Form.objects.get(id=int(custom_form_id))
         else:
             if request.user.isAdmin():
-                error = f'Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Custom Form" module of the {self.program} program.'
+                error = format_html('Cannot find an appropriate form for this module. You should <a href="/customforms" target="_blank">create one</a> and link it to the "Teacher Custom Form" module of the {} program.', self.program)
             else:
                 error = 'Cannot find an appropriate form for this module. Please ask your administrator to create a form and link it to the "Teacher Custom Form" module.'
             raise ESPError(error, log=False)

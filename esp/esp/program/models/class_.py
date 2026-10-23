@@ -48,6 +48,7 @@ from django.db import models, transaction
 from django.db.models.query import Q
 from django.db.models import Count, Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
+from django.utils.html import format_html
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -990,7 +991,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return f"Adding <i>{self.title()}</i> to your schedule requires that you {exp.requirement.label}.  You can go back and correct this."
+                    return format_html("Adding <i>{}</i> to your schedule requires that you {}.  You can go back and correct this.", self.title(), exp.requirement.label)
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)

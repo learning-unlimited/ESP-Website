@@ -53,6 +53,7 @@ from urllib.parse import quote, unquote
 from django.conf import settings
 from django.core.exceptions import SuspiciousFileOperation
 from django.template.loader import render_to_string
+from django.utils.html import format_html
 
 from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
@@ -647,11 +648,17 @@ class ThemeController(object):
         if sass_process.returncode != 0:
             sass_output = err_data.decode('UTF-8', errors='replace')
             raise ESPError(
-                f'The stylesheet compiler (sass) returned error code {sass_process.returncode}. '
-                f'Please check the SCSS sources and settings you are using to generate the theme, '
-                f'or contact the <a href="mailto:{settings.DEFAULT_EMAIL_ADDRESSES["support"]}">Web support team</a>.'
-                f'<br />SCSS compile command was: <pre>{" ".join(sass_args)}</pre>'
-                f'<br />Sass output: <pre>{sass_output}</pre>',
+                format_html(
+                    'The stylesheet compiler (sass) returned error code {}. '
+                    'Please check the SCSS sources and settings you are using to generate the theme, '
+                    'or contact the <a href="mailto:{}">Web support team</a>.'
+                    '<br />SCSS compile command was: <pre>{}</pre>'
+                    '<br />Sass output: <pre>{}</pre>',
+                    sass_process.returncode,
+                    settings.DEFAULT_EMAIL_ADDRESSES["support"],
+                    " ".join(sass_args),
+                    sass_output,
+                ),
                 log=True,
             )
         return css_data

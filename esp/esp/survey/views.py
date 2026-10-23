@@ -52,6 +52,7 @@ from esp.middleware import ESPError
 from esp.tagdict.models import Tag
 from esp.users.forms.generic_search_form import ApprovedTeacherSearchForm
 from django.http import Http404, HttpResponse
+from django.utils.safestring import mark_safe
 from wsgiref.util import FileWrapper
 from django.contrib.auth.decorators import login_required
 
@@ -658,7 +659,7 @@ def survey_review_single(request, tl, program, instance, template = 'survey/revi
         if len(srs) == 1:
             survey_response = srs[0]
     if survey_response is None:
-        raise ESPError('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.', log=False)
+        raise ESPError(mark_safe('Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.'), log=False)
 
     if tl == 'manage' and user.isAdmin(prog):
         answers = survey_response.answers.order_by('content_type', 'object_id', 'question')

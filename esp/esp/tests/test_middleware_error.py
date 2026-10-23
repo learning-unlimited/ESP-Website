@@ -6,6 +6,7 @@ Tests ESPError exception and AjaxExceptionReporter.
 """
 from django.contrib.auth.models import Group
 from django.test import RequestFactory
+from django.utils.safestring import mark_safe
 
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPErrorMiddleware
@@ -57,3 +58,24 @@ class ESPErrorMiddlewareTest(TestCase):
         # Should return an HttpResponse with the error
         if response is not None:
             self.assertEqual(response.status_code, 500)
+
+    def _render_error(self, err):
+        request = self.factory.get('/')
+        request.user = AnonymousESPUser()
+        # The middleware reads the exception from sys.exc_info()
+        try:
+            raise err
+        except Exception:
+            response = self.middleware.process_exception(request, err)
+        self.assertIsNotNone(response)
+        response.render()
+        return response.content.decode('utf-8')
+
+    def test_process_exception_escapes_html(self):
+        content = self._render_error(ESPError('<script>alert("XSS")</script>'))
+        self.assertNotIn('<script>alert("XSS")</script>', content)
+        self.assertIn('&lt;script&gt;', content)
+
+    def test_process_exception_renders_safe_html(self):
+        content = self._render_error(ESPError(mark_safe('See the <a href="/help/">help page</a>.'), log=False))
+        self.assertIn('<a href="/help/">help page</a>', content)

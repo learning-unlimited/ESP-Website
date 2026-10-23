@@ -45,6 +45,7 @@ from django.db import transaction
 from django.db.models.query import Q
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
+from django.utils.html import format_html
 
 from decimal import Decimal, InvalidOperation
 import stripe
@@ -229,7 +230,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team</a> to get it set up.', True)
+            raise ESPError(format_html('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{}">websupport team</a> to get it set up.', settings.DEFAULT_EMAIL_ADDRESSES['support']), True)
 
         user = request.user
 
@@ -297,7 +298,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            raise ESPError(format_html('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{}">websupport team</a> to get it set up.', settings.DEFAULT_EMAIL_ADDRESSES['support']), True)
 
         context = {'postdata': request.POST.copy()}
 
