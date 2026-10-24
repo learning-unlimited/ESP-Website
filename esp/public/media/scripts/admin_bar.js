@@ -1,5 +1,7 @@
 // Default to empty array if theme template did not define toolbarLinks
 if (typeof toolbarLinks === 'undefined') { var toolbarLinks = []; }
+if (typeof adminBarCollapsibleModules === 'undefined') { var adminBarCollapsibleModules = true; }
+
 ESP = (function () {
   var loaded = false;
   var queued_modules = [];
@@ -26,8 +28,9 @@ ESP = (function () {
         var module_wrap = document.createElement("div");
         var module_class = "adminbar_" + module.name;
         module_wrap.className = module_class;
+        var toggleClick = adminBarCollapsibleModules ? " onclick=\"ESP.toggleDisplay('" + module_class + "_content');\"" : "";
         module_wrap.innerHTML =
-          "<div class='title' onclick='ESP.toggleDisplay(\"" + module_class + "_content" + "\");'>" + module.displayName + "</div>";
+          "<div class='title'" + toggleClick + ">" + module.displayName + "</div>";
         var module_content = document.createElement("div");
         module_content.id = module_class + "_content";
         module_content.className = "content";
