@@ -45,6 +45,7 @@ from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
+from esp.qsdmedia.models import Media
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Permission
@@ -228,13 +229,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
-        cls1.status = -1
+        cls1.status = ClassStatus.REJECTED
         cls1.save()
         cls2 = random.choice(self.other_teacher1.getTaughtClasses())
-        cls2.status = 1
+        cls2.status = ClassStatus.ACCEPTED
         cls2.save()
         cls3 = random.choice(self.other_teacher2.getTaughtClasses())
-        cls3.status = 0
+        cls3.status = ClassStatus.UNREVIEWED
         cls3.save()
         # Check them
         d = self.moduleobj.teachers()
@@ -397,6 +398,74 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         url = '%ssection_students' % self.program.get_teach_url()
         response = self.client.post(url, {'secid': victim_section.id})
         self.assertContains(response, 'do not have privileges to edit', status_code=200)
+
+    @transaction.atomic
+    def test_class_docs_delete_own_document_succeeds(self):
+        """Teacher can delete a document belonging to their own class."""
+        doc = Media.objects.create(friendly_name='My Class Doc', owner=self.cls)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {'command': 'delete', 'docid': doc.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Media.objects.filter(id=doc.id).exists())
+
+    @transaction.atomic
+    def test_class_docs_delete_other_class_document_fails(self):
+        """Teacher cannot delete a document belonging to a class they cannot edit."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        self.assertFalse(attacker.canEdit(victim_cls))
+
+        victim_doc = Media.objects.create(friendly_name='Victim Doc', owner=victim_cls)
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {'command': 'delete', 'docid': victim_doc.id})
+        self.assertEqual(response.status_code, 200)
+
+        # Victim document must not have been deleted
+        self.assertTrue(Media.objects.filter(id=victim_doc.id).exists())
+
+    @transaction.atomic
+    def test_class_docs_rename_own_document_succeeds(self):
+        """Teacher can rename a document belonging to their own class."""
+        doc = Media.objects.create(friendly_name='Original Name', owner=self.cls)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {
+            'command': 'rename',
+            'docid': doc.id,
+            'title': 'New Name',
+        })
+        self.assertEqual(response.status_code, 200)
+        doc.refresh_from_db()
+        self.assertEqual(doc.friendly_name, 'New Name')
+
+    @transaction.atomic
+    def test_class_docs_rename_other_class_document_fails(self):
+        """Teacher cannot rename a document belonging to a class they cannot edit."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        self.assertFalse(attacker.canEdit(victim_cls))
+
+        victim_doc = Media.objects.create(friendly_name='Original Name', owner=victim_cls)
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {
+            'command': 'rename',
+            'docid': victim_doc.id,
+            'title': 'Hacked Name',
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # Victim document must remain untouched
+        victim_doc.refresh_from_db()
+        self.assertEqual(victim_doc.friendly_name, 'Original Name')
 
 
 class TeacherScheduleDeadlineTest(ProgramFrameworkTest):

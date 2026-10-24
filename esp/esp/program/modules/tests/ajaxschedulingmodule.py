@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import ProgramManagerTestHelper
-from esp.program.modules.module_ext import AJAXChangeLog
+from esp.program.modules.program_settings import AJAXChangeLog
 import json
 import time
 

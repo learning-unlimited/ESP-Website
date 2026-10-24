@@ -23,6 +23,7 @@ from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.forms.password_reset import PasswordResetForm
 from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
 from esp.users.models import (
     User,
@@ -208,6 +209,112 @@ class ESPUserTest(TestCase):
         with self.assertRaises(TypeError):
             _ = user < "string"
 
+class UnsubscribeViewTest(TestCase):
+    """Unsubscribing must be authorized before the account is deactivated."""
+
+    def setUp(self):
+        super().setUp()
+        user_role_setup()
+        self.user = ESPUser.objects.create(username='unsubme', email='unsubme@example.com')
+        self.user.set_password('password')
+        self.user.save()
+        # the token is the part of the unsubscribe link after the username
+        self.token = [part for part in self.user.unsubscribe_link().split('/') if part][-1]
+        self.bad_token = 'not-a-real-token'
+
+    def oneclick_url(self, token):
+        return reverse('unsubscribe_oneclick', kwargs={'username': self.user.username, 'token': token})
+
+    def confirm_url(self, token):
+        return reverse('unsubscribe', kwargs={'username': self.user.username, 'token': token})
+
+    def login_as_someone_else(self):
+        other = ESPUser.objects.create(username='someoneelse')
+        other.set_password('password')
+        other.save()
+        self.assertTrue(self.client.login(username='someoneelse', password='password'))
+
+    def assertStillActive(self):
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_oneclick_with_invalid_token_does_not_deactivate(self):
+        response = self.client.post(self.oneclick_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        # ESPError returns 500
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_ignores_the_session_of_a_logged_in_user(self):
+        # the one-click endpoint is CSRF-exempt, so a session must not
+        # authorize it -- any website could forge that POST
+        self.assertTrue(self.client.login(username='unsubme', password='password'))
+        response = self.client.post(self.oneclick_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_without_the_one_click_body_does_not_deactivate(self):
+        response = self.client.post(self.oneclick_url(self.token))
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_oneclick_with_valid_token_deactivates(self):
+        response = self.client.post(self.oneclick_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+        # the token stays valid for its lifetime, but a deactivated account
+        # can't be unsubscribed again
+        response = self.client.post(self.oneclick_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+
+    def test_confirm_post_with_invalid_token_does_not_deactivate(self):
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response['Location'])
+        self.assertStillActive()
+
+    def test_confirm_post_by_a_different_user_does_not_deactivate(self):
+        self.login_as_someone_else()
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_a_different_user_cannot_spend_someone_elses_token(self):
+        # they are told to log out rather than handed a confirmation page for
+        # an account that isn't theirs
+        self.login_as_someone_else()
+        response = self.client.post(self.confirm_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 500)
+        self.assertStillActive()
+
+    def test_valid_token_shows_confirmation_page_without_deactivating(self):
+        response = self.client.get(self.confirm_url(self.token))
+        self.assertEqual(response.status_code, 200)
+        self.assertStillActive()
+
+    def test_confirm_post_with_valid_token_deactivates(self):
+        response = self.client.post(self.confirm_url(self.token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    def test_logged_in_user_can_confirm_without_a_token(self):
+        self.assertTrue(self.client.login(username='unsubme', password='password'))
+        response = self.client.post(self.confirm_url(self.bad_token),
+                                    {'List-Unsubscribe': 'One-Click'})
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
 class PasswordRecoveryTest(TestCase):
     """Test password recovery using Django's built-in token generator.
 
@@ -272,6 +379,58 @@ class PasswordRecoveryTest(TestCase):
         # Other user's password is unaffected
         self.assertTrue(self.client.login(username='innocent', password='remembered_pw'),
                         "User innocent's old password no longer works")
+
+
+class PasswordResetFormTest(TestCase):
+    """Validation errors shown by the 'forgot your password' request form."""
+    @classmethod
+    def setUpTestData(cls):
+        cls.user, _ = ESPUser.objects.get_or_create(
+            username='forgetful', defaults={'email': 'forgetful@example.org'})
+
+    def test_blank_form_asks_for_something(self):
+        form = PasswordResetForm(data={'email': '', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.non_field_errors(), ["You need to specify something."])
+        self.assertNotIn('email', form.errors)
+        self.assertNotIn('username', form.errors)
+
+    def test_unknown_email_shows_only_email_error(self):
+        form = PasswordResetForm(data={'email': 'nobody@example.org', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['email'], ['No user has email nobody@example.org'])
+        self.assertNotIn('username', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_unknown_username_shows_only_username_error(self):
+        form = PasswordResetForm(data={'email': '', 'username': 'nobody'})
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.errors['username'], ["User 'nobody' does not exist."])
+        self.assertNotIn('email', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_malformed_email_does_not_ask_for_something(self):
+        form = PasswordResetForm(data={'email': 'not-an-email', 'username': ''})
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+        self.assertEqual(form.non_field_errors(), [])
+
+    def test_known_email_is_valid(self):
+        form = PasswordResetForm(data={'email': 'FORGETFUL@example.org', 'username': ''})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['username'], '')
+
+    def test_known_username_is_valid(self):
+        form = PasswordResetForm(data={'email': '', 'username': 'forgetful'})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['username'], 'forgetful')
+
+    def test_view_does_not_show_contradictory_errors(self):
+        response = self.client.post('/myesp/passwdrecover/',
+                                    {'email': 'nobody@example.org', 'username': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No user has email nobody@example.org')
+        self.assertNotContains(response, 'You need to specify something.')
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
@@ -518,6 +677,11 @@ class AccountCreationTest(TestCase):
         self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
         self.assertContains(response2, "do_reg_no_really")
 
+        #test duplicate account detection with differing casing
+        response2_case = self.client.post("/myesp/register/", data={"email":"TSUTTON125@GMAIL.COM", "confirm_email":"TSUTTON125@GMAIL.COM", "initial_role":"Teacher"}, follow=True)
+        self.assertTemplateUsed(response2_case, 'registration/newuser_phase1.html')
+        self.assertContains(response2_case, "do_reg_no_really")
+
         #check when there's a user awaiting activation
         #(the account is inactive with an outstanding PendingActivation row,
         #which is what registration leaves behind before the user clicks the
@@ -529,6 +693,11 @@ class AccountCreationTest(TestCase):
         response3 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher"}, follow=True)
         self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
         self.assertContains(response3, "do_reg_no_really")
+
+        #check awaiting activation duplicate detection with differing casing
+        response3_case = self.client.post("/myesp/register/", data={"email":"TSUTTON125@GMAIL.COM", "confirm_email":"TSUTTON125@GMAIL.COM", "initial_role":"Teacher"}, follow=True)
+        self.assertTemplateUsed(response3_case, 'registration/newuser_phase1.html')
+        self.assertContains(response3_case, "do_reg_no_really")
 
         #check when you send do_reg_no_really it proceeds
         response4 = self.client.post("/myesp/register/", data={"email":"tsutton125@gmail.com", "confirm_email":"tsutton125@gmail.com", "initial_role":"Teacher", "do_reg_no_really":""}, follow=False)
@@ -591,7 +760,7 @@ class AccountCreationTest(TestCase):
         try:
             Tag.setTag('ask_about_duplicate_accounts', value='true')
 
-            user = ESPUser.objects.create(email='livecheck@example.com')
+            user = ESPUser.objects.create(username='livecheck', email='livecheck@example.com')
             user.makeRole('Teacher')
 
             taken_response = self.client.get('/myesp/register/check-email/', {
@@ -603,6 +772,32 @@ class AccountCreationTest(TestCase):
             self.assertTrue(taken_payload['valid'])
             self.assertFalse(taken_payload['available'])
             self.assertTrue(taken_payload['message'])
+
+            # Case-insensitive check for existing active account
+            taken_case_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'LiveCheck@EXAMPLE.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(taken_case_response.status_code, 200)
+            taken_case_payload = json.loads(taken_case_response.content.decode('utf-8'))
+            self.assertTrue(taken_case_payload['valid'])
+            self.assertFalse(taken_case_payload['available'])
+            self.assertTrue(taken_case_payload['message'])
+
+            # Case-insensitive check for pending account awaiting activation
+            pending_user = ESPUser.objects.create(username='pendingcheck', email='pendingcheck@example.com', is_active=False)
+            pending_user.makeRole('Teacher')
+            PendingActivation.objects.create(user=pending_user)
+
+            pending_case_response = self.client.get('/myesp/register/check-email/', {
+                'email': 'PendingCheck@EXAMPLE.com',
+                'initial_role': 'Teacher',
+            })
+            self.assertEqual(pending_case_response.status_code, 200)
+            pending_case_payload = json.loads(pending_case_response.content.decode('utf-8'))
+            self.assertTrue(pending_case_payload['valid'])
+            self.assertFalse(pending_case_payload['available'])
+            self.assertTrue(pending_case_payload['message'])
 
             no_role_response = self.client.get('/myesp/register/check-email/', {
                 'email': 'newaddress@example.com',
@@ -692,6 +887,77 @@ class AccountCreationTest(TestCase):
         self.assertTrue(valid_payload['available'])
         self.assertEqual(valid_payload['message'], '')
 
+    def test_email_only_account_upgrade_case_insensitive(self):
+        email_user = ESPUser.objects.create(
+            username='email_user_upgrade',
+            email='EmailOnlyUser@example.com',
+            password='emailuser'
+        )
+        email_user.makeRole('Teacher')
+        initial_user_count = ESPUser.objects.count()
+
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
+        Tag.setTag('require_email_validation', value='false')
+
+        response = self.client.post('/myesp/register/', data={
+            'username': 'upgradeduser',
+            'password': 'Str0ng!Pass',
+            'confirm_password': 'Str0ng!Pass',
+            'first_name': 'Upgraded',
+            'last_name': 'User',
+            'email': 'emailonlyuser@example.com',
+            'confirm_email': 'emailonlyuser@example.com',
+            'initial_role': 'Teacher'
+        })
+        self.assertEqual(response.status_code, 302)
+
+        # Confirm no duplicate user was created and the original user was upgraded
+        self.assertEqual(ESPUser.objects.count(), initial_user_count)
+        email_user.refresh_from_db()
+        self.assertEqual(email_user.username, 'upgradeduser')
+        self.assertEqual(email_user.email, 'emailonlyuser@example.com')
+        self.assertNotEqual(email_user.password, 'emailuser')
+        self.assertTrue(email_user.check_password('Str0ng!Pass'))
+
+    def test_email_only_account_upgrade_ambiguous_casing(self):
+        user_upper = ESPUser.objects.create(
+            username='legacy_upper',
+            email='AmbiguousUser@example.com',
+            password='emailuser'
+        )
+        user_upper.makeRole('Teacher')
+        user_lower = ESPUser.objects.create(
+            username='legacy_lower',
+            email='ambiguoususer@example.com',
+            password='emailuser'
+        )
+        user_lower.makeRole('Teacher')
+        initial_user_count = ESPUser.objects.count()
+
+        Tag.setTag('ask_about_duplicate_accounts', value='false')
+        Tag.setTag('require_email_validation', value='false')
+
+        response = self.client.post('/myesp/register/', data={
+            'username': 'upgradedambiguous',
+            'password': 'Str0ng!Pass',
+            'confirm_password': 'Str0ng!Pass',
+            'first_name': 'Ambiguous',
+            'last_name': 'User',
+            'email': 'ambiguoususer@example.com',
+            'confirm_email': 'ambiguoususer@example.com',
+            'initial_role': 'Teacher'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(ESPUser.objects.count(), initial_user_count)
+
+        user_lower.refresh_from_db()
+        self.assertEqual(user_lower.username, 'upgradedambiguous')
+        self.assertNotEqual(user_lower.password, 'emailuser')
+
+        user_upper.refresh_from_db()
+        self.assertEqual(user_upper.username, 'legacy_upper')
+        self.assertEqual(user_upper.password, 'emailuser')
+
 from esp.users.models import GradeChangeRequest
 
 
@@ -743,6 +1009,26 @@ class TestChangeRequestModel(TestCase):
         self.assertIn(student.first_name, message)
         self.assertIn(student.last_name, message)
         self.assertIn(student.name(), subject)
+
+    def test_confirmation_email_sender_with_full_group_name(self):
+        """Verifies that send_confirmation_email includes email address when full_group_name is set."""
+        Tag.setTag('full_group_name', value='MIT Educational Studies Program')
+        student = ESPUser.objects.create_user(
+            'student_bob', email='student@example.com', first_name='bob', last_name='dobbs'
+        )
+        change_request = GradeChangeRequest.objects.create(
+            claimed_grade=12,
+            grade_before_request=8,
+            reason="hello",
+            requesting_student=student,
+        )
+        mail.outbox = []
+        change_request.send_confirmation_email()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(
+            mail.outbox[0].from_email,
+            f'MIT Educational Studies Program <info@{settings.SITE_INFO[1]}>',
+        )
 
 
 class TestChangeRequestView(TestCase):
