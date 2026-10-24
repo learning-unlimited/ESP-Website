@@ -34,6 +34,8 @@ function Matrix(
         roomResource: {active: false, el: $j("input#room-filter-resource-text"), weightEl: $j("input#room-filter-resource-weight"), type: "string"},
         roomName: {active: false, el: $j("input#room-filter-name-text"), weightEl: $j("input#room-filter-name-weight"), type: "string"},
         roomFitsSection: {active: false, el: $j("input#room-filter-fits-section"), weightEl: $j("input#room-filter-fits-section-weight"), type: "boolean"},
+        // Set by clicking timeslot headers (see toggleFilterTimeslot) rather than by an input
+        roomFreeAtTimeslots: {active: false, el: $j(), weightEl: $j("input#room-filter-free-timeslots-weight"), type: "timeslots", val: []},
     };
     // Rooms where the selected section has at least one valid placement (set by highlightTimeslots)
     this.placeableRoomIds = {};
@@ -66,6 +68,15 @@ function Matrix(
             return null;
         }
         return this.placeableRoomIds[a.id] === true ? 0 : 1;
+    }.bind(this);
+    this.filter.roomFreeAtTimeslots.distance = function(a) {
+        var timeslot_ids = this.filter.roomFreeAtTimeslots.val;
+        // the fraction of chosen timeslots where the room is unavailable or holds another section
+        var busy = timeslot_ids.filter(function(timeslot_id) {
+            var cell = this.getCell(a.id, timeslot_id);
+            return cell.disabled || (cell.section && cell.section !== this.sections.selectedSection);
+        }.bind(this));
+        return busy.length / timeslot_ids.length;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -100,6 +111,53 @@ function Matrix(
         this.matchThreshold = parseInt(thresholdEl.val(), 10);
         $j("#room-filter-threshold-value").text(this.matchThreshold + "%");
         $j("body").trigger("room-filters-changed");
+    }.bind(this));
+
+    /**
+     * Add or remove a timeslot from the "free at timeslots" room filter.
+     *
+     * @param timeslot_id: The id of the timeslot whose header was clicked
+     */
+    this.toggleFilterTimeslot = function(timeslot_id){
+        var filterObject = this.filter.roomFreeAtTimeslots;
+        var index = filterObject.val.indexOf(timeslot_id);
+        if (index >= 0) {
+            filterObject.val.splice(index, 1);
+        } else {
+            filterObject.val.push(timeslot_id);
+        }
+        this.setFilterTimeslots(filterObject.val);
+    };
+
+    /**
+     * Set the timeslots for the "free at timeslots" room filter and update its display.
+     *
+     * @param timeslot_ids: An array of timeslot ids
+     */
+    this.setFilterTimeslots = function(timeslot_ids){
+        var filterObject = this.filter.roomFreeAtTimeslots;
+        filterObject.val = timeslot_ids.slice().sort(function(a, b) {
+            return this.timeslots.get_by_id(a).order - this.timeslots.get_by_id(b).order;
+        }.bind(this));
+        filterObject.active = filterObject.val.length > 0;
+        $j.each(this.timeslotHeaders, function(timeslot_id, header) {
+            header.toggleClass("timeslot-filter-selected", filterObject.val.indexOf(parseInt(timeslot_id, 10)) >= 0);
+        });
+        $j("#room-filter-free-timeslots-list").text(filterObject.active ? filterObject.val.map(function(timeslot_id) {
+            return this.timeslots.get_by_id(timeslot_id).label;
+        }.bind(this)).join("; ") : "None (click timeslot headers to choose)");
+        $j("body").trigger("room-filters-changed");
+    };
+
+    $j("#room-filter-free-timeslots-clear").on("click", function() {
+        this.setFilterTimeslots([]);
+    }.bind(this));
+
+    // Scheduling changes can change which rooms are free at the chosen timeslots
+    $j("body").on("schedule-changed", function() {
+        if (this.filter.roomFreeAtTimeslots.active) {
+            this.updateRooms();
+        }
     }.bind(this));
 
     // Default room order: sort by building number
@@ -185,10 +243,10 @@ function Matrix(
     };
 
     /**
-     * Re-filter the rooms after the selected section changes, if the room filter depends on it.
+     * Re-filter the rooms after the selected section changes, if the room filters depend on it.
      */
     this.refreshRoomsForSelection = function(){
-        if (this.filter.roomFitsSection.active) {
+        if (this.filter.roomFitsSection.active || this.filter.roomFreeAtTimeslots.active) {
             this.updateRooms();
         }
     };
@@ -594,7 +652,10 @@ function Matrix(
         header_corner.append($j("<button id = 'legend_button'>Show Legend</button>"));
         header_row.append(header_corner);
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
-            var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
+            var timeslotHeader = $j("<th>" + timeslot.label + "</th>")
+                .addClass("timeslot-header")
+                .attr("data-timeslot-id", timeslot.id)
+                .attr("title", "Click to show rooms free at this time");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
             timeslotHeader.appendTo(header_row);
             colModal.push({width: 80, align: 'center'});
@@ -629,8 +690,11 @@ function Matrix(
 
         // Get both sets of headers
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
-            var timeslotHeader = $j("th:contains('" + timeslot.label + "')");
+            var timeslotHeader = $j("th[data-timeslot-id='" + timeslot.id + "']");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
+            timeslotHeader.on("click", function() {
+                this.toggleFilterTimeslot(timeslot.id);
+            }.bind(this));
         }.bind(this));
 
         // Hack to make tooltips work

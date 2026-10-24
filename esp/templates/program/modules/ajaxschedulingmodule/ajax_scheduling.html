@@ -193,6 +193,14 @@
                     <input id="room-filter-threshold" type="range" min="0" max="100" step="5" value="100"></input>
                     <br />
                     <br />
+                    <div id="room-filter-free-timeslots-wrapper">
+                        <b>Free at Timeslots</b><br />
+                        <span id="room-filter-free-timeslots-list">None (click timeslot headers to choose)</span>
+                        <button type="button" id="room-filter-free-timeslots-clear">Clear</button>
+                        <br />
+                        <label for="room-filter-free-timeslots-weight">Weight:</label> <input id="room-filter-free-timeslots-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
+                    </div>
+                    <br />
                     <div id="room-filter-fits-section-wrapper">
                         <input id="room-filter-fits-section" type="checkbox"></input>
                         <label for="room-filter-fits-section">Room fits the selected class</label>
