@@ -96,6 +96,7 @@ class ResourceControllerRestypeTest(ProgramFrameworkTest):
         form.cleaned_data = {"id": rt.id}
         result = self.controller.add_or_edit_restype(form)
         self.assertEqual(result.id, rt.id)
+        form.save_restype.assert_called_once_with(self.program, rt, None)
 
 
 class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
@@ -108,8 +109,12 @@ class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
         if not classrooms:
             self.skipTest("No classrooms in fixture program")
         target = classrooms[0]
-        name = target.name
+        section = self.program.sections().first()
+        section.meeting_times.add(target.event)
+        self.assertTrue(target.assignClassRoom(section))
         self.controller.delete_classroom(target.id)
+        self.assertFalse(section.classroomassignments().exists())
+        self.assertEqual(section.meeting_times.count(), 0)
         # All rooms sharing the name are removed
         self.assertEqual(
             self.program.getClassrooms().filter(name=name).count(), 0
@@ -126,8 +131,8 @@ class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
         resource = Resource.objects.filter(event__program=self.program).first()
         if resource is None:
             self.skipTest("No program resources in fixture program")
-        # identical_resources + program filter may match several rows;
-        # at minimum the targeted id must be gone afterwards.
-        target_id = resource.id
-        self.controller.delete_equipment(target_id)
-        self.assertFalse(Resource.objects.filter(id=target_id).exists())
+        self.assertFalse(
+            Resource.objects.filter(
+                name=resource.name, event__program=self.program
+            ).exists()
+        )
