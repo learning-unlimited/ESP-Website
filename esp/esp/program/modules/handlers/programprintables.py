@@ -1164,16 +1164,13 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog, onsite=False):
-        if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
-        else:
-            filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
+    def student_financial_spreadsheet(self, request, tl, one, two, module, extra, prog):
+        filterObj, found = UserSearchController().create_filter(request, self.program, add_to_context = {'module': 'Student Financial Spreadsheet'})
 
-            if not found:
-                return filterObj
+        if not found:
+            return filterObj
 
-            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         from django.http import HttpResponse
         response = HttpResponse(content_type='text/csv')
@@ -1212,28 +1209,25 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_onsite_no_switchback
-    def studentschedules(self, request, tl, one, two, module, extra, prog, onsite=False):
+    def studentschedules(self, request, tl, one, two, module, extra, prog):
 
         context = {'module': self }
 
-        if onsite:
-            students = [ESPUser.objects.get(id=request.GET['userid'])]
+        if extra:
+            file_type = extra.strip()
+        elif 'img_format' in request.GET:
+            file_type = request.GET['img_format']
         else:
-            if extra:
-                file_type = extra.strip()
-            elif 'img_format' in request.GET:
-                file_type = request.GET['img_format']
-            else:
-                file_type = 'pdf'
-            filterObj, found = UserSearchController().create_filter(request, self.program, target_path = request.get_full_path(), add_to_context = {'module': "Student Schedules (" + file_type + ")", 'default_user_type': 'Student'})
+            file_type = 'pdf'
+        filterObj, found = UserSearchController().create_filter(request, self.program, target_path = request.get_full_path(), add_to_context = {'module': "Student Schedules (" + file_type + ")", 'default_user_type': 'Student'})
 
-            if not found:
-                return filterObj
+        if not found:
+            return filterObj
 
-            students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
+        students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        if len(students) > 1 and file_type == 'pdf' and not onsite:
+        if len(students) > 1 and file_type == 'pdf':
             from django.http import HttpResponseRedirect
             from django.db import close_old_connections
 
@@ -1285,7 +1279,7 @@ class ProgramPrintables(ProgramModuleObj):
             printable_job_executor.submit(run_job, job.id, student_ids, prog.id, file_type)
             return HttpResponseRedirect('/manage/%s/printable_job_status/%s/' % (prog.url, job.id))
 
-        return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
+        return ProgramPrintables.get_student_schedules(request, students, prog, extra)
 
     @staticmethod
     def get_student_schedules(request, students, prog, extra='', onsite=False):

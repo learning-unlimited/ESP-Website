@@ -32,13 +32,22 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from django.http     import HttpResponseRedirect
+from django.http     import HttpResponse, HttpResponseRedirect
 from esp.users.views import search_for_user
 from esp.utils.web import render_to_response
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, needs_onsite, needs_onsite_no_switchback, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
+
+def _get_requested_user(request):
+    """Return the user named by the 'user' GET parameter (default: the requester), or None if there is no such user."""
+    if 'user' not in request.GET:
+        return request.user
+    try:
+        return ESPUser.objects.get(id=int(request.GET['user']))
+    except (ValueError, ESPUser.DoesNotExist):
+        return None
 
 class OnsiteClassSchedule(ProgramModuleObj):
     doc = """Get and/or print a student's schedule for the program."""
@@ -61,10 +70,9 @@ class OnsiteClassSchedule(ProgramModuleObj):
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
-        if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
-        else:
-            user = request.user
+        user = _get_requested_user(request)
+        if user is None:
+            return HttpResponse("Error: Could not find user.", status=400, content_type="text/plain")
         redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
         PrintRequest.objects.create(user=user, printer=printer)
         return HttpResponseRedirect(redirectURL)
@@ -72,10 +80,9 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @aux_call
     @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
-        if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
-        else:
-            user = request.user
+        user = _get_requested_user(request)
+        if user is None:
+            return HttpResponse("Error: Could not find user.", status=400, content_type="text/plain")
 
         #  onsite=False since we probably want a PDF
         return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
