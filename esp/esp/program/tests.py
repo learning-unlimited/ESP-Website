@@ -2488,12 +2488,13 @@ class AdmissionsDashboardTest(TestCase):
     """Tests for selective admissions logic in AdmissionsDashboard."""
 
     def setUp(self):
-        self.admin = make_user('Admin')
-        self.teacher = make_user('Teacher')
-        self.other_teacher = make_user('Teacher')
-        self.student = make_user('Student')
-        self.pending_student = make_user('Student')
-        self.other_student = make_user('Student')
+
+        self.admin = make_user('Administrator', username='admissions_admin')
+        self.teacher = make_user('Teacher', username='admissions_teacher')
+        self.other_teacher = make_user( 'Teacher',username='admissions_other_teacher',)
+        self.student = make_user('Student', username='admissions_student')
+        self.pending_student = make_user('Student',username='admissions_pending_student',)
+        self.other_student = make_user('Student',username='admissions_other_student',)
 
         teach_module = ProgramModule.objects.filter(
             handler='AdmissionsDashboard',
@@ -2588,7 +2589,7 @@ class AdmissionsDashboardTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
+        data = json.loads(response.content)
         app_ids = [app['id'] for app in data['apps']]
 
         self.assertEqual(app_ids, [self.teacher_class_app.id])
@@ -2601,6 +2602,7 @@ class AdmissionsDashboardTest(TestCase):
 
         request = self.factory.get('/')
         request.user = self.admin
+        self.assertTrue(self.admin.isAdmin(self.program))
 
         response = dashboard.apps(
             request,
@@ -2614,7 +2616,7 @@ class AdmissionsDashboardTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
+        data = json.loads(response.content)
         app_ids = [app['id'] for app in data['apps']]
 
         self.assertIn(self.teacher_class_app.id, app_ids)
@@ -2653,7 +2655,7 @@ class AdmissionsDashboardTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
+        data = json.loads(response.content)
 
         self.assertEqual(data['success'], 1)
         self.assertEqual(data['updated'], [])
@@ -2700,7 +2702,7 @@ class AdmissionsDashboardTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
-        data = response.json()
+        data = json.loads(response.content)
 
         self.assertEqual(data['success'], 1)
         self.assertEqual(
