@@ -117,7 +117,7 @@ class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
         self.assertEqual(section.meeting_times.count(), 0)
         # All rooms sharing the name are removed
         self.assertEqual(
-            self.program.getClassrooms().filter(name=name).count(), 0
+            self.program.getClassrooms().filter(name=target.name).count(), 0
         )
 
     def test_add_or_edit_classroom_delegates_to_form(self):
