@@ -1051,9 +1051,11 @@ class ClassSection(models.Model):
         user = teacher
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
+        meeting_times = list(meeting_times)
         for sec in user.getTaughtSections(self.parent_program, include_cancelled = False).exclude(id=self.id):
             for time in sec.meeting_times.all():
-                if meeting_times.filter(id = time.id).exists():
+                # Compare actual times so overlapping blocks of different types (e.g. open class time blocks) conflict
+                if any(mt.start < time.end and time.start < mt.end for mt in meeting_times):
                     return (sec, time)
 
         return None

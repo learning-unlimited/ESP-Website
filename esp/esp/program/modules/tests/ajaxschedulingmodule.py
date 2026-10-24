@@ -32,9 +32,11 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from esp.cal.models import Event, EventType
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import ProgramManagerTestHelper
 from esp.program.modules.program_settings import AJAXChangeLog
+from datetime import timedelta
 import json
 import time
 
@@ -146,6 +148,25 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2, 'override': 'false'})
         self.assertTrue(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.assertTrue(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
+
+    def testTeacherConflictsUseActualTimes(self):
+        """Teacher conflicts compare start/end times, not timeslot IDs."""
+        self.emptySchedule()
+
+        teacher = self.teachers[0]
+        s1, s2 = teacher.getTaughtSections(self.program)[:2]
+        timeslot = self.timeslots.order_by('start')[0]
+        s1.assign_meeting_times([timeslot])
+
+        def open_block(start):
+            return Event.objects.create(
+                program=self.program, event_type=EventType.get_from_desc('Open Class Time Block'),
+                start=start, end=start + timedelta(hours=1), short_description='Walk-in block', description='Walk-in block')
+
+        overlapping = open_block(timeslot.start + timedelta(minutes=30))
+        self.assertEqual(s2.conflicts(teacher, [overlapping]), (s1, timeslot), "Failed to detect overlapping open class time block.")
+        consecutive = open_block(timeslot.end)
+        self.assertIsNone(s2.conflicts(teacher, [consecutive]), "Back-to-back blocks should not conflict.")
 
 
     #############################################################

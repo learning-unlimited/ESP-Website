@@ -1,8 +1,10 @@
+from datetime import timedelta
 from decimal import Decimal
 import json
 
 from django.test import RequestFactory
 
+from esp.cal.models import Event, EventType
 from esp.middleware.threadlocalrequest import ThreadLocals, clear_current_request
 from esp.program.models import ClassCategories, ModeratorRecord, ProgramModule
 from esp.program.modules.admin_search import SEARCH_CATEGORY_CLASSES
@@ -238,6 +240,17 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
         if moderators is not None:
             section.moderators.set(moderators)
 
+    def _schedule_open_block(self, section, start, end):
+        block = Event.objects.create(
+            program=self.program, event_type=EventType.get_from_desc('Open Class Time Block'),
+            start=start, end=end, short_description='Walk-in block', description='Walk-in block')
+        room = Resource.objects.create(name='Walk-in Room', num_students=30, event=block,
+                                       res_type=ResourceType.get_or_create('Classroom'))
+        section.clearRooms()
+        section.clear_meeting_times()
+        section.assign_meeting_times([block])
+        section.assign_room(room)
+
     def test_all_diagnostics_and_run_diagnostics(self):
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         diags = runner.all_diagnostics()
@@ -365,7 +378,40 @@ class SchedulingCheckDiagnosticsTest(ProgramFrameworkTest):
 
         runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
         conflicts = runner.teachers_teaching_two_classes_same_time()
-        self.assertTrue(any(row['Username'] == user for row in conflicts))
+        rows = [row for row in conflicts if row['Username'] == user]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual({rows[0]['Section 1'], rows[0]['Section 2']},
+                         {str(sections[0]) + ' (Teacher)',
+                          str(sections[1]) + ' (' + self.program.getModeratorTitle().capitalize() + ')'})
+
+    def test_teachers_teaching_consecutive_walkins_in_open_blocks(self):
+        sections = list(self.program.sections()[:2])
+        teacher = self.teachers[0]
+        sections[0].parent_class.teachers.set([teacher])
+        sections[1].parent_class.teachers.set([teacher])
+
+        # Half-hour-offset walk-ins that touch but do not overlap
+        start = self.timeslots[0].start + timedelta(minutes=30)
+        self._schedule_open_block(sections[0], start, start + timedelta(hours=1))
+        self._schedule_open_block(sections[1], start + timedelta(hours=1), start + timedelta(hours=2))
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        conflicts = runner.teachers_teaching_two_classes_same_time()
+        self.assertFalse(any(row['Username'] == teacher for row in conflicts))
+
+    def test_teachers_teaching_walkin_overlapping_regular_class(self):
+        sections = list(self.program.sections()[:2])
+        teacher = self.teachers[0]
+        sections[0].parent_class.teachers.set([teacher])
+        sections[1].parent_class.teachers.set([teacher])
+
+        self._schedule_section(sections[0], self.timeslots[0], 'Room 0')
+        start = self.timeslots[0].start + timedelta(minutes=30)
+        self._schedule_open_block(sections[1], start, start + timedelta(hours=1))
+
+        runner = SchedulingCheckRunner(self.program, formatter=RawSCFormatter())
+        conflicts = runner.teachers_teaching_two_classes_same_time()
+        self.assertTrue(any(row['Username'] == teacher for row in conflicts))
 
     def test_multiple_classes_same_resource_same_time(self):
         sections = list(self.program.sections()[:2])
