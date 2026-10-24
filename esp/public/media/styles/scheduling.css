@@ -285,8 +285,21 @@ th.timeslot-header {
     cursor: pointer;
 }
 
+th.timeslot-header button {
+    background: none;
+    border: 0;
+    padding: 0;
+    width: 100%;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
 th.timeslot-filter-selected {
     box-shadow: inset 0 0 0 3px #1e6fd9;
+}
+
+th.timeslot-filter-selected button {
     text-decoration: underline;
 }
 

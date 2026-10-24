@@ -141,7 +141,9 @@ function Matrix(
         }.bind(this));
         filterObject.active = filterObject.val.length > 0;
         $j.each(this.timeslotHeaders, function(timeslot_id, header) {
-            header.toggleClass("timeslot-filter-selected", filterObject.val.indexOf(parseInt(timeslot_id, 10)) >= 0);
+            var selected = filterObject.val.indexOf(parseInt(timeslot_id, 10)) >= 0;
+            header.toggleClass("timeslot-filter-selected", selected);
+            header.find("button").attr("aria-pressed", String(selected));
         });
         $j("#room-filter-free-timeslots-list").text(filterObject.active ? filterObject.val.map(function(timeslot_id) {
             return this.timeslots.get_by_id(timeslot_id).label;
@@ -652,10 +654,12 @@ function Matrix(
         header_corner.append($j("<button id = 'legend_button'>Show Legend</button>"));
         header_row.append(header_corner);
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
-            var timeslotHeader = $j("<th>" + timeslot.label + "</th>")
+            // the button makes the header keyboard-accessible; its clicks bubble up to the header's handler
+            var timeslotHeader = $j("<th>")
                 .addClass("timeslot-header")
                 .attr("data-timeslot-id", timeslot.id)
-                .attr("title", "Click to show rooms free at this time");
+                .attr("title", "Click to show rooms free at this time")
+                .append($j("<button type='button'>").text(timeslot.label).attr("aria-pressed", "false"));
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
             timeslotHeader.appendTo(header_row);
             colModal.push({width: 80, align: 'center'});
