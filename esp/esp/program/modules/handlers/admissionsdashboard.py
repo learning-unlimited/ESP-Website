@@ -81,42 +81,93 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     @json_response(None)
     def apps(self, request, tl, one, two, module, extra, prog):
-        classapps = StudentClassApp.objects.filter(app__program=prog)
+        classapps = StudentClassApp.objects.filter(
+            app__program=prog,
+        ).select_related('app__user', 'subject')
+
         if not request.user.isAdmin(prog):
             classes = request.user.getTaughtClassesFromProgram(prog)
             classapps = classapps.filter(subject__in=classes)
+
         if extra:
             classapps = classapps.filter(subject__id=extra)
+
         if tl != 'manage':
-            classapps = classapps.filter(app__admin_status=StudentProgramApp.APPROVED)
+            classapps = classapps.filter(
+                app__admin_status=StudentProgramApp.APPROVED
+            )
+
+        # Load admission and waitlist statuses in bulk to avoid
+        # running additional queries for every application.
+        decision_status_by_app = {}
+
+        if tl == 'manage' and request.user.isAdmin(prog):
+            decision_classapps = StudentClassApp.objects.filter(
+                app__program=prog,
+                admission_status__in=(
+                    StudentClassApp.ADMITTED,
+                    StudentClassApp.WAITLIST,
+                ),
+            ).select_related('subject')
+
+            for decision_classapp in decision_classapps:
+                statuses = decision_status_by_app.setdefault(
+                    decision_classapp.app_id,
+                    {'admitted': [], 'waitlisted': []},
+                )
+
+                if (
+                    decision_classapp.admission_status
+                    == StudentClassApp.ADMITTED
+                ):
+                    statuses['admitted'].append(decision_classapp.subject)
+                else:
+                    statuses['waitlisted'].append(decision_classapp.subject)
+
+            # Each student program application can have at most one
+            # admitted class.
+            for statuses in decision_status_by_app.values():
+                assert len(statuses['admitted']) <= 1
 
         results = []
+
         for classapp in classapps:
             result = {}
             result['id'] = classapp.id
-            result['user'] = {'id': classapp.app.user.id,
-                              'name': classapp.app.user.name()}
-            result['subject'] = {'id': classapp.subject.id,
-                                 'title': classapp.subject.title}
+            result['user'] = {
+                'id': classapp.app.user.id,
+                'name': classapp.app.user.name(),
+            }
+            result['subject'] = {
+                'id': classapp.subject.id,
+                'title': classapp.subject.title,
+            }
             result['teacher_rating'] = classapp.teacher_rating
             result['teacher_ranking'] = classapp.teacher_ranking
             result['teacher_comment'] = classapp.teacher_comment
             result['student_preference'] = classapp.student_preference
+
             if tl == 'manage' and request.user.isAdmin(prog):
                 result['admin_status'] = classapp.app.admin_status
                 result['admin_comment'] = classapp.app.admin_comment
-                decision_status_lines = []
-                cls = classapp.app.admitted_to_class()
-                if cls is not None:
-                    line = f'Admitted: {cls.title}'
-                    decision_status_lines.append(line)
-                for cls in classapp.app.waitlisted_to_class():
-                    line = f'Waitlisted: {cls.title}'
-                    decision_status_lines.append(line)
-                result['decision_status'] = '\n'.join(decision_status_lines)
-            results.append(result)
-        return {'apps': results}
 
+                decision_status_lines = []
+                statuses = decision_status_by_app.get(
+                    classapp.app_id,
+                    {'admitted': [], 'waitlisted': []},
+                )
+
+                for cls in statuses['admitted']:
+                    decision_status_lines.append(f'Admitted: {cls.title}')
+
+                for cls in statuses['waitlisted']:
+                    decision_status_lines.append(f'Waitlisted: {cls.title}')
+
+                result['decision_status'] = '\n'.join(decision_status_lines)
+
+            results.append(result)
+
+        return {'apps': results}
     @aux_call
     @needs_teacher
     def app(self, request, tl, one, two, module, extra, prog):
