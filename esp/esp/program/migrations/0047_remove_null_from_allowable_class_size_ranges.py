@@ -8,17 +8,17 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0040_printablejob'),
+        ("program", "0046_classstatus_draft"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='classsubject',
-            name='allowable_class_size_ranges',
+            model_name="classsubject",
+            name="allowable_class_size_ranges",
             field=models.ManyToManyField(
                 blank=True,
-                related_name='classsubject_allowedsizes',
-                to='program.ClassSizeRange',
+                related_name="classsubject_allowedsizes",
+                to="program.classsizerange",
             ),
         ),
     ]
