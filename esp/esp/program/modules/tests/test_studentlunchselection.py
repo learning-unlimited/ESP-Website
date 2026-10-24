@@ -35,8 +35,9 @@ Learning Unlimited, Inc.
 import datetime
 
 from esp.cal.models import Event, EventType
-from esp.program.models import ClassCategories, ClassSection, StudentRegistration
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, StudentRegistration
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.modules.handlers.studentlunchselection import StudentLunchSelectionForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import Record, RecordType
 
@@ -89,7 +90,6 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         )
 
         # Create a lunch ClassSubject and ClassSection linked to the timeslot
-        from esp.program.models import ClassSubject
         self.lunch_class = ClassSubject.objects.create(
             title='Lunch',
             category=self.lunch_category,
@@ -305,3 +305,70 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         lunch_section2.meeting_times.clear()
         lunch_section2.delete()
         lunch_event2.delete()
+
+    def _add_lunch_section(self, day):
+        start = datetime.datetime.combine(day, datetime.time(12, 0))
+        event = Event.objects.create(
+            program=self.program,
+            event_type=self.lunch_event_type,
+            start=start,
+            end=start + datetime.timedelta(hours=1),
+            short_description='Lunch %s' % day,
+            description='Lunch %s' % day,
+        )
+        # Lunch subjects are created per day (see LunchConstraintGenerator)
+        lunch_class = ClassSubject.objects.create(
+            title='Lunch',
+            category=self.lunch_category,
+            parent_program=self.program,
+            grade_min=7,
+            grade_max=12,
+            class_size_max=100,
+            duration='1.0',
+        )
+        section = ClassSection.objects.create(
+            parent_class=lunch_class,
+            duration='1.0',
+            max_class_capacity=100,
+        )
+        section.meeting_times.add(event)
+        return event, section
+
+    def _same_day_next_month(self):
+        # Same day-of-month as self.lunch_day, one month later
+        return (self.lunch_day.replace(day=1) + datetime.timedelta(days=32)).replace(day=self.lunch_day.day)
+
+    def test_form_choices_match_full_date(self):
+        other_event, _ = self._add_lunch_section(self._same_day_next_month())
+        form = StudentLunchSelectionForm(self.program, self.student, self.lunch_day)
+        choices = [choice[0] for choice in form.fields['timeslot'].choices]
+        self.assertIn(self.lunch_event.id, choices)
+        self.assertNotIn(other_event.id, choices)
+
+    def test_load_data_prefills_selection_for_matching_date(self):
+        self.lunch_section.preregister_student(self.student)
+        form = StudentLunchSelectionForm(self.program, self.student, self.lunch_day)
+        form.load_data()
+        self.assertEqual(form.initial.get('timeslot'), self.lunch_event.id)
+
+    def test_load_data_ignores_selection_from_other_month(self):
+        _, other_section = self._add_lunch_section(self._same_day_next_month())
+        other_section.preregister_student(self.student)
+        form = StudentLunchSelectionForm(self.program, self.student, self.lunch_day)
+        form.load_data()
+        self.assertNotIn('timeslot', form.initial)
+
+    def test_save_data_keeps_selection_from_other_month(self):
+        _, other_section = self._add_lunch_section(self._same_day_next_month())
+        other_section.preregister_student(self.student)
+        form = StudentLunchSelectionForm(self.program, self.student, self.lunch_day,
+                                         data={'timeslot': self.lunch_event.id})
+        self.assertTrue(form.is_valid())
+        result, msg = form.save_data()
+        self.assertTrue(result, msg)
+        for section in [self.lunch_section, other_section]:
+            self.assertTrue(
+                StudentRegistration.valid_objects().filter(
+                    user=self.student, section=section,
+                ).exists(),
+            )

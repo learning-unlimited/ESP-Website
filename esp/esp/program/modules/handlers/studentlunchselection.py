@@ -54,27 +54,22 @@ class StudentLunchSelectionForm(forms.Form):
 
         #   Set choices for timeslot field
         #   [(None, '')] +
-        events_all = self.program.lunch_timeslots()
-        events_filtered = [x for x in events_all if x.start.day == self.day.day]
+        events_filtered = self.program.lunch_timeslots().filter(start__date=self.day)
         self.fields['timeslot'].choices = [(ts.id, ts.short_description) for ts in events_filtered] + [(-1, 'No lunch period')]
 
     def load_data(self):
-        lunch_registrations = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__is_lunch=True, section__parent_class__parent_program=self.program).select_related('section').prefetch_related('section__meeting_times')
-        lunch_registrations = [lunch_registration for lunch_registration in lunch_registrations if list(lunch_registration.section.meeting_times.all())[0].start.day == self.day.day]
-        if len(lunch_registrations) > 0:
-            section = lunch_registrations[0].section
-            if len(section.get_meeting_times()) > 0:
-                self.initial['timeslot'] = section.get_meeting_times()[0].id
+        lunch_registration = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__category__is_lunch=True, section__parent_class__parent_program=self.program, section__meeting_times__start__date=self.day).select_related('section').first()
+        if lunch_registration:
+            timeslot = lunch_registration.section.meeting_times.filter(start__date=self.day).order_by('start').first()
+            self.initial['timeslot'] = timeslot.id
 
     def save_data(self):
         msg = ''
         result = False
 
         #   Clear existing lunch periods for this day
-        for section in self.user.getSections(self.program):
-            if section.parent_class.category.is_lunch:
-                if section.get_meeting_times()[0].start.day == self.day.day:
-                    section.unpreregister_student(self.user)
+        for section in self.user.getSections(self.program).filter(parent_class__category__is_lunch=True, meeting_times__start__date=self.day).distinct():
+            section.unpreregister_student(self.user)
 
         #   Attempt to sign up for a new lunch period if specified
         if int(self.cleaned_data['timeslot']) != -1:
