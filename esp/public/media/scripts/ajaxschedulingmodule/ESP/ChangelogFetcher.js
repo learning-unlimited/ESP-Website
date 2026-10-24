@@ -64,6 +64,14 @@ function ChangelogFetcher(matrix, api_client){
         }
 
         if (data.changelog) {
+            // Scheduling changes can change where the selected section fits, so re-highlight it around them
+            var sections = this.matrix.sections;
+            var refreshSelection = sections.selectedSection && Object.values(data.changelog).some(function(change) {
+                return change.is_scheduling;
+            });
+            if (refreshSelection) {
+                this.matrix.unhighlightTimeslots(sections.availableTimeslots);
+            }
             $j.each(data.changelog, function(id, change){
                 var section = matrix.sections.getById(change.id);
                 if (change.is_scheduling) {
@@ -84,6 +92,10 @@ function ChangelogFetcher(matrix, api_client){
                 }
                 this.last_applied_index = change.index;
             }.bind(this));
+            if (refreshSelection && sections.selectedSection) {
+                sections.availableTimeslots = sections.getAvailableTimeslots(sections.selectedSection);
+                this.matrix.highlightTimeslots(sections.availableTimeslots, sections.selectedSection, null, { recurringMode: sections.recurringSelectionMode });
+            }
         }
 
         $j("#loadingOverlay").remove();
