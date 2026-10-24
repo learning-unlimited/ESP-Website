@@ -2,9 +2,7 @@
 Direct unit tests for ResourceController (esp/program/controllers/resources.py).
 
 This controller manages program infrastructure: timeslots, resource types,
-classrooms and equipment. It currently has 0% coverage.
-
-Refs: #4842, #3780
+classrooms and equipment.
 """
 
 from unittest.mock import MagicMock
