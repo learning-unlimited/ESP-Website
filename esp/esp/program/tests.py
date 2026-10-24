@@ -41,6 +41,7 @@ from esp.cal.models import EventType, Event
 from esp.program.models import Program, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, ClassCategories, ClassSubject, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.qsd.models import QuasiStaticData
 from esp.resources.models import Resource, ResourceRequest, ResourceType
+from esp.survey.models import Question, QuestionType
 from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Permission
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
@@ -1957,6 +1958,27 @@ class SeedDummyDataTest(TestCase):
             Program.objects.filter(url='SplashDev/2026').exists(),
             'Programs should exist after flush (command re-seeds)',
         )
+
+    def test_seed_dummy_data_survey_questions_render(self):
+        """Seeded survey questions use real QuestionTypes and render without errors."""
+        call_command('seed_dummy_data', verbosity=0)
+        questions = Question.objects.filter(survey__program__url__in=['SplashDev/2026', 'SparkDev/2026'])
+        self.assertGreater(questions.count(), 0)
+        for question in questions:
+            with self.subTest(question=str(question)):
+                question.question_type.full_clean()
+                self.assertIn(question.name, question.render())
+
+    def test_seed_dummy_data_repairs_legacy_question_types(self):
+        """Re-seeding moves questions off the legacy template-less types and removes them."""
+        call_command('seed_dummy_data', verbosity=0)
+        legacy = QuestionType.objects.create(name='rating')
+        Question.objects.filter(name='Overall rating').update(question_type=legacy)
+
+        call_command('seed_dummy_data', verbosity=0)
+        self.assertFalse(QuestionType.objects.filter(name='rating').exists())
+        self.assertFalse(Question.objects.filter(name='Overall rating').exclude(
+            question_type__name='Numeric Rating').exists())
 
 class ClassFlagTeacherVisibilityTest(ProgramFrameworkTest):
     """Tests for making class flags visible to teachers."""

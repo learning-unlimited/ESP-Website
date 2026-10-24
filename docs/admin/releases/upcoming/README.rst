@@ -38,9 +38,11 @@ Bug Fixes
 
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
+- Creating a survey question type in the admin panel now fails with a validation error if there is no matching question template, instead of creating a question type that crashes any survey that uses it.
 
 Developer Notes
 ===============
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+- ``seed_dummy_data`` now builds its survey questions from the standard "Numeric Rating" and "Long Answer" question types, so seeded surveys can be filled out and edited. Re-running it repairs surveys seeded by earlier versions and removes the unused question types they created.

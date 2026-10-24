@@ -6,10 +6,14 @@ Tests for esp.survey
 - View tests: Cross-program teacher survey responses page
 """
 import datetime
+from importlib import import_module
+from types import SimpleNamespace
 
+from django.apps import apps as django_apps
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from django.db import connection
 from django.http import HttpResponse
 from django.test import RequestFactory
 from unittest.mock import MagicMock, patch
@@ -142,6 +146,24 @@ class QuestionTypeTest(TestCase):
             is_countable=True,
         )
         self.assertTrue(qt.is_countable)
+
+    def test_clean_rejects_name_without_template(self):
+        qt = QuestionType(name='open response')
+        with self.assertRaises(ValidationError) as cm:
+            qt.full_clean()
+        self.assertIn('name', cm.exception.message_dict)
+
+    def test_clean_accepts_name_with_template(self):
+        QuestionType(name='Long Answer', _param_names='Rows').full_clean()
+
+    def test_migration_question_types_have_templates(self):
+        create_question_types = import_module(
+            'esp.survey.migrations.0002_auto_20200301_1048').create_question_types
+        # Re-run in case a TransactionTestCase flushed the migrated rows.
+        create_question_types(django_apps, SimpleNamespace(connection=connection))
+        for qt in QuestionType.objects.all():
+            with self.subTest(name=qt.name):
+                qt.full_clean()
 
 
 class QuestionTest(TestCase):

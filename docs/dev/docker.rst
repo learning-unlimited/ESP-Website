@@ -158,6 +158,8 @@ This creates:
 - **Students:** Enrolled in 2–3 classes each, with profiles and guardian info
 - **Volunteers:** With sign-ups for program timeslots
 - **Pages:** QSD content for learn/teach/volunteer flows and printables
+- **Surveys:** A student survey per program with a rating and a long-answer
+  question, plus sample responses
 
 **Options:**
 
