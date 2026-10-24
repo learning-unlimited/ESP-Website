@@ -564,7 +564,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 500)
         self.assertTemplateUsed(response, 'error.html')
         self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
-        self.assertIn("Invalid integer for class ID! Got `invalid_id`", str(response.context['error']))
+        self.assertIn("Invalid integer for class ID!", str(response.context['error']))
 
         # Nonexistent class ID
         response = self.client.get(url, {'cls': '999999'})

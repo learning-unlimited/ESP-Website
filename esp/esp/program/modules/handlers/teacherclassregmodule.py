@@ -905,7 +905,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         try:
             cls_id = int(cls_id)
         except (ValueError, TypeError):
-            raise ESPError(f"Invalid integer for class ID! Got `{cls_id}`", log=False)
+            raise ESPError("Invalid integer for class ID!", log=False)
 
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
