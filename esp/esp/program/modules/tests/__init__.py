@@ -84,7 +84,11 @@ from esp.program.modules.tests.lotteryfrontendmodule import LotteryFrontendModul
 from esp.program.modules.tests.test_student_reg_phase_zero import StudentRegPhaseZeroTestCase
 from esp.program.modules.tests.test_teacher_review_apps import TeacherReviewAppsTest
 from esp.program.modules.tests.schedulingcheckmodule import SchedulingCheckModuleTest
-from esp.program.modules.tests.test_scheduling_check import SchedulingCheckHelpersTest
+from esp.program.modules.tests.test_scheduling_check import (
+    SchedulingCheckHelpersTest,
+    SchedulingCheckModuleViewTest,
+    SchedulingCheckDiagnosticsTest,
+)
 from esp.program.modules.tests.test_student_reg_phase_zero_manage import StudentRegPhaseZeroManageTest
 from esp.program.modules.tests.test_teacherevents import TeacherEventsModuleTest, TeacherEventsCalendarDataTest
 from esp.program.modules.tests.test_studentlunchselection import StudentLunchSelectionTest as StudentLunchSelectionModuleTest
@@ -96,7 +100,7 @@ from esp.program.modules.tests.test_teachereventsmanage_module import (
     TeacherEventsManageModuleIsCompletedTest,
     TeacherEventsManageModuleViewTest,
 )
-from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest
+from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseTest, StudentRegTwoPhaseMisconfiguredTest
 from esp.program.modules.tests.test_onsiteattendance import TestTimesAttendingClass, TestTimesCheckedIn
 from esp.program.modules.tests.test_addclass_concurrency import AddClassConcurrencyRegressionTest
 from esp.program.modules.tests.test_usergroupmodule import UserGroupModuleTests
@@ -105,3 +109,4 @@ from esp.program.modules.tests.onsitecheckoutmodule import OnSiteCheckoutModuleT
 from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAppModuleTest
 
 from esp.program.modules.tests.test_donationmodule import DonationFormTest, DonationModuleTest
+from esp.program.modules.tests.test_draft_creation import MakeAClassDraftTest
