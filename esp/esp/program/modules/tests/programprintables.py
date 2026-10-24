@@ -334,7 +334,7 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         user = self.students[0]
         with patch('esp.utils.latex._gen_latex', return_value=b'%PDF mock'):
             response = self.client.get('/onsite/%s/studentschedules?userid=%s' % (self.program.getUrlBase(), user.id))
-        self.assertNotEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
     def test_student_financial_spreadsheet_invalid_userid(self):
         self._login_admin()
@@ -367,7 +367,7 @@ class TestOnsiteUseridValidation(ProgramFrameworkTest):
         user = self.students[0]
         with patch('esp.utils.latex._gen_latex', return_value=b'%PDF mock'):
             response = self.client.get('/onsite/%s/printschedules?userid=%s' % (self.program.getUrlBase(), user.id))
-        self.assertNotEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
 
     def test_onsiteprintschedules_invalid_userid(self):
         self._login_admin()
