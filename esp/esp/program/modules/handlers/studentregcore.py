@@ -82,6 +82,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         """ Whether the user has paid for this program.  """
         iac = IndividualAccountingController(self.program, user)
         return (iac.has_paid())
+    have_paid.get_or_create_token(('user',))
     have_paid.depend_on_row('accounting.Transfer', lambda transfer: {'user': transfer.user})
     have_paid.depend_on_row('program.SplashInfo', lambda splashinfo: {'user': splashinfo.student})
     have_paid.depend_on_row('accounting.FinancialAidGrant', lambda grant: {'user': grant.request.user})
@@ -174,7 +175,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             giving them the option of printing a confirmation            """
         self.request = request
 
-        from esp.program.modules.module_ext import DBReceipt
+        from esp.program.modules.program_settings import DBReceipt
         from esp.program.modules.forms.admincore import get_template_source
 
         user = request.user
@@ -249,7 +250,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
-        from esp.program.modules.module_ext import DBReceipt
+        from esp.program.modules.program_settings import DBReceipt
 
         # Block cancellation only if the user has made an actual payment via credit card.
         from esp.accounting.controllers import IndividualAccountingController

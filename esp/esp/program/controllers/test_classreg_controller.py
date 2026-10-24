@@ -8,7 +8,7 @@ is caught even if the view returns HTTP 200.
 Test classes:
   - GetCustomFieldsTest:       tag-driven custom field loading (CacheFlushTestCase)
   - SetClassDataTest:          field routing, custom field separation,
-                               section_ key exclusion, is-not regression guard
+                               section_ key exclusion
   - TeacherTimeTest:           teacher_has_time() and require_teacher_has_time()
   - UpdateClassSectionsTest:   section count creation, reduction, duration propagation
 """
@@ -158,15 +158,11 @@ class SetClassDataTest(ClassregControllerTestBase):
 
     def test_section_prefixed_field_excluded_from_cls_dict(self):
         """
-        Regression guard for the is-not identity comparison bug.
-
         Fields starting with 'section_' must NOT be written to cls.__dict__.
-        The original code used `k[:8] is not 'section_'` (identity comparison).
-        In Python 3, string interning is not guaranteed for sliced strings —
-        this can evaluate to True even when k starts with 'section_', silently
-        writing form fields to cls.__dict__. The fix (`!=` value comparison) is
-        already in place. This test documents correct behaviour and prevents
-        future regression.
+
+        set_class_data() routes these to section-level handling instead of
+        the class itself; this test guards against a future edit letting
+        them leak into cls.__dict__ as ordinary class attributes.
         """
         cls = self._make_saved_class()
         form = self._make_mock_form({
