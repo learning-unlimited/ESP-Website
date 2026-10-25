@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from esp.survey.models  import Question, Survey
 
@@ -43,50 +44,6 @@ class QuestionForm(forms.ModelForm):
             '_param_values': ('Parameter Values'),
             'seq': ('Sequence'),
         }
-
-    def clean(self):
-        cleaned_data = super().clean()
-        question_type = cleaned_data.get('question_type')
-        param_values_raw = cleaned_data.get('_param_values', '') or ''
-        if param_values_raw:
-            params = [p.strip() for p in param_values_raw.split('|')]
-        else:
-            params = []
-
-        if question_type:
-            qt_name = question_type.name
-
-            qt_name_lower = qt_name.lower()
-
-            if qt_name_lower in ('multiple choice', 'checkboxes'):
-                choices = [p for p in params if p.strip()]
-                if not choices:
-                    raise forms.ValidationError(
-                        'Please provide at least one choice for a %(qt)s question.',
-                        params={'qt': qt_name},
-                    )
-
-            elif qt_name_lower in ('labeled numeric rating', 'numeric rating'):
-                # First param is the number of ratings; must be an integer >= 2
-                if not params or not params[0]:
-                    raise forms.ValidationError(
-                        '%(qt)s requires the number of ratings to be specified.',
-                        params={'qt': qt_name},
-                    )
-                try:
-                    num_ratings = int(params[0])
-                except (ValueError, TypeError):
-                    raise forms.ValidationError(
-                        'Number of ratings must be a whole number, got "%(val)s".',
-                        params={'val': params[0]},
-                    )
-                if num_ratings < 2:
-                    raise forms.ValidationError(
-                        'Number of ratings must be at least 2, got %(val)s.',
-                        params={'val': num_ratings},
-                    )
-
-        return cleaned_data
 
 class SurveyImportForm(forms.Form):
     survey_id = forms.ModelChoiceField(queryset=None, label = "Survey")
@@ -236,6 +193,13 @@ def parse_csv(csv_file):
                     'Invalid per_class value "%s". Use true/false, yes/no, or 1/0.'
                     % per_class_str
                 )
+
+        # Validate param_values against the question type's rules (same checks as the question form)
+        if question_type is not None:
+            try:
+                Question(question_type=question_type, _param_values=param_values).clean()
+            except ValidationError as e:
+                row_errors.extend(e.messages)
 
         # Validate seq
         seq = 0

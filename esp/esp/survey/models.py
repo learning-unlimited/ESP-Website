@@ -167,6 +167,10 @@ class QuestionType(models.Model):
 
     # Canonical name for the Long Answer row in migrations / DB (template path derives from name).
     LONG_ANSWER_NAME = 'Long Answer'
+    # Types whose _param_values are the list of choices (compared case-insensitively, like template_file).
+    CHOICE_NAMES = ('multiple choice', 'checkboxes')
+    # Normalized (as in Question.get_params) name of the param that sets the size of a rating scale.
+    NUM_RATINGS_PARAM = 'number_of_ratings'
 
     name = models.CharField(max_length=255)
     _param_names = models.TextField("Parameter names", blank=True,
@@ -209,6 +213,8 @@ class Question(models.Model):
     def clean(self):
         super().clean()
         self._validate_long_answer_params()
+        self._validate_choice_params()
+        self._validate_rating_params()
 
     def _is_long_answer_question_type(self):
         """True if this question uses the Long Answer type, without an extra query when FK is cached."""
@@ -242,6 +248,45 @@ class Question(models.Model):
         if rows < 1:
             raise ValidationError({
                 '_param_values': 'Rows must be at least 1.',
+            })
+
+    def _validate_choice_params(self):
+        """Ensure Multiple Choice / Checkboxes questions have at least one choice and no blank choices."""
+        if not self.question_type_id or self.question_type.name.lower() not in QuestionType.CHOICE_NAMES:
+            return
+        choices = [str(c).strip() for c in self.param_values]
+        if not choices:
+            raise ValidationError({
+                '_param_values': f'{self.question_type.name} questions require at least one choice.',
+            })
+        if not all(choices):
+            raise ValidationError({
+                '_param_values': 'Choices cannot be blank.',
+            })
+
+    def _validate_rating_params(self):
+        """Ensure question types with a "Number of ratings" param have a whole number >= 2 for it."""
+        if not self.question_type_id:
+            return
+        names = [x.replace(' ', '_').lower() for x in self.question_type.param_names]
+        if QuestionType.NUM_RATINGS_PARAM not in names:
+            return
+        idx = names.index(QuestionType.NUM_RATINGS_PARAM)
+        vals = self.param_values
+        value = str(vals[idx]).strip() if idx < len(vals) else ''
+        if not value:
+            raise ValidationError({
+                '_param_values': f'{self.question_type.name} questions require a Number of ratings.',
+            })
+        try:
+            num_ratings = int(value)
+        except ValueError:
+            raise ValidationError({
+                '_param_values': 'Number of ratings must be a whole number.',
+            })
+        if num_ratings < 2:
+            raise ValidationError({
+                '_param_values': 'Number of ratings must be at least 2.',
             })
 
     def __str__(self):
