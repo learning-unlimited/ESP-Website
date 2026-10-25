@@ -455,6 +455,53 @@ class IndividualAccountingControllerTest(TestCase):
         finaid = self.iac.amount_finaid()
         self.assertEqual(finaid, Decimal('50.00'))
 
+    def test_amount_finaid_percentage_rounded_to_cents(self):
+        """A percentage-based finaid grant on a non-whole-dollar amount must
+        produce a result rounded to the nearest cent (ROUND_HALF_UP), so
+        that amount_due() is always a whole number of cents.
+
+        Exact scenario from the issue: 25% of $47.46 = $11.865.
+        Without rounding, amount_due() = $35.595, causing:
+          - payonline:      int(35.595 * 100)  = 3560
+          - charge_payment: Decimal(35.595)*100 = 3559.5
+        These never match → "inconsistent_amount" error → student can't pay.
+
+        With ROUND_HALF_UP, finaid = $11.87, amount_due() = $35.59, and
+        int(35.59 * 100) == Decimal(35.59) * 100 == 3559.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.46'))
+
+        self.iac.set_finaid_params(None, 25)  # 25% discount, no dollar cap
+        finaid = self.iac.amount_finaid()
+
+        # 25% of $47.46 = $11.865 → rounds up to $11.87 with ROUND_HALF_UP
+        self.assertEqual(finaid, Decimal('11.87'))
+        # amount_due must be a whole number of cents
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('35.59'))
+        # The two code paths for computing cents must agree
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
+    def test_amount_finaid_percentage_and_dollar_cap_rounded_to_cents(self):
+        """When both a dollar-cap and a percentage are applied together, the
+        final amount_finaid() must still be rounded to whole cents.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.50'))
+
+        # Dollar cap of $5.00 applied first, then 25% on remainder ($42.50)
+        # 25% of $42.50 = $10.625 → rounds up to $10.63
+        # Total finaid = $5.00 + $10.63 = $15.63
+        self.iac.set_finaid_params(5.00, 25)
+        finaid = self.iac.amount_finaid()
+        self.assertEqual(finaid, Decimal('15.63'))
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('31.87'))
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
     def test_amount_due_with_full_finaid(self):
         self.iac.grant_full_financial_aid()
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))

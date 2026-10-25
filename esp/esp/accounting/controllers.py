@@ -46,7 +46,7 @@ from django.db import transaction
 from django.db.models import Sum, Q
 from django.utils.text import slugify
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class BaseAccountingController(object):
@@ -623,7 +623,8 @@ class IndividualAccountingController(ProgramAccountingController):
                 discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
 
-        return aid_amount
+        # Round to the nearest cent
+        return aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def amount_donation(self):
         lit = self.donation_lineitemtype()
