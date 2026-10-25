@@ -12,6 +12,7 @@ from django.db.models import ProtectedError
 from esp.cal.models import Event
 from esp.middleware import ESPError_NoLog
 from esp.program.controllers.resources import ResourceController
+from esp.program.modules.forms.resources import ClassroomForm
 from esp.program.tests import ProgramFrameworkTest
 from esp.resources.models import Resource, ResourceType
 
@@ -111,7 +112,8 @@ class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
         target = classrooms[0]
         section = self.program.sections().first()
         section.meeting_times.add(target.event)
-        self.assertTrue(target.assignClassRoom(section))
+        self.assertTrue(section.assignClassRoom(target))
+        self.assertTrue(section.classroomassignments().exists())
         self.controller.delete_classroom(target.id)
         self.assertFalse(section.classroomassignments().exists())
         self.assertEqual(section.meeting_times.count(), 0)
@@ -127,12 +129,44 @@ class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
             self.program, furnishings=[]
         )
 
+    def test_add_or_edit_classroom_saves_furnishings(self):
+        furnishing_type = ResourceType.objects.create(
+            name="TestFurnishing", program=self.program, consumable=False
+        )
+        form = ClassroomForm(self.program, data={
+            "room_number": "Test Room 101",
+            "times_available": [str(ts.id) for ts in self.timeslots],
+            "num_students": 25,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.controller.add_or_edit_classroom(form, furnishings=[
+            {"furnishing": str(furnishing_type.id), "choice": "Whiteboard"}
+        ])
+        # One room per timeslot, each with its own furnishing in its res_group
+        rooms = self.program.getClassrooms().filter(name="Test Room 101")
+        self.assertEqual(rooms.count(), len(self.timeslots))
+        for room in rooms:
+            furnishings = list(room.associated_resources())
+            self.assertEqual(len(furnishings), 1)
+            self.assertEqual(furnishings[0].res_type, furnishing_type)
+            self.assertEqual(furnishings[0].attribute_value, "Whiteboard")
+            self.assertEqual(furnishings[0].event, room.event)
+
     def test_delete_equipment_removes_program_resources(self):
-        resource = Resource.objects.filter(event__program=self.program).first()
-        if resource is None:
-            self.skipTest("No program resources in fixture program")
+        equip_type = ResourceType.objects.create(
+            name="TestEquipType", program=self.program, consumable=False
+        )
+        # Same-named equipment in every timeslot of the program
+        resources = [
+            Resource.objects.create(
+                name="Test Projector", res_type=equip_type, event=ts
+            )
+            for ts in self.timeslots
+        ]
+        self.assertGreater(len(resources), 1)
+        self.controller.delete_equipment(resources[0].id)
         self.assertFalse(
             Resource.objects.filter(
-                name=resource.name, event__program=self.program
+                name="Test Projector", event__program=self.program
             ).exists()
         )
