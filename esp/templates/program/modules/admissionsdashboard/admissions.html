@@ -22,7 +22,8 @@
 
 </head>
 
-<body class="tl-{{ navbar_list.section }}">
+{# data-bs-no-jquery stops Bootstrap replacing jQuery-UI's $.fn.tooltip/$.fn.button #}
+<body class="tl-{{ navbar_list.section }}" data-bs-no-jquery>
   <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
   <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
   <datalist id="admin-status-choices">

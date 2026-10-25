@@ -44,3 +44,4 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+- Replaced every jQuery UI ``.dialog()`` popup with a Bootstrap 5 modal. jQuery UI is still loaded for its other widgets. The scheduler, onsite class-change grid and admissions dashboard now load Bootstrap and the site theme, with ``data-bs-no-jquery`` on ``<body>`` so Bootstrap does not replace jQuery UI's ``.tooltip()`` and ``.button()``.
