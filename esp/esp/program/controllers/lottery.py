@@ -703,7 +703,7 @@ class LotteryAssignmentController(object):
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_empty_classes'] = numpy.sum(section_enrollments == 0)
         stats['num_enrolled_classes'] = numpy.sum(section_enrollments > 0)
-        stats['num_full_classes'] = numpy.sum(self.section_capacities == section_enrollments)
+        stats['num_full_classes'] = numpy.sum((self.section_capacities > 0) & (section_enrollments >= self.section_capacities))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
         if stats['total_spaces'] > 0:
             stats['overall_capacity_ratio'] = float(stats['num_registrations']) / stats['total_spaces']

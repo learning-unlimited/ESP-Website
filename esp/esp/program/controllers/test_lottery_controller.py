@@ -353,7 +353,7 @@ class LotteryStatsTest(LotteryTestBase):
         self.assertEqual(stats['num_enrolled_classes'], int(numpy.sum(section_enrollments > 0)))
         self.assertEqual(
             stats['num_full_classes'],
-            int(numpy.sum(ctrl.section_capacities == section_enrollments)),
+            int(numpy.sum((ctrl.section_capacities > 0) & (section_enrollments >= ctrl.section_capacities))),
         )
         self.assertEqual(
             stats['num_empty_classes'] + stats['num_enrolled_classes'],
@@ -408,6 +408,7 @@ class LotteryStatsTest(LotteryTestBase):
 
         stats = ctrl.compute_stats(display=False)
         self.assertEqual(stats['total_spaces'], 0)
+        self.assertEqual(stats['num_full_classes'], 0)
         self.assertEqual(stats['overall_capacity_ratio'], 'NA')
 
         extracted = dict(ctrl.extract_stats(stats))
