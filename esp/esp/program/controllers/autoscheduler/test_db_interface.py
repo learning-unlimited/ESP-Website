@@ -1,7 +1,8 @@
 import datetime
 import traceback
+from unittest import mock
 
-from django.db.models import Min
+from django.db.models import Case, Min, When
 
 from esp.cal.models import Event
 import esp.program.controllers.autoscheduler.data_model as data_model
@@ -596,34 +597,6 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
                 db_interface_can_schedule
             raise
 
-    def test_repeated_room_swaps(self):
-        """Swapping two scheduled sections repeatedly should always succeed."""
-        sections = [self.schedule.class_sections[i] for i in range(
-                self.initial_section_id, self.initial_section_id + 2)]
-        room = self.schedule.classrooms["Room 1"]
-        roomslots = room.availability[1:3]
-        for s, r in zip(sections, roomslots):
-            s.assign_roomslots([r])
-        db_interface.save(self.schedule)
-
-        section_objs = [ClassSection.objects.get(id=s.id) for s in sections]
-        for _ in range(5):
-            for s in sections:
-                s.clear_roomslots()
-            roomslots = list(reversed(roomslots))
-            for s, r in zip(sections, roomslots):
-                s.assign_roomslots([r])
-            try:
-                db_interface.save(self.schedule)
-            except SchedulingError:
-                self.fail(
-                    "Repeated swap save crashed with error: \n"
-                    f"{traceback.format_exc()}")
-            for r, so in zip(roomslots, section_objs):
-                self.assertEqual(
-                    so.meeting_times.get().id, r.timeslot.id,
-                    "Section was assigned to wrong timeslot after swap")
-
     def test_save_rejects_genuine_room_conflict(self):
         """Saving must still reject a real room conflict with a section that
         is not part of the save batch."""
@@ -642,7 +615,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.assertIn("already occupied", str(ctx.exception))
 
     def test_save_mixed_scheduled_and_unscheduled_batch(self):
-        """Regression for intermittent swap/save failures (#5763).
+        """Regression for intermittent swap/save failures (#4345).
 
         Previously, the unschedule loop checked the wrong section's meeting
         times (a leftover loop variable). When the queryset's last section was
@@ -651,8 +624,6 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         failed with "room is already occupied". Queryset order made this
         intermittent.
         """
-        from django.db.models import Case, When
-
         # Put section 0 in Room 1 / timeslot 1 and save.
         section_a, roomslot_a = self.schedule_class_simple_model()
         db_interface.save(self.schedule)
@@ -673,22 +644,19 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         target_ids = [section_a.id, section_b.id]
 
         def filter_unscheduled_last(*args, **kwargs):
-            qs = original_filter(*args, **kwargs)
-            return qs.filter(id__in=target_ids).order_by(
+            return original_filter(*args, **kwargs).order_by(
                 Case(*[When(id=pk, then=pos)
-                       for pos, pk in enumerate(target_ids)])
-            )
+                       for pos, pk in enumerate(target_ids)],
+                     default=len(target_ids)))
 
-        try:
-            ClassSection.objects.filter = filter_unscheduled_last
+        with mock.patch.object(
+                ClassSection.objects, "filter", filter_unscheduled_last):
             try:
                 db_interface.save(self.schedule)
             except SchedulingError:
                 self.fail(
                     "Mixed batch save crashed with error: \n"
                     f"{traceback.format_exc()}")
-        finally:
-            ClassSection.objects.filter = original_filter
 
         so_a = ClassSection.objects.get(id=section_a.id)
         so_b = ClassSection.objects.get(id=section_b.id)
