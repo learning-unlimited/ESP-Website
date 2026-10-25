@@ -664,7 +664,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         section_a.clear_roomslots()
         section_a.assign_roomslots([roomslot_b])
 
-        section_b = self.schedule.class_sections[self.initial_section_id + 1]
+        section_b = self.schedule.class_sections[self.initial_section_id + 4]
         section_b.assign_roomslots([roomslot_a])
 
         # Force the queryset order so the previously-unscheduled section is
