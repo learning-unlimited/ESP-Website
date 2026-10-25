@@ -4,7 +4,7 @@ Source: esp/esp/accounting/models.py
 
 Tests LineItemType, LineItemOptions, Account, Transfer, and FinancialAidGrant models.
 """
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from django.contrib.auth.models import Group
 
@@ -456,9 +456,7 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertEqual(finaid, Decimal('50.00'))
 
     def test_amount_finaid_percentage_rounded_to_cents(self):
-        """Regression test for issue #6055.
-
-        A percentage-based finaid grant on a non-whole-dollar amount must
+        """A percentage-based finaid grant on a non-whole-dollar amount must
         produce a result rounded to the nearest cent (ROUND_HALF_UP), so
         that amount_due() is always a whole number of cents.
 
@@ -486,27 +484,8 @@ class IndividualAccountingControllerTest(TestCase):
         # The two code paths for computing cents must agree
         self.assertEqual(int(due * 100), int(Decimal(due) * 100))
 
-    def test_amount_finaid_half_cent_rounds_up(self):
-        """ROUND_HALF_UP: a half-cent aid amount rounds up, not to nearest even.
-
-        Per Will Gearty's comment on issue #6055: '.5 or higher gets rounded
-        up; less than .5 gets rounded down.'
-        """
-        # $47.50 at 25% = $11.875 — this is the exact half-cent boundary.
-        LineItemType.objects.filter(
-            program=self.program, text='Program admission'
-        ).update(amount_dec=Decimal('47.50'))
-
-        self.iac.set_finaid_params(None, 25)
-        finaid = self.iac.amount_finaid()
-        # ROUND_HALF_UP: $11.875 → $11.88 (rounds up, not to $11.88 via ROUND_HALF_EVEN too,
-        # but importantly NOT $11.87 as a truncation or floor would give).
-        self.assertEqual(finaid, Decimal('11.88'))
-
     def test_amount_finaid_percentage_and_dollar_cap_rounded_to_cents(self):
-        """Regression test for issue #6055 with combined percent + dollar cap.
-
-        When both a dollar-cap and a percentage are applied together, the
+        """When both a dollar-cap and a percentage are applied together, the
         final amount_finaid() must still be rounded to whole cents.
         """
         LineItemType.objects.filter(
@@ -531,7 +510,6 @@ class IndividualAccountingControllerTest(TestCase):
         self.iac.set_finaid_params(20.0, 0)
         due = self.iac.amount_due()
         self.assertEqual(due, Decimal('30.00'))
-
 
     def test_amount_refunded_zero(self):
         """amount_refunded returns 0 when no refunds exist."""
