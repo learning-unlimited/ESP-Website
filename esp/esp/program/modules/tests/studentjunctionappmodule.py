@@ -21,11 +21,8 @@ class StudentJunctionAppModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest)
         )
 
     def _make_app(self, student, done=False):
-        # StudentApplication.__init__ already calls save(); do not use objects.create()
-        app = StudentApplication(user=student, program=self.program)
-        if done:
-            app.done = True
-            app.save()
+        app = StudentApplication(user=student, program=self.program, done=done)
+        app.save()
         return app
 
     def test_is_using_student_apps(self):

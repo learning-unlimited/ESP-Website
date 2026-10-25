@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, meets_deadline, aux_call
 from esp.middleware.esperrormiddleware import ESPError
-from esp.program.modules import module_ext
+from esp.program.modules import program_settings
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentAppQuestion, StudentAppReview, StudentRegistration, StudentApplication
@@ -88,7 +88,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=request.user, score__isnull=False)
+                reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls, score__isnull=False)
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
@@ -132,7 +132,7 @@ class TeacherReviewApps(ProgramModuleObj):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
         subjects = request.user.getTaughtClasses(prog)
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         question_list = []
 
         #   Provide forms to modify existing questions, and also blank forms for new questions
@@ -219,11 +219,11 @@ class TeacherReviewApps(ProgramModuleObj):
         reg = StudentRegistration.valid_objects().filter(section__parent_class=cls, user=student).first()
         student.added_class = reg.start_date if reg else None
 
-        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
+        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user, class_subject=cls)
         if teacher_reviews.count() > 0:
             this_review = teacher_reviews.order_by('id')[0]
         else:
-            this_review = StudentAppReview(reviewer=request.user)
+            this_review = StudentAppReview(reviewer=request.user, class_subject=cls)
             this_review.save()
             student.app.reviews.add(this_review)
 
@@ -245,12 +245,12 @@ class TeacherReviewApps(ProgramModuleObj):
                                   request,
                                   {'class': cls,
                                    'reviews': teacher_reviews,
-                                  'program': prog,
+                                   'program': prog,
                                    'student':student,
                                    'form': form})
 
     def prepare(self, context):
-        clrmi = module_ext.ClassRegModuleInfo.objects.get(program=self.program)
+        clrmi = program_settings.ClassRegModuleInfo.objects.get(program=self.program)
         context['num_teacher_questions'] = clrmi.num_teacher_questions;
         context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
         return context

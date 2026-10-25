@@ -192,9 +192,6 @@ class Resource(models.Model):
             new_group = ResourceGroup.objects.create()
             self.res_group = new_group
             self.is_unique = True
-        else:
-            self.is_unique = False
-
         super().save(*args, **kwargs)
 
     # I'd love to kill this, but since it's set as the __sub__, it's hard to
@@ -338,8 +335,9 @@ class Resource(models.Model):
             return ~Q(test_resource.is_taken(True))
         else:
             return not test_resource.is_taken(False)
+    is_available.get_or_create_token(('self',))
     is_available.depend_on_row('resources.ResourceAssignment', lambda instance: {'self': instance.resource})
-    is_available.depend_on_row('cal.Event', lambda instance: {'timeslot': instance})
+    is_available.depend_on_row('cal.Event', lambda instance: {})
 
     def is_taken(self, QObjects=False):
         if QObjects:
@@ -347,6 +345,7 @@ class Resource(models.Model):
         else:
             collision = ResourceAssignment.objects.filter(resource=self)
             return collision.exists()
+
 
     def has_unreturned_prior_assignment(self, timeslot, ignore_section=None):
         """Check if any identical resource (same name and type) in an earlier
