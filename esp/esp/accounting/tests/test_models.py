@@ -460,27 +460,27 @@ class IndividualAccountingControllerTest(TestCase):
         produce a result rounded to the nearest cent (ROUND_HALF_UP), so
         that amount_due() is always a whole number of cents.
 
-        Exact scenario from the issue: 25% of $47.50 = $11.875.
-        Without rounding, amount_due() = $35.625, causing:
-          - payonline:      int(35.625 * 100)  = 3562
-          - charge_payment: Decimal(35.625)*100 = 3562.5
+        Exact scenario from the issue: 25% of $47.46 = $11.865.
+        Without rounding, amount_due() = $35.595, causing:
+          - payonline:      int(35.595 * 100)  = 3560
+          - charge_payment: Decimal(35.595)*100 = 3559.5
         These never match → "inconsistent_amount" error → student can't pay.
 
-        With ROUND_HALF_UP, finaid = $11.88, amount_due() = $35.62, and
-        int(35.62 * 100) == Decimal(35.62) * 100 == 3562.
+        With ROUND_HALF_UP, finaid = $11.87, amount_due() = $35.59, and
+        int(35.59 * 100) == Decimal(35.59) * 100 == 3559.
         """
         LineItemType.objects.filter(
             program=self.program, text='Program admission'
-        ).update(amount_dec=Decimal('47.50'))
+        ).update(amount_dec=Decimal('47.46'))
 
         self.iac.set_finaid_params(None, 25)  # 25% discount, no dollar cap
         finaid = self.iac.amount_finaid()
 
-        # 25% of $47.50 = $11.875 → rounds up to $11.88 with ROUND_HALF_UP
-        self.assertEqual(finaid, Decimal('11.88'))
+        # 25% of $47.46 = $11.865 → rounds up to $11.87 with ROUND_HALF_UP
+        self.assertEqual(finaid, Decimal('11.87'))
         # amount_due must be a whole number of cents
         due = self.iac.amount_due()
-        self.assertEqual(due, Decimal('35.62'))
+        self.assertEqual(due, Decimal('35.59'))
         # The two code paths for computing cents must agree
         self.assertEqual(int(due * 100), int(Decimal(due) * 100))
 
