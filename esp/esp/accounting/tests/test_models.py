@@ -497,9 +497,9 @@ class IndividualAccountingControllerTest(TestCase):
         # Total finaid = $5.00 + $10.63 = $15.63
         self.iac.set_finaid_params(5.00, 25)
         finaid = self.iac.amount_finaid()
-        self.assertEqual(finaid, finaid.quantize(Decimal('0.01')))
+        self.assertEqual(finaid, Decimal('15.63'))
         due = self.iac.amount_due()
-        self.assertEqual(due, due.quantize(Decimal('0.01')))
+        self.assertEqual(due, Decimal('31.87'))
         self.assertEqual(int(due * 100), int(Decimal(due) * 100))
 
     def test_amount_due_with_full_finaid(self):
