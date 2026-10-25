@@ -396,6 +396,12 @@ class ChoiceAndRatingQuestionValidationTest(TestCase):
             for val in ('1', '0', '-3'):
                 self._assert_invalid(qt, val + '|Bad|Good', 'must be at least 2')
 
+    def test_labeled_ratings_require_label_per_rating(self):
+        self._assert_invalid(self.qt_lnr, '2', 'label for each of the 2 ratings')
+        self._assert_invalid(self.qt_lnr, '3|Bad|Good', 'label for each of the 3 ratings')
+        self._assert_invalid(self.qt_lnr, '3|Bad||Good', 'label for each of the 3 ratings')
+        self._assert_invalid(self.qt_lnr, '2|Bad|OK|Good', 'label for each of the 2 ratings')
+
     def test_ratings_keyed_on_param_name_not_type_name(self):
         qt = QuestionType.objects.create(
             name='Custom Scale',

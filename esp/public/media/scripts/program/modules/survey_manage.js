@@ -19,8 +19,8 @@ if (typeof question_types != 'undefined') {
 
     //Parse a count input, falling back to the minimum if it isn't a whole number at or above it
     function clampCount(val, min) {
-        var n = parseInt(val, 10);
-        return (isNaN(n) || n < min)? min : n;
+        var n = Number(val);
+        return (Number.isInteger(n) && n >= min)? n : min;
     }
 
     function updatePars(){
@@ -87,7 +87,7 @@ if (typeof question_types != 'undefined') {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
                     if (params[i] === "Number of ratings") {
-                        par_value = isNaN(parseInt(par_value, 10))? 5 : clampCount(par_value, 2);
+                        par_value = (par_value.trim() === "" || isNaN(Number(par_value)))? 5 : clampCount(par_value, 2);
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
                     } else {
                         $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
@@ -111,7 +111,7 @@ if (typeof question_types != 'undefined') {
         $j("[name=param_val]").each(function() {
             par_values.push($j(this).val());
         });
-        $j("#id__param_values").text(par_values.join("|"));
+        $j("#id__param_values").val(par_values.join("|"));
     }
 
     function updateVals() {

@@ -169,6 +169,8 @@ class QuestionType(models.Model):
     LONG_ANSWER_NAME = 'Long Answer'
     # Types whose _param_values are the list of choices (compared case-insensitively, like template_file).
     CHOICE_NAMES = ('multiple choice', 'checkboxes')
+    # Rating type whose extra _param_values are one label per rating.
+    LABELED_RATING_NAME = 'labeled numeric rating'
     # Normalized (as in Question.get_params) name of the param that sets the size of a rating scale.
     NUM_RATINGS_PARAM = 'number_of_ratings'
 
@@ -288,6 +290,12 @@ class Question(models.Model):
             raise ValidationError({
                 '_param_values': 'Number of ratings must be at least 2.',
             })
+        if self.question_type.name.lower() == QuestionType.LABELED_RATING_NAME:
+            labels = [str(x).strip() for x in vals[len(names):]]
+            if len(labels) != num_ratings or not all(labels):
+                raise ValidationError({
+                    '_param_values': f'Provide a label for each of the {num_ratings} ratings.',
+                })
 
     def __str__(self):
         return f'{self.survey.name}, {self.seq}: "{self.name}" ({self.question_type.name})'
