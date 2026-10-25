@@ -185,20 +185,24 @@ class ProgramCreationForm(BetterModelForm):
                                                         (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(handler__in=['StudentRegPhaseZero', 'StudentRegPhaseZeroManage'])]),
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(handler='ClassChangeRequestModule')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(handler='StudentAcknowledgementModule')]),
-                                                        #   The two application systems are kept in separate questions: each one
-                                                        #   needs its own student-facing module, and mixing them leaves admins with
-                                                        #   review screens backed by a table nothing writes to.
-                                                        #   In-site applications: students answer questions on the site (StudentJunctionAppModule),
-                                                        #   teachers write and score them (TeacherReviewApps), admins accept (AdminReviewApps).
+                                                        #   The in-site application system, offered as one question so that it is
+                                                        #   enabled whole: students answer questions on the site
+                                                        #   (StudentJunctionAppModule), teachers write and score them
+                                                        #   (TeacherReviewApps), admins accept (AdminReviewApps).  Enabling only
+                                                        #   part of it leaves admins with review screens students cannot submit to.
                                                         ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(handler__in=['StudentJunctionAppModule', 'TeacherReviewApps', 'AdminReviewApps'])]),
-                                                        #   Formstack applications: students are sent to an externally hosted form
-                                                        #   (FormstackAppModule) and teachers/admins decide on AdmissionsDashboard.
-                                                        (mark_safe('Will student applications be collected on <b>Formstack</b> instead? (Requires a Formstack account and a per-program API key.)'), [x.id for x in ProgramModule.objects.filter(handler__in=['FormstackAppModule', 'AdmissionsDashboard'])]),
                                                         ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(handler='TeacherModeratorModule')]),
                                                         ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(handler='StudentCertModule')]),
                                                        ])
+        # The Formstack application system is not offered here; only the in-site
+        # system above is. Without this exclusion the catch-all below would hand
+        # AdmissionsDashboard back as its own auto-named question, which enables
+        # half of a pipeline that also needs a Formstack account and API key set
+        # up outside this form. These modules are still assignable through the
+        # Django admin.
+        formstack_app_handlers = ['FormstackAppModule', 'AdmissionsDashboard']
         # Include additional or new modules that haven't been added to the list
-        for x in ProgramModule.objects.filter(choosable=0):
+        for x in ProgramModule.objects.filter(choosable=0).exclude(handler__in=formstack_app_handlers):
             if x.id not in sum(list(self.program_module_question_ids.values()), []): # flatten list of modules
                 self.program_module_question_ids['Would you like to include the {} module?'.format(x.admin_title)] = [x.id]
         # Now initialize the form

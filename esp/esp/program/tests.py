@@ -2495,9 +2495,9 @@ class ClassSubjectCacheTest(ProgramFrameworkTest):
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
-    handler lookups (not admin_title), and that each application question
-    enables one complete pipeline: the two application systems are offered
-    separately, and each offer includes its own student-facing module.
+    handler lookups (not admin_title), that the in-site application question
+    enables that whole pipeline including its student-facing module, and that
+    the Formstack application system is not offered here at all.
     """
 
     def setUp(self):
@@ -2527,24 +2527,18 @@ class ProgramCreationFormHandlerLookupTest(TestCase):
             for pm_id in expected:
                 self.assertIn(pm_id, ids, f"{handler} missing from the in-site application question")
 
-    def test_in_site_question_excludes_formstack_modules(self):
-        """The in-site question must not drag in the Formstack-backed modules."""
-        ids = self._ids_for_question('Do students have to apply to individual classes?')
-        self.assertIsNotNone(ids)
-        for handler in ('AdmissionsDashboard', 'FormstackAppModule'):
-            for pm_id in self._ids_for_handler(handler):
-                self.assertNotIn(pm_id, ids, f"{handler} should be offered under the Formstack question")
+    def test_formstack_modules_not_offered(self):
+        """No question offers a Formstack application module.
 
-    def test_formstack_question_enables_whole_pipeline(self):
-        """The Formstack question must include its student module and both dashboard rows."""
-        ids = self._ids_for_question('Formstack')
-        self.assertIsNotNone(ids)
+        This covers the auto-generated catch-all questions as well as the
+        hand-written ones: AdmissionsDashboard is choosable=0, so without an
+        explicit exclusion the catch-all would offer it under its admin_title.
+        """
+        offered = sum(list(self.form.program_module_question_ids.values()), [])
         for handler in ('FormstackAppModule', 'AdmissionsDashboard'):
-            expected = self._ids_for_handler(handler)
-            if not expected:
-                self.skipTest(f"{handler} not in DB")
-            for pm_id in expected:
-                self.assertIn(pm_id, ids, f"{handler} missing from the Formstack application question")
+            for pm_id in self._ids_for_handler(handler):
+                self.assertNotIn(pm_id, offered,
+                                 f"{handler} should not be offered in the program settings questions")
 
     def test_handler_based_lookup_includes_expected_module(self):
         """Spot-check: CreditCardModule_Stripe appears under the credit card question."""
