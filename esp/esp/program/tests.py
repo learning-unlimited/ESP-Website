@@ -1473,6 +1473,12 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         #   - Some basic stats
         self.assertEqual(stats['num_enrolled_students'], len([x for x in self.students if len(x.getEnrolledClasses(self.program)) > 0]))
         self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
+        scheduled_sections = list(self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).distinct())
+        self.assertEqual(stats['num_sections'], len(scheduled_sections))
+        self.assertEqual(stats['num_empty_classes'], len([s for s in scheduled_sections if s.num_students() == 0]))
+        self.assertEqual(stats['num_enrolled_classes'], len([s for s in scheduled_sections if s.num_students() > 0]))
+        self.assertEqual(stats['num_full_classes'], len([s for s in scheduled_sections if s.isFull()]))
+        self.assertEqual(stats['num_empty_classes'] + stats['num_enrolled_classes'], stats['num_sections'])
         #   - 'Screwed students' list
         for student in self.students:
             stats_entry = list([x for x in stats['students_by_screwedness'] if x[1] == student.id])

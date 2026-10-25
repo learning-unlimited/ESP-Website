@@ -332,3 +332,111 @@ class LotterySaveTest(LotteryTestBase):
             relationship__name='Enrolled',
         ).count()
         self.assertEqual(total_before, total_after)
+
+
+# ---------------------------------------------------------------------------
+# LotteryStatsTest
+# ---------------------------------------------------------------------------
+
+class LotteryStatsTest(LotteryTestBase):
+    """Tests for compute_stats() and extract_stats() class enrollment statistics."""
+
+    def test_compute_stats_class_enrollment_counts(self):
+        """compute_stats() accurately computes class enrollment counts and ratios."""
+        ctrl = self._make_controller()
+        ctrl.compute_assignments()
+        stats = ctrl.compute_stats(display=False)
+
+        section_enrollments = numpy.sum(ctrl.student_sections, axis=0)
+        self.assertTrue(numpy.array_equal(stats['section_enrollments'], section_enrollments))
+        self.assertEqual(stats['num_empty_classes'], int(numpy.sum(section_enrollments == 0)))
+        self.assertEqual(stats['num_enrolled_classes'], int(numpy.sum(section_enrollments > 0)))
+        self.assertEqual(
+            stats['num_full_classes'],
+            int(numpy.sum(ctrl.section_capacities == section_enrollments)),
+        )
+        self.assertEqual(
+            stats['num_empty_classes'] + stats['num_enrolled_classes'],
+            stats['num_sections'],
+        )
+        self.assertEqual(stats['total_spaces'], int(numpy.sum(ctrl.section_capacities)))
+        self.assertAlmostEqual(
+            stats['overall_capacity_ratio'],
+            float(stats['num_registrations']) / stats['total_spaces'],
+        )
+
+    def test_compute_stats_when_all_classes_empty(self):
+        """When no students are enrolled, all classes are counted as empty."""
+        ctrl = self._make_controller()
+        ctrl.clear_assignments()
+        stats = ctrl.compute_stats(display=False)
+
+        self.assertEqual(stats['num_empty_classes'], ctrl.num_sections)
+        self.assertEqual(stats['num_enrolled_classes'], 0)
+        self.assertEqual(stats['num_full_classes'], 0)
+        self.assertEqual(stats['overall_capacity_ratio'], 0.0)
+
+    def test_compute_stats_mixed_empty_partial_and_full_classes(self):
+        """compute_stats() distinguishes empty, enrolled, and full sections."""
+        ctrl = self._make_controller()
+        ctrl.clear_assignments()
+        self.assertGreaterEqual(ctrl.num_sections, 3)
+
+        # Section 0: full (capacity 2, 2 students enrolled)
+        # Section 1: partially filled (capacity 5, 1 student enrolled)
+        # Remaining sections: empty (0 students enrolled)
+        ctrl.section_capacities[:] = 5
+        ctrl.section_capacities[0] = 2
+        ctrl.student_sections[0, 0] = True
+        ctrl.student_sections[1, 0] = True
+        ctrl.student_sections[2, 1] = True
+
+        stats = ctrl.compute_stats(display=False)
+        self.assertEqual(stats['num_full_classes'], 1)
+        self.assertEqual(stats['num_enrolled_classes'], 2)
+        self.assertEqual(stats['num_empty_classes'], ctrl.num_sections - 2)
+        self.assertEqual(stats['num_registrations'], 3)
+        expected_spaces = 2 + 5 * (ctrl.num_sections - 1)
+        self.assertEqual(stats['total_spaces'], expected_spaces)
+        self.assertAlmostEqual(stats['overall_capacity_ratio'], 3.0 / expected_spaces)
+
+    def test_compute_stats_zero_total_spaces_ratio_is_na(self):
+        """When total_spaces is 0, overall_capacity_ratio is 'NA'."""
+        ctrl = self._make_controller()
+        ctrl.clear_assignments()
+        ctrl.section_capacities[:] = 0
+
+        stats = ctrl.compute_stats(display=False)
+        self.assertEqual(stats['total_spaces'], 0)
+        self.assertEqual(stats['overall_capacity_ratio'], 'NA')
+
+        extracted = dict(ctrl.extract_stats(stats))
+        self.assertIn('NA% of available spaces were filled', extracted['ratios'])
+
+    def test_extract_stats_includes_class_enrollment_stats(self):
+        """extract_stats() formats class enrollment counts and capacity ratio for display."""
+        ctrl = self._make_controller()
+        ctrl.compute_assignments()
+        stats = ctrl.compute_stats(display=False)
+        extracted = dict(ctrl.extract_stats(stats))
+
+        self.assertIn('counts', extracted)
+        counts = extracted['counts']
+        self.assertIn(f'{stats["total_spaces"]:6d} total available spaces', counts)
+        self.assertIn(f'{stats["num_sections"]:6d} available sections', counts)
+        self.assertIn(
+            f'{stats["num_enrolled_classes"]:6d} sections had at least 1 student enrolled',
+            counts,
+        )
+        self.assertIn(f'{stats["num_empty_classes"]:6d} sections were empty', counts)
+        self.assertIn(
+            f'{stats["num_full_classes"]:6d} sections were filled to capacity',
+            counts,
+        )
+
+        self.assertIn('ratios', extracted)
+        ratios = extracted['ratios']
+        self.assertIn(
+            f'{stats["overall_capacity_ratio"] * 100.0:2.2f}% of available spaces were filled',
+            ratios,
+        )
