@@ -17,6 +17,12 @@ $j("th.selector").click(function() {
 if (typeof question_types != 'undefined') {
     var par_values = $j("#id__param_values").text().split("|");
 
+    //Parse a count input, falling back to the minimum if it isn't a whole number at or above it
+    function clampCount(val, min) {
+        var n = Number(val);
+        return (Number.isInteger(n) && n >= min)? n : min;
+    }
+
     function updatePars(){
         var $td = $j("#id__param_values").parents("td");
         var quest_ind = $j("#id_question_type").val();
@@ -24,9 +30,9 @@ if (typeof question_types != 'undefined') {
         //Delete old fields and their labels
         $j(".param_field, .param_extra_field").remove();
         if (["Multiple Choice", "Checkboxes"].includes(quest_type)) {
-            var num_choices = (par_values.length > 1)? par_values.length : 5;
+            var num_choices = (par_values.length > 1 || par_values[0] !== "")? par_values.length : 5;
             //Add field for user to specify number of choices
-            $td.append("<span class='param_extra_field'>Number of choices: <input type='text' id='num_choices' value='" + num_choices + "'><br/></span>");
+            $td.append("<span class='param_extra_field'>Number of choices: <input type='number' id='num_choices' min='1' value='" + num_choices + "'><br/></span>");
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for choices
@@ -36,13 +42,12 @@ if (typeof question_types != 'undefined') {
             }
             updateVals();
             $j("#num_choices").change(function() {
-                num_choices = $j(this).val();
+                num_choices = clampCount($j(this).val(), 1);
+                $j(this).val(num_choices);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (let i = 0; i < num_choices; i++) {
-                    if ($fields[i] === undefined){
-                        $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
-                    }
+                for (let i = $fields.length; i < num_choices; i++) {
+                    $td.append("<span class='param_field'>Choice " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                 }
                 //Remove extra fields if necessary
                 $fields.slice(num_choices).remove();
@@ -52,7 +57,7 @@ if (typeof question_types != 'undefined') {
         } else if (quest_type == "Labeled Numeric Rating") {
             var num_ratings = (par_values.length > 1)? par_values.length - 1 : 5;
             //Add field for user to specify number of ratings
-            $td.append("<span class='param_extra_field'>Number of ratings: <input type='text' id='num_ratings' name='param_val' value='" + num_ratings + "'><br/></span>");
+            $td.append("<span class='param_extra_field'>Number of ratings: <input type='number' id='num_ratings' min='2' name='param_val' value='" + num_ratings + "'><br/></span>");
             //We want to prevent people from submitting the form by pressing enter
             $td.append("<button class='param_extra_field' type='submit' disabled hidden></button>");
             //Add fields for rating labels
@@ -63,13 +68,12 @@ if (typeof question_types != 'undefined') {
             updateVals();
             //Update number of fields if requested
             $j("#num_ratings").change(function() {
-                num_ratings = $j(this).val();
+                num_ratings = clampCount($j(this).val(), 2);
+                $j(this).val(num_ratings);
                 var $fields = $j(".param_field");
                 //Add extra fields if necessary
-                for (let i = 0; i < num_ratings; i++) {
-                    if ($fields[i] === undefined){
-                        $td.append("<span class='param_field'>Rating " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
-                    }
+                for (let i = $fields.length; i < num_ratings; i++) {
+                    $td.append("<span class='param_field'>Rating " + (i + 1) + ": <input type='text' name='param_val'><br/></span>");
                 }
                 //Remove extra fields if necessary
                 $fields.slice(num_ratings).remove();
@@ -82,9 +86,18 @@ if (typeof question_types != 'undefined') {
             if (params && params.length > 0) {
                 for (let i = 0; i < params.length; i++) {
                     var par_value = (i in par_values)? par_values[i] : "";
-                    $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    if (params[i] === "Number of ratings") {
+                        par_value = (par_value.trim() === "" || isNaN(Number(par_value)))? 5 : clampCount(par_value, 2);
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='number' min='2' class='num_ratings_input' name='param_val' value='" + par_value + "'><br/></span>");
+                    } else {
+                        $td.append("<span class='param_field'>" + params[i] + ": <input type='text' name='param_val' value='" + par_value + "'><br/></span>");
+                    }
                 }
                 $td.parents("tr").show();
+                $j(".num_ratings_input").change(function() {
+                    $j(this).val(clampCount($j(this).val(), 2));
+                    updateTextArea();
+                });
             } else {
                 //If there aren't any parameters, hide the whole row
                 $td.parents("tr").hide();
@@ -98,7 +111,7 @@ if (typeof question_types != 'undefined') {
         $j("[name=param_val]").each(function() {
             par_values.push($j(this).val());
         });
-        $j("#id__param_values").text(par_values.join("|"));
+        $j("#id__param_values").val(par_values.join("|"));
     }
 
     function updateVals() {

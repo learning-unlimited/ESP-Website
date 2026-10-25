@@ -65,6 +65,7 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
 from esp.middleware import ESPError
+from esp.program.class_status import ClassStatus
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -308,14 +309,38 @@ class ProgramEmailField(models.EmailField):
         path = 'django.db.models.EmailField'
         return name, path, args, kwargs
 
+# Program.url is a two-segment path (e.g. 'Splash/2007_Fall'); the accepted
+# characters are those the program URL patterns in esp/urls.py can route.
+program_url_validator = validators.RegexValidator(
+    regex=r'\A[A-Za-z0-9_ -]+/[A-Za-z0-9_ -]+\Z',
+    message='Program URL must have the form ProgramType/Term (e.g. Splash/2007_Fall) '
+            'and may only contain letters, numbers, spaces, underscores, and hyphens.',
+)
+
+# Program names are free-form text, so only reject the characters that make
+# markup injection possible.
+program_name_validator = validators.RegexValidator(
+    regex=r'\A[^<>\x00-\x1f\x7f]+\Z',
+    message='Program name may not contain control characters or the characters "<" and ">".',
+)
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80, unique=True)
-    name = models.CharField(max_length=80)
+    url = models.CharField(
+        max_length=80,
+        unique=True,
+        help_text='The URL fragment for this program, of the form ProgramType/Term (e.g. Splash/2007_Fall).',
+        validators=[program_url_validator],
+    )
+    name = models.CharField(
+        max_length=80,
+        help_text='The full name of this program (e.g. Splash Fall 2007).',
+        validators=[program_name_validator],
+    )
     grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
@@ -949,11 +974,17 @@ class Program(models.Model, CustomFormsLinkModel):
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
 
-    def classes(self):
-        return ClassSubject.objects.filter(parent_program = self).order_by('id')
+    def classes(self, include_drafts = False):
+        classes = ClassSubject.objects.filter(parent_program = self)
+        if not include_drafts:
+            classes = classes.exclude(status = ClassStatus.DRAFT)
+        return classes.order_by('id')
 
-    def sections(self):
-        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
+    def sections(self, include_drafts = False):
+        sections = ClassSection.objects.filter(parent_class__parent_program=self)
+        if not include_drafts:
+            sections = sections.exclude(status = ClassStatus.DRAFT)
+        return sections.distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self, types=None, exclude_types=None):
         """ Get the time slots for a program.

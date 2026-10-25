@@ -40,7 +40,8 @@ import unicodedata
 from django.conf import settings
 from argcache import cache_function
 from esp.users.models import StudentInfo, K12School, RecordType, ZipCode
-from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories
+from esp.program.models import Program, ProgramModule, ClassFlag, ClassFlagType, ClassCategories, \
+                               program_name_validator, program_url_validator
 from esp.dbmail.models import PlainRedirect
 from esp.utils.widgets import DateTimeWidget
 from django import forms
@@ -150,7 +151,8 @@ def make_id_tuple(object_list):
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
 
-    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label=mark_safe('Term or year, in URL form (e.g. <tt>2007_Fall</tt>)'), widget=forms.TextInput(attrs={'size': '40'}),
+                           error_messages={'invalid': 'Enter the term in URL form: only letters, numbers, underscores, and hyphens, with no spaces (e.g., 2007_Fall).'})
     term_friendly = forms.CharField(label=mark_safe('Term, in English (e.g. <tt>Fall 2007</tt>)'), widget=forms.TextInput(attrs={'size': '40'}))
 
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
@@ -213,6 +215,18 @@ class ProgramCreationForm(BetterModelForm):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
+    #   program_type and term_friendly are concatenated into Program.name, which
+    #   isn't a field on this form, so its model validator never runs here.
+    def clean_program_type(self):
+        program_type = self.cleaned_data['program_type']
+        program_name_validator(program_type)
+        return program_type
+
+    def clean_term_friendly(self):
+        term_friendly = self.cleaned_data['term_friendly']
+        program_name_validator(term_friendly)
+        return term_friendly
+
     def clean_program_modules(self):
         mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
         # Add "include by default" modules (choosable property = 1)
@@ -225,7 +239,8 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance.
         '''
         super().clean()
-        if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
+        if all(field in self.cleaned_data
+               for field in ('program_type', 'term', 'term_friendly')):
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
@@ -238,6 +253,19 @@ class ProgramCreationForm(BetterModelForm):
                   }
             self.cleaned_data['new_url'] = new_url
             self.cleaned_data['new_name'] = new_name
+            # url and name aren't fields on this form, so neither their validators
+            # nor their max_length run against the assembled values.
+            try:
+                program_url_validator(new_url)
+            except forms.ValidationError as e:
+                self.add_error('program_type', e.messages)
+            for value, label, model_field, form_field in ((new_url, 'URL', 'url', 'term'),
+                                                          (new_name, 'name', 'name', 'term_friendly')):
+                max_length = Program._meta.get_field(model_field).max_length
+                if len(value) > max_length:
+                    self.add_error(form_field, 'The program %s would be %d characters long, but the '
+                                               'limit is %d. Please shorten the program type or term.'
+                                               % (label, len(value), max_length))
             # Check that there isn't another program with this URL or name
             if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])
