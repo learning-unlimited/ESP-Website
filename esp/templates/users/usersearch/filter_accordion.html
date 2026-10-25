@@ -5,7 +5,8 @@
 
 <h4 class="any"><a href="#">User name</a></h4>
 <div><label for="username">Enter a username:</label> <input type="text" size="30" name="username" id="username" autocomplete="new-username" /> <br />
-<small>(Supports regular expressions)</small></div>
+(<label for="username_regex">Regex?</label> <input type="checkbox" value="true" name="username__regex" id="username_regex" />) <br />
+<small>(Matches the whole username unless "Regex?" is checked)</small></div>
 
 <h4 class="any"><a href="#">Last name</a></h4>
 <div><label for="last_name">Enter a portion of the last name:</label> <input type="text" size="30" name="last_name" id="last_name" /> <br />
@@ -94,9 +95,6 @@ Max number: <input type="text" size="3" name="hours_max" value="" />
 
 <h4 class="teacher"><a href="#">Teachers of a student</a></h4>
 <div>
-<form id="student_in_class" name="student_in_class" method="POST" action="{{ request.path }}">
-    {% csrf_token %}
-    {{ student_search_form }}
-</form>
+{{ student_search_form }}
 </div>
 </div>
