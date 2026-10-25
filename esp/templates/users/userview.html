@@ -44,7 +44,7 @@
     <h2>
         Administrative links
     </h2>
-    <form id="morphlink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+    <form id="morphlink-form" action="{% url 'morph_into_user' %}" method="post" style="display:inline">{% csrf_token %}
         <input type="hidden" name="morph_user" value="{{user.id}}"/>
         <a id="morphlink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Morph into this user</a>
     </form>
@@ -55,7 +55,7 @@
         <a id="biolink" class="sidelink" href="/accounting/user?target_user={{user.id}}">View accounting info</a>
     {% endif %}
     {% if "Teacher" in user.getUserTypes %}
-        <a id="biolink" class="sidelink" href="/teach/teachers/{{user.username}}/bio.html">Go to teacher bio</a>
+        <a id="biolink" class="sidelink" href="{% url 'teacher_bio' tl='teach' username=request.user.username %}">Go to teacher bio</a>
     {% endif %}
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
@@ -67,7 +67,7 @@
                 Student links<br/>
                 (for {{program.niceName}})
             </h2>
-            <form id="onsitelink-form" action="/myesp/morph" method="post" style="display:inline">{% csrf_token %}
+            <form id="onsitelink-form" action="{% url 'morph_into_user' %}" method="post" style="display:inline">{% csrf_token %}
                 <input type="hidden" name="morph_user" value="{{user.id}}"/>
                 <input type="hidden" name="onsite" value="{{program.id}}"/>
                 <a id="onsitelink" class="sidelink" onclick="$j(this).parent().submit();return false;" href="">Onsite registration</a>

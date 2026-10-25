@@ -9,6 +9,9 @@ import datetime
 
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
+from django.http import HttpResponse
+from django.test import RequestFactory
 from unittest.mock import MagicMock, patch
 
 from esp.program.models import Program
@@ -22,6 +25,8 @@ from esp.survey.models import (
     Survey,
     SurveyResponse,
 )
+from esp.survey.views import survey_review
+from esp.program.modules.forms.surveys import QuestionForm
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 
@@ -173,6 +178,71 @@ class QuestionTest(TestCase):
         self.assertIsInstance(params, dict)
 
 
+class LongAnswerQuestionValidationTest(TestCase):
+    """Long Answer questions store textarea height in _param_values (Rows)."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='Long Answer Survey',
+            program=self.program,
+            category='learn',
+        )
+        self.la_type, _ = QuestionType.objects.get_or_create(
+            name='Long Answer',
+            defaults={
+                '_param_names': 'Rows',
+                'is_numeric': False,
+                'is_countable': False,
+            },
+        )
+
+    def _question(self, param_values):
+        return Question(
+            survey=self.survey,
+            name='Tell us more',
+            question_type=self.la_type,
+            _param_values=param_values,
+            seq=0,
+        )
+
+    def test_full_clean_accepts_positive_rows(self):
+        q = self._question('8')
+        q.full_clean()
+
+    def test_full_clean_rejects_negative_rows(self):
+        q = self._question('-3')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_zero_rows(self):
+        q = self._question('0')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_empty_param(self):
+        q = self._question('')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_non_integer_rows(self):
+        q = self._question('abc')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_whitespace_only_rows(self):
+        q = self._question('   ')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+    def test_full_clean_rejects_float_string_rows(self):
+        q = self._question('3.5')
+        with self.assertRaises(ValidationError):
+            q.full_clean()
+
+
 class AnswerTest(TestCase):
     def setUp(self):
         super().setUp()
@@ -212,6 +282,156 @@ class AnswerTest(TestCase):
         self.answer.save()
         self.answer.refresh_from_db()
         self.assertEqual(self.answer.answer, 'New answer')
+
+    def testAnswerCleanValidation(self):
+        '''Test that Answer.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both null -> OK
+        ans_null = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=None)
+        ans_null.clean()  # Should not raise
+
+        # Both set -> OK
+        ct = ContentType.objects.get_for_model(self.program)
+        ans_set = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=self.program.id)
+        ans_set.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError on save()
+        ans_ct_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_ct_only.save()
+
+        # content_type null, object_id set -> ValidationError on save()
+        ans_id_only = Answer(survey_response=self.response, question=self.question, value='test', content_type=None, object_id=self.program.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            ans_id_only.save()
+
+
+# ===== Choice / Rating Question Validation Tests =====
+
+class ChoiceAndRatingQuestionValidationTest(TestCase):
+    """Choice and rating questions store their choices / scale size in _param_values (#3858)."""
+
+    def setUp(self):
+        super().setUp()
+        _setup_roles()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+        self.survey = Survey.objects.create(
+            name='Validation Test Survey',
+            program=self.program,
+            category='learn',
+        )
+        # Same definitions as the survey 0002 data migration
+        self.qt_mc, _ = QuestionType.objects.get_or_create(
+            name='Multiple Choice', defaults={'is_countable': True})
+        self.qt_cb, _ = QuestionType.objects.get_or_create(
+            name='Checkboxes', defaults={'is_countable': True})
+        self.qt_nr, _ = QuestionType.objects.get_or_create(
+            name='Numeric Rating',
+            defaults={
+                '_param_names': 'Number of ratings|Lower text|Middle text|Upper text',
+                'is_numeric': True,
+                'is_countable': True,
+            },
+        )
+        self.qt_lnr, _ = QuestionType.objects.get_or_create(
+            name='Labeled Numeric Rating',
+            defaults={
+                '_param_names': 'Number of ratings',
+                'is_numeric': True,
+                'is_countable': True,
+            },
+        )
+
+    def _question(self, qt, param_values):
+        return Question(
+            survey=self.survey,
+            name='Test Question',
+            question_type=qt,
+            _param_values=param_values,
+            seq=0,
+        )
+
+    def _assert_invalid(self, qt, param_values, message):
+        with self.assertRaisesMessage(ValidationError, message):
+            self._question(qt, param_values).full_clean()
+
+    def test_choices_valid(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._question(qt, 'Choice 1|Choice 2|Choice 3').full_clean()
+            self._question(qt, 'Only choice').full_clean()
+
+    def test_choices_rejects_empty(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._assert_invalid(qt, '', 'require at least one choice')
+            self._assert_invalid(qt, '   ', 'require at least one choice')
+
+    def test_choices_rejects_blank_choice(self):
+        for qt in (self.qt_mc, self.qt_cb):
+            self._assert_invalid(qt, '  |  ', 'Choices cannot be blank')
+            self._assert_invalid(qt, 'A||B', 'Choices cannot be blank')
+            self._assert_invalid(qt, 'A|B|', 'Choices cannot be blank')
+
+    def test_choices_type_name_case_insensitive(self):
+        qt = QuestionType.objects.create(name='checkboxes')
+        self._assert_invalid(qt, '', 'require at least one choice')
+
+    def test_ratings_valid(self):
+        self._question(self.qt_nr, '5|Bad|OK|Good').full_clean()
+        self._question(self.qt_nr, '2').full_clean()
+        self._question(self.qt_lnr, '3|Bad|OK|Good').full_clean()
+
+    def test_ratings_rejects_missing(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            self._assert_invalid(qt, '', 'require a Number of ratings')
+            self._assert_invalid(qt, ' |Bad|Good', 'require a Number of ratings')
+
+    def test_ratings_rejects_non_integer(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            self._assert_invalid(qt, 'f|Bad|Good', 'must be a whole number')
+            self._assert_invalid(qt, '2.5|Bad|Good', 'must be a whole number')
+
+    def test_ratings_rejects_below_minimum(self):
+        for qt in (self.qt_nr, self.qt_lnr):
+            for val in ('1', '0', '-3'):
+                self._assert_invalid(qt, val + '|Bad|Good', 'must be at least 2')
+
+    def test_labeled_ratings_require_label_per_rating(self):
+        self._assert_invalid(self.qt_lnr, '2', 'label for each of the 2 ratings')
+        self._assert_invalid(self.qt_lnr, '3|Bad|Good', 'label for each of the 3 ratings')
+        self._assert_invalid(self.qt_lnr, '3|Bad||Good', 'label for each of the 3 ratings')
+        self._assert_invalid(self.qt_lnr, '2|Bad|OK|Good', 'label for each of the 2 ratings')
+
+    def test_ratings_keyed_on_param_name_not_type_name(self):
+        qt = QuestionType.objects.create(
+            name='Custom Scale',
+            _param_names='Prompt|Number of ratings',
+            is_numeric=True,
+        )
+        self._question(qt, 'Rate it|4').full_clean()
+        self._assert_invalid(qt, 'Rate it|f', 'must be a whole number')
+        self._assert_invalid(qt, 'Rate it', 'require a Number of ratings')
+
+    def test_other_types_unaffected(self):
+        qt = QuestionType.objects.create(name='Free Response')
+        self._question(qt, '').full_clean()
+
+    def test_question_form_reports_error_on_param_values(self):
+        data = {
+            'name': 'Test Question',
+            'question_type': self.qt_nr.id,
+            'survey': self.survey.id,
+            '_param_values': 'f|Bad|OK|Good',
+            'seq': 1,
+        }
+        form = QuestionForm(data=data, cur_prog=self.program)
+        self.assertFalse(form.is_valid())
+        self.assertIn('_param_values', form.errors)
+        self.assertIn('must be a whole number', str(form.errors['_param_values']))
+
+        data['_param_values'] = '5|Bad|OK|Good'
+        form = QuestionForm(data=data, cur_prog=self.program)
+        self.assertTrue(form.is_valid(), form.errors)
 
 
 # ===== CSV Import Tests =====
@@ -309,16 +529,37 @@ class CSVImportTest(TestCase):
         from esp.program.modules.forms.surveys import parse_csv
 
         csv_content = (
-            'question_text,question_type,per_class,seq\n'
-            'Good question,yes-no response,false,1\n'
-            ',yes-no response,false,2\n'
-            'Another good one,numeric rating,true,3\n'
+            'question_text,question_type,per_class,seq,param_values\n'
+            'Good question,yes-no response,false,1,\n'
+            ',yes-no response,false,2,\n'
+            'Another good one,numeric rating,true,3,5|Low|Mid|High\n'
         )
         parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
         self.assertEqual(len(parsed_rows), 2)
         self.assertEqual(len(errors), 1)
         self.assertEqual(errors[0]['row_number'], 3)
         self.assertIn('question_text is empty', errors[0]['message'])
+
+    def test_csv_parse_invalid_param_values(self):
+        """param_values are checked with the same rules as the question form."""
+        from esp.program.modules.forms.surveys import parse_csv
+
+        csv_content = (
+            'question_text,question_type,param_values\n'
+            'Rate it,test numeric rating,f|Low|High\n'
+            'Rate it again,test numeric rating,1|Low|High\n'
+            'Pick one,multiple choice,\n'
+            'Pick some,checkboxes,A||C\n'
+            'Rate it well,test numeric rating,5|Low|High\n'
+        )
+        parsed_rows, errors = parse_csv(self._make_csv_file(csv_content))
+        self.assertEqual(len(parsed_rows), 1)
+        self.assertEqual(parsed_rows[0]['row_number'], 6)
+        self.assertEqual([e['row_number'] for e in errors], [2, 3, 4, 5])
+        self.assertIn('whole number', errors[0]['message'])
+        self.assertIn('at least 2', errors[1]['message'])
+        self.assertIn('at least one choice', errors[2]['message'])
+        self.assertIn('cannot be blank', errors[3]['message'])
 
 
 # ===== View Tests (cross-program teacher survey page, #3228) =====
@@ -569,3 +810,99 @@ class TeacherSurveyMultiSectionTest(ProgramFrameworkTest):
                          "Class should appear exactly once in summary table")
         # Should show total 2 responses in the summary table
         self.assertIn('>2<', summary_section)
+
+
+# ===== View Tests (regressions for #5991) =====
+
+class SurveyReviewSingleErrorHandlingTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `survey_review_single` used to pass an
+    unvalidated query-string key straight into `SurveyResponse.objects.filter
+    (id=...)`, raising an unhandled ValueError (-> 500 with no friendly
+    message) for a non-numeric key instead of falling through to the
+    existing "pick an individual response" ESPError message.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        self.survey, _ = Survey.objects.get_or_create(
+            name='Review Single Survey', program=self.program, category='learn')
+        self.response = SurveyResponse.objects.create(survey=self.survey)
+
+        self.admin = self.admins[0]
+        self.review_single_url = '/manage/%s/surveys/review_single' % self.program.getUrlBase()
+
+    def test_non_numeric_key_shows_friendly_error(self):
+        """A non-numeric query-string key no longer raises an unhandled ValueError."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?not-a-number=' % self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+    def test_valid_response_id_still_works(self):
+        """A valid numeric response id still resolves to that response's page."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get('%s?%d=' % (self.review_single_url, self.response.id))
+        self.assertEqual(response.status_code, 200)
+
+    def test_missing_response_id_shows_friendly_error(self):
+        """No query string at all still hits the pre-existing friendly error path."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.review_single_url)
+        self.assertEqual(response.status_code, 500)
+        content = str(response.content, encoding='UTF-8')
+        self.assertIn('reviewing the whole survey', content)
+
+
+class SurveyViewsContextIsolationTest(ProgramFrameworkTest):
+    """
+    Regression tests for #5991: `context = {}` as a default argument is a
+    single dict created once at function-definition time, so every call
+    that doesn't pass its own `context` used to mutate and reuse the exact
+    same shared dict across requests. This class asserts each call now gets
+    its own fresh dict.
+    """
+
+    def setUp(self, *args, **kwargs):
+        kwargs.update({
+            'num_timeslots': 1, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 1, 'classes_per_teacher': 1, 'sections_per_class': 1,
+            'num_rooms': 1,
+        })
+        super().setUp(*args, **kwargs)
+
+        Survey.objects.get_or_create(
+            name='Context Isolation Survey', program=self.program, category='learn')
+
+        self.admin = self.admins[0]
+        self.factory = RequestFactory()
+
+    def _manage_request(self):
+        request = self.factory.get('/')
+        request.user = self.admin
+        request.session = {}
+        return request
+
+    @patch('esp.survey.views.render_to_response')
+    def test_context_dict_not_shared_across_calls(self, mock_render):
+        """Two calls to survey_review get two distinct context dict objects."""
+        mock_render.return_value = HttpResponse('')
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        first_context = mock_render.call_args[0][2]
+
+        # Simulate data one request left behind in its context dict.
+        first_context['leaked_from_first_request'] = True
+
+        survey_review(self._manage_request(), 'manage', self.program.program_type, self.program.program_instance)
+        second_context = mock_render.call_args[0][2]
+
+        self.assertIsNot(first_context, second_context)
+        self.assertNotIn('leaked_from_first_request', second_context)

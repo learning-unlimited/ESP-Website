@@ -2,16 +2,16 @@ from esp.program.models import Program, ClassSubject
 from io import open
 
 programs = Program.objects.order_by('id')
-all_subjects = ClassSubject.objects.filter(status__gt=0, sections__status__gt=0, sections__meeting_times__isnull=False, sections__resourceassignment__isnull=False).exclude(category__category__iexact="Lunch").distinct() # Returns a QuerySet of all ClassSubjects that are approved (and have an approved section), that have a scheduled section, and that aren't in the "Lunch" category
+all_subjects = ClassSubject.objects.filter(status__gt=0, sections__status__gt=0, sections__meeting_times__isnull=False, sections__resourceassignment__isnull=False).exclude(category__is_lunch=True).distinct() # Returns a QuerySet of all ClassSubjects that are approved (and have an approved section), that have a scheduled section, and that aren't in the lunch category
 class_title_delimiter = ' ||| '
 f = open('all_classes_ever.txt', 'w')
 f.write("Class Title Delimiter: '%s'\n\n\n\n\n" % class_title_delimiter)
 
 def to_ascii(s):
     try:
-       return str(s).strip().decode('ascii')
+        return str(s).strip().decode('ascii')
     except Exception:
-       return ""
+        return ""
 
 for program in programs:
 

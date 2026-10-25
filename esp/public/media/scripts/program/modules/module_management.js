@@ -14,6 +14,9 @@ $j(document).ready(function() {
     var allModules = { learn: [], teach: [] };
     var activeModule = null;    // currently editing
     var activeModuleType = null; // 'student' or 'teacher'
+    var lastFocusBeforeModal = null;
+    var lastFocusedModuleId = null;
+    var lastFocusedWasAddDrawer = false;
 
     var timelineStart = null;
     var timelineEnd = null;
@@ -32,12 +35,37 @@ $j(document).ready(function() {
     var $addOverlay  = $j('#addOverlay');
     var $addDrawer   = $j('#addDrawer');
 
+    function safeFocus($el) {
+        if (!$el || !$el.length) return;
+        var el = $el.get(0);
+        if (el && el.focus) {
+            try {
+                el.focus({ preventScroll: true });
+            } catch (e) {
+                $el.trigger('focus');
+            }
+        }
+    }
+
+    // Prevent browser focus-scroll bugs from shifting the layout when modals open/close
+    $j('.tl-wrapper, .tl-workspace').on('scroll', function() {
+        // Only lock the outer containers while a modal is open; otherwise allow normal scrolling
+        if (!($editPanel.hasClass('active') || $addDrawer.hasClass('active'))) return;
+        if (this.scrollLeft !== 0) {
+            this.scrollLeft = 0;
+        }
+    });
+
     // ──────────────────────────────────────────────────────────────
     // Toast Notifications (replaces alert())
     // ──────────────────────────────────────────────────────────────
     function showToast(msg, type) {
         // type = 'success' | 'error'
-        var $toast = $j('<div>').addClass('tl-toast tl-toast-' + (type || 'success')).text(msg);
+        var $toast = $j('<div>')
+            .addClass('tl-toast tl-toast-' + (type || 'success'))
+            .attr('role', 'status')
+            .attr('aria-live', 'polite')
+            .text(msg);
         $j('body').append($toast);
         setTimeout(function() { $toast.addClass('tl-toast-visible'); }, 10);
         setTimeout(function() {
@@ -62,6 +90,23 @@ $j(document).ready(function() {
                     renderTimeline('student');
                     renderTimeline('teacher');
                     updateTabCounts();
+                    if (lastFocusedModuleId) {
+                        var $targetBlock = $j('.tl-block[data-module-id="' + lastFocusedModuleId + '"], .tl-row-label[data-module-id="' + lastFocusedModuleId + '"]');
+                        if ($targetBlock.length) {
+                            safeFocus($targetBlock.first());
+                        } else if (lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+                            safeFocus($j(lastFocusBeforeModal));
+                        }
+                        lastFocusedModuleId = null;
+                        lastFocusBeforeModal = null;
+                    } else if (lastFocusedWasAddDrawer) {
+                        var $addBtn = $j('button[onclick="openAddDrawer()"]');
+                        if ($addBtn.length) {
+                            safeFocus($addBtn.first());
+                        }
+                        lastFocusedWasAddDrawer = false;
+                        lastFocusBeforeModal = null;
+                    }
                 } else {
                     showToast('Failed to load modules.', 'error');
                 }
@@ -87,9 +132,11 @@ $j(document).ready(function() {
             if (mod.start_date) {
                 var d = new Date(mod.start_date);
                 if (!minDate || d < minDate) minDate = new Date(d);
+                if (!maxDate || d > maxDate) maxDate = new Date(d);
             }
             if (mod.end_date) {
                 var d = new Date(mod.end_date);
+                if (!minDate || d < minDate) minDate = new Date(d);
                 if (!maxDate || d > maxDate) maxDate = new Date(d);
             }
         });
@@ -212,8 +259,14 @@ $j(document).ready(function() {
         var leftMs = sDate - timelineStart;
         var widthMs = eDate - sDate;
         
-        var leftPct = Math.max(0, (leftMs / totalMs) * 100);
+        var leftPct = (leftMs / totalMs) * 100;
         var widthPct = (widthMs / totalMs) * 100;
+        
+        if (leftPct > 99.5) leftPct = 99.5;
+        if (leftPct < 0) {
+            widthPct += leftPct;
+            leftPct = 0;
+        }
         
         if (leftPct + widthPct > 100) {
             widthPct = 100 - leftPct;
@@ -245,9 +298,22 @@ $j(document).ready(function() {
             var pos     = calculatePosition(mod);
 
             // ── Sidebar row ──────────────────────────────────────
-            var $row = $j('<div>').addClass('tl-row-label').data('mod-id', mod.id).on('click', function() {
-                openEditPanel(mod, type);
-            });
+            var rowTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
+            var $row = $j('<div>').addClass('tl-row-label')
+                .attr('tabindex', '0')
+                .attr('role', 'button')
+                .attr('aria-label', 'Edit ' + rowTitle)
+                .attr('data-module-id', mod.id)
+                .data('mod-id', mod.id)
+                .on('click', function() {
+                    openEditPanel(mod, type);
+                })
+                .on('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openEditPanel(mod, type);
+                    }
+                });
             if (isLocked) { $row.addClass('tl-row-locked'); }
 
             // Add status classes based on timeline position
@@ -307,10 +373,21 @@ $j(document).ready(function() {
             $sidebar.append($row);
 
             // ── Grid block ───────────────────────────────────────
+            var blockTitle = mod.link_title || mod.admin_title || ('Module ' + mod.id);
             var $blockRow = $j('<div>').addClass('tl-block-row');
             var $block    = $j('<div>').addClass('tl-block')
+                .attr('data-module-id', mod.id)
                 .css({ left: pos.left, width: pos.width })
-                .on('click', function() { openEditPanel(mod, type); });
+                .attr('tabindex', '0')
+                .attr('role', 'button')
+                .attr('aria-label', 'Edit ' + blockTitle)
+                .on('click', function() { openEditPanel(mod, type); })
+                .on('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openEditPanel(mod, type);
+                    }
+                });
 
             var $leftSticky = $j('<span>').addClass('tl-block-label').text(mod.link_title || mod.admin_title).css({
                 position: 'sticky',
@@ -501,10 +578,10 @@ $j(document).ready(function() {
 
         // Required toggle
         if (mod.required) {
-            $j('#reqToggle').addClass('on');
+            $j('#reqToggle').addClass('on').attr('aria-checked', 'true');
             $j('#reqLabel').text('Required');
         } else {
-            $j('#reqToggle').removeClass('on');
+            $j('#reqToggle').removeClass('on').attr('aria-checked', 'false');
             $j('#reqLabel').text('Optional');
         }
 
@@ -519,19 +596,32 @@ $j(document).ready(function() {
 
         $editOverlay.addClass('active');
         $editPanel.addClass('active');
+        
+        lastFocusBeforeModal = document.activeElement;
+        lastFocusedModuleId = mod ? mod.id : null;
+        lastFocusedWasAddDrawer = false;
+        setTimeout(function() {
+            safeFocus($j('#editLabel'));
+        }, 100);
     }
 
-    window.closeEditPanel = function() {
+    window.closeEditPanel = function(isSaving) {
         $editPanel.removeClass('active');
         $editOverlay.removeClass('active');
         activeModule     = null;
         activeModuleType = null;
+        if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+            lastFocusedModuleId = null;
+        }
+        $j('.tl-wrapper, .tl-workspace').scrollLeft(0);
     };
 
     window.toggleReq = function() {
         if ($j('#reqToggle').prop('disabled')) return;
         var isOn = $j('#reqToggle').hasClass('on');
-        $j('#reqToggle').toggleClass('on', !isOn);
+        $j('#reqToggle').toggleClass('on', !isOn).attr('aria-checked', !isOn ? 'true' : 'false');
         $j('#reqLabel').text(isOn ? 'Optional' : 'Required');
     };
 
@@ -560,7 +650,7 @@ $j(document).ready(function() {
                 $j('#editSaveBtn').prop('disabled', false).text('Save Changes');
                 if (res.success) {
                     showToast('Module saved successfully.', 'success');
-                    closeEditPanel();
+                    closeEditPanel(true);
                     loadModules();
                 } else {
                     showToast('Error: ' + (res.error || 'Unknown error'), 'error');
@@ -579,12 +669,24 @@ $j(document).ready(function() {
     // Add Drawer & Save Modules
     // ──────────────────────────────────────────────────────────────
     window.openAddDrawer = function() {
+        lastFocusBeforeModal = document.activeElement;
+        lastFocusedWasAddDrawer = true;
+        lastFocusedModuleId = null;
         $addOverlay.addClass('active');
         $addDrawer.addClass('active');
+        setTimeout(function() {
+            safeFocus($j('.tl-add-checkbox:not(:disabled)').first());
+        }, 100);
     };
-    window.closeAddDrawer = function() {
+    window.closeAddDrawer = function(isSaving) {
         $addDrawer.removeClass('active');
         $addOverlay.removeClass('active');
+        if (!isSaving && lastFocusBeforeModal && document.body.contains(lastFocusBeforeModal)) {
+            safeFocus($j(lastFocusBeforeModal));
+            lastFocusBeforeModal = null;
+            lastFocusedWasAddDrawer = false;
+        }
+        $j('.tl-wrapper, .tl-workspace').scrollLeft(0);
     };
 
     window.saveModules = function() {
@@ -608,6 +710,12 @@ $j(document).ready(function() {
             return;
         }
 
+        if (removeIds.length > 0) {
+            if (!confirm("Are you sure you want to remove these modules? If active students have already interacted with them, data may be hidden or affected.")) {
+                return;
+            }
+        }
+
         var payload = new URLSearchParams();
         addIds.forEach(function(id) { payload.append('add_modules[]', id); });
         removeIds.forEach(function(id) { payload.append('remove_modules[]', id); });
@@ -629,8 +737,11 @@ $j(document).ready(function() {
                 $btn.prop('disabled', false).text(oldText);
                 if (res.status === 'success') {
                     showToast('Modules updated successfully.', 'success');
-                    closeAddDrawer();
-                    window.location.reload();
+                    closeAddDrawer(true);
+                    $j('.tl-add-checkbox').each(function() {
+                        this.defaultChecked = this.checked;
+                    });
+                    loadModules();
                 } else {
                     showToast('Error: ' + (res.message || 'Unknown error'), 'error');
                 }
@@ -659,5 +770,17 @@ $j(document).ready(function() {
         $j(this).closest('.tl-content').find('.tl-now-badge').css('opacity', '1');
     }).on('mouseleave', '.tl-now-line', function() {
         $j(this).closest('.tl-content').find('.tl-now-badge').css('opacity', '0');
+    });
+
+    // Global Escape key handler to close modals
+    $j(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if ($editPanel.hasClass('active')) {
+                closeEditPanel();
+            }
+            if ($addDrawer.hasClass('active')) {
+                closeAddDrawer();
+            }
+        }
     });
 });

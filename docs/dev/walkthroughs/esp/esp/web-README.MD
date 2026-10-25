@@ -97,8 +97,8 @@
 | `filter_archive` | Function | `views/archives.py` | Applies a list of `ArchiveFilter` objects as Django ORM filters to an `ArchiveClass` queryset. |
 | `title_heading` | Function | `views/archives.py` | Returns the first character of a title string for use as a jump-to heading, or `'[No Title]'` if empty. |
 | `archive_classes` | Function | `views/archives.py` | Renders a filterable, sortable, paginated list of historical `ArchiveClass` records. |
-| `archive_teachers` | Function | `views/archives.py` | Stub: sets `selection`, `category`, `options` in context and renders `program/archives.html` — **crashes with `TypeError`** when called via `archives()` because the dispatcher passes more positional arguments than this function accepts. |
-| `archive_programs` | Function | `views/archives.py` | Stub: same signature mismatch as `archive_teachers` — also crashes with `TypeError`. |
+| `archive_teachers` | Function | `views/archives.py` | Stub: sets `selection`, `category`, `options` in context and renders `program/archives.html`. Accepts unused `sortorder=None` so `archives()` can pass sort params without crashing. |
+| `archive_programs` | Function | `views/archives.py` | Stub: same signature as `archive_teachers` — renders the archives template for the programs selection. |
 | `archive_handlers` | Dict | `views/archives.py` | Maps the strings `'classes'`, `'teachers'`, `'programs'` to their respective view functions; used by `archives()` in `main.py`. |
 
 ### Views — `views/navBar.py`
@@ -212,12 +212,8 @@
 
 - **`bio_user` deliberately excludes classes whose end time is in the future.** This is a documented privacy decision: the course catalog for a not-yet-run program may not be public yet, so exposing class titles on the bio page would leak information. See the comment in [views/bio.py](views/bio.py).
 
-- **`archive_teachers` and `archive_programs` crash on every call.** The dispatcher `archives()` in `main.py` always calls `archive_handlers[selection](request, category, options, sortparams)` with 4 positional arguments, but `archive_teachers(request, category, options)` and `archive_programs(request, category, options)` only accept 3. Any request to `/archives/teachers/` or `/archives/programs/` will raise `TypeError`. `archive_classes` is thCodebase commit: HEADe only handler that is both implemented and callable.
-
 - **Old bio URLs permanently redirect.** Both `bio` and `bio_edit` detect "old URL" patterns (non-`teach` tl prefix, or first/last/num format) and issue `HttpResponsePermanentRedirect`. A `TODO` comment in [views/bio.py](views/bio.py) indicates these redirects were expected to be removed, but are still present.
 
 - **`csrf_failure` resolves `prog` but never uses it.** In [views/csrf.py](views/csrf.py), `prog` is looked up and assigned but never added to the template context before `render_to_response` is called, so `403_csrf_failure.html` cannot access program-specific context. This appears to be a long-standing bug.
-
-- **`ResizeImageField` calls `Image.ANTIALIAS`, which is removed in Pillow 10.** `Image.ANTIALIAS` was deprecated in Pillow 9.1.0 and fully removed in Pillow 10.0.0 (released 2023). Running on a modern Pillow version will raise `AttributeError` when a user uploads a profile picture. The fix is to replace it with `Image.LANCZOS`.
 
 <!-- Last verified: 2026-03-05 | Verified by: Balasubramaniam12007 -->

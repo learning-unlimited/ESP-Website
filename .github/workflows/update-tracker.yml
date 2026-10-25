@@ -9,11 +9,13 @@ on:
 jobs:
   update-sheet:
     runs-on: ubuntu-latest
+    # Don't run on forks (no secrets there)
+    if: github.repository == 'learning-unlimited/ESP-Website'
 
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6.3.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
 
@@ -28,4 +30,6 @@ jobs:
           # Set these to your repo, or override via repository variables
           REPO_OWNER: ${{ vars.REPO_OWNER }}
           REPO_NAME: ${{ vars.REPO_NAME }}
+          # Keep stdout/stderr ordered in the job log
+          PYTHONUNBUFFERED: '1'
         run: python .github/scripts/project-tracker/update_project_sheet.py

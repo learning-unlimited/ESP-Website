@@ -2,9 +2,22 @@ import ast
 import os
 import re
 
+from django import forms
+from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
-from esp.tagdict import all_global_tags, all_program_tags
+from esp.tagdict import (
+    all_global_tags,
+    all_program_tags,
+    initial_choices,
+    join_choices,
+    is_visible,
+    preserve_current_choice,
+    validate_page_url,
+    JSONValidatedCharField,
+    MonthDayWidget,
+    MultilineCharField,
+)
 from esp.tagdict.models import Tag
 from esp.tagdict.validators import (
     ALL_HIDE_FIELDS_TAG_KEYS,
@@ -74,6 +87,31 @@ class TagTest(TestCase):
         Tag.setTag("test")
         self.assertTrue(Tag.getTag("test"), "Error:  Setting a tag with an unspecified value must yield a tag whose value evaluates to True!")
         self.assertNotEqual(Tag.getTag("test", default="the default"), "the default", "If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
+
+    def testTagCleanValidation(self):
+        '''Test that Tag.save() raises ValidationError if GenericForeignKey is partial.'''
+        from django.core.exceptions import ValidationError
+
+        # Both set -> OK
+        user, created = User.objects.get_or_create(username="TestUser123", email="test@example.com", password="")
+        from django.contrib.contenttypes.models import ContentType
+        ct = ContentType.objects.get_for_model(user)
+        t1 = Tag(key="test1", value="val1", content_type=ct, object_id=user.id)
+        t1.clean()  # Should not raise
+
+        # Both null -> OK
+        t2 = Tag(key="test2", value="val2", content_type=None, object_id=None)
+        t2.clean()  # Should not raise
+
+        # content_type set, object_id null -> ValidationError on save()
+        t3 = Tag(key="test3", value="val3", content_type=ct, object_id=None)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            t3.save()
+
+        # content_type null, object_id set -> ValidationError on save()
+        t4 = Tag(key="test4", value="val4", content_type=None, object_id=user.id)
+        with self.assertRaisesMessage(ValidationError, "Both parts of the GenericForeignKey"):
+            t4.save()
 
     def testTagWithTarget(self):
         '''Test getting and setting of tags with targets.'''
@@ -915,3 +953,687 @@ class TagAdminFormValidationTest(TestCase):
         # Should mention at least one valid field
         any_valid = sorted(TeacherProfileForm.declared_fields.keys())[0]
         self.assertIn(any_valid, error_text)
+
+
+class TagSearchMarkupTest(ProgramFrameworkTest):
+    """
+    Tests the markup the tag settings search box relies on.
+
+    The filtering itself is client side, so these tests only check that the
+    template renders the hooks tag_search.js needs.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _get_page(self, url):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def _urls(self):
+        return ['/manage/tags/', '/manage/%s/tags/' % self.program.getUrlBase()]
+
+    def _search_text_by_tag(self, content):
+        """Map each search row's tag name to its full data-search-text value."""
+        rows = re.findall(r'<tr class="tag-row" data-search-text="([^"]*)"', content)
+        return {row.split(' ')[0]: row for row in rows}
+
+    def _rendered_fields(self, form):
+        """The fields the template actually renders, in fieldset order."""
+        for fieldset in form.fieldsets:
+            if fieldset.name in form.categories:
+                for field in fieldset:
+                    yield field
+
+    def _program_form(self):
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+        return ProgramTagSettingsForm(program=self.program)
+
+    def test_search_box_is_rendered_with_a_label(self):
+        """Both tag pages get a labelled search input and a status region."""
+        for url in self._urls():
+            content = self._get_page(url)
+            self.assertIn('id="tag-search-input"', content)
+            self.assertIn('for="tag-search-input"', content)
+            self.assertIn('id="tag-search-status"', content)
+
+    def test_search_scripts_are_loaded(self):
+        for url in self._urls():
+            content = self._get_page(url)
+            self.assertIn('id="tag-list"', content)
+            self.assertIn('/media/scripts/utils/search_filter.js', content)
+            self.assertIn('/media/scripts/tag_search.js', content)
+
+    def test_rows_are_searchable_by_tag_name(self):
+        """Each visible setting is a search row keyed by its raw tag name.
+
+        The rendered label is a prettified version of the tag name, so the tag
+        name has to come from data-search-text for admins to be able to search
+        for the key they see in the documentation.
+        """
+        content = self._get_page('/manage/%s/tags/' % self.program.getUrlBase())
+        rows = self._search_text_by_tag(content)
+        self.assertTrue(rows, 'No searchable tag rows were rendered')
+
+        for field in self._rendered_fields(self._program_form()):
+            if field.is_hidden:
+                # Hidden settings show no text, so they must not be matchable.
+                self.assertNotIn(field.name, rows)
+            else:
+                self.assertIn(field.name, rows)
+
+    def test_help_text_is_searchable_without_markup(self):
+        """Help text is searchable, with any HTML markup stripped out of it."""
+        from django.utils.html import escape, strip_tags
+
+        content = self._get_page('/manage/%s/tags/' % self.program.getUrlBase())
+        rows = self._search_text_by_tag(content)
+
+        checked = 0
+        for field in self._rendered_fields(self._program_form()):
+            if field.is_hidden or not field.help_text:
+                continue
+            self.assertIn(escape(strip_tags(field.help_text)), rows[field.name])
+            checked += 1
+        self.assertTrue(checked, 'No tags with help text were rendered')
+
+
+class JSONTagFieldTest(SimpleTestCase):
+    """
+    Tests the form field used for tags whose values are JSON.
+
+    Consumers of these tags json.loads() the value, so a malformed value should
+    be caught on the tag settings page rather than at the point of use.
+    """
+
+    def _json_tags(self):
+        """Every setting whose default value is a JSON object or list."""
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if not info.get('is_setting', False):
+                    continue
+                default = info.get('default')
+                if isinstance(default, str) and default[:1] in ('{', '['):
+                    yield key, info
+
+    def test_json_tags_are_validated(self):
+        checked = 0
+        for key, info in self._json_tags():
+            self.assertIsInstance(
+                info.get('field'), JSONValidatedCharField,
+                "Tag '%s' holds JSON but is not validated as JSON" % key)
+            checked += 1
+        self.assertTrue(checked, 'No JSON tags were found')
+
+    def test_json_fields_are_multiline(self):
+        checked = 0
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if isinstance(info.get('field'), JSONValidatedCharField):
+                    self.assertIsInstance(
+                        info['field'].widget, forms.Textarea,
+                        "Tag '%s' should not show JSON in a one-line input" % key)
+                    checked += 1
+        self.assertTrue(checked, 'No JSON fields were found')
+
+    def test_malformed_json_is_rejected(self):
+        field = JSONValidatedCharField(required=False)
+        for value in ('{"unclosed": 1', "{'single': 'quotes'}", 'not json'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+    def test_valid_json_is_accepted(self):
+        field = JSONValidatedCharField(required=False)
+        for value in ('{}', '[]', '{"a": [1, 2]}'):
+            self.assertEqual(field.clean(value), value)
+
+    def test_blank_value_is_accepted(self):
+        """Tags are optional, so an empty value must not be validated as JSON."""
+        self.assertEqual(JSONValidatedCharField(required=False).clean(''), '')
+
+
+class ProseTagFieldTest(SimpleTestCase):
+    """
+    Tests the form fields used for tags whose values are prose.
+
+    These hold sentences or paragraphs (help text overrides, notes shown in the
+    webapps), which do not fit in a single-line input.
+    """
+
+    EXTRA_PROSE_TAGS = ('teacher_onsite_checkin_note', 'student_onsite_checkin_note',
+                        'already_paid_extracosts_text')
+
+    def _prose_tags(self):
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if '_help_text_' in key or key in self.EXTRA_PROSE_TAGS:
+                    yield key, info
+
+    def test_prose_tags_are_multiline(self):
+        checked = 0
+        for key, info in self._prose_tags():
+            self.assertIsInstance(
+                info.get('field'), MultilineCharField,
+                "Tag '%s' holds prose and should not be a one-line input" % key)
+            checked += 1
+        self.assertTrue(checked, 'No prose tags were found')
+
+    def test_prose_values_have_no_runs_of_spaces(self):
+        """A textarea shows whitespace as typed, and the tag search matches
+        help text without collapsing it, so neither may be padded out."""
+        import re as _re
+
+        checked = 0
+        for tags in (all_global_tags, all_program_tags):
+            for key, info in tags.items():
+                if not info.get('is_setting', False):
+                    continue
+                for attr in ('default', 'help_text'):
+                    value = info.get(attr)
+                    if isinstance(value, str):
+                        self.assertIsNone(
+                            _re.search(r'  +', value),
+                            "The %s of '%s' has a run of spaces in it" % (attr, key))
+                        checked += 1
+        self.assertTrue(checked, 'No tag text was checked')
+
+    def test_label_tags_stay_single_line(self):
+        """Label overrides are a few words, so they keep the default input."""
+        checked = 0
+        for key, info in all_program_tags.items():
+            if '_label_' in key:
+                self.assertNotIsInstance(info.get('field'), MultilineCharField, key)
+                checked += 1
+        self.assertTrue(checked, 'No label tags were found')
+
+
+class TagSettingsFormFieldTest(ProgramFrameworkTest):
+    """
+    Tests how the tag settings forms use the fields declared in the tag dict.
+    """
+
+    def test_form_does_not_mutate_the_declared_fields(self):
+        """Each form must work on its own copy of the declared field.
+
+        The program form swaps in a HiddenInput for class registration tags
+        whose field is not in the teacher registration form.  The tag dict's
+        field instances are shared by every form, so mutating one in place
+        would hide that tag for every program from then on.
+        """
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        form = ProgramTagSettingsForm(program=self.program)
+        hidden = [key for key, field in form.fields.items()
+                  if isinstance(field.widget, forms.HiddenInput)]
+        self.assertTrue(hidden, 'No class registration tags were hidden')
+
+        declared = [key for key in hidden
+                    if all_program_tags[key].get('field') is not None]
+        self.assertTrue(declared, 'No hidden tag declares its own field')
+        for key in declared:
+            self.assertIsNot(form.fields[key], all_program_tags[key]['field'], key)
+            self.assertNotIsInstance(
+                all_program_tags[key]['field'].widget, forms.HiddenInput,
+                "Hiding tag '%s' leaked into the tag dict" % key)
+
+
+class ChoiceValueHelperTest(SimpleTestCase):
+    """Tests the conversion between a stored tag value and a list of choices."""
+
+    def test_comma_separated_values_are_split(self):
+        self.assertEqual(initial_choices('a,b'), ['a', 'b'])
+
+    def test_surrounding_whitespace_and_blanks_are_dropped(self):
+        self.assertEqual(initial_choices(' a , ,b '), ['a', 'b'])
+
+    def test_json_values_are_parsed(self):
+        self.assertEqual(initial_choices('["a", "b"]', json_list=True), ['a', 'b'])
+
+    def test_malformed_json_gives_no_choices(self):
+        self.assertEqual(initial_choices('not json', json_list=True), [])
+        self.assertEqual(initial_choices('{"a": 1}', json_list=True), [])
+
+    def test_values_are_joined_the_way_they_are_read(self):
+        for json_list in (False, True):
+            values = ['a', 'b']
+            self.assertEqual(
+                initial_choices(join_choices(values, json_list), json_list), values)
+
+    def test_an_empty_selection_clears_the_tag(self):
+        """The forms unset a tag whose value is empty, so don't store '[]'."""
+        self.assertEqual(join_choices([], json_list=True), '')
+        self.assertEqual(join_choices([]), '')
+
+    def test_a_stored_value_stays_selectable(self):
+        field = forms.MultipleChoiceField(choices=[('a', 'a')])
+        preserve_current_choice(field, ['a', 'gone'])
+        self.assertEqual(list(field.choices),
+                         [('a', 'a'), ('gone', 'gone (current value)')])
+
+    def test_offered_values_are_not_duplicated(self):
+        field = forms.ChoiceField(choices=[('a', 'a')])
+        preserve_current_choice(field, 'a')
+        self.assertEqual(list(field.choices), [('a', 'a')])
+
+    def test_non_choice_fields_are_left_alone(self):
+        field = forms.CharField()
+        preserve_current_choice(field, 'anything')
+        self.assertFalse(hasattr(field, 'choices'))
+
+
+class ChoiceTagFieldTest(ProgramFrameworkTest):
+    """
+    Tests the settings whose values are picked from a list rather than typed.
+
+    Their choices come from the database or from another form, so the tag dict
+    declares a callable that the settings forms call while building the form.
+    """
+
+    PROGRAM_CHOICE_TAGS = (
+        'teacherreg_hide_fields', 'student_reg_records', 'teacher_reg_records',
+        'survey_teacher_filter', 'survey_student_filter', 'open_class_category',
+        'creditcard_required_for_extracosts', 'display_registration_names',
+    )
+    GLOBAL_CHOICE_TAGS = (
+        'teacher_profile_hide_fields', 'student_profile_hide_fields',
+        'volunteer_profile_hide_fields', 'educator_profile_hide_fields',
+        'guardian_profile_hide_fields', 'finaid_form_fields',
+        'show_studentrep_application',
+    )
+
+    def _program_form(self, data=None):
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+        return ProgramTagSettingsForm(data, program=self.program)
+
+    def _global_form(self, data=None):
+        from esp.program.forms import TagSettingsForm
+        return TagSettingsForm(data)
+
+    def test_tags_offer_choices(self):
+        for form, keys in ((self._program_form(), self.PROGRAM_CHOICE_TAGS),
+                           (self._global_form(), self.GLOBAL_CHOICE_TAGS)):
+            for key in keys:
+                field = form.fields[key]
+                self.assertIsInstance(field, forms.ChoiceField, key)
+                self.assertTrue(list(field.choices), key)
+
+    def test_survey_filters_offer_the_sets_the_modules_define(self):
+        """The stored value has to be a key of program.students()/teachers()."""
+        form = self._program_form()
+        for key, user_type in (('survey_student_filter', 'students'),
+                               ('survey_teacher_filter', 'teachers')):
+            offered = {choice[0] for choice in form.fields[key].choices}
+            self.assertEqual(offered, set(getattr(self.program, user_type)(True)))
+            self.assertIn(all_program_tags[key]['default'], offered,
+                          "The default for '%s' is not offered" % key)
+
+    def test_open_class_category_offers_category_ids(self):
+        """The tag stores the category's ID, so that has to be the value."""
+        from esp.program.models import ClassCategories
+
+        category = ClassCategories.objects.all()[0]
+        offered = dict(self._program_form().fields['open_class_category'].choices)
+        self.assertIn(str(category.id), offered)
+        self.assertIn(category.category, offered[str(category.id)])
+        self.assertIn('', offered, 'There is no way to leave the tag unset')
+
+    def test_any_extra_cost_item_overrides_the_named_ones(self):
+        """'*' means any item, so it cannot be combined with item names."""
+        field = self._program_form().fields['creditcard_required_for_extracosts']
+        field.choices = list(field.choices) + [('T-Shirt', 'T-Shirt')]
+        self.assertEqual(field.clean(['*', 'T-Shirt']), ['*'])
+        self.assertEqual(field.clean(['T-Shirt']), ['T-Shirt'])
+
+    def test_a_selection_is_saved_and_read_back(self):
+        form = self._program_form()
+        choices = [choice[0] for choice in form.fields['student_reg_records'].choices]
+        selected = choices[:2]
+
+        data = {'student_reg_records': selected}
+        save_form = self._program_form(data)
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+
+        self.assertEqual(Tag.getProgramTag('student_reg_records', self.program),
+                         ','.join(selected))
+        self.assertEqual(self._program_form().fields['student_reg_records'].initial,
+                         selected)
+
+    def test_registration_types_offer_the_all_sentinel(self):
+        """RegistrationTypeController expands 'All' to every type, so an admin
+        has to be able to pick it (see getVisibleRegistrationTypeNames)."""
+        from esp.program.models import RegistrationType
+
+        RegistrationType.objects.get_or_create(name='Applied')
+        field = self._program_form().fields['display_registration_names']
+        self.assertIn('All', dict(field.choices))
+        self.assertIn('Applied', dict(field.choices))
+        # 'All' covers the named ones, so it replaces them
+        self.assertEqual(field.clean(['All', 'Applied']), ['All'])
+        self.assertEqual(field.clean(['Applied']), ['Applied'])
+
+    def test_the_all_sentinel_is_saved_as_json(self):
+        save_form = self._program_form({'display_registration_names': ['All']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertEqual(
+            Tag.getProgramTag('display_registration_names', self.program), '["All"]')
+
+    def test_a_json_list_selection_is_saved_as_json(self):
+        from esp.program.models import RegistrationType
+
+        RegistrationType.objects.get_or_create(name='Applied')
+        form = self._program_form()
+        field = form.fields['display_registration_names']
+        self.assertIsInstance(field, forms.MultipleChoiceField)
+        self.assertNotIn('Enrolled', dict(field.choices),
+                         "'Enrolled' is always included, so don't offer it")
+
+        save_form = self._program_form({'display_registration_names': ['Applied']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+
+        self.assertEqual(
+            Tag.getProgramTag('display_registration_names', self.program), '["Applied"]')
+        self.assertEqual(
+            self._program_form().fields['display_registration_names'].initial, ['Applied'])
+
+    def test_a_value_that_is_no_longer_offered_is_kept(self):
+        """A stored value must survive the next save even if it is now unknown."""
+        Tag.setTag('student_reg_records', self.program, 'no_such_record')
+        form = self._program_form()
+        self.assertIn('no_such_record',
+                      dict(form.fields['student_reg_records'].choices))
+
+        save_form = self._program_form({'student_reg_records': ['no_such_record']})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertEqual(Tag.getProgramTag('student_reg_records', self.program),
+                         'no_such_record')
+
+    def test_catalog_sort_fields_rejects_unsortable_fields(self):
+        from esp.program.models.class_ import CATALOG_UNSORTABLE_FIELDS
+
+        unsortable = sorted(CATALOG_UNSORTABLE_FIELDS)[0]
+        form = self._program_form({'catalog_sort_fields': 'category__symbol,-%s' % unsortable})
+        self.assertFalse(form.is_valid())
+        self.assertIn('catalog_sort_fields', form.errors)
+
+        form = self._program_form({'catalog_sort_fields': 'category__symbol,-id'})
+        self.assertTrue(form.is_valid(), form.errors)
+
+
+class FormattedTagValueTest(SimpleTestCase):
+    """
+    Tests the settings whose value has to be in a particular format.
+
+    Their consumers either fall back silently or log a warning when the value
+    does not parse, so the format is checked on the settings form instead.
+    """
+
+    def _field(self, tags, key):
+        return tags[key]['field']
+
+    def test_switch_time_takes_a_24_hour_time(self):
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        for value in ('00:00', '9:05', '13:30', '23:59'):
+            field.clean(value)
+        for value in ('24:00', '13:60', '1:30 pm', '13:30:00', 'noon'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+    def test_switch_time_uses_a_time_input(self):
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        self.assertEqual(field.widget.input_type, 'time')
+
+    def test_switch_time_pads_the_hour(self):
+        """A time input shows nothing unless the hour is zero padded, so a
+        value saved before this was a picker still has to appear in it."""
+        field = self._field(all_program_tags, 'switch_time_program_attendance')
+        self.assertEqual(field.prepare_value('9:05'), '09:05')
+        self.assertEqual(field.clean('9:05'), '09:05')
+        for value in ('13:30', '', None):
+            self.assertEqual(field.prepare_value(value), value)
+
+    def test_home_pages_take_a_path_or_a_url(self):
+        for value in ('/learn/index.html', '/', '/a/b?c=d#e',
+                      'https://example.com/page', 'http://example.com'):
+            validate_page_url(value)
+
+    def test_home_pages_reject_values_that_would_not_redirect(self):
+        # The value is put in an href, so it cannot carry spaces or markup
+        for value in ('learn/index.html', 'www.example.com', 'javascript:alert(1)',
+                      '/a b', '/a" onmouseover="x'):
+            with self.assertRaises(ValidationError, msg=value):
+                validate_page_url(value)
+
+    def test_home_pages_reject_paths_that_lead_off_site(self):
+        """A browser reads a second leading slash or backslash as a host."""
+        for value in ('//attacker.example', '/\\attacker.example', '/a\\b'):
+            with self.assertRaises(ValidationError, msg=value):
+                validate_page_url(value)
+
+    def test_all_three_home_page_tags_are_validated(self):
+        for key in ('admin_home_page', 'teacher_home_page', 'student_home_page'):
+            field = self._field(all_global_tags, key)
+            with self.assertRaises(ValidationError, msg=key):
+                field.clean('somewhere')
+            self.assertEqual(field.clean(all_global_tags[key]['default'] or '/'),
+                             all_global_tags[key]['default'] or '/')
+
+    def test_analytics_id_takes_a_prefixed_measurement_id(self):
+        field = self._field(all_global_tags, 'google_analytics_id')
+        for value in ('G-PSW1MY7HB4', 'UA-123456-1', 'AW-12345'):
+            field.clean(value)
+        for value in ('PSW1MY7HB4', 'G PSW1MY7HB4',
+                      '<script async src="https://www.googletagmanager.com">'):
+            with self.assertRaises(ValidationError, msg=value):
+                field.clean(value)
+
+
+class MonthDayWidgetTest(TestCase):
+    """
+    Tests the widget for grade_increment_date.
+
+    Its consumer parses the stored value as a full date and then replaces the
+    year (see ESPUser.current_schoolyear), so the year is stored but not asked
+    for.
+    """
+
+    def _field(self):
+        return all_global_tags['grade_increment_date']['field']
+
+    def test_the_year_is_not_offered(self):
+        html = self._field().widget.render('grade_increment_date', None)
+        self.assertIn('name="grade_increment_date_month"', html)
+        self.assertIn('name="grade_increment_date_day"', html)
+        self.assertNotIn('name="grade_increment_date_year"', html)
+
+    def test_a_month_and_day_still_make_a_full_date(self):
+        """The stored value has to be one strptime('%Y-%m-%d') can read."""
+        import datetime
+
+        field = self._field()
+        value = field.widget.value_from_datadict(
+            {'grade_increment_date_month': '7', 'grade_increment_date_day': '31'},
+            {}, 'grade_increment_date')
+        cleaned = field.clean(value)
+        self.assertEqual((cleaned.month, cleaned.day), (7, 31))
+        self.assertEqual(
+            datetime.datetime.strptime(str(cleaned), '%Y-%m-%d').date(), cleaned)
+
+    def test_a_saved_date_is_stored_the_way_its_consumer_reads_it(self):
+        from esp.program.forms import TagSettingsForm
+        import datetime
+
+        form = TagSettingsForm({'grade_increment_date_month': '8',
+                                'grade_increment_date_day': '1'})
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+
+        stored = Tag.getTag('grade_increment_date')
+        self.assertEqual(
+            datetime.datetime.strptime(stored, '%Y-%m-%d').date(),
+            datetime.date(MonthDayWidget().year, 8, 1))
+
+    def test_the_year_matches_the_default(self):
+        """So that saving an unchanged value still counts as the default."""
+        self.assertEqual(MonthDayWidget().year,
+                         all_global_tags['grade_increment_date']['default'].year)
+
+
+class HiddenTagRowTest(ProgramFrameworkTest):
+    """
+    Tests the rows for tags the program tag form hides.
+
+    Class registration tags whose field is not in the teacher registration form
+    get a HiddenInput, which still has to submit the tag's current value, but
+    must not leave a blank row in the table.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _page(self):
+        url = '/manage/%s/tags/' % self.program.getUrlBase()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def test_hidden_tags_are_still_submitted(self):
+        """Dropping the input would make the next save clear the tag."""
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        form = ProgramTagSettingsForm(program=self.program)
+        hidden = [key for key, field in form.fields.items()
+                  if isinstance(field.widget, forms.HiddenInput)]
+        self.assertTrue(hidden, 'No class registration tags were hidden')
+
+        content = self._page()
+        for key in hidden:
+            self.assertIn('name="%s"' % key, content)
+
+    def test_hidden_tags_do_not_leave_a_blank_row(self):
+        rows = re.findall(r'<tr([^>]*)>\s*<td[^>]*>\s*<input type="hidden"', self._page())
+        self.assertTrue(rows, 'No hidden tag rows were rendered')
+        for attrs in rows:
+            self.assertIn('d-none', attrs)
+
+
+class HideFieldsSelectorTest(ProgramFrameworkTest):
+    """
+    Tests the two-column selector for the *_hide_fields settings.
+
+    It is the admin's FilteredSelectMultiple, which only works if the page
+    serves the JS and CSS it expects, none of which the admin site is doing
+    for us out here.
+    """
+
+    PROFILE_TAGS = (
+        'teacher_profile_hide_fields', 'student_profile_hide_fields',
+        'volunteer_profile_hide_fields', 'educator_profile_hide_fields',
+        'guardian_profile_hide_fields',
+    )
+
+    def setUp(self):
+        super().setUp()
+        self.assertTrue(
+            self.client.login(username=self.admins[0].username, password='password'),
+            'Could not login as %s' % self.admins[0].username)
+
+    def _page(self, url):
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, 'GET %s' % url)
+        return str(response.content, encoding='UTF-8')
+
+    def test_hide_fields_tags_use_the_two_column_selector(self):
+        from django.contrib.admin.widgets import FilteredSelectMultiple
+        from esp.program.forms import TagSettingsForm
+        from esp.program.modules.forms.admincore import ProgramTagSettingsForm
+
+        checks = [(TagSettingsForm(), self.PROFILE_TAGS),
+                  (ProgramTagSettingsForm(program=self.program), ('teacherreg_hide_fields',))]
+        for form, keys in checks:
+            for key in keys:
+                self.assertIsInstance(form.fields[key].widget, FilteredSelectMultiple, key)
+
+    def test_the_pages_serve_what_the_widget_needs(self):
+        """Without any one of these the selector silently stays a plain select."""
+        for url in ('/manage/tags/', '/manage/%s/tags/' % self.program.getUrlBase()):
+            content = self._page(url)
+            for asset in ('admin/js/SelectFilter2.js',   # from {{ form.media }}
+                          'admin/css/widgets.css',
+                          '/media/styles/admin_selector.css',
+                          '/jsi18n/'):                   # gettext() and interpolate()
+                self.assertIn(asset, content, '%s is missing from %s' % (asset, url))
+
+    def test_the_selector_is_rendered(self):
+        content = self._page('/manage/tags/')
+        for key in self.PROFILE_TAGS:
+            self.assertRegex(
+                content, r'<select[^>]*name="%s"[^>]*class="selectfilter"' % key)
+
+
+class VisibleIfTest(TestCase):
+    """
+    Tests the 'visible_if' tag entry, which leaves a setting off the page when
+    it does not currently apply.
+
+    fruitsalad_sounds is the only user-facing tag in the theme category, so
+    hiding it hides that section of the page.
+    """
+
+    KEY = 'fruitsalad_sounds'
+
+    def _global_form(self, data=None):
+        from esp.program.forms import TagSettingsForm
+        return TagSettingsForm(data)
+
+    def _set_theme(self, name):
+        Tag.setTag('current_theme_name', value=name)
+
+    def test_the_setting_is_offered_on_its_own_theme(self):
+        self._set_theme('fruitsalad')
+        form = self._global_form()
+        self.assertIn(self.KEY, form.fields)
+        self.assertIn('theme', form.categories)
+
+    def test_the_setting_and_its_section_are_gone_on_another_theme(self):
+        self._set_theme('bigpicture')
+        form = self._global_form()
+        self.assertNotIn(self.KEY, form.fields)
+        self.assertNotIn('theme', form.categories,
+                         'The theme section has nothing left to show')
+
+    def test_a_hidden_tag_keeps_its_value_when_the_page_is_saved(self):
+        """A tag that is not on the page is not submitted, so saving the page
+        must leave it alone rather than read it as empty and unset it."""
+        self._set_theme('fruitsalad')
+        save_form = self._global_form({self.KEY: 'on'})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertTrue(Tag.getBooleanTag(self.KEY))
+
+        self._set_theme('bigpicture')
+        save_form = self._global_form({})
+        self.assertTrue(save_form.is_valid(), save_form.errors)
+        save_form.save()
+        self.assertTrue(Tag.getBooleanTag(self.KEY),
+                        'Saving the page cleared a tag it does not show')
+
+    def test_a_tag_without_the_entry_is_always_visible(self):
+        self.assertTrue(is_visible(all_global_tags['full_group_name'],
+                                   'full_group_name'))
+
+    def test_the_entry_decides_visibility(self):
+        self.assertFalse(is_visible({'visible_if': lambda key, program: False},
+                                    'whatever'))
+        self.assertTrue(is_visible({'visible_if': lambda key, program: True},
+                                   'whatever'))

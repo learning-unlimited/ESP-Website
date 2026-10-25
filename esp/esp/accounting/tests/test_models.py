@@ -16,19 +16,14 @@ from esp.accounting.models import (
     Transfer,
 )
 from esp.program.models import FinancialAidRequest, Program
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class LineItemTypeTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -100,7 +95,7 @@ class LineItemTypeTest(TestCase):
 class LineItemOptionsTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -139,7 +134,7 @@ class LineItemOptionsTest(TestCase):
 class AccountTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account = Account.objects.create(
             name='test-account',
@@ -184,7 +179,7 @@ class AccountTest(TestCase):
 class TransferTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account_src = Account.objects.create(
             name='source', description='Source', program=self.program,
@@ -235,34 +230,19 @@ Source: esp/esp/accounting/controllers.py
 Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
-from decimal import Decimal
-
-from django.contrib.auth.models import Group
 
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
     ProgramAccountingController,
 )
-from esp.accounting.models import (
-    Account,
-    LineItemType,
-    Transfer,
-)
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class GlobalAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
 
     def test_setup_accounts(self):
         gac = GlobalAccountingController()
@@ -283,7 +263,7 @@ class GlobalAccountingControllerTest(TestCase):
 class ProgramAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         gac = GlobalAccountingController()
         gac.setup_accounts()
@@ -404,7 +384,7 @@ class ProgramAccountingControllerTest(TestCase):
 class IndividualAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
             username='teststu', password='password',
@@ -475,6 +455,53 @@ class IndividualAccountingControllerTest(TestCase):
         finaid = self.iac.amount_finaid()
         self.assertEqual(finaid, Decimal('50.00'))
 
+    def test_amount_finaid_percentage_rounded_to_cents(self):
+        """A percentage-based finaid grant on a non-whole-dollar amount must
+        produce a result rounded to the nearest cent (ROUND_HALF_UP), so
+        that amount_due() is always a whole number of cents.
+
+        Exact scenario from the issue: 25% of $47.46 = $11.865.
+        Without rounding, amount_due() = $35.595, causing:
+          - payonline:      int(35.595 * 100)  = 3560
+          - charge_payment: Decimal(35.595)*100 = 3559.5
+        These never match → "inconsistent_amount" error → student can't pay.
+
+        With ROUND_HALF_UP, finaid = $11.87, amount_due() = $35.59, and
+        int(35.59 * 100) == Decimal(35.59) * 100 == 3559.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.46'))
+
+        self.iac.set_finaid_params(None, 25)  # 25% discount, no dollar cap
+        finaid = self.iac.amount_finaid()
+
+        # 25% of $47.46 = $11.865 → rounds up to $11.87 with ROUND_HALF_UP
+        self.assertEqual(finaid, Decimal('11.87'))
+        # amount_due must be a whole number of cents
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('35.59'))
+        # The two code paths for computing cents must agree
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
+    def test_amount_finaid_percentage_and_dollar_cap_rounded_to_cents(self):
+        """When both a dollar-cap and a percentage are applied together, the
+        final amount_finaid() must still be rounded to whole cents.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.50'))
+
+        # Dollar cap of $5.00 applied first, then 25% on remainder ($42.50)
+        # 25% of $42.50 = $10.625 → rounds up to $10.63
+        # Total finaid = $5.00 + $10.63 = $15.63
+        self.iac.set_finaid_params(5.00, 25)
+        finaid = self.iac.amount_finaid()
+        self.assertEqual(finaid, Decimal('15.63'))
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('31.87'))
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
     def test_amount_due_with_full_finaid(self):
         self.iac.grant_full_financial_aid()
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
@@ -541,6 +568,26 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
 
+    def test_apply_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 1, Decimal('15.00')])
+
+    def test_set_preference(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 1)
+        transfers = self.iac.get_transfers()
+        self.assertTrue(transfers.filter(line_item__text='T-shirt').exists())
+
+    def test_get_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 2)
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
+
     def test_record_payment_from_identifier_handles_multiple_transfers_same_line_item(self):
         """Reconciliation should consume one unpaid transfer per identifier entry."""
         self.pac.setup_lineitemtypes(50.0, optional_items=[('T-Shirt', 15.0, 5)])
@@ -555,4 +602,3 @@ class IndividualAccountingControllerTest(TestCase):
 
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
         self.assertEqual(self.iac.get_transfers().filter(paid_in__isnull=False).count(), 3)
-

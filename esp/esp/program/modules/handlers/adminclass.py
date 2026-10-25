@@ -44,6 +44,7 @@ from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
 from django.http import HttpResponseRedirect, HttpResponse
+from django.utils.http import url_has_allowed_host_and_scheme
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
@@ -72,7 +73,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.DRAFT, 'Draft'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
@@ -155,6 +156,9 @@ class AdminClass(ProgramModuleObj):
             except ClassSubject.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
 
+            if class_subject.isDraft():
+                raise ESPError("Error: this class is still a teacher's unsubmitted draft and cannot be reviewed.", log=False)
+
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':
@@ -228,8 +232,9 @@ class AdminClass(ProgramModuleObj):
                 sec_cancel_forms.is_bound = True
                 if sec_cancel_forms.is_valid():
                     cleaned_data = sec_cancel_forms.cleaned_data
+                    target_ids = set(cleaned_data['target'].values_list('id', flat=True))
                     for sec in sections:
-                        if not sec.isCancelled() and sec in cleaned_data['target']:
+                        if not sec.isCancelled() and sec.id in target_ids:
                             sec.cancel(email_students=True, include_lottery_students=cleaned_data['email_lottery_students'], text_students=cleaned_data['text_students'], email_teachers = cleaned_data['email_teachers'], explanation=cleaned_data['explanation'], unschedule=cleaned_data['unschedule'])
                     return HttpResponseRedirect(request.get_full_path()) # Other forms may need updating, so just reload this view
             elif action == 'modify_cls':
@@ -269,39 +274,44 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'manageclass.html', request, context)
 
+    def _safe_redirect(self, request, fallback_url):
+        """ Redirect to the 'redirect' GET parameter, but only if it stays on this host."""
+        redirect_url = request.GET.get('redirect')
+        if redirect_url and url_has_allowed_host_and_scheme(
+            url=redirect_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return HttpResponseRedirect(redirect_url)
+        return HttpResponseRedirect(fallback_url)
+
     @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.accept()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.reject()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.propose()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         cls.delete(True)

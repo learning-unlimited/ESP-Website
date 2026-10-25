@@ -26,7 +26,8 @@ CACHES = {
     'default': {
         'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
         'LOCATION': 'memcached:11211',
-        'TIMEOUT': 0,
+        # None == never expire.  Set 0 to actually disable caching.
+        'TIMEOUT': None,
     }
 }
 
