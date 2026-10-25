@@ -214,6 +214,18 @@ class ProgramCreationForm(BetterModelForm):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
+    #   program_type and term_friendly are concatenated into Program.name, which
+    #   isn't a field on this form, so its model validator never runs here.
+    def clean_program_type(self):
+        program_type = self.cleaned_data['program_type']
+        program_name_validator(program_type)
+        return program_type
+
+    def clean_term_friendly(self):
+        term_friendly = self.cleaned_data['term_friendly']
+        program_name_validator(term_friendly)
+        return term_friendly
+
     def clean_program_modules(self):
         mods = list(self.cleaned_data['program_modules'])[:] # take a copy of the list to be safe
         # Add "include by default" modules (choosable property = 1)
@@ -226,7 +238,8 @@ class ProgramCreationForm(BetterModelForm):
         fields, and constructs the url and name fields on the Program instance.
         '''
         super().clean()
-        if 'term' in self.cleaned_data and 'term_friendly' in self.cleaned_data:
+        if all(field in self.cleaned_data
+               for field in ('program_type', 'term', 'term_friendly')):
             #   Filter out unwanted characters from program type to form URL
             ptype_slug = re.sub(r'[-\s]+', '_', re.sub(r'[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type'])).strip())
             new_url = '%(type)s/%(term)s' \
@@ -239,15 +252,7 @@ class ProgramCreationForm(BetterModelForm):
                   }
             self.cleaned_data['new_url'] = new_url
             self.cleaned_data['new_name'] = new_name
-            # url and name aren't fields on this form, so their model validators
-            # don't run; validate the values they are built from instead.
-            for field_name in ('program_type', 'term_friendly'):
-                value = self.cleaned_data.get(field_name)
-                if value:
-                    try:
-                        program_name_validator(value)
-                    except forms.ValidationError as e:
-                        self.add_error(field_name, e.messages)
+            # url isn't a field on this form, so its model validator doesn't run.
             try:
                 program_url_validator(new_url)
             except forms.ValidationError as e:

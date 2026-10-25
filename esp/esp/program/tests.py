@@ -2801,6 +2801,15 @@ class ProgramCreationFormValidationTest(TestCase):
         errors = self.form_errors(program_type="Splash<script>")
         self.assertIn('program_type', errors)
 
+    def test_each_title_field_is_validated_independently(self):
+        errors = self.form_errors(term='Splash! 2013', term_friendly='Splash<script>')
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
+    def test_missing_program_type_does_not_raise(self):
+        errors = self.form_errors(program_type='')
+        self.assertIn('program_type', errors)
+
     def test_valid_title_fields_produce_no_title_errors(self):
         errors = self.form_errors()
         for field_name in ('program_type', 'term', 'term_friendly'):
