@@ -632,7 +632,7 @@ class ScheduleLoadAndSaveTest(ProgramFrameworkTest):
         self.schedule_class_simple_db()
 
         # Try to place a different section into the same occupied roomslot.
-        other = self.schedule.class_sections[self.initial_section_id + 1]
+        other = self.schedule.class_sections[self.initial_section_id + 2]
         room = self.schedule.classrooms["Room 1"]
         roomslot = room.availability[1]
         other.assign_roomslots([roomslot])
