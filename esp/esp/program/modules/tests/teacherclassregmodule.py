@@ -35,18 +35,25 @@ Learning Unlimited, Inc.
 import json
 import random
 
+from django.contrib.auth.models import Group
 from django.db import transaction
+
+from unittest.mock import patch
 
 from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from esp.program.class_status import ClassStatus
 from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
+from esp.qsdmedia.models import Media
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.tagdict.models import Tag
 from esp.users.models import ESPUser, Permission
+from esp.middleware import ESPError, ESPError_NoLog
+from esp.tests.factories import make_program, make_class, make_user
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -227,13 +234,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
-        cls1.status = -1
+        cls1.status = ClassStatus.REJECTED
         cls1.save()
         cls2 = random.choice(self.other_teacher1.getTaughtClasses())
-        cls2.status = 1
+        cls2.status = ClassStatus.ACCEPTED
         cls2.save()
         cls3 = random.choice(self.other_teacher2.getTaughtClasses())
-        cls3.status = 0
+        cls3.status = ClassStatus.UNREVIEWED
         cls3.save()
         # Check them
         d = self.moduleobj.teachers()
@@ -397,3 +404,316 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         response = self.client.post(url, {'secid': victim_section.id})
         self.assertContains(response, 'do not have privileges to edit', status_code=200)
 
+    @transaction.atomic
+    def test_class_docs_delete_own_document_succeeds(self):
+        """Teacher can delete a document belonging to their own class."""
+        doc = Media.objects.create(friendly_name='My Class Doc', owner=self.cls)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {'command': 'delete', 'docid': doc.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Media.objects.filter(id=doc.id).exists())
+
+    @transaction.atomic
+    def test_class_docs_delete_other_class_document_fails(self):
+        """Teacher cannot delete a document belonging to a class they cannot edit."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        self.assertFalse(attacker.canEdit(victim_cls))
+
+        victim_doc = Media.objects.create(friendly_name='Victim Doc', owner=victim_cls)
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {'command': 'delete', 'docid': victim_doc.id})
+        self.assertEqual(response.status_code, 200)
+
+        # Victim document must not have been deleted
+        self.assertTrue(Media.objects.filter(id=victim_doc.id).exists())
+
+    @transaction.atomic
+    def test_class_docs_rename_own_document_succeeds(self):
+        """Teacher can rename a document belonging to their own class."""
+        doc = Media.objects.create(friendly_name='Original Name', owner=self.cls)
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {
+            'command': 'rename',
+            'docid': doc.id,
+            'title': 'New Name',
+        })
+        self.assertEqual(response.status_code, 200)
+        doc.refresh_from_db()
+        self.assertEqual(doc.friendly_name, 'New Name')
+
+    @transaction.atomic
+    def test_class_docs_rename_other_class_document_fails(self):
+        """Teacher cannot rename a document belonging to a class they cannot edit."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        self.assertFalse(attacker.canEdit(victim_cls))
+
+        victim_doc = Media.objects.create(friendly_name='Original Name', owner=victim_cls)
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {
+            'command': 'rename',
+            'docid': victim_doc.id,
+            'title': 'Hacked Name',
+        })
+        self.assertEqual(response.status_code, 200)
+
+        # Victim document must remain untouched
+        victim_doc.refresh_from_db()
+        self.assertEqual(victim_doc.friendly_name, 'Original Name')
+
+    def test_copyaclass_authorized_teacher_can_copy(self):
+        """Test A: An authorized teacher can copy a class they teach.
+        The form is populated with the source class's fields."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+        response = self.client.get(url, {'cls': self.cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/classedit.html')
+        self.assertContains(response, self.cls.title)
+        self.assertIn('form', response.context)
+        self.assertEqual(response.context['form'].initial['title'], self.cls.title)
+
+    @patch.object(TeacherClassRegModule, 'makeaclass_logic')
+    def test_copyaclass_unauthorized_teacher_cannot_copy(self, mock_makeaclass_logic):
+        """Test B: An unauthorized teacher cannot copy another teacher's class.
+        The request is denied, no protected data is exposed, and makeaclass_logic is not invoked."""
+        attacker = self.teacher
+        victim_cls = random.choice(self.other_teacher1.getTaughtClasses())
+        self.assertNotIn(attacker, victim_cls.get_teachers())
+        self.assertFalse(attacker.canEdit(victim_cls))
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+        response = self.client.get(url, {'cls': victim_cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/cannoteditclass.html')
+        self.assertContains(response, 'do not have privileges to edit')
+        self.assertNotContains(response, victim_cls.title)
+        if victim_cls.class_info:
+            self.assertNotContains(response, victim_cls.class_info)
+        self.assertNotIn('form', response.context)
+        mock_makeaclass_logic.assert_not_called()
+
+    def test_copyaclass_cross_program_unauthorized_rejected(self):
+        """Test C1: Cross-program access to an unauthorized class is rejected."""
+        attacker = self.teacher
+        other_prog = make_program(program_type='OtherProg', instance_name='2025_Fall')
+        other_cls = make_class(other_prog, self.other_teacher1, title='Secret Cross Program Class')
+        self.assertFalse(attacker.canEdit(other_cls))
+
+        self.assertTrue(
+            self.client.login(username=attacker.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+        response = self.client.get(url, {'cls': other_cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/cannoteditclass.html')
+        self.assertContains(response, 'do not have privileges to edit')
+        self.assertNotContains(response, other_cls.title)
+
+    def test_copyaclass_cross_program_authorized_allowed(self):
+        """Test C2: Legitimate cross-program copying by the teacher who taught
+        the class in another program is permitted."""
+        other_prog = make_program(program_type='PastProg', instance_name='2024_Spring')
+        past_cls = make_class(other_prog, self.teacher, title='My Past Program Class')
+        self.assertTrue(self.teacher.canEdit(past_cls))
+
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+        response = self.client.get(url, {'cls': past_cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/classedit.html')
+        self.assertContains(response, past_cls.title)
+        self.assertEqual(response.context['form'].initial['title'], past_cls.title)
+
+    def test_copyaclass_invalid_and_nonexistent_ids(self):
+        """Test D: Missing, malformed, and nonexistent class IDs fail safely."""
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+
+        # Missing cls parameter
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
+        self.assertIn("No class specified!", str(response.context['error']))
+
+        # Empty cls parameter
+        response = self.client.get(url, {'cls': ''})
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
+        self.assertIn("No class specified!", str(response.context['error']))
+
+        # Malformed non-numeric cls parameter (graceful ESPError, not unhandled ValueError)
+        response = self.client.get(url, {'cls': 'invalid_id'})
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
+        self.assertIn("Invalid integer for class ID!", str(response.context['error']))
+
+        # Nonexistent class ID
+        response = self.client.get(url, {'cls': '999999'})
+        self.assertEqual(response.status_code, 500)
+        self.assertTemplateUsed(response, 'error.html')
+        self.assertEqual(response.context['error_type'], 'ESPError_NoLog')
+        self.assertIn("No class found matching this ID!", str(response.context['error']))
+
+    def test_copyaclass_administrator_behavior(self):
+        """Test E: Administrator and privileged user privilege semantics.
+        An admin of the program can copy any class in that program even if not teaching it.
+        An admin of another program without access to this program is denied."""
+        admin = self.admins[0]
+        victim_cls = self.cls
+        self.assertNotIn(admin, victim_cls.get_teachers())
+        self.assertTrue(admin.canEdit(victim_cls))
+
+        self.assertTrue(
+            self.client.login(username=admin.username, password='password'))
+        url = '%scopyaclass' % self.program.get_teach_url()
+        response = self.client.get(url, {'cls': victim_cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/classedit.html')
+        self.assertContains(response, victim_cls.title)
+        self.assertIn('form', response.context)
+        self.assertEqual(response.context['form'].initial['title'], victim_cls.title)
+
+        # A user who is an admin only for another program cannot copy a class from this program
+        other_prog = make_program(program_type='OtherProg', instance_name='2025_Fall')
+        other_admin = make_user('Teacher', username='other_prog_admin')
+        Permission.objects.create(user=other_admin, program=other_prog, permission_type='Administer')
+        self.assertTrue(other_admin.isAdmin(other_prog))
+        self.assertFalse(other_admin.isAdmin(self.program))
+        self.assertFalse(other_admin.canEdit(self.cls))
+
+        self.assertTrue(
+            self.client.login(username=other_admin.username, password='password'))
+        url = '%scopyaclass' % other_prog.get_teach_url()
+        response = self.client.get(url, {'cls': self.cls.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'program/modules/teacherclassregmodule/cannoteditclass.html')
+        self.assertContains(response, 'do not have privileges to edit')
+        self.assertNotContains(response, self.cls.title)
+
+
+class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
+    """Tests for the Teacher/Classes/Schedule deadline."""
+
+    #   Permissions that grant Teacher/Classes/Schedule, directly or by
+    #   implication.  Deleting exactly these closes the schedule deadline while
+    #   leaving the rest of teacher reg reachable.
+    SCHEDULE_PERMS = ['Teacher/All', 'Teacher/Classes/All',
+                      'Teacher/Classes/Schedule']
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+
+        self.add_user_profiles()
+
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = False
+        scrmi.save()
+
+        self.teacher = self.teachers[0]
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
+        self.moduleobj.user = self.teacher
+
+        #   Give the sections real room/time assignments, so the templates have
+        #   something to hide.
+        self.schedule_randomly()
+
+    def close_schedule_deadline(self):
+        """Remove every permission that would grant Teacher/Classes/Schedule."""
+        Permission.objects.filter(
+            permission_type__in=self.SCHEDULE_PERMS,
+            program=self.program,
+        ).delete()
+
+    @transaction.atomic
+    def test_schedule_permission_seeded_for_new_program(self):
+        """New programs get the deadline default-open, so it is discoverable."""
+        perm = Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role__name='Teacher',
+        ).first()
+        self.assertIsNotNone(
+            perm, "prepare_program() should seed Teacher/Classes/Schedule")
+        self.assertIsNone(perm.end_date,
+                          "The seeded schedule deadline should not expire")
+
+    @transaction.atomic
+    def test_can_view_schedule_by_implication(self):
+        """Teacher/All implies Teacher/Classes/Schedule."""
+        Permission.objects.filter(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+        ).delete()
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_can_view_schedule_with_specific_permission(self):
+        """Teacher/Classes/Schedule on its own is enough."""
+        self.close_schedule_deadline()
+        Permission.objects.create(
+            permission_type='Teacher/Classes/Schedule',
+            program=self.program,
+            role=Group.objects.get(name='Teacher'),
+        )
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_cannot_view_schedule_when_deadline_closed(self):
+        self.close_schedule_deadline()
+        self.assertFalse(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_admin_always_sees_schedule(self):
+        """Admins bypass the deadline check."""
+        self.close_schedule_deadline()
+        self.moduleobj.user = self.admins[0]
+        self.assertTrue(self.moduleobj.prepare({})['can_view_schedule'])
+
+    @transaction.atomic
+    def test_teacherreg_shows_schedule_when_open(self):
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Room:', status_code=200)
+        self.assertNotContains(response, 'Schedule not yet available.')
+
+    @transaction.atomic
+    def test_teacherreg_hides_schedule_when_closed(self):
+        self.close_schedule_deadline()
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        response = self.client.get('%steacherreg' % self.program.get_teach_url())
+        self.assertContains(response, 'Schedule not yet available.', status_code=200)
+        self.assertNotContains(response, 'Room:')
+
+    @transaction.atomic
+    def test_class_status_hides_time_blocks_when_closed(self):
+        cls = self.teacher.getTaughtClasses(self.program)[0]
+        self.assertTrue(self.client.login(username=self.teacher.username,
+                                          password='password'))
+        url = '%sclass_status/%d' % (self.program.get_teach_url(), cls.id)
+
+        self.assertContains(self.client.get(url), 'Time Blocks', status_code=200)
+
+        self.close_schedule_deadline()
+        self.assertNotContains(self.client.get(url), 'Time Blocks', status_code=200)
