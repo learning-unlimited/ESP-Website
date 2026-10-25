@@ -6,6 +6,7 @@ Covers:
   myesp.py:
     myesp_passwd() POST — valid old + new password → renders success
     myesp_passwd() POST — wrong old password → form errors
+    myesp_passwd() POST — new password same as current → form errors
     myesp_stop_testing() — valid admin in session → redirect to manage URL, cookie deleted
     profile_editor() GET — pre-fills form from user + RegistrationProfile
     profile_editor() POST valid teacher — saves ContactInfo, redirects
@@ -111,6 +112,21 @@ class MyESPPasswdPostTest(TestCase):
         self.user.refresh_from_db()
         self.assertTrue(self.user.check_password(self.plain_password))
         self.assertFalse(self.user.check_password('newpassword456'))
+
+    def test_new_password_same_as_current_rerenders_form(self):
+        """New password identical to the current one → form re-rendered with an error."""
+        data = {
+            'password': self.plain_password,
+            'newpasswd': self.plain_password,
+            'newpasswdconfirm': self.plain_password,
+        }
+        response = myesp_passwd(self._post_request(data))
+        self.assertEqual(response.status_code, 200)
+        response.render()
+        self.assertNotIn(b'Congratulations', response.content)
+        self.assertIn(b'New password cannot be the same as the current password.', response.content)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.plain_password))
 
 
 # ---------------------------------------------------------------------------
