@@ -252,11 +252,19 @@ class ProgramCreationForm(BetterModelForm):
                   }
             self.cleaned_data['new_url'] = new_url
             self.cleaned_data['new_name'] = new_name
-            # url isn't a field on this form, so its model validator doesn't run.
+            # url and name aren't fields on this form, so neither their validators
+            # nor their max_length run against the assembled values.
             try:
                 program_url_validator(new_url)
             except forms.ValidationError as e:
                 self.add_error('program_type', e.messages)
+            for value, label, model_field, form_field in ((new_url, 'URL', 'url', 'term'),
+                                                          (new_name, 'name', 'name', 'term_friendly')):
+                max_length = Program._meta.get_field(model_field).max_length
+                if len(value) > max_length:
+                    self.add_error(form_field, 'The program %s would be %d characters long, but the '
+                                               'limit is %d. Please shorten the program type or term.'
+                                               % (label, len(value), max_length))
             # Check that there isn't another program with this URL or name
             if Program.objects.filter(url=new_url).exclude(id=self.instance.id).exists():
                 self.add_error('term', "A %s program already exists with this URL. Please choose a new URL or change the URL of the old program." % self.cleaned_data['program_type'])

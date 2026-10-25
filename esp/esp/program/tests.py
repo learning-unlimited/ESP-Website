@@ -2810,6 +2810,11 @@ class ProgramCreationFormValidationTest(TestCase):
         errors = self.form_errors(program_type='')
         self.assertIn('program_type', errors)
 
+    def test_overlong_assembled_name_and_url_are_rejected(self):
+        errors = self.form_errors(program_type='S' * 60, term='2' * 40, term_friendly='F' * 40)
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
     def test_valid_title_fields_produce_no_title_errors(self):
         errors = self.form_errors()
         for field_name in ('program_type', 'term', 'term_friendly'):
