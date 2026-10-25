@@ -226,30 +226,30 @@ class StudentApplication(models.Model):
             self.questions.add(i)
 
     def get_forms(self, data=None):
-        """ Get a list of forms for the student to fill out.
+        """ Get a list of forms for the student to fill out, one per question
+        currently on this application.
         This function sets a target attribute on each form so that
-        the update function can be called directly on target. """
+        the update function can be called directly on target.
+
+        Driving this off self.questions (which set_questions() keeps in sync with
+        the program-wide questions plus those of the classes the student applied
+        to) is what keeps program-wide questions editable: keying off the applied
+        classes skipped them, and they then vanished from the form as soon as they
+        had been answered once. """
 
         if data is None:
             data = {}
 
-        #   Get forms for already existing responses.
         forms = []
-        new_user = self.user
-        applied_classes = new_user.getAppliedClasses(self.program)
-        for r in self.responses.filter(question__subject__in=applied_classes):
-            f = r.get_form(data)
-            f.target = r
-            forms.append(f)
-
-        #   Create responses if necessary for the other questions, and get their forms.
         for q in self.questions.all():
-            if self.responses.filter(question=q).count() == 0:
+            r = self.responses.filter(question=q).first()
+            if r is None:
                 r = StudentAppResponse(question=q)
                 r.save()
                 self.responses.add(r)
-                f = r.get_form(data)
-                forms.append(f)
+            f = r.get_form(data)
+            f.target = r
+            forms.append(f)
 
         return forms
 

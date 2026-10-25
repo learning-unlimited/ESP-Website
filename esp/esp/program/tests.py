@@ -2495,8 +2495,9 @@ class ClassSubjectCacheTest(ProgramFrameworkTest):
 class ProgramCreationFormHandlerLookupTest(TestCase):
     """
     Verify that ProgramCreationForm.program_module_question_ids is built using
-    handler lookups (not admin_title), and that the AdmissionsDashboard
-    manage-only special case is preserved correctly.
+    handler lookups (not admin_title), and that each application question
+    enables one complete pipeline: the two application systems are offered
+    separately, and each offer includes its own student-facing module.
     """
 
     def setUp(self):
@@ -2508,27 +2509,42 @@ class ProgramCreationFormHandlerLookupTest(TestCase):
                 return ids
         return None
 
-    def test_admissions_dashboard_manage_only_question(self):
-        """'Do students have to apply...' must include AdmissionsDashboard manage row only."""
-        manage_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage').first()
-        teach_row = ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='teach').first()
-        if manage_row is None:
-            self.skipTest("AdmissionsDashboard manage row not in DB")
+    def _ids_for_handler(self, handler, **kwargs):
+        return [pm.id for pm in ProgramModule.objects.filter(handler=handler, **kwargs)]
+
+    def test_in_site_question_enables_whole_pipeline(self):
+        """'Do students have to apply...' must enable the student, teacher and admin modules.
+
+        Without the student-facing module, answering yes leaves teachers and
+        admins with review screens that students can never submit anything to.
+        """
         ids = self._ids_for_question('Do students have to apply to individual classes?')
         self.assertIsNotNone(ids)
-        self.assertIn(manage_row.id, ids)
-        if teach_row is not None:
-            self.assertNotIn(teach_row.id, ids)
+        for handler in ('StudentJunctionAppModule', 'TeacherReviewApps', 'AdminReviewApps'):
+            expected = self._ids_for_handler(handler)
+            if not expected:
+                self.skipTest(f"{handler} not in DB")
+            for pm_id in expected:
+                self.assertIn(pm_id, ids, f"{handler} missing from the in-site application question")
 
-    def test_admissions_dashboard_both_rows_in_teacher_question(self):
-        """'If students must apply to individual classes...' must include both AdmissionsDashboard rows."""
-        rows = list(ProgramModule.objects.filter(handler='AdmissionsDashboard'))
-        if not rows:
-            self.skipTest("AdmissionsDashboard rows not in DB")
-        ids = self._ids_for_question('If students must apply to individual classes')
+    def test_in_site_question_excludes_formstack_modules(self):
+        """The in-site question must not drag in the Formstack-backed modules."""
+        ids = self._ids_for_question('Do students have to apply to individual classes?')
         self.assertIsNotNone(ids)
-        for row in rows:
-            self.assertIn(row.id, ids)
+        for handler in ('AdmissionsDashboard', 'FormstackAppModule'):
+            for pm_id in self._ids_for_handler(handler):
+                self.assertNotIn(pm_id, ids, f"{handler} should be offered under the Formstack question")
+
+    def test_formstack_question_enables_whole_pipeline(self):
+        """The Formstack question must include its student module and both dashboard rows."""
+        ids = self._ids_for_question('Formstack')
+        self.assertIsNotNone(ids)
+        for handler in ('FormstackAppModule', 'AdmissionsDashboard'):
+            expected = self._ids_for_handler(handler)
+            if not expected:
+                self.skipTest(f"{handler} not in DB")
+            for pm_id in expected:
+                self.assertIn(pm_id, ids, f"{handler} missing from the Formstack application question")
 
     def test_handler_based_lookup_includes_expected_module(self):
         """Spot-check: CreditCardModule_Stripe appears under the credit card question."""

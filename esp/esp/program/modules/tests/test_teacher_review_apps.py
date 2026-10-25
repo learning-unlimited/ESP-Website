@@ -120,13 +120,16 @@ class TeacherReviewAppsTest(ProgramFrameworkTest):
         for app in self.student_apps:
             app.set_questions()
 
-        # Make the second student's application completed
+        # Make the second student's application completed.  The response has to be
+        # attached to the application, the way StudentApplication.get_forms() does
+        # it -- the roster reads completion off the application, not off the question.
         if len(self.student_apps) > 1:
             for question in self.student_apps[1].questions.all():
-                StudentAppResponse.objects.create(
+                response = StudentAppResponse.objects.create(
                     question=question,
                     complete=True
                 )
+                self.student_apps[1].responses.add(response)
 
     def test_review_students_valid(self):
         """Test that a valid teacher can access the review_students view (200 OK)"""

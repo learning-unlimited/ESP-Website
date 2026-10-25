@@ -84,8 +84,9 @@ class StudentJunctionAppModule(ProgramModuleObj):
                 'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
 
     def isCompleted(self, user=None):
-        """ This step is completed if the student has marked their application as complete or answered questions for
-        all of their classes.  I know this is slow sometimes.  -Michael P"""
+        """ This step is completed if the student has marked their application as complete or answered every
+        question on it -- the program-wide ones as well as those of the classes they applied to.
+        I know this is slow sometimes.  -Michael P"""
         user = self._resolve_user(user)
         app = user.getApplication(self.program)
 
@@ -99,21 +100,19 @@ class StudentJunctionAppModule(ProgramModuleObj):
         #   Code below here may be unnecessary; it's just to save students the trouble
         #   of clicking through to mark their application complete before they can confirm.
 
-        #   Get the student's responses to application questions.
-        responses = app.responses.all()
-        response_question_ids = [x.question.id for x in responses]
-        response_dict = {}
-        for i in range(len(responses)):
-            response_dict[response_question_ids[i]] = responses[i]
+        #   Get the student's responses to application questions, keyed by question.
+        response_dict = {r.question_id: r for r in app.responses.all()}
 
-        #   Check that they responded to everything.
-        classes = user.getAppliedClasses(self.program)
-        for cls in classes:
-            for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
-                if i not in response_question_ids:
-                    return False
-                elif (not response_dict[i].complete) and len(response_dict[i].response) == 0:
-                    return False
+        #   Check that they responded to everything.  set_questions() above has
+        #   already synced app.questions to the program-wide questions plus those
+        #   of the classes they applied to, so walking it covers both; walking the
+        #   applied classes instead would skip every program-wide question.
+        for question_id in app.questions.values_list('id', flat=True):
+            if question_id not in response_dict:
+                return False
+            response = response_dict[question_id]
+            if (not response.complete) and len(response.response) == 0:
+                return False
         return True
 
     def deadline_met(self):

@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_admin, aux_call
 from esp.middleware.esperrormiddleware import ESPError
 from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
@@ -52,20 +52,25 @@ class AdminReviewApps(ProgramModuleObj):
             "link_title": "Application Review for Admin",
             "module_type": "manage",
             "seq": 1000,
+            #   The module has no main view; the admin dashboard renders this
+            #   template to list the classes whose applications can be reviewed.
+            "inline_template": "adminreviews.html",
             "choosable": 0,
             }
 
-    @main_call
+    @aux_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
         """ Show a roster of the students in the class, allowing the administrators
         to accept students into the program based on the teachers' reviews and the
         students' applications. """
 
+        #   `extra` is the class ID from the URL; it is blank if someone reaches
+        #   this view without picking a class off the dashboard.
         try:
             cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
-            raise ESPError('Cannot find class.', log=False)
+        except (ValueError, TypeError, ClassSubject.DoesNotExist):
+            raise ESPError('Cannot find class. Pick a class to review from the program dashboard.', log=False)
 
         if not request.user.canEdit(cls):
             raise ESPError('You cannot edit class "%s"' % cls, log=False)
@@ -176,8 +181,14 @@ class AdminReviewApps(ProgramModuleObj):
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
 
     def prepare(self, context):
-        """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """
-        context['classes_to_review'] = self.program.classes()
+        """ Sets 'classes_to_review' to the classes that actually have applications
+        waiting, i.e. at least one registered student with an application for this
+        program.  That is the same set whose rosters are non-empty in
+        review_students, so every link on the dashboard leads somewhere useful. """
+        context['classes_to_review'] = ClassSubject.objects.filter(
+            parent_program=self.program,
+            sections__registrations__studentapplication__program=self.program,
+        ).distinct()
         return context
 
     def get_msg_vars(self, user, key):

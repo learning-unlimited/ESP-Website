@@ -185,8 +185,15 @@ class ProgramCreationForm(BetterModelForm):
                                                         (mark_safe('Will you use lottery registration (as opposed to first come, first served) to the <b>program</b>?'), [x.id for x in ProgramModule.objects.filter(handler__in=['StudentRegPhaseZero', 'StudentRegPhaseZeroManage'])]),
                                                         ('Will you let students enter a lottery to switch classes after the program has started?', [x.id for x in ProgramModule.objects.filter(handler='ClassChangeRequestModule')]),
                                                         ('Will you have students accept some sort of agreement?', [x.id for x in ProgramModule.objects.filter(handler='StudentAcknowledgementModule')]),
-                                                        ('Do students have to apply to individual classes?', [x.id for x in (ProgramModule.objects.filter(handler='AdminReviewApps') | ProgramModule.objects.filter(handler='AdmissionsDashboard', module_type='manage'))]),
-                                                        ('If students must apply to individual classes, can teachers admit them (as opposed to just admins)?', [x.id for x in ProgramModule.objects.filter(handler__in=['AdmissionsDashboard', 'TeacherReviewApps', 'AdminReviewApps'])]),
+                                                        #   The two application systems are kept in separate questions: each one
+                                                        #   needs its own student-facing module, and mixing them leaves admins with
+                                                        #   review screens backed by a table nothing writes to.
+                                                        #   In-site applications: students answer questions on the site (StudentJunctionAppModule),
+                                                        #   teachers write and score them (TeacherReviewApps), admins accept (AdminReviewApps).
+                                                        ('Do students have to apply to individual classes?', [x.id for x in ProgramModule.objects.filter(handler__in=['StudentJunctionAppModule', 'TeacherReviewApps', 'AdminReviewApps'])]),
+                                                        #   Formstack applications: students are sent to an externally hosted form
+                                                        #   (FormstackAppModule) and teachers/admins decide on AdmissionsDashboard.
+                                                        (mark_safe('Will student applications be collected on <b>Formstack</b> instead? (Requires a Formstack account and a per-program API key.)'), [x.id for x in ProgramModule.objects.filter(handler__in=['FormstackAppModule', 'AdmissionsDashboard'])]),
                                                         ('Will you have moderators or assistants for individual class sections?', [x.id for x in ProgramModule.objects.filter(handler='TeacherModeratorModule')]),
                                                         ('Do you want students to be able to download a completion certificate after the program ends?', [x.id for x in ProgramModule.objects.filter(handler='StudentCertModule')]),
                                                        ])

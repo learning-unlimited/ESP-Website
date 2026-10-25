@@ -99,11 +99,13 @@ class TeacherReviewApps(ProgramModuleObj):
             else:
                 student.app_reviewed = None
 
-            student.app_completed = False
-            for i in questions:
-                for j in i.studentappresponse_set.all():
-                    if j.complete:
-                        student.app_completed = True
+            #   Only this student's own responses count; reading the questions'
+            #   responses directly would pick up every other applicant's too.
+            if student.app:
+                student.app_completed = student.app.responses.filter(
+                    question__in=questions, complete=True).exists()
+            else:
+                student.app_completed = False
 
         students = list(students)
         students.sort(key=lambda s: s.added_class or datetime.min)

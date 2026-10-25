@@ -1,18 +1,18 @@
+{% if classes_to_review %}
 <hr />
 
 <h2>Classes for Student Application Reviews</h2>
 
-<p style="text-align: left">
-    <ul>
+<ul style="text-align: left">
     {% for cls in classes_to_review %}
-        {% if cls.num_students_prereg != 0 %}
-        <li>
-            <a href="/manage/{{ program.getUrlBase }}/review_students/{{ cls.id }}/">
-            Review for {{ cls }}</a>: {{ cls.num_students_prereg }} students total, {{ cls.num_students }} enrolled
-        </li>
-        {% endif %}
+    <li>
+        <a href="/manage/{{ program.getUrlBase }}/review_students/{{ cls.id }}/">
+        Review for {{ cls }}</a>:
+        {% with cls.num_students_prereg as prereg %}{{ prereg }} student{{ prereg|pluralize }} total{% endwith %},
+        {% with cls.num_students as enrolled %}{{ enrolled }} enrolled{% endwith %}
+    </li>
     {% endfor %}
-    </ul>
-</p>
+</ul>
 
 <hr />
+{% endif %}

@@ -15,7 +15,7 @@
 
 <h2>Introduction</h2>
 <p>
-    To complete your application for {{ program.niceName }}, please fill out the following form. When you're finished with a question, please let us know by clicking the <strong>Complete</strong> box, and <u>click <strong>Save Progress</strong> to save your work before leaving this page</u>.
+    To complete your application for {{ program.niceName }}, please fill out the following form. When you're finished with a question, please let us know by ticking its <strong>Complete</strong> box. <u>Click <strong>Save Applications</strong> to save your work before leaving this page</u>, and click <strong>Complete</strong> at the bottom once your whole application is finished.
 </p>
 
 <p>   
@@ -53,7 +53,14 @@
 {% endfor %}
 <tr>
  <th colspan="2" style="text-align: center;">
-    <input class="btn btn-primary" type="submit" name="submitform" value="Save Applications" />
+    {# "Complete" and "Mark as Unfinished" are matched by name in the view; don't reword them. #}
+    {% if app.done %}
+    <input class="btn btn-secondary" type="submit" name="submitform" value="Mark as Unfinished" />
+    {% else %}
+    <input class="btn btn-primary" type="submit" name="submitform" value="Complete" />
+    {% endif %}
+    &nbsp;&nbsp;&nbsp;&nbsp;
+    <input class="btn btn-secondary" type="submit" name="submitform" value="Save Applications" />
  </th>
 </tr>
 </table>
