@@ -715,3 +715,26 @@ class IndividualAccountingControllerTest(TestCase):
         amounts = sorted(self.iac.get_transfers().filter(
             line_item=line_item).values_list('amount_dec', flat=True))
         self.assertEqual(amounts, [Decimal('15.00'), Decimal('15.00')])
+
+    def test_record_payment_from_identifier_rejects_replayed_transaction(self):
+        """A repeated notification is rejected even when every item has a fresh transfer."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due, transaction_id='cs-1')
+
+        #   The student redoes their registration, so each paid transfer named by the
+        #   identifier is replaced by an identical unpaid one.
+        self.iac.get_transfers().filter(line_item__for_payments=False).delete()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, amount_due, transaction_id='cs-1')
+
+        self.assertEqual(self.iac.amount_paid(), Decimal('65.00'))

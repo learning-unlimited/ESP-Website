@@ -509,6 +509,10 @@ class IndividualAccountingController(ProgramAccountingController):
         exception will be raised. This means that changing the cost of an item
         while users are paying will lead to errors.
 
+        A non-empty transaction_id that was already recorded as a payment for this
+        user and program is rejected with DuplicatePaymentError, so that a repeated
+        notification from the payment processor cannot be banked twice.
+
         For identifiers that were passed through trusted (e.g. signed) channels,
         set trusted=True. The cost of Transfer objects will be automatically
         adjusted to match the amount saved in the identifier, removing the need
@@ -517,6 +521,16 @@ class IndividualAccountingController(ProgramAccountingController):
         # Parse identifier
         id_str, transfer_list = identifier.split(':')
         iac = IndividualAccountingController.from_id(id_str)
+
+        # The processor's transaction ID is unique per payment, so seeing it again means
+        # this notification is a replay of a payment that was already recorded.
+        if transaction_id and Transfer.objects.filter(
+                user=iac.user,
+                line_item__program=iac.program,
+                line_item__for_payments=True,
+                transaction_id=transaction_id).exists():
+            raise DuplicatePaymentError(
+                f"Failed on processing payment {transaction_id}: already recorded")
 
         payment = iac.submit_payment(
             amount_paid, transaction_id, link_transfers=False)
