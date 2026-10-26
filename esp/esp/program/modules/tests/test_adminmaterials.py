@@ -52,9 +52,7 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         media = Media.objects.filter(friendly_name="Test doc").first()
         self.assertIsNotNone(media, "add should create a Media object")
-        self.assertTrue(
-            (media.file_name or "").endswith("waiver.pdf")
-            or "waiver" in (media.file_name or ""),
+        self.assertEqual(media.file_name, f"{self.cls.emailcode()}_waiver.pdf")
             "uploaded file should be stored, got %r" % (media.file_name,),
         )
         # Owner should be the class (GenericForeignKey resolves to ClassSubject)
