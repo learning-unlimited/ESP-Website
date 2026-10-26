@@ -85,3 +85,107 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         self.assertFalse(enrollments.filter(StudentRegistration.is_valid_qobject()).exists())
 
         enrollments.update(end_date=None)
+
+    def test_empty_selection(self):
+        self.client.login(username='admin', password='password')
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertGreater(len(regs_before), 0)
+
+        r = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': ''}
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Select Students to Unenroll")
+        self.assertContains(r, "No enrollments selected.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
+
+    def test_missing_selection_field(self):
+        self.client.login(username='admin', password='password')
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertGreater(len(regs_before), 0)
+
+        r = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {}
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Select Students to Unenroll")
+        self.assertContains(r, "No enrollments selected.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
+
+    def test_whitespace_only_selection(self):
+        self.client.login(username='admin', password='password')
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertGreater(len(regs_before), 0)
+
+        r = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': '   '}
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Select Students to Unenroll")
+        self.assertContains(r, "No enrollments selected.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
+
+    def test_valid_submission_after_empty_selection(self):
+        self.client.login(username='admin', password='password')
+        r_empty = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': ''}
+        )
+        self.assertEqual(r_empty.status_code, 200)
+        self.assertContains(r_empty, "No enrollments selected.")
+
+        response = self.client.get('/onsite/' + self.program.url + '/unenroll_status')
+        data = json.loads(str(response.content, encoding='UTF-8'))
+        enrollment_ids = list(data['enrollments'].keys())
+
+        r_valid = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': ','.join(enrollment_ids)}
+        )
+        self.assertContains(r_valid, 'Expired %d student registrations' % len(enrollment_ids))
+        self.assertContains(r_valid, ','.join(enrollment_ids))
+
+        enrollments = StudentRegistration.objects.filter(id__in=enrollment_ids)
+        self.assertFalse(enrollments.filter(StudentRegistration.is_valid_qobject()).exists())
+        enrollments.update(end_date=None)
+
+    def test_undo_empty_selection(self):
+        self.client.login(username='admin', password='password')
+        regs_before = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertGreater(len(regs_before), 0)
+
+        r = self.client.post(
+            '/onsite/' + self.program.url + '/unenroll_students',
+            {'selected_enrollments': '', 'undo': ''}
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Select Students to Unenroll")
+        self.assertContains(r, "No enrollments selected.")
+
+        regs_after = list(StudentRegistration.objects.all().values(
+            'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
+        ))
+        self.assertEqual(regs_before, regs_after)
