@@ -71,6 +71,9 @@ class UserPasswdForm(FormWithRequiredCss):
 
         if self.cleaned_data['newpasswd'] != new_passwd:
             raise forms.ValidationError('Password and confirmation are not equal.')
+
+        if new_passwd == self.cleaned_data.get('password'):
+            raise forms.ValidationError('New password cannot be the same as the current password.')
         try:
             validate_password(new_passwd, self.user)
         except ValidationError as e:
