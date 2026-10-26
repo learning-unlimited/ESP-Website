@@ -46,13 +46,9 @@ class CheckAvailabilityModuleTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         )
         self.assertIsNone(entry)
 
-
-    # This function will cover both the test cases:
-    #1:admin accessing the edit form 
-    #2:Verify that the admin sees a teacher search form when no user is specified.
     def test_admin_can_access_edit_availability_form(self):
-        """Verify that an admin can access the availability search form."""
-        """Verify that the admin sees a teacher search form when no user is specified."""
+        """Verify that an admin can access the availability search form and
+           sees a teacher search form when no user is specified."""
         self.login_as("admin")
         url = self.get_module_url("manage", "edit_availability")
         response = self.client.get(url)
