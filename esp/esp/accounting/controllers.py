@@ -524,56 +524,40 @@ class IndividualAccountingController(ProgramAccountingController):
         # Reconcile Transfers with what's listed in the identifier. Note that
         # any exception will roll back the entire transaction.
         parsed_items = []
-        line_item_ids = set()
         for item in transfer_list.split(';'):
             line_item_id, saved_amount = item.split(',')
-            line_item_id = int(line_item_id)
-            parsed_items.append((line_item_id, saved_amount))
-            line_item_ids.add(line_item_id)
+            parsed_items.append((int(line_item_id), saved_amount))
 
-        candidate_transfers = Transfer.objects.filter(
+        # A user can have several Transfers for one Line Item Type (e.g. an optional item
+        # with quantity > 1), so hand out one unpaid Transfer per identifier entry.
+        unpaid_transfers = {}
+        paid_line_item_ids = set()
+        candidates = Transfer.objects.filter(
             user=iac.user,
-            line_item__id__in=line_item_ids,
-        ).select_related('line_item').order_by('id')
-
-        transfers_by_line_item = {}
-        for transfer in candidate_transfers:
-            transfers_by_line_item.setdefault(transfer.line_item_id, []).append(transfer)
-
-        consumed_transfer_ids = set()
-        transfer_total = 0
-        for line_item_id, saved_amount in parsed_items:
-            unpaid_candidates = []
-            all_candidates = []
-            for candidate in transfers_by_line_item.get(line_item_id, []):
-                if candidate.id in consumed_transfer_ids:
-                    continue
-                all_candidates.append(candidate)
-                if not candidate.paid_in:
-                    unpaid_candidates.append(candidate)
-
-            transfer = None
-            if trusted:
-                if unpaid_candidates:
-                    transfer = unpaid_candidates[0]
+            line_item__id__in={line_item_id for line_item_id, _ in parsed_items},
+        ).exclude(id=payment.id).select_related('line_item').order_by('id')
+        for candidate in candidates:
+            if candidate.paid_in_id:
+                paid_line_item_ids.add(candidate.line_item_id)
             else:
-                for candidate in unpaid_candidates:
-                    if '%.2f' % candidate.amount == saved_amount:
-                        transfer = candidate
-                        break
-                if transfer is None and unpaid_candidates:
-                    transfer = unpaid_candidates[0]
+                unpaid_transfers.setdefault(candidate.line_item_id, []).append(candidate)
 
-            if transfer is None:
-                # Distinguish between "transfer already paid" and "transfer doesn't exist"
-                paid_candidates = [c for c in all_candidates if c.paid_in]
-                if paid_candidates:
+        transfer_total = Decimal('0')
+        for line_item_id, saved_amount in parsed_items:
+            available = unpaid_transfers.get(line_item_id, [])
+            if not available:
+                # Check for duplicate payment
+                if line_item_id in paid_line_item_ids:
                     raise DuplicatePaymentError(
-                        f"Failed on processing line item type {line_item_id}: transfer already paid")
+                        f"Failed on processing line item type {line_item_id}: already paid")
                 raise ReconciliationError(
                     f"Failed on processing line item type {line_item_id}: no transfer found")
 
-            consumed_transfer_ids.add(transfer.id)
+            # Prefer a Transfer whose amount matches, so that entries for the same item at
+            # different prices pair up correctly; otherwise take the oldest one.
+            index = next((i for i, candidate in enumerate(available)
+                          if '%.2f' % candidate.amount == saved_amount), 0)
+            transfer = available.pop(index)
 
             # This case is rare, since it's unusual to change the program of a
             # Line Item Type after it's been created.
@@ -593,10 +577,12 @@ class IndividualAccountingController(ProgramAccountingController):
 
             # Mark as paid!
             transfer.paid_in = payment
-            transfer_total += transfer.amount
+            transfer_total += transfer.amount_dec
             transfer.save()
 
-        if transfer_total != amount_paid:
+        # Compare against the recorded payment so that summing the item amounts isn't
+        # tripped up by float rounding.
+        if transfer_total != payment.amount_dec:
             raise ReconciliationError(
                 "Failed to process payment. Item prices sum to $%.2f, but the user paid $%.2f" %
                 (transfer_total, amount_paid))
