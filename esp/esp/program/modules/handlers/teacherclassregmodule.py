@@ -50,6 +50,7 @@ from esp.users.models            import ESPUser, Record, RecordType, TeacherInfo
 from esp.resources.forms         import ResourceRequestFormSet
 from esp.mailman                 import add_list_members
 from django.conf                 import settings
+from django.contrib              import messages
 from django.http                 import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.db                   import models
 from django.forms.utils          import ErrorDict
@@ -897,17 +898,25 @@ class TeacherClassRegModule(ProgramModuleObj):
                 if category.isdigit() and int(category) == int(self.program.open_class_category.id):
                     action = 'createopenclass'
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog, action=action)
-        if not 'cls' in request.GET:
+        cls_id = request.GET.get('cls')
+        if not cls_id:
             raise ESPError("No class specified!", log=False)
 
         # Select the class
-        cls_id = request.GET['cls']
+        try:
+            cls_id = int(cls_id)
+        except (ValueError, TypeError):
+            raise ESPError("Invalid integer for class ID!", log=False)
+
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
             raise ESPError("No class found matching this ID!", log=False)
         if len(classes) != 1:
             raise ESPError("Something weird happened, more than one class found matching this ID.", log=False)
         cls = classes[0]
+
+        if not request.user.canEdit(cls):
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         # Select the correct action
         if cls.category == self.program.open_class_category:
@@ -1011,6 +1020,10 @@ class TeacherClassRegModule(ProgramModuleObj):
                         newclass = ccc.editclass(request.user, request.POST, extra)
                     elif action == 'editopenclass':
                         newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
+
+                    for sec in ccc.undeleted_sections:
+                        num_students = sec.num_students()
+                        messages.warning(request, f"Could not remove section {sec.emailcode()}: {num_students} student{'s are' if num_students != 1 else ' is'} enrolled in it.")
 
                     do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
