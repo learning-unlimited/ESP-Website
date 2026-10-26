@@ -2,9 +2,7 @@
 Behavioral tests for AdminMaterials (esp/program/modules/handlers/adminmaterials.py).
 
 Covers the three POST commands on get_materials(): add / rename / delete,
-plus permission gating. Follows the acceptance criteria in #5127.
-
-Refs: #5127, #3780
+plus permission gating.
 """
 
 from django.core.files.uploadedfile import SimpleUploadedFile
