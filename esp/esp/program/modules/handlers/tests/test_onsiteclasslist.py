@@ -43,6 +43,128 @@ class UpdateScheduleJsonTests(SimpleTestCase):
             resp = self._call({"user": "9999"})
         self._assert_user_not_found(resp)
 
+    def _assert_invalid_sections(self, resp):
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('sections must be a JSON list' in msg for msg in payload.get('messages', [])))
+
+    def test_sections_object_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "{}"})
+        self._assert_invalid_sections(resp)
+
+    def test_sections_scalar_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "5"})
+        self._assert_invalid_sections(resp)
+
+    def test_malformed_sections_json_returns_400(self):
+        user = SimpleNamespace(id=1)
+        with patch.object(ESPUser.objects, "get", return_value=user):
+            resp = self._call({"user": "1", "sections": "not-json{{{"})
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in payload.get('messages', [])))
+
+
+class UpdateScheduleJsonSanitizationTests(ProgramFrameworkTest):
+    """update_schedule_json must cast section IDs to ints, drop invalid
+    entries, dedupe, and reject oversized lists (#4268)."""
+
+    def setUp(self):
+        super().setUp(
+            num_timeslots=1,
+            num_teachers=1,
+            classes_per_teacher=1,
+            sections_per_class=1,
+            num_rooms=1,
+            num_students=1,
+        )
+        self.schedule_randomly()
+        self.add_user_profiles()
+        self.student = self.students[0]
+        self.section = self.program.sections()[0]
+        self.factory = RequestFactory()
+        self.admin = self.admins[0]
+
+    def _call(self, sections_param):
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': sections_param,
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        return fn(module, request, None, None, None, None, None, self.program)
+
+    def test_invalid_and_duplicate_entries_are_sanitized(self):
+        resp = self._call(json.dumps(['junk', self.section.id, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+        #   The duplicate entry must have been collapsed to a single attempt.
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_all_invalid_entries_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps(['junk']))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_oversized_list_returns_400(self):
+        resp = self._call(json.dumps(list(range(300))))
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('too many sections' in msg for msg in data['messages']))
+
+    def test_float_and_bool_entries_are_rejected(self):
+        #   int(1.0) == 1 and int(True) == 1, so strict validation must
+        #   reject floats (even 1.0) and bools instead of coercing them.
+        resp = self._call(json.dumps([1.0, True, False, self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertEqual(sum('ignored invalid section ID' in msg for msg in data['messages']), 3)
+        add_messages = [m for m in data['messages'] if m.startswith('Added') or m.startswith('Failed to add')]
+        self.assertEqual(len(add_messages), 1)
+
+    def test_mixed_list_with_non_integer_sanitized(self):
+        #   Regression for Copilot review: list containing non-integers
+        #   like ["abc", 12] must sanitize, not 500 or wipe.
+        resp = self._call(json.dumps(['abc', self.section.id]))
+        self.assertEqual(resp.status_code, 200)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('ignored invalid section ID' in msg for msg in data['messages']))
+
+    def test_all_floats_rejected_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        resp = self._call(json.dumps([1.0, 2.5]))
+        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
+    def test_malformed_json_returns_400_without_wiping_schedule(self):
+        self.section.preregister_student(self.student)
+        request = self.factory.get('/onsite/update_schedule_json', {
+            'user': str(self.student.id),
+            'sections': 'not-json{{{',
+        })
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.update_schedule_json, 'method', OnSiteClassList.update_schedule_json)
+        module = SimpleNamespace(program=self.program)
+        resp = fn(module, request, None, None, None, None, None, self.program)
+        self.assertEqual(resp.status_code, 400)
+        data = json.loads(resp.content.decode())
+        self.assertTrue(any('could not parse' in msg for msg in data['messages']))
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(user=self.student, section=self.section).exists()
+        )
+
 
 class PrintScheduleStatusTests(SimpleTestCase):
     """Regression tests for printschedule_status early failure cases."""
@@ -846,6 +968,41 @@ class ClassListReloadTests(ProgramFrameworkTest):
 
         self.assertLess(wrap_index, check_index)
         self.assertLess(check_index, reload_index)
+
+    def test_refresh_non_numeric_fallback(self):
+        """Non-numeric refresh should fall back to 120."""
+        content = self._render({'refresh': '2 minutes', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_refresh_empty_fallback(self):
+        """Empty refresh should fall back to 120."""
+        content = self._render({'refresh': '', 'scrollspeed': '1'})
+        self.assertIn('refresh_interval_ms = 120 * 1000', content)
+
+    def test_scrollspeed_non_numeric_fallback(self):
+        """Non-numeric scrollspeed should fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '2 fast'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_fractional_scale_factor(self):
+        """Fractional scrollspeed should be preserved (float parsing, not int)."""
+        content = self._render({'refresh': '120', 'scrollspeed': '0.5'})
+        self.assertIn('scroll_offset -= 0.5;', content)
+
+    def test_scrollspeed_nan_fallback(self):
+        """scrollspeed='nan' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'nan'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_inf_fallback(self):
+        """scrollspeed='inf' is a valid float() input but non-finite; must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': 'inf'})
+        self.assertIn('scroll_offset -= 1.0;', content)
+
+    def test_scrollspeed_overflow_fallback(self):
+        """scrollspeed='1e309' overflows to inf (non-finite); must fall back to 1.0."""
+        content = self._render({'refresh': '120', 'scrollspeed': '1e309'})
+        self.assertIn('scroll_offset -= 1.0;', content)
 
 
 class OnsiteAuthorizationTests(CacheFlushTestCase):

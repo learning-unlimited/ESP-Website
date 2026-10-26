@@ -209,14 +209,16 @@ class AccountingModule(ProgramModuleObj):
     def accounting(self, request, tl, one, two, module, extra, prog):
         user = None
         context = {}
+        form = StudentSearchForm()
         if extra:
-            user = ESPUser.objects.get(id=extra)
+            try:
+                user = ESPUser.objects.get(id=extra)
+            except (ESPUser.DoesNotExist, ValueError):
+                user = None
         elif 'target_user' in request.POST:
             form = StudentSearchForm(request.POST)
             if form.is_valid():
                 user = form.cleaned_data['target_user']
-        else:
-            form = StudentSearchForm()
 
         if user:
             form = StudentSearchForm(initial={'target_user': user.id})

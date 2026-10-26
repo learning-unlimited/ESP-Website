@@ -216,6 +216,4 @@
 
 - **`csrf_failure` resolves `prog` but never uses it.** In [views/csrf.py](views/csrf.py), `prog` is looked up and assigned but never added to the template context before `render_to_response` is called, so `403_csrf_failure.html` cannot access program-specific context. This appears to be a long-standing bug.
 
-- **`ResizeImageField` calls `Image.ANTIALIAS`, which is removed in Pillow 10.** `Image.ANTIALIAS` was deprecated in Pillow 9.1.0 and fully removed in Pillow 10.0.0 (released 2023). Running on a modern Pillow version will raise `AttributeError` when a user uploads a profile picture. The fix is to replace it with `Image.LANCZOS`.
-
 <!-- Last verified: 2026-03-05 | Verified by: Balasubramaniam12007 -->
