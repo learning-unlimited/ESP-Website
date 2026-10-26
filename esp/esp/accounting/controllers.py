@@ -522,6 +522,10 @@ class IndividualAccountingController(ProgramAccountingController):
         id_str, transfer_list = identifier.split(':')
         iac = IndividualAccountingController.from_id(id_str)
 
+        # Lock this user's row so that concurrent notifications are reconciled one at a
+        # time and the duplicate check below cannot be raced by a second postback.
+        ESPUser.objects.select_for_update().get(id=iac.user.id)
+
         # The processor's transaction ID is unique per payment, so seeing it again means
         # this notification is a replay of a payment that was already recorded.
         if transaction_id and Transfer.objects.filter(
