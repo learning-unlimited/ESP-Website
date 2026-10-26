@@ -3,25 +3,24 @@
 # the same effect as using a OneToOneField. Use OneToOneField instead.
 
 import django.db.models.deletion
-from django.conf import settings
-from django.db import migrations, models
+import esp.db.fields
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('users', '0044_alter_contactinfo_address_country'),
+        ("users", "0051_backfill_teacher_schedule_permission"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='userforwarder',
-            name='source',
-            field=models.OneToOneField(
+            model_name="userforwarder",
+            name="source",
+            field=esp.db.fields.AjaxOneToOneField(
                 on_delete=django.db.models.deletion.CASCADE,
-                related_name='forwarders_out',
-                to=settings.AUTH_USER_MODEL,
+                related_name="forwarders_out",
+                to="users.espuser",
             ),
         ),
     ]

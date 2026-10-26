@@ -23,6 +23,7 @@ from esp.program.models import RegistrationProfile, Program
 from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.controllers.merge import merge_users
 from esp.users.forms.password_reset import PasswordResetForm
 from esp.users.forms.user_reg import AwaitingActivationEmailForm, ValidHostEmailField
 from esp.users.models import (
@@ -555,6 +556,12 @@ class UserForwarderTest(TestCase):
         self.assertTrue(UserForwarder.follow(self.ua) == (self.ub, True), fwd_info(self.ua))
         self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
         self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
+    def test_merge_users(self):
+        # Merge A (which forwards to C) into B; A must still end up forwarded.
+        UserForwarder.forward(self.ua, self.uc)
+        merge_users(self.ub, self.ua)
+        ua = ESPUser.objects.get(pk=self.ua.pk)
+        self.assertEqual(UserForwarder.follow(ua), (self.uc, True))
 
 class MakeAdminTest(TestCase):
     def setUp(self):
