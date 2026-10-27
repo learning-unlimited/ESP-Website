@@ -87,6 +87,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         enrollments.update(end_date=None)
 
     def test_empty_selection(self):
+        """Verify that submitting an empty selection returns HTTP 200 with an error and does not mutate registrations."""
         self.client.login(username='admin', password='password')
         regs_before = list(StudentRegistration.objects.all().values(
             'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
@@ -107,6 +108,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         self.assertEqual(regs_before, regs_after)
 
     def test_missing_selection_field(self):
+        """Verify that omitting the selected_enrollments field returns HTTP 200 with an error and preserves registrations."""
         self.client.login(username='admin', password='password')
         regs_before = list(StudentRegistration.objects.all().values(
             'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
@@ -127,6 +129,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         self.assertEqual(regs_before, regs_after)
 
     def test_whitespace_only_selection(self):
+        """Verify that whitespace-only selected_enrollments is treated as empty without altering registrations."""
         self.client.login(username='admin', password='password')
         regs_before = list(StudentRegistration.objects.all().values(
             'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
@@ -147,6 +150,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         self.assertEqual(regs_before, regs_after)
 
     def test_valid_submission_after_empty_selection(self):
+        """Verify that valid unenrollment can be submitted successfully following an empty selection attempt."""
         self.client.login(username='admin', password='password')
         r_empty = self.client.post(
             '/onsite/' + self.program.url + '/unenroll_students',
@@ -171,6 +175,7 @@ class UnenrollModuleTest(ProgramFrameworkTest):
         enrollments.update(end_date=None)
 
     def test_undo_empty_selection(self):
+        """Verify that submitting undo with an empty selection returns HTTP 200 with an error and leaves registrations unchanged."""
         self.client.login(username='admin', password='password')
         regs_before = list(StudentRegistration.objects.all().values(
             'id', 'end_date', 'relationship_id', 'section_id', 'user_id'
