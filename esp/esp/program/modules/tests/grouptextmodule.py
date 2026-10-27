@@ -176,6 +176,7 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
             self.assertFalse(GroupTextModule.is_configured())
 
     def test_is_configured_false_with_empty_list_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty list."""
         with override_settings(
             TWILIO_ACCOUNT_SID='sid',
             TWILIO_AUTH_TOKEN='tok',
@@ -184,6 +185,7 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
             self.assertFalse(GroupTextModule.is_configured())
 
     def test_is_configured_false_with_empty_tuple_numbers(self):
+        """Verify that is_configured returns False when TWILIO_ACCOUNT_NUMBERS is an empty tuple."""
         with override_settings(
             TWILIO_ACCOUNT_SID='sid',
             TWILIO_AUTH_TOKEN='tok',
@@ -192,6 +194,7 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
             self.assertFalse(GroupTextModule.is_configured())
 
     def test_is_configured_true_with_tuple_numbers(self):
+        """Verify that is_configured returns True when TWILIO_ACCOUNT_NUMBERS is a valid non-empty tuple."""
         with override_settings(
             TWILIO_ACCOUNT_SID='sid',
             TWILIO_AUTH_TOKEN='tok',
@@ -220,6 +223,7 @@ class GroupTextModuleConfiguredTest(ProgramFrameworkTest):
             )
 
     def test_panel_not_configured_with_empty_numbers(self):
+        """Verify that grouptextpanel renders not_configured.html on GET and POST when numbers are empty."""
         with override_settings(
             TWILIO_ACCOUNT_SID='sid',
             TWILIO_AUTH_TOKEN='tok',
