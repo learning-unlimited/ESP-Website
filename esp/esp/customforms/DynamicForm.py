@@ -412,15 +412,15 @@ class ComboForm(SessionWizardView):
         # Also, populate 'data' with foreign-keys that need to be inserted into the response table
         for k, v in link_models_cache.items():
             if v['instance'] is not None:
-                # TODO-> the following update won't work for fk fields.
-                v['instance'].__dict__.update(v['data'])
+                # Assign through setattr so that field descriptors run; a related
+                # field written straight into __dict__ never reaches the database
+                for field_name, value in v['data'].items():
+                    setattr(v['instance'], field_name, value)
                 v['instance'].save()
-                curr_instance = v['instance']
             else:
                 # The user has no record yet, so create one for them
                 v['instance'] = v['model'].objects.create(user=self.curr_request.user, **v['data'])
-            if v['instance'] is not None:
-                data[f'link_{v["model"].__name__}'] = v['instance']
+            data[f'link_{v["model"].__name__}'] = v['instance']
 
         # Saving response
         initial_keys = list(data.keys())
@@ -581,15 +581,16 @@ class FormHandler:
                         else:
                             # Get the instance from the model method that should have been defined
                             link_models_cache[v['model'].__name__] = getattr(v['model'], 'cf_link_instance')(self.request)
-                        if link_models_cache[v['model'].__name__] is not None:
-                            link_models_cache[v['model'].__name__] = link_models_cache[v['model'].__name__].__dict__
-                    if link_models_cache[v['model'].__name__] is not None:
+                    instance = link_models_cache[v['model'].__name__]
+                    if instance is not None:
+                        # Read through getattr for the same reason, and because
+                        # __dict__ holds raw column values (e.g. 'user_id')
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[str(step)].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            initial_data[str(step)].update({ k:getattr(instance, v['model_field'], None) })
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[str(step)].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[str(step)].update({k:[getattr(instance, val, None) for val in v['model_field'] ]})
         return initial_data
 
     def get_initial_data(self, initial_data=None):
