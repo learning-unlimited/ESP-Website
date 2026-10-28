@@ -27,7 +27,7 @@
 
 {% if tl == "onsite" %}
 <br />
-<a class="btn" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">&lt;&lt;Back to Attendance Overview</a>
+<a class="btn btn-secondary" style="float: left" href="/onsite/{{ one }}/{{ two }}/attendance/{{ timeslot.id }}">&lt;&lt;Back to Attendance Overview</a>
 <select name="tsid" onchange="location.href='/onsite/{{ one }}/{{ two }}/section_attendance/'+$j(this).children('option:selected').val()" style="width: 200px; float: right;">
     <option disabled{% if not timeslot %} selected="selected"{% endif %}>
         (Select a timeslot)

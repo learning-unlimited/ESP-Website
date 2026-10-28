@@ -19,11 +19,11 @@
     <br/>
     {# Next comes first so Enter submits it; the CSS shows it last. #}
     <div class="wizard-nav">
-    <input type="submit" class="btn primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
+    <input type="submit" class="btn btn-primary"{% if wizard.steps.next %} value="Next Step"{% endif %}>
     {% if wizard.steps.prev %}
-        <button class="btn primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.prev }}">Prev Step</button>
+        <button class="btn btn-primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.prev }}">Prev Step</button>
         {% if wizard.steps.first != wizard.steps.prev %}
-            <button class="btn primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.first }}">First Step</button>
+            <button class="btn btn-primary" name="wizard_goto_step" formnovalidate value="{{ wizard.steps.first }}">First Step</button>
         {% endif %}
     {% endif %}
     </div>

@@ -44,15 +44,15 @@
 <div id='program_form'>
 
 <br/>
-<a class="btn" style="float: left" href="teachercheckin{% if url_when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
+<a class="btn btn-secondary" style="float: left" href="teachercheckin{% if url_when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
 {% if previous or next %}
 <div style="text-align:right">
 {% if start_time %}
-{% if previous %}<a class="btn" href="missingteachers?start={{ previous.id }}{% if url_when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
-{% if next %}<a class="btn" href="missingteachers?start={{ next.id }}{% if url_when %}&when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
+{% if previous %}<a class="btn btn-secondary" href="missingteachers?start={{ previous.id }}{% if url_when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous time slot</a>{% endif %}
+{% if next %}<a class="btn btn-secondary" href="missingteachers?start={{ next.id }}{% if url_when %}&when={{ url_when }}{% endif %}">Next time slot&gt;&gt;</a>{% endif %}
 {% elif date %}
-{% if previous %}<a class="btn" href="missingteachers?date={{ previous }}{% if url_when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
-{% if next %}<a class="btn" href="missingteachers?date={{ next }}{% if url_when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
+{% if previous %}<a class="btn btn-secondary" href="missingteachers?date={{ previous }}{% if url_when %}&when={{ url_when }}{% endif %}">&lt;&lt;Previous day</a>{% endif %}
+{% if next %}<a class="btn btn-secondary" href="missingteachers?date={{ next }}{% if url_when %}&when={{ url_when }}{% endif %}">Next day&gt;&gt;</a>{% endif %}
 {% endif %}
 </div>
 {% endif %}
@@ -310,14 +310,14 @@
                     {% endfor %}
                 </div>
                 <br />
-                <button class="add-flag btn">add flag</button>
+                <button class="add-flag btn btn-secondary">add flag</button>
             {% endif %}
             <div class="assignment-name-list fqr-class-assignments">
                 {% for assignment in section.unique_resources %}
                     {% include "program/modules/resourcemodule/assignment_name.html" %}
                 {% endfor %}
             </div>
-            <button class="add-assignment btn" data-section="{{ section.id }}" data-geturl="/manage/{{program.getUrlBase}}/getavailableequipment/">checkout resource</button>
+            <button class="add-assignment btn btn-secondary" data-section="{{ section.id }}" data-geturl="/manage/{{program.getUrlBase}}/getavailableequipment/">checkout resource</button>
             <div class="section-detail-info"
                  style="display: none;"
                  data-class-id="{{section.parent_class.id}}"
@@ -345,7 +345,7 @@
 {% endfor %}
 </table>
 
-<br/><a class="btn" style="float: left" href="teachercheckin{% if url_when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
+<br/><a class="btn btn-secondary" style="float: left" href="teachercheckin{% if url_when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
 
 <br />
 {% load render_qsd %}
