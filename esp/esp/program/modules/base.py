@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 from django.db import models
 from django.contrib.auth.models import Group
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, Permission
@@ -389,13 +389,12 @@ class ProgramModuleObj(ExpirableModel):
     def makeLink(self):
         title = self.get_link_title()
         if not self.module.module_type == 'manage':
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), title, title)
+            tooltip = title
         else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), title)
+            tooltip = self.docs()
 
-        return mark_safe(link)
+        return format_html('<a href="{}" title="{}" class="vModuleLink" >{}</a>',
+                           self.get_full_path(), tooltip, title)
 
     def makeSelfCheckinLink(self):
         return self.makeLink()
@@ -415,20 +414,18 @@ class ProgramModuleObj(ExpirableModel):
     def makeSetupLink(self):
         title = self.get_setup_title()
         link = self.get_setup_path()
-        return mark_safe(f'<a href="{link}" title="{title}">{title}</a>')
+        return format_html('<a href="{}" title="{}">{}</a>', link, title, title)
 
     def makeButtonLink(self):
         if not self.module.module_type == 'manage':
-            link = f"""<div class="module_button">\
-                                <a href="{self.get_full_path()}" class="module_link_large">
-                                    <div class="module_link_main">{self.module.link_title}</div>
+            return format_html("""<div class="module_button">\
+                                <a href="{}" class="module_link_large">
+                                    <div class="module_link_main">{}</div>
                                 </a>
-                            </div>"""
-        else:
-            link = '<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.docs().replace("'", "\\'").replace('\n', '<br />\\n').replace('\r', ''), self.module.link_title)
+                            </div>""", self.get_full_path(), self.module.link_title)
 
-        return mark_safe(link)
+        return format_html('<a href="{}" title="{}" class="vModuleLink" >{}</a>',
+                           self.get_full_path(), self.docs(), self.module.link_title)
 
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
