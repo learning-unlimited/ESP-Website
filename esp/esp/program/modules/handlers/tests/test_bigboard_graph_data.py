@@ -9,6 +9,7 @@ from django.test import SimpleTestCase, TestCase
 
 from esp.program.models import Program
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 
 
@@ -88,3 +89,36 @@ class GraphSettingTest(TestCase):
     def test_negative_values_are_clamped(self):
         Tag.setTag('bigboard_graph_drop_end', target=self.program, value='-5')
         self.assertEqual(BigBoardModule.graph_setting('bigboard_graph_drop_end', self.program), 0)
+
+
+class TimesLotteryUndatedTest(ProgramFrameworkTest):
+    """times_lottery sorts before make_graph_data sees anything, so an undated
+    record has to be excluded by the query itself."""
+
+    def setUp(self):
+        super().setUp(num_timeslots=2, num_teachers=1, classes_per_teacher=1,
+                      sections_per_class=1, num_rooms=1, num_students=2)
+        self._flush_cache()
+
+    def test_undated_lottery_records_do_not_raise(self):
+        from esp.program.models import RegistrationType, StudentRegistration
+        priority, _ = RegistrationType.objects.get_or_create(
+            name='Priority/1', defaults={'category': 'student'})
+        section = self.program.classes()[0].sections.first()
+        module = [m for m in self.program.getModules()
+                  if m.__class__.__name__ == 'BigBoardModule'][0]
+
+        dated = StudentRegistration.objects.create(
+            user=self.students[0], section=section, relationship=priority)
+        dated.start_date = datetime.datetime.now() - datetime.timedelta(days=1)
+        dated.save()
+
+        undated = StudentRegistration.objects.create(
+            user=self.students[1], section=section, relationship=priority)
+        undated.start_date = None
+        undated.save()
+
+        self._flush_cache()
+        times = module.times_lottery(self.program)   # raised TypeError before
+        self.assertEqual(len(times), 1)
+        self.assertTrue(all(t is not None for t in times))

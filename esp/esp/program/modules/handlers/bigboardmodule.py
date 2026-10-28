@@ -292,14 +292,17 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def times_lottery(self, prog):
         # stars or priorities
+        # Undated records are excluded here rather than in make_graph_data,
+        # because the comparison and sort below would hit the None first
         ssi_times_dict = dict(
             StudentSubjectInterest.objects.filter(subject__parent_program=prog)
+            .exclude(start_date=None)
             # GROUP BY user, SELECT user and min start date.
             # Don't you love django ORM syntax?
             .values_list('user').annotate(Min('start_date')))
         sr_times = StudentRegistration.objects.filter(
             section__parent_class__parent_program=prog, relationship__name__startswith="Priority"
-        ).values_list('user').annotate(Min('start_date'))
+        ).exclude(start_date=None).values_list('user').annotate(Min('start_date'))
         for id, sr_time in sr_times:
             if id not in ssi_times_dict or sr_time < ssi_times_dict[id]:
                 ssi_times_dict[id] = sr_time
