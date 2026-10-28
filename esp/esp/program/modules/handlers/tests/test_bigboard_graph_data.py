@@ -5,9 +5,11 @@ set combinations that would leave a series with nothing in it.
 """
 import datetime
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 
+from esp.program.models import Program
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+from esp.tagdict.models import Tag
 
 
 def series(name, count, cumulative=True):
@@ -41,3 +43,33 @@ class MakeGraphDataTrimTest(SimpleTestCase):
             [series('short', 5), series('long', 20)], 6, 0, 5)
         self.assertEqual([d['description'] for d in graph_data], ['long'])
         self.assertIsNotNone(start)
+
+
+class GraphSettingTest(TestCase):
+    """The Tag admin accepts free text, so a stray value must not 500 the page."""
+
+    def setUp(self):
+        Tag._getTag.delete_all()
+        self.addCleanup(Tag._getTag.delete_all)
+        self.program = Program.objects.create(name='Graph Tags', grade_min=7, grade_max=12)
+
+    def test_defaults_when_unset(self):
+        self.assertEqual(
+            [BigBoardModule.graph_setting(k, self.program) for k in
+             ('bigboard_graph_drop_beg', 'bigboard_graph_drop_end', 'bigboard_graph_min_points')],
+            [4, 0, 5])
+
+    def test_configured_value_is_used(self):
+        Tag.setTag('bigboard_graph_drop_beg', target=self.program, value='7')
+        self.assertEqual(BigBoardModule.graph_setting('bigboard_graph_drop_beg', self.program), 7)
+
+    def test_unusable_values_fall_back_to_the_default(self):
+        for value in ('', '   ', 'four', '3.5'):
+            with self.subTest(value=value):
+                Tag.setTag('bigboard_graph_drop_beg', target=self.program, value=value)
+                self.assertEqual(
+                    BigBoardModule.graph_setting('bigboard_graph_drop_beg', self.program), 4)
+
+    def test_negative_values_are_clamped(self):
+        Tag.setTag('bigboard_graph_drop_end', target=self.program, value='-5')
+        self.assertEqual(BigBoardModule.graph_setting('bigboard_graph_drop_end', self.program), 0)

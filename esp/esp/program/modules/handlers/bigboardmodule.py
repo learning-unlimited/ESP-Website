@@ -1,4 +1,5 @@
 import datetime
+import logging
 import subprocess
 
 from django.db.models.aggregates import Count, Min
@@ -10,8 +11,11 @@ from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
+from esp.tagdict import all_program_tags
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
+
+logger = logging.getLogger(__name__)
 
 
 class BigBoardModule(ProgramModuleObj):
@@ -84,9 +88,9 @@ class BigBoardModule(ProgramModuleObj):
 
         timess_data, start = self.make_graph_data(
             timess,
-            int(Tag.getProgramTag('bigboard_graph_drop_beg', prog)),
-            int(Tag.getProgramTag('bigboard_graph_drop_end', prog)),
-            int(Tag.getProgramTag('bigboard_graph_min_points', prog)))
+            self.graph_setting('bigboard_graph_drop_beg', prog),
+            self.graph_setting('bigboard_graph_drop_end', prog),
+            self.graph_setting('bigboard_graph_min_points', prog))
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
@@ -342,6 +346,21 @@ class BigBoardModule(ProgramModuleObj):
                 if not cumulative:
                     count = 0
         return chunks
+
+    @staticmethod
+    def graph_setting(key, prog):
+        """Read one of the graph tags as a count of data points.
+
+        The tag settings page offers these as integer fields, but the Tag
+        admin accepts any text, so fall back to the tag's own default rather
+        than failing the whole big board on a stray value.
+        """
+        value = Tag.getProgramTag(key, prog)
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            logger.warning("Tag %s is not a number (%r); using its default", key, value)
+            return int(all_program_tags[key]['default'])
 
     @staticmethod
     def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 1):

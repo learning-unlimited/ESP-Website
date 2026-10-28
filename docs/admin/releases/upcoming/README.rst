@@ -25,7 +25,7 @@ defaults to the existing behavior, so nothing changes unless it is set.
 - ``volunteer_label_comments`` (per-program, volunteer): overrides the label of the volunteer form's comments field, complementing the existing ``volunteer_help_text_comments`` tag.
 - ``volunteer_help_text_requests`` (per-program, volunteer): overrides the help text of the volunteer form's timeslots field.
 - ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the text of the volunteer form's confirmation checkbox. The value is treated as plain text and the default red styling is kept.
-- ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control how many data points are trimmed from each end of the big board's registration graph series, and how many points a series needs before it is plotted. These were previously hard-coded as 4, 0, and 5 respectively.
+- ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control where the big board's registration graph starts and stops, and how many data points a series needs before it is plotted at all. The first two move the visible date range only; the running totals still count every registration, so raising ``bigboard_graph_drop_beg`` hides a long flat lead-in without understating enrollment. These were previously hard-coded as 4, 0, and 5 respectively.
 
 Teacher Schedule Deadline
 =========================

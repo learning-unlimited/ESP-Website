@@ -23,6 +23,7 @@ class CustomizationTagsTestCase(TestCase):
         # Tag reads are memoized outside the test transaction, so they are not
         # rolled back between tests; dump the cache as the other tag tests do.
         Tag._getTag.delete_all()
+        self.addCleanup(Tag._getTag.delete_all)
 
         self.program = Program.objects.create(name='Test Program', grade_min=7, grade_max=12)
         event_type, _ = EventType.objects.get_or_create(description='Volunteer')

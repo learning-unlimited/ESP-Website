@@ -1514,7 +1514,7 @@ all_program_tags = {
     },
     'bigboard_graph_drop_beg': {
         'is_boolean': False,
-        'help_text': 'How many of the earliest data points to drop from each big board registration graph series. Raise this to stop a handful of very early registrations from flattening the graph.',
+        'help_text': 'How many of the earliest data points each big board registration graph series starts after. Raise this to stop a handful of very early registrations from flattening the graph; the running totals still count them.',
         'default': '4',
         'category': 'manage',
         'is_setting': True,
@@ -1522,7 +1522,7 @@ all_program_tags = {
     },
     'bigboard_graph_drop_end': {
         'is_boolean': False,
-        'help_text': 'How many of the latest data points to drop from each big board registration graph series.',
+        'help_text': 'How many of the latest data points each big board registration graph series stops before.',
         'default': '0',
         'category': 'manage',
         'is_setting': True,
