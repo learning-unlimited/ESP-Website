@@ -5,3 +5,8 @@ table.sortable thead th:not(.sorttable_sorted):not(.sorttable_sorted_reverse):no
 table.sortable tbody tr:nth-child(2n) td {
   background: #eee;
 }
+
+.undo-attendance {
+  font-size: 0.8em;
+  margin-top: 2px;
+}

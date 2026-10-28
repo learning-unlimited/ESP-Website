@@ -30,8 +30,8 @@
     text-align: center;
 }
 #statistics_form_contents th {
-    text-align: right;
-    padding-right: 10px;
+    text-align: center;
+    background-color: #c6def7;
 }
 #statistics_form_contents td {
     text-align: left;
@@ -65,4 +65,7 @@
 }
 #result table {
     margin-bottom: 10px;
+}
+#statistics_form_contents{
+    border: 1px solid #CCC;
 }

@@ -33,8 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
-from esp.program.modules         import module_ext
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
+from esp.program.modules         import program_settings
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
 from django.http                 import HttpResponse
@@ -71,7 +71,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             id="manage_ajax_scheduling",
             url="/manage/%s/ajax_scheduling" % base,
             title="Scheduling",
-            category="Logistics",
+            category=SEARCH_CATEGORY_CLASSES,
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
@@ -214,15 +214,18 @@ class AJAXSchedulingModule(ProgramModuleObj):
         called in production, but it is annoying.
         Clears the change log for this program. """
 
+        if request.method != 'POST':
+            return HttpResponse('Method not allowed. Use POST.', status=405)
+
         self.get_change_log(prog).entries.all().delete()
         context = {}
         return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
 
     def get_change_log(self, prog):
-        change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+        change_log = program_settings.AJAXChangeLog.objects.filter(program=prog)
 
         if change_log.count() == 0:
-            change_log = module_ext.AJAXChangeLog()
+            change_log = program_settings.AJAXChangeLog()
             change_log.update(prog)
             change_log.save()
         else:
@@ -235,7 +238,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_section_details(self, request, tl, one, two, module, extra, prog):
         sectionDetails = {}
-        for sectionDetail in module_ext.AJAXSectionDetail.objects.filter(program=prog):
+        for sectionDetail in program_settings.AJAXSectionDetail.objects.filter(program=prog):
             sectionDetails[sectionDetail.cls_id] = [{'comment': sectionDetail.comment, 'locked': sectionDetail.locked}]
         return sectionDetails
 
@@ -295,7 +298,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if action == 'removemod':
             sec.moderators.remove(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, False, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' removed from Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' removed from Class Section '{sec.emailcode()}'")
         elif action == 'assignmod':
             override = request.POST['override'] == "true"
             if not override:
@@ -303,10 +306,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 avail_times = [time.id for time in mod.getAvailableTimes(prog)]
                 for time in sec.meeting_times.all():
                     if time.id not in avail_times:
-                        return self.makeret(prog, ret=False, msg="Moderator '%s' is not available to moderate Class Section '%s'" % (mod.name(), sec.emailcode()))
+                        return self.makeret(prog, ret=False, msg=f"Moderator '{mod.name()}' is not available to moderate Class Section '{sec.emailcode()}'")
             sec.moderators.add(mod)
             self.get_change_log(prog).appendModerator(mod_id, sec_id, True, request.user)
-            return self.makeret(prog, ret=True, msg="Moderator '%s' assigned to Class Section '%s'" % (mod.name(), sec.emailcode()))
+            return self.makeret(prog, ret=True, msg=f"Moderator '{mod.name()}' assigned to Class Section '{sec.emailcode()}'")
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
@@ -322,9 +325,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         locked = 'locked' in request.POST
 
         try:
-            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
-        except module_ext.AJAXSectionDetail.DoesNotExist:
-            sectionDetail = module_ext.AJAXSectionDetail()
+            program_settings.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+        except program_settings.AJAXSectionDetail.DoesNotExist:
+            sectionDetail = program_settings.AJAXSectionDetail()
             sectionDetail.initialize(prog, cls_id, comment, locked)
 
         self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
@@ -364,13 +367,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
-        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        data = list(prog.lunch_timeslots().values_list('id', flat=True))
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
+    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
+                                              lambda e: {'prog': e.program} if e.program_id else {})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
+                                              lambda sec: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
+                                              lambda cls: {'prog': cls.parent_program})
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 
@@ -394,7 +401,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         if request.method == 'POST':
             num_affected_sections = self.clear_schedule_logic(prog, lock_level)
-            data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
+            data = {'message': f'Cleared schedule assignments for {num_affected_sections} sections.'}
             response = HttpResponse(content_type="application/json")
             json.dump(data, response)
         else:

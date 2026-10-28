@@ -11,9 +11,10 @@ function ChangelogFetcher(matrix, api_client){
 
     // Get the index of the last change in the changelog
     this.last_applied_index = 0;
+    var self = this;
     $j.getJSON('ajax_schedule_last_changed', function(data, status) {
         if (status == "success") {
-            this.last_applied_index = data['latest_index'];
+            self.last_applied_index = data['latest_index'];
         }
     });
 
@@ -23,9 +24,13 @@ function ChangelogFetcher(matrix, api_client){
      * @param interval: The time in milliseconds between polling the server
      */
     this.pollForChanges = function(interval){
+        if (this.pollInterval) {
+            window.clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
         // run getChanges() immediately, then set up the recurring call
         this.getChanges();
-        window.setInterval(this.getChanges.bind(this), interval);
+        this.pollInterval = window.setInterval(this.getChanges.bind(this), interval);
     };
 
     /**
@@ -47,26 +52,70 @@ function ChangelogFetcher(matrix, api_client){
      * @param data: the data to apply to the matrix
      */
     this.applyChangeLog = function(data){
-        $j.each(data.changelog, function(id, change){
-            var section = matrix.sections.getById(change.id);
-            if (change.is_scheduling) {
-                if (change.timeslots.length == 0){
-                    this.matrix.sections.unscheduleSectionLocal(section);
-                } else {
-                    this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+        // Check if server is commanding a reload (changelog was pruned)
+        if (data.other) {
+            for (var i = 0; i < data.other.length; i++) {
+                if (data.other[i].command === "reload") {
+                    $j("#loadingOverlay").remove();
+                    this.showReloadNotification();
+                    return;
                 }
-            } else if (change.is_moderator) {
-                this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
-                if (change.assigned) {
-                    this.matrix.moderatorDirectory.assignModeratorLocal(section);
-                } else {
-                    this.matrix.moderatorDirectory.unassignModeratorLocal(section);
-                }
-            } else {
-                this.matrix.sections.setComment(section, change.comment, change.locked, true);
             }
-            this.last_applied_index = change.index;
-        }.bind(this));
-        $j("#loadingOverlay").remove(); // remove the loading overlay
+        }
+
+        if (data.changelog) {
+            $j.each(data.changelog, function(id, change){
+                var section = matrix.sections.getById(change.id);
+                if (change.is_scheduling) {
+                    if (change.timeslots.length == 0){
+                        this.matrix.sections.unscheduleSectionLocal(section);
+                    } else {
+                        this.matrix.sections.scheduleSectionLocal(section, parseInt(change.room_name,10), change.timeslots);
+                    }
+                } else if (change.is_moderator) {
+                    this.matrix.moderatorDirectory.selectModerator(this.matrix.moderatorDirectory.getById(change.moderator));
+                    if (change.assigned) {
+                        this.matrix.moderatorDirectory.assignModeratorLocal(section);
+                    } else {
+                        this.matrix.moderatorDirectory.unassignModeratorLocal(section);
+                    }
+                } else {
+                    this.matrix.sections.setComment(section, change.comment, change.locked, true);
+                }
+                this.last_applied_index = change.index;
+            }.bind(this));
+        }
+
+        $j("#loadingOverlay").remove();
+    };
+
+    /**
+     * Show a notification banner when the schedule data is out of sync.
+     * Stops polling and lets the user decide when to reload.
+     */
+    this.showReloadNotification = function(){
+        if ($j("#changelog-reload-notice").length > 0) {
+            return;
+        }
+
+        var reloadLink = $j("<a>", {
+            "class": "reload-link",
+            href: "#",
+            text: "Reload now"
+        }).on("click", function(event) {
+            event.preventDefault();
+            window.location.reload();
+        });
+
+        var notice = $j("<div>", { id: "changelog-reload-notice" })
+            .append(document.createTextNode("The schedule data is out of sync. "))
+            .append(reloadLink);
+
+        $j("body").prepend(notice);
+
+        if (this.pollInterval) {
+            window.clearInterval(this.pollInterval);
+            this.pollInterval = null;
+        }
     };
 };

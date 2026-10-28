@@ -35,11 +35,21 @@ def clear_current_request():
         del _threading_local.request
 
 def AutoRequestContext(*args, **kwargs):
+    """
+    Create a context with access to the current request.
+
+    Args:
+        *args: Arguments to pass to the context constructor
+        **kwargs: Keyword arguments (including optional 'autoescape')
+
+    Returns:
+        A dictionary-like context object
+    """
     request = get_current_request()
     if request is None:
-        logger.error("Couldn't use RequestContext! Falling back to Context. "
+        logger.error("Couldn't access request! Falling back to basic Context. "
                      "This is almost certainly a bug; either Context should "
-                     "be being used explicitly, or RequestContext ought to "
+                     "be being used explicitly, or the request ought to "
                      "be available here.")
         retVal = Context(*args, **kwargs)
     else:

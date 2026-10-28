@@ -34,9 +34,14 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.forms.renderers import TemplatesSetting
 
 from esp.tagdict.models import Tag
 from esp.utils.widgets import DummyWidget
+
+class TableFormRenderer(TemplatesSetting):
+    form_template_name = "django/forms/table.html"
+    formset_template_name = "django/forms/formsets/table.html"
 
 class SizedCharField(forms.CharField):
     """ Just like CharField, but you can set the width of the text widget. """

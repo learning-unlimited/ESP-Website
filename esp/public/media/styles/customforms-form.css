@@ -169,4 +169,12 @@ ul {
     margin-bottom: 0;
     padding-bottom: 0;
 }
+
+/* Wizard buttons: Next is first in the markup (so Enter submits it) but shown last. */
+.wizard-nav {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: flex-end;
+	gap: 4px;
+}
 /* End of Form view*/

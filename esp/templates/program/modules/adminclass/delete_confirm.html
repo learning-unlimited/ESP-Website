@@ -22,7 +22,9 @@
     </tr>
     <tr>
         <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i><br />
-            Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
+            Status: {% if sec.isDraft %}
+            <span style="font-weight: bold; color: #888;">Draft</span>
+            {% elif sec.isReviewed %}{% if sec.isAccepted %}
             <span style="font-weight: bold; color: #0C0;">Accepted</span>
             {% else %}
             <span style="font-weight: bold; color: #C00;">Rejected</span>
@@ -31,7 +33,7 @@
             <span style="font-weight: bold; color: #00C;">Unreviewed</span>
             {% endif %}
         </td>
-        <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
+        <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length == 0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students</td>
     </tr>
     <tr>

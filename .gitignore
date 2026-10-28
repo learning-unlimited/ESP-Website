@@ -13,6 +13,7 @@ esp/public/media/images/backups
 esp/public/media/images/histograms
 esp/public/media/images/theme
 esp/public/media/images/favicon.ico
+esp/public/media/styles/theme_compiled_test*.css
 esp/public/media/theme_editor/themes
 esp/public/media/scripts/theme
 esp/public/static
@@ -25,6 +26,7 @@ venv/
 venv
 useful_logs
 theme_compiled.css
+theme_compiled_test.css
 /.vagrant/*
 *_admin_thumbnail.gif
 *_admin_thumbnail.jpg
@@ -38,6 +40,12 @@ local_fabfile.py
 *.swp
 .espsettings
 
+
+# Claude Code
+.claude/
+
+# pyenv local version pin — developer-specific, should not be committed
+.python-version
 
 # Mac
 .DS_Store

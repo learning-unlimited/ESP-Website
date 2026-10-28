@@ -12,8 +12,8 @@
 
 {% block module_content %}
 <div class="error_background">
-<div class="alert alert-danger">
-    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+<div role="alert" class="alert alert-danger">
+    <span class="bi bi-info-circle" aria-hidden="true"></span>
         Credit Card Payment for {{ program.niceName }} FAILED.
 </div>
 
@@ -46,6 +46,10 @@
 
 {% if error_type == "invalid" %}
 <b>Invalid request.</b>  This is usually caused by a duplicate request (such as refreshing your web browser after paying).  It is possible that your payment went through successfully; <b>please return to the payment page to check</b>.
+{% endif %}
+
+{% if error_type == "missing_fields" %}
+<b>Incomplete request.</b>  Your payment submission was missing required information{% if error_info.missing %} (missing: <code>{{ error_info.missing }}</code>){% endif %}.  Your card was not charged.  Please return to the <a href="/learn/{{ program.getUrlBase }}/payonline">payment page</a> and try again.
 {% endif %}
 
 {% if error_type == "auth" %}

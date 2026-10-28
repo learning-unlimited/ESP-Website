@@ -2,6 +2,11 @@
 
 {% block title %}Change Account Password{% endblock %}
 
+{% block stylesheets %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock stylesheets %}
+
 {% block content %}
 <h1>Account Management &ndash; Change Password </h1>
 {% if Success %}
@@ -31,7 +36,7 @@ Your password has been successfully changed.
 <tr>
  <td><label for="password"><strong>Current Password:</strong></label></td>
  <td>{{ form.password }} {% if form.password.errors %}
-   <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.password.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -39,22 +44,23 @@ Your password has been successfully changed.
 <tr>
  <td><label for="newpasswd"><strong>New Password:</strong></label></td>
  <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
-   <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 <tr>
- <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
+ <td><label for="newpasswdconfirm"><strong>New Password Confirm:</strong></label></td>
  <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
-   <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
 
 </table>
 
-<p style="text-align: center"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
+<p class="form-submit-centered"><input type='submit' value='-  Change My Password  -' class='btn btn-primary'></p>
+
 </form>
 {% endif %}
 {% endblock %}

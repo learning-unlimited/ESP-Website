@@ -22,7 +22,7 @@ Please enter the information for the new student:
 <tr>
  <td><label for="id_first_name">First Name:</label></td>
  <td>{{ form.first_name }} {% if form.first_name.errors %}
-   <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.first_name.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -30,7 +30,7 @@ Please enter the information for the new student:
 <tr>
  <td><label for="id_last_name">Last Name:</label></td>
  <td>{{ form.last_name }} {% if form.last_name.errors %}
-   <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.last_name.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -38,7 +38,7 @@ Please enter the information for the new student:
 <tr>
  <td><label for="id_email">Email:</label></td>
  <td>{{ form.email }} {% if form.email.errors %}
-   <br /><span class="form_error">{{ form.email.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.email.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -46,7 +46,7 @@ Please enter the information for the new student:
 <tr>
  <td><label for="id_medical">Handed Medical Form In?:</label></td>
  <td>{{ form.medical }} {% if form.medical.errors %}
-   <br /><span class="form_error">{{ form.medical.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.medical.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -55,7 +55,7 @@ Please enter the information for the new student:
  <td><label for="id_liability">Handed Liability Form In?:
 </label></td>
  <td>{{ form.liability }} {% if form.liability.errors %}
-   <br /><span class="form_error">{{ form.liability.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.liability.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
@@ -64,7 +64,7 @@ Please enter the information for the new student:
  <td><label for="id_paid">Has Paid?:
           </label></td>
  <td>{{ form.paid }} {% if form.paid.errors %}
-   <br /><span class="form_error">{{ form.paid.errors|join:", " }}</span>
+   <br /><span class="form_error" role="alert">{{ form.paid.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>

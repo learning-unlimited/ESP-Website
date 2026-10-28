@@ -52,11 +52,6 @@ This release adds three new checks to the scheduling checks module:
 
 - "Classes which are the wrong length or have gaps", which checks for classes where the difference between the start time and end time isn't what it's expected to be.
 
-Sentry integration
-~~~~~~~~~~~~~~~~~~
-
-This release adds integration with the Sentry exception logging platform (https://getsentry.com/). This change is most useful for developers and system administrators. To copy exceptions to Sentry, configure ``SENTRY_DSN`` with your DSN in ``local_settings.py``. This will not interfere with existing error-reporting mechanisms.
-
 Student schedule extra information
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

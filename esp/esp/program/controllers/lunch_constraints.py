@@ -40,12 +40,15 @@ import datetime
 
 class LunchConstraintGenerator(object):
     """ A class for finding issues with the scheduling of a program. """
-    def __init__(self, program, lunch_timeslots=[], generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+    def __init__(self, program, lunch_timeslots=None, generate_constraints=True, include_conditions=True, autocorrect=True, **kwargs):
+        if lunch_timeslots is None:
+            lunch_timeslots = []
         self.program = program
         self.lunch_timeslots = lunch_timeslots
         self.generate_constraints = generate_constraints
         self.include_conditions = include_conditions
         self.autocorrect = autocorrect
+        self.undeleted_sections = []
 
         #   Figure out which timeslots are before, during and after lunch on each day
         self.days = {}
@@ -69,8 +72,10 @@ class LunchConstraintGenerator(object):
 
     def clear_existing_constraints(self):
         # Delete any sections that we don't need anymore
+        # (delete() refuses and returns False if students are enrolled)
         for lunch_section in ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category=self.get_lunch_category()).exclude(meeting_times__in=self.lunch_timeslots):
-            lunch_section.delete()
+            if lunch_section.delete() is False:
+                self.undeleted_sections.append(lunch_section)
         # Delete any classes that no longer have sections
         for lunch_subject in ClassSubject.objects.filter(parent_program=self.program, category=self.get_lunch_category(), sections__isnull=True):
             lunch_subject.delete()
@@ -110,11 +115,9 @@ class LunchConstraintGenerator(object):
         return expression
 
     def get_lunch_category(self):
-        qs = ClassCategories.objects.filter(category='Lunch', symbol='L').order_by('-id')
-        if qs.exists():
-            lunch_category = qs[0]
-        else:
-            lunch_category, created = ClassCategories.objects.get_or_create(category='Lunch', symbol='L')
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is None:
+            lunch_category = ClassCategories.objects.create(category='Lunch', is_lunch=True, symbol='L')
         self.program.class_categories.add(lunch_category)
         return lunch_category
 
@@ -188,7 +191,7 @@ if len(time_options) == 0:
     return (schedule_map, 'Unable to autoschedule lunch.')
 else:
     dest_sec = None
-    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__category='Lunch')
+    dest_qs = ClassSection.objects.filter(meeting_times__id__in=time_options, parent_class__category__is_lunch=True)
     if dest_qs.count() == 0:
         return (schedule_map, 'Unable to autoschedule lunch.')
     elif dest_qs.count() == 1:

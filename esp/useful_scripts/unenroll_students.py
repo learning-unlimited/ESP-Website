@@ -23,7 +23,7 @@ args = parser.parse_args()
 enrolled = RegistrationType.objects.get(name='Enrolled')
 
 prog = Program.objects.get(id=args.program_id)
-relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).exclude(parent_class__category__category='Lunch')
+relevant_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=ClassStatus.ACCEPTED, parent_class__status=ClassStatus.ACCEPTED).exclude(parent_class__category__is_lunch=True)
 # classes that started more than 60 minutes ago
 passed_sections = relevant_sections.filter(begin_time__lt=datetime.now() - timedelta(minutes=60))
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in
