@@ -90,6 +90,19 @@ def getPerms(request):
             return HttpResponse(json.dumps(perms))
     return HttpResponse(status=400)
 
+def check_no_anonymous_link_fields(anonymous, metadata):
+    """
+    Raises an error if an anonymous form contains linked fields, since their
+    answers are stored in the submitting user's own records
+    """
+    if not anonymous:
+        return
+    for page in metadata['pages']:
+        for section in page['sections']:
+            for field in section['fields']:
+                if cf_cache.isLinkField(field['data']['field_type']):
+                    raise ESPError('Anonymous forms cannot contain linked fields.', log=False)
+
 @user_passes_test(test_func)
 @transaction.atomic
 def onSubmit(request):
@@ -112,6 +125,8 @@ def onSubmit(request):
                 # Validate that title is not empty or missing
                 if not title or not title.strip():
                     raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(metadata['anonymous'], metadata)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -212,6 +227,8 @@ def onModify(request):
                 title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
                 if not title_normalized or not title_normalized.strip():
                     raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(form.anonymous, metadata)
 
                 # NOT updating 'anonymous'
                 form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
