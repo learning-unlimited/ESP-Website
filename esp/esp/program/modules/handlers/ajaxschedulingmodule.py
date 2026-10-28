@@ -75,8 +75,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
-    def prepare(self, context={}):
-        if context is None: context = {}
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
 
         context['schedulingmodule'] = self
         return context
