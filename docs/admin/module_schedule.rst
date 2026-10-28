@@ -21,6 +21,7 @@ Model Architecture: ExpirableModel Subclass
 * ``end_date``: Nullable ``DateTimeField``. Indicates when the module closes.
 * ``NULL`` handling: A ``NULL`` timestamp is interpreted as "no expiry" (always open from that boundary).
 * ``is_valid(when=None)``: Helper method that evaluates whether a module object is active at a given timestamp.
+* ``is_open(user=None)``, ``has_ended(user=None)`` and ``opens_at(user=None)``: the module's window for a user. By default these follow ``start_date`` and ``end_date``; ``StudentRegTwoPhase`` also follows its ``Student/Classes/Lottery`` deadlines (see below).
 
 ProgramModuleObj Model Fields
 ------------------------------
@@ -77,7 +78,7 @@ Time-Filtering in Program.getModules()
 To maintain high performance without returning stale registration views:
 
 1. ``Program.getModules()`` retrieves the program's module objects list from the Memcached layer.
-2. The ``is_valid()`` filter is evaluated dynamically in the request path after cache retrieval.
+2. For non-admin users, the ``is_open(user)`` filter is evaluated dynamically in the request path after cache retrieval.
 3. Cache invalidation on ``save()`` guarantees instant propagation of schedule edits while avoiding database query overhead during active registration.
 
 Initial Permission and Date Generation

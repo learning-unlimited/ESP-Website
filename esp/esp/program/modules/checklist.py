@@ -33,8 +33,8 @@ def get_checklist_context(user, prog, tl, modules=None):
     forced = forces_required_modules(prog)
     modules = sorted(open_modules + others, key=lambda m: (forced and not m.isRequired(), m.seq))
     for m in modules:
-        m.schedule_state = 'closed' if m.has_ended() else ('upcoming' if not m.is_valid() else 'open')
-        m.opens_on = m.opens_at() if m.schedule_state == 'upcoming' else None
+        m.schedule_state = 'closed' if m.has_ended(user) else ('upcoming' if not m.is_open(user) else 'open')
+        m.opens_on = m.opens_at(user) if m.schedule_state == 'upcoming' else None
         m.after_gate = None
         m.hide_in_checklist = False
 

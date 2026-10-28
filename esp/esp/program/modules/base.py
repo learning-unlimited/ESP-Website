@@ -277,7 +277,7 @@ class ProgramModuleObj(ExpirableModel):
                     if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
                     if not isinstance(m, CoreModule) and m.main_view and m.gate_status(request.user) != 'passed':
-                        if not m.is_valid() and not m.has_ended():
+                        if not m.is_open(request.user) and not m.has_ended(request.user):
                             #   A lottery holding the user before it opens
                             return m.gate_not_open(request, tl, prog)
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
@@ -547,11 +547,16 @@ class ProgramModuleObj(ExpirableModel):
     #   How the checklist refers to a gating module, e.g. 'the class lottery'.
     gate_label = ''
 
-    def has_ended(self):
+    #   is_open(), has_ended() and opens_at() describe the module's window for
+    #   a user (the module's schedule, unless a handler adds its own rules).
+    def is_open(self, user=None):
+        return self.is_valid()
+
+    def has_ended(self, user=None):
         return self.end_date is not None and self.end_date < datetime.now()
 
-    def opens_at(self):
-        """When the module opens for users, if that is set."""
+    def opens_at(self, user=None):
+        """When the module opens, if that is set."""
         return self.start_date
 
     def gate_status(self, user=None):
@@ -565,10 +570,10 @@ class ProgramModuleObj(ExpirableModel):
         if self.gate_lifts == 'completed':
             return 'passed' if self.isCompleted(user) else self.gate_pending_status(user)
         if self.gate_lifts == 'closed':
-            if self.has_ended():
+            if self.has_ended(user):
                 return 'passed'
-            return 'waiting' if not self.is_valid() or self.isCompleted(user) else 'todo'
-        return 'passed' if not self.is_valid() or self.isCompleted(user) else 'todo'
+            return 'waiting' if not self.is_open(user) or self.isCompleted(user) else 'todo'
+        return 'passed' if not self.is_open(user) or self.isCompleted(user) else 'todo'
 
     def gate_pending_status(self, user=None):
         """gate_status for an incomplete 'completed' gate; see StudentRegPhaseZero."""

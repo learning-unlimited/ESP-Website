@@ -156,6 +156,18 @@ class LotteryGateTest(StudentRegTwoPhaseBaseTest):
         self.assertContains(response, 'Email me an updated summary')
         self.assertNotContains(response, 'Student registration for')
 
+    def test_another_roles_lottery_deadline_doesnt_end_the_class_lottery(self):
+        """Only deadlines for the student or their roles count."""
+        self._select_student()
+        self.client.post('/learn/%s/confirm_registration' % self.program.getUrlBase())
+        Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery').delete()
+        Permission.objects.create(role=Group.objects.get(name='Teacher'), permission_type='Student/Classes/Lottery',
+                                  program=self.program, start_date=datetime.now() - timedelta(days=7),
+                                  end_date=datetime.now() - timedelta(hours=1))
+        response = self.client.get(self.studentreg)
+        self.assertContains(response, 'Email me an updated summary')
+        self.assertNotContains(response, 'Student registration for')
+
     def test_students_who_skipped_the_class_lottery_can_confirm_once_its_deadline_closes(self):
         """With the module's own schedule still open, the class lottery stops
         being a required step once its deadline closes."""
