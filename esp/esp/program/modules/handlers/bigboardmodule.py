@@ -372,6 +372,8 @@ class BigBoardModule(ProgramModuleObj):
     def load_averages(self):
         try:
             uptime = subprocess.check_output('uptime')
+            if isinstance(uptime, bytes):
+                uptime = uptime.decode('utf-8')
             # The output ends in e.g. "load average: 1.65, 1.84, 1.67\n"
             return [float(x.strip(',')) for x in uptime.strip().split()[-3:]]
         except Exception:

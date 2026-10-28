@@ -1,0 +1,172 @@
+"""
+Direct unit tests for ResourceController (esp/program/controllers/resources.py).
+
+This controller manages program infrastructure: timeslots, resource types,
+classrooms and equipment.
+"""
+
+from unittest.mock import MagicMock
+
+from django.db.models import ProtectedError
+
+from esp.cal.models import Event
+from esp.middleware import ESPError_NoLog
+from esp.program.controllers.resources import ResourceController
+from esp.program.modules.forms.resources import ClassroomForm
+from esp.program.tests import ProgramFrameworkTest
+from esp.resources.models import Resource, ResourceType
+
+
+class ResourceControllerTimeslotTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        self.controller = ResourceController(self.program)
+
+    def test_delete_timeslot_removes_event(self):
+        slot = self.program.getTimeSlots().first()
+        slot_id = slot.id
+        self.controller.delete_timeslot(slot_id)
+        self.assertFalse(Event.objects.filter(id=slot_id).exists())
+
+    def test_add_or_edit_timeslot_create_delegates_to_form(self):
+        form = MagicMock()
+        form.cleaned_data = {"id": None}
+        slot = self.controller.add_or_edit_timeslot(form)
+        form.save_timeslot.assert_called_once()
+        self.assertEqual(form.save_timeslot.call_args[0][0], self.program)
+        # New unsaved Event passed through (use identity: Event.__eq__
+        # compares start datetimes and raises TypeError when both are None)
+        self.assertIs(form.save_timeslot.call_args[0][1], slot)
+
+    def test_add_or_edit_timeslot_edit_loads_existing(self):
+        slot = self.program.getTimeSlots().first()
+        form = MagicMock()
+        form.cleaned_data = {"id": slot.id}
+        result = self.controller.add_or_edit_timeslot(form)
+        self.assertEqual(result.id, slot.id)
+        form.save_timeslot.assert_called_once()
+
+
+class ResourceControllerRestypeTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        self.controller = ResourceController(self.program)
+
+    def test_delete_restype_removes_unreferenced_type(self):
+        rt = ResourceType.objects.create(
+            name="TestDeleteType", program=self.program, consumable=False
+        )
+        rt_id = rt.id
+        self.controller.delete_restype(rt_id)
+        self.assertFalse(ResourceType.objects.filter(id=rt_id).exists())
+
+    def test_delete_restype_protected_raises_esp_error(self):
+        rt = ResourceType.objects.create(
+            name="TestProtectedType", program=self.program, consumable=False
+        )
+        original_delete = ResourceType.delete
+
+        def failing_delete(self, *a, **k):
+            raise ProtectedError("protected", [])
+
+        ResourceType.delete = failing_delete
+        try:
+            # ESPError is a factory function returning ESPError_NoLog
+            # (log=False), not an exception class, so assert on the
+            # concrete class.
+            with self.assertRaises(ESPError_NoLog):
+                self.controller.delete_restype(rt.id)
+        finally:
+            ResourceType.delete = original_delete
+        # Original row still exists since delete failed
+        self.assertTrue(ResourceType.objects.filter(id=rt.id).exists())
+
+    def test_add_or_edit_restype_create(self):
+        form = MagicMock()
+        form.cleaned_data = {"id": None}
+        result = self.controller.add_or_edit_restype(form, choices=[])
+        form.save_restype.assert_called_once()
+        self.assertEqual(form.save_restype.call_args[0][0], self.program)
+        self.assertIs(form.save_restype.call_args[0][1], result)
+
+    def test_add_or_edit_restype_edit(self):
+        rt = ResourceType.objects.create(
+            name="TestEditType", program=self.program, consumable=False
+        )
+        form = MagicMock()
+        form.cleaned_data = {"id": rt.id}
+        result = self.controller.add_or_edit_restype(form)
+        self.assertEqual(result.id, rt.id)
+        form.save_restype.assert_called_once_with(self.program, rt, None)
+
+
+class ResourceControllerClassroomEquipmentTest(ProgramFrameworkTest):
+    def setUp(self):
+        super().setUp()
+        self.controller = ResourceController(self.program)
+
+    def test_delete_classroom_unschedules_and_removes(self):
+        classrooms = list(self.program.getClassrooms())
+        if not classrooms:
+            self.skipTest("No classrooms in fixture program")
+        target = classrooms[0]
+        section = self.program.sections().first()
+        section.meeting_times.add(target.event)
+        self.assertTrue(section.assignClassRoom(target))
+        self.assertTrue(section.classroomassignments().exists())
+        self.controller.delete_classroom(target.id)
+        self.assertFalse(section.classroomassignments().exists())
+        self.assertEqual(section.meeting_times.count(), 0)
+        # All rooms sharing the name are removed
+        self.assertEqual(
+            self.program.getClassrooms().filter(name=target.name).count(), 0
+        )
+
+    def test_add_or_edit_classroom_delegates_to_form(self):
+        form = MagicMock()
+        self.controller.add_or_edit_classroom(form, furnishings=[])
+        form.save_classroom.assert_called_once_with(
+            self.program, furnishings=[]
+        )
+
+    def test_add_or_edit_classroom_saves_furnishings(self):
+        furnishing_type = ResourceType.objects.create(
+            name="TestFurnishing", program=self.program, consumable=False
+        )
+        form = ClassroomForm(self.program, data={
+            "room_number": "Test Room 101",
+            "times_available": [str(ts.id) for ts in self.timeslots],
+            "num_students": 25,
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        self.controller.add_or_edit_classroom(form, furnishings=[
+            {"furnishing": str(furnishing_type.id), "choice": "Whiteboard"}
+        ])
+        # One room per timeslot, each with its own furnishing in its res_group
+        rooms = self.program.getClassrooms().filter(name="Test Room 101")
+        self.assertEqual(rooms.count(), len(self.timeslots))
+        for room in rooms:
+            furnishings = list(room.associated_resources())
+            self.assertEqual(len(furnishings), 1)
+            self.assertEqual(furnishings[0].res_type, furnishing_type)
+            self.assertEqual(furnishings[0].attribute_value, "Whiteboard")
+            self.assertEqual(furnishings[0].event, room.event)
+
+    def test_delete_equipment_removes_program_resources(self):
+        equip_type = ResourceType.objects.create(
+            name="TestEquipType", program=self.program, consumable=False
+        )
+        # Same-named equipment in every timeslot of the program
+        resources = [
+            Resource.objects.create(
+                name="Test Projector", res_type=equip_type, event=ts
+            )
+            for ts in self.timeslots
+        ]
+        self.assertGreater(len(resources), 1)
+        self.controller.delete_equipment(resources[0].id)
+        self.assertFalse(
+            Resource.objects.filter(
+                name="Test Projector", event__program=self.program
+            ).exists()
+        )
