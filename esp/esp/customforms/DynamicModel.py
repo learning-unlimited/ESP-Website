@@ -158,10 +158,10 @@ class DynamicModelHandler:
     }
 
 
-    def __init__(self, form, fields=[]):
+    def __init__(self, form, fields=None):
         self.form = form
         self.field_list = []
-        self.fields = fields
+        self.fields = fields if fields is not None else []
         self._tname = f'customforms"."customforms_response_{form.id}'
         # Keep track of the models being linked to (see docstring)
         self.link_models_list = []
@@ -351,7 +351,7 @@ class DynamicModelHandler:
                     # Add in the FK-column for this model
                     model = self.createDynModel()
                     new_field = self._getLinkModelField(link_model_cls)
-                    new_field.column = f'link_{link_model_cls.__name__}'
+                    new_field.column = f'link_{link_model_cls.__name__}_id'
                     schema_editor.add_field(model, new_field)
                     self.link_models_list.append(link_model_cls.__name__)
 

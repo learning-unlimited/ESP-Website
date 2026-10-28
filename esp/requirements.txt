@@ -1,5 +1,5 @@
 # Django
-Django==5.2.16
+Django==5.2.17
 
 # Django-specific packages
 git+https://github.com/learning-unlimited/django-argcache.git@v0.5.1 # Handles caching
@@ -30,7 +30,7 @@ pytest-xdist==3.3.1 # Parallel test execution via -n auto
 ipython==8.12.3 # Used for shell_plus
 Markdown==3.8.1 # Used in QSD
 numpy==1.26.4 # Used mainly in the lottery and class change controller
-pillow==12.3.0 # Required for ImageField, which we use in teacher bios
+pillow==13.0.0 # Required for ImageField, which we use in teacher bios
 psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.4 # Used only in a formstack script which I think is outdated
 py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
@@ -43,5 +43,5 @@ shortuuid==0.4.2 # django-extensions dependency
 stripe==7.5.0 # Required for credit card processing
 twilio==6.63.2 # Required for text messaging support
 wheel==0.38.4  # For building modern packages
-werkzeug==3.1.6 # Required for runserver_plus (alternative to runserver provided by django-extensions)
+werkzeug==3.1.9 # Required for runserver_plus (alternative to runserver provided by django-extensions)
 openpyxl==3.1.2 # Does form and survey exporting
