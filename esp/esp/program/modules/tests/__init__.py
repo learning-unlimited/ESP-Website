@@ -111,3 +111,4 @@ from esp.program.modules.tests.studentjunctionappmodule import StudentJunctionAp
 from esp.program.modules.tests.test_donationmodule import DonationFormTest, DonationModuleTest
 from esp.program.modules.tests.test_draft_creation import MakeAClassDraftTest
 from esp.program.modules.tests.test_customform_assets import CustomFormAssetsTest
+from esp.program.modules.tests.test_customform_reopen import CustomFormReopenTest
