@@ -2167,7 +2167,7 @@ def _schedule_maps(user, program, add_sections, remove_sections):
         after.add_section(section)
     return (before, after)
 
-def repair_section(constraint, schedule_map, exclude=()):
+def repair_section(constraint, schedule_map, exclude=(), webapp=False):
     """ A section the user could be enrolled in to satisfy this constraint,
     or None if every timeblock is occupied and every candidate section full.
     """
@@ -2186,14 +2186,14 @@ def repair_section(constraint, schedule_map, exclude=()):
         ).exclude(id__in=exclude_ids).order_by('id')
         for section in sections:
             #   A lunch period has a real capacity, so do not overfill it.
-            if not section.isFull():
+            if not section.isFull(webapp=webapp):
                 return section
     return None
 
-def _satisfiable(constraint, schedule_map):
+def _satisfiable(constraint, schedule_map, webapp=False):
     """ Whether the constraint holds, or could still be made to hold. """
     return (constraint.evaluate(schedule_map)
-            or repair_section(constraint, schedule_map) is not None)
+            or repair_section(constraint, schedule_map, webapp=webapp) is not None)
 
 def blocking_requirements(user, program, add_sections=(), remove_sections=()):
     """ Labels of the enforced requirements this change would newly break.
@@ -2208,7 +2208,7 @@ def blocking_requirements(user, program, add_sections=(), remove_sections=()):
     return [c.requirement.label for c in constraints
             if c.evaluate(before) and not c.evaluate(after)]
 
-def unrepairable_requirements(user, program, add_sections=(), remove_sections=()):
+def unrepairable_requirements(user, program, add_sections=(), remove_sections=(), webapp=False):
     """ Labels of the enforced requirements this change would leave no way to meet.
     When adding a class, only using up the last opportunity is refused.
     """
@@ -2218,16 +2218,16 @@ def unrepairable_requirements(user, program, add_sections=(), remove_sections=()
 
     before, after = _schedule_maps(user, program, add_sections, remove_sections)
     return [c.requirement.label for c in constraints
-            if _satisfiable(c, before) and not _satisfiable(c, after)]
+            if _satisfiable(c, before, webapp) and not _satisfiable(c, after, webapp)]
 
-def schedule_change_blockers(user, program, add_sections=(), remove_sections=()):
+def schedule_change_blockers(user, program, add_sections=(), remove_sections=(), webapp=False):
     """ Labels of the enforced requirements that forbid this change. """
     if add_sections:
         return unrepairable_requirements(user, program, add_sections=add_sections,
-                                         remove_sections=remove_sections)
+                                         remove_sections=remove_sections, webapp=webapp)
     return blocking_requirements(user, program, remove_sections=remove_sections)
 
-def autocorrect_schedule(user, program):
+def autocorrect_schedule(user, program, webapp=False):
     """ Enroll the user in whatever an autocorrecting constraint is missing,
     and return the sections that were added.
     """
@@ -2238,9 +2238,17 @@ def autocorrect_schedule(user, program):
         schedule_map = ScheduleMap(user, program)
         if constraint.evaluate(schedule_map):
             continue
-        section = repair_section(constraint, schedule_map, exclude=added)
-        if section and section.preregister_student(user):
-            added.append(section)
+        #   A section can fill between being chosen and being registered for,
+        #   so work down the candidates until one takes the student.
+        tried = list(added)
+        while True:
+            section = repair_section(constraint, schedule_map, exclude=tried, webapp=webapp)
+            if section is None:
+                break
+            if section.preregister_student(user, webapp=webapp):
+                added.append(section)
+                break
+            tried.append(section)
     return added
 
 class ScheduleTestTimeblock(BooleanToken):

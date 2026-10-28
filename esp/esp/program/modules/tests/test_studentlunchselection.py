@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 import datetime
 
+from unittest.mock import patch
+
 from esp.cal.models import Event, EventType
 from esp.program.models import (BooleanExpression, BooleanToken, ClassCategories, ClassSection,
                                 ScheduleConstraint, ScheduleTestCategory, StudentRegistration,
@@ -422,6 +424,25 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
 
         self.assertEqual(autocorrect_schedule(self.student, self.program), [])
         self.assertFalse(self.lunch_registration_exists())
+
+    def test_autocorrect_falls_back_when_a_section_fills_under_it(self):
+        """A lost seat must not abandon the repair while another block has room."""
+        second_event, second_lunch = self.second_lunch_block()
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True,
+                           timeblocks=[self.lunch_event, second_event])
+
+        #   The first candidate reports space, then takes none.
+        self.lunch_section.max_class_capacity = 1
+        self.lunch_section.save()
+        with patch.object(ClassSection, 'preregister_student', autospec=True) as prereg:
+            def refuse_the_first(section, user, *args, **kwargs):
+                return section.id != self.lunch_section.id
+            prereg.side_effect = refuse_the_first
+            added = autocorrect_schedule(self.student, self.program)
+
+        self.assertEqual([section.id for section in added], [second_lunch.id],
+                         'Expected the other lunch block to be used instead')
 
     def test_autocorrect_is_off_unless_the_constraint_asks_for_it(self):
         self.accept_lunch()

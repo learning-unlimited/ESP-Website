@@ -176,7 +176,7 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
                             check_schedule_constraints(request, prog, add_sections=[section],
-                                                       remove_sections=conflicts)
+                                                       remove_sections=conflicts, webapp=True)
                             for conflict in conflicts:
                                 conflict.unpreregister_student(request.user, verbs)
                     success = StudentClassRegModule.addclass_logic(request, tl, one, two, module, extra, prog, webapp=True)

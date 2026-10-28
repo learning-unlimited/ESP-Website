@@ -135,22 +135,22 @@ class ScheduleConstraintError(ESPError_NoLog):
     """ A schedule change that an enforced constraint does not allow. """
     pass
 
-def check_schedule_constraints(request, prog, add_sections=(), remove_sections=()):
+def check_schedule_constraints(request, prog, add_sections=(), remove_sections=(), webapp=False):
     """ Refuse a schedule change that an enforced constraint does not allow.
     Taking a class on is judged on repairability. Onsite-morphed admins are exempt.
     """
     if getattr(request.user, 'onsite_local', False):
         return
     blocked = schedule_change_blockers(request.user, prog, add_sections=add_sections,
-                                       remove_sections=remove_sections)
+                                       remove_sections=remove_sections, webapp=webapp)
     if blocked:
         raise ScheduleConstraintError("This change would leave your schedule in violation of "
                                       f"the requirement that you {blocked[0]}.")
 
-def apply_schedule_autocorrect(request, prog):
+def apply_schedule_autocorrect(request, prog, webapp=False):
     """ Repair whatever an autocorrecting constraint is missing, remembering
     what was added so the schedule can say so. """
-    added = autocorrect_schedule(request.user, prog)
+    added = autocorrect_schedule(request.user, prog, webapp=webapp)
     if added:
         request.autocorrected_sections = getattr(request, 'autocorrected_sections', []) + added
     return added
@@ -511,7 +511,8 @@ class StudentClassRegModule(ProgramModuleObj):
                 error = cobj_error or section_error
 
             if not error and not request.user.onsite_local:
-                blocked = schedule_change_blockers(request.user, prog, add_sections=[section])
+                blocked = schedule_change_blockers(request.user, prog, add_sections=[section],
+                                                   webapp=webapp)
                 if blocked:
                     raise ScheduleConstraintError(
                         f"Adding {section.title()} to your schedule would leave you no way to "
@@ -527,7 +528,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
             #   Desired priority level is 1 above current max
             if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
-                apply_schedule_autocorrect(request, prog)
+                apply_schedule_autocorrect(request, prog, webapp=webapp)
                 return True
             else:
                 raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
