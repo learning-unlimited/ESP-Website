@@ -326,6 +326,30 @@ Naming
   patterns pytest collects are set in ``esp/pytest.ini``.
 - Test methods: ``test_<what_it_tests>``
 
+Browser (Selenium) Tests
+------------------------
+
+A few tests drive a real browser to cover behavior that lives in JavaScript,
+such as inline QSD editing. They subclass ``SeleniumTestCase``
+(``esp/seltests/util.py``), which starts headless Firefox as
+``self.selenium`` and marks the test ``@pytest.mark.selenium``. Put them in a
+file named ``seltests.py`` next to the code they cover, e.g.
+``esp/qsd/seltests.py``.
+
+They are skipped unless you pass ``--selenium``::
+
+  pytest --selenium esp/qsd/seltests.py
+
+To run only the browser tests, combine it with the marker::
+
+  pytest --selenium -m selenium
+
+CI passes ``--selenium``, so these run on every pull request. Once requested,
+a browser that cannot start fails the test rather than skipping it. You need
+Firefox installed; Selenium Manager (bundled with Selenium) finds or downloads
+a matching geckodriver. The Docker image does not include Firefox, so run
+these from an environment that has it.
+
 Code Coverage
 -------------
 
