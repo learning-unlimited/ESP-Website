@@ -54,6 +54,16 @@ class CustomizationTagsTestCase(TestCase):
         # Unrelated sections are untouched
         self.assertIn('emerg_first_name', remaining)
 
+    def test_guardian_section_heading_goes_with_its_fields(self):
+        """An empty "Parent/Guardian Contact" heading should not be left behind."""
+        fragment = get_template('users/profiles/guardiancontact.html')
+        shown = fragment.render({'form': StudentProfileForm(user=self.user)})
+        self.assertIn('Parent/Guardian Contact', shown)
+
+        Tag.setTag('student_profile_show_guardian_info', value='False')
+        hidden = fragment.render({'form': StudentProfileForm(user=self.user)})
+        self.assertNotIn('Parent/Guardian Contact', hidden)
+
     def test_volunteer_text_overrides(self):
         Tag.setTag('volunteer_allow_comments', value='True')
         defaults = VolunteerOfferForm(program=self.program).fields
