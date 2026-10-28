@@ -77,21 +77,46 @@ class StudentRegTwoPhase(ProgramModuleObj):
     gate_lifts = 'closed'
     gate_label = 'the class lottery'
 
-    def has_ended(self):
-        """The class lottery also ends once its deadline has closed with none
-        open or still to come, since a deadline closed on the deadlines page
-        doesn't change the module's own close time."""
-        if super().has_ended():
-            return True
+    def _lottery_deadlines(self, user):
+        """The Student/Classes/Lottery deadlines that apply to ``user``:
+        everyone's, plus any of their own."""
+        applies = Q(user__isnull=True)
+        if user is not None and user.is_authenticated:
+            applies |= Q(user=user)
+        return Permission.objects.filter(applies, program=self.program, permission_type='Student/Classes/Lottery')
+
+    def _lottery_state(self):
+        """Where the class lottery's own deadlines stand for the current user:
+        'open', 'upcoming', 'ended', or None without any.  Deadlines changed
+        on the deadlines page, including one student's extension, don't
+        change the module's own schedule, so the module checks them too.
+        Broader permissions like Student/All aren't counted, since programs
+        usually leave those open."""
         now = datetime.datetime.now()
-        lottery = Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery',
-                                            user__isnull=True)
-        return lottery.filter(end_date__lt=now).exists() and not lottery.exclude(end_date__lt=now).exists()
+        deadlines = self._lottery_deadlines(getattr(get_current_request(), 'user', None))
+        if deadlines.filter(Permission.is_valid_qobject(now)).exists():
+            return 'open'
+        if deadlines.filter(start_date__gt=now).exists():
+            return 'upcoming'
+        if deadlines.filter(end_date__lt=now).exists():
+            return 'ended'
+        return None
+
+    def has_ended(self):
+        return super().has_ended() or self._lottery_state() == 'ended'
 
     def is_valid(self, when=None):
-        """Closed once has_ended(), so the module also drops out of the open
-        modules (and the steps registration requires) when its deadline closes."""
-        return super().is_valid(when) and (when is not None or not self.has_ended())
+        """Also closed while the class lottery's deadline isn't open, so the
+        module drops out of the open modules (and the steps registration
+        requires) once it has ended."""
+        return super().is_valid(when) and (when is not None or self._lottery_state() in ('open', None))
+
+    def opens_at(self):
+        if self._lottery_state() != 'upcoming':
+            return self.start_date
+        user = getattr(get_current_request(), 'user', None)
+        starts = self._lottery_deadlines(user).filter(start_date__gt=datetime.datetime.now()).aggregate(Min('start_date'))
+        return max(filter(None, [self.start_date, starts['start_date__min']]))
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)

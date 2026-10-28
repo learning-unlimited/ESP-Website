@@ -550,6 +550,10 @@ class ProgramModuleObj(ExpirableModel):
     def has_ended(self):
         return self.end_date is not None and self.end_date < datetime.now()
 
+    def opens_at(self):
+        """When the module opens for users, if that is set."""
+        return self.start_date
+
     def gate_status(self, user=None):
         """Where the user stands with this module in the required-module flow.
 

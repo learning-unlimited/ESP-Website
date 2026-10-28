@@ -33,7 +33,7 @@ reg-layout.css keeps it open (and hides the toggle) everywhere else.
         {% elif checklist.gate_status == 'waiting' and gate.isCompleted %}
         You're all set until {{ gate.gate_label }}{% if gate.end_date %} closes on {{ gate.end_date|date:"F j" }}{% endif %}. The remaining steps open after it.
         {% elif checklist.gate_status == 'waiting' %}
-        {{ gate.get_link_title }} opens{% if gate.start_date %} on {{ gate.start_date|date:"F j" }}{% else %} soon{% endif %}.
+        {{ gate.get_link_title }} opens{% if gate.opens_at %} on {{ gate.opens_at|date:"F j" }}{% else %} soon{% endif %}.
         {% elif progress.next_step %}
         {% with step=progress.next_step %}
         Next:

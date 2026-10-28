@@ -123,6 +123,39 @@ class LotteryGateTest(StudentRegTwoPhaseBaseTest):
         response = self.client.get(self.studentreg)
         self.assertContains(response, 'Student registration for')
 
+    def _set_lottery_deadline(self, start, end, user=None):
+        """Replace the Student/Classes/Lottery deadline (as the deadlines page
+        would, leaving the module's own schedule open)."""
+        Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery', user=user).delete()
+        if user is None:
+            Permission.objects.create(role=Group.objects.get(name='Student'), permission_type='Student/Classes/Lottery',
+                                      program=self.program, start_date=start, end_date=end)
+        else:
+            Permission.objects.create(user=user, permission_type='Student/Classes/Lottery',
+                                      program=self.program, start_date=start, end_date=end)
+
+    def test_class_lottery_deadline_opening_later_shows_when_it_opens(self):
+        """A Lottery deadline starting after the module opens holds students
+        on the waiting page, with the deadline's opening date."""
+        self._select_student()
+        opens = datetime.now() + timedelta(days=2)
+        self._set_lottery_deadline(opens, opens + timedelta(days=7))
+        response = self.client.get(self.studentreg)
+        self.assertContains(response, 'The class lottery opens on %s' % opens.strftime('%B %-d'))
+        self.assertNotContains(response, 'Registration Closed')
+
+    def test_an_individual_extension_keeps_the_class_lottery_open(self):
+        """A student given their own Lottery deadline stays at the class
+        lottery after everyone else's closes."""
+        self._select_student()
+        self.client.post('/learn/%s/confirm_registration' % self.program.getUrlBase())
+        self._set_lottery_deadline(datetime.now() - timedelta(days=7), datetime.now() - timedelta(hours=1))
+        self._set_lottery_deadline(datetime.now() - timedelta(days=7), datetime.now() + timedelta(days=1),
+                                   user=self.student)
+        response = self.client.get(self.studentreg)
+        self.assertContains(response, 'Email me an updated summary')
+        self.assertNotContains(response, 'Student registration for')
+
     def test_students_who_skipped_the_class_lottery_can_confirm_once_its_deadline_closes(self):
         """With the module's own schedule still open, the class lottery stops
         being a required step once its deadline closes."""
