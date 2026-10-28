@@ -12,7 +12,7 @@ def enforce_existing_constraints(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0045_backfill_studentappreview_class_subject'),
+        ('program', '0048_remove_null_from_allowable_class_size_ranges'),
     ]
 
     operations = [

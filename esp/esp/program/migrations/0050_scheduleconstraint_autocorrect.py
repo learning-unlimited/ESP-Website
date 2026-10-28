@@ -4,7 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('program', '0048_remove_null_from_allowable_class_size_ranges'),
+        ('program', '0049_scheduleconstraint_enforce'),
     ]
 
     operations = [
