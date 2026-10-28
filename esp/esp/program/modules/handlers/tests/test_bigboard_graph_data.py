@@ -101,7 +101,8 @@ class TimesLotteryUndatedTest(ProgramFrameworkTest):
         self._flush_cache()
 
     def test_undated_lottery_records_do_not_raise(self):
-        from esp.program.models import RegistrationType, StudentRegistration
+        from esp.program.models import (
+            RegistrationType, StudentRegistration, StudentSubjectInterest)
         priority, _ = RegistrationType.objects.get_or_create(
             name='Priority/1', defaults={'category': 'student'})
         section = self.program.classes()[0].sections.first()
@@ -117,6 +118,13 @@ class TimesLotteryUndatedTest(ProgramFrameworkTest):
             user=self.students[1], section=section, relationship=priority)
         undated.start_date = None
         undated.save()
+
+        # times_lottery merges two querysets; cover the interest side too, so
+        # dropping either exclude() is caught
+        undated_interest = StudentSubjectInterest.objects.create(
+            user=self.students[1], subject=self.program.classes()[0])
+        undated_interest.start_date = None
+        undated_interest.save()
 
         self._flush_cache()
         times = module.times_lottery(self.program)   # raised TypeError before
