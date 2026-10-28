@@ -231,6 +231,7 @@ Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
 
+from esp.accounting import DuplicatePaymentError, ReconciliationError
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
@@ -455,6 +456,53 @@ class IndividualAccountingControllerTest(TestCase):
         finaid = self.iac.amount_finaid()
         self.assertEqual(finaid, Decimal('50.00'))
 
+    def test_amount_finaid_percentage_rounded_to_cents(self):
+        """A percentage-based finaid grant on a non-whole-dollar amount must
+        produce a result rounded to the nearest cent (ROUND_HALF_UP), so
+        that amount_due() is always a whole number of cents.
+
+        Exact scenario from the issue: 25% of $47.46 = $11.865.
+        Without rounding, amount_due() = $35.595, causing:
+          - payonline:      int(35.595 * 100)  = 3560
+          - charge_payment: Decimal(35.595)*100 = 3559.5
+        These never match → "inconsistent_amount" error → student can't pay.
+
+        With ROUND_HALF_UP, finaid = $11.87, amount_due() = $35.59, and
+        int(35.59 * 100) == Decimal(35.59) * 100 == 3559.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.46'))
+
+        self.iac.set_finaid_params(None, 25)  # 25% discount, no dollar cap
+        finaid = self.iac.amount_finaid()
+
+        # 25% of $47.46 = $11.865 → rounds up to $11.87 with ROUND_HALF_UP
+        self.assertEqual(finaid, Decimal('11.87'))
+        # amount_due must be a whole number of cents
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('35.59'))
+        # The two code paths for computing cents must agree
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
+    def test_amount_finaid_percentage_and_dollar_cap_rounded_to_cents(self):
+        """When both a dollar-cap and a percentage are applied together, the
+        final amount_finaid() must still be rounded to whole cents.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.50'))
+
+        # Dollar cap of $5.00 applied first, then 25% on remainder ($42.50)
+        # 25% of $42.50 = $10.625 → rounds up to $10.63
+        # Total finaid = $5.00 + $10.63 = $15.63
+        self.iac.set_finaid_params(5.00, 25)
+        finaid = self.iac.amount_finaid()
+        self.assertEqual(finaid, Decimal('15.63'))
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('31.87'))
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
     def test_amount_due_with_full_finaid(self):
         self.iac.grant_full_financial_aid()
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
@@ -540,3 +588,153 @@ class IndividualAccountingControllerTest(TestCase):
         prefs = self.iac.get_preferences()
         self.assertEqual(len(prefs), 1)
         self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
+
+    def _add_optional_item(self, text='T-shirt', amount=Decimal('15.00'), max_quantity=5):
+        return LineItemType.objects.create(
+            text=text, amount_dec=amount, required=False,
+            max_quantity=max_quantity, program=self.program, for_payments=False,
+        )
+
+    def test_record_payment_from_identifier_handles_multiple_transfers_same_line_item(self):
+        """Reconciliation should consume one unpaid transfer per identifier entry."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.assertEqual(
+            self.iac.get_transfers().filter(paid_in__isnull=False).count(), 3)
+
+    def test_record_payment_from_identifier_repeated_item_sums_exactly(self):
+        """Repeated amounts are summed as decimals, not accumulated floats."""
+        self._add_optional_item(amount=Decimal('16.67'))
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 3, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        self.assertEqual(amount_due, Decimal('100.01'))
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due)
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
+    def test_record_payment_from_identifier_matches_amounts_within_line_item(self):
+        """Entries for one item at different prices pair up with the right transfers."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([
+            ('T-shirt', 1, Decimal('15.00'), None),
+            ('T-shirt', 1, Decimal('25.00'), None),
+        ])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        transfers = self.iac.get_transfers().filter(line_item=line_item)
+        self.assertEqual(transfers.count(), 2)
+        self.assertEqual(transfers.filter(paid_in__isnull=True).count(), 0)
+
+    def test_record_payment_from_identifier_duplicate_payment(self):
+        """Replaying an identifier still raises DuplicatePaymentError."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_partially_paid_item(self):
+        """Too few unpaid transfers for an item is a duplicate payment, not a crash."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+
+        #   Pay off one of the two shirts out of band.
+        earlier_payment = self.iac.submit_payment(
+            Decimal('15.00'), link_transfers=False)
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.paid_in = earlier_payment
+        transfer.save()
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_missing_transfer(self):
+        """A line item type with no matching transfer raises ReconciliationError."""
+        self.iac.ensure_required_transfers()
+        missing_id = LineItemType.objects.order_by('-id').first().id + 1
+        identifier = f'{self.iac.get_id()}:{missing_id},50.00'
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('50.00'))
+
+    def test_record_payment_from_identifier_amount_changed(self):
+        """A price change while the user was paying is rejected unless trusted."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_amount_changed_trusted(self):
+        """With trusted=True the changed transfer is adjusted back to the billed amount."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, Decimal('80.00'), trusted=True)
+
+        amounts = sorted(self.iac.get_transfers().filter(
+            line_item=line_item).values_list('amount_dec', flat=True))
+        self.assertEqual(amounts, [Decimal('15.00'), Decimal('15.00')])
+
+    def test_record_payment_from_identifier_rejects_replayed_transaction(self):
+        """A repeated notification is rejected even when every item has a fresh transfer."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due, transaction_id='cs-1')
+
+        #   The student redoes their registration, so each paid transfer named by the
+        #   identifier is replaced by an identical unpaid one.
+        self.iac.get_transfers().filter(line_item__for_payments=False).delete()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, amount_due, transaction_id='cs-1')
+
+        self.assertEqual(self.iac.amount_paid(), Decimal('65.00'))
