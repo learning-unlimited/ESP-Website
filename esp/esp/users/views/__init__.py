@@ -26,7 +26,7 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    # format_html automatically escapes dangerous characters to prevent XSS
+    # format_html escapes location so it can't break out of the attribute
     response.content = format_html("""
     <html><head>
     <meta http-equiv="refresh" content="0; url={0}">
@@ -96,7 +96,7 @@ class CustomLoginView(LoginView):
         """Handle redirects for users who are already logged in."""
         next_url = request.GET.get('next', '')
 
-        # SECURITY FIX: Validate next_url to prevent Open Redirects
+        # Don't send users off-site just because ?next= said so
         if next_url and not url_has_allowed_host_and_scheme(
             url=next_url,
             allowed_hosts={request.get_host()},
@@ -185,7 +185,7 @@ def signout(request):
 
     redirect_path = request.GET.get('redirect')
 
-    # SECURITY FIX: Validate redirect_path to prevent Open Redirects
+    # Only honor ?redirect= when it points back at this site
     if redirect_path and url_has_allowed_host_and_scheme(
         url=redirect_path,
         allowed_hosts={request.get_host()},
