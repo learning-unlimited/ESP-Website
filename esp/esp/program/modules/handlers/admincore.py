@@ -373,7 +373,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             context['POST'] = True
             form = LunchConstraintsForm(prog, request.POST)
             if form.is_valid():
-                form.save_data()
+                context['undeleted_sections'] = form.save_data()
                 context['saved'] = True
             else:
                 context['saved'] = False
