@@ -1499,7 +1499,7 @@ all_program_tags = {
     },
     'volunteer_help_text_confirm': {
         'is_boolean': False,
-        'help_text': 'If set, overrides the text of the confirmation checkbox for the volunteer form (plain text; the default red styling is kept)',
+        'help_text': 'If set, overrides the text of the confirmation checkbox for the volunteer form',
         'default': None,
         'category': 'volunteer',
         'is_setting': True,
@@ -1514,7 +1514,7 @@ all_program_tags = {
     },
     'bigboard_graph_drop_beg': {
         'is_boolean': False,
-        'help_text': 'How many of the earliest data points each big board registration graph series starts after. Raise this to stop a handful of very early registrations from flattening the graph; the running totals still count them.',
+        'help_text': 'How many of the earliest data points each big board registration graph series starts after. Raise this to stop a handful of very early registrations from flattening the graph.',
         'default': '4',
         'category': 'manage',
         'is_setting': True,
@@ -1530,7 +1530,7 @@ all_program_tags = {
     },
     'bigboard_graph_min_points': {
         'is_boolean': False,
-        'help_text': 'The minimum number of data points a series must have to be shown on the big board registration graph.',
+        'help_text': 'The minimum number of data points a series must have to be shown on the big board registration graphs.',
         'default': '5',
         'category': 'manage',
         'is_setting': True,
