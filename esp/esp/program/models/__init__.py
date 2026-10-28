@@ -2169,7 +2169,7 @@ def _schedule_maps(user, program, add_sections, remove_sections):
 
 def repair_section(constraint, schedule_map, exclude=()):
     """ A section the user could be enrolled in to satisfy this constraint,
-    or None if every timeblock is already occupied.
+    or None if every timeblock is occupied and every candidate section full.
     """
     from esp.program.models.class_ import ClassSection
 
@@ -2178,14 +2178,16 @@ def repair_section(constraint, schedule_map, exclude=()):
         if schedule_map.map.get(timeblock_id):
             #   The user is busy then, so this option is not available.
             continue
-        section = ClassSection.objects.filter(
+        sections = ClassSection.objects.filter(
             meeting_times__id=timeblock_id,
             parent_class__parent_program=constraint.program,
             parent_class__category_id=category_id,
             status__gt=0, parent_class__status__gt=0,
-        ).exclude(id__in=exclude_ids).order_by('id').first()
-        if section:
-            return section
+        ).exclude(id__in=exclude_ids).order_by('id')
+        for section in sections:
+            #   A lunch period has a real capacity, so do not overfill it.
+            if not section.isFull():
+                return section
     return None
 
 def _satisfiable(constraint, schedule_map):
@@ -2237,8 +2239,7 @@ def autocorrect_schedule(user, program):
         if constraint.evaluate(schedule_map):
             continue
         section = repair_section(constraint, schedule_map, exclude=added)
-        #   Lunch sections are sized to the whole program, so ignore the cap.
-        if section and section.preregister_student(user, overridefull=True):
+        if section and section.preregister_student(user):
             added.append(section)
     return added
 

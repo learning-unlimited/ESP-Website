@@ -410,6 +410,19 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         self.assertEqual(autocorrect_schedule(self.student, self.program), [])
         self.assertFalse(self.lunch_registration_exists())
 
+    def test_autocorrect_respects_an_explicit_section_capacity(self):
+        """A lunch period has a real capacity, so autocorrect must not overfill it."""
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True)
+
+        #   Fill the only lunch section to its explicit cap.
+        self.lunch_section.max_class_capacity = 1
+        self.lunch_section.save()
+        self.lunch_section.preregister_student(self.students[1])
+
+        self.assertEqual(autocorrect_schedule(self.student, self.program), [])
+        self.assertFalse(self.lunch_registration_exists())
+
     def test_autocorrect_is_off_unless_the_constraint_asks_for_it(self):
         self.accept_lunch()
         self.require_lunch(enforce=True, autocorrect=False)

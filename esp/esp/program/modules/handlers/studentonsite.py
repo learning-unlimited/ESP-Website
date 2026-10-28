@@ -220,11 +220,11 @@ class StudentOnsite(ProgramModuleObj, CoreModule):
     @needs_student_in_grade
     @meets_deadline('/Webapp')
     def onsiteclearslot(self, request, tl, one, two, module, extra, prog):
-        result = StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, str):
-            raise ESPError(result, log=False)
-        else:
-            return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
+        try:
+            StudentClassRegModule.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+        return HttpResponseRedirect(prog.get_learn_url() + 'studentonsite')
 
     @aux_call
     @needs_student_in_grade
