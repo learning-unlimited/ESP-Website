@@ -310,7 +310,7 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
         lunch_section2.delete()
         lunch_event2.delete()
 
-    def require_lunch(self, enforce, autocorrect=False, timeblocks=None):
+    def require_lunch(self, enforce, autocorrect=False, timeblocks=None, operator='OR'):
         """A constraint requiring a lunch-category class in one of these blocks."""
         timeblocks = timeblocks or [self.lunch_event]
         condition = BooleanExpression.objects.create(label='always')
@@ -321,9 +321,9 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
             ScheduleTestCategory.objects.create(exp=requirement, timeblock=timeblock,
                                                 category=self.lunch_category, seq=seq)
             seq += 10
-        #   Any one of the blocks will do, so OR the tests together.
+        #   Combine the tests, by default so that any one block will do.
         for _ in range(len(timeblocks) - 1):
-            BooleanToken.objects.create(exp=requirement, text='OR', seq=seq)
+            BooleanToken.objects.create(exp=requirement, text=operator, seq=seq)
             seq += 10
         return ScheduleConstraint.objects.create(program=self.program, condition=condition,
                                                  requirement=requirement, enforce=enforce,
@@ -443,6 +443,35 @@ class StudentLunchSelectionTest(ProgramFrameworkTest):
 
         self.assertEqual([section.id for section in added], [second_lunch.id],
                          'Expected the other lunch block to be used instead')
+
+    def test_autocorrect_skips_a_section_that_overlaps_the_schedule(self):
+        """A candidate meeting more than once must be free at all of its times."""
+        second_event, _second_lunch = self.second_lunch_block()
+        #   Make the only lunch section for this block span both periods.
+        self.lunch_section.meeting_times.add(second_event)
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True)
+
+        #   Occupy the second period, which the lunch section also covers.
+        busy = self.program.sections().exclude(parent_class=self.lunch_class).first()
+        if busy is None:
+            self.skipTest('Program has no non-lunch section')
+        busy.meeting_times.set([second_event])
+        busy.preregister_student(self.student)
+
+        self.assertEqual(autocorrect_schedule(self.student, self.program), [])
+        self.assertFalse(self.lunch_registration_exists())
+
+    def test_autocorrect_needs_the_whole_requirement_met(self):
+        """One option is not a repair when the requirement demands both."""
+        second_event, _second_lunch = self.second_lunch_block()
+        self.accept_lunch()
+        self.require_lunch(enforce=True, autocorrect=True, operator='AND',
+                           timeblocks=[self.lunch_event, second_event])
+
+        #   No single section satisfies 'lunch in both blocks', so nothing is added.
+        self.assertEqual(autocorrect_schedule(self.student, self.program), [])
+        self.assertFalse(self.lunch_registration_exists())
 
     def test_autocorrect_is_off_unless_the_constraint_asks_for_it(self):
         self.accept_lunch()

@@ -2132,7 +2132,7 @@ class ScheduleConstraint(models.Model):
         return f'{self.program.niceName()}: "{self.condition}" requires "{self.requirement}"'
 
     def satisfying_options(self):
-        """ (timeblock id, category id) pairs that would satisfy this requirement.
+        """ (timeblock id, category id) pairs worth trying as a repair.
         Only category tests qualify; other shapes cannot be repaired automatically.
         """
         return [(token.timeblock_id, token.category_id)
@@ -2169,7 +2169,7 @@ def _schedule_maps(user, program, add_sections, remove_sections):
 
 def repair_section(constraint, schedule_map, exclude=(), webapp=False):
     """ A section the user could be enrolled in to satisfy this constraint,
-    or None if every timeblock is occupied and every candidate section full.
+    or None if no single section would do it.
     """
     from esp.program.models.class_ import ClassSection
 
@@ -2185,9 +2185,19 @@ def repair_section(constraint, schedule_map, exclude=(), webapp=False):
             status__gt=0, parent_class__status__gt=0,
         ).exclude(id__in=exclude_ids).order_by('id')
         for section in sections:
-            #   A lunch period has a real capacity, so do not overfill it.
-            if not section.isFull(webapp=webapp):
-                return section
+            #   A section can meet more than once, so it has to be free throughout
+            if any(schedule_map.map.get(meeting_id) for meeting_id in section.timeslot_ids()):
+                continue
+            #   A lunch period has a real capacity
+            if section.isFull(webapp=webapp):
+                continue
+            #   Check if adding this section satisfies the constraint
+            schedule_map.add_section(section)
+            try:
+                if constraint.evaluate(schedule_map):
+                    return section
+            finally:
+                schedule_map.remove_section(section)
     return None
 
 def _satisfiable(constraint, schedule_map, webapp=False):
