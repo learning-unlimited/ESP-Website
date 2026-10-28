@@ -38,6 +38,21 @@ class MakeGraphDataTrimTest(SimpleTestCase):
                 self.assertEqual(graph_data, [])
                 self.assertIsNone(start)
 
+    def test_undated_points_are_ignored(self):
+        """Registration timestamps are nullable; an undated point has no place
+        on a time axis and must not take down the page."""
+        name, times, cumulative = series('enrolled', 6)
+        with_gap = [(1, None)] + times + [(1, None)]
+        graph_data, start = BigBoardModule.make_graph_data([(name, with_gap, cumulative)], 0, 0, 5)
+        self.assertEqual(len(graph_data), 1)
+        self.assertIsNotNone(start)
+
+    def test_series_of_only_undated_points_is_dropped(self):
+        graph_data, start = BigBoardModule.make_graph_data(
+            [('enrolled', [(1, None)] * 8, True)], 0, 0, 5)
+        self.assertEqual(graph_data, [])
+        self.assertIsNone(start)
+
     def test_surviving_series_is_still_plotted(self):
         graph_data, start = BigBoardModule.make_graph_data(
             [series('short', 5), series('long', 20)], 6, 0, 5)
