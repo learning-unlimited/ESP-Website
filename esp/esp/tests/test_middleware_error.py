@@ -40,7 +40,7 @@ class ESPErrorMiddlewareTest(TestCase):
     def setUp(self):
         super().setUp()
         _setup_roles()
-        self.middleware = ESPErrorMiddleware()
+        self.middleware = ESPErrorMiddleware(get_response=lambda request: None)
         self.factory = RequestFactory()
 
     def test_process_exception_returns_none_for_non_esp_error(self):

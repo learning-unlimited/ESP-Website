@@ -90,6 +90,19 @@ def getPerms(request):
             return HttpResponse(json.dumps(perms))
     return HttpResponse(status=400)
 
+def check_no_anonymous_link_fields(anonymous, metadata):
+    """
+    Raises an error if an anonymous form contains linked fields, since their
+    answers are stored in the submitting user's own records
+    """
+    if not anonymous:
+        return
+    for page in metadata['pages']:
+        for section in page['sections']:
+            for field in section['fields']:
+                if cf_cache.isLinkField(field['data']['field_type']):
+                    raise ESPError('Anonymous forms cannot contain linked fields.', log=False)
+
 @user_passes_test(test_func)
 @transaction.atomic
 def onSubmit(request):
@@ -111,7 +124,9 @@ def onSubmit(request):
 
                 # Validate that title is not empty or missing
                 if not title or not title.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(metadata['anonymous'], metadata)
 
                 # Creating form
                 form = Form.objects.create(title=title,
@@ -125,9 +140,9 @@ def onSubmit(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -135,7 +150,7 @@ def onSubmit(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Inserting pages
                 for page in metadata['pages']:
@@ -165,6 +180,8 @@ def onSubmit(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
@@ -209,7 +226,9 @@ def onModify(request):
                 title_raw = (metadata.get('title') or '').strip()
                 title_normalized = title_raw[0:Form._meta.get_field('title').max_length]
                 if not title_normalized or not title_normalized.strip():
-                    return JsonResponse({'message': 'Form Name/Title is required and cannot be empty.'}, status=400)
+                    raise ESPError('Form Name/Title is required and cannot be empty.', log=False)
+
+                check_no_anonymous_link_fields(form.anonymous, metadata)
 
                 # NOT updating 'anonymous'
                 form.__dict__.update(title=title_normalized, description=metadata['desc'], perms=metadata['perms'],
@@ -226,9 +245,9 @@ def onModify(request):
                     try:
                         prog = Program.objects.get(id=metadata['link_id'])
                     except Program.DoesNotExist:
-                        return ESPError(f'No program with ID {metadata["link_id"]}')
+                        raise ESPError(f'No program with ID {metadata["link_id"]}', log=False)
                     if not prog.hasModule(metadata['link_module']):
-                        return ESPError(f'Program does not have {metadata["link_module"]} enabled')
+                        raise ESPError(f'Program does not have {metadata["link_module"]} enabled', log=False)
                     if metadata['link_module'] == 'StudentCustomFormModule':
                         Tag.setTag(key='learn_extraform_id', value=form.id, target=prog)
                     elif metadata['link_module'] == 'TeacherCustomFormModule':
@@ -236,7 +255,7 @@ def onModify(request):
                     elif metadata['link_module'] == 'TeacherQuizModule':
                         Tag.setTag(key='quiz_form_id', value=form.id, target=prog)
                     else:
-                        return ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented')
+                        raise ESPError(f'Module {metadata["link_module"]} does not use a custom form or is not implemented', log=False)
 
                 # Check if only_fkey links have changed
                 if form.link_type != metadata['link_type'] or form.link_id != metadata['link_id']:
@@ -297,6 +316,8 @@ def onModify(request):
 
                 return HttpResponse('OK')
             except Exception as err:
+                #   Rollback any changes if an error is raised
+                transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
 
 def hasPerm(user, form):

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.support import ProgramManagerTestHelper
-from esp.program.modules.module_ext import AJAXChangeLog
+from esp.program.modules.program_settings import AJAXChangeLog
 import json
 import time
 
@@ -189,7 +189,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': 1 })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.assertTrue(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
-        #TODO:  more detailed testing here
+        entry = changelog[0]
+        self.assertEqual(entry['id'], section.id, "Change log entry was for the wrong class section: " + str(changelog))
+        self.assertTrue(entry['is_scheduling'], "Change log entry should be a scheduling entry: " + str(changelog))
+        self.assertEqual(entry['timeslots'], [], "Timeslots should be empty for an unscheduled class: " + str(changelog))
+        self.assertEqual(entry['room_name'], '', "Room name should be empty for an unscheduled class: " + str(changelog))
 
     def testChangeLogFailedScheduling(self):
         #change log should not include failed scheduling of classes

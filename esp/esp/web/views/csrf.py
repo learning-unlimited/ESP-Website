@@ -23,18 +23,27 @@ def csrf_failure(request, reason=""):
         from esp.utils.web import render_to_response
         from esp.program.models import Program
 
-        prog_re = r'^[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'
+        prog_re = r'^/?[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'
         match = re.match(prog_re, request.path)
+        prog = None
         if match:
             one, two = match.groups()
             try:
                 prog = Program.by_prog_inst(one, two)
             except Program.DoesNotExist:
                 prog = None
-        else:
-            prog = None
+
+        c['prog'] = prog
 
         response = render_to_response('403_csrf_failure.html', request, c)
+        # render_to_response() hands back an unrendered TemplateResponse, whose
+        # content is not available until it has been rendered. Reading .content
+        # first raises ContentNotRenderedError, which the except clause below
+        # would quietly turn into Django's default error page. render() is a
+        # no-op once the content is baked, so it is safe to call without
+        # inspecting is_rendered, which not every render-capable type defines.
+        if hasattr(response, 'render'):
+            response.render()
         response = HttpResponseForbidden(str(response.content, encoding='UTF-8'),
                                          content_type=response['Content-Type'])
 

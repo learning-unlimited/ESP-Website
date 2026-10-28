@@ -16,19 +16,14 @@ from esp.accounting.models import (
     Transfer,
 )
 from esp.program.models import FinancialAidRequest, Program
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class LineItemTypeTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -100,7 +95,7 @@ class LineItemTypeTest(TestCase):
 class LineItemOptionsTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.lit = LineItemType.objects.create(
             text='Test Item',
@@ -139,7 +134,7 @@ class LineItemOptionsTest(TestCase):
 class AccountTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account = Account.objects.create(
             name='test-account',
@@ -184,7 +179,7 @@ class AccountTest(TestCase):
 class TransferTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.account_src = Account.objects.create(
             name='source', description='Source', program=self.program,
@@ -235,34 +230,20 @@ Source: esp/esp/accounting/controllers.py
 Tests GlobalAccountingController, ProgramAccountingController, and
 IndividualAccountingController.
 """
-from decimal import Decimal
 
-from django.contrib.auth.models import Group
-
+from esp.accounting import DuplicatePaymentError, ReconciliationError
 from esp.accounting.controllers import (
     GlobalAccountingController,
     IndividualAccountingController,
     ProgramAccountingController,
 )
-from esp.accounting.models import (
-    Account,
-    LineItemType,
-    Transfer,
-)
-from esp.program.models import Program
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import ESPUser
-
-
-def _setup_roles():
-    for name in ['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']:
-        Group.objects.get_or_create(name=name)
 
 
 class GlobalAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
 
     def test_setup_accounts(self):
         gac = GlobalAccountingController()
@@ -283,7 +264,7 @@ class GlobalAccountingControllerTest(TestCase):
 class ProgramAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         gac = GlobalAccountingController()
         gac.setup_accounts()
@@ -357,11 +338,54 @@ class ProgramAccountingControllerTest(TestCase):
         count, total = self.pac.payments_summary()
         self.assertEqual(count, 0)
 
+    def test_clear_all_data(self):
+        """Regression test for Django 3.2+ distinct().delete() handling.
+
+        clear_all_data() exercises two pk__in subquery wrappers that are
+        required for delete() to work after distinct() in Django 3.2+:
+          - Transfer.objects.filter(pk__in=self.all_transfers()) wraps a
+            bare .distinct() queryset.
+          - LineItemType.objects.filter(pk__in=self.get_lineitemtypes())
+            wraps a .distinct('text') (DISTINCT ON) queryset.
+
+        Without the wrappers this raises
+        TypeError: Cannot call delete() after .distinct().
+        """
+        # Populate the program so all four delete paths in clear_all_data
+        # have rows to remove.
+        self.pac.setup_accounts()
+        self.pac.setup_lineitemtypes(50.0)
+        user = ESPUser.objects.create_user(username='cleardata', password='pwd')
+        iac = IndividualAccountingController(self.program, user)
+        iac.ensure_required_transfers()
+        iac.grant_full_financial_aid()
+
+        # Sanity-check that there is data to clear.
+        self.assertTrue(LineItemType.objects.filter(program=self.program).exists())
+        self.assertTrue(Account.objects.filter(program=self.program).exists())
+        self.assertTrue(Transfer.objects.filter(line_item__program=self.program).exists())
+        self.assertTrue(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+
+        # The function under test. Must not raise under Django 3.2+.
+        self.pac.clear_all_data()
+
+        # Accounts and grants are unconditionally cleared.
+        self.assertFalse(Account.objects.filter(program=self.program).exists())
+        self.assertFalse(FinancialAidGrant.objects.filter(request__program=self.program).exists())
+        # All transfers cascade with the program accounts.
+        self.assertFalse(Transfer.objects.filter(line_item__program=self.program).exists())
+        # Non-finaid line items (the DISTINCT ON case) are deleted via pk__in.
+        # Finaid items intentionally remain -- they're excluded from
+        # get_lineitemtypes() via ProgramAccountingController.finaid_items.
+        self.assertFalse(
+            LineItemType.objects.filter(program=self.program, text='Program admission').exists()
+        )
+
 
 class IndividualAccountingControllerTest(TestCase):
     def setUp(self):
         super().setUp()
-        _setup_roles()
+        user_role_setup()
         self.program = Program.objects.create(grade_min=7, grade_max=12)
         self.user = ESPUser.objects.create_user(
             username='teststu', password='password',
@@ -432,6 +456,53 @@ class IndividualAccountingControllerTest(TestCase):
         finaid = self.iac.amount_finaid()
         self.assertEqual(finaid, Decimal('50.00'))
 
+    def test_amount_finaid_percentage_rounded_to_cents(self):
+        """A percentage-based finaid grant on a non-whole-dollar amount must
+        produce a result rounded to the nearest cent (ROUND_HALF_UP), so
+        that amount_due() is always a whole number of cents.
+
+        Exact scenario from the issue: 25% of $47.46 = $11.865.
+        Without rounding, amount_due() = $35.595, causing:
+          - payonline:      int(35.595 * 100)  = 3560
+          - charge_payment: Decimal(35.595)*100 = 3559.5
+        These never match → "inconsistent_amount" error → student can't pay.
+
+        With ROUND_HALF_UP, finaid = $11.87, amount_due() = $35.59, and
+        int(35.59 * 100) == Decimal(35.59) * 100 == 3559.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.46'))
+
+        self.iac.set_finaid_params(None, 25)  # 25% discount, no dollar cap
+        finaid = self.iac.amount_finaid()
+
+        # 25% of $47.46 = $11.865 → rounds up to $11.87 with ROUND_HALF_UP
+        self.assertEqual(finaid, Decimal('11.87'))
+        # amount_due must be a whole number of cents
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('35.59'))
+        # The two code paths for computing cents must agree
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
+    def test_amount_finaid_percentage_and_dollar_cap_rounded_to_cents(self):
+        """When both a dollar-cap and a percentage are applied together, the
+        final amount_finaid() must still be rounded to whole cents.
+        """
+        LineItemType.objects.filter(
+            program=self.program, text='Program admission'
+        ).update(amount_dec=Decimal('47.50'))
+
+        # Dollar cap of $5.00 applied first, then 25% on remainder ($42.50)
+        # 25% of $42.50 = $10.625 → rounds up to $10.63
+        # Total finaid = $5.00 + $10.63 = $15.63
+        self.iac.set_finaid_params(5.00, 25)
+        finaid = self.iac.amount_finaid()
+        self.assertEqual(finaid, Decimal('15.63'))
+        due = self.iac.amount_due()
+        self.assertEqual(due, Decimal('31.87'))
+        self.assertEqual(int(due * 100), int(Decimal(due) * 100))
+
     def test_amount_due_with_full_finaid(self):
         self.iac.grant_full_financial_aid()
         self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
@@ -498,3 +569,172 @@ class IndividualAccountingControllerTest(TestCase):
         self.assertIn('Refund', types)
         self.assertEqual(results[0]['refunded'], Decimal('15.00'))
 
+    def test_apply_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 1, Decimal('15.00')])
+
+    def test_set_preference(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 1)
+        transfers = self.iac.get_transfers()
+        self.assertTrue(transfers.filter(line_item__text='T-shirt').exists())
+
+    def test_get_preferences(self):
+        LineItemType.objects.create(text='T-shirt', amount_dec=Decimal('15.00'), required=False, max_quantity=1, program=self.program, for_payments=False)
+        self.iac.set_preference('T-shirt', 2)
+        prefs = self.iac.get_preferences()
+        self.assertEqual(len(prefs), 1)
+        self.assertEqual(prefs[0][:3], ['T-shirt', 2, Decimal('15.00')])
+
+    def _add_optional_item(self, text='T-shirt', amount=Decimal('15.00'), max_quantity=5):
+        return LineItemType.objects.create(
+            text=text, amount_dec=amount, required=False,
+            max_quantity=max_quantity, program=self.program, for_payments=False,
+        )
+
+    def test_record_payment_from_identifier_handles_multiple_transfers_same_line_item(self):
+        """Reconciliation should consume one unpaid transfer per identifier entry."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+        self.assertEqual(
+            self.iac.get_transfers().filter(paid_in__isnull=False).count(), 3)
+
+    def test_record_payment_from_identifier_repeated_item_sums_exactly(self):
+        """Repeated amounts are summed as decimals, not accumulated floats."""
+        self._add_optional_item(amount=Decimal('16.67'))
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 3, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        self.assertEqual(amount_due, Decimal('100.01'))
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due)
+        self.assertEqual(self.iac.amount_due(), Decimal('0.00'))
+
+    def test_record_payment_from_identifier_matches_amounts_within_line_item(self):
+        """Entries for one item at different prices pair up with the right transfers."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([
+            ('T-shirt', 1, Decimal('15.00'), None),
+            ('T-shirt', 1, Decimal('25.00'), None),
+        ])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        transfers = self.iac.get_transfers().filter(line_item=line_item)
+        self.assertEqual(transfers.count(), 2)
+        self.assertEqual(transfers.filter(paid_in__isnull=True).count(), 0)
+
+    def test_record_payment_from_identifier_duplicate_payment(self):
+        """Replaying an identifier still raises DuplicatePaymentError."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, self.iac.amount_due())
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_partially_paid_item(self):
+        """Too few unpaid transfers for an item is a duplicate payment, not a crash."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+
+        #   Pay off one of the two shirts out of band.
+        earlier_payment = self.iac.submit_payment(
+            Decimal('15.00'), link_transfers=False)
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.paid_in = earlier_payment
+        transfer.save()
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_missing_transfer(self):
+        """A line item type with no matching transfer raises ReconciliationError."""
+        self.iac.ensure_required_transfers()
+        missing_id = LineItemType.objects.order_by('-id').first().id + 1
+        identifier = f'{self.iac.get_id()}:{missing_id},50.00'
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('50.00'))
+
+    def test_record_payment_from_identifier_amount_changed(self):
+        """A price change while the user was paying is rejected unless trusted."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        with self.assertRaises(ReconciliationError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, Decimal('80.00'))
+
+    def test_record_payment_from_identifier_amount_changed_trusted(self):
+        """With trusted=True the changed transfer is adjusted back to the billed amount."""
+        line_item = self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 2, None, None)])
+
+        identifier = self.iac.get_identifier()
+        transfer = self.iac.get_transfers().filter(line_item=line_item).first()
+        transfer.amount_dec = Decimal('25.00')
+        transfer.save()
+
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, Decimal('80.00'), trusted=True)
+
+        amounts = sorted(self.iac.get_transfers().filter(
+            line_item=line_item).values_list('amount_dec', flat=True))
+        self.assertEqual(amounts, [Decimal('15.00'), Decimal('15.00')])
+
+    def test_record_payment_from_identifier_rejects_replayed_transaction(self):
+        """A repeated notification is rejected even when every item has a fresh transfer."""
+        self._add_optional_item()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        identifier = self.iac.get_identifier()
+        amount_due = self.iac.amount_due()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, amount_due, transaction_id='cs-1')
+
+        #   The student redoes their registration, so each paid transfer named by the
+        #   identifier is replaced by an identical unpaid one.
+        self.iac.get_transfers().filter(line_item__for_payments=False).delete()
+        self.iac.ensure_required_transfers()
+        self.iac.apply_preferences([('T-shirt', 1, None, None)])
+
+        with self.assertRaises(DuplicatePaymentError):
+            IndividualAccountingController.record_payment_from_identifier(
+                identifier, amount_due, transaction_id='cs-1')
+
+        self.assertEqual(self.iac.amount_paid(), Decimal('65.00'))

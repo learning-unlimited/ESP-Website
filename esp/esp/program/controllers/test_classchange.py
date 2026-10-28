@@ -354,6 +354,59 @@ class ComputeAssignmentsTest(ClassChangeTestBase):
 
 
 # ===========================================================================
+# fill_section() — negative / zero section capacity
+# ===========================================================================
+
+class FillSectionCapacityTest(ClassChangeTestBase):
+    """
+    ``section_capacities`` can be negative when students enrolled in a class
+    before it was moved to a smaller classroom.  ``fill_section`` must treat
+    such a section as having no open spaces rather than crashing.
+    """
+
+    def setUp(self, *args, **kwargs):
+        super().setUp(*args, **kwargs)
+        self.ctrl = _make_controller(self.program)
+        self.si = int(numpy.nonzero(
+            self.ctrl.section_ids == self.first_section.id
+        )[0][0])
+        # Guard against a vacuous pass: the fixture must give this section
+        # at least one interested student, otherwise fill_section never
+        # reaches the capacity logic under test.
+        self.assertTrue(self.ctrl.request[:, self.si, :].any())
+
+    def _fill_with_capacity(self, capacity):
+        self.ctrl.section_capacities[self.si] = capacity
+        return self.ctrl.fill_section(self.si)
+
+    def test_negative_capacity_does_not_raise(self):
+        """Regression test: used to raise
+        ``ValueError: Negative dimensions are not allowed``."""
+        self._fill_with_capacity(-2)
+
+    def test_negative_capacity_enrolls_nobody(self):
+        self._fill_with_capacity(-2)
+        self.assertFalse(self.ctrl.enroll_final[:, self.si, :].any())
+
+    def test_negative_capacity_reports_section_filled(self):
+        self.assertTrue(self._fill_with_capacity(-2))
+
+    def test_negative_capacity_is_not_changed(self):
+        """No students were added, so the capacity must be left as it was."""
+        self._fill_with_capacity(-2)
+        self.assertEqual(self.ctrl.section_capacities[self.si], -2)
+
+    def test_zero_capacity_enrolls_nobody(self):
+        self.assertTrue(self._fill_with_capacity(0))
+        self.assertFalse(self.ctrl.enroll_final[:, self.si, :].any())
+
+    def test_positive_capacity_still_enrolls_candidate(self):
+        """The fix must not change behaviour for ordinary capacities."""
+        self.assertFalse(self._fill_with_capacity(5))
+        self.assertTrue(self.ctrl.enroll_final[:, self.si, :].any())
+
+
+# ===========================================================================
 # Email text generation
 # ===========================================================================
 
@@ -369,39 +422,39 @@ class EmailTextTest(ClassChangeTestBase):
         # Student at index 0 in the controller's student list.
         self.student_idx = 0
 
-    def test_get_student_schedule_returns_bytes(self):
-        """get_student_schedule encodes its output to ASCII bytes."""
+    def test_get_student_schedule_returns_str(self):
+        """get_student_schedule encodes its output to a string."""
         schedule = self.ctrl.get_student_schedule(self.student_idx)
-        self.assertIsInstance(schedule, bytes)
+        self.assertIsInstance(schedule, str)
 
     def test_get_student_schedule_contains_table_tag(self):
         schedule = self.ctrl.get_student_schedule(self.student_idx)
-        self.assertIn(b"<table", schedule)
+        self.assertIn("<table", schedule)
 
-    def test_get_changed_student_email_text_returns_bytes(self):
+    def test_get_changed_student_email_text_returns_str(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        self.assertIsInstance(text, bytes)
+        self.assertIsInstance(text, str)
 
     def test_get_changed_student_email_text_contains_html(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        self.assertIn(b"<html>", text)
+        self.assertIn("<html>", text)
 
     def test_get_changed_student_email_text_mentions_program(self):
         text = self.ctrl.get_changed_student_email_text(self.student_idx)
-        program_name = self.program.niceName().encode("ascii", "ignore")
+        program_name = self.program.niceName()
         self.assertIn(program_name, text)
 
-    def test_get_unchanged_student_email_text_returns_bytes(self):
+    def test_get_unchanged_student_email_text_returns_str(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        self.assertIsInstance(text, bytes)
+        self.assertIsInstance(text, str)
 
     def test_get_unchanged_student_email_text_contains_html(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        self.assertIn(b"<html>", text)
+        self.assertIn("<html>", text)
 
     def test_get_unchanged_student_email_text_mentions_program(self):
         text = self.ctrl.get_unchanged_student_email_text(self.student_idx)
-        program_name = self.program.niceName().encode("ascii", "ignore")
+        program_name = self.program.niceName()
         self.assertIn(program_name, text)
 
     def test_changed_and_unchanged_emails_differ(self):
