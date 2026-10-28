@@ -1306,6 +1306,117 @@ class AddLinkFieldToExistingFormTest(TestCase):
         self.assertEqual(response.status_code, 200)
 
 
+class RetypedLinkFieldTest(TestCase):
+    """
+    Changing a field's type between a plain column and a linked model must move
+    the response table's columns with it.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='retype_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='retype_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def fieldSpec(self, field_type, label, seq, parent_id=-1):
+        return {'data': {'field_type': field_type, 'question_text': label, 'seq': seq,
+                         'required': False, 'parent_id': parent_id,
+                         'attrs': {}, 'help_text': ''}}
+
+    def createForm(self, fields):
+        form_data = {
+            'title': 'Retype Form', 'desc': 'Test', 'perms': '',
+            'link_type': '-1', 'link_id': -1, 'anonymous': False,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'pages': [{'parent_id': -1, 'seq': 0, 'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': -1},
+                'fields': fields}]}],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                   content_type='application/json',
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        return Form.objects.get(title='Retype Form')
+
+    def modifyForm(self, form, fields):
+        page = Page.objects.get(form=form)
+        section = Section.objects.get(page=page)
+        modify_data = {
+            'form_id': form.id, 'title': 'Retype Form', 'desc': 'Test', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'pages': [{'parent_id': page.id, 'seq': 0, 'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': section.id},
+                'fields': fields}]}],
+        }
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data),
+                                   content_type='application/json',
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+
+    def respond(self, form, answers):
+        post_dict = {'combo_form-current_step': '0'}
+        post_dict.update(answers)
+        response = self.client.post(f"/customforms/view/{form.id}/", post_dict)
+        self.assertRedirects(response, f"/customforms/success/{form.id}/")
+        #   Flush deferred FK checks first, as committing the response would.
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+
+    def readResponses(self, form):
+        response = self.client.get("/customforms/getData/", {'form_id': form.id},
+                                  HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content.decode('UTF-8'))['answers']
+
+    def test_plain_field_retyped_as_link_field(self):
+        form = self.createForm([self.fieldSpec('textField', 'Plain', 0)])
+        plain = Field.objects.get(form=form, label='Plain')
+        self.respond(form, {f'question_{plain.id}': 'hello'})
+
+        self.modifyForm(form, [self.fieldSpec('ContactInfo_e_mail', 'Plain', 0, plain.id)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+        field_names = [f.name for f in DynamicModelHandler(form).createDynModel()._meta.fields]
+        self.assertIn('link_ContactInfo', field_names)
+        self.assertNotIn(f'question_{plain.id}', field_names)
+
+    def test_link_field_retyped_as_plain_field(self):
+        form = self.createForm([self.fieldSpec('ContactInfo_e_mail', 'Email', 0)])
+        email = Field.objects.get(form=form, label='Email')
+        self.respond(form, {f'question_{email.id}': 'test@example.com'})
+
+        self.modifyForm(form, [self.fieldSpec('textField', 'Email', 0, email.id)])
+
+        self.assertEqual(len(self.readResponses(form)), 1)
+        field_names = [f.name for f in DynamicModelHandler(form).createDynModel()._meta.fields]
+        self.assertNotIn('link_ContactInfo', field_names)
+        self.assertIn(f'question_{email.id}', field_names)
+
+    def test_retyped_field_keeps_column_another_field_needs(self):
+        """ The FK column stays while a second field of the same model still uses it. """
+
+        form = self.createForm([self.fieldSpec('ContactInfo_e_mail', 'Email', 0),
+                                self.fieldSpec('ContactInfo_phone_day', 'Phone', 1)])
+        email = Field.objects.get(form=form, label='Email')
+        phone = Field.objects.get(form=form, label='Phone')
+        self.respond(form, {f'question_{email.id}': 'test@example.com',
+                            f'question_{phone.id}': ''})
+
+        self.modifyForm(form, [self.fieldSpec('textField', 'Email', 0, email.id),
+                               self.fieldSpec('ContactInfo_phone_day', 'Phone', 1, phone.id)])
+
+        answers = self.readResponses(form)
+        self.assertEqual(len(answers), 1)
+        self.assertIn('link_ContactInfo',
+                      [f.name for f in DynamicModelHandler(form).createDynModel()._meta.fields])
+
 class FixLinkFieldColumnNamesMigrationTest(TestCase):
     """
     Migration 0005 renames "link_<Model>" columns left behind by #3762.
