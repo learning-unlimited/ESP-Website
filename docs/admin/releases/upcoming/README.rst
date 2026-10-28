@@ -49,7 +49,7 @@ Lotteries and Module Schedules
 
 While "Force show required modules" is on:
 
-- **Class lottery (two-phase registration):** students stay on the two-phase page from before the module opens until it closes on the module schedule, including after they submit their preferences, so the module no longer needs to be disabled once the class lottery is over. Its open and close times also set the ``Student/Classes/Lottery`` deadline, and closing that deadline on the deadlines page also ends the class lottery. The "Send Me a Confirmation Email" button is now "Submit my preferences".
+- **Class lottery (two-phase registration):** students are held at the class lottery from before the module opens (seeing when it opens) until it closes on the module schedule, including after they submit their preferences, so the module no longer needs to be disabled once the class lottery is over. Its open and close times also set the ``Student/Classes/Lottery`` deadline, and closing that deadline on the deadlines page also ends the class lottery. The "Send Me a Confirmation Email" button is now "Submit my preferences".
 - **Student lottery (phase zero):** students stay on the lottery page until they are selected, even after the module closes. It is now listed in the registration checklist.
 - **Registration checklist:** it tells students when they are waiting on a lottery, lists the steps that open after each lottery, and hides the later steps (and the other registration requirements) from students who weren't selected in the student lottery.
 - **Closed modules:** required modules outside their time window on the module schedule are no longer forced on students. The checklist lists modules outside their window as "(closed)", or with the date they open.

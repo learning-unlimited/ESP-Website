@@ -277,6 +277,9 @@ class ProgramModuleObj(ExpirableModel):
                     if request.user.updateOnsite(request) and not isinstance(m, (StudentRegProfileModule, TeacherRegProfileModule)):
                         continue
                     if not isinstance(m, CoreModule) and m.main_view and m.gate_status(request.user) != 'passed':
+                        if not m.is_valid() and not m.has_ended():
+                            #   A lottery holding the user before it opens
+                            return m.gate_not_open(request, tl, prog)
                         return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
@@ -566,6 +569,11 @@ class ProgramModuleObj(ExpirableModel):
     def gate_pending_status(self, user=None):
         """gate_status for an incomplete 'completed' gate; see StudentRegPhaseZero."""
         return 'todo'
+
+    def gate_not_open(self, request, tl, prog):
+        """The page findModule shows while this gate holds the user before it opens."""
+        request.tl = tl
+        return render_to_response('program/modules/gate_not_open.html', request, {'program': prog, 'module': self})
 
     def inModulesList(self):
         return self.isStep()

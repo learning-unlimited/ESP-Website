@@ -10,9 +10,10 @@ from django.contrib.auth.models import Group
 
 from esp.program.models import PhaseZeroRecord
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.checklist import get_checklist_context
 from esp.program.modules.tests.studentregtwophase import StudentRegTwoPhaseBaseTest
 from esp.tagdict.models import Tag
-from esp.users.models import Permission
+from esp.users.models import Permission, Record
 
 
 class LotteryGateTest(StudentRegTwoPhaseBaseTest):
@@ -96,6 +97,10 @@ class LotteryGateTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(self._gate_status('StudentRegTwoPhase'), 'waiting')
         response = self.client.get(self.studentreg)
         self.assertNotContains(response, 'Student registration for')
+        # A page saying when it opens, with the checklist, not the deadline error page.
+        self.assertContains(response, 'The class lottery opens on')
+        self.assertContains(response, 'Two-Phase Student Registration opens on')
+        self.assertNotContains(response, 'Registration Closed')
 
     def test_closing_the_class_lottery_lets_students_through(self):
         self._select_student()
@@ -117,6 +122,18 @@ class LotteryGateTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(self._gate_status('StudentRegTwoPhase'), 'passed')
         response = self.client.get(self.studentreg)
         self.assertContains(response, 'Student registration for')
+
+    def test_students_who_skipped_the_class_lottery_can_confirm_once_its_deadline_closes(self):
+        """With the module's own schedule still open, the class lottery stops
+        being a required step once its deadline closes."""
+        self._select_student()
+        Permission.objects.filter(program=self.program, permission_type='Student/Classes/Lottery').delete()
+        Permission.objects.create(role=Group.objects.get(name='Student'), permission_type='Student/Classes/Lottery',
+                                  program=self.program, start_date=datetime.now() - timedelta(days=7),
+                                  end_date=datetime.now() - timedelta(hours=1))
+        self.assertTrue(get_checklist_context(self.student, self.program, 'learn')['completedAll'])
+        self.client.post('/learn/%s/confirmreg' % self.program.getUrlBase())
+        self.assertTrue(Record.user_completed(self.student, 'reg_confirmed', self.program))
 
     def test_steps_after_the_class_lottery_show_when_they_open(self):
         """A step opening after the lottery closes shows its own opening date."""

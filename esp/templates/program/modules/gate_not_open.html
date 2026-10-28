@@ -1,0 +1,17 @@
+{% extends "program/modules/module_base.html" %}
+
+{% comment %}
+Shown in the required-module flow while a lottery (a gating module, see
+ProgramModuleObj.gate_lifts) holds the user before it opens.
+{% endcomment %}
+
+{% block title %}{{ module.get_link_title }} for {{ program.niceName }}{% endblock %}
+
+{% block module_content %}
+<h1>{{ module.get_link_title }}</h1>
+
+<p>
+{{ module.gate_label|capfirst }} opens{% if module.start_date %} on {{ module.start_date|date:"F j \a\t g:i A" }}{% else %} soon{% endif %}.
+Please come back then to continue registering.
+</p>
+{% endblock %}

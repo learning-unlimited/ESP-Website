@@ -88,6 +88,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
                                             user__isnull=True)
         return lottery.filter(end_date__lt=now).exists() and not lottery.exclude(end_date__lt=now).exists()
 
+    def is_valid(self, when=None):
+        """Closed once has_ended(), so the module also drops out of the open
+        modules (and the steps registration requires) when its deadline closes."""
+        return super().is_valid(when) and (when is not None or not self.has_ended())
+
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
         records = Record.objects.filter(user=user,
