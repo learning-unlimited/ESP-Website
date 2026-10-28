@@ -585,7 +585,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                     source_media = Media.objects.get(id=docid)
                     # Verify the teacher owns the source document's class
                     taught_ids = request.user.getTaughtClasses().values_list('id', flat=True)
-                    if source_media.owner_id in taught_ids:
+                    if source_media.owner_type_id == classsubject_ct.id and source_media.owner_id in taught_ids:
                         source_path = source_media.get_uploaded_filename()
                         if os.path.isfile(source_path):
                             with open(source_path, 'rb') as f:
