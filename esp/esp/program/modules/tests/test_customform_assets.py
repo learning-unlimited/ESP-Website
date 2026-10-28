@@ -72,6 +72,12 @@ class CustomFormAssetsTest(ProgramFrameworkTest):
         self.client.login(username=self.teachers[0].username, password='password')
         self._assert_assets_once(self.client.get('/teach/%s/extraform' % self.program.url))
 
+    def test_teacher_module_form_uses_client_validation(self):
+        """customforms-validation.js attaches to #cstform, so the module form needs that id."""
+        self.client.login(username=self.teachers[0].username, password='password')
+        response = self.client.get('/teach/%s/extraform' % self.program.url)
+        self.assertContains(response, 'id="cstform"', count=1)
+
     def _assert_enter_submits_next(self, url):
         """On the second page, the submit button comes before Prev Step, since
         pressing Enter submits the form with its first submit button."""
