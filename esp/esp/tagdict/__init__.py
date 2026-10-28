@@ -837,7 +837,7 @@ all_program_tags = {
     },
     'catalog_sort_fields': {
         'is_boolean': False,
-        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\'). Use \'earliest_start\' for time-based sorting; legacy \'sections__meeting_times__start\' values are automatically translated. \'media_count\', \'_index_qsd\' and \'_studentapps_count\' are not sortable and are rejected.',
+        'help_text': 'A comma-separated list of fields by which to sort the course catalog (e.g. \'category__symbol\', \'category__category\', \'earliest_start\', \'_num_students\', \'id\'). Use \'earliest_start\' for time-based sorting; legacy \'sections__meeting_times__start\' and \'timeblock\' values are automatically translated. \'media_count\', \'_index_qsd\' and \'_studentapps_count\' are not sortable and are rejected. This ordering is used consistently by the catalog page, the LaTeX/PDF course catalog, and the separate-category-pages list.',
         'default': 'category__symbol',
         'category': 'manage',
         'is_setting': True,
