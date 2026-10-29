@@ -23,6 +23,10 @@ class Form(models.Model):
     def __str__(self):
         return f'{self.title} (created by {self.created_by.username})'
 
+    def can_be_managed_by(self, user, request=None):
+        """Whether user may view, download, rebuild or modify this form and its responses."""
+        return user.isAdministrator() or user.is_morphed(request) or self.created_by_id == user.id
+
     def clean(self):
         """Validate that title is not empty or whitespace-only."""
         if not self.title or not self.title.strip():

@@ -731,7 +731,7 @@ class EmptyFormTitleValidationTest(TestCase):
 
 
 class FormOwnershipAccessTest(TestCase):
-    """Tests that only the form creator, admins, or morphed users can access form response data."""
+    """Tests that only the form creator, admins, or morphed users can access or modify a form and its response data."""
 
     def setUp(self):
         self.admin, _ = ESPUser.objects.get_or_create(username='owner_admin')
@@ -892,6 +892,7 @@ class FormOwnershipAccessTest(TestCase):
             HTTP_X_REQUESTED_WITH='XMLHttpRequest'
         )
         self.assertEqual(response.status_code, 403)
+        self.assertIn('message', response.json())
 
     def test_admin_can_get_any_metadata(self):
         self.client.login(username='owner_admin', password='password')
@@ -922,6 +923,45 @@ class FormOwnershipAccessTest(TestCase):
         )
         self.assertEqual(response.status_code, 400)
         self.assertIn('message', response.json())
+
+    def _post_modify(self, title):
+        modify_data = {
+            'form_id': self.form.id,
+            'title': title,
+            'desc': 'Test',
+            'perms': '',
+            'success_message': 'OK',
+            'success_url': '/',
+            'link_type': '-1',
+            'link_id': -1,
+            'pages': []
+        }
+        return self.client.post('/customforms/modify/', json.dumps(modify_data),
+                                content_type='application/json',
+                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_owner_can_modify_form(self):
+        self.client.login(username='owner_teacher', password='password')
+        response = self._post_modify('Renamed by owner')
+        self.assertEqual(response.status_code, 200)
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.title, 'Renamed by owner')
+
+    def test_nonowner_teacher_cannot_modify_form(self):
+        self.client.login(username='other_teacher', password='password')
+        response = self._post_modify('Renamed by someone else')
+        self.assertEqual(response.status_code, 403)
+        self.assertIn('message', response.json())
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.title, 'Ownership Test Form')
+        self.assertTrue(Field.objects.filter(id=self.field.id).exists())
+
+    def test_admin_can_modify_any_form(self):
+        self.client.login(username='owner_admin', password='password')
+        response = self._post_modify('Renamed by admin')
+        self.assertEqual(response.status_code, 200)
+        self.form.refresh_from_db()
+        self.assertEqual(self.form.title, 'Renamed by admin')
 
 
 class CustomFormModelOrderingTest(TestCase):

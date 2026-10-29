@@ -218,6 +218,8 @@ def onModify(request):
 
                 except (Form.DoesNotExist, ValueError):
                     raise ESPError(f'Form {metadata["form_id"]} not found', log=False)
+                if not form.can_be_managed_by(request.user, request):
+                    return JsonResponse({'message': 'You do not have permission to modify this form.'}, status=403)
 
                 dmh = DMH(form=form)
                 link_models_list = []     # Stores a cache of link models that should not be removed
@@ -397,7 +399,7 @@ def viewResponse(request, form_id):
         form = Form.objects.get(pk=form_id)
     except (ValueError, Form.DoesNotExist):
         return error404(request)
-    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+    if not form.can_be_managed_by(request.user, request):
         raise Http403('You do not have permission to view responses for this form.')
     return render_to_response('customforms/view_results.html', request, {'form': form})
 
@@ -412,7 +414,7 @@ def getExcelData(request, form_id):
         form = Form.objects.get(pk=form_id)
     except (ValueError, Form.DoesNotExist):
         return error404(request)
-    if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+    if not form.can_be_managed_by(request.user, request):
         raise Http403('You do not have permission to download responses for this form.')
     fh = FormHandler(form=form, request=request)
     wbk = fh.getResponseExcel()
@@ -432,7 +434,7 @@ def getData(request):
                 form = Form.objects.get(pk=form_id)
             except (KeyError, ValueError, Form.DoesNotExist):
                 return error404(request)
-            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+            if not form.can_be_managed_by(request.user, request):
                 raise Http403('You do not have permission to view responses for this form.')
             fh = FormHandler(form=form, request=request)
             resp_data = json.dumps(fh.getResponseData(form), cls=DjangoJSONEncoder)
@@ -454,7 +456,7 @@ def bulkDownloadFiles(request):
             form = Form.objects.get(pk=form_id)
         except Form.DoesNotExist:
             return error404(request)
-        if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
+        if not form.can_be_managed_by(request.user, request):
             raise Http403('You do not have permission to download files for this form.')
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
@@ -479,8 +481,8 @@ def getRebuildData(request):
                 form = Form.objects.get(pk=form_id)
             except Form.DoesNotExist:
                 return JsonResponse({'message': 'No such form.'}, status=404)
-            if not request.user.isAdministrator() and not request.user.is_morphed(request) and form.created_by_id != request.user.id:
-                raise Http403('You do not have permission to view this form.')
+            if not form.can_be_managed_by(request.user, request):
+                return JsonResponse({'message': 'You do not have permission to view this form.'}, status=403)
             fh = FormHandler(form=form, request=request)
             try:
                 return JsonResponse(fh.rebuildData())
