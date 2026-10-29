@@ -366,6 +366,66 @@ class SectionManagementTest(ProgramFrameworkTest):
         self.assertEqual(self.sec.max_class_capacity, original_capacity)
 
 
+class DeleteSectionTest(ProgramFrameworkTest):
+    """Tests for the deletesection confirm/delete/cancel flow."""
+
+    def setUp(self):
+        super().setUp()
+        self.admin = self.admins[0]
+        self.client.login(username=self.admin.username, password='password')
+        self.cls, self.other_cls = self.program.classes()[:2]
+        self.sec = self.cls.sections.first()
+        self.other_sec = self.other_cls.sections.first()
+
+        self.url = f'{self.program.get_manage_url()}deletesection/{self.cls.id}'
+        self.manage_url = f'{self.program.get_manage_url()}manageclass/{self.cls.id}'
+
+    def _exists(self, sec):
+        return ClassSection.objects.filter(id=sec.id).exists()
+
+    def test_get_renders_confirmation(self):
+        response = self.client.get(self.url, {'sec_id': self.sec.id})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['sec'], self.sec)
+        self.assertTrue(self._exists(self.sec))
+
+    def test_confirm_with_sec_id_in_post_body_deletes(self):
+        response = self.client.post(self.url, {'sec_id': self.sec.id, 'sure': 'True'})
+        self.assertRedirects(response, self.manage_url, fetch_redirect_response=False)
+        self.assertFalse(self._exists(self.sec))
+
+    def test_confirm_with_sec_id_in_query_string_deletes(self):
+        """Forms rendered before this fix put sec_id in the action URL."""
+        response = self.client.post(f'{self.url}?sec_id={self.sec.id}', {'sure': 'True'})
+        self.assertRedirects(response, self.manage_url, fetch_redirect_response=False)
+        self.assertFalse(self._exists(self.sec))
+
+    def test_cancel_redirects_without_deleting(self):
+        response = self.client.post(self.url, {'sec_id': self.sec.id, 'sure': 'False'})
+        self.assertRedirects(response, self.manage_url, fetch_redirect_response=False)
+        self.assertTrue(self._exists(self.sec))
+
+    def test_section_from_other_class_rejected(self):
+        response = self.client.get(self.url, {'sec_id': self.other_sec.id})
+        self.assertEqual(response.status_code, 500)
+        response = self.client.post(self.url, {'sec_id': self.other_sec.id, 'sure': 'True'})
+        self.assertEqual(response.status_code, 500)
+        self.assertTrue(self._exists(self.other_sec))
+
+    def test_missing_or_invalid_sec_id_rejected(self):
+        self.assertEqual(self.client.get(self.url).status_code, 500)
+        self.assertEqual(self.client.post(self.url, {'sure': 'True'}).status_code, 500)
+        self.assertEqual(self.client.get(self.url, {'sec_id': 'abc'}).status_code, 500)
+        self.assertTrue(self._exists(self.sec))
+
+    def test_invalid_sec_id_not_echoed(self):
+        """Error messages render unescaped, so raw input must not appear in them."""
+        payload = '<script>alert(1)</script>'
+        response = self.client.get(self.url, {'sec_id': payload})
+        self.assertEqual(response.status_code, 500)
+        self.assertNotIn(payload, response.content.decode())
+
+
 class ClassAvailabilityConflictTest(ProgramFrameworkTest):
     """Tests for classavailability view and scheduling conflict detection."""
 
