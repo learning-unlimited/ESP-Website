@@ -780,11 +780,29 @@ class ThemeController(object):
             #   compiled CSS just because the form was submitted.
             allowed_substitutions = set(overridden)
         else:
-            scss_data = (var_data
+            #   Without Bootswatch every supplied variable is still substituted
+            #   (the legacy behaviour, where the editor values are the source of
+            #   truth), but $esp-overridden is injected here too, diffed against
+            #   the theme's own SCSS defaults.  A rule that must only take effect
+            #   when the admin genuinely edited a field — e.g. the footer colors,
+            #   which otherwise have to keep inheriting the navbar — cannot tell
+            #   "left at the default" from "deliberately set to the default"
+            #   without it.  Names come from the theme's own SCSS and are
+            #   filtered to plain identifiers, so nothing user-tainted is
+            #   interpolated into the stylesheet.
+            scss_defaults = self.find_scss_variables(theme_name, flat=True)
+            overridden = [
+                name for name in scss_defaults
+                if name in variable_data
+                and re.match(r'^[a-zA-Z0-9_]+$', name)
+                and str(variable_data[name]).strip().lower()
+                    != str(scss_defaults[name]).strip().lower()
+            ]
+            esp_overridden = '(' + ''.join("'%s', " % n for n in overridden) + ')'
+            scss_data = (f'$esp-overridden: {esp_overridden};\n'
+                         + var_data
                          + f'\n@import "{_BOOTSTRAP5_SCSS}";\n'
                          + css_data_pre)
-            #   No Bootswatch theme: substitute every supplied variable (the
-            #   legacy behaviour, where the editor values are the source of truth).
             allowed_substitutions = None
 
         #   Replace all SCSS variable declarations for which we have a value defined.

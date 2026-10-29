@@ -73,6 +73,7 @@ from esp.cal.models import Event, EventType
 from argcache import cache_function, wildcard
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
+from esp.db.autocomplete import allow_non_staff_autocomplete
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -534,16 +535,16 @@ class BaseESPUser(object):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None, include_rejected = False, include_cancelled = True):
+    def getTaughtClasses(self, program = None, include_rejected = False, include_cancelled = True, include_drafts = False):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
         else:
-            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = False):
         from esp.program.models import Program # Need the Class object.
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtClassesFromProgram expects a Program, not a `"+str(type(program))+"'.")
@@ -553,6 +554,8 @@ class BaseESPUser(object):
                 classes = classes.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
                 classes = classes.exclude(status=ClassStatus.CANCELLED)
+            if not include_drafts:
+                classes = classes.exclude(status=ClassStatus.DRAFT)
             return classes
     getTaughtClassesFromProgram.get_or_create_token(('self',))
     getTaughtClassesFromProgram.get_or_create_token(('program',))
@@ -588,18 +591,20 @@ class BaseESPUser(object):
             return times
 
     @cache_function
-    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtOrModeratingSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = False):
         from esp.program.models import Program
         from esp.program.models import ClassSection
         if not isinstance(program, Program): # if we did not receive a program
             raise ESPError("getTaughtOrModeratingSectionsFromProgram expects a Program, not a `" + str(type(program)) + "'.")
         else:
-            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+            classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
             sections = ClassSection.objects.filter(parent_class__in=classes)
             if not include_rejected:
                 sections = sections.exclude(status=ClassStatus.REJECTED)
             if not include_cancelled:
                 sections = sections.exclude(status=ClassStatus.CANCELLED)
+            if not include_drafts:
+                sections = sections.exclude(status=ClassStatus.DRAFT)
             return self.moderating_sections.filter(parent_class__parent_program = program) | sections
     getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('self',))
     getTaughtOrModeratingSectionsFromProgram.get_or_create_token(('program',))
@@ -608,12 +613,14 @@ class BaseESPUser(object):
     getTaughtOrModeratingSectionsFromProgram.depend_on_row('program.ClassSection', lambda instance: {'program': instance.parent_program})
 
     @cache_function
-    def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True):
+    def getTaughtClassesAll(self, include_rejected = False, include_cancelled = True, include_drafts = False):
         classes = self.classsubject_set.all()
         if not include_rejected:
             classes = classes.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             classes = classes.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            classes = classes.exclude(status=ClassStatus.DRAFT)
         return classes
     getTaughtClassesAll.get_or_create_token(('self',))
     getTaughtClassesAll.depend_on_row('program.ClassSubject', lambda cls: {})
@@ -636,21 +643,23 @@ class BaseESPUser(object):
     getFullClasses_pretty.depend_on_row('tagdict.Tag', lambda tag: {},
                                         lambda tag: tag.key == 'nearly_full_threshold')
 
-    def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True):
+    def getTaughtSections(self, program = None, include_rejected = False, include_cancelled = True, include_drafts = False):
         if program is None:
-            return self.getTaughtSectionsAll(include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtSectionsAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
         else:
-            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts)
 
     @cache_function
-    def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True):
+    def getTaughtSectionsAll(self, include_rejected = False, include_cancelled = True, include_drafts = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled))
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
             sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            sections = sections.exclude(status=ClassStatus.DRAFT)
         return sections
     getTaughtSectionsAll.get_or_create_token(('self',))
     getTaughtSectionsAll.depend_on_model('program.ClassSection')
@@ -658,14 +667,16 @@ class BaseESPUser(object):
                                                               {'self':self})
 
     @cache_function
-    def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False, include_cancelled = True, include_drafts = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled))
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected, include_cancelled = include_cancelled, include_drafts = include_drafts))
         sections = ClassSection.objects.filter(parent_class__in=classes)
         if not include_rejected:
             sections = sections.exclude(status=ClassStatus.REJECTED)
         if not include_cancelled:
             sections = sections.exclude(status=ClassStatus.CANCELLED)
+        if not include_drafts:
+            sections = sections.exclude(status=ClassStatus.DRAFT)
         return sections
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.get_or_create_token(('self', 'program',))
@@ -749,10 +760,13 @@ class BaseESPUser(object):
             return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
-    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=[]):
+    def getAvailableTimes(self, program, ignore_classes=False, ignore_moderation=False, ignore_sections=None):
         """ Return a list of the Event objects representing the times that a particular user
             can teach for a particular program. """
         from esp.cal.models import Event, EventType
+
+        if ignore_sections is None:
+            ignore_sections = []
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
@@ -1344,7 +1358,7 @@ class BaseESPUser(object):
         for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
             if not len(sar.response.strip()):
                 return 1
-        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, class_subject=subject, reviewer__in=subject.get_teachers(), score__isnull=False).values_list('score', flat=True)) + [-1])
         if rank == -1:
             rank = default
         return rank
@@ -2245,6 +2259,7 @@ class K12School(models.Model):
     AJAX_AUTOCOMPLETE_MAX_RESULTS = 25
 
     @classmethod
+    @allow_non_staff_autocomplete
     def ajax_autocomplete(cls, data, allow_non_staff=True, request=None, **kwargs):
         """
         Server-side autocomplete for K12 schools. Requires a minimum query length
@@ -2657,6 +2672,7 @@ class Permission(ExpirableModel):
             ("Teacher/Classes/View", "View registered classes"),
             ("Teacher/Classes/Edit", "Edit registered classes"),
             ("Teacher/Classes/CancelReq", "Request class cancellation"),
+            ("Teacher/Classes/Schedule", "View class schedule (room/time assignments)"),
             ("Teacher/Classes/Coteachers", "Add or remove coteachers"),
             ("Teacher/Classes/Create", "Create classes of all types"),
             ("Teacher/Classes/Create/Class", "Create standard classes"),
@@ -3183,9 +3199,11 @@ class GradeChangeRequest(TimeStampedModel):
         This email is sent when the administrator confirms a change grade change request.
         """
         subject, message = self._confirmation_email_content()
+        from_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
+        from_email = f'{from_name} <info@{settings.SITE_INFO[1]}>'
         send_mail(subject,
                   message,
-                  Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}' + ' <info@' + settings.SITE_INFO[1] + '>',
+                  from_email,
                   [self.requesting_student.email, ])
 
     def get_admin_url(self):

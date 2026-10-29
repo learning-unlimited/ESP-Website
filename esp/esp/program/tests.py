@@ -45,6 +45,7 @@ from esp.users.models import ESPUser, ContactInfo, StudentInfo, TeacherInfo, Per
 from esp.web.models import NavBarCategory
 from esp.tagdict.models import Tag
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import Group
 
 from django.db.models import ProtectedError
@@ -930,6 +931,21 @@ class ProgramCapTest(ProgramFrameworkTest):
             # Assert that everyone can join the program.
             self.assertTrue(self.program.user_can_join(user))
 
+    def test_cap_without_classreg_module(self):
+        # Without StudentClassRegModule there is no 'classreg' key, which the
+        # cap checks used to index unconditionally and 500 the reg page.
+        classreg_modules = list(self.program.program_modules.filter(handler='StudentClassRegModule'))
+        self.assertTrue(classreg_modules)
+        self.program.program_modules.remove(*classreg_modules)
+        self.program.save()
+
+        self.assertNotIn('classreg', self.program.students())
+        self.assertEqual(self.program._students_in_program(), 0)
+        self.assertEqual(self.program._students_in_program_in_grades([10]), 0)
+        self.assertFalse(self.program._student_is_in_program(self.students[0]))
+        for user in self.students:
+            self.assertTrue(self.program.user_can_join(user))
+
     def test_simple_cap(self):
         enrolled, _ = RegistrationType.objects.get_or_create(
             name='Enrolled', category='student')
@@ -1540,6 +1556,20 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
         self.assertTrue(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
+
+    def testRemoveLunchWithEnrolledStudent(self):
+        # Removing a lunch block whose section has an enrolled student should
+        # leave the section in place and report it, not fail silently
+        kept_ts, removed_ts = self.timeslots[0], self.timeslots[1]
+        LunchConstraintGenerator(self.program, [kept_ts, removed_ts]).generate_all_constraints()
+        removed_sec = ClassSection.objects.get(parent_class__parent_program=self.program, parent_class__category__is_lunch=True, meeting_times=removed_ts)
+        removed_sec.preregister_student(self.students[0], overridefull=True)
+
+        lcg = LunchConstraintGenerator(self.program, [kept_ts])
+        lcg.generate_all_constraints()
+
+        self.assertEqual(lcg.undeleted_sections, [removed_sec])
+        self.assertTrue(ClassSection.objects.filter(id=removed_sec.id).exists())
 
     #   Helpers for the lunch assignment tests below
 
@@ -2739,3 +2769,67 @@ class ProgramModuleObjCreationTest(TestCase):
         self.assertEqual(moduleobj.required_label, 'Sign up')
         self.assertEqual(moduleobj.start_date, start)
         self.assertEqual(moduleobj.end_date, end)
+
+
+class ProgramValidatorsTest(TestCase):
+    """Tests for Program name/url validation."""
+
+    def test_valid_program_name_and_url(self):
+        field = Program._meta.get_field('name')
+        for name in ["Splash 2026", "Splash! 2013", "Delve 2005 (Winter)"]:
+            field.clean(name, None)
+        field = Program._meta.get_field('url')
+        for url in ["Splash/2026_Spring", "TestProgram/2222_Summer", "Splash/2007_Fall_1"]:
+            field.clean(url, None)
+
+    def test_program_name_rejects_markup(self):
+        field = Program._meta.get_field('name')
+        for name in ["Harda <script>alert('BCA Power')</script>", "Splash>2026", "Splash\n2026"]:
+            with self.assertRaises(ValidationError):
+                field.clean(name, None)
+
+    def test_program_url_rejects_markup_and_bad_shape(self):
+        field = Program._meta.get_field('url')
+        # Missing or extra path segments, and characters that can't be routed.
+        for url in ["splash-2026", "Splash/2026/Spring", "test-url-<script>", "Splash/"]:
+            with self.assertRaises(ValidationError):
+                field.clean(url, None)
+
+
+class ProgramCreationFormValidationTest(TestCase):
+    """The url and name fields aren't on ProgramCreationForm, so the form has to
+    validate the values it builds them from."""
+
+    def form_errors(self, **overrides):
+        data = {'program_type': 'Splash', 'term': '2026_Spring', 'term_friendly': 'Spring 2026'}
+        data.update(overrides)
+        form = ProgramCreationForm(data)
+        form.is_valid()
+        return form.errors
+
+    def test_markup_in_term_friendly_is_rejected(self):
+        errors = self.form_errors(term_friendly="<script>alert('XSS')</script>")
+        self.assertIn('term_friendly', errors)
+
+    def test_markup_in_program_type_is_rejected(self):
+        errors = self.form_errors(program_type="Splash<script>")
+        self.assertIn('program_type', errors)
+
+    def test_each_title_field_is_validated_independently(self):
+        errors = self.form_errors(term='Splash! 2013', term_friendly='Splash<script>')
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
+    def test_missing_program_type_does_not_raise(self):
+        errors = self.form_errors(program_type='')
+        self.assertIn('program_type', errors)
+
+    def test_overlong_assembled_name_and_url_are_rejected(self):
+        errors = self.form_errors(program_type='S' * 60, term='2' * 40, term_friendly='F' * 40)
+        self.assertIn('term', errors)
+        self.assertIn('term_friendly', errors)
+
+    def test_valid_title_fields_produce_no_title_errors(self):
+        errors = self.form_errors()
+        for field_name in ('program_type', 'term', 'term_friendly'):
+            self.assertNotIn(field_name, errors)

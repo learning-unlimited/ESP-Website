@@ -274,6 +274,25 @@ class LotteryEdgeCaseTest(LotteryTestBase):
         self.assertFalse(numpy.any(ctrl.student_schedules))
 
 
+    def test_fill_section_handles_zero_and_sparse_weights(self):
+        """fill_section must not raise or produce NaN when too few students have positive weight."""
+        for positive_count in (0, 1, 2, 5):
+            ctrl = self._make_controller()
+            ctrl.clear_assignments()
+            si = int(numpy.nonzero(ctrl.section_schedules.any(axis=1))[0][0])
+            ctrl.interest[:, si] = True
+            ctrl.section_capacities[si] = 3          # fewer than the 10 students
+            ctrl.student_weights[:] = 0
+            ctrl.student_weights[:positive_count] = 1
+            ctrl.fill_section(si)
+            enrolled = ctrl.student_sections[:, si]
+            self.assertEqual(numpy.sum(enrolled), 3)
+            self.assertFalse(numpy.any(numpy.isnan(ctrl.student_weights)))
+            # With fewer positive-weight students than spaces, all of them must be picked
+            if positive_count < 3:
+                for s in range(positive_count):
+                    self.assertTrue(enrolled[s])
+
 # ---------------------------------------------------------------------------
 # LotterySaveTest
 # ---------------------------------------------------------------------------

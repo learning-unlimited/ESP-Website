@@ -65,6 +65,7 @@ from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.db.fields import AjaxForeignKey
 from esp.dbmail.models import send_mail
 from esp.middleware import ESPError
+from esp.program.class_status import ClassStatus
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, Record
 from esp.utils.expirable_model import ExpirableModel
@@ -308,19 +309,43 @@ class ProgramEmailField(models.EmailField):
         path = 'django.db.models.EmailField'
         return name, path, args, kwargs
 
+# Program.url is a two-segment path (e.g. 'Splash/2007_Fall'); the accepted
+# characters are those the program URL patterns in esp/urls.py can route.
+program_url_validator = validators.RegexValidator(
+    regex=r'\A[A-Za-z0-9_ -]+/[A-Za-z0-9_ -]+\Z',
+    message='Program URL must have the form ProgramType/Term (e.g. Splash/2007_Fall) '
+            'and may only contain letters, numbers, spaces, underscores, and hyphens.',
+)
+
+# Program names are free-form text, so only reject the characters that make
+# markup injection possible.
+program_name_validator = validators.RegexValidator(
+    regex=r'\A[^<>\x00-\x1f\x7f]+\Z',
+    message='Program name may not contain control characters or the characters "<" and ">".',
+)
+
 class Program(models.Model, CustomFormsLinkModel):
     objects = ProgramManager()
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     #customforms definitions
     form_link_name='Program'
 
-    url = models.CharField(max_length=80, unique=True)
-    name = models.CharField(max_length=80)
+    url = models.CharField(
+        max_length=80,
+        unique=True,
+        help_text='The URL fragment for this program, of the form ProgramType/Term (e.g. Splash/2007_Fall).',
+        validators=[program_url_validator],
+    )
+    name = models.CharField(
+        max_length=80,
+        help_text='The full name of this program (e.g. Splash Fall 2007).',
+        validators=[program_name_validator],
+    )
     grade_min = models.IntegerField(validators=[validators.MinValueValidator(0)])
     grade_max = models.IntegerField(validators=[validators.MinValueValidator(0)])
     # director contact email address used for from field and display
     director_email = ProgramEmailField(default='info@' + settings.SITE_INFO[1], max_length=75,
-                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)?learningu\.org$)')],
+                                       validators=[validators.RegexValidator(r'(^.+@' + re.escape(settings.SITE_INFO[1]) + r'$)|(^.+@(\w+\.)*learningu\.org$)')],
                                        help_text=mark_safe('The director email address must end in @' + settings.SITE_INFO[1] + ' (your website), ' +
                                                            '@learningu.org, or a valid subdomain of learningu.org (i.e., @subdomain.learningu.org). ' +
                                                            'The default is <b>info@' + settings.SITE_INFO[1] + '</b>, which redirects to the "default" ' +
@@ -683,6 +708,10 @@ class Program(models.Model, CustomFormsLinkModel):
     # everything in sight, including every student registration for the program
     # and for the grade-based version every registration profile for the
     # program, so they're probably not worth caching.
+    def _classreg_students(self):
+        """Students registered for at least one class."""
+        return self.students().get('classreg', ESPUser.objects.none())
+
     def _students_in_program_in_grades(self, grades):
         """The number of students in the program in a set of grades
 
@@ -691,7 +720,7 @@ class Program(models.Model, CustomFormsLinkModel):
         # Due to how RegistrationProfiles work, this is ~impossible to do
         # efficiently.  getGrade is cached, though, and probably most of those
         # caches will be warm, so it'll probably be okay.  Maybe.  Hopefully.
-        return len([student for student in self.students()['classreg']
+        return len([student for student in self._classreg_students()
                     if student.getGrade(self, assume_student=True) in grades])
 
     def _students_in_program(self):
@@ -699,13 +728,12 @@ class Program(models.Model, CustomFormsLinkModel):
 
         Used by the program cap logic.
         """
-        return self.students()['classreg'].count()
+        return self._classreg_students().count()
 
     @cache_function
     def _student_is_in_program(self, user):
         """Return whether the student is in the program."""
-        students = self.students()['classreg']
-        return students.filter(id=user.id).exists()
+        return self._classreg_students().filter(id=user.id).exists()
     _student_is_in_program.depend_on_row('program.ClassSubject', lambda cls: {'self': cls.parent_program})
     _student_is_in_program.depend_on_row('program.ClassSection', lambda cls: {'self': cls.parent_class.parent_program})
     _student_is_in_program.depend_on_row('program.StudentRegistration', lambda sr: {'user': sr.user})
@@ -946,11 +974,17 @@ class Program(models.Model, CustomFormsLinkModel):
     groupedClassrooms.depend_on_row('resources.Resource', lambda res: {'self': res.event.parent_program()})
     groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
 
-    def classes(self):
-        return ClassSubject.objects.filter(parent_program = self).order_by('id')
+    def classes(self, include_drafts = False):
+        classes = ClassSubject.objects.filter(parent_program = self)
+        if not include_drafts:
+            classes = classes.exclude(status = ClassStatus.DRAFT)
+        return classes.order_by('id')
 
-    def sections(self):
-        return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
+    def sections(self, include_drafts = False):
+        sections = ClassSection.objects.filter(parent_class__parent_program=self)
+        if not include_drafts:
+            sections = sections.exclude(status = ClassStatus.DRAFT)
+        return sections.distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self, types=None, exclude_types=None):
         """ Get the time slots for a program.
@@ -1185,7 +1219,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getDurations(self, round_15=False):
         """ Find all contiguous time blocks and provide a list of duration options. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo # noqa: F811
+        from esp.program.modules.program_settings import ClassRegModuleInfo # noqa: F811
         from decimal import Decimal
 
         times = Event.group_contiguous(list(self.getTimeSlots()), int(Tag.getProgramTag('timeblock_contiguous_tolerance', program = self)))
@@ -1509,7 +1543,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def base_cost(self):
         from esp.accounting.controllers import ProgramAccountingController
         pac = ProgramAccountingController(self)
-        return pac.default_admission_lineitemtype().amount_dec
+        line_item = pac.default_admission_lineitemtype()
+        return line_item.amount_dec if line_item else Decimal('0.00')
     base_cost = property(base_cost)
 
     @property
@@ -2419,5 +2454,5 @@ def install():
 
 # The following are only so that we can refer to them in caching
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.resources.models import ResourceType

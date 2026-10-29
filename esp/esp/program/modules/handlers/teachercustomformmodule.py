@@ -107,7 +107,8 @@ class TeacherCustomFormModule(ProgramModuleObj):
         prev_result_data = {}
         if prev_results.exists():
             form_wizard = FormHandler(form, request, request.user).get_wizard()
-            for step in range(len(form_wizard.form_list)):
+            #   The wizard's steps are keyed '0', '1', ...
+            for step in form_wizard.form_list:
                 field_dict = {}
                 plain_form = form_wizard.get_form(step)
                 #   Load previous results, with a hack for multiple choice questions.
@@ -119,7 +120,7 @@ class TeacherCustomFormModule(ProgramModuleObj):
                         field_dict[field] = getattr(prev_results[0], field).split(';')
                     else:
                         field_dict[field] = getattr(prev_results[0], field)
-                prev_result_data[str(step)] = field_dict
+                prev_result_data[step] = field_dict
         return prev_result_data
 
     @main_call

@@ -174,8 +174,15 @@ class CommModule(ProgramModuleObj):
             mailer_warnings.append(f"Caution: You are about to send a massive mailer to {listcount_int} recipients.")
 
         # b. Warn if no grade range filter is used
-        filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-        if filter_obj and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
+        try:
+            filter_obj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            mailer_warnings.append(
+                "Warning: The selected recipient filter is no longer valid. Please go back and reselect your recipient list."
+            )
+            filter_obj = None
+
+        if filter_obj is not None and not CommModule._q_has_grade_filter(filter_obj.get_Q()):
             mailer_warnings.append("Warning: You haven't selected a grade range filter.")
 
         # c. Warn if parent/emergency contact emails are included
@@ -196,10 +203,19 @@ class CommModule(ProgramModuleObj):
 
         return mailer_warnings
 
+    @staticmethod
+    def get_valid_filter_or_error(filterid):
+        """ Return the PersistentQueryFilter for filterid, or raise an
+            ESPError if the filter does not exist or the id is invalid. """
+        try:
+            return PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        except (AssertionError, PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError("The selected recipient filter is no longer valid.  "
+                           "Please go back and reselect your recipient list.")
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import PersistentQueryFilter # noqa: F811
         from django.conf import settings
 
         required_fields = ['filterid', 'listcount', 'subject', 'body']
@@ -223,7 +239,7 @@ class CommModule(ProgramModuleObj):
         # Set From address
         if request.POST.get('from', '').strip():
             fromemail = request.POST['from']
-            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)', fromemail):
+            if not re.match(rf'(^.+@{re.escape(settings.SITE_INFO[1])}$)|(^.+<.+@{re.escape(settings.SITE_INFO[1])}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)', fromemail):
                 raise ESPError("Invalid 'From' email address. The 'From' email address must " +
                                "end in @" + settings.SITE_INFO[1] + " (your website), " +
                                "@learningu.org, or a valid subdomain of learningu.org " +
@@ -248,7 +264,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu.org and tell us how you got this error," +
             "and we'll look into it.")
 
-        userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
+        userlist = CommModule.get_valid_filter_or_error(filterid).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
@@ -321,7 +337,6 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def commfinal(self, request, tl, one, two, module, extra, prog):
         from esp.dbmail.models import MessageRequest # noqa: F811
-        from esp.users.models import PersistentQueryFilter # noqa: F811
 
         required_fields = ['filterid', 'from', 'replyto', 'subject', 'body']
         missing_fields = [field for field in required_fields if field not in request.POST]
@@ -380,7 +395,7 @@ class CommModule(ProgramModuleObj):
             "websupport@learningu and tell us how you got this error, " +
             "and we'll look into it.")
 
-        filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+        filterobj = CommModule.get_valid_filter_or_error(filterid)
 
         sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
