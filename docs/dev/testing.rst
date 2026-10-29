@@ -169,7 +169,7 @@ Two things to know before calling these methods:
   which validates the POST data and raises ``ClassCreationValidationError`` if
   it is invalid.
 
-``esp/program/controllers/test_classreg_controller.py`` shows both patterns,
+``esp/program/controllers/tests/test_classreg_controller.py`` shows both patterns,
 including a ``MagicMock`` stand-in for the form.
 
 Writing Behavioral Invariant Tests
@@ -300,16 +300,15 @@ Test Organization
 File Structure
 ~~~~~~~~~~~~~~
 
-Tests live in the application directory of the code they cover, either as a
-single ``tests.py`` or as a ``tests/`` package once an app has enough of them::
+Tests live in a ``tests/`` package next to the code they cover::
 
   esp/program/models/class_.py  ->  esp/program/tests/test_program.py
   esp/accounting/models.py      ->  esp/accounting/tests/test_models.py
 
-Controller tests sit next to the controller they cover::
+Controller tests sit in a ``tests/`` package beside the controllers::
 
-  esp/program/controllers/classreg.py  ->  esp/program/controllers/test_classreg_controller.py
-  esp/program/controllers/lottery.py   ->  esp/program/controllers/test_lottery_controller.py
+  esp/program/controllers/classreg.py  ->  esp/program/controllers/tests/test_classreg_controller.py
+  esp/program/controllers/lottery.py   ->  esp/program/controllers/tests/test_lottery_controller.py
 
 Program module handler tests are the exception: they are collected together
 under ``esp/program/modules/tests/``, not next to the handler::
@@ -320,10 +319,9 @@ under ``esp/program/modules/tests/``, not next to the handler::
 Naming
 ~~~~~~
 
-- Test files: ``test_<module_name>.py``. Some older files in
-  ``esp/program/modules/tests/`` are named ``<module_name>.py`` instead, which
-  matches none of the collection patterns in ``esp/pytest.ini``. Use the
-  ``test_`` prefix on new files so pytest collects them directly.
+- Test files: ``test_<module_name>.py``. ``esp/pytest.ini`` only collects
+  ``test_*.py`` and ``seltests.py``, and ``esp/tests/test_layout.py`` fails if
+  a test file is misnamed or sits outside a ``tests/`` package.
 - Test classes: ``<Feature>Test`` (e.g., ``EnrollmentConflictTest``). The
   patterns pytest collects are set in ``esp/pytest.ini``.
 - Test methods: ``test_<what_it_tests>``
@@ -335,12 +333,12 @@ A few tests drive a real browser to cover behavior that lives in JavaScript,
 such as inline QSD editing. They subclass ``SeleniumTestCase``
 (``esp/seltests/util.py``), which starts headless Firefox as
 ``self.selenium`` and marks the test ``@pytest.mark.selenium``. Put them in a
-file named ``seltests.py`` next to the code they cover, e.g.
-``esp/qsd/seltests.py``.
+file named ``seltests.py`` in the ``tests/`` package next to the code they
+cover, e.g. ``esp/qsd/tests/seltests.py``.
 
 They are skipped unless you pass ``--selenium``::
 
-  pytest --selenium esp/qsd/seltests.py
+  pytest --selenium esp/qsd/tests/seltests.py
 
 To run only the browser tests, combine it with the marker::
 

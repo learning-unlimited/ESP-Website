@@ -333,8 +333,8 @@ wrapper, but the attribute path depends on the other decorators: some are
 reached as ``view.cached_function``, others as ``view.method.cached_function``.
 Follow whatever the function's own dependency declarations use.
 
-See ``esp/esp/program/tests_cache_scoping.py`` and
-``esp/esp/program/tests_m2m_cache_deps.py`` for worked examples.
+See ``esp/esp/program/tests/test_cache_scoping.py`` and
+``esp/esp/program/tests/test_m2m_cache_deps.py`` for worked examples.
 
 The Memcached Backend
 ---------------------
