@@ -2,7 +2,9 @@
 
 {% load render_qsd %}
 
-<h3>{{ profiletype|capfirst }} Contact Information</h3>
+<div class="card mb-4">
+<h3 class="card-header">{{ profiletype|capfirst }} Contact Information</h3>
+<div class="card-body">
 
 {% if form.first_name %}
  <div class="control-group">
@@ -133,5 +135,8 @@
  </div>
 </div>
 {% endif %}
+
+</div>
+</div>
 
 <!-- End User ContactInfo -->

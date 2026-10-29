@@ -33,6 +33,14 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Profile Page Sections
+=====================
+
+Each section of the profile editor (contact information, role-specific
+information, parent/guardian contact and emergency contact) is now shown in its
+own card, so the parts of the form are easier to tell apart. The cards use the
+site theme's colors.
+
 Bug Fixes
 =========
 

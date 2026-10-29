@@ -1,5 +1,7 @@
 <!-- Begin Student Info Portion -->
-<h3>Additional Student Information</h3>
+<div class="card mb-4">
+<h3 class="card-header">Additional Student Information</h3>
+<div class="card-body">
 {% if not user.getGrade or form.allow_change_grade_level %}
 <div role="alert" class="alert alert-dismissible">
 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -190,5 +192,8 @@ T-shirts are available at some of our programs. When you reserve a t-shirt, this
     </div>
 </div>
 {% endif %}
+
+</div>
+</div>
 
 <!-- End Student Info Portion -->
