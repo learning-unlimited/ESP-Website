@@ -49,39 +49,24 @@ class DropdownOtherField(forms.MultiValueField):
         super().__init__(fields=fields, require_all_fields=False, *args, **kwargs)
 
 def validate_address_postal(form, prefix=''):
-    state_field = f'{prefix}address_state'
+    """ Require the zip (US) or postcode (international) matching the selected state, and blank the other one. """
     zip_field = f'{prefix}address_zip'
     postcode_field = f'{prefix}address_postcode'
-    street_field = f'{prefix}address_street'
+    if form.cleaned_data.get(f'{prefix}address_state') == 'International':
+        postal_field, unused_field = postcode_field, zip_field
+        message = "Postcode is required for international addresses."
+    else:
+        postal_field, unused_field = zip_field, postcode_field
+        message = "Zip code is required."
 
-    # Check if the street field is present and required
-    is_required = form.fields.get(street_field) and form.fields[street_field].required
+    if unused_field in form.cleaned_data:
+        form.cleaned_data[unused_field] = ''
 
-    if is_required:
-        state_val = form.cleaned_data.get(state_field)
-        zip_val = form.cleaned_data.get(zip_field, '')
-        if zip_val is not None:
-            zip_val = zip_val.strip()
-        else:
-            zip_val = ''
-        postcode_val = form.cleaned_data.get(postcode_field, '')
-        if postcode_val is not None:
-            postcode_val = postcode_val.strip()
-        else:
-            postcode_val = ''
-
-        if state_val == 'International':
-            if not postcode_val:
-                if postcode_field in form.fields:
-                    form.add_error(postcode_field, "Postcode is required for international addresses.")
-                else:
-                    form.add_error(None, "Postcode is required for international addresses.")
-        else:
-            if not zip_val:
-                if zip_field in form.fields:
-                    form.add_error(zip_field, "Zip code is required.")
-                else:
-                    form.add_error(None, "Zip code is required.")
+    # Skip if the address is optional or the postal field was hidden by a tag
+    street = form.fields.get(f'{prefix}address_street')
+    if (street is not None and street.required and postal_field in form.fields
+            and postal_field not in form.errors and not form.cleaned_data.get(postal_field)):
+        form.add_error(postal_field, message)
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
@@ -110,9 +95,6 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
             self.fields['address_street'].required = False
             self.fields['address_city'].required = False
             self.fields['address_state'].required = False
-            self.fields['address_zip'].required = False
-            if 'address_postcode' in self.fields:
-                self.fields['address_postcode'].required = False
 
     def clean(self):
         super().clean()
@@ -467,6 +449,9 @@ GuardianInfoForm.base_fields['num_kids'].widget.attrs['maxlength'] = 16
 # A list of fields (across all profile forms) that can not be deleted via profile_hide_fields tags
 _undeletable_fields_all = ['e_mail']
 
+# Hiding a zip field via profile_hide_fields tags also hides its postcode counterpart
+_linked_postcode_fields = {'address_zip': 'address_postcode', 'emerg_address_zip': 'emerg_address_postcode'}
+
 # A list of student fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_students = ['graduation_year']
 class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, StudentInfoForm):
@@ -483,6 +468,8 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
                 continue
             if field_name not in _undeletable_fields_all + _undeletable_fields_students:
                 del self.fields[field_name]
+                if field_name in _linked_postcode_fields:
+                    self.fields.pop(_linked_postcode_fields[field_name], None)
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
     def clean(self):
@@ -520,6 +507,8 @@ class TeacherProfileForm(UserContactForm, TeacherInfoForm):
                 continue
             if field_name not in _undeletable_fields_all + _undeletable_fields_teachers:
                 del self.fields[field_name]
+                if field_name in _linked_postcode_fields:
+                    self.fields.pop(_linked_postcode_fields[field_name], None)
 
 # A list of guardian fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_guardians = []
@@ -537,6 +526,8 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
                 continue
             if field_name not in _undeletable_fields_all + _undeletable_fields_guardians:
                 del self.fields[field_name]
+                if field_name in _linked_postcode_fields:
+                    self.fields.pop(_linked_postcode_fields[field_name], None)
 
 # A list of educator fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_educators = []
@@ -554,6 +545,8 @@ class EducatorProfileForm(UserContactForm, EducatorInfoForm):
                 continue
             if field_name not in _undeletable_fields_all + _undeletable_fields_educators:
                 del self.fields[field_name]
+                if field_name in _linked_postcode_fields:
+                    self.fields.pop(_linked_postcode_fields[field_name], None)
 
 # A list of volunteer fields that can not be deleted via profile_hide_fields tags
 _undeletable_fields_volunteers = []
@@ -570,6 +563,8 @@ class VolunteerProfileForm(UserContactForm):
                 continue
             if field_name not in _undeletable_fields_all + _undeletable_fields_volunteers:
                 del self.fields[field_name]
+                if field_name in _linked_postcode_fields:
+                    self.fields.pop(_linked_postcode_fields[field_name], None)
 
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)

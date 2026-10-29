@@ -33,6 +33,17 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+International Postcodes
+=======================
+
+Profile and emergency contact addresses now support postcodes from outside the
+US. Choosing "International" as the state replaces the 5-character zip code box
+with a postcode box (up to 20 characters); the zip code is required for US
+addresses and the postcode for international ones. Saved postcodes are shown on
+the user view page, refund receipts and the Formstack medical form. Hiding
+``address_zip`` or ``emerg_address_zip`` with a ``*_profile_hide_fields`` tag
+also hides the matching postcode box.
+
 Bug Fixes
 =========
 
