@@ -280,14 +280,15 @@ class UserSearchController(object):
         #   empty field left over from the other search form is ignored.  A
         #   missing or empty selection would otherwise fail with an
         #   UnboundLocalError, KeyError (base_list) or ValueError (combo_base_list).
-        if 'base_list' in data and 'recipient_type' in data:
+        use_basic_list = 'base_list' in data and 'recipient_type' in data
+        if use_basic_list:
             selected_list = data['base_list']
         else:
             selected_list = data.get('combo_base_list')
-        if not selected_list:
+        if not selected_list or (not use_basic_list and ':' not in selected_list):
             raise ESPError('Please select a list to search.', log=False)
 
-        if 'base_list' in data and 'recipient_type' in data:
+        if use_basic_list:
             #   Get the program-specific part of the query (e.g. which list to use)
             if data['recipient_type'] not in ESPUser.getTypes():
                 recipient_type = 'any'

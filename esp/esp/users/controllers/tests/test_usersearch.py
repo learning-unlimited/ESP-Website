@@ -82,6 +82,12 @@ class TestUserSearchController(ProgramFrameworkTest):
         with self.assertRaises(ESPError_NoLog):
             self.controller.query_from_postdata(self.program, post_data)
 
+        # Malformed combination list value without ':' should also fail gracefully
+        post_data = self._get_combination_post_data('Student', 'confirmed')
+        post_data['combo_base_list'] = 'foo'
+        with self.assertRaises(ESPError_NoLog):
+            self.controller.query_from_postdata(self.program, post_data)
+
         post_data = self._get_combination_post_data('Student', 'confirmed')
         del post_data['combo_base_list']
         post_data['base_list'] = ''
