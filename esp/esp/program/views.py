@@ -67,7 +67,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
@@ -254,40 +254,6 @@ def _latest_release():
     return label, _rst_to_html("\n".join(preview_lines))
 
 # ---------------------------------------------------------------------------
-
-@login_required
-def lottery_student_reg(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
-
-@login_required
-def lottery_student_reg_simple(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 @transaction.atomic
 @login_required

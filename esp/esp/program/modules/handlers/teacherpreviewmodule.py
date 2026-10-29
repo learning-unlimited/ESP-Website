@@ -179,7 +179,11 @@ class TeacherPreviewModule(ProgramModuleObj):
             cls = qs[0]
         except (ValueError, IndexError, TypeError):
             raise Http404('The requested class could not be found.')
-        cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
+        #   make sure the class is actually catalog-visible
+        catalog_entries = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)
+        if not catalog_entries:
+            raise Http404('The requested class is not catalog-visible.')
+        cls = catalog_entries[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
 
     def get_handouts(self):
@@ -190,8 +194,9 @@ class TeacherPreviewModule(ProgramModuleObj):
         else:
             return {}
 
-    def prepare(self, context={}):
-        if context is None: context = {}
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
 
         classes = ClassSubject.objects.catalog(self.program, None, True)
 
