@@ -109,10 +109,10 @@ class StudentRegProfileModuleTest(ProgramFrameworkTest):
         for j, line in enumerate(lines[i:]):
             if '</select>' in line:
                 break
-        self.assertTrue(j < len(lines) - 2) ## Found the line, need to also find the error message on the next line
+        self.assertTrue(j < len(lines) - 3) ## Found the line, need to also find the error message in the next few lines
 
-        ## Find the error message
-        self.assertTrue('<span class="form_error" role="alert">This field is required.</span>' in lines[i+j+1])
+        ## Find the error message (after the optional hint line)
+        self.assertIn('<div class="invalid-feedback d-block" role="alert">This field is required.</div>', '\n'.join(lines[i+j+1:i+j+3]))
 
         ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
         found_default = False
