@@ -1263,8 +1263,8 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """Approving a grade change request via GET is ignored; via POST it is
         approved and acknowledged by the admin."""
         gcr = GradeChangeRequest.objects.create(
-            claimed_grade=self.student.getGrade() + 1,
-            grade_before_request=self.student.getGrade(),
+            claimed_grade=12,
+            grade_before_request=8,
             reason='test',
             requesting_student=self.student,
         )
@@ -1289,8 +1289,8 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A request id belonging to a different student is not acted on."""
         other_student = self.students[1]
         gcr = GradeChangeRequest.objects.create(
-            claimed_grade=other_student.getGrade() + 1,
-            grade_before_request=other_student.getGrade(),
+            claimed_grade=12,
+            grade_before_request=8,
             reason='test',
             requesting_student=other_student,
         )
