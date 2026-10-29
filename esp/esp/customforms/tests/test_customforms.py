@@ -33,11 +33,23 @@ Learning Unlimited, Inc.
 """
 
 import json
+from importlib import import_module
+import time
+from unittest.mock import patch
+
+import psycopg2
+from django.db import connection, transaction
+from django.db.utils import OperationalError
+from django.test import RequestFactory, TransactionTestCase, override_settings
 
 from esp.customforms.models import Form, Field, Page, Section
-from esp.customforms.DynamicModel import DynamicModelHandler
+from esp.customforms.DynamicModel import (
+    DynamicModelHandler, PG_LOCK_NOT_AVAILABLE, lock_timeout, schema_lock)
+from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.views import hasPerm
-from esp.users.models import ESPUser, AnonymousESPUser
+from esp.middleware import ESPError
+from esp.middleware.esperrormiddleware import ESPError_NoLog
+from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo, TeacherInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 class CustomFormsTest(TestCase):
@@ -865,3 +877,782 @@ class CustomFormModelOrderingTest(TestCase):
         self.assertEqual(Page._meta.ordering, ['seq'])
         self.assertEqual(Section._meta.ordering, ['seq'])
         self.assertEqual(Field._meta.ordering, ['seq'])
+
+
+def lock_timeout_ms():
+    """
+    Returns lock_timeout in milliseconds.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT setting FROM pg_settings WHERE name = 'lock_timeout'")
+        return int(cursor.fetchone()[0])
+
+
+class SchemaLockTimeoutTest(TestCase):
+    """
+    Tests for the lock_timeout safeguard around custom form schema changes.
+    """
+
+    def test_timeout_is_set_and_restored(self):
+        """The timeout applies inside the block and is undone afterwards."""
+        before = lock_timeout_ms()
+        with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+            with lock_timeout():
+                self.assertEqual(lock_timeout_ms(), 1234)
+        self.assertEqual(lock_timeout_ms(), before)
+
+    def test_timeout_is_restored_when_the_block_fails(self):
+        """A failed schema change must not leave lock_timeout set."""
+        before = lock_timeout_ms()
+        with self.assertRaises(ValueError):
+            with override_settings(CUSTOMFORMS_LOCK_TIMEOUT='1234ms'):
+                with lock_timeout():
+                    raise ValueError('boom')
+        self.assertEqual(lock_timeout_ms(), before)
+
+    def test_lock_timeout_error_becomes_a_readable_error(self):
+        """A lock timeout is reported to the user, not dumped as a 500."""
+        with self.assertRaises(ESPError_NoLog) as caught:
+            with schema_lock("Could not do the thing"):
+                raise self._operational_error(PG_LOCK_NOT_AVAILABLE)
+        self.assertIn('Could not do the thing', str(caught.exception))
+
+    def test_other_database_errors_are_not_swallowed(self):
+        """Only lock timeouts get translated; anything else propagates as-is."""
+        original = self._operational_error('08006')    # connection failure
+        with self.assertRaises(OperationalError) as caught:
+            with schema_lock("Could not do the thing"):
+                raise original
+        self.assertIs(caught.exception, original)
+
+    def test_success_is_not_disturbed(self):
+        """The wrapper is transparent when nothing goes wrong."""
+        with schema_lock("Could not do the thing"):
+            result = 'fine'
+        self.assertEqual(result, 'fine')
+
+    def _operational_error(self, sqlstate):
+        """
+        Returns a genuine OperationalError carrying the given SQLSTATE
+        """
+        try:
+            #   The savepoint keeps the failure from poisoning the test's
+            #   transaction.
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "DO $$ BEGIN RAISE EXCEPTION 'database error'"
+                        f" USING ERRCODE = '{sqlstate}'; END $$")
+        except OperationalError as error:
+            return error
+        self.fail(f'PostgreSQL did not raise an error for SQLSTATE {sqlstate}')
+
+
+class SchemaLockTimeoutIntegrationTest(TransactionTestCase):
+    """
+    End-to-end check that a schema change gives up instead of hanging when
+    another connection is holding the lock it needs.
+    """
+
+    def setUp(self):
+        self.user, _ = ESPUser.objects.get_or_create(username='lock_admin')
+        self.form = Form.objects.create(
+            title='Lock Form', created_by=self.user,
+            link_type='-1', link_id=-1,
+            success_message='OK', success_url='/'
+        )
+        self.dmh = DynamicModelHandler(self.form)
+        self.dmh.createTable()
+        #   Registered as soon as the table exists: this test case commits, so
+        #   a response table left behind by a failure here would break the
+        #   flush at the end of every later test in this database.
+        self.addCleanup(self.dmh.deleteTable)
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section 1', seq=1)
+        self.field = Field.objects.create(
+            form=self.form, section=section, field_type='textField', seq=1,
+            label='Question', required=False)
+
+    @override_settings(CUSTOMFORMS_LOCK_TIMEOUT='250ms')
+    def test_schema_change_gives_up_when_the_table_is_locked(self):
+        before = lock_timeout_ms()
+        blocker = psycopg2.connect(**connection.get_connection_params())
+        try:
+            with blocker.cursor() as cursor:
+                cursor.execute(
+                    f'LOCK TABLE "customforms"."customforms_response_{self.form.id}"'
+                    ' IN ACCESS EXCLUSIVE MODE')
+
+                started = time.time()
+                with self.assertRaises(ESPError_NoLog):
+                    self.dmh.addField(self.field)
+                #   The point of the exercise: we gave up quickly rather than
+                #   blocking until the other transaction ended.
+                self.assertLess(time.time() - started, 30)
+        finally:
+            blocker.rollback()
+            blocker.close()
+
+        #   The connection must still be usable, and the timeout must not have
+        #   leaked into it.
+        self.assertEqual(lock_timeout_ms(), before)
+
+
+class FailedFormSaveRollbackTest(TestCase):
+    """
+    A custom form save that fails partway through must not leave half of the
+    form behind.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='rollback_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='rollback_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_form_metadata_is_not_committed_when_the_table_cannot_be_made(self):
+        form_data = {
+            'title': 'Rollback Form',
+            'perms': '',
+            'link_id': -1,
+            'link_type': '-1',
+            'desc': 'Test',
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'help_text': '', 'question_text': '', 'seq': 0},
+                    'fields': [{'data': {
+                        'field_type': 'textField', 'question_text': 'Q',
+                        'seq': 0, 'required': True, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+
+        failure = ESPError('could not get a lock', log=False)
+        with patch.object(DynamicModelHandler, 'createTable', side_effect=failure):
+            response = self.client.post(
+                "/customforms/submit/", json.dumps(form_data),
+                content_type='application/json',
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('could not get a lock',
+                      json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Rollback Form').exists())
+        self.assertFalse(Field.objects.filter(label='Q').exists())
+
+
+
+class RequiredFieldValidationTest(TestCase):
+    """
+    Server-side enforcement of the 'required' flag on custom form fields.
+
+    Django already enforces 'required' for nearly every field type these forms
+    can build; most of these tests just lock that in so it cannot silently
+    regress.  The exception is linked NullBooleanFields, whose validate() is a
+    no-op in Django and which rely on RequiredNullBooleanField instead.
+    """
+
+    #   (field_type, label, required, attrs)
+    FIELD_SPECS = [
+        ('textField', 'Required Text', True, {'charlimits': '0,100'}),
+        ('textField', 'Optional Text', False, {'charlimits': '0,100'}),
+        ('multiselect', 'Required Multi', True, {'options': 'A|B|C'}),
+        ('ContactInfo_phone_day', 'Required Link', True, {}),
+        ('TeacherInfo_from_here', 'Required Null Boolean', True, {}),
+        ('TeacherInfo_is_graduate_student', 'Optional Null Boolean', False, {}),
+    ]
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='reqfield_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='reqfield_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        form_data = {
+            'title': 'Required Field Test Form',
+            'desc': 'Test form for required field validation',
+            'perms': '',
+            'link_type': '-1',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': field_type, 'question_text': label,
+                                  'required': required, 'attrs': attrs,
+                                  'seq': seq, 'parent_id': -1, 'help_text': ''}}
+                        for seq, (field_type, label, required, attrs)
+                        in enumerate(self.FIELD_SPECS)
+                    ],
+                }],
+            }],
+        }
+
+        self.client.login(username='reqfield_admin', password='password')
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.client.logout()
+
+        self.form = Form.objects.get(title='Required Field Test Form')
+        self.field_ids = {field.label: field.id for field in self.form.field_set.all()}
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def question(self, label):
+        """The POST key for the question with this label."""
+        return 'question_%d' % self.field_ids[label]
+
+    def valid_answers(self):
+        """Answers that fill in every required field on the test form."""
+        return {
+            'Required Text': 'an answer',
+            'Required Multi': ['A'],
+            'Required Link': '(201) 426-5797',
+            'Required Null Boolean': 'true',
+        }
+
+    def post_data(self, overrides=None):
+        """Valid answers keyed by POST key, with `overrides` (by label) applied.
+           A value of None omits that question from the POST entirely."""
+        answers = self.valid_answers()
+        answers.update(overrides or {})
+        return {self.question(label): value
+                for label, value in answers.items() if value is not None}
+
+    def errors_for(self, overrides=None):
+        """Bind page 0 of the generated form to post_data() and return its errors."""
+        form_class = FormHandler(form=self.form, request=None)._getFormList()[0]
+        return form_class(data=self.post_data(overrides)).errors
+
+    def assertRequiredError(self, label, overrides):
+        errors = self.errors_for(overrides)
+        self.assertEqual(errors.get(self.question(label)), ['This field is required.'])
+
+    def test_valid_answers_pass(self):
+        """The baseline answers validate, and the optional fields may be omitted."""
+        self.assertEqual(self.errors_for(), {})
+
+    def test_required_text_field_rejects_empty(self):
+        self.assertRequiredError('Required Text', {'Required Text': ''})
+
+    def test_required_text_field_rejects_whitespace_only(self):
+        self.assertRequiredError('Required Text', {'Required Text': '   '})
+
+    def test_required_text_field_rejects_missing_key(self):
+        """A crafted POST that omits the question entirely is still rejected."""
+        self.assertRequiredError('Required Text', {'Required Text': None})
+
+    def test_required_multiselect_rejects_empty(self):
+        self.assertRequiredError('Required Multi', {'Required Multi': []})
+
+    def test_required_multiselect_rejects_missing_key(self):
+        self.assertRequiredError('Required Multi', {'Required Multi': None})
+
+    def test_required_link_field_rejects_empty(self):
+        """Link fields get their `required` flag from field_attrs, like any other."""
+        self.assertRequiredError('Required Link', {'Required Link': ''})
+
+    def test_required_null_boolean_link_field_rejects_null(self):
+        """NullCheckboxSelect maps any non-boolean value to None; `required`
+           means that null answer is not acceptable."""
+        self.assertRequiredError('Required Null Boolean', {'Required Null Boolean': ''})
+        self.assertRequiredError('Required Null Boolean', {'Required Null Boolean': 'unknown'})
+
+    def test_required_null_boolean_link_field_accepts_booleans(self):
+        for value in ('true', 'false'):
+            self.assertEqual(self.errors_for({'Required Null Boolean': value}), {})
+
+    def test_optional_null_boolean_link_field_accepts_null(self):
+        """Only required null booleans are enforced; optional ones still accept null."""
+        errors = self.errors_for({'Optional Null Boolean': 'unknown'})
+        self.assertNotIn(self.question('Optional Null Boolean'), errors)
+
+    def test_submission_surfaces_error_to_user(self):
+        """End-to-end: an empty required field re-renders the form with the error."""
+        self.client.login(username='reqfield_student', password='password')
+        response = self.client.get("/customforms/view/%d/" % self.form.id)
+        self.assertEqual(response.status_code, 200)
+
+        post_dict = {'combo_form-current_step': '0'}
+        post_dict.update(self.post_data({'Required Text': ''}))
+        response = self.client.post("/customforms/view/%d/" % self.form.id, post_dict)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.question('Required Text'), response.context['form'].errors)
+        self.assertContains(response, 'This field is required.')
+        self.client.logout()
+
+
+class AddLinkFieldToExistingFormTest(TestCase):
+    """
+    Adding a linked field to a form that already has a response table must
+    leave the table matching the dynamic model (issue #3762).
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='linkfield_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='linkfield_admin', password='password')
+
+        self.form_data = {
+            'title': 'Link Field Form',
+            'desc': 'Test',
+            'perms': '',
+            'link_type': '-1',
+            'link_id': -1,
+            'success_url': '/formsuccess.html',
+            'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1,
+                'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': -1},
+                    'fields': [{'data': {
+                        'field_type': 'textField', 'question_text': 'Plain',
+                        'seq': 0, 'required': False, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(self.form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Link Field Form')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_readable_after_adding_link_field(self):
+        modify_data = dict(self.form_data, form_id=self.form.id)
+        page = Page.objects.get(form=self.form)
+        section = Section.objects.get(page=page)
+        plain = Field.objects.get(form=self.form)
+        modify_data['pages'] = [{
+            'parent_id': page.id,
+            'seq': 0,
+            'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': section.id},
+                'fields': [
+                    {'data': {'field_type': 'textField', 'question_text': 'Plain',
+                              'seq': 0, 'required': False, 'parent_id': plain.id,
+                              'attrs': {}, 'help_text': ''}},
+                    {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Email',
+                              'seq': 1, 'required': False, 'parent_id': -1,
+                              'attrs': {}, 'help_text': ''}},
+                ],
+            }],
+        }]
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+
+        email = Field.objects.get(form=self.form, label='Email')
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{plain.id}': 'hello',
+            f'question_{email.id}': 'test@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        answers = json.loads(response.content.decode('UTF-8'))['answers']
+        self.assertEqual(len(answers), 1)
+        self.assertEqual(answers[0][f'question_{email.id}'], 'test@example.com')
+
+        #   Removing the linked field again should drop the column cleanly.
+        #   Flush deferred FK checks first, as committing the response would.
+        with connection.cursor() as cursor:
+            cursor.execute('SET CONSTRAINTS ALL IMMEDIATE')
+        modify_data['pages'][0]['sections'][0]['fields'].pop()
+        response = self.client.post("/customforms/modify/", json.dumps(modify_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200, response.content)
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+
+class FixLinkFieldColumnNamesMigrationTest(TestCase):
+    """
+    Migration 0005 renames "link_<Model>" columns left behind by #3762.
+    """
+
+    def setUp(self):
+        self.migration = import_module('esp.customforms.migrations.0005_fix_link_field_column_names')
+        user, _ = ESPUser.objects.get_or_create(username='migration_admin')
+        self.form = Form.objects.create(
+            title='Migration Form', created_by=user, link_type='-1', link_id=-1,
+            success_message='OK', success_url='/')
+        DynamicModelHandler(self.form).createTable()
+        page = Page.objects.create(form=self.form, seq=1)
+        section = Section.objects.create(page=page, title='Section', seq=1)
+        Field.objects.create(form=self.form, section=section, field_type='ContactInfo_e_mail',
+                             seq=1, label='Email', required=False)
+        self.table = f'customforms_response_{self.form.id}'
+
+    def tearDown(self):
+        DynamicModelHandler(self.form).purgeDynModel()
+
+    def add_column(self, column):
+        with connection.cursor() as cursor:
+            cursor.execute(f'ALTER TABLE "customforms"."{self.table}" ADD COLUMN "{column}" integer NULL '
+                           'REFERENCES users_contactinfo(id) DEFERRABLE INITIALLY DEFERRED')
+
+    def columns(self):
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT column_name FROM information_schema.columns "
+                           "WHERE table_schema = 'customforms' AND table_name = %s", [self.table])
+            return {row[0] for row in cursor.fetchall()}
+
+    def run_migration(self):
+        with connection.schema_editor() as schema_editor:
+            self.migration.rename_link_columns(None, schema_editor)
+
+    def test_misnamed_column_is_renamed(self):
+        self.add_column('link_ContactInfo')
+        self.run_migration()
+        self.assertIn('link_ContactInfo_id', self.columns())
+        self.assertNotIn('link_ContactInfo', self.columns())
+
+        #   The responses table is usable again, and the field can be removed
+        model = DynamicModelHandler(self.form).createDynModel()
+        self.assertEqual(model.objects.count(), 0)
+        dmh = DynamicModelHandler(self.form)
+        dmh._getModelFieldList()
+        dmh.removeLinkField(Field.objects.get(form=self.form))
+        self.assertNotIn('link_ContactInfo_id', self.columns())
+
+    def test_correct_and_conflicting_columns_are_left_alone(self):
+        self.add_column('link_ContactInfo_id')
+        self.add_column('link_ContactInfo')
+        before = self.columns()
+        self.run_migration()
+        self.assertEqual(self.columns(), before)
+
+
+class LinkedPhoneFieldResponsesTest(TestCase):
+    """
+    Responses with a linked phone number field can be viewed and exported.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='phone_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='phone_admin', password='password')
+
+        form_data = {
+            'title': 'Linked Phone Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [{'data': {
+                        'field_type': 'ContactInfo_phone_day', 'question_text': 'Phone',
+                        'seq': 0, 'required': False, 'parent_id': -1,
+                        'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Linked Phone Form')
+        self.phone = Field.objects.get(form=self.form)
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.phone.id}': '(201) 426-5797',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_can_be_viewed(self):
+        response = self.client.get("/customforms/getData/", {'form_id': self.form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        answers = json.loads(response.content.decode('UTF-8'))['answers']
+        self.assertEqual(answers[0][f'question_{self.phone.id}'], '(201) 426-5797')
+
+    def test_responses_can_be_exported(self):
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+
+class LinkedAddressFieldExportTest(TestCase):
+    """
+    Responses can be exported when a linked compound field has blank parts.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='address_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        #   No address on file, as for many existing users
+        ContactInfo.objects.create(user=self.admin)
+        self.client.login(username='address_admin', password='password')
+
+        form_data = {
+            'title': 'Linked Address Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Email',
+                                  'seq': 0, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}},
+                        {'data': {'field_type': 'ContactInfo_address', 'question_text': 'Address',
+                                  'seq': 1, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}},
+                    ],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Linked Address Form')
+        email = Field.objects.get(form=self.form, label='Email')
+        #   The optional address is left blank
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{email.id}': 'test@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_responses_can_be_exported(self):
+        response = self.client.get(f'/customforms/exceldata/{self.form.id}/')
+        self.assertEqual(response.status_code, 200)
+
+
+class LinkedFieldPrefillTest(TestCase):
+    """
+    Linked fields are pre-filled from the user's existing records, so
+    submitting the form doesn't blank them out.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='prefill_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        ContactInfo.objects.create(user=self.admin, e_mail='old@example.com')
+        TeacherInfo.objects.create(user=self.admin, college='Harvard')
+        self.client.login(username='prefill_admin', password='password')
+
+        def page(seq, ftype, label):
+            return {'parent_id': -1, 'seq': seq, 'sections': [{
+                'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                'fields': [{'data': {'field_type': ftype, 'question_text': label,
+                                     'seq': 0, 'required': False, 'parent_id': -1,
+                                     'attrs': {}, 'help_text': ''}}],
+            }]}
+
+        #   Page seqs needn't be contiguous; wizard steps are numbered by position
+        form_data = {
+            'title': 'Prefill Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [page(0, 'ContactInfo_e_mail', 'Email'), page(5, 'TeacherInfo_college', 'College')],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='Prefill Form')
+        self.email = Field.objects.get(form=self.form, label='Email')
+        self.college = Field.objects.get(form=self.form, label='College')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_initial_data_is_keyed_by_step(self):
+        fh = FormHandler(form=self.form, request=RequestFactory().get('/'), user=self.admin)
+        fh.request.user = self.admin
+        initial = fh.get_initial_data()
+        self.assertEqual(initial['0'][f'question_{self.email.id}'], 'old@example.com')
+        self.assertEqual(initial['1'][f'question_{self.college.id}'], 'Harvard')
+
+    def test_form_renders_existing_values(self):
+        response = self.client.get(f"/customforms/view/{self.form.id}/")
+        self.assertContains(response, 'value="old@example.com"')
+
+
+class LinkedFieldNewRecordTest(TestCase):
+    """
+    Answering linked fields creates the user's ContactInfo/TeacherInfo if
+    they don't have one yet, and links it to the response.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='newrecord_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='newrecord_admin', password='password')
+
+        form_data = {
+            'title': 'New Record Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [
+                        {'data': {'field_type': ftype, 'question_text': label,
+                                  'seq': seq, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}}
+                        for seq, (ftype, label) in enumerate([
+                            ('ContactInfo_e_mail', 'Email'), ('TeacherInfo_college', 'College')])
+                    ],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.form = Form.objects.get(title='New Record Form')
+        self.email = Field.objects.get(form=self.form, label='Email')
+        self.college = Field.objects.get(form=self.form, label='College')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_records_are_created_for_the_user(self):
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+            f'question_{self.college.id}': 'MIT',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+
+        contact = ContactInfo.objects.get(user=self.admin)
+        teacher = TeacherInfo.objects.get(user=self.admin)
+        self.assertEqual(contact.e_mail, 'new@example.com')
+        self.assertEqual(teacher.college, 'MIT')
+
+        response = DynamicModelHandler(self.form).createDynModel().objects.get(user=self.admin)
+        self.assertEqual(response.link_ContactInfo_id, contact.id)
+        self.assertEqual(response.link_TeacherInfo_id, teacher.id)
+
+
+class AnonymousFormLinkedFieldTest(TestCase):
+    """
+    Anonymous forms can't contain linked fields, since there's no user whose
+    records the answers could be stored in.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='anonlink_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+        self.client.login(username='anonlink_admin', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def form_data(self, field_types, **extra):
+        data = {
+            'title': 'Anonymous Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': True,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0, 'parent_id': -1},
+                    'fields': [
+                        {'data': {'field_type': ftype, 'question_text': ftype,
+                                  'seq': seq, 'required': False, 'parent_id': -1,
+                                  'attrs': {}, 'help_text': ''}}
+                        for seq, ftype in enumerate(field_types)
+                    ],
+                }],
+            }],
+        }
+        data.update(extra)
+        return data
+
+    def post(self, url, data):
+        return self.client.post(url, json.dumps(data), content_type='application/json',
+                                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+    def test_cannot_create_with_linked_fields(self):
+        response = self.post("/customforms/submit/", self.form_data(['textField', 'ContactInfo_e_mail']))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('linked', json.loads(response.content)['message'])
+        self.assertFalse(Form.objects.filter(title='Anonymous Form').exists())
+
+    def test_can_create_without_linked_fields(self):
+        response = self.post("/customforms/submit/", self.form_data(['textField']))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Form.objects.get(title='Anonymous Form').anonymous)
+
+    def test_cannot_add_linked_fields_to_existing_form(self):
+        self.post("/customforms/submit/", self.form_data(['textField']))
+        form = Form.objects.get(title='Anonymous Form')
+        response = self.post("/customforms/modify/",
+                             self.form_data(['ContactInfo_e_mail'], form_id=form.id))
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('linked', json.loads(response.content)['message'])
+        self.assertFalse(Field.objects.filter(form=form, field_type='ContactInfo_e_mail').exists())

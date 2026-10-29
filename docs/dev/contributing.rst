@@ -146,7 +146,7 @@ Test Suite Reference
 
 To list all test modules currently in the codebase::
 
-  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' \) | sort"
+  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' -o -name 'seltests.py' \) | sort"
 
 Code reviews
 ------------

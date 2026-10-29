@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 import datetime
 import logging
+from django.contrib import messages
 from django.db.models import signals
 from esp.users.models import Record
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
@@ -70,72 +71,77 @@ class UnenrollModule(ProgramModuleObj):
         times.
 
         """
+        context = {}
         if request.method == 'POST':
-            context = {}
-            if 'undo' in request.POST:
-                selected_enrollments = request.POST['selected_enrollments']
-                ids = [int(id) for id in selected_enrollments.split(',')]
-                qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                    'user', 'section', 'section__parent_class')
-                reg_list = list(qs)
-                qs.update(end_date=None)
-                logger.info("Unexpired student registrations: %s", ids)
-                for reg in reg_list:
-                    signals.post_save.send(sender=StudentRegistration, instance=reg)
-
-                # Update mailman lists for unexpired registrations (dedupe list/user pairs)
-                from esp.mailman import add_list_member
-
-                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
-                mailman_adds = set()
-                for reg in reg_list:
-                    user = reg.user
-                    section = reg.section
-                    mailman_adds.add(("%s-%s" % (section.emailcode(), "students"), user.pk))
-                    mailman_adds.add(("%s-%s" % (section.parent_class.emailcode(), "students"), user.pk))
-                    mailman_adds.add((program_list, user.pk))
-                users_by_id = {reg.user_id: reg.user for reg in reg_list}
-                for list_name, user_id in mailman_adds:
-                    add_list_member(list_name, users_by_id[user_id])
-
-                context['undo'] = True
+            selected_enrollments = request.POST.get(
+                'selected_enrollments', ''
+            ).strip()
+            if not selected_enrollments:
+                messages.error(request, 'No enrollments selected.')
+                context['error'] = 'No enrollments selected.'
             else:
-                selected_enrollments = request.POST['selected_enrollments']
-                ids = [int(id) for id in selected_enrollments.split(',')]
-                now = datetime.datetime.now()
-                qs = StudentRegistration.objects.filter(id__in=ids).select_related(
-                    'user', 'section', 'section__parent_class')
-                reg_list = list(qs)
-                qs.update(end_date=now)
-                logger.info("Expired student registrations: %s", ids)
-                for reg in reg_list:
-                    signals.post_save.send(sender=StudentRegistration, instance=reg)
+                if 'undo' in request.POST:
+                    ids = [int(id) for id in selected_enrollments.split(',')]
+                    qs = StudentRegistration.objects.filter(id__in=ids).select_related(
+                        'user', 'section', 'section__parent_class')
+                    reg_list = list(qs)
+                    qs.update(end_date=None)
+                    logger.info("Unexpired student registrations: %s", ids)
+                    for reg in reg_list:
+                        signals.post_save.send(sender=StudentRegistration, instance=reg)
 
-                # Update mailman lists for expired registrations
-                from esp.mailman import remove_list_member
+                    # Update mailman lists for unexpired registrations (dedupe list/user pairs)
+                    from esp.mailman import add_list_member
 
-                program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
-                mailman_removals = set()
-                for reg in reg_list:
-                    section = reg.section
-                    email = reg.user.email
-                    mailman_removals.add(("%s-%s" % (section.emailcode(), "students"), email))
-                    mailman_removals.add(("%s-%s" % (section.parent_class.emailcode(), "students"), email))
-                for list_name, email in mailman_removals:
-                    remove_list_member(list_name, email)
+                    program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                    mailman_adds = set()
+                    for reg in reg_list:
+                        user = reg.user
+                        section = reg.section
+                        mailman_adds.add(("%s-%s" % (section.emailcode(), "students"), user.pk))
+                        mailman_adds.add(("%s-%s" % (section.parent_class.emailcode(), "students"), user.pk))
+                        mailman_adds.add((program_list, user.pk))
+                    users_by_id = {reg.user_id: reg.user for reg in reg_list}
+                    for list_name, user_id in mailman_adds:
+                        add_list_member(list_name, users_by_id[user_id])
 
-                affected_user_ids = {reg.user_id for reg in reg_list}
-                users_by_id = {reg.user_id: reg.user for reg in reg_list}
-                for user_id in affected_user_ids:
-                    if not StudentRegistration.valid_objects(now).filter(
-                            user_id=user_id,
-                            section__parent_class__parent_program=prog,
-                            relationship__name='Enrolled',
-                    ).exists():
-                        remove_list_member(program_list, users_by_id[user_id].email)
-            context['ids'] = ids
-            return render_to_response(
-                self.baseDir()+'result.html', request, context)
+                    context['undo'] = True
+                else:
+                    ids = [int(id) for id in selected_enrollments.split(',')]
+                    now = datetime.datetime.now()
+                    qs = StudentRegistration.objects.filter(id__in=ids).select_related(
+                        'user', 'section', 'section__parent_class')
+                    reg_list = list(qs)
+                    qs.update(end_date=now)
+                    logger.info("Expired student registrations: %s", ids)
+                    for reg in reg_list:
+                        signals.post_save.send(sender=StudentRegistration, instance=reg)
+
+                    # Update mailman lists for expired registrations
+                    from esp.mailman import remove_list_member
+
+                    program_list = "%s_%s-students" % (prog.program_type, prog.program_instance)
+                    mailman_removals = set()
+                    for reg in reg_list:
+                        section = reg.section
+                        email = reg.user.email
+                        mailman_removals.add(("%s-%s" % (section.emailcode(), "students"), email))
+                        mailman_removals.add(("%s-%s" % (section.parent_class.emailcode(), "students"), email))
+                    for list_name, email in mailman_removals:
+                        remove_list_member(list_name, email)
+
+                    affected_user_ids = {reg.user_id for reg in reg_list}
+                    users_by_id = {reg.user_id: reg.user for reg in reg_list}
+                    for user_id in affected_user_ids:
+                        if not StudentRegistration.valid_objects(now).filter(
+                                user_id=user_id,
+                                section__parent_class__parent_program=prog,
+                                relationship__name='Enrolled',
+                        ).exists():
+                            remove_list_member(program_list, users_by_id[user_id].email)
+                context['ids'] = ids
+                return render_to_response(
+                    self.baseDir()+'result.html', request, context)
 
         timeslots = prog.getTimeSlotList()
         now = datetime.datetime.now()
@@ -146,7 +152,6 @@ class UnenrollModule(ProgramModuleObj):
             'passed': timeslot.start < now - hour,
             'upcoming': timeslot.start >= now - hour,
         } for seq, timeslot in enumerate(timeslots)]
-        context = {}
         context['selections'] = selections
         return render_to_response(
             self.baseDir()+'select.html', request, context)

@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.program.tests import ProgramFrameworkTest
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory, default_navbarcategory
 from esp.users.models import ESPUser
@@ -43,9 +44,8 @@ from esp.qsd.models import qsd_cache_key
 from django.urls import reverse
 from reversion import revisions as reversion
 from reversion.models import Version
+import esp.qsd.admin  # noqa: F401
 import json
-
-from esp.qsd.tests.seltests import TestQsdCachePurging  # Run Selenium tests with regular tests
 
 class QSDCorrectnessTest(TestCase):
     """ Tests to ensure that QSD-related caches are cleared appropriately. """
@@ -466,6 +466,63 @@ class QSDVersionHistoryTest(TestCase):
 
     def tearDown(self):
         QuasiStaticData.objects.filter(url='learn/historytest').delete()
+
+
+class ClassQSDCanEditTest(ProgramFrameworkTest):
+    """Tests for revealing QSD edit controls to non-admins who can edit them (#5794)."""
+
+    CAN_EDIT_URL = '/admin/ajax_qsd_can_edit'
+
+    def setUp(self):
+        super().setUp(num_students=1, num_teachers=2, classes_per_teacher=1, num_admins=1)
+        self.teacher = self.teachers[0]
+        self.student = self.students[0]
+        self.qsd_url = 'learn/%s/index' % self.teacher.getTaughtClasses()[0].url()
+        self.other_class_url = 'learn/%s/index' % self.teachers[1].getTaughtClasses()[0].url()
+        self.program_url = 'learn/%s/index' % self.program.url
+
+        QuasiStaticData.objects.create(
+            url=self.qsd_url,
+            name='learn:index',
+            title='Class page',
+            content='Class page content',
+            author=self.admins[0],
+            nav_category=default_navbarcategory(),
+            description='',
+            keywords='',
+        )
+
+    def get_editable(self):
+        response = self.client.get(self.CAN_EDIT_URL, {
+            'url': [self.qsd_url, self.other_class_url, self.program_url],
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('no-store', response['Cache-Control'])
+        return json.loads(response.content)['editable']
+
+    def test_teacher_can_edit_only_own_class_page(self):
+        self.client.login(username=self.teacher.username, password='password')
+        self.assertEqual(self.get_editable(), [self.qsd_url])
+
+    def test_student_cannot_edit(self):
+        self.client.login(username=self.student.username, password='password')
+        self.assertEqual(self.get_editable(), [])
+
+    def test_anonymous_cannot_edit(self):
+        self.assertEqual(self.get_editable(), [])
+
+    def test_admin_can_edit_all(self):
+        self.client.login(username=self.admins[0].username, password='password')
+        self.assertEqual(self.get_editable(), [self.qsd_url, self.other_class_url, self.program_url])
+
+    def test_read_page_is_not_user_specific(self):
+        """Edit controls carry their QSD URL, but stay identical for every user so the page remains cacheable."""
+        logged_out = self.client.get('/%s.html' % self.qsd_url).content.decode('UTF-8')
+        self.assertIn('data-qsd-url="%s"' % self.qsd_url, logged_out)
+
+        self.client.login(username=self.teacher.username, password='password')
+        logged_in = self.client.get('/%s.html' % self.qsd_url).content.decode('UTF-8')
+        self.assertEqual(logged_out, logged_in)
 
 
 class QSDImageUploadTest(TestCase):

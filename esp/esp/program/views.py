@@ -67,7 +67,7 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo, StudentClassRegModuleInfo
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration, VolunteerOffer, RegistrationProfile, ClassCategories, ClassFlagType, StudentSubjectInterest
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm, TagSettingsForm, CategoryForm, FlagTypeForm, RecordTypeForm, RedirectForm, PlainRedirectForm
 from esp.program.setup import prepare_program, commit_program
@@ -75,7 +75,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.program.modules.handlers.commmodule import CommModule
-from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType, PendingActivation
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
@@ -254,40 +254,6 @@ def _latest_release():
     return label, _rst_to_html("\n".join(preview_lines))
 
 # ---------------------------------------------------------------------------
-
-@login_required
-def lottery_student_reg(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
-
-@login_required
-def lottery_student_reg_simple(request, program = None):
-    """
-    Serve the student reg page.
-
-    This is just a static page;
-    it gets all of its content from AJAX callbacks.
-    """
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
-
-    context = {}
-
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 @transaction.atomic
 @login_required
@@ -737,6 +703,8 @@ def activate_or_deactivate_user(request, activate):
             user = users[0]
             user.is_active = activate
             user.save()
+            if activate:
+                PendingActivation.objects.filter(user=user).delete()
             return HttpResponseRedirect('/manage/userview?username=%s' % user.username)
 
 @admin_required
@@ -1270,6 +1238,16 @@ def statistics(request, program=None):
                 field_ids.append(field_name)
         return field_ids
 
+    def get_form_setup(field_ids):
+        """ Data telling ajax_tools.js how to re-attach behavior to a freshly
+            rendered statistics form.
+        """
+        return {
+            'forms': [{'id': 'statistics_form', 'url': '/manage/statistics/'}],
+            'callbacks': [{'name': 'setup_update', 'args': [field_id]}
+                          for field_id in field_ids],
+        }
+
     if request.method == 'POST':
         #   Hack for proper behavior when multiselect fields are hidden
         #   (they contain '' instead of simply being absent like they should)
@@ -1291,7 +1269,7 @@ def statistics(request, program=None):
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-            result['script'] = render_to_string('program/statistics/script.js', context)
+            result.update(get_form_setup(context['field_ids']))
             return HttpResponse(json.dumps(result), content_type='application/json')
 
         if form.is_valid():
@@ -1445,7 +1423,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['result_html'] = context['result']
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)
@@ -1458,7 +1436,7 @@ def statistics(request, program=None):
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 result = {}
                 result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
-                result['script'] = render_to_string('program/statistics/script.js', context)
+                result.update(get_form_setup(context['field_ids']))
                 return HttpResponse(json.dumps(result), content_type='application/json')
             else:
                 return render_to_response('program/statistics.html', request, context)

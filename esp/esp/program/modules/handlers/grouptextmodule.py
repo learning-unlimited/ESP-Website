@@ -87,7 +87,7 @@ class GroupTextModule(ProgramModuleObj):
             return False
         if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, str):
             return False
-        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, (list, tuple)) or not settings.TWILIO_ACCOUNT_NUMBERS:
             return False
 
         return True
