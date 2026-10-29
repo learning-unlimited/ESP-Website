@@ -1,10 +1,9 @@
 <!-- Begin Student Info Portion -->
-<div class="card mb-4">
+<div class="card mb-4 profile-card">
 <div class="card-header"><h2 class="h5 mb-0">Additional Student Information</h2></div>
 <div class="card-body">
 {% if not user.getGrade or form.allow_change_grade_level %}
-<div role="alert" class="alert alert-warning alert-dismissible">
-<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="profile-note profile-note-warning mb-3">
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade

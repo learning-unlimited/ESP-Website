@@ -2,7 +2,7 @@
 
 {% load render_qsd %}
 
-<div class="card mb-4">
+<div class="card mb-4 profile-card">
 <div class="card-header"><h2 class="h5 mb-0">Additional Teacher Information</h2></div>
 <div class="card-body">
 <div class="row g-3">
@@ -31,7 +31,7 @@
 {% if form.shirt_size %}
 <div class="col-12">
 {% inline_program_qsd_block program "teach:teacher_shirt_info" %}
-<div role="alert" class="alert alert-info mb-0"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.</div>
+<div class="profile-note"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.</div>
 {% end_inline_program_qsd_block %}
 </div>
 

@@ -10,12 +10,45 @@ div.required label.control-label:after,
   content:" *";
   color: var(--bs-danger, red);
 }
-/* Inline-editable text inside alerts ends with a margin and a <br> */
-.card .alert .prettify > :last-child {
+/* Inside the profile cards, text follows the card's Bootstrap colors rather than
+   the theme's page-level rules (e.g. "#content h2"), which assume a different
+   background under some Bootswatch variants */
+.profile-card :is(h2, h3) {
+  color: var(--bs-heading-color, inherit) !important;
+}
+.profile-card :is(p, label, li, .prettify, .form-text) {
+  color: inherit !important;
+}
+.profile-card .form-text,
+.profile-muted {
+  opacity: 0.8;
+}
+.profile-note {
+  padding: 0.75rem 1rem;
+  border-left: 0.25rem solid var(--bs-info);
+  border-radius: var(--bs-border-radius);
+  background-color: rgba(var(--bs-info-rgb), 0.1);
+}
+.profile-note-warning {
+  border-left-color: var(--bs-warning);
+  background-color: rgba(var(--bs-warning-rgb), 0.12);
+}
+/* Inline-editable text ends with a margin and a <br> */
+.profile-note .prettify > :last-child {
   margin-bottom: 0;
 }
-.card .alert .prettify ~ br {
+.profile-note .prettify ~ br {
   display: none;
+}
+.btn.profile-copy-btn {
+  --bs-btn-color: inherit;
+  --bs-btn-border-color: currentColor;
+  --bs-btn-hover-color: inherit;
+  --bs-btn-hover-bg: rgba(128, 128, 128, 0.15);
+  --bs-btn-hover-border-color: currentColor;
+  --bs-btn-active-color: inherit;
+  --bs-btn-active-bg: rgba(128, 128, 128, 0.25);
+  --bs-btn-active-border-color: currentColor;
 }
 </style>
 {% endblock %}
@@ -24,7 +57,7 @@ div.required label.control-label:after,
 <div class="row">
   <div class="col-xl-10">
     <h1>Your Profile Information</h1>
-    <p class="text-body-secondary"><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
+    <p class="profile-muted"><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
   </div>
   <div class="row">
     <div class="col-xl-10">
