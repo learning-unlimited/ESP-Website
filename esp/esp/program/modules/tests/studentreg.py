@@ -41,7 +41,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, GradeChangeRequest
 
 from decimal import Decimal
 import json
@@ -984,8 +984,8 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
     """
     Tests for the grade-update functionality introduced in PR #208 (commit
     7db5367) that resolves Issue #26.  The feature allows an admin to visit
-    /manage/userview?username=<student>&graduation_year=<year> and have the
-    student's graduation year updated immediately.
+    /manage/userview and have the student's graduation year updated
+    immediately. Grade changes must be submitted via POST.
 
     Covers Issue #226: "Test for updating student grades".
     """
@@ -1028,12 +1028,12 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
 
     def test_admin_can_update_grade(self):
         """A logged-in admin should be able to change a student's graduation
-        year via the graduation_year GET parameter."""
+        year via the graduation_year POST parameter."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         # Re-fetch from DB to confirm persistence.
@@ -1052,7 +1052,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         """A student is not an administrator, so the view should return 403
         and leave the graduation year unchanged."""
         self.client.login(username=self.student.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -1077,7 +1077,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         unchanged."""
         teacher = self.teachers[0]
         self.client.login(username=teacher.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -1101,7 +1101,7 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the graduation year must remain untouched."""
         # Ensure no session cookie is active.
         self.client.logout()
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
         })
@@ -1127,10 +1127,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         the view returns 200 without crashing, and the graduation year in the
         DB remains unchanged."""
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
-        })
+        }, follow=True)
         self.assertEqual(
             response.status_code, 200,
             "Expected 200 for invalid graduation_year input, got %s"
@@ -1155,10 +1155,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': self.new_grad_year,
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         updated_info = self.student.getLastProfile().student_info
@@ -1174,10 +1174,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         self.client.login(username=self.admin.username, password='password')
 
         for invalid_year in ('-100', '999999'):
-            response = self.client.get(self.userview_base, data={
+            response = self.client.post(self.userview_base, data={
                 'username': self.student.username,
                 'graduation_year': invalid_year,
-            })
+            }, follow=True)
             self.assertEqual(response.status_code, 200)
 
             info = self.student.getLastProfile().student_info
@@ -1194,10 +1194,10 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
         profile.save()
 
         self.client.login(username=self.admin.username, password='password')
-        response = self.client.get(self.userview_base, data={
+        response = self.client.post(self.userview_base, data={
             'username': self.student.username,
             'graduation_year': 'not_a_number',
-        })
+        }, follow=True)
         self.assertEqual(response.status_code, 200)
 
         profile.refresh_from_db()
@@ -1223,3 +1223,81 @@ class UserviewGradeUpdateTest(ProgramFrameworkTest):
             'change_grade_form', response.context,
             "'change_grade_form' was not found in the userview template context.",
         )
+
+    # ------------------------------------------------------------------
+    # Test 8: State-changing actions are ignored on GET (CSRF hardening)
+    # ------------------------------------------------------------------
+
+    def test_get_does_not_change_grade(self):
+        """A GET carrying graduation_year (e.g. a forged link) must render the
+        page without modifying the graduation year."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertEqual(response.status_code, 200)
+
+        info = self.student.getLastProfile().student_info
+        self.assertEqual(
+            info.graduation_year, self.initial_grad_year,
+            "Graduation year was modified by a GET request.",
+        )
+
+    def test_post_redirects_to_userview(self):
+        """A grade-change POST should redirect back to the GET view,
+        preserving the username and program."""
+        self.client.login(username=self.admin.username, password='password')
+        response = self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'program': self.program.id,
+            'graduation_year': self.new_grad_year,
+        })
+        self.assertRedirects(
+            response,
+            '/manage/userview?username=%s&program=%s' % (self.student.username, self.program.id),
+            fetch_redirect_response=False,
+        )
+
+    def test_grade_change_request_approval_requires_post(self):
+        """Approving a grade change request via GET is ignored; via POST it is
+        approved and acknowledged by the admin."""
+        gcr = GradeChangeRequest.objects.create(
+            claimed_grade=self.student.getGrade() + 1,
+            grade_before_request=self.student.getGrade(),
+            reason='test',
+            requesting_student=self.student,
+        )
+        self.client.login(username=self.admin.username, password='password')
+
+        self.client.get(self.userview_base, data={
+            'username': self.student.username,
+            'approve_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertIsNone(gcr.approved)
+
+        self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'approve_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertTrue(gcr.approved)
+        self.assertEqual(gcr.acknowledged_by, self.admin)
+
+    def test_grade_change_request_must_belong_to_viewed_user(self):
+        """A request id belonging to a different student is not acted on."""
+        other_student = self.students[1]
+        gcr = GradeChangeRequest.objects.create(
+            claimed_grade=other_student.getGrade() + 1,
+            grade_before_request=other_student.getGrade(),
+            reason='test',
+            requesting_student=other_student,
+        )
+        self.client.login(username=self.admin.username, password='password')
+        self.client.post(self.userview_base, data={
+            'username': self.student.username,
+            'reject_request': gcr.id,
+        })
+        gcr.refresh_from_db()
+        self.assertIsNone(gcr.approved)

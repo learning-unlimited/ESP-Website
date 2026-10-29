@@ -513,14 +513,42 @@ def usersearch(request):
 
 @admin_required
 def userview(request):
-    """ Render a template displaying all the information about the specified user """
-    username = request.GET.get('username')
+    """ Render a template displaying all the information about the specified user.
+
+    Grade changes and grade change request approvals/rejections must be
+    submitted via POST (CSRF-protected); they redirect back to the GET view.
+    """
+    params = request.POST if request.method == 'POST' else request.GET
+    username = params.get('username')
     if not username:
         raise ESPError("You must specify a username to view.", log=False)
     try:
         user = ESPUser.objects.get(username=username)
     except ESPUser.DoesNotExist:
         raise ESPError("Sorry, can't find anyone with that username.", log=False)
+
+    if request.method == 'POST':
+        if 'approve_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['approve_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = True
+                gcr.acknowledged_by = request.user
+                gcr.save()
+        if 'reject_request' in request.POST:
+            gcr = GradeChangeRequest.objects.filter(id=request.POST['reject_request'], requesting_student=user).first()
+            if gcr:
+                gcr.approved = False
+                gcr.acknowledged_by = request.user
+                gcr.save()
+
+        if 'graduation_year' in request.POST:
+            user.set_student_grad_year(request.POST['graduation_year'])
+
+        from urllib.parse import urlencode
+        query = {'username': user.username}
+        if request.POST.get('program'):
+            query['program'] = request.POST['program']
+        return HttpResponseRedirect('/manage/userview?%s' % urlencode(query))
 
     if 'program' in request.GET:
         try:
@@ -554,24 +582,6 @@ def userview(request):
         teacherbio.picture = 'images/not-available.jpg'
 
     from esp.users.forms.user_profile import StudentInfoForm
-
-    if 'approve_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['approve_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = True
-            gcr.acknowledged_by = request.user
-            gcr.save()
-    if 'reject_request' in request.GET:
-        gcrs = GradeChangeRequest.objects.filter(id=request.GET['reject_request'])
-        if gcrs.count() == 1:
-            gcr = gcrs[0]
-            gcr.approved = False
-            gcr.acknowledged_by = request.user
-            gcr.save()
-
-    if 'graduation_year' in request.GET:
-        user.set_student_grad_year(request.GET['graduation_year'])
 
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
@@ -679,11 +689,10 @@ def activate_user(request):
 def unenroll_student(request):
     if request.method != 'POST' or 'user_id' not in request.POST or 'program' not in request.POST:
         return HttpResponseBadRequest('')
-    users = ESPUser.objects.filter(id=request.POST['user_id'])
-    if users.count() != 1:
+    user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+    if user is None:
         return HttpResponseBadRequest('')
     else:
-        user = users[0]
         sections = user.getSections(program = request.POST['program'])
         verbs = RTC.getVisibleRegistrationTypeNames(request.POST['program'])
         for sec in sections:
@@ -696,11 +705,10 @@ def activate_or_deactivate_user(request, activate):
     if request.method != 'POST' or 'user_id' not in request.POST:
         return HttpResponseBadRequest('')
     else:
-        users = ESPUser.objects.filter(id=request.POST['user_id'])
-        if users.count() != 1:
+        user = ESPUser.objects.filter(id=request.POST['user_id']).first()
+        if user is None:
             return HttpResponseBadRequest('')
         else:
-            user = users[0]
             user.is_active = activate
             user.save()
             if activate:
@@ -1063,24 +1071,21 @@ def redirects(request, section=""):
                     redirect_form = RedirectForm()
             elif request.POST.get('command') == 'load': # Load existing redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect_form = RedirectForm(request.POST, instance = redirect)
                     if redirect_form.is_valid():
                         redirect_form.save()
                         redirect_form = RedirectForm()
             elif request.POST.get('command') == 'delete': # Delete redirect
                 redirect_id = request.POST.get('id')
-                redirects = Redirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = Redirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
         elif request.POST.get('object') == 'email_redirect':
             section = 'email_redirects'
@@ -1091,24 +1096,21 @@ def redirects(request, section=""):
                     email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'load': # Load existing email redirect into form
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(instance = redirect)
             elif request.POST.get('command') == 'edit': # Edit existing email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     email_redirect_form = PlainRedirectForm(request.POST, instance = redirect)
                     if email_redirect_form.is_valid():
                         email_redirect_form.save()
                         email_redirect_form = PlainRedirectForm()
             elif request.POST.get('command') == 'delete': # Delete email redirect
                 redirect_id = request.POST.get('id')
-                redirects = PlainRedirect.objects.filter(id = redirect_id)
-                if redirects.count() == 1:
-                    redirect = redirects[0]
+                redirect = PlainRedirect.objects.filter(id = redirect_id).first()
+                if redirect:
                     redirect.delete()
     context['open_section'] = section
     context['redirect_form'] = redirect_form
@@ -1138,24 +1140,21 @@ def catsflagsrecs(request, section=""):
                     cat_form = CategoryForm()
             elif request.POST.get('command') == 'load': # Load existing category into form
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(instance = cat)
             elif request.POST.get('command') == 'edit': # Edit existing category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat_form = CategoryForm(request.POST, instance = cat)
                     if cat_form.is_valid():
                         cat_form.save()
                         cat_form = CategoryForm()
             elif request.POST.get('command') == 'delete': # Delete category
                 cat_id = request.POST.get('id')
-                cats = ClassCategories.objects.filter(id = cat_id)
-                if cats.count() == 1:
-                    cat = cats[0]
+                cat = ClassCategories.objects.filter(id = cat_id).first()
+                if cat:
                     cat.delete()
         elif request.POST.get('object') == 'flag_type':
             section = 'flagtypes'
@@ -1166,24 +1165,21 @@ def catsflagsrecs(request, section=""):
                     flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'load': # Load existing flag type into form
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     flag_form = FlagTypeForm(request.POST, instance = ft)
                     if flag_form.is_valid():
                         flag_form.save()
                         flag_form = FlagTypeForm()
             elif request.POST.get('command') == 'delete': # Delete flag type
                 ft_id = request.POST.get('id')
-                fts = ClassFlagType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = ClassFlagType.objects.filter(id = ft_id).first()
+                if ft:
                     ft.delete()
         elif request.POST.get('object') == 'record_type':
             section = 'recordtypes'
@@ -1194,24 +1190,21 @@ def catsflagsrecs(request, section=""):
                     rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'load': # Load existing record type into form
                 ft_id = request.POST.get('id')
-                fts = RecordType.objects.filter(id = ft_id)
-                if fts.count() == 1:
-                    ft = fts[0]
+                ft = RecordType.objects.filter(id = ft_id).first()
+                if ft:
                     rec_form = RecordTypeForm(instance = ft)
             elif request.POST.get('command') == 'edit': # Edit existing record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rec_form = RecordTypeForm(request.POST, instance = rt)
                     if rec_form.is_valid():
                         rec_form.save()
                         rec_form = RecordTypeForm()
             elif request.POST.get('command') == 'delete': # Delete record type
                 rt_id = request.POST.get('id')
-                rts = RecordType.objects.filter(id = rt_id)
-                if rts.count() == 1:
-                    rt = rts[0]
+                rt = RecordType.objects.filter(id = rt_id).first()
+                if rt:
                     rt.delete()
     context['open_section'] = section
     context['cat_form'] = cat_form
