@@ -10,18 +10,19 @@ div.required label.control-label:after,
   content:" *";
   color: var(--bs-danger, red);
 }
-/* Inside the profile cards, text follows the card's Bootstrap colors rather than
-   the theme's page-level rules (e.g. "#content h2"), which assume a different
-   background under some Bootswatch variants */
-.profile-card :is(h2, h3) {
-  color: var(--bs-heading-color, inherit) !important;
+/* Some ESP themes paint their own content panel, and some Bootswatch variants
+   use translucent cards that assume the variant's page background. Laying the
+   card colour over that background keeps the card as the variant designed it. */
+.card.profile-card {
+  background: linear-gradient(var(--bs-card-bg), var(--bs-card-bg)), var(--bs-body-bg);
 }
-.profile-card :is(p, label, li, .prettify, .form-text) {
+/* Inside the profile cards, text follows the card's Bootstrap colors rather than
+   the theme's page-level rules (e.g. "#content h2") */
+.profile-card :is(h2, h3, p, label, li, .prettify, .form-text) {
   color: inherit !important;
 }
-.profile-card .form-text,
-.profile-muted {
-  opacity: 0.8;
+.profile-card > .card-header {
+  color: inherit;
 }
 .profile-note {
   padding: 0.75rem 1rem;
@@ -50,6 +51,12 @@ div.required label.control-label:after,
   --bs-btn-active-bg: rgba(128, 128, 128, 0.25);
   --bs-btn-active-border-color: currentColor;
 }
+/* Some Bootswatch variants set button text colour directly */
+.btn.profile-copy-btn,
+.btn.profile-copy-btn:hover {
+  color: inherit;
+  border-color: currentColor;
+}
 </style>
 {% endblock %}
 
@@ -57,7 +64,7 @@ div.required label.control-label:after,
 <div class="row">
   <div class="col-xl-10">
     <h1>Your Profile Information</h1>
-    <p class="profile-muted"><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
+    <p><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
   </div>
   <div class="row">
     <div class="col-xl-10">
