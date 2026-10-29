@@ -574,6 +574,47 @@ class InternationalAddressPostcodeTest(CacheFlushTestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('address_postcode', form.errors)
 
+    def test_unused_postal_field_is_cleared(self):
+        """Only the postal field matching the selected state is kept."""
+        data = self._valid_contact_data()
+        data['address_postcode'] = 'SW1A 1AA'
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+        self.assertEqual(form.cleaned_data['address_zip'], '02134')
+        self.assertEqual(form.cleaned_data['address_postcode'], '')
+
+        data['address_state'] = 'International'
+        data['address_country'] = 'GB'
+        form = self._make_form(data)
+        self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+        self.assertEqual(form.cleaned_data['address_zip'], '')
+        self.assertEqual(form.cleaned_data['address_postcode'], 'SW1A 1AA')
+
+    def test_invalid_zip_reports_single_error(self):
+        """A too-long ZIP gets its length error, not an extra 'required' one."""
+        data = self._valid_contact_data()
+        data['address_zip'] = '123456'
+        form = self._make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertEqual(len(form.errors['address_zip']), 1)
+        self.assertNotIn('Zip code is required.', form.errors['address_zip'])
+
+    def test_hiding_zip_also_hides_postcode(self):
+        """A profile_hide_fields tag hiding the ZIP must not make the form unsubmittable."""
+        from esp.users.forms.user_profile import VolunteerProfileForm
+        Tag.setTag('volunteer_profile_hide_fields', value='address_zip')
+        volunteer = _make_user('postcode_volunteer', 'Volunteer')
+        try:
+            data = self._valid_contact_data()
+            del data['address_zip']
+            del data['address_postcode']
+            form = VolunteerProfileForm(user=volunteer, data=data)
+            self.assertNotIn('address_zip', form.fields)
+            self.assertNotIn('address_postcode', form.fields)
+            self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+        finally:
+            volunteer.delete()
+
     def test_long_and_alphanumeric_postcodes_accepted(self):
         """Alphanumeric and long international postcodes up to 20 chars must be accepted."""
         data = self._valid_contact_data()
@@ -586,10 +627,16 @@ class InternationalAddressPostcodeTest(CacheFlushTestCase):
         form = self._make_form(data)
         self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
 
-        # Long postcode (e.g. 15 chars)
+        # Long postcode (16 chars)
         data['address_postcode'] = 'A-VERY-LONG-POST'
         form = self._make_form(data)
         self.assertTrue(form.is_valid(), f"Errors: {form.errors}")
+
+        # Over the 20-char limit
+        data['address_postcode'] = 'X' * 21
+        form = self._make_form(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('address_postcode', form.errors)
 
     def test_emergency_contact_postcode_validation(self):
         """Test postcode validation on EmergContactForm."""
