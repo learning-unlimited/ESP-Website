@@ -410,6 +410,30 @@ class ScssPipelineTest(TestCase):
         self.assertIn('.bi', css, 'Missing .bi — Bootstrap Icons not included')
         self.assertNotIn('.glyphicon', css, '.glyphicon present — BS3 leaked into BS5 output')
 
+    def _read_compiled_css(self):
+        with open(self.css_filename) as f:
+            return f.read()
+
+    def test_compile_default_css_produces_bs5_markers(self):
+        """compile_default_css() builds stock Bootstrap 5 without any theme."""
+        self.tc.compile_default_css()
+        css = self._read_compiled_css()
+        self.assertIn('.navbar-toggler', css, 'Missing .navbar-toggler — BS5 not compiling')
+        self.assertIn('.card', css, 'Missing .card — BS5 not compiling')
+        self.assertIn('.bi', css, 'Missing .bi — Bootstrap Icons not included')
+
+    def test_clear_theme_leaves_default_stylesheet(self):
+        """clear_theme() replaces the compiled CSS with stock Bootstrap rather than deleting it."""
+        self.tc.clear_theme()
+        self.assertIn('.card', self._read_compiled_css())
+        self.assertIsNotNone(Tag.getTag('current_theme_version'))
+
+    def test_recompile_theme_without_theme_compiles_default_stylesheet(self):
+        """recompile_theme() on a site with no theme compiles stock Bootstrap instead of failing."""
+        Tag.unSetTag('current_theme_name')
+        self.tc.recompile_theme()
+        self.assertIn('.card', self._read_compiled_css())
+
     def test_get_variable_defaults_roundtrip(self):
         """get_variable_defaults() compiles and returns a non-empty dict for every theme."""
         for theme_name in self.tc.get_theme_names():
