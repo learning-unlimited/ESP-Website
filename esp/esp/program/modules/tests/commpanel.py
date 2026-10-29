@@ -150,19 +150,19 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         self.assertTrue(m.count() == 1)
         self.assertTrue(m[0].processed)
 
-    def test_commfinal_missing_required_fields(self):
+    def test_missing_required_fields(self):
+        """ commprev, commfinal and maincomm2 should list every missing POST field in an ESPError. """
         self.assertTrue(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
 
-        post_data = {
-            'filterid': '1',
+        expected_missing = {
+            'commprev': 'listcount, subject, body',
+            'commfinal': 'from, replyto, subject, body',
+            'maincomm2': 'listcount, from, replyto, subject, body',
         }
-        response = self.client.post(f'/manage/{self.program.getUrlBase()}/commfinal', post_data)
-
-        self.assertContains(response, 'Missing required POST fields', status_code=500)
-        self.assertContains(response, 'from', status_code=500)
-        self.assertContains(response, 'replyto', status_code=500)
-        self.assertContains(response, 'subject', status_code=500)
-        self.assertContains(response, 'body', status_code=500)
+        for view, missing in expected_missing.items():
+            with self.subTest(view=view):
+                response = self.client.post(f'/manage/{self.program.getUrlBase()}/{view}', {'filterid': '1'})
+                self.assertContains(response, f'Missing required POST fields: {missing}.', status_code=500)
 
     def test_program_date_variables_in_comms(self):
         """Test that {{ program.date }}, {{ program.date_range }}, {{ program.teacher_reg_deadline }} work in email templates."""
