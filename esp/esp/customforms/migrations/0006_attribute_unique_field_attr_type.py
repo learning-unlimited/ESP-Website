@@ -1,24 +1,22 @@
 from django.db import migrations, models
+from django.db.models import Count, Max
 
 
 def dedupe_attributes(apps, schema_editor):
     Attribute = apps.get_model('customforms', 'Attribute')
-    seen = set()
-    duplicate_ids = []
-    for attr in Attribute.objects.order_by('field_id', 'attr_type', 'id').only('id', 'field_id', 'attr_type'):
-        key = (attr.field_id, attr.attr_type)
-        if key in seen:
-            duplicate_ids.append(attr.id)
-        else:
-            seen.add(key)
-    if duplicate_ids:
-        Attribute.objects.filter(id__in=duplicate_ids).delete()
+    # Keep the newest row of each duplicated (field, attr_type) pair.
+    duplicates = (Attribute.objects.values('field_id', 'attr_type')
+                  .annotate(n=Count('id'), keep_id=Max('id'))
+                  .filter(n__gt=1))
+    for dup in duplicates:
+        Attribute.objects.filter(field_id=dup['field_id'], attr_type=dup['attr_type']) \
+            .exclude(id=dup['keep_id']).delete()
 
 
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('customforms', '0004_alter_field_options_alter_page_options_and_more'),
+        ('customforms', '0005_fix_link_field_column_names'),
     ]
 
     operations = [

@@ -873,40 +873,35 @@ class FormOwnershipAccessTest(TestCase):
 
 
 class SetAttributeUpdateOrCreateTest(TestCase):
-    def test_set_attribute_creates_and_updates(self):
+    def setUp(self):
         user, _ = ESPUser.objects.get_or_create(username='attr_owner')
         form = Form.objects.create(title='Attr Form', created_by=user)
         page = Page.objects.create(form=form, seq=0)
         section = Section.objects.create(page=page, title='S', seq=0)
-        field = Field.objects.create(
+        self.field = Field.objects.create(
             form=form, section=section, field_type='textField',
             seq=0, label='Q',
         )
-        attr = field.set_attribute('charlimits', '0,100')
-        self.assertEqual(Attribute.objects.filter(field=field, attr_type='charlimits').count(), 1)
+
+    def test_set_attribute_creates_and_updates(self):
+        attr = self.field.set_attribute('charlimits', '0,100')
+        self.assertEqual(Attribute.objects.filter(field=self.field, attr_type='charlimits').count(), 1)
         self.assertEqual(attr.value, '0,100')
 
-        updated = field.set_attribute('charlimits', '0,200')
-        self.assertEqual(Attribute.objects.filter(field=field, attr_type='charlimits').count(), 1)
+        updated = self.field.set_attribute('charlimits', '0,200')
+        self.assertEqual(Attribute.objects.filter(field=self.field, attr_type='charlimits').count(), 1)
         self.assertEqual(updated.id, attr.id)
         updated.refresh_from_db()
         self.assertEqual(updated.value, '0,200')
 
     def test_duplicate_attribute_blocked_at_database_level(self):
-        user, _ = ESPUser.objects.get_or_create(username='attr_owner_dupe')
-        form = Form.objects.create(title='Attr Dupe Form', created_by=user)
-        page = Page.objects.create(form=form, seq=0)
-        section = Section.objects.create(page=page, title='S', seq=0)
-        field = Field.objects.create(
-            form=form, section=section, field_type='textField',
-            seq=0, label='Q',
-        )
-        Attribute.objects.create(field=field, attr_type='charlimits', value='0,100')
+        Attribute.objects.create(field=self.field, attr_type='charlimits', value='0,100')
         # Wrap in atomic so the expected IntegrityError doesn't break the
         # outer TestCase transaction (which would poison subsequent tests).
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                Attribute.objects.create(field=field, attr_type='charlimits', value='0,200')
+                Attribute.objects.create(field=self.field, attr_type='charlimits', value='0,200')
+
 
 class CustomFormModelOrderingTest(TestCase):
     def test_page_section_field_default_order_is_seq(self):
