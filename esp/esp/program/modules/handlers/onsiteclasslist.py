@@ -214,7 +214,9 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def full_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(content_type='application/json')
-        data = [[section.id, section.isFull(webapp=True)] for section in
+        #   ignore_changes=true matches the fullness check used by the scrolling class list
+        ignore_changes = request.GET.get('ignore_changes') == 'true'
+        data = [[section.id, section.isFullIgnoreChanges() if ignore_changes else section.isFull(webapp=True)] for section in
                      ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0,
                                                  parent_class__parent_program=prog)]
         json.dump(data, resp)
@@ -384,14 +386,6 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
         return self.classList_base(request, tl, one, two, module, extra, prog, template_name='classlist.html')
-
-    @aux_call
-    @needs_onsite
-    def classlist_fragment(self, request, tl, one, two, module, extra, prog):
-        """ Returns just the scrolling class-list fragment (no page chrome), for
-            AJAX refreshing of the classList scroller mid-scroll without a full
-            page reload.  See issue #116. """
-        return self.classList_base(request, tl, one, two, module, extra, prog, template_name='allclass_fragment.html')
 
     @aux_call
     @needs_student_in_grade

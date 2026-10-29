@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.test import SimpleTestCase, RequestFactory
 
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
-from esp.program.models import Program, RegistrationType, StudentRegistration
+from esp.program.models import ClassSection, Program, RegistrationType, StudentRegistration
 from esp.program.tests import ProgramFrameworkTest
 from esp.tests.util import CacheFlushTestCase, user_role_setup
 from esp.users.models import ESPUser
@@ -716,11 +716,9 @@ class OnsiteAuthorizationTests(CacheFlushTestCase):
         self.assertIn('application/json', resp.get('Content-Type', ''))
 
 
-class ClassListMidScrollRefreshTests(ProgramFrameworkTest):
-    """The scrolling onsite class list should refresh its data once per lap
-    (issue #116), not just once every full page reload cycle (issue #318),
-    so a long list doesn't sit stale for several minutes while it scrolls.
-    """
+class ClassListFullStatusTests(ProgramFrameworkTest):
+    """The scrolling onsite class list should mark classes that fill up mid-scroll
+    (issue #116), using full_status with the same fullness check as the list."""
 
     def setUp(self):
         super().setUp(
@@ -731,11 +729,12 @@ class ClassListMidScrollRefreshTests(ProgramFrameworkTest):
             num_rooms=2,
             num_students=0,
         )
+        self.schedule_randomly()
         self.factory = RequestFactory()
         self.admin = self.admins[0]
 
-    def _render(self, template_name='classlist.html', options=None):
-        options = options or {'refresh': '30', 'scrollspeed': '1'}
+    def _render(self):
+        options = {'refresh': '30', 'scrollspeed': '1'}
         request = self.factory.get('/onsite/classlist', options)
         request.user = self.admin
         module = SimpleNamespace(
@@ -746,127 +745,44 @@ class ClassListMidScrollRefreshTests(ProgramFrameworkTest):
             module,
             request,
             'onsite',
-            None,
-            None,
+            'one',
+            'two',
             None,
             None,
             self.program,
             options=options,
-            template_name=template_name,
+            template_name='classlist.html',
         )
         resp.render()
         return resp.content.decode()
 
-    def test_prefetch_and_swap_js_present(self):
-        """classlist.html must define the background prefetch and the
-        reset()-time swap that keeps data fresh across laps."""
+    def _call_full_status(self, params=None):
+        request = self.factory.get('/onsite/full_status', params or {})
+        request.user = self.admin
+        fn = getattr(OnSiteClassList.full_status, 'method', OnSiteClassList.full_status)
+        return json.loads(fn(SimpleNamespace(), request, None, None, None, None, None, self.program).content)
+
+    def test_rows_carry_section_ids(self):
+        """Each listed class row must be tagged with its section ID so it can be marked full."""
         content = self._render()
-        self.assertIn('prefetch_fragment', content)
-        self.assertIn('pending_html', content)
-        self.assertIn('fragment_url', content)
+        for section in self.program.sections():
+            self.assertIn('data-section-id="%d"' % section.id, content)
 
-    def test_swap_happens_before_dom_scan_in_reset(self):
-        """The pending fragment must be swapped into the DOM, and the next
-        fetch kicked off, before reset() re-scans .category/.start_time —
-        otherwise the freshly-swapped headers wouldn't be picked up."""
+    def test_polls_full_status_on_refresh_interval(self):
+        """The page must poll full_status, with the list's fullness check, every refresh interval."""
         content = self._render()
+        self.assertIn('/onsite/one/two/full_status?ignore_changes=true', content)
+        self.assertIn('setInterval(update_full_status, refresh_interval_ms)', content)
 
-        swap_index = content.index('pending_html !== null')
-        prefetch_call_index = content.index(
-            'prefetch_fragment();', content.index('function reset()')
-        )
-        rescan_index = content.index('categories = $j(".category")')
-
-        self.assertLess(swap_index, rescan_index)
-        self.assertLess(prefetch_call_index, rescan_index)
-
-    def test_fragment_url_targets_classlist_fragment_endpoint(self):
-        """The prefetch must hit the fragment-only endpoint, not the full
-        classList page (which would re-fetch page chrome every lap)."""
-        content = self._render()
-        self.assertIn('/classlist_fragment', content)
-
-    def test_fragment_view_returns_fragment_only(self):
-        """classlist_fragment must render allclass_fragment.html, not the
-        full classlist.html page with its <head>/<script> chrome."""
-        content = self._render(template_name='allclass_fragment.html')
-        self.assertNotIn('<head>', content)
-        self.assertNotIn('prefetch_fragment', content)
-
-
-class ClassListFragmentAuthorizationTests(CacheFlushTestCase):
-    """The new classlist_fragment endpoint must be gated by @needs_onsite,
-    the same as the full classList page, not left open to any logged-in user.
-    """
-
-    def setUp(self):
-        super().setUp()
-        user_role_setup()
-
-        self.student = ESPUser.objects.create_user(
-            username='fragment_test_student',
-            password='password',
-            email='fragment_student@test.com',
-            first_name='Fragment',
-            last_name='Student',
-        )
-        self.student.makeRole('Student')
-
-        self.admin = ESPUser.objects.create_user(
-            username='fragment_test_admin',
-            password='password',
-            email='fragment_admin@test.com',
-            first_name='Fragment',
-            last_name='Admin',
-        )
-        self.admin.makeRole('Administrator')
-
-        self.program = Program.objects.create(
-            name='Fragment Auth Test Program',
-            url='fragmentauthtest/2222',
-            grade_min=7,
-            grade_max=12,
-        )
-
-        self.factory = RequestFactory()
-
-    def _call_classlist_fragment(self, user):
-        import types
-        request = self.factory.get('/onsite/%s/classlist_fragment' % self.program.url)
-        request.user = user
-        request.session = self.client.session
-        wrapped_fn = OnSiteClassList.classlist_fragment
-        module = SimpleNamespace(
-            program=self.program,
-            baseDir=lambda: 'program/modules/onsiteclasslist/'
-        )
-        module.classList_base = types.MethodType(OnSiteClassList.classList_base, module)
-        return wrapped_fn(module, request, 'onsite', None, None, None, None, self.program)
-
-    def test_anonymous_user_redirected(self):
-        """An unauthenticated request must be redirected to the login page."""
-        from django.contrib.auth.models import AnonymousUser
-        anonymous = AnonymousUser()
-        resp = self._call_classlist_fragment(anonymous)
-        self.assertEqual(resp.status_code, 302)
-        location = resp.get('Location', '')
-        self.assertIn('login', location)
-
-    def test_student_denied(self):
-        """A student must not get the fragment content back.
-        needs_onsite renders errors/program/notonsite.html when access is
-        denied, so the response won't contain the fragment's markers.
-        """
-        resp = self._call_classlist_fragment(self.student)
-        if hasattr(resp, 'render'):
-            resp.render()
-        self.assertNotIn('scroller', resp.content.decode())
-
-    def test_admin_gets_200(self):
-        """A user in the Administrator group must pass the guard and get
-        the fragment content back."""
-        resp = self._call_classlist_fragment(self.admin)
-        self.assertEqual(resp.status_code, 200)
+    def test_full_status_ignore_changes_uses_list_fullness_check(self):
+        """ignore_changes=true must use isFullIgnoreChanges, which the list filters on."""
+        with patch.object(ClassSection, 'isFullIgnoreChanges', return_value=True), \
+                patch.object(ClassSection, 'isFull', return_value=False):
+            default = self._call_full_status()
+            ignoring = self._call_full_status({'ignore_changes': 'true'})
+        self.assertTrue(default)
+        self.assertFalse(any(is_full for _, is_full in default))
+        self.assertTrue(all(is_full for _, is_full in ignoring))
 
 
 class SchedulePdfTests(SimpleTestCase):
