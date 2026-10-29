@@ -12,23 +12,31 @@ categories = [];
 start_times = [];
 next_category = 0;
 next_start_time = 0;
-var page_load_time = Date.now();
 var refresh_interval_ms = {{ refresh }} * 1000;
 
-//   Mid-scroll data refresh (issue #116): fetch a fresh copy of the class-list
-//   fragment in the background during each lap, and swap it in right at the
-//   reset() seam, where the old content has just scrolled fully out of view.
-//   This keeps the data from going stale over a long scroll cycle, without
-//   causing a visible jump the way a mid-scroll page reload would.
-var pending_html = null;
+//   Data refresh (issue #116): every refresh interval, re-fetch this page in the
+//   background.  The static open-class list is replaced right away; scroller rows
+//   that have since filled up are greyed out in place, and the full fresh list is
+//   swapped in at the reset() seam, so the scroller never reloads or jumps.
+var pending_doc = null;
 var fetch_in_progress = false;
-var fragment_url = window.location.pathname.replace(/\/classlist\/?$/i, "/classlist_fragment") + window.location.search;
 
-function prefetch_fragment() {
+function fetch_fresh_data() {
     if (fetch_in_progress) return;
     fetch_in_progress = true;
-    $j.get(fragment_url, function(data) {
-        pending_html = data;
+    $j.ajax({url: window.location.href, cache: false, dataType: "html"}).done(function(data) {
+        var doc = new DOMParser().parseFromString(data, "text/html");
+        //   Ignore anything that isn't this page (e.g. a login or error page)
+        if (!doc.getElementById("scroller_top") || !doc.querySelector(".openclasslist")) return;
+        $j(".openclasslist").replaceWith(document.importNode(doc.querySelector(".openclasslist"), true));
+        var open_ids = {};
+        $j(doc.getElementById("scroller_top")).find("[data-section-id]").each(function() {
+            open_ids[this.getAttribute("data-section-id")] = true;
+        });
+        $j("#scroller_top, #scroller_bottom").find("[data-section-id]").each(function() {
+            if (!open_ids[this.getAttribute("data-section-id")]) $j(this).addClass("section_closed");
+        });
+        pending_doc = doc;
     }).always(function() {
         fetch_in_progress = false;
     });
@@ -51,16 +59,7 @@ function scroll()
     scroll_offset -= {{ scrollspeed }};
     elt1 = document.getElementById("scroller_top");
     if (elt1.offsetHeight + scroll_offset < 0)
-    {
-        if (Date.now() - page_load_time >= refresh_interval_ms)
-        {
-            if (interval_handle != -1) clearInterval(interval_handle);
-            interval_handle = -1;
-            location.reload();
-            return;
-        }
         reset();
-    }
     setElementStyleById("scroller_top", "top", scroll_offset + "px");
     setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
 
@@ -94,15 +93,14 @@ function reset()
     if (interval_handle != -1)
         clearInterval(interval_handle);
 
-    if (pending_html !== null) {
-        document.getElementById("scroller_top").innerHTML = pending_html;
-        document.getElementById("scroller_bottom").innerHTML = pending_html;
-        pending_html = null;
+    //   Swap in the latest fetched list at the seam, where the old content has
+    //   just scrolled fully out of view.
+    if (pending_doc !== null) {
+        var fresh_html = pending_doc.getElementById("scroller_top").innerHTML;
+        document.getElementById("scroller_top").innerHTML = fresh_html;
+        document.getElementById("scroller_bottom").innerHTML = fresh_html;
+        pending_doc = null;
     }
-    //   Kick off the fetch for the *next* lap now, so it has this whole lap
-    //   to complete before it's needed.
-    prefetch_fragment();
-
     categories = $j(".category");
     start_times = $j(".start_time");
     next_category = 0;
@@ -124,6 +122,7 @@ $j(function(){
     reset();
     if(startOffset)
         scroll_offset = startOffset;
+    setInterval(fetch_fresh_data, refresh_interval_ms);
 });
 
 </script>
@@ -174,6 +173,11 @@ font-size: 1.7em;
 
 table .openclasslist td {
     height: 16px !important;
+}
+
+.section_closed td {
+    opacity: 0.35;
+    text-decoration: line-through;
 }
 
 </style>
