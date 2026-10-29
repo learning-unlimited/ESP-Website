@@ -55,6 +55,16 @@ class TeacherPreviewModule(ProgramModuleObj):
             "choosable": 1,
             }
 
+    @staticmethod
+    def _get_schedule_user(request):
+        #   Admins may view another user's schedule with ?user=<id>
+        if request.user.isAdmin() and 'user' in request.GET:
+            try:
+                return ESPUser.objects.get(id=request.GET['user'])
+            except (ESPUser.DoesNotExist, ValueError):
+                raise Http404('The requested user could not be found.')
+        return request.user
+
     def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedule.html'):
         #   Use the template defined in ProgramPrintables
         from esp.program.modules.handlers import ProgramPrintables
@@ -62,10 +72,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_schedule_user(request)
             scheditems = []
             sections_qs = teacher.getTaughtSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs
@@ -97,10 +104,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_schedule_user(request)
             scheditems = []
             sections_qs = teacher.getTaughtOrModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs
@@ -137,10 +141,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog, module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            if request.user.isAdmin() and 'user' in request.GET:
-                teacher = ESPUser.objects.get(id=request.GET['user'])
-            else:
-                teacher = request.user
+            teacher = self._get_schedule_user(request)
             scheditems = []
             sections_qs = teacher.getModeratingSectionsFromProgram(self.program).select_related('parent_class').prefetch_related('meeting_times', 'resourceassignment_set')
             classes = [cls for cls in sections_qs

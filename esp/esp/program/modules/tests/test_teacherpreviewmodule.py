@@ -38,6 +38,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
+from esp.users.models import ESPUser
 
 class TeacherPreviewModuleTest(ProgramFrameworkTest):
     """
@@ -203,6 +204,23 @@ class TeacherPreviewModuleTest(ProgramFrameworkTest):
         for item in scheditems:
             self.assertEqual(item['teacher'], impersonate_teacher)
             self.assertEqual(item['name'], impersonate_teacher.name())
+
+    def test_admin_impersonation_with_invalid_user_returns_404(self):
+        """
+        Test that a missing or non-numeric ?user= returns 404 instead of a 500 (#5657).
+        """
+        admin_user = self.admins[0]
+        missing_id = ESPUser.objects.order_by('-id').values_list('id', flat=True)[0] + 1
+
+        for endpoint in ('teacherschedule', 'teachermoderatorschedule', 'moderatorschedule'):
+            for bad_id in (str(missing_id), 'not-a-number', ''):
+                with self.subTest(endpoint=endpoint, user=bad_id):
+                    response = self._get_schedule_response(
+                        admin_user,
+                        endpoint,
+                        query_params={'user': bad_id}
+                    )
+                    self.assertEqual(response.status_code, 404)
 
     def test_admin_cannot_impersonate_without_user_param(self):
         """
