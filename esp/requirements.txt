@@ -30,14 +30,14 @@ pytest-xdist==3.3.1 # Parallel test execution via -n auto
 ipython==8.12.3 # Used for shell_plus
 Markdown==3.8.1 # Used in QSD
 numpy==1.26.4 # Used mainly in the lottery and class change controller
-pillow==12.3.0 # Required for ImageField, which we use in teacher bios
+pillow==13.0.0 # Required for ImageField, which we use in teacher bios
 psycopg2==2.9.9 # Talks to postgres
 pycurl==7.45.4 # Used only in a formstack script which I think is outdated
 py3dns==4.0.2 # Used for validating email addresses; imports as "DNS" (case matters), not "py3dns"
 Pygments==2.20.0 # django-extensions dependency
 pymemcache==4.0.0 # Talks to memcached
 pytz==2023.3 # Required for timezone support
-setuptools==83.0.0 # For building packages from source
+setuptools==84.1.0 # For building packages from source
 selenium>=4.9,<5 # Runs selenium tests
 shortuuid==0.4.2 # django-extensions dependency
 stripe==7.5.0 # Required for credit card processing

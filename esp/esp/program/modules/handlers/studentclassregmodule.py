@@ -275,14 +275,18 @@ class StudentClassRegModule(ProgramModuleObj):
             return 'no-store'
         return 'public, max-age=%d' % CATALOG_CACHE_MAX_AGE
 
-    def prepare(self, context={}):
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
         user = get_current_request().user
         program = self.program
         scrmi = self.program.studentclassregmoduleinfo
         return self.prepare_static(user, program, context=context, scrm = self)
 
     @staticmethod
-    def prepare_static(user, program, context={}, scrm = ""):
+    def prepare_static(user, program, context=None, scrm = ""):
+        if context is None:
+            context = {}
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         verbs = RTC.getVisibleRegistrationTypeNames(prog=program)
         regProf = RegistrationProfile.getLastForProgram(user, program)
