@@ -75,7 +75,7 @@ class ModuleLinkEscapingTest(ProgramFrameworkTest):
     # -- makeLink -----------------------------------------------------------
 
     def test_make_link_plain_title_format_unchanged(self):
-        """Ordinary titles render exactly as before (tests/existence.py matches this shape)."""
+        """Ordinary titles render exactly as before (tests/test_existence.py matches this shape)."""
         mod = self.learn_module
         mod.link_title = 'Plain Title'
         self.assertEqual(

@@ -2,7 +2,7 @@
 Behavioral tests for LotteryStudentRegModule
 (esp/program/modules/handlers/lotterystudentregmodule.py).
 
-LotteryStudentRegTest (studentregmodules.py) already covers students() and
+LotteryStudentRegTest (test_studentregmodules.py) already covers students() and
 isCompleted(). This file adds tests for the HTTP-layer views: timeslots_json()
 and viewlotteryprefs().
 

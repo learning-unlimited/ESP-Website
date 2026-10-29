@@ -1,7 +1,7 @@
 """
 Direct unit tests for LotteryAssignmentController (esp/program/controllers/lottery.py).
 
-LSRAssignmentTest (program/tests.py) covers end-to-end enroll/waitlist correctness
+LSRAssignmentTest (program/tests/test_program.py) covers end-to-end enroll/waitlist correctness
 and lunch constraints. This file adds invariant and edge-case tests that verify
 numpy array postconditions directly, independent of the HTTP layer.
 

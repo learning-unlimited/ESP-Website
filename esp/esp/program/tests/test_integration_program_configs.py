@@ -295,7 +295,7 @@ class FCFSPipelineIntegrationTest(ProgramFrameworkTest):
 
 class WaitlistToggleIntegrationTest(ProgramFrameworkTest):
     """program_allow_waitlist gates both a students()/studentDesc() bucket and
-    the waitlist_subscribe view. Existing coverage (studentregmodules.py)
+    the waitlist_subscribe view. Existing coverage (test_studentregmodules.py)
     only checks the bucket appears when the flag is True; this covers the
     flag being False, and the actual register-until-full-then-waitlist
     pipeline through real views rather than through a hand-created Record.
