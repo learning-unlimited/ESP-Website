@@ -5,25 +5,29 @@
 {% block stylesheets %}
 {{ block.super }}
 <style>
-div.required label.control-label:after {
+div.required label.control-label:after,
+.profile-field.required > .form-label:after {
   content:" *";
-  color:red;
+  color: var(--bs-danger, red);
 }
-#id_receive_txt_message {
-  list-style-type: none;
-  margin-left: 0px;
+/* Inline-editable text inside alerts ends with a margin and a <br> */
+.card .alert .prettify > :last-child {
+  margin-bottom: 0;
+}
+.card .alert .prettify ~ br {
+  display: none;
 }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row">
-  <div class="col-md-10">
+  <div class="col-xl-10">
     <h1>Your Profile Information</h1>
-    <p class="help-block"><span aria-hidden="true" style="color:red;">*</span> indicates a required field</p>
+    <p class="text-body-secondary"><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
   </div>
   <div class="row">
-    <div class="col-md-12">
+    <div class="col-xl-10">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
 <p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "{% if new_user %}submit{% else %}update{% endif %}" button at the bottom of the page to continue.</p>
@@ -36,7 +40,7 @@ div.required label.control-label:after {
   </div>
 </div>
 <div class="row">
-  <div class="col-md-10">
+  <div class="col-xl-10">
       {% if form.errors %}
             <div role="alert" class="alert alert-danger">
                 <span class="bi bi-info-circle" aria-hidden="true"></span>
@@ -52,7 +56,7 @@ div.required label.control-label:after {
       <br />
       {% endif %}
 
-    <form action="{{request.path}}" method="post" class="form-horizontal">
+    <form action="{{request.path}}" method="post">
         <fieldset>
         <input type="hidden" name="profile_page" value="true" />
         <input type="hidden" name="current_role" value="{{ profiletype }}" />
@@ -91,7 +95,7 @@ div.required label.control-label:after {
         {% endif %}
         {% endif %}
 
-        <div class="form-actions"><input type="submit" class="btn btn-primary" value="{% if new_user %}Submit{% else %}Update{% endif %} Your Information!" /></div>
+        <div class="d-grid d-sm-flex justify-content-sm-end mb-4"><input type="submit" class="btn btn-primary btn-lg" value="{% if new_user %}Submit{% else %}Update{% endif %} Your Information!" /></div>
 
         </fieldset>
     </form>
@@ -99,31 +103,28 @@ div.required label.control-label:after {
 </div>
 
 <script>
-function check_state() {
-  if ($j("#id_address_state").val() == "International") {
-    $j("#id_address_country").removeClass("hidden");
-    if ($j("#id_address_country").val() == "US") {
-      $j("#id_address_country").val("");
+// Show the country field (and its label) only for international addresses
+function toggle_country(state, country) {
+  var $country = $j(country).add($j(country).closest(".profile-field"));
+  if ($j(state).val() == "International") {
+    $country.removeClass("hidden");
+    if ($j(country).val() == "US") {
+      $j(country).val("");
     }
   } else {
-    $j("#id_address_country").addClass("hidden");
-    $j("#id_address_country").val("US");
+    $country.addClass("hidden");
+    $j(country).val("US");
   }
 }
+function check_state() {
+  toggle_country("#id_address_state", "#id_address_country");
+}
 function check_emerg_state() {
-  if ($j("#id_emerg_address_state").val() == "International") {
-    $j("#id_emerg_address_country").removeClass("hidden");
-    if ($j("#id_emerg_address_country").val() == "US") {
-      $j("#id_emerg_address_country").val("");
-    }
-  } else {
-    $j("#id_emerg_address_country").addClass("hidden");
-    $j("#id_emerg_address_country").val("US");
-  }
+  toggle_country("#id_emerg_address_state", "#id_emerg_address_country");
 }
 $j(document).ready(function() {
   $j(":required").each(function() {
-    $j(this).closest(".control-group").addClass("required");
+    $j(this).closest(".profile-field, .control-group").addClass("required");
   });
   
   check_state();

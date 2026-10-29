@@ -1,0 +1,12 @@
+{% comment %}
+One labelled profile form field in a Bootstrap 5 grid column.
+Takes: field, label, and optionally col (grid classes), for_id (label target,
+for multi-part widgets), group (classes for a wrapper around multi-part
+widgets) and help (hint text shown under the field).
+{% endcomment %}
+<div class="{{ col|default:'col-12' }} profile-field">
+    <label class="form-label" for="{{ for_id|default:field.id_for_label }}">{{ label }}</label>
+    {% if group %}<div class="{{ group }}">{{ field }}</div>{% else %}{{ field }}{% endif %}
+    {% if help %}<div class="form-text">{{ help }}</div>{% endif %}
+    {% for error in field.errors %}<div class="invalid-feedback d-block" role="alert">{{ error }}</div>{% endfor %}
+</div>

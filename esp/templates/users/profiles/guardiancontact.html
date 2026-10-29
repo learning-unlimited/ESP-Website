@@ -1,68 +1,34 @@
 <!-- Begin Guardian Contact Info -->
-
 <div class="card mb-4">
-<h3 class="card-header">Parent/Guardian Contact</h3>
+<div class="card-header"><h2 class="h5 mb-0">Parent/Guardian Contact</h2></div>
 <div class="card-body">
+<div class="row g-3">
 
 {% if form.guard_first_name %}
-<div class="control-group">
- <label class="control-label" for="id_guard_first_name">First Name:</label>
- <div class="controls">
- {{ form.guard_first_name }} {% if form.guard_first_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.guard_first_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.guard_first_name label="First name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.guard_last_name %}
-<div class="control-group">
- <label class="control-label" for="id_guard_last_name">Last Name:</label>
- <div class="controls">
- {{ form.guard_last_name }} {% if form.guard_last_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.guard_last_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.guard_last_name label="Last name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.guard_e_mail %}
-<div class="control-group">
- <label class="control-label" for="id_guard_e_mail">Email address:</label>
- <div class="controls">
- {{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
-   <br /><span class="form_error" role="alert">{{ form.guard_e_mail.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.guard_e_mail label="Email address" %}
 {% endif %}
 
 {% if form.guard_phone_day or form.guard_phone_cell %}
-<h4>Phone numbers:</h4>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Phone numbers</h3></div>
 {% endif %}
 
 {% if form.guard_phone_day %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_guard_phone_day">home</label></i></small>
- <div class="controls">
- {{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
-   <br /><span class="form_error" role="alert">{{ form.guard_phone_day.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.guard_phone_day label="Home" col="col-sm-6" %}
 {% endif %}
 
 {% if form.guard_phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_guard_phone_cell">cell</label></i></small>
- <div class="controls">
- {{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
-   <br /><span class="form_error" role="alert">{{ form.guard_phone_cell.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.guard_phone_cell label="Cell" col="col-sm-6" %}
 {% endif %}
 
+</div>
 </div>
 </div>
 
