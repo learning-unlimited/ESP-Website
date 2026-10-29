@@ -105,8 +105,10 @@ class TeacherClassRegModule(ProgramModuleObj):
     def crmi(self):
         return self.program.classregmoduleinfo
 
-    def prepare(self, context={}):
+    def prepare(self, context=None):
         """ prepare returns the context for the main teacherreg page. """
+        if context is None:
+            context = {}
         user = self._resolve_user(None)
 
         context['can_edit'] = self.deadline_met('/Classes/Edit')

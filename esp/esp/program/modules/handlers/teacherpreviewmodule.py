@@ -194,8 +194,9 @@ class TeacherPreviewModule(ProgramModuleObj):
         else:
             return {}
 
-    def prepare(self, context={}):
-        if context is None: context = {}
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
 
         classes = ClassSubject.objects.catalog(self.program, None, True)
 
