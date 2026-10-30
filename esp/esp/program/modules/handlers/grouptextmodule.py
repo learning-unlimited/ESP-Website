@@ -87,7 +87,7 @@ class GroupTextModule(ProgramModuleObj):
             return False
         if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, str):
             return False
-        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
+        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, (list, tuple)) or not settings.TWILIO_ACCOUNT_NUMBERS:
             return False
 
         return True
@@ -102,7 +102,11 @@ class GroupTextModule(ProgramModuleObj):
             return render_to_response(self.baseDir() + 'not_configured.html', request, {})
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
-        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        filter_id = request.GET.get('filterid')
+        try:
+            filterObj = PersistentQueryFilter.objects.get(id=filter_id)
+        except (PersistentQueryFilter.DoesNotExist, ValueError, TypeError):
+            raise ESPError()('The requested query filter is invalid or no longer exists.')
         message = request.POST['message']
         override = False
         if 'text-override' in request.POST:

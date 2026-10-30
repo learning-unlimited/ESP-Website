@@ -10,7 +10,8 @@ from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from localflavor.us.forms import USStateField, USStateSelect
 from phonenumber_field.formfields import PhoneNumberField
-from esp.customforms.forms import NameField, AddressField
+from phonenumber_field.phonenumber import PhoneNumber
+from esp.customforms.forms import NameField, AddressField, RequiredNullBooleanField
 from esp.customforms.DynamicModel import DMH
 from esp.tagdict.models import Tag
 from esp.utils.forms import DummyField
@@ -24,6 +25,16 @@ from django.core.exceptions import ValidationError
 from esp.middleware import ESPError
 
 from datetime import datetime
+
+
+def _response_value(value):
+    """
+    Returns a linked model's value in a form that JSON and Excel can handle
+    """
+    if isinstance(value, PhoneNumber):
+        return str(value)
+    return value
+
 
 class BaseCustomForm(BetterForm):
     """
@@ -200,7 +211,11 @@ class CustomFormHandler():
                         else:
                             raise Exception(f'Could not find linked field: {model_field}')
 
-                    # TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
+                    # Django's NullBooleanField.validate() ignores `required`; ours doesn't.
+                    if field['required'] and isinstance(form_field, forms.NullBooleanField):
+                        form_field = RequiredNullBooleanField(widget=form_field.widget)
+
+                    # `required` arrives in field_attrs and is enforced by Django's field validation.
                     form_field.__dict__.update(field_attrs)
                     form_field.widget.attrs.update({'class': ''})
                     if form_field.required:
@@ -402,11 +417,8 @@ class ComboForm(SessionWizardView):
                 v['instance'].save()
                 curr_instance = v['instance']
             else:
-                try:
-                    new_instance = v['model'].objects.create(**v['data'])
-                except Exception:
-                    # show some error message
-                    pass
+                # The user has no record yet, so create one for them
+                v['instance'] = v['model'].objects.create(user=self.curr_request.user, **v['data'])
             if v['instance'] is not None:
                 data[f'link_{v["model"].__name__}'] = v['instance']
 
@@ -490,6 +502,7 @@ class FormHandler:
             else:
                 field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
+    _getFormMetadata.get_or_create_token(('form',))
     _getFormMetadata.depend_on_row('customforms.Field', lambda field: {'form': field.form})
     _getFormMetadata.depend_on_row('customforms.Attribute', lambda attr: {'form': attr.field.form})
     _getFormMetadata.depend_on_row('customforms.Section', lambda section: {'form': section.page.form})
@@ -553,10 +566,11 @@ class FormHandler:
         """
         if not self.handlers:
             self._getHandlers()
-        for handler in self.handlers:
+        # Keyed by step number as a string, as the form wizard expects
+        for step, handler in enumerate(self.handlers):
             initial = handler.getInitialLinkDataFields()
             if initial:
-                initial_data[handler.seq] = {}
+                initial_data[str(step)] = {}
                 for k, v in initial.items():
                     if v['model'].__name__ not in link_models_cache:
                         # Get the corresponding instance, and get its values
@@ -572,10 +586,10 @@ class FormHandler:
                     if link_models_cache[v['model'].__name__] is not None:
                         if not isinstance(v['model_field'], list):
                             # Simple field
-                            initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+                            initial_data[str(step)].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
                         else:
                             # Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+                            initial_data[str(step)].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data
 
     def get_initial_data(self, initial_data=None):
@@ -593,10 +607,13 @@ class FormHandler:
 
     def get_wizard(self, initial_data=None, wizard_view=ComboForm):
         combined_initial_data = self.get_initial_data(initial_data)
-        return wizard_view( form_list = self._getFormList(),
+        #   get_initkwargs() sets up form_list and condition_dict the way
+        #   as_view() would, which formtools needs to build the forms.
+        return wizard_view(**wizard_view.get_initkwargs(
+                            self._getFormList(),
                             initial_dict = combined_initial_data,
                             form_handler = self,
-                            form = self.form)
+                            form = self.form))
 
     def get_wizard_view(self, initial_data=None, wizard_view=ComboForm, **kwargs):
         """
@@ -721,12 +738,12 @@ class FormHandler:
                     if link_instances_cache[model_name] is None:
                         response[qname] = []
                     else:
-                        response[qname] = [link_instances_cache[model_name].__dict__[x] for x in cf_cache.getCompoundLinkFields(model, data[1])]
+                        response[qname] = [_response_value(link_instances_cache[model_name].__dict__[x]) for x in cf_cache.getCompoundLinkFields(model, data[1])]
                 else:
                     if link_instances_cache[model_name] is None:
                         response[qname]=''
                     else:
-                        response[qname] = link_instances_cache[model_name].__dict__[data[1]]
+                        response[qname] = _response_value(link_instances_cache[model_name].__dict__[data[1]])
 
         # Add responses to response_data
         response_data['answers'].extend(responses)
@@ -771,9 +788,9 @@ class FormHandler:
                     col = ques_cols[ques]
                 except KeyError:
                     continue
-                # Join together responses from compound fields
+                # Join together responses from compound fields, skipping blank parts
                 if isinstance(ans, list):
-                    write_ans = " ".join(ans)
+                    write_ans = " ".join(part for part in ans if part)
                 else:
                     write_ans = ans
 

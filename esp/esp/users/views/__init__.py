@@ -5,6 +5,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -24,15 +26,16 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    response.content = f"""
+    # format_html escapes location so it can't break out of the attribute
+    response.content = format_html("""
     <html><head>
-    <meta http-equiv="refresh" content="0; url={location}">
+    <meta http-equiv="refresh" content="0; url={0}">
     </head>
     <body>
-    Thank you for logging in. Please click <a href="{location}">here</a> if you are not redirected.
+    Thank you for logging in. Please click <a href="{0}">here</a> if you are not redirected.
     </body>
     </html>
-    """
+    """, location)
     return response
 
 # Locations where we override redirects with smarter defaults
@@ -92,6 +95,14 @@ class CustomLoginView(LoginView):
     def handle_authenticated_user(self, request):
         """Handle redirects for users who are already logged in."""
         next_url = request.GET.get('next', '')
+
+        # Don't send users off-site just because ?next= said so
+        if next_url and not url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            next_url = '/'
 
         if not RegistrationProfile.objects.filter(user=request.user).exists():
             reply = HttpMetaRedirect('/myesp/profile')
@@ -173,7 +184,13 @@ def signout(request):
     request._cached_user = request.user
 
     redirect_path = request.GET.get('redirect')
-    if redirect_path:
+
+    # Only honor ?redirect= when it points back at this site
+    if redirect_path and url_has_allowed_host_and_scheme(
+        url=redirect_path,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure()
+    ):
         return HttpResponseRedirect(redirect_path)
 
     return render_to_response('registration/logged_out.html', request, {})
@@ -195,12 +212,14 @@ def disable_account(request):
 
     curUser = request.user
 
-    if 'enable' in request.GET:
-        curUser.is_active = True
-        curUser.save()
-    elif 'disable' in request.GET:
-        curUser.is_active = False
-        curUser.save()
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'enable':
+            curUser.is_active = True
+            curUser.save()
+        elif action == 'disable':
+            curUser.is_active = False
+            curUser.save()
 
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
 
@@ -217,9 +236,9 @@ def disable_account(request):
 # modified from here: https://www.grokcode.com/819/one-click-unsubscribes-for-django-apps/
 def unsubscribe(request, username, token, oneclick = False):
     """
-    User is immediately unsubscribed if they are logged in as username, or
-    if they came from an unexpired unsubscribe link. Otherwise, they are
-    redirected to the login page and unsubscribed as soon as they log in.
+    Deactivates the account named in the URL, once the request is authorized:
+    a one-click request needs an unexpired token, a request from the website
+    needs that token or the logged-in owner. Everyone else is sent to log in.
     """
 
     # render our own error message if the username doesn't match
@@ -233,22 +252,33 @@ def unsubscribe(request, username, token, oneclick = False):
     else:
         raise ESPError("No user matching that unsubscribe request.")
 
-    # if POSTing, they clicked the confirm button
-    # if oneclick=True, then they came here from an email client
-    if request.POST.get("List-Unsubscribe") == "One-Click" or oneclick == True:
+    # the one-click endpoint is CSRF-exempt, so the signed token is the only
+    # acceptable authorization -- a session here would be forgeable by any site
+    if oneclick:
+        if not user.check_token(token):
+            # log=False: anyone can POST here, so don't email the admins
+            raise ESPError("That unsubscribe link is invalid or has expired.", log=False)
         # "unsubscribe" them (deactivate their account)
         user.is_active = False
         user.save()
         return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
 
-    # otherwise show them a confirmation button
-    # if they are logged into the correct account or the token is valid
-    if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
-        return render_to_response('users/unsubscribe.html', request, context = {'user': user})
-    # if they are logged into a different account
-    # tell them to log out and try again
-    elif request.user.is_authenticated and request.user != user:
+    # someone logged into another account gets told to log out, rather than a
+    # confirmation page for an account that isn't theirs
+    if request.user.is_authenticated and request.user != user:
         raise ESPError("You are logged into a different account than the one you are trying to unsubscribe. Please log out and try your request again.")
+
+    # otherwise, authorize before touching the account:
+    # they must be logged into the correct account or have a valid token
+    if ( (request.user.is_authenticated and request.user == user) or user.check_token(token)):
+        # if POSTing, they clicked the confirm button
+        if request.POST.get("List-Unsubscribe") == "One-Click":
+            user.is_active = False
+            user.save()
+            return render_to_response('users/unsubscribe.html', request, context = {'user': user, 'deactivated': True})
+
+        # otherwise show them a confirmation button
+        return render_to_response('users/unsubscribe.html', request, context = {'user': user})
     # otherwise they will need to log in (or find a more recent link)
     # so show the login page (with a custom alert message)
     else:

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
-from esp.program.modules         import module_ext
+from esp.program.modules         import program_settings
 from esp.program.models          import ClassSection
 from esp.utils.web               import render_to_response
 from django.http                 import HttpResponse
@@ -75,8 +75,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
             keywords=["schedule", "rooms", "times", "ajax", "scheduling"],
         )
 
-    def prepare(self, context={}):
-        if context is None: context = {}
+    def prepare(self, context=None):
+        if context is None:
+            context = {}
 
         context['schedulingmodule'] = self
         return context
@@ -222,10 +223,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'clear_cache_confirmation.html', request, context)
 
     def get_change_log(self, prog):
-        change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+        change_log = program_settings.AJAXChangeLog.objects.filter(program=prog)
 
         if change_log.count() == 0:
-            change_log = module_ext.AJAXChangeLog()
+            change_log = program_settings.AJAXChangeLog()
             change_log.update(prog)
             change_log.save()
         else:
@@ -238,7 +239,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_section_details(self, request, tl, one, two, module, extra, prog):
         sectionDetails = {}
-        for sectionDetail in module_ext.AJAXSectionDetail.objects.filter(program=prog):
+        for sectionDetail in program_settings.AJAXSectionDetail.objects.filter(program=prog):
             sectionDetails[sectionDetail.cls_id] = [{'comment': sectionDetail.comment, 'locked': sectionDetail.locked}]
         return sectionDetails
 
@@ -325,9 +326,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         locked = 'locked' in request.POST
 
         try:
-            module_ext.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
-        except module_ext.AJAXSectionDetail.DoesNotExist:
-            sectionDetail = module_ext.AJAXSectionDetail()
+            program_settings.AJAXSectionDetail.objects.get(cls_id=cls_id).update(comment, locked)
+        except program_settings.AJAXSectionDetail.DoesNotExist:
+            sectionDetail = program_settings.AJAXSectionDetail()
             sectionDetail.initialize(prog, cls_id, comment, locked)
 
         self.get_change_log(prog).appendComment(comment, locked, cls_id, request.user)
@@ -371,9 +372,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
         response = HttpResponse(content_type="application/json")
         json.dump(data, response)
         return response
-    ajax_lunch_timeslots_cached.depend_on_model('cal.Event')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSection')
-    ajax_lunch_timeslots_cached.depend_on_model('program.ClassSubject')
+    ajax_lunch_timeslots_cached.get_or_create_token(('prog',))
+    ajax_lunch_timeslots_cached.depend_on_row('cal.Event',
+                                              lambda e: {'prog': e.program} if e.program_id else {})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSection',
+                                              lambda sec: {'prog': sec.parent_class.parent_program})
+    ajax_lunch_timeslots_cached.depend_on_row('program.ClassSubject',
+                                              lambda cls: {'prog': cls.parent_program})
     ajax_lunch_timeslots_cached.depend_on_model('program.ClassCategories')
     ajax_lunch_timeslots_cached.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
 

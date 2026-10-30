@@ -44,6 +44,7 @@ from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
 from django.http import HttpResponseRedirect, HttpResponse
+from django.utils.http import url_has_allowed_host_and_scheme
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 
@@ -72,7 +73,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.DRAFT, 'Draft'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
@@ -154,6 +155,9 @@ class AdminClass(ProgramModuleObj):
                 raise ESPError("Error: multiple classes selected")
             except ClassSubject.DoesNotExist:
                 raise ESPError("Error: no classes found with id "+str(class_id))
+
+            if class_subject.isDraft():
+                raise ESPError("Error: this class is still a teacher's unsubmitted draft and cannot be reviewed.", log=False)
 
             review_status = request.POST['review_status']
 
@@ -270,32 +274,37 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'manageclass.html', request, context)
 
+    def _safe_redirect(self, request, fallback_url):
+        """ Redirect to the 'redirect' GET parameter, but only if it stays on this host."""
+        redirect_url = request.GET.get('redirect')
+        if redirect_url and url_has_allowed_host_and_scheme(
+            url=redirect_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return HttpResponseRedirect(redirect_url)
+        return HttpResponseRedirect(fallback_url)
+
     @aux_call
     @needs_admin
     def approveclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.accept()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
     def rejectclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.reject()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin
     def proposeclass(self, request, tl, one, two, module, extra, prog):
         cls = self.getClass(request, extra)
         cls.propose()
-        if 'redirect' in request.GET:
-            return HttpResponseRedirect(request.GET['redirect'])
-        return HttpResponseRedirect(prog.get_manage_url() + 'manageclass/' + str(cls.id))
+        return self._safe_redirect(request, prog.get_manage_url() + 'manageclass/' + str(cls.id))
 
     @aux_call
     @needs_admin

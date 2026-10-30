@@ -1,7 +1,7 @@
 from esp.users.forms.password_reset import PasswordResetForm
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.http import HttpResponseRedirect
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, PendingActivation
 from esp.utils.web import render_to_response
 from esp.users.decorators import anonymous_only
 from django.contrib.auth import authenticate, login
@@ -69,6 +69,7 @@ class ESPPasswordResetConfirmView(PasswordResetConfirmView):
         if not user.is_active:
             user.is_active = True
             user.save()
+            PendingActivation.objects.filter(user=user).delete()
         # Auto-login the user after successful password reset
         auth_user = authenticate(
             username=user.username,
