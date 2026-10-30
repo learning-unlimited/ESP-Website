@@ -47,3 +47,8 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+
+Module Schedule Templates
+=========================
+
+The module management page can now save a program's module schedule and import it into a future program. "Save Schedule" (in the menu next to "+ Add Module") exports the modules' open/close dates, order, required flags and titles as a JSON file, with dates stored relative to the earliest module opening date. "Import Schedule" takes that file and a new anchor date and time, and gives each module the same open/close dates relative to the new anchor, adding any modules the program does not have yet.

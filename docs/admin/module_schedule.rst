@@ -137,7 +137,15 @@ During creation of a new ``ProgramModuleObj`` in ``getFromProgModule()``:
 
 Module Schedule APIs & Admin Interactions
 =========================================
-The module schedule functionality is currently exposed via JSON endpoints under ``/manage/<program_type>/<program_term>/module_schedule/`` (see the "Module Schedule API Reference" section below). These endpoints support listing modules, updating ``start_date``/``end_date``/metadata, previewing active modules at a given time, detecting conflicts, and bulk reordering.
+The module schedule functionality is currently exposed via JSON endpoints under ``/manage/<program_type>/<program_term>/module_schedule/`` (see the "Module Schedule API Reference" section below). These endpoints support listing modules, updating ``start_date``/``end_date``/metadata, previewing active modules at a given time, detecting conflicts, bulk reordering, and exporting/importing schedule templates.
+
+Saving and Importing Schedule Templates
+---------------------------------------
+The schedule actions menu (next to **+ Add Module**) saves a program's module schedule as a reusable JSON template and imports one into another program:
+
+* **Save Schedule** exports each module's handler, ``module_type``, ``seq``, ``required``, ``required_label``, ``link_title`` and its open/close dates as offsets in seconds from an anchor date. The anchor is the earliest module opening date in the program (or the ``anchor`` query parameter of the export endpoint, if given).
+* **Import Schedule** asks for a new anchor date and time, then sets each module's open/close dates to that anchor plus the saved offsets. Modules are matched by handler and ``module_type``; template modules that the program does not have yet are added to it. Modules in the program but not in the template are left unchanged.
+* The import runs in a single transaction, so if any module fails validation (e.g. its open date would be after its close date) nothing is changed. The fixed ``seq``/``required`` rules for special modules (e.g. profile, credit card and confirmation modules) are applied after the template values, ``seq_locked`` modules keep their position, and ``sync_permissions()`` is called for every imported module.
 
 Bidirectional Permission Sync (sync_permissions)
 ================================================
@@ -237,7 +245,6 @@ Testing Guidelines & Verification
 Unit tests for the module schedule endpoints, export/import APIs, and conflict detection reside in ``esp/esp/program/modules/tests/``:
 
 * ``test_module_schedule_api.py``: Validates auth, listing modules, updating dates/metadata, export/import APIs, and preview behavior.
-
 * ``test_module_schedule_conflicts_api.py``: Validates conflict detection based on ``conflicts_with`` and time-window overlap.
 * **Auth Group Setup**: Fresh test databases must invoke ``user_role_setup()`` to seed role groups before committing program permissions.
 

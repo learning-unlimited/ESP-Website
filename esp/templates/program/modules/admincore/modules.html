@@ -275,7 +275,7 @@
             <div class="tl-modal-body">
                 <div class="tl-form-group">
                     <label class="tl-label">Schedule Template JSON</label>
-                    <textarea id="exportJsonText" class="tl-input" rows="10" readonly style="font-family: monospace; font-size: 11px; white-space: pre; background-color: #f8fafc;"></textarea>
+                    <textarea id="exportJsonText" class="tl-input" rows="10" readonly style="font-family: monospace; font-size: 11px; background-color: #f8fafc;"></textarea>
                     <div class="tl-help-text">Contains module configurations, required flags, titles, and relative time offsets in seconds.</div>
                 </div>
             </div>
@@ -298,9 +298,9 @@
             </div>
             <div class="tl-modal-body">
                 <div class="tl-form-group">
-                    <label class="tl-label">New Program Starting Date &amp; Time (Anchor Point)</label>
+                    <label class="tl-label" for="importStartDate">New Anchor Date &amp; Time</label>
                     <input type="datetime-local" id="importStartDate" class="tl-input">
-                    <div class="tl-help-text">This acts as the anchor date (t = 0). All module start/end dates will be recalculated relative to this starting timestamp.</div>
+                    <div class="tl-help-text">The template's anchor date is the earliest module opening date in the program it was saved from. That date moves to the time chosen here, and every other module keeps the same offset from it.</div>
                     <div id="importAnchorInfo" class="tl-help-text" style="color: #2563eb; font-weight: 600; display: none; margin-top: 6px;"></div>
                 </div>
                 <div class="tl-form-group">

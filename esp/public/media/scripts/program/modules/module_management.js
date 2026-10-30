@@ -995,8 +995,6 @@ $j(document).ready(function() {
     // ──────────────────────────────────────────────────────────────
     // Export Schedule Modal
     // ──────────────────────────────────────────────────────────────
-    var currentExportData = null;
-
     window.openExportModal = function() {
         lastFocusBeforeModal = document.activeElement;
         $j('#exportOverlay').addClass('active');
@@ -1007,7 +1005,6 @@ $j(document).ready(function() {
             method: 'GET',
             success: function(res) {
                 if (res.success) {
-                    currentExportData = res;
                     $j('#exportJsonText').val(JSON.stringify(res.schedule, null, 2));
                 } else {
                     $j('#exportJsonText').val('Error loading schedule export.');
@@ -1078,11 +1075,7 @@ $j(document).ready(function() {
         $j('#importOverlay').addClass('active');
         $j('#importJsonText').val('');
         $j('#importFileInput').val('');
-        
-        var now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        var nowStr = now.toISOString().slice(0, 16);
-        $j('#importStartDate').val(nowStr);
+        $j('#importStartDate').val('');
         $j('#importAnchorInfo').hide().text('');
 
         setTimeout(function() {
@@ -1153,6 +1146,10 @@ $j(document).ready(function() {
             scheduleData = JSON.parse(jsonRaw);
         } catch (e) {
             showToast('Invalid JSON syntax in schedule template.', 'error');
+            return;
+        }
+
+        if (!confirm("Importing will overwrite the open/close dates of every module in the template and add any template modules this program does not have yet. Continue?")) {
             return;
         }
 

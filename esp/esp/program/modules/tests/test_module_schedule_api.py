@@ -589,4 +589,73 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
         response = self.client.post(import_url, "{}", content_type="application/json")
         self.assertEqual(response.status_code, 403)
 
+    def _post_import(self, modules, url_kwargs=None, target_start_date="2027-04-01T09:00:00"):
+        url = reverse("module_schedule_import_api", kwargs=url_kwargs or self.url_kwargs)
+        payload = {"target_start_date": target_start_date, "schedule": {"version": "1.0", "modules": modules}}
+        return self.client.post(url, json.dumps(payload), content_type="application/json")
 
+    def test_export_import_round_trip(self):
+        """Exporting one program and importing into another preserves relative offsets."""
+        from esp.program.models import Program
+        self.client.force_login(self.admin)
+
+        self.pmo.start_date = datetime(2026, 9, 1, 10, 0, 0)
+        self.pmo.end_date = datetime(2026, 9, 15, 10, 0, 0)
+        self.pmo.save()
+
+        response = self.client.get(reverse("module_schedule_export_api", kwargs=self.url_kwargs))
+        schedule = json.loads(response.content)["schedule"]
+
+        target_prog = Program.objects.create(url="RoundTrip/2027", name="Round Trip 2027", grade_min=7, grade_max=12)
+        url = reverse("module_schedule_import_api", kwargs={'program_type': 'RoundTrip', 'program_term': '2027'})
+        payload = {"target_start_date": "2027-09-01T10:00:00", "schedule": schedule}
+        response = self.client.post(url, json.dumps(payload), content_type="application/json")
+        self.assertEqual(response.status_code, 200)
+
+        target_pmo = ProgramModuleObj.getFromProgModule(target_prog, self.pmo.module)
+        self.assertTrue(target_prog.program_modules.filter(id=self.pmo.module.id).exists())
+        self.assertEqual(target_pmo.end_date - target_pmo.start_date, timedelta(days=14))
+
+    def test_import_matches_handler_and_module_type(self):
+        """Handlers shared by several modules (e.g. AdmissionsDashboard) are matched by module_type too."""
+        teach_mod = ProgramModule.objects.filter(handler="AdmissionsDashboard", module_type="teach").first()
+        manage_mod = ProgramModule.objects.filter(handler="AdmissionsDashboard", module_type="manage").first()
+        if not (teach_mod and manage_mod):
+            self.skipTest("AdmissionsDashboard modules are not installed")
+        self.program.program_modules.add(teach_mod, manage_mod)
+        self.client.force_login(self.admin)
+
+        response = self._post_import([
+            {"handler": "AdmissionsDashboard", "module_type": "teach", "start_offset_seconds": 0, "end_offset_seconds": 86400},
+            {"handler": "AdmissionsDashboard", "module_type": "manage", "start_offset_seconds": 0, "end_offset_seconds": 2 * 86400},
+        ])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(json.loads(response.content)["updated_count"], 2)
+
+        teach_pmo = ProgramModuleObj.objects.get(program=self.program, module=teach_mod)
+        manage_pmo = ProgramModuleObj.objects.get(program=self.program, module=manage_mod)
+        self.assertEqual(teach_pmo.end_date, datetime(2027, 4, 2, 9, 0, 0))
+        self.assertEqual(manage_pmo.end_date, datetime(2027, 4, 3, 9, 0, 0))
+
+    def test_import_rejects_malformed_items(self):
+        """Malformed module entries return 400 with a safe message instead of a 500 or a raw exception."""
+        self.client.force_login(self.admin)
+        handler = self.pmo.module.handler
+        bad_payloads = [
+            ["not-a-dict"],
+            [{"handler": handler, "start_offset_seconds": "abc"}],
+            [{"handler": handler, "start_offset_seconds": 10 ** 18}],
+            [{"handler": handler, "seq": "abc"}],
+        ]
+        for modules in bad_payloads:
+            with self.subTest(modules=modules):
+                response = self._post_import(modules)
+                self.assertEqual(response.status_code, 400)
+                error = json.loads(response.content)["error"]
+                self.assertNotIn("invalid literal", error)
+
+    def test_import_unknown_handlers_only(self):
+        """A template whose handlers are all unknown is rejected."""
+        self.client.force_login(self.admin)
+        response = self._post_import([{"handler": "NoSuchModule", "start_offset_seconds": 0}])
+        self.assertEqual(response.status_code, 400)

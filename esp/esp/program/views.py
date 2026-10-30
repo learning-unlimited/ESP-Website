@@ -1547,6 +1547,25 @@ def get_program_or_404(request, program_type, program_term):
 
     return prog
 
+def enforce_module_hard_constraints(mod):
+    """Enforce hard seq/required constraints on a module (same as admincore POST handler)."""
+    handler = mod.module.handler
+    if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
+        mod.seq = 0
+        mod.required = True
+    elif "CreditCardModule_" in handler:
+        mod.seq = 10000
+        mod.required = False
+    elif handler == "StudentRegConfirm":
+        mod.seq = 99999
+        mod.required = False
+    elif handler == "AvailabilityModule":
+        mod.required = True
+    elif "AcknowledgementModule" in handler:
+        mod.required = True
+    elif handler == "StudentRegTwoPhase":
+        mod.required = True
+
 @require_GET
 def module_schedule_api(request, program_type, program_term):
     """
@@ -1665,23 +1684,7 @@ def module_schedule_update_api(request, program_type, program_term):
         if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
             return JsonResponse({"success": False, "error": "start_date must be before end_date"}, status=400)
 
-        # Enforce hard constraints (same as admincore POST handler)
-        handler = mod.module.handler
-        if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
-            mod.seq = 0
-            mod.required = True
-        elif "CreditCardModule_" in handler:
-            mod.seq = 10000
-            mod.required = False
-        elif handler == "StudentRegConfirm":
-            mod.seq = 99999
-            mod.required = False
-        elif handler == "AvailabilityModule":
-            mod.required = True
-        elif "AcknowledgementModule" in handler:
-            mod.required = True
-        elif handler == "StudentRegTwoPhase":
-            mod.required = True
+        enforce_module_hard_constraints(mod)
 
         mod.save()
         mod_hydrated.start_date = mod.start_date
@@ -1860,7 +1863,7 @@ def module_schedule_export_api(request, program_type, program_term):
     Outputs: JSONResponse containing anchor_date and list of serialized modules with relative time offsets in seconds.
     """
     prog = get_program_or_404(request, program_type, program_term)
-    modules = prog.getModules(user=request.user)
+    modules = prog.getModules()
 
     anchor_str = request.GET.get("anchor")
     anchor_dt = None
@@ -1911,6 +1914,29 @@ def module_schedule_export_api(request, program_type, program_term):
         }
     })
 
+class ScheduleImportError(ValueError):
+    """Validation error whose message is safe to return to the user."""
+
+def _schedule_int(item, key, handler):
+    value = item.get(key)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ScheduleImportError(f"'{key}' must be an integer for module '{handler}'")
+    return value
+
+def _schedule_string(item, key, handler):
+    value = item.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ScheduleImportError(f"{key} must be a string for module '{handler}'")
+    from esp.program.modules.base import ProgramModuleObj
+    max_len = ProgramModuleObj._meta.get_field(key).max_length
+    if len(value) > max_len:
+        raise ScheduleImportError(f"{key} must be {max_len} characters or fewer for module '{handler}'")
+    return value
+
 @require_POST
 def module_schedule_import_api(request, program_type, program_term):
     """
@@ -1918,6 +1944,7 @@ def module_schedule_import_api(request, program_type, program_term):
     Accepts JSON body:
       - target_start_date (ISO timestamp string for new anchor point)
       - schedule (dict containing 'modules' list of module configurations)
+    Modules are matched by handler and module_type; modules not yet in the program are added.
     Calculates new start_date / end_date from offsets, updates ProgramModuleObj records,
     and calls sync_permissions() for permission synchronization.
     """
@@ -1925,13 +1952,16 @@ def module_schedule_import_api(request, program_type, program_term):
 
     try:
         data = json.loads(request.body)
+        if not isinstance(data, dict):
+            raise ScheduleImportError("Invalid request payload")
+
         target_start_str = data.get("target_start_date")
-        if not target_start_str:
-            return JsonResponse({"success": False, "error": "Missing 'target_start_date'"}, status=400)
+        if not target_start_str or not isinstance(target_start_str, str):
+            raise ScheduleImportError("Missing 'target_start_date'")
 
         target_anchor_dt = parse_datetime(target_start_str)
         if target_anchor_dt is None:
-            return JsonResponse({"success": False, "error": "Invalid 'target_start_date' format"}, status=400)
+            raise ScheduleImportError("Invalid 'target_start_date' format")
 
         if timezone.is_aware(target_anchor_dt):
             target_anchor_dt = timezone.make_naive(target_anchor_dt, timezone.get_current_timezone())
@@ -1939,119 +1969,95 @@ def module_schedule_import_api(request, program_type, program_term):
         schedule_data = data.get("schedule", {})
         if isinstance(schedule_data, dict):
             module_items = schedule_data.get("modules")
-            if module_items is None and "schedule" in schedule_data and isinstance(schedule_data["schedule"], dict):
+            if module_items is None and isinstance(schedule_data.get("schedule"), dict):
                 module_items = schedule_data["schedule"].get("modules")
-            if module_items is None:
-                module_items = []
         elif isinstance(schedule_data, list):
             module_items = schedule_data
         else:
-            return JsonResponse({"success": False, "error": "Invalid schedule payload"}, status=400)
+            raise ScheduleImportError("Invalid schedule payload")
 
-        if not isinstance(module_items, list):
-            return JsonResponse({"success": False, "error": "'modules' must be a list"}, status=400)
-
-        if len(module_items) == 0:
-            return JsonResponse({"success": False, "error": "No valid module configurations found in schedule payload"}, status=400)
+        if not isinstance(module_items, list) or not module_items:
+            raise ScheduleImportError("No valid module configurations found in schedule payload")
 
         from esp.program.models import ProgramModule
         from esp.program.modules.base import ProgramModuleObj
         from datetime import timedelta
         from django.db import transaction
 
-        existing_modules = {m.module.handler: m for m in prog.getModules(user=request.user)}
-        all_program_modules = {pm.handler: pm for pm in ProgramModule.objects.all()}
+        # Some handlers (e.g. AdmissionsDashboard) back several modules, so match on module_type too
+        existing_modules = {(m.module.handler, m.module.module_type): m for m in prog.getModules()}
+        all_program_modules = {(pm.handler, pm.module_type): pm for pm in ProgramModule.objects.all()}
+
+        def find_key(handler, module_type, keys):
+            if module_type is not None:
+                return (handler, module_type) if (handler, module_type) in keys else None
+            matches = [k for k in keys if k[0] == handler]
+            return matches[0] if len(matches) == 1 else None
 
         updated_count = 0
         with transaction.atomic():
             for item in module_items:
+                if not isinstance(item, dict):
+                    raise ScheduleImportError("Each module configuration must be an object")
                 handler = item.get("handler")
-                if not handler:
+                if not handler or not isinstance(handler, str):
                     continue
+                module_type = item.get("module_type")
 
-                if handler in existing_modules:
-                    mod = existing_modules[handler]
-                elif handler in all_program_modules:
-                    prog_mod = all_program_modules[handler]
+                key = find_key(handler, module_type, existing_modules)
+                if key is not None:
+                    mod = existing_modules[key]
+                else:
+                    key = find_key(handler, module_type, all_program_modules)
+                    if key is None:
+                        continue
+                    prog_mod = all_program_modules[key]
                     prog.program_modules.add(prog_mod)
                     mod = ProgramModuleObj.getFromProgModule(prog, prog_mod)
-                    existing_modules[handler] = mod
-                else:
-                    continue
+                    existing_modules[key] = mod
 
-                mod_hydrated = ProgramModuleObj.getFromProgModule(prog, mod.module)
-
-                start_offset = item.get("start_offset_seconds")
-                if start_offset is not None:
-                    mod.start_date = target_anchor_dt + timedelta(seconds=int(start_offset))
-                else:
-                    mod.start_date = None
-
-                end_offset = item.get("end_offset_seconds")
-                if end_offset is not None:
-                    mod.end_date = target_anchor_dt + timedelta(seconds=int(end_offset))
-                else:
-                    mod.end_date = None
+                start_offset = _schedule_int(item, "start_offset_seconds", handler)
+                end_offset = _schedule_int(item, "end_offset_seconds", handler)
+                try:
+                    mod.start_date = None if start_offset is None else target_anchor_dt + timedelta(seconds=start_offset)
+                    mod.end_date = None if end_offset is None else target_anchor_dt + timedelta(seconds=end_offset)
+                except OverflowError:
+                    raise ScheduleImportError(f"Time offsets are out of range for module '{handler}'")
 
                 if mod.start_date and mod.end_date and mod.start_date >= mod.end_date:
-                    raise ValueError(f"Calculated start_date is after end_date for module '{mod.module.admin_title}'")
+                    raise ScheduleImportError(f"Calculated start_date is after end_date for module '{mod.module.admin_title}'")
 
-                if "seq" in item and not mod_hydrated.seq_locked:
-                    mod.seq = int(item["seq"])
+                seq = _schedule_int(item, "seq", handler)
+                if seq is not None and not mod.seq_locked:
+                    mod.seq = seq
                 if "required" in item:
                     if not isinstance(item["required"], bool):
-                        raise ValueError(f"Field 'required' must be a boolean value for module '{handler}'")
+                        raise ScheduleImportError(f"Field 'required' must be a boolean value for module '{handler}'")
                     mod.required = item["required"]
-                if "required_label" in item and item["required_label"] is not None:
-                    label = item["required_label"]
-                    if not isinstance(label, str):
-                        raise ValueError(f"required_label must be a string for module '{handler}'")
-                    max_len = ProgramModuleObj._meta.get_field('required_label').max_length
-                    if len(label) > max_len:
-                        raise ValueError(f"required_label must be {max_len} characters or fewer for module '{handler}'")
-                    mod.required_label = label
-                if "link_title" in item and item["link_title"] is not None:
-                    title = item["link_title"]
-                    if not isinstance(title, str):
-                        raise ValueError(f"link_title must be a string for module '{handler}'")
-                    max_len = ProgramModuleObj._meta.get_field('link_title').max_length
-                    if len(title) > max_len:
-                        raise ValueError(f"link_title must be {max_len} characters or fewer for module '{handler}'")
-                    mod.link_title = title
+                for field in ("required_label", "link_title"):
+                    value = _schedule_string(item, field, handler)
+                    if value is not None:
+                        setattr(mod, field, value)
 
-                if handler in ("StudentRegProfileModule", "TeacherRegProfileModule"):
-                    mod.seq = 0
-                    mod.required = True
-                elif "CreditCardModule_" in handler:
-                    mod.seq = 10000
-                    mod.required = False
-                elif handler == "StudentRegConfirm":
-                    mod.seq = 99999
-                    mod.required = False
-                elif handler == "AvailabilityModule":
-                    mod.required = True
-                elif "AcknowledgementModule" in handler:
-                    mod.required = True
-                elif handler == "StudentRegTwoPhase":
-                    mod.required = True
+                enforce_module_hard_constraints(mod)
 
                 mod.save()
-                mod_hydrated.start_date = mod.start_date
-                mod_hydrated.end_date = mod.end_date
-                mod_hydrated.sync_permissions()
+                mod.sync_permissions()
                 updated_count += 1
 
             if updated_count == 0:
-                raise ValueError("No valid module configurations were found or updated from the provided schedule payload.")
+                raise ScheduleImportError("No valid module configurations were found or updated from the provided schedule payload.")
 
         return JsonResponse({
             "success": True,
             "updated_count": updated_count,
             "target_start_date": target_anchor_dt.isoformat()
         })
-    except (ValueError, TypeError) as e:
+    except ScheduleImportError as e:
         return JsonResponse({"success": False, "error": str(e)}, status=400)
-    except Exception as e:
+    except (ValueError, TypeError):
+        # Raw messages can contain internal Python details, so don't return them
+        return JsonResponse({"success": False, "error": "Invalid data format in schedule payload"}, status=400)
+    except Exception:
         logger.exception("module_schedule_import_api failed")
         return JsonResponse({"success": False, "error": "An internal error occurred"}, status=500)
-
