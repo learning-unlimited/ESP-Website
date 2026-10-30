@@ -1,0 +1,67 @@
+{% comment %}
+What the student's schedule does not currently satisfy, whether or not the
+constraints are enforced; see esp.program.models.unmet_requirements.
+Expects 'unmet_requirements' and 'autocorrected_sections' in the context
+(set by StudentClassRegModule.prepare_static).
+{% endcomment %}
+{% if unmet_requirements or autocorrected_sections %}
+<style type="text/css">
+    .schedule-constraint-warning {
+        display: block;
+        box-sizing: border-box;
+        width: auto;
+        max-width: 700px;
+        margin: 12px auto;
+        padding: 12px 16px;
+        border: 1px solid #e0a800;
+        border-left: 8px solid #e0a800;
+        border-radius: 4px;
+        background-color: #fff3cd;
+        color: #6b5200;
+        font-family: inherit;
+        font-size: 1em;
+        font-style: normal;
+        text-align: left;
+    }
+    .schedule-constraint-warning .schedule-constraint-warning-title {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+        font-size: 1.1em;
+        text-transform: none;
+    }
+    .schedule-constraint-added {
+        border-color: #6c9b45;
+        border-left-color: #6c9b45;
+        background-color: #eaf5e0;
+        color: #33501d;
+    }
+    .schedule-constraint-warning ul {
+        margin: 0;
+        padding-left: 22px;
+    }
+    .schedule-constraint-warning li {
+        margin: 2px 0;
+    }
+</style>
+{% if autocorrected_sections %}
+<div class="schedule-constraint-warning schedule-constraint-added" role="status">
+    <span class="schedule-constraint-warning-title">We updated your schedule</span>
+    <ul>
+    {% for section in autocorrected_sections %}
+        <li>{{ section.title }} was added at {% for time in section.friendly_times %}{{ time }}{% if not forloop.last %}, {% endif %}{% endfor %}, so that your schedule meets the requirements below.</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% if unmet_requirements %}
+<div class="schedule-constraint-warning" role="alert">
+    <span class="schedule-constraint-warning-title">&#9888; Please check your schedule</span>
+    <ul>
+    {% for requirement in unmet_requirements %}
+        <li>You need to {{ requirement }}.</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+{% endif %}

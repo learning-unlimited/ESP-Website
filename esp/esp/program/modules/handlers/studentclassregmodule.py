@@ -51,9 +51,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, m
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, Program, StudentRegistration, StudentSubjectInterest, autocorrect_schedule, schedule_change_blockers, unmet_requirements
 from esp.utils.web import render_to_response
 from esp.middleware      import ESPError, ESPError_NoLog
+from django.contrib import messages
 from esp.users.models    import ESPUser, Permission
 from esp.tagdict.models  import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -130,6 +131,30 @@ def json_encode(obj):
 CATALOG_CACHE_MAX_AGE = 120
 
 # student class picker module
+class ScheduleConstraintError(ESPError_NoLog):
+    """ A schedule change that an enforced constraint does not allow. """
+    pass
+
+def check_schedule_constraints(request, prog, add_sections=(), remove_sections=(), webapp=False):
+    """ Refuse a schedule change that an enforced constraint does not allow.
+    Taking a class on is judged on repairability. Onsite-morphed admins are exempt.
+    """
+    if getattr(request.user, 'onsite_local', False):
+        return
+    blocked = schedule_change_blockers(request.user, prog, add_sections=add_sections,
+                                       remove_sections=remove_sections, webapp=webapp)
+    if blocked:
+        raise ScheduleConstraintError("This change would leave your schedule in violation of "
+                                      f"the requirement that you {blocked[0]}.")
+
+def apply_schedule_autocorrect(request, prog, webapp=False):
+    """ Repair whatever an autocorrecting constraint is missing, remembering
+    what was added so the schedule can say so. """
+    added = autocorrect_schedule(request.user, prog, webapp=webapp)
+    if added:
+        request.autocorrected_sections = getattr(request, 'autocorrected_sections', []) + added
+    return added
+
 class StudentClassRegModule(ProgramModuleObj):
     doc = """Allows students to directly enroll in classes."""
     permission_types = ('Student/Classes',)
@@ -366,6 +391,8 @@ class StudentClassRegModule(ProgramModuleObj):
         context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
+        context['unmet_requirements'] = unmet_requirements(user, program)
+        context['autocorrected_sections'] = getattr(get_current_request(), 'autocorrected_sections', [])
         if scrm:
             context['allow_removal'] = scrm.deadline_met('/Removal')
 
@@ -487,6 +514,14 @@ class StudentClassRegModule(ProgramModuleObj):
                 cobj_error = cobj.cannotAdd(request.user, scrmi.enforce_max, webapp=webapp)
                 error = cobj_error or section_error
 
+            if not error and not request.user.onsite_local:
+                blocked = schedule_change_blockers(request.user, prog, add_sections=[section],
+                                                   webapp=webapp)
+                if blocked:
+                    raise ScheduleConstraintError(
+                        f"Adding {section.title()} to your schedule would leave you no way to "
+                        f"{blocked[0]}.")
+
             if scrmi.use_priority:
                 priority = request.user.getRegistrationPriority(prog, section.meeting_times.all())
             else:
@@ -497,6 +532,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
             #   Desired priority level is 1 above current max
             if section.preregister_student(request.user, request.user.onsite_local, priority, webapp=webapp):
+                apply_schedule_autocorrect(request, prog, webapp=webapp)
                 return True
             else:
                 raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
@@ -517,10 +553,9 @@ class StudentClassRegModule(ProgramModuleObj):
                         if section:
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            check_schedule_constraints(request, prog, add_sections=[section],
+                                                       remove_sections=conflicts)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = self.addclass_logic(request, tl, one, two, module, extra, prog)
                     if not success:
@@ -530,6 +565,10 @@ class StudentClassRegModule(ProgramModuleObj):
 
             if success:
                 return self.goToCore(tl)
+
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return self.goToCore(tl)
 
         except ESPError_NoLog as inst:
             # Check for schedule conflicts
@@ -577,10 +616,9 @@ class StudentClassRegModule(ProgramModuleObj):
                         if section:
                             conflicts = section.get_conflicts(request.user)
                             verbs = RTC.getVisibleRegistrationTypeNames(prog)
+                            check_schedule_constraints(request, prog, add_sections=[section],
+                                                       remove_sections=conflicts)
                             for conflict in conflicts:
-                                error = conflict.cannotRemove(request.user)
-                                if error and not getattr(request.user, "onsite_local", False):
-                                    raise ESPError(error, log=False)
                                 conflict.unpreregister_student(request.user, verbs)
                     success = self.addclass_logic(request, tl, one, two, module, extra, prog)
                     if not success:
@@ -864,33 +902,33 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @staticmethod
     def clearslot_logic(request, tl, one, two, module, extra, prog):
-        """ Clear the specified timeslot from a student registration and return True if there are no errors """
+        """ Clear the specified timeslot from a student registration and return the IDs of the removed sections """
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
         #   Get the sections that the student is registered for in the specified timeslot.
         oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
         #   Narrow this down to one class if we're using the priority system.
         if 'sec_id' in request.GET:
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out if constraints allow
+        #   Collect the IDs as a list in case the queryset changes.
+        oldclasses = list(oldclasses)
+        removed_ids = [sec.id for sec in oldclasses]
+        check_schedule_constraints(request, prog, remove_sections=oldclasses)
+        #   Take the student out.
         for sec in oldclasses:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                return result
-            else:
-                sec.unpreregister_student(request.user, verbs)
-        #   Return the ID of classes that were removed.
-        return oldclasses.values_list('id', flat=True)
+            sec.unpreregister_student(request.user, verbs)
+        #   Return the IDs of the classes that were removed.
+        return removed_ids
 
     @aux_call
     @needs_student_in_grade
     @meets_any_deadline(['/Classes', '/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
-        if isinstance(result, str):
-            raise ESPError(result, log=False)
-        else:
-            return self.goToCore(tl)
+        try:
+            self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+        return self.goToCore(tl)
 
     @aux_call
     @needs_student_in_grade
@@ -900,7 +938,12 @@ class StudentClassRegModule(ProgramModuleObj):
         if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return self.clearslot(request, tl, one, two, module, extra, prog)
 
-        cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        try:
+            cleared_ids = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        except ScheduleConstraintError as inst:
+            #   Matches the shape ajax_addclass uses, so the page can show it inline.
+            return HttpResponse(json.dumps({'status': 200, 'error': str(inst)}),
+                                content_type='application/json')
 
         if 'no_schedule' in request.POST:
             resp = HttpResponse(content_type='application/json')
@@ -938,12 +981,14 @@ class StudentClassRegModule(ProgramModuleObj):
         if not sections.exists():
             raise ESPError("No registrations found for this day.", log=False)
 
+        try:
+            check_schedule_constraints(request, prog, remove_sections=sections)
+        except ScheduleConstraintError as inst:
+            messages.error(request, str(inst))
+            return self.goToCore(tl)
+
         for sec in sections:
-            result = sec.cannotRemove(request.user)
-            if result and not hasattr(request.user, "onsite_local"):
-                raise ESPError("Cannot remove class %s: %s" % (sec.emailcode(), result), log=False)
-            else:
-                sec.unpreregister_student(request.user, verbs)
+            sec.unpreregister_student(request.user, verbs)
 
         return self.goToCore(tl)
 

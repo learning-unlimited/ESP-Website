@@ -2081,17 +2081,17 @@ class ScheduleMap:
         sl = self.user.getEnrolledSectionsFromProgram(self.program)
         for s in sl:
             for m in s._timeslot_ids:
-                result[m].append(s)
+                result.setdefault(m, []).append(s)
         self.map = result
         return self.map
 
     def add_section(self, sec):
         for t in sec.timeslot_ids():
-            self.map[t].append(sec)
+            self.map.setdefault(t, []).append(sec)
 
     def remove_section(self, sec):
         for t in sec.timeslot_ids():
-            if sec in self.map[t]:
+            if sec in self.map.get(t, []):
                 self.map[t].remove(sec)
 
     def __marinade__(self):
@@ -2101,11 +2101,6 @@ class ScheduleMap:
 
     def __str__(self):
         return f'{self.map}'
-
-# Log at most once per constraint instance (by DB pk or object id) to avoid
-# flooding logs when schedule evaluation retries handle_failure repeatedly.
-_schedule_constraint_on_failure_warned_keys = set()
-
 
 class ScheduleConstraint(models.Model):
     """ A scheduling constraint that can be tested:
@@ -2125,8 +2120,10 @@ class ScheduleConstraint(models.Model):
 
     condition = models.ForeignKey(BooleanExpression, related_name='condition_constraint', on_delete=models.CASCADE)
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint', on_delete=models.CASCADE)
-    #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
-    on_failure = models.TextField()
+    #   Binding constraints block schedule changes that would newly break them;
+    #   advisory ones only produce a warning.
+    enforce = models.BooleanField(default=False, help_text='Should schedule changes that would newly violate this constraint be prevented? If not, produce a warning instead.')
+    autocorrect = models.BooleanField(default=False, help_text='Should the student be enrolled automatically in something that satisfies this constraint, rather than being warned or blocked?')
 
     class Meta:
         app_label = 'program'
@@ -2134,40 +2131,135 @@ class ScheduleConstraint(models.Model):
     def __str__(self):
         return f'{self.program.niceName()}: "{self.condition}" requires "{self.requirement}"'
 
-    def evaluate(self, smap, recursive=True):
-        self.schedule_map = smap
-        cond_state = self.condition.evaluate(map=self.schedule_map.map)
-        if cond_state:
-            result = self.requirement.evaluate(map=self.schedule_map.map)
-            if result:
-                return True
-            else:
-                if recursive:
-                    #   Try using the execution hook for arbitrary code... and running again to see if it helped.
-                    (fail_result, data) = self.handle_failure()
-                    if isinstance(fail_result, ScheduleMap):
-                        self.schedule_map = fail_result
-                    return self.evaluate(self.schedule_map, recursive=False)
-                else:
-                    return False
-        else:
-            return True
+    def satisfying_options(self):
+        """ (timeblock id, category id) pairs worth trying as a repair.
+        Only category tests qualify; other shapes cannot be repaired automatically.
+        """
+        return [(token.timeblock_id, token.category_id)
+                for token in self.requirement.get_stack()
+                if isinstance(token, ScheduleTestCategory)]
 
-    def handle_failure(self):
-        # on_failure previously executed arbitrary code via exec(); disabled for
-        # security. Kept as a DB field for backwards compatibility.
-        if not self.on_failure or not self.on_failure.strip():
-            return (None, None)
-        key = ('pk', self.pk) if self.pk is not None else ('id', id(self))
-        if key not in _schedule_constraint_on_failure_warned_keys:
-            _schedule_constraint_on_failure_warned_keys.add(key)
-            logger.warning(
-                "Execution of ScheduleConstraint.on_failure disabled for "
-                "security (constraint id=%s, program_id=%s).",
-                self.pk,
-                self.program_id,
-            )
-        return (None, None)
+    def evaluate(self, smap):
+        self.schedule_map = smap
+        if not self.condition.evaluate(map=self.schedule_map.map):
+            return True
+        return bool(self.requirement.evaluate(map=self.schedule_map.map))
+
+def unmet_requirements(user, program):
+    """ Labels of the schedule constraint requirements this user's schedule fails.
+
+    Every constraint is reported, whether or not it is enforced.
+    """
+    constraints = program.getScheduleConstraints()
+    if not constraints:
+        return []
+    schedule_map = ScheduleMap(user, program)
+    return [constraint.requirement.label for constraint in constraints
+            if not constraint.evaluate(schedule_map)]
+
+def _schedule_maps(user, program, add_sections, remove_sections):
+    """ The user's schedule as it is now, and as this change would leave it. """
+    before = ScheduleMap(user, program)
+    after = ScheduleMap(user, program)
+    for section in remove_sections:
+        after.remove_section(section)
+    for section in add_sections:
+        after.add_section(section)
+    return (before, after)
+
+def repair_section(constraint, schedule_map, exclude=(), webapp=False):
+    """ A section the user could be enrolled in to satisfy this constraint,
+    or None if no single section would do it.
+    """
+    from esp.program.models.class_ import ClassSection
+
+    exclude_ids = {section.id for section in exclude}
+    for timeblock_id, category_id in constraint.satisfying_options():
+        if schedule_map.map.get(timeblock_id):
+            #   The user is busy then, so this option is not available.
+            continue
+        sections = ClassSection.objects.filter(
+            meeting_times__id=timeblock_id,
+            parent_class__parent_program=constraint.program,
+            parent_class__category_id=category_id,
+            status__gt=0, parent_class__status__gt=0,
+        ).exclude(id__in=exclude_ids).order_by('id')
+        for section in sections:
+            #   A section can meet more than once, so it has to be free throughout
+            if any(schedule_map.map.get(meeting_id) for meeting_id in section.timeslot_ids()):
+                continue
+            #   A lunch period has a real capacity
+            if section.isFull(webapp=webapp):
+                continue
+            #   Check if adding this section satisfies the constraint
+            schedule_map.add_section(section)
+            try:
+                if constraint.evaluate(schedule_map):
+                    return section
+            finally:
+                schedule_map.remove_section(section)
+    return None
+
+def _satisfiable(constraint, schedule_map, webapp=False):
+    """ Whether the constraint holds, or could still be made to hold. """
+    return (constraint.evaluate(schedule_map)
+            or repair_section(constraint, schedule_map, webapp=webapp) is not None)
+
+def blocking_requirements(user, program, add_sections=(), remove_sections=()):
+    """ Labels of the enforced requirements this change would newly break.
+    When removing a class, only breaking a requirement that was previously met is refused;
+    constraints already broken are ignored.
+    """
+    constraints = [c for c in program.getScheduleConstraints() if c.enforce]
+    if not constraints:
+        return []
+
+    before, after = _schedule_maps(user, program, add_sections, remove_sections)
+    return [c.requirement.label for c in constraints
+            if c.evaluate(before) and not c.evaluate(after)]
+
+def unrepairable_requirements(user, program, add_sections=(), remove_sections=(), webapp=False):
+    """ Labels of the enforced requirements this change would leave no way to meet.
+    When adding a class, only using up the last opportunity is refused.
+    """
+    constraints = [c for c in program.getScheduleConstraints() if c.enforce]
+    if not constraints:
+        return []
+
+    before, after = _schedule_maps(user, program, add_sections, remove_sections)
+    return [c.requirement.label for c in constraints
+            if _satisfiable(c, before, webapp) and not _satisfiable(c, after, webapp)]
+
+def schedule_change_blockers(user, program, add_sections=(), remove_sections=(), webapp=False):
+    """ Labels of the enforced requirements that forbid this change. """
+    if add_sections:
+        return unrepairable_requirements(user, program, add_sections=add_sections,
+                                         remove_sections=remove_sections, webapp=webapp)
+    return blocking_requirements(user, program, remove_sections=remove_sections)
+
+def autocorrect_schedule(user, program, webapp=False):
+    """ Enroll the user in whatever an autocorrecting constraint is missing,
+    and return the sections that were added.
+    """
+    constraints = [c for c in program.getScheduleConstraints()
+                   if c.enforce and c.autocorrect]
+    added = []
+    for constraint in constraints:
+        schedule_map = ScheduleMap(user, program)
+        if constraint.evaluate(schedule_map):
+            continue
+        #   A section can fill between being chosen and being registered for,
+        #   so work down the candidates until one takes the student.
+        tried = list(added)
+        while True:
+            section = repair_section(constraint, schedule_map, exclude=tried, webapp=webapp)
+            if section is None:
+                break
+            if section.preregister_student(user, webapp=webapp):
+                added.append(section)
+                break
+            tried.append(section)
+    return added
 
 class ScheduleTestTimeblock(BooleanToken):
     """ A boolean value that keeps track of a timeblock.

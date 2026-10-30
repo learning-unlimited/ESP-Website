@@ -397,3 +397,20 @@ table.sortable tbody tr:nth-child(2n+1) td {
   padding-left: 0;
   color: #c50000;
 }
+
+/* Messages shown above a webapp page, e.g. a refused schedule change. */
+.webapp_message {
+    margin: 10px;
+    padding: 10px 14px;
+    border-radius: 4px;
+    border-left: 8px solid #6c757d;
+    background-color: #e9ecef;
+    color: #333;
+    text-align: left;
+}
+
+.webapp_message.error {
+    border-left-color: #c0392b;
+    background-color: #fdecea;
+    color: #7b241c;
+}
