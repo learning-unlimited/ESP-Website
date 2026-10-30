@@ -1,8 +1,11 @@
 import ast
+import importlib
+import json
 import os
 import re
 
 from django import forms
+from django.apps import apps
 from django.core.exceptions import ValidationError
 from django.test import TestCase, SimpleTestCase
 from django.contrib.auth.models import User
@@ -19,6 +22,7 @@ from esp.tagdict import (
     MultilineCharField,
 )
 from esp.tagdict.models import Tag
+from esp.utils.widgets import bootstrap_icons
 from esp.tagdict.validators import (
     ALL_HIDE_FIELDS_TAG_KEYS,
     get_valid_field_names_for_tag,
@@ -1637,3 +1641,39 @@ class VisibleIfTest(TestCase):
                                     'whatever'))
         self.assertTrue(is_visible({'visible_if': lambda key, program: True},
                                    'whatever'))
+
+
+class NavIconsToBootstrapIconsMigrationTest(TestCase):
+    """The data migration that converts saved Glyphicon nav icons."""
+
+    def setUp(self):
+        self.migration = importlib.import_module(
+            'esp.tagdict.migrations.0002_nav_icons_to_bootstrap_icons')
+
+    def _convert(self, value):
+        Tag.objects.filter(key='theme_template_control').delete()
+        Tag.objects.create(key='theme_template_control', value=value)
+        self.migration.convert_nav_icons(apps, None)
+        return Tag.objects.get(key='theme_template_control').value
+
+    def test_converts_glyphicons_and_keeps_the_rest(self):
+        links = [{'text': t, 'link': '/', 'icon': icon} for t, icon in [
+            ('renamed', 'home'), ('pair', 'star'), ('pair', 'star-empty'),
+            ('shared', 'envelope'), ('unmatched', 'king'), ('none', '')]]
+        data = {'full_group_name': 'Splash', 'nav_structure': [
+            {'header': 'Learn', 'header_link': '/learn', 'links': links}]}
+        result = json.loads(self._convert(json.dumps(data)))
+        self.assertEqual(result['full_group_name'], 'Splash')
+        self.assertEqual([link['icon'] for link in result['nav_structure'][0]['links']],
+                         ['house', 'star-fill', 'star', 'envelope', 'king', ''])
+
+    def test_leaves_unexpected_values_alone(self):
+        for value in ['not json', '{}', '{"nav_structure": "oops"}',
+                      '{"nav_structure": [{"header": "x"}]}']:
+            self.assertEqual(self._convert(value), value)
+
+    def test_every_target_is_a_bootstrap_icon(self):
+        icons = bootstrap_icons()
+        self.assertTrue(icons, 'bootstrap-icons npm package is not installed')
+        missing = sorted(set(self.migration.GLYPHICON_TO_BOOTSTRAP_ICON.values()) - set(icons))
+        self.assertEqual(missing, [])
