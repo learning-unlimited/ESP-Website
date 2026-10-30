@@ -40,6 +40,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.conf import settings
 from django.contrib.sites.models import Site
+from django.db import DataError
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -173,12 +174,12 @@ def refund(request):
             program = Program.objects.get(id=request.GET['program'])
             context['form'] = RefundSearchForm(initial={'program': program.id})
             request.session['refund_last_program_id'] = program.id
-        except (Program.DoesNotExist, ValueError, TypeError):
+        except (Program.DoesNotExist, DataError, ValueError, TypeError):
             context['form'] = RefundSearchForm(initial={'program': initial_program_id})
         if 'user' in request.GET:
             try:
                 users = [ESPUser.objects.get(id=request.GET['user'])]
-            except (ESPUser.DoesNotExist, ValueError, TypeError):
+            except (ESPUser.DoesNotExist, DataError, ValueError, TypeError):
                 pass
 
     if 'form' not in context:
@@ -233,7 +234,7 @@ def process_refund(request):
     program_id = request.POST.get('program_id')
     try:
         program = Program.objects.get(id=program_id)
-    except (Program.DoesNotExist, ValueError, TypeError):
+    except (Program.DoesNotExist, DataError, ValueError, TypeError):
         return render_to_response('accounting/refund_error.html', request, {
             'error_message': 'Invalid program specified.',
         })

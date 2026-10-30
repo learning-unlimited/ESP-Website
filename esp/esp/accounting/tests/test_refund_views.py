@@ -181,9 +181,9 @@ class RefundViewsTest(ProgramFrameworkTest):
         self.assertContains(response, 'Invalid program specified.')
 
     def test_process_refund_non_numeric_program(self):
-        """POST to process_refund with non-numeric or empty program should return an error."""
+        """POST to process_refund with non-numeric, out-of-range, or empty program should return an error."""
         self.client.login(username=self.admin.username, password='password')
-        for invalid_prog in ['invalid', '', None]:
+        for invalid_prog in ['invalid', '', '99999999999999999999', None]:
             data = {}
             if invalid_prog is not None:
                 data['program_id'] = invalid_prog
@@ -212,13 +212,21 @@ class RefundViewsTest(ProgramFrameworkTest):
         self.assertTemplateUsed(response, 'accounting/refund.html')
 
     def test_refund_non_numeric_program_and_user_get(self):
-        """GET request to refund with non-numeric program or user shouldn't crash."""
+        """GET request to refund with non-numeric or out-of-range program or user shouldn't crash."""
         self.client.login(username=self.admin.username, password='password')
         response = self.client.get('/accounting/refund/', {'program': 'invalid', 'user': 'invalid'})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounting/refund.html')
 
+        response = self.client.get('/accounting/refund/', {'program': '99999999999999999999', 'user': '99999999999999999999'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund.html')
+
         response = self.client.get('/accounting/refund/', {'program': self.program.id, 'user': 'invalid'})
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'accounting/refund.html')
+
+        response = self.client.get('/accounting/refund/', {'program': self.program.id, 'user': '99999999999999999999'})
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'accounting/refund.html')
 
