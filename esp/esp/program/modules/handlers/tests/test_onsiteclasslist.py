@@ -242,6 +242,36 @@ class SectionDataTests(ProgramFrameworkTest):
         self.assertTrue(len(self.result['emailcode']) > 0)
 
 
+class ClasschangeGridRefreshIntervalTests(SimpleTestCase):
+    """classchange_grid must pass the onsite_classchange_grid_refresh Tag
+    (seconds) to the template in ms, with a default and a minimum (#5439)."""
+
+    def _refresh_interval_ms(self, tag_value):
+        prog = SimpleNamespace(
+            getTimeSlots=lambda: [],
+            dates=lambda: [],
+            open_class_category=SimpleNamespace(id=1, symbol='O', category='Open'),
+        )
+        module = SimpleNamespace(baseDir=lambda: '')
+        request = RequestFactory().get('/onsite/classchange_grid')
+        fn = getattr(OnSiteClassList.classchange_grid, 'method', OnSiteClassList.classchange_grid)
+        with patch('esp.program.modules.handlers.onsiteclasslist.Tag.getTag', return_value=tag_value), \
+                patch('esp.program.modules.handlers.onsiteclasslist.Printer.objects.all') as mocked_printers, \
+                patch('esp.program.modules.handlers.onsiteclasslist.render_to_response') as mocked_render:
+            mocked_printers.return_value.values_list.return_value = []
+            fn(module, request, None, None, None, None, None, prog)
+        return mocked_render.call_args[0][2]['refresh_interval_ms']
+
+    def test_tag_value_is_converted_to_ms(self):
+        self.assertEqual(self._refresh_interval_ms('45'), 45000)
+
+    def test_value_below_minimum_is_clamped(self):
+        self.assertEqual(self._refresh_interval_ms('0'), 10000)
+
+    def test_non_numeric_value_falls_back_to_default(self):
+        self.assertEqual(self._refresh_interval_ms('abc'), 30000)
+
+
 class CatalogStatusTests(ProgramFrameworkTest):
     """Tests for OnSiteClassList.catalog_status"""
 

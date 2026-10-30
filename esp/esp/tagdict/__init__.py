@@ -402,6 +402,14 @@ all_global_tags = {
         'is_setting': True,
         'field': forms.IntegerField(min_value=1),
     },
+    'onsite_classchange_grid_refresh': {
+        'is_boolean': False,
+        'help_text': 'How often the onsite class changes grid automatically refreshes its data (in seconds). Lower values increase server load, especially when several admins have the grid open.',
+        'default': '30',
+        'category': 'onsite',
+        'is_setting': True,
+        'field': forms.IntegerField(min_value=10),
+    },
     'oktimes_collapse': {
         'is_boolean': True,
         'help_text': 'Collapse feasible start times into a single column in the Viable Times Spreadsheet?',

@@ -441,6 +441,13 @@ class OnSiteClassList(ProgramModuleObj):
         context['initial_student'] = request.GET.get('student_id', '')
         context['check_in_default'] = datetime.today().date() in prog.dates()
 
+        #   Auto-refresh interval in ms, clamped in case the Tag was set via the admin.
+        try:
+            refresh_seconds = int(Tag.getTag('onsite_classchange_grid_refresh'))
+        except (ValueError, TypeError):
+            refresh_seconds = 30
+        context['refresh_interval_ms'] = max(refresh_seconds, 10) * 1000
+
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id', 'symbol', 'category'] ] )
         context['open_class_category'] = mark_safe(json.dumps(open_class_category))

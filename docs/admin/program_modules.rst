@@ -762,7 +762,7 @@ Show open classes at registration (OnSiteClassList)
 
 This module creates a view which shows a scrolling list, suitable for projection on a large screen at your program.  The list shows non-full classes sorted by time slot, with an emphasis on those beginning in the next hour.  Students can also view this list if they have a computer or mobile device with Internet access.
 
-This module is very useful because it includes the class changes grid (classchange_grid), which is now the preferred way to handle students' class change requests during a program.  The class change grid is a compact display of all classes with color codes indicating how much (predicted and actual) space there is in each.  You can find a student to highlight their selections, and check boxes to change them.  Performance may be an issue with slow laptops/browsers and large programs.
+This module is very useful because it includes the class changes grid (classchange_grid), which is now the preferred way to handle students' class change requests during a program.  The class change grid is a compact display of all classes with color codes indicating how much (predicted and actual) space there is in each.  You can find a student to highlight their selections, and check boxes to change them.  The grid automatically refreshes its data every 30 seconds by default; this can be changed with the ``onsite_classchange_grid_refresh`` Tag (in seconds, minimum 10).  Performance may be an issue with slow laptops/browsers and large programs.
 
 Onsite Scheduling for students (OnsiteClassSchedule)
 ----------------------------------------------------

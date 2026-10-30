@@ -18,6 +18,7 @@
 <script type="text/javascript">
     var program_base_url = "/onsite/{{ program.getUrlBase }}/";
     var open_class_category = {{ open_class_category }};
+    var refresh_interval_ms = {{ refresh_interval_ms }};
     {% if initial_student %}
     set_current_student({{ initial_student }});
     {% endif %}
@@ -108,6 +109,7 @@
 <input id="schedule_pdf" class="control_button" type="button" value="Download schedule PDF" disabled="disabled"/>
 <input id="status_switch" class="control_button" type="button" value="Return to status view"/>
 <input id="reload_button" class="control_button" type="button" value="Refresh data" onclick="refresh_counts();"/>
+<span id="last_refresh"></span>
 <br />Select a printer:
 <select id="printer_selector" class="control_button">
     <option value="">Default printer</option>

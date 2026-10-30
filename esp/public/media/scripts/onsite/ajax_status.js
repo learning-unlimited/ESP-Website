@@ -45,15 +45,8 @@ var data_status = {
     students_received: false
 };
 
-//  Guard against overlapping auto-refresh batches. fetch_all() resets the
-//  shared data_status flags, so a second batch starting before the first
-//  finishes can mix old/new responses. refresh_counts() skips when a batch
-//  is still in flight; handle_completed() clears the flag.
-var refresh_in_flight = false;
-
-//  ID for the single auto-refresh status line (avoids appending a new
-//  "Pinging server..." message every 30s during long onsite sessions).
-var auto_refresh_status_id = "auto_refresh_status";
+//  Pending auto-refresh timeout (refresh_interval_ms is set by the template)
+var refresh_timer = null;
 
 //  This function resets all the flags
 function reset_status()
@@ -1377,79 +1370,71 @@ function handle_completed()
     else if (state.display_mode == "classchange")
         set_current_student(state.student_id);
 
-    //  Auto-refresh batch finished; allow the next poll.
-    refresh_in_flight = false;
+    $j("#last_refresh").text("Last updated: " + new Date().toLocaleTimeString());
 }
 
 function fetch_all(avoid_catalog)
 {
     reset_status();
+    var requests = [];
     if (!avoid_catalog)
     {
-        $j.ajax({
+        requests.push($j.ajax({
             url: program_base_url + "catalog_status",
             dataType: 'json',
             success: handle_catalog
-        });
+        }));
     }
     else
     {
         data_status.catalog_received = true;
     }
-    $j.ajax({
+    requests.push($j.ajax({
         url: program_base_url + "enrollment_status",
         dataType: 'json',
         success: handle_enrollment
-    });
-    $j.ajax({
+    }));
+    requests.push($j.ajax({
         url: program_base_url + "checkin_status",
         dataType: 'json',
         success: handle_checkins
-    });
-    $j.ajax({
+    }));
+    requests.push($j.ajax({
         url: program_base_url + "counts_status",
         dataType: 'json',
         success: handle_counts
-    });
-    $j.ajax({
+    }));
+    requests.push($j.ajax({
         url: program_base_url + "full_status",
         dataType: 'json',
         success: handle_full
-    });
-    $j.ajax({
+    }));
+    requests.push($j.ajax({
         url: program_base_url + "rooms_status",
         dataType: 'json',
         success: handle_rooms
-    });
-    $j.ajax({
+    }));
+    requests.push($j.ajax({
         url: program_base_url + "students_status",
         dataType: 'json',
         success: handle_students
-    });
+    }));
+
+    //  Schedule the next auto-refresh only once this batch has finished (or
+    //  failed), so batches never overlap and mix responses in data_status.
+    $j.when.apply($j, requests).always(schedule_refresh);
+}
+
+function schedule_refresh()
+{
+    clearTimeout(refresh_timer);
+    refresh_timer = setTimeout(function () { refresh_counts(true); }, refresh_interval_ms);
 }
 
 function refresh_counts(silent) {
-    //  Skip if the previous batch hasn't finished to avoid mixing
-    //  old/new responses via the shared data_status flags.
-    if (refresh_in_flight) {
-        return;
-    }
-    refresh_in_flight = true;
-    //  Safety: unstick the guard if some request never completes
-    //  (no error handlers below), so the next interval can still poll.
-    setTimeout(function () { refresh_in_flight = false; }, 25000);
-    if (silent) {
-        //  Update a single status line instead of appending every 30s.
-        var status_el = $j("#" + auto_refresh_status_id);
-        var text = "Auto-refresh: pinging server for updated information... Last refresh: " + new Date().toLocaleTimeString();
-        if (status_el.length === 0) {
-            $j("#messages").append($j("<div/>").attr("id", auto_refresh_status_id).addClass("message_header").html(text));
-        } else {
-            status_el.html(text);
-        }
-    } else {
+    //  Auto-refreshes don't log, so #messages doesn't grow on every poll.
+    if (!silent)
         add_message("Pinging server for updated information, please stand by...", "message_header");
-    }
     fetch_all(true);
 }
 
@@ -1521,10 +1506,7 @@ $j(document).ready(function () {
     setup_settings();
     setup_sidebar();
     setup_search();
+    //  fetch_all() also schedules the periodic refresh of enrollment counts
+    //  and the list of students (see schedule_refresh()).
     fetch_all();
-    
-    //  Update enrollment counts and list of students every 30 seconds.
-    //  Silent auto-refresh (single status line) + in-flight guard to avoid
-    //  overlapping batches and unbounded #messages growth.
-    setInterval(function () { refresh_counts(true); }, 30000);
 });
