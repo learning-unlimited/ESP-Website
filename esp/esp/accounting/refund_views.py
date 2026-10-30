@@ -173,12 +173,12 @@ def refund(request):
             program = Program.objects.get(id=request.GET['program'])
             context['form'] = RefundSearchForm(initial={'program': program.id})
             request.session['refund_last_program_id'] = program.id
-        except Program.DoesNotExist:
+        except (Program.DoesNotExist, ValueError, TypeError):
             context['form'] = RefundSearchForm(initial={'program': initial_program_id})
         if 'user' in request.GET:
             try:
                 users = [ESPUser.objects.get(id=request.GET['user'])]
-            except ESPUser.DoesNotExist:
+            except (ESPUser.DoesNotExist, ValueError, TypeError):
                 pass
 
     if 'form' not in context:
@@ -233,7 +233,7 @@ def process_refund(request):
     program_id = request.POST.get('program_id')
     try:
         program = Program.objects.get(id=program_id)
-    except Program.DoesNotExist:
+    except (Program.DoesNotExist, ValueError, TypeError):
         return render_to_response('accounting/refund_error.html', request, {
             'error_message': 'Invalid program specified.',
         })
