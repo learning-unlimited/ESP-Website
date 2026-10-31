@@ -13,6 +13,11 @@ div.required label.control-label:after {
   list-style-type: none;
   margin-left: 0px;
 }
+/* Fields sized by character count (e.g. the 40-character street address) would
+   otherwise be wider than a phone screen. */
+.form-horizontal .controls input, .form-horizontal .controls select, .form-horizontal .controls textarea {
+  max-width: 100%;
+}
 </style>
 {% endblock %}
 
