@@ -170,6 +170,19 @@ class AdminReviewAppsViewsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
 
         self.assertEqual(statuses, {accepted.id: 'Accepted', pending.id: 'Not accepted'})
 
+    def test_review_students_lists_enrolled_and_accepted_student_once(self):
+        """A student with both Enrolled and Accepted registrations appears
+        once on the roster, as Accepted (#6225)."""
+        student = self.students[0]
+        self._register(student, self.enrolled_rt)
+        self._register(student, self.accepted_rt)
+        self._apply(student)
+
+        self.login_as('admin')
+        students = self._roster().context['students']
+
+        self.assertEqual([(s.id, s.status) for s in students], [(student.id, 'Accepted')])
+
     def test_review_students_sorted_by_last_name(self):
         names = ['Zimmer', 'Adams', 'Moore']
         for student, last_name in zip(self.students, names):
