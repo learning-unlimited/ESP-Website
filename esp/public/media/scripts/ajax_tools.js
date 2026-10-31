@@ -86,6 +86,10 @@ var fetch_fragments = function()
 
 var apply_fragment_changes = function(data)
 {
+    if (!data || typeof data !== 'object')
+    {
+        return;
+    }
     //  console.log("Applying fragment changes from data: " + data);
 
     //  Rewrite DOM nodes first, so that anything registered below is applied to
@@ -157,19 +161,45 @@ var apply_fragment_changes = function(data)
     }
 }
 
+var handle_failure = function(jqXHR, textStatus, errorThrown)
+{
+    var msg = 'An error occurred while processing your request.';
+    if (jqXHR && jqXHR.responseJSON && jqXHR.responseJSON.error)
+    {
+        msg = jqXHR.responseJSON.error;
+    }
+    else if (jqXHR && jqXHR.responseText)
+    {
+        try {
+            var parsed = JSON.parse(jqXHR.responseText);
+            if (parsed && parsed.error) {
+                msg = parsed.error;
+            }
+        } catch (e) {}
+    }
+    alert(msg);
+    reset_forms();
+};
+
 var handle_success = function(data, textStatus, jqXHR)
 {
+    if (!data || typeof data !== 'object')
+    {
+        reset_forms();
+        return;
+    }
     if ('error' in data)
     {
         //  Maybe this should be something more gentle like a floating div.
         alert(data['error']);
+        reset_forms();
         return;
     }   
     //  Update portions of the page determined by response
     apply_fragment_changes(data);
     //  Reset the form event functions so they can be used again
     reset_forms();
-}
+};
 
 var handle_submit = function(mode, attrs, eventObject)
 {
@@ -191,13 +221,13 @@ var handle_submit = function(mode, attrs, eventObject)
     //  I'm not sure if these calls are correct -- test this
     if (mode == 'post')
     {
-	$j.post(attrs.url, attrs.content, handle_success, "json");
+        $j.post(attrs.url, attrs.content, handle_success, "json").fail(handle_failure);
     }
     else
     {
-	$j.get(attrs.url, attrs.content, handle_success, "json");
+        $j.get(attrs.url, attrs.content, handle_success, "json").fail(handle_failure);
     }
-}
+};
 
 
 
@@ -205,14 +235,19 @@ var fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     if (! attrs.url) { return; }
-    $j.get(attrs.url, handle_success, "json");
-}
+    $j.get(attrs.url, handle_success, "json").fail(handle_failure);
+};
     
 function CallbackForm(id, url)
 {
     this.id = id;
     this.url = url;
-    this.callback = function (e) {handle_submit('post', this, e)};
+    var callback_attrs = this;
+    this.callback = function (e) {
+        if (e && e.preventDefault) { e.preventDefault(); }
+        handle_submit('post', callback_attrs, e);
+        return false;
+    };
 }
     
 function CallbackLink(id, url, content, post_form)
@@ -221,13 +256,22 @@ function CallbackLink(id, url, content, post_form)
     this.url = url;
     this.content = content;
     this.post_form = post_form;
+    var callback_attrs = this;
     if (this.post_form)
     {
-        this.callback = function (e) {handle_submit('post', this, e)};
+        this.callback = function (e) {
+            if (e && e.preventDefault) { e.preventDefault(); }
+            handle_submit('post', callback_attrs, e);
+            return false;
+        };
     }
     else
     {
-        this.callback = function (e) {handle_submit('get', this, e)};
+        this.callback = function (e) {
+            if (e && e.preventDefault) { e.preventDefault(); }
+            handle_submit('get', callback_attrs, e);
+            return false;
+        };
     }
 }
 
