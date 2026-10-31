@@ -56,7 +56,10 @@ $j(document).ready(function() {
 //  Function to convert an uploaded file storage location to a URL.
 function file_link_formatter(cellvalue, options, rowObject)
 {
-    var url_path = cellvalue.split("media/uploaded/")[1];
+    //  Newer responses store a path relative to the media directory
+    //  ("uploaded/..."); older ones stored an absolute ".../media/uploaded/..." path.
+    var match = (cellvalue || "").match(/(?:^|media\/)uploaded\/(.+)$/);
+    var url_path = match ? match[1] : undefined;
     if (url_path) {
         var url_dir = url_path.split("/");
         return "<a href=\"/media/uploaded/" + url_dir.slice(0, url_dir.length - 1).join("/") + "/" + encodeURIComponent(url_dir[url_dir.length - 1]) +  "\">" + url_dir[url_dir.length - 1] + "</a>";

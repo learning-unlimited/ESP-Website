@@ -1,6 +1,8 @@
 from copy import deepcopy
 import json
+import os
 
+from django.conf import settings
 from django.db import transaction
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
@@ -456,7 +458,9 @@ def bulkDownloadFiles(request):
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
-        return zip_download(filenames, 'surveyfiles')
+        #   Stored paths are relative to MEDIA_ROOT; os.path.join() leaves the
+        #   absolute paths that older versions stored unchanged.
+        return zip_download([os.path.join(settings.MEDIA_ROOT, filename) for filename in filenames if filename], 'surveyfiles')
     return HttpResponse(status=400)
 
 @user_passes_test(test_func)
