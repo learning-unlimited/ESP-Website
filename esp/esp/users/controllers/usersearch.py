@@ -276,7 +276,19 @@ class UserSearchController(object):
 
         subquery = None
 
-        if 'base_list' in data and 'recipient_type' in data:
+        #   Only check the list field of the branch that will run below, so an
+        #   empty field left over from the other search form is ignored.  A
+        #   missing or empty selection would otherwise fail with an
+        #   UnboundLocalError, KeyError (base_list) or ValueError (combo_base_list).
+        use_basic_list = 'base_list' in data and 'recipient_type' in data
+        if use_basic_list:
+            selected_list = data['base_list']
+        else:
+            selected_list = data.get('combo_base_list')
+        if not selected_list or (not use_basic_list and ':' not in selected_list):
+            raise ESPError('Please select a list to search.', log=False)
+
+        if use_basic_list:
             #   Get the program-specific part of the query (e.g. which list to use)
             if data['recipient_type'] not in ESPUser.getTypes():
                 recipient_type = 'any'
@@ -449,8 +461,10 @@ class UserSearchController(object):
         if request.method == 'POST':
             data = ListGenModule.processPost(request)
 
-            #   Look for signs that this request contains user search options and act accordingly
-            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
+            #   Look for signs that this request contains user search options and act accordingly.
+            #   recipient_type is always sent by the basic search form, so a submission
+            #   without a selected list still gets validated and shows an error.
+            if any(key in data for key in ('base_list', 'recipient_type', 'combo_base_list')):
                 try:
                     filterObj = self.filter_from_postdata(program, data)
                     return (filterObj, True)
