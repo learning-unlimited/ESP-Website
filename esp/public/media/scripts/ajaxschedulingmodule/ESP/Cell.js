@@ -109,8 +109,8 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
     };
 
     this.cellBackground = function(section) {
-        var grey = {r: 119, g: 119, b: 119};
-        var red = {r: 255, g: 0, b: 0};
+        var grey = this.cellColors.grey;
+        var red = this.cellColors.red;
         // If this cell is in the directory, always color it normally
         if(!this.room_id) return this.cellColors.color(section);
         // If there is a ghostScheduleAssignment, use that
@@ -207,6 +207,7 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                             }
                         }
                 }
+                n_teachers = Math.min(n_teachers, 5);
                 if(n_teachers == 0) return grey;
                 return this.cellColors.HSLToRGB(0,100,100 - 10 * n_teachers); // Color red based on number of teachers
             case "double_booked":
@@ -299,7 +300,9 @@ function Cell(el, section, room_id, timeslot_id, matrix) {
                         n_moderators += 1;
                     }
                 }
-                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_moderators);
+                if(n_moderators == 0) return grey;
+                n_moderators = Math.min(n_moderators, 5);
+                return this.cellColors.HSLToRGB(0,100,100 - 10 * n_moderators); // Color red based on number of moderators
         }
         return this.cellColors.color(section); // Selected scheduling check isn't implemented or none is selected
     };

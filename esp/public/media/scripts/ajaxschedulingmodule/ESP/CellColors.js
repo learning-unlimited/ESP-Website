@@ -8,6 +8,9 @@
 function CellColors() {
     this.colors = palette('tol-rainbow', 100);
     this.specialColor = "rgb(255, 153, 0)";
+    // Base colors for the scheduling checks (shared by Cell and CheckLegend)
+    this.grey = {r: 119, g: 119, b: 119};
+    this.red = {r: 255, g: 0, b: 0};
 
     this.hexToRGB = function(hex) {
         var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
