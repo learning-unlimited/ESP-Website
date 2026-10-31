@@ -532,6 +532,7 @@ class CommModule(ProgramModuleObj):
     @needs_admin
     def send_test_email(self, request, tl, one, two, module, extra, prog):
         """Send a test email to the logged-in admin using the current compose form data."""
+        from django.conf import settings
         from django.http import JsonResponse
         from esp.dbmail.models import send_mail
 
@@ -555,6 +556,7 @@ class CommModule(ProgramModuleObj):
             'user': ActionHandler(request.user, request.user),
             'program': ActionHandler(self.program, request.user),
             'request': ActionHandler(MessageRequest(), request.user),
+            'EMAIL_HOST_SENDER': settings.EMAIL_HOST_SENDER,
         }
         rendered_text = Template(rendered_text).render(DjangoContext(contextdict))
 
