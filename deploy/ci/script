@@ -9,8 +9,9 @@ if [ "$CI_JOB" = "test" ]; then
     # Both must be specified.
     # --selenium runs the browser tests too, in the Firefox that ships on
     # the GitHub Actions runner image.
-    # --dist worksteal lets idle xdist workers take queued tests from busy
-    # ones, so a long test doesn't strand the rest of its worker's batch.
+    # --maxschedchunk caps how many tests xdist queues on a worker at once,
+    # so a long test doesn't strand a large batch behind it. (worksteal
+    # would also do this, but reorders tests and breaks isolation.)
     if [ -n "${TEST_SPLITS:-}" ] && [ -z "${TEST_GROUP:-}" ]; then
         echo "TEST_SPLITS is set to '$TEST_SPLITS' but TEST_GROUP is empty or unset." >&2
         echo "Both are required to run one shard; see the shard matrix in .github/workflows/tests.yml." >&2
@@ -22,9 +23,9 @@ if [ "$CI_JOB" = "test" ]; then
         exit 1
     fi
     if [ -n "${TEST_SPLITS:-}" ]; then
-        pytest -n auto --dist=worksteal --selenium --splits "$TEST_SPLITS" --group "$TEST_GROUP" --cov=. --cov-report=xml
+        pytest -n auto --maxschedchunk=8 --selenium --splits "$TEST_SPLITS" --group "$TEST_GROUP" --cov=. --cov-report=xml
     else
-        pytest -n auto --dist=worksteal --selenium --cov=. --cov-report=xml
+        pytest -n auto --maxschedchunk=8 --selenium --cov=. --cov-report=xml
     fi
 elif [ "$CI_JOB" = "lint" ]; then
     deploy/lint

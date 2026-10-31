@@ -138,7 +138,7 @@ The full suite can be parallelized across CPU cores for faster runs::
 
   docker compose exec -w /app/esp web pytest -n auto
 
-CI also passes ``--dist worksteal``, which lets idle workers take queued tests from busy ones. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
+CI also passes ``--maxschedchunk=8``, which limits how many tests are queued on a worker at once so one slow test can't hold up a large batch. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
 
 
 Test Suite Reference
