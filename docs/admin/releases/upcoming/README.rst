@@ -40,6 +40,7 @@ Bug Fixes
 - The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
 - Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
+- Sites with no theme selected now use Bootstrap 5 styles. They previously fell back to a leftover Bootstrap 2 stylesheet, so many pages (including the new-site landing page) rendered with missing or broken styling. ``manage.py recompile_theme`` and ``manage.py update`` no longer fail on a site with no theme.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
 
 Developer Notes
@@ -47,3 +48,5 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
+- ``theme_compiled.css`` now always exists: ``ThemeController.clear_theme()`` writes stock Bootstrap 5 (via the new ``compile_default_css()``) instead of deleting it, and the Docker entrypoint compiles it on first start.
+- Removed the leftover Bootstrap 2 files from ``esp/public/media/theme_editor/`` (``bootstrap_initial.css``, the BS2 ``js/`` plugins and tests, glyphicon sprites in ``img/``, and the BS2 ``Makefile``, ``README.md``, ``LICENSE`` and ``.travis.yml``).

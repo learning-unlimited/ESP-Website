@@ -711,16 +711,7 @@ class ThemeController(object):
         #   3. @import "bootstrap"  (generates Bootstrap CSS)
         #   4. Bootswatch component overrides (optional)
         #   5. CSS rule files (after @import so our rules override Bootstrap's)
-        var_data = ''
-        css_data_pre = ''
-        for filename in self.get_scss_names(theme_name):
-            with open(filename) as f:
-                logger.debug('Including SCSS source %s', filename)
-                content = '\n' + f.read()
-            if os.path.basename(filename).startswith('variables'):
-                var_data += content
-            else:
-                css_data_pre += content
+        var_data, css_data_pre = self._read_scss_sources(theme_name)
 
         if bootswatch_theme is None:
             #   Implicit value from the site-wide tag: tolerate a stale or
@@ -823,8 +814,34 @@ class ThemeController(object):
                 scss_data,
             )
 
-        css_data = self.compile_scss(scss_data)
+        self._write_compiled_css(self.compile_scss(scss_data), output_filename)
 
+    def compile_default_css(self, output_filename=None):
+        """Compile stock Bootstrap 5 plus the shared theme-editor SCSS, so the
+        site is still styled when no theme is loaded."""
+        if output_filename is None:
+            output_filename = self.css_filename
+        #   No theme name, so only the shared theme-editor sources are included.
+        var_data, css_data_pre = self._read_scss_sources(None)
+        scss_data = var_data + f'\n@import "{_BOOTSTRAP5_SCSS}";\n' + css_data_pre
+        self._write_compiled_css(self.compile_scss(scss_data), output_filename)
+
+    def _read_scss_sources(self, theme_name):
+        """Return (variable SCSS, rule SCSS) for the theme, to be placed
+        before and after the Bootstrap import respectively."""
+        var_data = ''
+        css_data_pre = ''
+        for filename in self.get_scss_names(theme_name):
+            with open(filename) as f:
+                logger.debug('Including SCSS source %s', filename)
+                content = '\n' + f.read()
+            if os.path.basename(filename).startswith('variables'):
+                var_data += content
+            else:
+                css_data_pre += content
+        return var_data, css_data_pre
+
+    def _write_compiled_css(self, css_data, output_filename):
         with open(output_filename, 'w', encoding='utf-8') as output_file:
             output_file.write(str(THEME_COMPILED_WARNING) + css_data.decode('UTF-8'))
         logger.debug('Wrote %.1f KB CSS output to %s', len(css_data) / 1000., output_filename)
@@ -841,6 +858,11 @@ class ThemeController(object):
             customization_name = self.get_current_customization()
         if theme_name is None:
             theme_name = self.get_current_theme()
+        if theme_name not in _ALL_THEMES:
+            #   No theme is loaded: just refresh the stock Bootstrap stylesheet.
+            self.compile_default_css()
+            varnish.purge_all()
+            return
 
         # Save current parameters, palette, and Bootswatch selection before they are cleared
         current_vars = self.get_current_params()
@@ -921,15 +943,15 @@ class ThemeController(object):
         if os.path.exists(scripts_theme_dir):
             shutil.rmtree(scripts_theme_dir, ignore_errors=True)
 
-        #   Remove compiled CSS file
-        if os.path.exists(self.css_filename):
-            os.remove(self.css_filename)
-
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
         Tag.unSetTag('current_theme_version')
         self.unset_current_customization()
+
+        #   Replace the compiled CSS with stock Bootstrap (this also sets a new
+        #   current_theme_version, so it must come after the unSetTag above)
+        self.compile_default_css()
 
         #   Clear the Varnish cache
         varnish.purge_all()
