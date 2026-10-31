@@ -5,12 +5,14 @@ button and minimum class requirement features.
 
 import json
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.core import mail
 
+from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
 from esp.program.models import (
+    ClassCategories,
     ClassSection,
     ClassSubject,
     RegistrationProfile,
@@ -723,6 +725,416 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(props['module_type'], 'learn')
         self.assertEqual(props['link_title'], 'Two-Phase Student Registration')
         self.assertTrue(props['required'])
+
+    # ---------------------------------------------------------------
+    # Helpers for tests that need a deterministic schedule
+    # ---------------------------------------------------------------
+    def _url(self, view):
+        return '/learn/%s/%s' % (self.program.getUrlBase(), view)
+
+    def _login_with_profile(self, student):
+        self._ensure_student_profile(student)
+        self.assertTrue(
+            self.client.login(username=student.username, password='password'))
+
+    def _place(self, sec, timeslot):
+        """Schedule ``sec`` in exactly ``timeslot``."""
+        sec.meeting_times.set([timeslot])
+
+    def _priority(self, student, sec, index=1):
+        rel = RegistrationType.objects.get(
+            name='Priority/%d' % index, category='student')
+        return StudentRegistration.objects.create(
+            user=student, section=sec, relationship=rel)
+
+    def _valid_priorities(self, student, index=1):
+        return StudentRegistration.valid_objects().filter(
+            user=student,
+            relationship__name='Priority/%d' % index,
+            section__parent_class__parent_program=self.program)
+
+    def _post_priorities(self, timeslot, choices):
+        return self.client.post(
+            self._url('save_priorities'),
+            {'json_data': json.dumps({str(timeslot.id): choices})})
+
+    def _schedule_row(self, response, timeslot):
+        for row in response.context['timeslots']:
+            if row[0].id == timeslot.id:
+                return row
+        self.fail('Timeslot %s missing from main page schedule' % timeslot.id)
+
+    # ---------------------------------------------------------------
+    # Tests: Main page schedule summary
+    # ---------------------------------------------------------------
+    def test_main_page_shows_priorities_per_timeslot(self):
+        """Priority choices appear under the timeslot their section starts in."""
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 2
+        scrmi.save()
+        ts0, ts1 = self.timeslots[0], self.timeslots[1]
+        sec, other, unscheduled = list(self.program.sections())[:3]
+        self._place(sec, ts0)
+        self._place(other, ts0)
+        unscheduled.meeting_times.clear()
+
+        student = self.students[0]
+        self._priority(student, sec, 1)
+        self._priority(student, other, 2)
+        # A choice on an unscheduled section must be ignored, not crash.
+        self._priority(student, unscheduled, 1)
+
+        self._login_with_profile(student)
+        response = self.client.get(self._url('studentreg2phase'))
+        self.assertEqual(response.status_code, 200)
+
+        titles = [title for _, title in self._schedule_row(response, ts0)[1]]
+        self.assertEqual(
+            titles, [sec.parent_class.title, other.parent_class.title])
+        titles = [title for _, title in self._schedule_row(response, ts1)[1]]
+        self.assertEqual(titles, ['', ''])
+
+    def test_main_page_counts_stars_per_timeslot(self):
+        """Star counts are per starting timeslot; unscheduled classes are skipped."""
+        ts0, ts1 = self.timeslots[0], self.timeslots[1]
+        sec_a, sec_b, unscheduled = list(self.program.sections())[:3]
+        self._place(sec_a, ts0)
+        self._place(sec_b, ts0)
+        unscheduled.meeting_times.clear()
+
+        student = self.students[0]
+        for sec in (sec_a, sec_b, unscheduled):
+            StudentSubjectInterest.objects.create(
+                user=student, subject=sec.parent_class)
+
+        self._login_with_profile(student)
+        response = self.client.get(self._url('studentreg2phase'))
+        self.assertEqual(response.status_code, 200)
+
+        row = self._schedule_row(response, ts0)
+        self.assertEqual(row[3], 2)
+        # num_stars is 3, so 2 stars is two thirds of the bar
+        self.assertAlmostEqual(row[4], 200.0 / 3)
+        self.assertEqual(self._schedule_row(response, ts1)[3], 0)
+
+    def test_main_page_groups_noncontiguous_timeslots_into_blocks(self):
+        """A large gap between timeslots starts a new block."""
+        last = self.timeslots[2]
+        Event.objects.filter(pk=last.pk).update(
+            start=last.start + timedelta(hours=3),
+            end=last.end + timedelta(hours=3))
+
+        self._login_with_profile(self.students[0])
+        response = self.client.get(self._url('studentreg2phase'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row[2] for row in response.context['timeslots']], [1, 1, 2])
+
+    # ---------------------------------------------------------------
+    # Tests: Catalog views and the lunch category
+    # ---------------------------------------------------------------
+    def test_catalog_views_hide_lunch_category(self):
+        """view_classes and mark_classes omit lunch from the filters but expose its id."""
+        lunch = ClassCategories.get_lunch()
+        if lunch is None:
+            lunch = ClassCategories.objects.create(
+                category='Lunch', symbol='L', is_lunch=True)
+        self.program.class_categories.add(lunch)
+
+        self._login_with_profile(self.students[0])
+        for view in ('view_classes', 'mark_classes'):
+            response = self.client.get(self._url(view))
+            self.assertEqual(response.status_code, 200)
+            ids = [cat_id for col in response.context['category_choices']
+                   for cat_id, _ in col]
+            self.assertNotIn(lunch.id, ids, view)
+            self.assertIn(self.categories[0].id, ids, view)
+            self.assertEqual(response.context['lunch_category_id'], lunch.id)
+
+    def test_catalog_without_lunch_category(self):
+        """With no lunch category configured, lunch_category_id is -1."""
+        ClassCategories.objects.filter(is_lunch=True).update(is_lunch=False)
+        response = self.client.get(self._url('view_classes'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['lunch_category_id'], -1)
+
+    # ---------------------------------------------------------------
+    # Tests: mark_classes_interested validation and edge cases
+    # ---------------------------------------------------------------
+    def test_mark_classes_interested_rejects_non_list_fields(self):
+        """Valid JSON without both lists returns 400 and stars nothing."""
+        student = self.students[0]
+        self._login_with_profile(student)
+        cls = self.program.classes()[0]
+        for payload in ({'interested': cls.id, 'not_interested': []},
+                        {'interested': [cls.id]}):
+            response = self.client.post(
+                self._url('mark_classes_interested'),
+                {'json_data': json.dumps(payload)},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 400, payload)
+        self.assertFalse(
+            StudentSubjectInterest.objects.filter(user=student).exists())
+
+    def test_mark_classes_interested_non_ajax_redirects(self):
+        """A plain form POST saves the stars and redirects to the main page."""
+        student = self.students[0]
+        self._login_with_profile(student)
+        cls = self.program.classes()[0]
+        response = self.client.post(
+            self._url('mark_classes_interested'),
+            {'json_data': json.dumps(
+                {'interested': [cls.id], 'not_interested': []})})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            StudentSubjectInterest.valid_objects().filter(
+                user=student, subject=cls).exists())
+
+    def test_mark_classes_interested_restar_reuses_expired_row(self):
+        """Re-starring a class unexpires the old row instead of adding one."""
+        student = self.students[0]
+        self._login_with_profile(student)
+        cls = self.program.classes()[0]
+        ssi = StudentSubjectInterest.objects.create(user=student, subject=cls)
+        ssi.expire()
+
+        response = self.client.post(
+            self._url('mark_classes_interested'),
+            {'json_data': json.dumps(
+                {'interested': [cls.id], 'not_interested': []})},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+
+        rows = StudentSubjectInterest.objects.filter(user=student, subject=cls)
+        self.assertEqual(rows.count(), 1)
+        self.assertIsNone(rows[0].end_date)
+
+    def test_mark_classes_interested_ignores_ineligible_classes(self):
+        """Classes outside the student's grade or not approved are not starred."""
+        student = self.students[0]
+        self._login_with_profile(student)  # grade 10
+        too_old, rejected, ok = list(self.program.classes())[:3]
+        ClassSubject.objects.filter(pk=too_old.pk).update(
+            grade_min=11, grade_max=12)
+        ClassSubject.objects.filter(pk=rejected.pk).update(
+            status=ClassStatus.REJECTED)
+
+        response = self.client.post(
+            self._url('mark_classes_interested'),
+            {'json_data': json.dumps({
+                'interested': [too_old.id, rejected.id, ok.id],
+                'not_interested': []})},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        starred = set(StudentSubjectInterest.objects.filter(
+            user=student).values_list('subject_id', flat=True))
+        self.assertEqual(starred, {ok.id})
+
+    # ---------------------------------------------------------------
+    # Tests: save_priorities validation and update semantics
+    # ---------------------------------------------------------------
+    def test_save_priorities_non_dict_value_rejected(self):
+        """The single timeslot key must map to a dict of choices."""
+        student = self.students[0]
+        self._login_with_profile(student)
+        sec = self.program.sections()[0]
+        self._place(sec, self.timeslots[0])
+        response = self._post_priorities(
+            self.timeslots[0], [str(sec.parent_class.id)])
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_blank_choice_expires_existing(self):
+        """An empty choice clears the existing priority for that slot."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._priority(student, sec)
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {'1': ''})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(self._valid_priorities(student).exists())
+        self.assertEqual(
+            StudentRegistration.objects.filter(
+                user=student, section=sec).count(), 1,
+            'Clearing a priority should expire, not delete, the row')
+
+    def test_save_priorities_blank_choice_leaves_other_slots(self):
+        """Clearing one timeslot does not touch priorities in another."""
+        ts0, ts1 = self.timeslots[0], self.timeslots[1]
+        sec0, sec1 = list(self.program.sections())[:2]
+        self._place(sec0, ts0)
+        self._place(sec1, ts1)
+        student = self.students[0]
+        self._priority(student, sec0)
+        self._priority(student, sec1)
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts0, {'1': ''})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            list(self._valid_priorities(student).values_list(
+                'section_id', flat=True)),
+            [sec1.id])
+
+    def test_save_priorities_unknown_class_skipped_and_warns(self):
+        """A class id that doesn't exist is logged and skipped."""
+        ts = self.timeslots[0]
+        student = self.students[0]
+        self._login_with_profile(student)
+        bogus = ClassSubject.objects.order_by('-id')[0].id + 1000
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING') as log_ctx:
+            response = self._post_priorities(ts, {'1': str(bogus)})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            any('Could not save priority' in e for e in log_ctx.output))
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_class_in_other_timeslot_skipped(self):
+        """A class that doesn't start in the posted timeslot isn't registered."""
+        ts0, ts1 = self.timeslots[0], self.timeslots[1]
+        sec = self.program.sections()[0]
+        self._place(sec, ts1)
+        student = self.students[0]
+        self._login_with_profile(student)
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING'):
+            response = self._post_priorities(
+                ts0, {'1': str(sec.parent_class.id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_class_outside_grade_skipped_and_warns(self):
+        """Students can't prioritize a class outside their grade range."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        ClassSubject.objects.filter(pk=sec.parent_class_id).update(
+            grade_min=11, grade_max=12)
+        student = self.students[0]
+        self._login_with_profile(student)  # grade 10
+
+        with self.assertLogs(self.LOGGER_NAME, level='WARNING') as log_ctx:
+            response = self._post_priorities(
+                ts, {'1': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(
+            any('not in class grade range' in e for e in log_ctx.output))
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_collapses_duplicate_registrations(self):
+        """Duplicate rows for one slot/priority are reduced to a single valid one."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._priority(student, sec)
+        self._priority(student, sec)
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self._valid_priorities(student).count(), 1)
+        self.assertEqual(
+            StudentRegistration.objects.filter(user=student).count(), 2)
+
+    def test_save_priorities_reuses_expired_registration(self):
+        """Re-choosing a class unexpires the old row instead of adding one."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        sr = self._priority(student, sec)
+        sr.expire()
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            list(self._valid_priorities(student).values_list('id', flat=True)),
+            [sr.id])
+        self.assertEqual(
+            StudentRegistration.objects.filter(user=student).count(), 1)
+
+    def test_save_priorities_changing_choice_moves_registration(self):
+        """Picking a different class for a slot updates the existing row."""
+        ts = self.timeslots[0]
+        old, new = list(self.program.sections())[:2]
+        self._place(old, ts)
+        self._place(new, ts)
+        student = self.students[0]
+        sr = self._priority(student, old)
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {'1': str(new.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        sr.refresh_from_db()
+        self.assertEqual(sr.section_id, new.id)
+        self.assertEqual(
+            list(self._valid_priorities(student).values_list('id', flat=True)),
+            [sr.id])
+
+    def test_save_priorities_multiple_ranks_in_one_slot(self):
+        """Each rank in the payload gets its own Priority/N registration."""
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 2
+        scrmi.save()
+        ts = self.timeslots[0]
+        first, second = list(self.program.sections())[:2]
+        self._place(first, ts)
+        self._place(second, ts)
+        student = self.students[0]
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {
+            '1': str(first.parent_class_id),
+            '2': str(second.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            list(self._valid_priorities(student, 1).values_list(
+                'section_id', flat=True)), [first.id])
+        self.assertEqual(
+            list(self._valid_priorities(student, 2).values_list(
+                'section_id', flat=True)), [second.id])
+
+    # ---------------------------------------------------------------
+    # Tests: confirm_registration with priorities set
+    # ---------------------------------------------------------------
+    def test_confirm_lists_priorities_in_page_and_email(self):
+        """The confirmation page and email include the student's priority choices."""
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.priority_limit = 2
+        scrmi.save()
+        ts0, ts1 = self.timeslots[0], self.timeslots[1]
+        sec, unscheduled = list(self.program.sections())[:2]
+        self._place(sec, ts0)
+        unscheduled.meeting_times.clear()
+        student = self.students[0]
+        self._priority(student, sec)
+        # A choice on an unscheduled section is left out, not a crash.
+        self._priority(student, unscheduled)
+
+        self._login_with_profile(student)
+        mail.outbox = []
+        response = self.client.post(self._url('confirm_registration'))
+        self.assertEqual(response.status_code, 200)
+
+        schedule = {ts.id: prios for ts, prios in response.context['schedule']}
+        self.assertEqual(
+            schedule[ts0.id],
+            [('Priority 1', sec.parent_class.title),
+             ('Priority 2', '(not set)')])
+        self.assertEqual(
+            schedule[ts1.id],
+            [('Priority 1', '(not set)'), ('Priority 2', '(not set)')])
+        self.assertContains(response, sec.parent_class.title)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn(sec.parent_class.title, mail.outbox[0].body)
+        self.assertNotIn(unscheduled.parent_class.title, mail.outbox[0].body)
 
 
 class StudentRegTwoPhaseMisconfiguredTest(StudentRegTwoPhaseBaseTest):
