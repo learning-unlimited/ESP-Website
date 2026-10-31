@@ -2,136 +2,96 @@
 
 {% load render_qsd %}
 
-<h3>{{ profiletype|capfirst }} Contact Information</h3>
+<div class="card mb-4 profile-card">
+<div class="card-header"><h2 class="h5 mb-0">{{ profiletype|capfirst }} Contact Information</h2></div>
+<div class="card-body">
+<div class="row g-3">
 
 {% if form.first_name %}
- <div class="control-group">
- <label class="control-label" for="id_first_name">First Name:</label>
- <div class="controls">
- {{ form.first_name }} {% if form.first_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.first_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.first_name label="First name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.last_name %}
-<div class="control-group">
- <label class="control-label" for="id_last_name">Last Name:</label>
- <div class="controls">
- {{ form.last_name }} {% if form.last_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.last_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.last_name label="Last name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.e_mail %}
 {% if profiletype == "student" %}
-<div role="alert" class="alert alert-dismissible">
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="col-12">
+<div class="profile-note">
     {% inline_program_qsd_block program "student_email_instructions" %}
     <strong>Students:</strong> Please enter your primary email address.  It is important that you check your email at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  Enter your parents' email address in the parent/guardian section below.
     {% end_inline_program_qsd_block %}
 </div>
+</div>
 {% endif %}
 
-<div class="control-group">
- <label class="control-label" for="id_e_mail">Email address:</label>
- <div class="controls">
- {{ form.e_mail }} {% if form.e_mail.errors %}
-   <br /><span class="form_error" role="alert">{{ form.e_mail.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.e_mail label="Email address" %}
 {% endif %}
 
 {% if form.address_street or form.address_city or form.address_state or form.address_zip %}
-<h4>Address:</h4>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Address</h3></div>
 {% endif %}
 
 {% if form.address_street %}
-<div class="control-group">
-    <label class="control-label" for="id_address_street">
-    <small><i>street</i></small>
-    </label>
-    <div class="controls">
-    {{ form.address_street }} {% if form.address_street.errors %}
-    <br /><span class="form_error" role="alert">{{ form.address_street.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.address_street label="Street" %}
 {% endif %}
 
-{% if form.address_city or form.address_state or form.address_zip %}
-<div class="control-group">
-    <label class="control-label" for="id_address_city">
-    <small><i>{% if form.address_city %}city/{% endif %}{% if form.address_state %}state/{% endif %}{% if form.address_zip %}zip{% endif %}</i></small>
-    </label>
-    <div class="controls controls-row">
-        {{ form.address_city }} {% if form.address_city.errors %}
-        <br /><span class="form_error" role="alert">{{ form.address_city.errors|join:", " }}</span>
-        {% endif %}
+{% if form.address_city %}
+{% include "users/profiles/field.html" with field=form.address_city label="City" col="col-sm-6" %}
+{% endif %}
 
-        {{ form.address_state }} {% if form.address_state.errors %}
-        <br /><span class="form_error" role="alert">{{ form.address_state.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.address_zip }} {% if form.address_zip.errors %}
-        <br /><span class="form_error" role="alert">{{ form.address_zip.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.address_country }} {% if form.address_country.errors %}
-        <br /><span class="form_error" role="alert">{{ form.address_country.errors|join:", " }}</span>
-        {% endif %}
-    </div>
-</div>
+{% if form.address_state %}
+{% include "users/profiles/field.html" with field=form.address_state label="State" col="col-6 col-sm-3" %}
+{% endif %}
+
+{% if form.address_zip %}
+{% include "users/profiles/field.html" with field=form.address_zip label="ZIP code" col="col-6 col-sm-3" %}
+{% endif %}
+
+{% if form.address_country %}
+{% include "users/profiles/field.html" with field=form.address_country label="Country" col="col-sm-6" %}
 {% endif %}
 
 {% if form.phone_day or form.phone_cell %}
-<h4>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<font color="red">*</font>{% endif %}</h4>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<span class="text-danger" aria-hidden="true"> *</span>{% endif %}</h3></div>
 
 {% if profiletype == "student" %}
-<div role="alert" class="alert alert-dismissible">
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="col-12">
+<div class="profile-note">
     {% inline_program_qsd_block program "student_phone_instructions" %}
     <strong>Students:</strong> Please enter <b>your</b> phone numbers below.{% if not require_student_phonenum %} If you do not have {% if form.phone_day %}a home phone {% endif %}{% if form.phone_day and form.phone_cell %}nor {% endif %}{% if form.phone_cell %}a personal cell phone{% endif %}, please leave this blank.{% endif %} You will enter your guardian and emergency contact phone numbers in the sections below.
     {% end_inline_program_qsd_block %}
 </div>
+</div>
 {% endif %}
 
 {% if form.phone_day %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_phone_day">home</label></i></small>
- <div class="controls">
- {{ form.phone_day }} {% if form.phone_day.errors %}
-   <br /><span class="form_error" role="alert">{{ form.phone_day.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.phone_day label="Home" col="col-sm-6" %}
 {% endif %}
 
 {% if form.phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_phone_cell">cell</label></i></small>
- <div class="controls">
- {{ form.phone_cell }} {% if form.phone_cell.errors %}
-   <br /><span class="form_error" role="alert">{{ form.phone_cell.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.phone_cell label="Cell" col="col-sm-6" %}
 {% endif %}
 {% endif %}
 
 {% if form.receive_txt_message and form.phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
- <div class="controls">
- {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
-   <br /><span class="form_error" role="alert">{{ form.receive_txt_message.errors|join:", " }}</span>
-   {% endif %}
+<div class="col-12 profile-field">
+ <span class="form-label d-block" id="id_receive_txt_message_label">I would like to receive text-message reminders about the program:</span>
+ <div role="radiogroup" aria-labelledby="id_receive_txt_message_label">
+ {% for radio in form.receive_txt_message %}
+ <div class="form-check form-check-inline">
+   {{ radio.tag }}
+   <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
  </div>
+ {% endfor %}
+ </div>
+ {% for error in form.receive_txt_message.errors %}<div class="invalid-feedback d-block" role="alert">{{ error }}</div>{% endfor %}
 </div>
 {% endif %}
+
+</div>
+</div>
+</div>
 
 <!-- End User ContactInfo -->

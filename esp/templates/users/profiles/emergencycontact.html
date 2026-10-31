@@ -1,14 +1,15 @@
 <!-- Begin Emergency Contact -->
-<h3>Emergency Contact</h3>
+<div class="card mb-4 profile-card">
+<div class="card-header"><h2 class="h5 mb-0">Emergency Contact</h2></div>
+<div class="card-body">
 
-<div role="alert" class="alert alert-dismissible" id="id_copy_parent_info">
-<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-In the unlikely event of an emergency, we need to know who we should contact first, to let
+<div id="id_copy_parent_info" class="mb-3">
+<p>In the unlikely event of an emergency, we need to know who we should contact first, to let
 them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
-this might be a family friend or nearby relative.<br /><br />
-Please either click below to copy your home address and your
-parents' contact information into this form, or give contact information for someone else that you know and trust.
-<p><center><input type="button" class="btn" onclick="javascript:copy_parent_info();" value="Use my parents as my emergency contact" /></center></p>
+this might be a family friend or nearby relative.</p>
+<p>Please either click below to copy your home address and your
+parents' contact information into this form, or give contact information for someone else that you know and trust.</p>
+<button type="button" class="btn profile-copy-btn" onclick="copy_parent_info();">Use my parents as my emergency contact</button>
 </div>
 
 <script type="text/javascript">
@@ -29,105 +30,58 @@ function copy_parent_info() {
 }
 </script>
 
+<div class="row g-3">
+
 {% if form.emerg_first_name %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_first_name">First Name:</label>
- <div class="controls">
- {{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_first_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_first_name label="First name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.emerg_last_name %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_last_name">Last Name:</label>
- <div class="controls">
- {{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_last_name.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_last_name label="Last name" col="col-sm-6" %}
 {% endif %}
 
 {% if form.emerg_e_mail %}
-<div class="control-group">
- <label class="control-label" for="id_emerg_e_mail">Email address:</label>
- <div class="controls">
- {{ form.emerg_e_mail }} {% if form.emerg_e_mail.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_e_mail.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_e_mail label="Email address" %}
 {% endif %}
 
 {% if form.emerg_address_street or form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
-<h4>Address:</h4>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Address</h3></div>
 {% endif %}
 
 {% if form.emerg_address_street %}
-<div class="control-group">
-    <label class="control-label" for="id_emerg_address_street">
-    <small><i>street</i></small>
-    </label>
-    <div class="controls">
-    {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
-    <br /><span class="form_error" role="alert">{{ form.emerg_address_street.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_address_street label="Street" %}
 {% endif %}
 
-{% if form.emerg_address_city or form.emerg_address_state or form.emerg_address_zip %}
-<div class="control-group">
-    <label class="control-label" for="id_emerg_address_city">
-    <small><i>{% if form.emerg_address_city %}city/{% endif %}{% if form.emerg_address_state %}state/{% endif %}{% if form.emerg_address_zip %}zip{% endif %}</i></small>
-    </label>
-    <div class="controls controls-row">
-        {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_city.errors|join:", " }}</span>
-        {% endif %}
+{% if form.emerg_address_city %}
+{% include "users/profiles/field.html" with field=form.emerg_address_city label="City" col="col-sm-6" %}
+{% endif %}
 
-        {{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_state.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_zip.errors|join:", " }}</span>
-        {% endif %}
-        
-        {{ form.emerg_address_country }} {% if form.emerg_address_country.errors %}
-        <br /><span class="form_error" role="alert">{{ form.emerg_address_country.errors|join:", " }}</span>
-        {% endif %}
-    </div>
-</div>
+{% if form.emerg_address_state %}
+{% include "users/profiles/field.html" with field=form.emerg_address_state label="State" col="col-6 col-sm-3" %}
+{% endif %}
+
+{% if form.emerg_address_zip %}
+{% include "users/profiles/field.html" with field=form.emerg_address_zip label="ZIP code" col="col-6 col-sm-3" %}
+{% endif %}
+
+{% if form.emerg_address_country %}
+{% include "users/profiles/field.html" with field=form.emerg_address_country label="Country" col="col-sm-6" %}
 {% endif %}
 
 {% if form.emerg_phone_day or form.emerg_phone_cell %}
-<h4>Phone numbers:</h4>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Phone numbers</h3></div>
 {% endif %}
 
 {% if form.emerg_phone_day %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
- <div class="controls">
- {{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_phone_day.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_phone_day label="Home" col="col-sm-6" %}
 {% endif %}
 
 {% if form.emerg_phone_cell %}
-<div class="control-group">
- <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
- <div class="controls">
- {{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
-   <br /><span class="form_error" role="alert">{{ form.emerg_phone_cell.errors|join:", " }}</span>
-   {% endif %}
-</div>
-</div>
+{% include "users/profiles/field.html" with field=form.emerg_phone_cell label="Cell" col="col-sm-6" %}
 {% endif %}
+
+</div>
+</div>
+</div>
 
 <!-- End Emergency Contact -->
