@@ -454,6 +454,21 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertIn('Hello %s' % self.admin.first_name, sent.body)
         self.assertFalse(MessageRequest.objects.exists())
 
+    def test_send_test_email_footer_links_to_site(self):
+        self.login_as('admin')
+        self.post_to_module('manage', 'send_test_email', {
+            'from': 'director@learningu.org',
+            'subject': 'Schedule update',
+            'body': 'Hello',
+            'template': 'default',
+        })
+        self.assertEqual(len(mail.outbox), 1)
+        html, mimetype = mail.outbox[0].alternatives[0]
+        self.assertEqual(mimetype, 'text/html')
+        self.assertTrue(settings.EMAIL_HOST_SENDER)
+        self.assertIn('href="https://%s"' % settings.EMAIL_HOST_SENDER, html)
+        self.assertNotIn('href="https://"', html)
+
     def test_send_test_email_rejects_get(self):
         self.login_as('admin')
         response = self.client.get(
