@@ -188,23 +188,47 @@
                 </div>
                 <div id="filters2">
                   <form>
+                    <p class="room-filter-help">Rooms are scored by how closely they match the filters you set. A higher weight makes a filter count for more (0 ignores it). The best matches are listed first, and rooms below the match threshold are hidden.</p>
+                    <label for="room-filter-threshold"><b>Match Threshold</b></label>: <span id="room-filter-threshold-value">100%</span><br />
+                    <input id="room-filter-threshold" type="range" min="0" max="100" step="5" value="100"></input>
+                    <br />
+                    <br />
+                    <div id="room-filter-free-timeslots-wrapper">
+                        <b>Free at Timeslots</b><br />
+                        <span id="room-filter-free-timeslots-list">None (click timeslot headers to choose)</span>
+                        <button type="button" id="room-filter-free-timeslots-clear">Clear</button>
+                        <br />
+                        <label for="room-filter-free-timeslots-weight">Weight:</label> <input id="room-filter-free-timeslots-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
+                    </div>
+                    <br />
+                    <div id="room-filter-fits-section-wrapper">
+                        <input id="room-filter-fits-section" type="checkbox"></input>
+                        <label for="room-filter-fits-section">Room fits the selected class</label>
+                        <br />
+                        <label for="room-filter-fits-section-weight">Weight:</label> <input id="room-filter-fits-section-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
+                    </div>
+                    <br />
                     <label for="room-filter-capacity"><b>Room Capacity</b></label><br />
                     <div id="room-filter-capacity">
                         <label for="room-filter-capacity-min">Min:</label>
                         <input id="room-filter-capacity-min" class="numeric"></input> Students
+                        <label for="room-filter-capacity-min-weight">Weight:</label> <input id="room-filter-capacity-min-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
                         <br />
                         <label for="room-filter-capacity-max">Max:</label>
                         <input id="room-filter-capacity-max" class="numeric"></input> Students
+                        <label for="room-filter-capacity-max-weight">Weight:</label> <input id="room-filter-capacity-max-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
                     </div>
                     <br />
                     <div id="room-filter-resource">
                         <label for="room-filter-resource-text"><b>Resource</b></label><br />
                         <input id="room-filter-resource-text"></input>
+                        <label for="room-filter-resource-weight">Weight:</label> <input id="room-filter-resource-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
                     </div>
                     <br />
                     <div id="room-filter-name">
                         <label for="room-filter-name-text"><b>Name</b></label><br />
                         <input id="room-filter-name-text"></input>
+                        <label for="room-filter-name-weight">Weight:</label> <input id="room-filter-name-weight" class="numeric room-filter-weight" type="number" min="0" step="any" value="1"></input>
                     </div>
                   </form>
                 </div>

@@ -33,6 +33,18 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Weighted Room Filters in the Scheduler
+======================================
+
+The Room Filters tab of the AJAX scheduler can now rank rooms by how closely they match, instead of only hiding the rooms that don't match exactly.
+
+- Each room filter (minimum and maximum capacity, resource, and name) has a weight, which defaults to 1. A higher weight makes that filter count for more, and a weight of 0 ignores it.
+- Each room gets a match score: 1 minus the weighted average of its squared distances from the active filters. A capacity filter's distance grows with how far the room is from the requested size. A resource or name filter counts as either a match or a miss.
+- Rooms are listed best match first. Rooms that fully match are highlighted in green, and the rest show their match percentage next to the room name and in the room's tooltip.
+- A new "Match Threshold" slider hides rooms that score below the chosen percentage. It defaults to 100%, so the filters work exactly as before until you move the slider down to see near matches.
+- A new "Free at Timeslots" filter, which also has a weight, scores rooms by whether they are free in every timeslot you choose by clicking the timeslot headers in the grid. Chosen headers are outlined, and the Room Filters tab lists them with a Clear button. A room counts as free in a timeslot if it is available then and holds no class other than the selected one. A room that is free in only some of the chosen timeslots gets partial credit, so it can still appear once you lower the match threshold. The filter updates as classes are scheduled, including by other users.
+- A new "Room fits the selected class" filter, which also has a weight, scores rooms by whether the selected class has at least one valid placement there (i.e., a green square). The room the class is already scheduled in always counts as a fit. This filter has no effect when no class is selected. It is off by default, since hiding rooms also hides classes you may want to Ctrl/Cmd+click to swap with.
+
 Bug Fixes
 =========
 
