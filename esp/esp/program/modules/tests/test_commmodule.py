@@ -23,6 +23,9 @@ from esp.program.modules.tests.support import ModuleHandlerTestMixin
 from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, PersistentQueryFilter
 
+CORRUPTED_POST_ERROR = (
+    "Corrupted POST data!  Please contact us at websupport@learningu.org "
+    "and tell us how you got this error, and we'll look into it.")
 GRADE_WARNING = "You haven't selected a grade range filter"
 GUARDIAN_WARNING = 'parent and/or emergency contact emails'
 STALE_FILTER_WARNING = 'no longer valid'
@@ -314,6 +317,14 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
                     'manage', 'commprev', self.compose_data(filterobj, **overrides))
                 self.assertContains(response, message, status_code=500)
 
+    def test_commprev_corrupted_post_error_is_readable(self):
+        filterobj = self.make_filter(self.students)
+        self.login_as('admin')
+        response = self.post_to_module('manage', 'commprev', self.compose_data(
+            filterobj, filterid='abc'))
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(str(response.context['error']), CORRUPTED_POST_ERROR)
+
     def test_commprev_flags_links_to_other_programs(self):
         filterobj = self.make_filter(self.students)
         own = self.program.getUrlBase()
@@ -406,6 +417,15 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
                     'manage', 'commfinal', self.compose_data(filterobj, **overrides))
                 self.assertContains(response, message, status_code=500)
                 self.assertFalse(MessageRequest.objects.exists())
+
+    def test_commfinal_corrupted_post_error_is_readable(self):
+        filterobj = self.make_filter(self.students)
+        self.login_as('admin')
+        response = self.post_to_module('manage', 'commfinal', self.compose_data(
+            filterobj, filterid='abc'))
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(str(response.context['error']), CORRUPTED_POST_ERROR)
+        self.assertFalse(MessageRequest.objects.exists())
 
     # ------------------------------------------------------------------
     # maincomm2 (back to compose from preview)
