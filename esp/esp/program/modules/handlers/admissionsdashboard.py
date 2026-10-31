@@ -141,11 +141,13 @@ class AdmissionsDashboard(ProgramModuleObj):
 
         if tl == "manage" and request.user.isAdmin(prog):
             decision_classapps = StudentClassApp.objects.filter(
-                app__program=prog,
-                admission_status__in=(
-                    StudentClassApp.ADMITTED,
-                    StudentClassApp.WAITLIST,
-                ),
+                            app__program=prog,
+                            app_id__in=classapps.values("app_id"),
+                            admission_status__in=(
+                              StudentClassApp.ADMITTED,
+                              StudentClassApp.WAITLIST,
+                    ),
+
             ).values(
                 "app_id",
                 "admission_status",
@@ -301,6 +303,7 @@ class AdmissionsDashboard(ProgramModuleObj):
                 updated.append(app_id)
 
             return {"success": 1, "updated": updated}
+
 
     def isStep(self):
         return False
