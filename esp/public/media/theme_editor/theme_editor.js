@@ -1,20 +1,34 @@
 function showColor() {
     $j('.color').each(function(i){
-        $j(this).spectrum({
+        var $el = $j(this);
+        $el.spectrum({
             type: "color",
             showInput: true,
             showInitial: true,
             showButtons: false,
             preferredFormat: "hex",
             palette: [palette_list],
-            showPaletteOnly: true
+            showPaletteOnly: true,
+            hideAfterPaletteSelect: true,
+            move: function(color) {
+                if (color) {
+                    $el.val(color.toHexString());
+                }
+            },
+            change: function(color) {
+                if (color) {
+                    $el.val(color.toHexString());
+                }
+            }
         });
         // Create the "Reset Color" button.  Read data-default dynamically at
         // click time so the button reflects any Bootswatch-theme dropdown changes
         // that updated data-default after the picker was initialised.
         var resetButton = $j('<button class="reset-color" type="button" style="margin-left: 1.5px;">Reset Color</button>').on('click', function() {
             var $inp = $j(this).siblings("input");
-            $inp.spectrum("set", $inp.data("default")); // Reset color to current default
+            var def = $inp.data("default");
+            $inp.val(def);
+            $inp.spectrum("set", def); // Reset color to current default
         });
         // Create the "Remove" button
         var removeButton = $j('<button class="remove-color" type="button" style="margin-left: 5px;">Remove Variable</button>').on('click', function() {
@@ -76,6 +90,16 @@ $j(document).ready(function(){
     showColor();
     showBasePalette();
     showCustomPalette();
+    $j('form.centered-form').on('submit', function() {
+        $j('.color').each(function() {
+            try {
+                var sp = $j(this).spectrum('get');
+                if (sp) {
+                    $j(this).val(sp.toHexString());
+                }
+            } catch (e) {}
+        });
+    });
     $j(".length, .text").each(function(){
         var el = $j(this)
         var default_val = el.data("default");
