@@ -91,6 +91,8 @@ Surveys for students and teachers can be associated with {{ program.program_type
 		{% elif s.category == "learn" %}
 			<li><a href="/learn/{{ program.getUrlBase }}/survey{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for students</a></li>
 			<li><a href="/teach/{{ program.getUrlBase }}/survey/review{% if counts.learn > 1 %}?survey_id={{ s.id }}{% endif %}">Link for teachers to review results</a></li>
+		{% elif s.category == "generic" %}
+			<li><a href="/survey/{{ program.getUrlBase }}{% if counts.generic > 1 %}?survey_id={{ s.id }}{% endif %}">Link for survey</a></li>
 		{% endif %}
 		</ul>
 		{% endfor %}
