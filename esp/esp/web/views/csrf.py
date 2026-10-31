@@ -23,17 +23,15 @@ def csrf_failure(request, reason=""):
         from esp.utils.web import render_to_response
         from esp.program.models import Program
 
-        prog_re = r'^/?[-A-Za-z0-9_ ]+/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)'
-        match = re.match(prog_re, request.path)
         prog = None
-        if match:
-            one, two = match.groups()
-            try:
-                prog = Program.by_prog_inst(one, two)
-            except Program.DoesNotExist:
-                prog = None
-
+        path_parts = request.path.lstrip('/').split('/')
+        if len(path_parts) >= 3:
+            program_url = '/'.join(path_parts[1:3])
+            prog = Program.objects.filter(url=program_url).first()
+        
         c['prog'] = prog
+        if prog:
+            request.program = prog
 
         response = render_to_response('403_csrf_failure.html', request, c)
         # render_to_response() hands back an unrendered TemplateResponse, whose
