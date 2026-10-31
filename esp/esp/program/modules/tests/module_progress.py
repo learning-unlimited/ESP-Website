@@ -32,12 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
-from django.test import RequestFactory
+from unittest import mock
+
+from django.template import Context
+from django.test import RequestFactory, SimpleTestCase
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.templatetags.modules import registration_progress
+from esp.program.modules.checklist import get_checklist_context, get_checklist_progress, get_module_page_checklist_context
+from esp.program.templatetags.modules import registration_progress, teacher_checklist
 from esp.program.tests import ProgramFrameworkTest
+from esp.themes.controllers import ThemeController
 
 
 class RegistrationProgressTagTest(ProgramFrameworkTest):
@@ -226,3 +231,218 @@ class RequiredModuleProgressIntegrationTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         # Progress bar mode: no "Steps for Registration" table header
         self.assertNotContains(response, self.CHECKLIST_MARKER)
+
+
+class TeacherChecklistTagTest(ProgramFrameworkTest):
+    """Unit tests for the teacher_checklist template tag used by
+    teacher_module_base.html."""
+
+    def setUp(self):
+        super().setUp()
+        self.crmi = self.program.classregmoduleinfo
+        self.crmi.progress_mode = 1
+        self.crmi.save()
+
+    def _make_request(self, tl):
+        request = RequestFactory().get('/')
+        request.user = self.teachers[0]
+        request.program = self.program
+        request.tl = tl
+        return request
+
+    def test_returns_empty_outside_teacher_registration(self):
+        """Shared templates render as plain pages for student and admin pages."""
+        for tl in ('learn', 'manage'):
+            self.assertEqual(teacher_checklist(Context({'request': self._make_request(tl)})), {})
+
+    def test_returns_module_page_context_for_teach_tl(self):
+        """Checklist links point back to the main page on teacher module pages."""
+        result = teacher_checklist(Context({'request': self._make_request('teach')}))
+        self.assertEqual(result['options'], self.crmi)
+        self.assertEqual(result['extra_steps'], 'teach:extra_steps')
+        self.assertTrue(result['is_module_page'])
+        self.assertEqual(result['mainpage_url'], '/teach/%s/teacherreg' % self.program.url)
+        self.assertIn('modules', result)
+        self.assertIn('records', result)
+
+    def test_reuses_checklist_from_view(self):
+        """The main page passes its own checklist, which the tag must not replace."""
+        checklist = {'modules': [], 'options': self.crmi, 'completedAll': True, 'program': self.program}
+        result = teacher_checklist(Context({'request': self._make_request('teach'), 'checklist': checklist}))
+        self.assertIs(result, checklist)
+
+    def test_looks_up_checklist_once_per_render(self):
+        """teacher_module_base.html calls the tag from two blocks."""
+        context = Context({'request': self._make_request('teach')})
+        with mock.patch('esp.program.templatetags.modules.get_module_page_checklist_context',
+                        wraps=get_module_page_checklist_context) as lookup:
+            first = teacher_checklist(context)
+            second = teacher_checklist(context)
+        self.assertIs(first, second)
+        self.assertEqual(lookup.call_count, 1)
+
+    def _in_theme_sidebar(self, theme_name, settings):
+        with mock.patch.object(ThemeController, 'get_current_theme', return_value=theme_name), \
+                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
+            return teacher_checklist(Context({'request': self._make_request('teach')}))['in_theme_sidebar']
+
+    def test_theme_sidebar_setting(self):
+        """Only themes with a checklist_in_sidebar setting can move the list there."""
+        self.assertTrue(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': True}))
+        self.assertFalse(self._in_theme_sidebar('bigpicture', {'checklist_in_sidebar': False}))
+        # The setting can linger in the theme settings after switching themes.
+        self.assertFalse(self._in_theme_sidebar('droplets', {'checklist_in_sidebar': True}))
+
+
+class TeacherChecklistLayoutIntegrationTest(ProgramFrameworkTest):
+    """Integration tests: teacher module pages show the checklist column."""
+
+    SIDEBAR_MARKER = 'teacher-reg-checklist-col'
+
+    def setUp(self):
+        super().setUp()
+        self.add_user_profiles()
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 1
+        crmi.save()
+        self.teacher = self.teachers[0]
+        self.client.login(username=self.teacher.username, password='password')
+
+    def test_mainpage_and_module_page_show_checklist_column(self):
+        for view in ('teacherreg', 'availability'):
+            response = self.client.get('/teach/%s/%s' % (self.program.url, view))
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, self.SIDEBAR_MARKER)
+            self.assertContains(response, 'registration requirements done')
+            self.assertContains(response, 'id="teacher-reg-checklist-steps"')
+
+    def test_class_registration_form_has_no_checklist(self):
+        response = self.client.get('/teach/%s/makeaclass' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.SIDEBAR_MARKER)
+        self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+
+    def test_class_tool_pages_have_no_checklist(self):
+        cls = self.teacher.getTaughtClasses(self.program)[0]
+        for view in ('copyclasses', 'class_status/%d' % cls.id, 'coteachers?clsid=%d' % cls.id):
+            response = self.client.get('/teach/%s/%s' % (self.program.url, view))
+            self.assertEqual(response.status_code, 200)
+            self.assertNotContains(response, self.SIDEBAR_MARKER)
+            self.assertNotContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+
+    def test_no_checklist_column_when_progress_mode_disabled(self):
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 0
+        crmi.save()
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, self.SIDEBAR_MARKER)
+
+    def test_bigpicture_shows_checklist_in_its_sidebar(self):
+        settings = dict(ThemeController().get_template_settings(), checklist_in_sidebar=True)
+        with mock.patch.object(ThemeController, 'get_current_theme', return_value='bigpicture'), \
+                mock.patch.object(ThemeController, 'get_template_settings', return_value=settings):
+            response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertEqual(html.count(self.SIDEBAR_MARKER), 1)
+        sidebar_start = html.index('id="sidebar"')
+        main_start = html.index('id="main"')
+        self.assertTrue(sidebar_start < html.index(self.SIDEBAR_MARKER) < main_start)
+        self.assertNotIn('teacher-reg-columns', html)
+
+    def test_progress_bar_mode_shows_the_checklist(self):
+        """Teacher pages show the checklist card for progress mode 2, not the old progress bar."""
+        crmi = self.program.classregmoduleinfo
+        crmi.progress_mode = 2
+        crmi.save()
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.SIDEBAR_MARKER)
+        self.assertContains(response, RequiredModuleProgressIntegrationTest.CHECKLIST_MARKER)
+        self.assertNotContains(response, 'class="progressbar"')
+
+    def _require_acknowledgement(self, force_show):
+        """Make the (unfinished) teacher acknowledgement a required step."""
+        pm = ProgramModule.objects.get(handler='TeacherAcknowledgementModule')
+        pmo = ProgramModuleObj.getFromProgModule(self.program, pm)
+        pmo.__class__ = ProgramModuleObj
+        pmo.required = True
+        pmo.save()
+        scrmi = self.program.studentclassregmoduleinfo
+        scrmi.force_show_required_modules = force_show
+        scrmi.save()
+
+    def test_steps_are_not_links_while_required_modules_are_forced(self):
+        """Teachers shouldn't be able to click past the required modules."""
+        self._require_acknowledgement(force_show=True)
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Teacher Acknowledgement')
+        self.assertNotContains(response, 'class="vModuleLink"')
+
+    def test_steps_are_links_when_required_modules_are_not_forced(self):
+        self._require_acknowledgement(force_show=False)
+        response = self.client.get('/teach/%s/availability' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'class="vModuleLink"')
+
+class ChecklistProgressTest(SimpleTestCase):
+    """Unit tests for get_checklist_progress, which feeds the checklist's progress bar."""
+
+    @staticmethod
+    def _module(completed, required=True, step=True):
+        return mock.Mock(**{'isCompleted.return_value': completed,
+                            'isRequired.return_value': required,
+                            'isStep.return_value': step})
+
+    def test_counts_required_steps_and_records(self):
+        todo = self._module(False)
+        checklist = {
+            'modules': [self._module(True), todo, self._module(False, required=False),
+                        self._module(False, step=False)],
+            'records': [{'isCompleted': True}, {'isCompleted': False}],
+        }
+        progress = get_checklist_progress(checklist)
+        self.assertEqual((progress['done'], progress['total'], progress['percent']), (2, 4, 50))
+        self.assertIs(progress['next_step'], todo)
+        self.assertIsNone(progress['next_record'])
+
+    def test_next_record_once_steps_are_done(self):
+        record = {'isCompleted': False}
+        progress = get_checklist_progress({'modules': [self._module(True)], 'records': [record]})
+        self.assertIsNone(progress['next_step'])
+        self.assertIs(progress['next_record'], record)
+
+    def test_records_only_without_checklist(self):
+        """With the checklist off, only the other requirements are counted."""
+        progress = get_checklist_progress({'modules': [self._module(False)], 'records': [{'isCompleted': True}]},
+                                          include_steps=False)
+        self.assertEqual((progress['done'], progress['total'], progress['percent']), (1, 1, 100))
+        self.assertIsNone(progress['next_step'])
+        self.assertIsNone(progress['next_record'])
+
+
+class ChecklistOrderTest(SimpleTestCase):
+    """The checklist lists modules in the order users meet them."""
+
+    @staticmethod
+    def _module(seq, required, completed=False):
+        return mock.Mock(seq=seq, **{'isRequired.return_value': required,
+                                     'isCompleted.return_value': completed})
+
+    def _order(self, forced):
+        prog = mock.Mock()
+        prog.studentclassregmoduleinfo.force_show_required_modules = forced
+        modules = [self._module(4, False), self._module(20, True, completed=True),
+                   self._module(0, True), self._module(35, False, completed=True)]
+        with mock.patch('esp.program.modules.checklist.StudentRegCore.get_reg_records', return_value=[]):
+            checklist = get_checklist_context(mock.Mock(), prog, 'learn', modules)
+        return [m.seq for m in checklist['modules']]
+
+    def test_required_modules_first_when_forced(self):
+        self.assertEqual(self._order(forced=True), [0, 20, 4, 35])
+
+    def test_seq_order_when_not_forced(self):
+        """Finished modules aren't moved to the top."""
+        self.assertEqual(self._order(forced=False), [0, 4, 20, 35])
