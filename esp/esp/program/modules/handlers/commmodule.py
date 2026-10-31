@@ -42,10 +42,11 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
 from esp.tagdict.models import Tag
-from django.template import Template
+from django.template import Template, TemplateDoesNotExist
 from django.template import Context as DjangoContext
-from django.template.loader import render_to_string
+from django.template.loader import get_template
 from esp.middleware import ESPError, ESPError_Log, ESPError_NoLog
+from esp.utils.ids import filter_by_id
 from esp.utils.sanitize import strip_base64_images
 
 import re
@@ -213,6 +214,19 @@ class CommModule(ProgramModuleObj):
             raise ESPError("The selected recipient filter is no longer valid.  "
                            "Please go back and reselect your recipient list.")
 
+    @staticmethod
+    def get_email_template_or_error(template):
+        """ Return the email/<template>_email.html wrapper template, or raise
+            an ESPError if there is no such email template. """
+        # Only accept a bare name, so the value can't point outside email/.
+        if re.fullmatch(r'\w+', template):
+            try:
+                return get_template(f'email/{template}_email.html')
+            except TemplateDoesNotExist:
+                pass
+        raise ESPError("The selected email template does not exist.  "
+                       "Please go back and try again.")
+
     @aux_call
     @needs_admin
     def commprev(self, request, tl, one, two, module, extra, prog):
@@ -272,8 +286,8 @@ class CommModule(ProgramModuleObj):
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
         template = request.POST.get('template', 'default')
-        rendered_text = render_to_string(f'email/{template}_email.html',
-                                        {'msgbody': body})
+        rendered_text = CommModule.get_email_template_or_error(template).render(
+            {'msgbody': body})
         # Render the text for the first user
         contextdict = {'user'   : ActionHandler(firstuser, firstuser),
                        'program': ActionHandler(self.program, firstuser),
@@ -341,6 +355,7 @@ class CommModule(ProgramModuleObj):
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST
         template = request.POST.get('template', 'default')
+        email_template = CommModule.get_email_template_or_error(template)
 
         current_program_url = self.program.getUrlBase()
         other_program_urls = _program_urls_in_text(
@@ -348,8 +363,7 @@ class CommModule(ProgramModuleObj):
             current_program_url
         )
         if other_program_urls and not request.POST.get('confirm_send_with_other_program_links'):
-            rendered_text = render_to_string(f'email/{template}_email.html',
-                                             {'msgbody': body})
+            rendered_text = email_template.render({'msgbody': body})
             listcount = request.POST.get('listcount', '')
             selected = request.POST.get('selected', '')
             return render_to_response(self.baseDir() + 'preview.html', request, {
@@ -370,8 +384,7 @@ class CommModule(ProgramModuleObj):
             })
 
         # Use whichever template the user selected or the default (just an unsubscribe slug) if 'None'
-        rendered_text = render_to_string(f'email/{template}_email.html',
-                                        {'msgbody': body})
+        rendered_text = email_template.render({'msgbody': body})
 
         try:
             filterid = int(filterid)
@@ -463,7 +476,7 @@ class CommModule(ProgramModuleObj):
                 sendto_fn_name = usc.sendto_fn_from_postdata(data)
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(sendto_fn_name)
 
-                if data['use_checklist'] == '1':
+                if data.get('use_checklist') == '1':
                     (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase(), extra_context = {'module': "Communications Portal"})
                     return response
 
@@ -481,7 +494,10 @@ class CommModule(ProgramModuleObj):
 
             ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
-                msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
+                msgreq = filter_by_id(MessageRequest.objects, data['msgreq_id']).first()
+                if msgreq is None:
+                    raise ESPError("The selected previous message could not be found.  "
+                                   "Please go back and select a message from the list.")
                 context['filterid'] = msgreq.recipients.id
                 context['sendto_fn_name'] = msgreq.sendto_fn_name
                 sendto_fn = MessageRequest.assert_is_valid_sendto_fn_or_ESPError(msgreq.sendto_fn_name)
@@ -549,7 +565,11 @@ class CommModule(ProgramModuleObj):
         if '<html>' not in body:
             body = '<html>' + body + '</html>'
 
-        rendered_text = render_to_string('email/{}_email.html'.format(template), {'msgbody': body})
+        try:
+            email_template = CommModule.get_email_template_or_error(template)
+        except (ESPError_Log, ESPError_NoLog) as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+        rendered_text = email_template.render({'msgbody': body})
 
         contextdict = {
             'user': ActionHandler(request.user, request.user),
