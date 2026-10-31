@@ -120,8 +120,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         return self.apply_settings().get(name, default)
 
     def line_item_type(self):
-        (donate_type, created) = LineItemType.objects.get_or_create(program=self.program, text=self.get_setting('donation_text'))
-        return donate_type
+        return LineItemType.get_or_create_for_program(self.program, text=self.get_setting('donation_text'))[0]
 
     def isCompleted(self, user=None):
         """ Whether the user has fully paid for this program. """
@@ -192,11 +191,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         #   Note: This could also be created by default for every program,
         #   in the accounting controllers.
         if self.settings['offer_donation']:
-            (lit, created) = LineItemType.objects.get_or_create(
-                text=self.settings['donation_text'],
-                program=self.program,
-                required=False
-            )
+            self.line_item_type()
 
         #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
         #   and followed by a 24 character base64-encoded string.
@@ -244,7 +239,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
         offer_donation = self.settings['offer_donation']
-        donate_type = LineItemType.objects.get(program=self.program, text=self.settings['donation_text']) if offer_donation else None
+        donate_type = self.line_item_type() if offer_donation else None
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[_f for _f in [payment_type, sibling_type, grant_type, donate_type] if _f]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         #   This amount should be formatted as an integer in order to be
