@@ -174,10 +174,18 @@ def remove_list_member(list, member):
 
     return Popen([MM_PATH + "remove_members", "--nouserack", "--noadminack", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
+def _decode_output(output):
+    """ Decode Mailman command output, which Popen returns as bytes.
+
+    Uses iso-8859-1 to match the encoding we send to Mailman in add_list_members().
+    """
+    return output.decode('iso-8859-1')
+
 @enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of email addresses on the specified mailing list """
-    contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    output = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0]
+    contents = _decode_output(output).split('\n')
 
     try:
         # It seems the empty string gets dragged into this list.
@@ -204,7 +212,8 @@ def all_lists(show_nonpublic=False):
     args = [MM_PATH + "list_lists", "-b"]
     if not show_nonpublic:
         args.append("-a")
-    return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+    output = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
+    return _decode_output(output).split('\n')
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
@@ -216,7 +225,7 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = data[0].split('\n')
+    data = _decode_output(data[0]).split('\n')
 
     # find_member's output is of the form
     #
