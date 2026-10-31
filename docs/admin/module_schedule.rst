@@ -21,6 +21,7 @@ Model Architecture: ExpirableModel Subclass
 * ``end_date``: Nullable ``DateTimeField``. Indicates when the module closes.
 * ``NULL`` handling: A ``NULL`` timestamp is interpreted as "no expiry" (always open from that boundary).
 * ``is_valid(when=None)``: Helper method that evaluates whether a module object is active at a given timestamp.
+* ``is_open(user=None)``, ``has_ended(user=None)`` and ``opens_at(user=None)``: the module's window for a user. By default these follow ``start_date`` and ``end_date``; ``StudentRegTwoPhase`` also follows its ``Student/Classes/Lottery`` deadlines (see below).
 
 ProgramModuleObj Model Fields
 ------------------------------
@@ -77,7 +78,7 @@ Time-Filtering in Program.getModules()
 To maintain high performance without returning stale registration views:
 
 1. ``Program.getModules()`` retrieves the program's module objects list from the Memcached layer.
-2. The ``is_valid()`` filter is evaluated dynamically in the request path after cache retrieval.
+2. For non-admin users, the ``is_open(user)`` filter is evaluated dynamically in the request path after cache retrieval.
 3. Cache invalidation on ``save()`` guarantees instant propagation of schedule edits while avoiding database query overhead during active registration.
 
 Initial Permission and Date Generation
@@ -212,6 +213,17 @@ Certain modules require continuous availability or locked sequencing:
 
 * ``always_enabled = True``: Handler class property indicating the module remains active regardless of timestamp.
 * ``seq_locked = True``: Handler class property preventing reordering of the module sequence position.
+
+Required Modules and Lottery Gates
+----------------------------------
+While "Force show required modules" is on, students are sent through the program's required modules in order (``findModule``). A required module outside its time window isn't forced; the registration checklist still lists it, marked "(closed)" or with its opening date. Two handlers are gates, set by their ``gate_lifts`` class property:
+
+* ``StudentRegTwoPhase`` (``'closed'``): holds students from before the module opens until its window ends (or its ``Student/Classes/Lottery`` deadline closes), even once they have submitted their preferences. Its ``Student/Classes/Lottery`` deadlines also count, including one student's own extension: while none is open for a student, the module counts as closed for them (or not yet open, if one is still to come). Once the class lottery has ended, it is no longer a step students must complete to confirm their registration. Broader permissions such as ``Student/All`` don't keep it open.
+* ``StudentRegPhaseZero`` (``'completed'``): holds students until they are selected in the student lottery, even after its window ends.
+
+Until a gate opens, students held at it see a page saying when it opens, alongside the registration checklist.
+
+``ProgramModuleObj.gate_status(user)`` reports where a user stands with a module, for both ``findModule`` and the checklist.
 
 Schedule Conflict Detection Engine
 -----------------------------------

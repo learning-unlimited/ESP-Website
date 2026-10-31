@@ -238,7 +238,8 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         response = self.client.get(
             '/learn/%s/studentreg2phase' % self.program.getUrlBase())
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Send Me a Confirmation Email')
+        self.assertContains(response, 'Your preferences are submitted.')
+        self.assertContains(response, 'Email me an updated summary')
 
     # ---------------------------------------------------------------
 

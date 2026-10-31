@@ -78,10 +78,11 @@ def registration_checklist(context):
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
         if checklist['show_list']:
             checklist['progress'] = get_checklist_progress(checklist, include_steps=show_steps)
-        # Until the required modules are done, findModule sends the user
-        # through them in order, so the checklist shouldn't link around that.
-        checklist['lock_links'] = (not checklist['completedAll']
-                                   and forces_required_modules(checklist['program']))
+        # Until the required modules are done (and any lottery has let the
+        # user through), findModule sends the user through them in order, so
+        # the checklist shouldn't link around that.
+        checklist['lock_links'] = bool(checklist.get('gate')) or (
+            not checklist['completedAll'] and forces_required_modules(checklist['program']))
 
     context.render_context['registration_checklist'] = checklist
     return checklist
