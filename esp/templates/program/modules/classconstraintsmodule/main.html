@@ -1,0 +1,122 @@
+{% extends "program/modules/manage_base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h2 class="page-header">Class Constraints Management</h2>
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">Existing Constraints for {{ prog.niceName }}</h3>
+            </div>
+            <div class="panel-body">
+                {% if constraints %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Constraint Rule</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for constraint in constraints %}
+                            <tr>
+                                <td>
+                                    <strong>IF</strong> {{ constraint.condition.label }}<br/>
+                                    <strong>THEN</strong> {{ constraint.requirement.label }}
+                                </td>
+                                <td>
+                                    <form method="post" onsubmit="return confirm('Are you sure you want to delete this constraint?');">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="constraint_id" value="{{ constraint.id }}">
+                                        <button type="submit" name="delete" class="btn btn-danger btn-xs">
+                                            <i class="glyphicon glyphicon-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No class constraints have been defined for this program yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="panel panel-primary">
+            <div class="panel-heading">
+                <h3 class="panel-title"><i class="glyphicon glyphicon-plus"></i> Add New Constraint</h3>
+            </div>
+            <div class="panel-body">
+                {# Display non-field (form-level) errors, e.g. class_a == class_b #}
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" class="form-horizontal">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="form-group {% if field.errors %}has-error{% endif %}">
+                        {# Fix: use label_tag so the <label> gets for="{{ field.id_for_label }}"
+                           which enables click-to-focus and correct screen-reader association. #}
+                        <div class="col-sm-3 control-label">
+                            {{ field.label_tag }}
+                        </div>
+                        <div class="col-sm-9">
+                            {{ field }}
+                            {% if field.help_text %}
+                            <span class="help-block">{{ field.help_text }}</span>
+                            {% endif %}
+                            {% for error in field.errors %}
+                            <span class="help-block"><strong>{{ error }}</strong></span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="form-group">
+                        <div class="col-sm-offset-3 col-sm-9">
+                            <button type="submit" name="add" class="btn btn-success">
+                                <i class="glyphicon glyphicon-ok"></i> Create Constraint
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="panel-footer">
+                <small class="text-muted">
+                    <strong>Prerequisite:</strong> Enrolling in Class A will require the student to also be enrolled in Class B.<br/>
+                    <strong>Mutual Exclusion:</strong> Enrolling in Class A will prevent the student from also enrolling in Class B.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-horizontal .form-group select {
+        width: 100%;
+        padding: 6px 12px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+    /* Align label_tag output with Bootstrap horizontal form layout */
+    .form-horizontal .control-label label {
+        font-weight: 600;
+        padding-top: 7px;
+        text-align: right;
+        display: block;
+    }
+</style>
+{% endblock %}
