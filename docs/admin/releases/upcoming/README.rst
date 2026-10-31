@@ -21,10 +21,12 @@ A new ``Teacher/Classes/Schedule`` deadline controls whether teachers and modera
 
 The deadline is created default-open for new programs, and is backfilled default-open for existing programs, so nothing changes until an administrator closes it. Close it while scheduling is in progress to keep teachers from seeing assignments that may still change, and re-open it when the schedule is final. Note that ``Teacher/All`` and ``Teacher/Classes/All`` imply this permission, so they must not be open at the same time for it to have any effect.
 
-Teacher Registration Layout
-===========================
+Registration Layout
+===================
 
-The teacher registration main page and the pages of the teacher registration steps (profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, and surveys) have a new layout. When the checklist is enabled, it (along with any other registration requirements) is shown in a column beside the page content when the theme's content area is wide enough, or above the content otherwise (for example on phones and in the fruitsalad theme), so teachers can see their progress from any step. In the bigpicture theme, the list is instead shown in the theme's left sidebar, below the navigation links; this can be turned off with the new "Registration checklist in sidebar" theme setting, in which case the list is shown above the page content. The checklist starts with a progress bar counting the required steps and other registration requirements that are done, and a link to the next one. While "Force show required modules" is on and a teacher still has required modules to finish, the steps in the checklist are not links, so teachers complete the required modules in order rather than skipping ahead. Wherever the checklist is shown above the page content, the list of steps starts collapsed behind a "Show all steps" button, so the page content stays near the top. The steps are listed in the order teachers go through them: while "Force show required modules" is on, the required steps come first, then the optional ones; otherwise all steps are listed in their module order. Finished steps are no longer moved to the top. Teacher registration no longer uses the old image-based progress bar: the teacher "Progress mode" setting 2 (progress bar) now shows the same checklist as setting 1. Nothing about how the modules work has changed.
+The student and teacher registration main pages and the pages of their registration steps (for students: profile, custom form, acknowledgement, extra costs, lunch selection, applications, medical forms, donations, payment, surveys and the two-phase lottery page; for teachers: profile, biography, availability, acknowledgement, moderator signup, teacher events, custom forms and quizzes, and surveys) have a new layout. When the checklist is enabled, it (along with any other registration requirements) is shown in a column beside the page content when the theme's content area is wide enough, or above the content otherwise (for example on phones and in the fruitsalad theme), so students and teachers can see their progress from any step. In the bigpicture theme, the list is instead shown in the theme's left sidebar, below the navigation links; this can be turned off with the new "Registration checklist in sidebar" theme setting, in which case the list is shown above the page content. The checklist starts with a progress bar counting the required steps and other registration requirements that are done, and a link to the next one. While "Force show required modules" is on and a student or teacher still has required modules to finish, the steps in the checklist are not links, so the required modules are completed in order rather than skipped. Wherever the checklist is shown above the page content, the list of steps starts collapsed behind a "Show all steps" button, so the page content stays near the top. The steps are listed in the order students and teachers go through them: while "Force show required modules" is on, the required steps come first, then the optional ones; otherwise all steps are listed in their module order. Finished steps are no longer moved to the top. Registration no longer uses the old image-based progress bar: the student and teacher "Progress mode" setting 2 (progress bar) now shows the same checklist as setting 1.
+
+Nothing about how the modules work has changed.
 
 .. figure:: ../../images/teacherreg/checklist_beside_content.png
 
@@ -37,6 +39,10 @@ The teacher registration main page and the pages of the teacher registration ste
 .. figure:: ../../images/teacherreg/checklist_collapsed_phone.png
 
    Figure 3: Checklist collapsed above the page content on a phone
+
+.. figure:: ../../images/studentreg/checklist_student_mainpage.png
+
+   Figure 4: Checklist on the student registration main page (droplets theme)
 
 Form Field Selectors
 ====================
@@ -64,4 +70,4 @@ Developer Notes
 
 - Upgraded Django from 4.2.30 to 5.2.14 (LTS).
 - Updated dependencies for Django 5.2 compatibility: ``django-debug-toolbar`` 5.1.0 → 5.2.0.
-- Teacher registration main and step templates extend ``program/modules/teacherregcore/teacher_module_base.html`` (content goes in the ``module_content`` block; the main page also uses ``module_header``). The checklist context for both the teacher main page and module pages comes from ``esp.program.modules.checklist.get_checklist_context``. Themes can show the checklist in their own sidebar by adding a ``sidebar_extra`` block to their ``main.html`` and a ``checklist_in_sidebar`` field to their theme settings form, as bigpicture does.
+- Student and teacher registration main and step templates extend ``program/modules/module_base.html`` (content goes in the ``module_content`` block; the main pages also use ``module_header``), which holds the shared registration layout. The checklist context for the main pages and module pages comes from ``esp.program.modules.checklist.get_checklist_context``, and templates get it from the ``registration_checklist`` template tag. Themes can show the checklist in their own sidebar by adding a ``sidebar_extra`` block to their ``main.html`` and a ``checklist_in_sidebar`` field to their theme settings form, as bigpicture does.
