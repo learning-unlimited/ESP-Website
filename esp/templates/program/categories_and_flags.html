@@ -7,7 +7,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -59,19 +58,11 @@ You will need to use the main settings page for a specific program to modify whi
 
 <div id="program_form">
 
-    {% if open_section == "categories" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "categories" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#categories-section" aria-expanded="{% if open_section == "categories" %}true{% else %}false{% endif %}" aria-controls="categories-section">
        <b>Class Categories</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Class Categories</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="categories-section" class="accordion-collapse collapse{% if open_section == "categories" %} show{% endif %}">
 
     <p>Teachers choose categories for their classes when they register them. These categories are then displayed in schedules, catalogs, etc.
     The following class <b>categories</b> are available to use for your programs. You can add another category or edit an existing one using the form below.
@@ -128,19 +119,11 @@ You will need to use the main settings page for a specific program to modify whi
     </table>
     </div>
 
-    {% if open_section == "flagtypes" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "flagtypes" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#flagtypes-section" aria-expanded="{% if open_section == "flagtypes" %}true{% else %}false{% endif %}" aria-controls="flagtypes-section">
        <b>Class Flag Types</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Class Flag Types</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="flagtypes-section" class="accordion-collapse collapse{% if open_section == "flagtypes" %} show{% endif %}">
 
     <p>Flags allow you to annotate classes with particular information (e.g., classroom needs, needs further review).
     The following flag <b>types</b> are available to use for your programs. You can add another flag type or edit an existing one using the form below.
@@ -203,19 +186,11 @@ You will need to use the main settings page for a specific program to modify whi
     </table>
     </div>
     
-    {% if open_section == "recordtypes" %}
-    <button class="dsphead active">
+    <button class="accordion-button{% if open_section != "recordtypes" %} collapsed{% endif %}" data-bs-toggle="collapse" data-bs-target="#recordtypes-section" aria-expanded="{% if open_section == "recordtypes" %}true{% else %}false{% endif %}" aria-controls="recordtypes-section">
        <b>Record Types</b> (click to expand/contract)
     </button>
 
-    <div class="dspcont active">
-    {% else %}
-    <button class="dsphead">
-       <b>Record Types</b> (click to expand/contract)
-    </button>
-
-    <div class="dspcont">
-    {% endif %}
+     <div id="recordtypes-section" class="accordion-collapse collapse{% if open_section == "recordtypes" %} show{% endif %}">
 
     <p>Records allow you to mark that a user has performed some action (e.g., checked into a program or took a survey) at a specific time.
     The following record <b>types</b> are available to use for your programs (many of which are built-in). You can add another record type or edit an existing one using the form below.
@@ -275,6 +250,5 @@ You will need to use the main settings page for a specific program to modify whi
 
 <br /><br /><br />
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% endblock %}

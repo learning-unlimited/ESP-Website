@@ -1,16 +1,8 @@
-{% if open_section == "equipment" %}
-<button class="dsphead active">
-   <b>Step 4: Floating Resources</b> (click to expand/contract)
+<button class="accordion-button{% if open_section != "equipment" %} collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#equipment-section" aria-expanded="{% if open_section == "equipment" %}true{% else %}false{% endif %}" aria-controls="equipment-section">
+    <b>Step 4: Floating Resources</b>
 </button>
 
-<div class="dspcont active">
-{% else %}
-<button class="dsphead">
-   <b>Step 4: Floating Resources</b> (click to expand/contract)
-</button>
-
-<div class="dspcont">
-{% endif %}
+<div id="equipment-section" class="accordion-collapse collapse{% if open_section == "equipment" %} show{% endif %}">
 
 <p>The following are resources that {{ settings.ORGANIZATION_SHORT_NAME }} administrators or teachers can carry from room to room (LCD projectors, art supplies, etc).</p>
 

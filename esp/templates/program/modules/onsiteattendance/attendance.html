@@ -5,7 +5,6 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <style>
     table.sortable {
         table-layout: fixed;
@@ -99,10 +98,10 @@ or select a timeslot from the dropdown below to see attendance stats:
 </table>
 <br />
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#checked-in-students" aria-expanded="false" aria-controls="checked-in-students">
     <b>Students Checked In Between {{ timeslot.start_w_buffer|date:"g:i A" }} and {{ timeslot.end|date:"g:i A" }}{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
-<div class="dspcont">
+<div id="checked-in-students" class="accordion-collapse collapse">
 <table class="sortable" width="100%">
 <tr>
     <th width="5%" class="sorttable_nosort">#</th>
@@ -155,10 +154,10 @@ or select a timeslot from the dropdown below to see attendance stats:
 </table>
 </div>
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#not-attending-students" aria-expanded="false" aria-controls="not-attending-students">
     <b>Students Checked In Before {{ timeslot.end|date:"g:i A" }} But Not Attending Class During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
-<div class="dspcont">
+<div id="not-attending-students" class="accordion-collapse collapse">
 <table class="sortable" width="100%">
 <tr>
     <th width="5%" class="sorttable_nosort">#</th>
@@ -213,10 +212,10 @@ or select a timeslot from the dropdown below to see attendance stats:
 </table>
 </div>
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#unregistered-attendance" aria-expanded="false" aria-controls="unregistered-attendance">
     <b>Students Attending Classes In Which They Weren't Originally Enrolled During This Timeslot{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
-<div class="dspcont">
+<div id="unregistered-attendance" class="accordion-collapse collapse">
 <table class="sortable" width="100%">
 <tr>
     <th width="5%" class="sorttable_nosort">#</th>
@@ -272,10 +271,10 @@ or select a timeslot from the dropdown below to see attendance stats:
 </table>
 </div>
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#missing-attendance" aria-expanded="false" aria-controls="missing-attendance">
     <b>Sections During This Timeslot with No Attendance Recorded{% if when != timeslot.end %} on {{ when|date:'n/j/Y' }}{% endif %}</b> (click to expand/collapse)
 </button>
-<div class="dspcont">
+<div id="missing-attendance" class="accordion-collapse collapse">
 <table class="sortable">
 <tr>
     <th width="5%" class="sorttable_nosort">#</th>
@@ -354,7 +353,6 @@ or select a timeslot from the dropdown below to see attendance stats:
 </div>
 </center>
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endif %}
 
 </div>
