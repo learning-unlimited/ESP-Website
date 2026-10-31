@@ -876,6 +876,32 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertFalse(
             StudentSubjectInterest.objects.filter(user=student).exists())
 
+    def test_mark_classes_interested_rejects_top_level_array(self):
+        """A JSON array instead of an object returns 400."""
+        self._login_with_profile(self.students[0])
+        response = self.client.post(
+            self._url('mark_classes_interested'),
+            {'json_data': json.dumps([1, 2])},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b'JSON data mis-formatted.')
+
+    def test_mark_classes_interested_rejects_non_numeric_ids(self):
+        """A non-numeric class id in either list returns 400 and stars nothing."""
+        student = self.students[0]
+        self._login_with_profile(student)
+        cls = self.program.classes()[0]
+        for payload in ({'interested': [cls.id, 'abc'], 'not_interested': []},
+                        {'interested': [cls.id], 'not_interested': ['abc']}):
+            response = self.client.post(
+                self._url('mark_classes_interested'),
+                {'json_data': json.dumps(payload)},
+                HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+            self.assertEqual(response.status_code, 400, payload)
+            self.assertEqual(response.content, b'JSON data mis-formatted.')
+        self.assertFalse(
+            StudentSubjectInterest.objects.filter(user=student).exists())
+
     def test_mark_classes_interested_non_ajax_redirects(self):
         """A plain form POST saves the stars and redirects to the main page."""
         student = self.students[0]
@@ -943,6 +969,50 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
             self.timeslots[0], [str(sec.parent_class.id)])
         self.assertEqual(response.status_code, 400)
         self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_top_level_array_rejected(self):
+        """A JSON array instead of an object returns 400."""
+        self._login_with_profile(self.students[0])
+        response = self.client.post(
+            self._url('save_priorities'),
+            {'json_data': json.dumps([1, 2])})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b'JSON data mis-formatted.')
+
+    def test_save_priorities_unknown_rank_rejected(self):
+        """A rank with no matching Priority/N registration type returns 400."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._login_with_profile(student)
+        self.assertFalse(RegistrationType.objects.filter(
+            name='Priority/9', category='student').exists())
+
+        response = self._post_priorities(
+            ts, {'9': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b'JSON data mis-formatted.')
+        self.assertFalse(
+            StudentRegistration.objects.filter(user=student).exists())
+
+    def test_save_priorities_unknown_rank_saves_no_other_ranks(self):
+        """A valid rank posted alongside an unknown one is not saved either."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._login_with_profile(student)
+        RegistrationType.objects.get_or_create(
+            name='Priority/1', category='student')
+
+        response = self._post_priorities(ts, {
+            '1': str(sec.parent_class_id),
+            '9': str(sec.parent_class_id),
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(
+            StudentRegistration.objects.filter(user=student).exists())
 
     def test_save_priorities_blank_choice_expires_existing(self):
         """An empty choice clears the existing priority for that slot."""
