@@ -61,6 +61,7 @@ from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.utils.query_utils import nest_Q
+from esp.utils.ids import filter_by_id, parse_id
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -851,7 +852,7 @@ class StudentClassRegModule(ProgramModuleObj):
         else:
             clsid = extra
 
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
 
         if not classes.exists():
             raise Http404("Class not found")
@@ -866,11 +867,17 @@ class StudentClassRegModule(ProgramModuleObj):
     def clearslot_logic(request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and return True if there are no errors """
         verbs = RTC.getVisibleRegistrationTypeNames(prog)
+        slot_id = parse_id(extra)
+        if slot_id is None:
+            raise Http404("Invalid timeslot ID")
         #   Get the sections that the student is registered for in the specified timeslot.
-        oldclasses = request.user.getSections(prog).filter(meeting_times=extra)
+        oldclasses = request.user.getSections(prog).filter(meeting_times=slot_id)
         #   Narrow this down to one class if we're using the priority system.
         if 'sec_id' in request.GET:
-            oldclasses = oldclasses.filter(id=request.GET['sec_id'])
+            sec_id = parse_id(request.GET['sec_id'])
+            if sec_id is None:
+                raise Http404("Invalid section ID")
+            oldclasses = oldclasses.filter(id=sec_id)
         #   Take the student out if constraints allow
         for sec in oldclasses:
             result = sec.cannotRemove(request.user)
