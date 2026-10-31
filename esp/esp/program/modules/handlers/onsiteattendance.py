@@ -46,6 +46,7 @@ from esp.cal.models import Event
 from esp.utils.query_utils import nest_Q
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
+from esp.utils.ids import filter_by_id
 
 import datetime
 
@@ -69,7 +70,7 @@ class OnSiteAttendance(ProgramModuleObj):
 
         if extra:
             tsid = extra
-            timeslots = Event.objects.filter(id = tsid)
+            timeslots = filter_by_id(Event.objects, tsid)
             if len(timeslots) == 1:
                 timeslot = timeslots[0]
                 context['timeslot'] = timeslot
@@ -211,7 +212,7 @@ class OnSiteAttendance(ProgramModuleObj):
     def section_attendance(self, request, tl, one, two, module, extra, prog):
         context = {'program': prog, 'tl': tl, 'one': one, 'two': two}
 
-        timeslots = Event.objects.filter(id=extra, program = prog)
+        timeslots = filter_by_id(Event.objects, extra, program=prog)
         if len(timeslots) == 1:
             timeslot = timeslots[0]
             context['timeslot'] = timeslot
@@ -222,7 +223,7 @@ class OnSiteAttendance(ProgramModuleObj):
                 secid = request.POST['secid']
             elif 'secid' in request.GET:
                 secid = request.GET['secid']
-            sections = ClassSection.objects.filter(id = secid)
+            sections = filter_by_id(ClassSection.objects, secid)
             if len(sections) == 1:
                 section = sections[0]
                 context['section'], context['not_found'] = TeacherClassRegModule.process_attendance(section, request, prog)
