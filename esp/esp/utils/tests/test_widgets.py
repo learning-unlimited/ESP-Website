@@ -1,10 +1,12 @@
 import json
 import datetime
-from django.test import SimpleTestCase
+import tempfile
+from django.test import SimpleTestCase, override_settings
 from esp.utils.widgets import (
     ClassAttrMergingSelect, NullCheckboxSelect, DummyWidget,
     BlankSelectWidget, NullRadioSelect, ContactFieldsWidget,
-    DateTimeWidget, DateWidget, SplitDateWidget, NavStructureWidget
+    DateTimeWidget, DateWidget, SplitDateWidget, NavStructureWidget,
+    NavStructureWidgetWithIcons, bootstrap_icons
 )
 
 class UtilsWidgetsTests(SimpleTestCase):
@@ -98,3 +100,23 @@ class UtilsWidgetsTests(SimpleTestCase):
         test_data = [{"header": "Home", "links": []}]
         result = widget.value_from_datadict({'nav': json.dumps(test_data)}, {}, 'nav')
         self.assertEqual(result[0]['header'], "Home")
+
+    def test_bootstrap_icons_reads_installed_package(self):
+        """The icon list comes from the Bootstrap Icons package the themes render."""
+        icons = bootstrap_icons()
+        self.assertIn('house', icons)
+        self.assertIn('envelope', icons)
+        self.assertIsInstance(icons['house'], int)
+
+    def test_bootstrap_icons_missing_package_returns_empty(self):
+        """A host without the npm package gets an empty list rather than an error."""
+        with override_settings(MEDIA_ROOT=tempfile.mkdtemp()):
+            with self.assertLogs('esp.utils.widgets', level='WARNING'):
+                self.assertEqual(bootstrap_icons(), {})
+
+    def test_nav_structure_with_icons_offers_bootstrap_icons(self):
+        """The menu editor's picker lists Bootstrap Icons names, not Glyphicons."""
+        html = NavStructureWidgetWithIcons().render('nav', [], attrs={'id': 'id_nav'})
+        self.assertIn('var nav_icons = ', html)
+        self.assertIn('["house", %d]' % bootstrap_icons()['house'], html)
+        self.assertNotIn('Glyphicons Halflings', html)

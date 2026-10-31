@@ -33,6 +33,18 @@ the teacher class registration form (``teacher_profile_hide_fields``,
 hidden from the form. The settings themselves are unchanged, so any values you
 have set already carry over and keep working.
 
+Navigation Icons
+================
+
+The "bigpicture" and "droplets" themes now show navigation link icons from
+Bootstrap Icons instead of Glyphicons. When you upgrade, ``manage.py update``
+converts each saved icon to its closest Bootstrap Icon (for example "home"
+becomes "house" and "cog" becomes "gear"). A few Glyphicons have no close match
+(such as the chess pieces); those links show no icon until you choose a new one.
+On the theme setup page, the icon picker now lists Bootstrap Icons with a
+preview, and labels any unmatched icon "(not a Bootstrap Icons name)" so it is
+easy to find and replace.
+
 Bug Fixes
 =========
 
