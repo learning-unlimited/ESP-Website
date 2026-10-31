@@ -436,10 +436,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
                     user=request.user,
                     relationship=rel)
             else:
-                # Pull the first StudentRegistration, expire the others
-                for sr in srs[1:]:
-                    sr.expire()
-                sr = srs[0]
+                # Keep the oldest StudentRegistration, expire the others.
+                # Order and evaluate the queryset once so the row we keep
+                # can't also be one of the rows we expire.
+                sr, *duplicates = srs.order_by('id')
+                for duplicate in duplicates:
+                    duplicate.expire()
 
             # Modify as needed to ensure the section is correct and
             # expiration date is valid

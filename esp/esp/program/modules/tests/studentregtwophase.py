@@ -1041,6 +1041,24 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(
             StudentRegistration.objects.filter(user=student).count(), 2)
 
+    def test_save_priorities_duplicate_cleanup_keeps_lowest_id(self):
+        """Duplicate cleanup keeps the lowest-id row and expires the rest."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        keep, dup1, dup2 = [self._priority(student, sec) for _ in range(3)]
+
+        self._login_with_profile(student)
+        response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            list(self._valid_priorities(student).values_list('id', flat=True)),
+            [keep.id])
+        for dup in (dup1, dup2):
+            dup.refresh_from_db()
+            self.assertFalse(dup.is_valid(), dup.id)
+
     def test_save_priorities_reuses_expired_registration(self):
         """Re-choosing a class unexpires the old row instead of adding one."""
         ts = self.timeslots[0]
