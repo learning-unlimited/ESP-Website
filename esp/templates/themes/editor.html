@@ -550,7 +550,7 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
                                         <option value="{{ item.0 }}" data-default="{{ variable_defaults|index:item.0 }}"{% if item.2 %} hidden{% endif %}>{{ item.0 }}</option>
                                         {% endfor %}
                                     </select>
-                                    <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
+                                    <button class="btn btn-secondary add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
                                 </div>
                             </div>
                             {% endif %}
