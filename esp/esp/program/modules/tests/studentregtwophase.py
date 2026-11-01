@@ -891,8 +891,11 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         student = self.students[0]
         self._login_with_profile(student)
         cls = self.program.classes()[0]
+        # json.loads() reads 1e309 or Infinity as float('inf'), which int() rejects
+        # with an OverflowError rather than a ValueError.
         for payload in ({'interested': [cls.id, 'abc'], 'not_interested': []},
-                        {'interested': [cls.id], 'not_interested': ['abc']}):
+                        {'interested': [cls.id], 'not_interested': ['abc']},
+                        {'interested': [cls.id, float('inf')], 'not_interested': []}):
             response = self.client.post(
                 self._url('mark_classes_interested'),
                 {'json_data': json.dumps(payload)},

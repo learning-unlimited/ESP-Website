@@ -302,7 +302,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         try:
             interested = [int(x) for x in json_data['interested']]
             not_interested = [int(x) for x in json_data['not_interested']]
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
         # Determine which of the given class ids are valid
