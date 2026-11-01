@@ -38,6 +38,9 @@ BAD_ID_PARAMS = [
     ('get', 'onsite', 'printschedule', 'user'),
     ('post', 'onsite', 'checkin', 'userid'),
     ('get', 'volunteer', 'volunteerschedule', 'user'),
+    ('post', 'manage', 'volunteering', 'id', {'op': 'delete'}),
+    ('get', 'manage', 'volunteering', 'id', {'op': 'edit'}),
+    ('get', 'manage', 'check_volunteer', 'user'),
 ]
 
 class IdHelpersTest(TestCase):
@@ -132,12 +135,13 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
 
     def test_bad_id_in_listed_request_parameters_is_handled(self):
-        for method, section, view, param in BAD_ID_PARAMS:
+        for method, section, view, param, *rest in BAD_ID_PARAMS:
+            extra = rest[0] if rest else {}
             with self.subTest(view=view, param=param):
                 url = self.url(section, view)
                 self.assert_nothing_raises(
-                    [(method, url, {param: bad}) for bad in BAD_IDS])
-                statuses = [getattr(self.client, method)(url, {param: bad}).status_code
-                            for bad in BAD_IDS]
+                    [(method, url, {**extra, param: bad}) for bad in BAD_IDS])
+                statuses = [getattr(self.client, method)(url, {**extra, param: bad}).status_code
+                        for bad in BAD_IDS]
                 self.assertEqual(statuses[0], statuses[1],
                                 '%s %s: abc and 999999 differ' % (view, param))
