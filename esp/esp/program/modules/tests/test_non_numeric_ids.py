@@ -55,6 +55,8 @@ BAD_ID_PARAMS = [
     ('get', 'json', 'class_admin_info', 'section_id', {'return_key': 'classes'}),
     ('get', 'json', 'class_admin_info', 'class_id'),
     ('post', 'onsite', 'register_student', 'student_id'),
+    ('get', 'onsite', 'ajaxclassdetail', 'class', {'show_flags': '1'}),
+    ('get', 'onsite', 'missingteachers', 'start'),
 ]
 
 class IdHelpersTest(TestCase):
