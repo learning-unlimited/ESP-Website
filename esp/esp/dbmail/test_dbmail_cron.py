@@ -170,3 +170,15 @@ class DbmailCronTest(SimpleTestCase):
         self.calls.process_messages.assert_not_called()
         self.calls.send_email_requests.assert_not_called()
         self.assertFalse(os.path.exists(self.lock_file_path))
+
+    def test_import_in_a_clean_process_does_not_need_django(self):
+        # The reload above can't catch a module-level Django import, because
+        # this process already has Django configured; a fresh one doesn't.
+        env = os.environ.copy()
+        env.pop('DJANGO_SETTINGS_MODULE', None)
+        env['PYTHONPATH'] = os.path.dirname(os.path.abspath(dbmail_cron.__file__))
+        result = subprocess.run(
+            [sys.executable, '-c',
+             'import sys, dbmail_cron; sys.exit("django" in sys.modules)'],
+            env=env, cwd=self.tmpdir, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
