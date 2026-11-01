@@ -61,6 +61,8 @@ BAD_ID_PARAMS = [
     ('post', 'manage', 'editassignment', 'id', {'returned': 'true'}),
     ('post', 'manage', 'getavailableequipment', 'secid'),
     ('post', 'manage', 'deleteassignment', 'id'),
+    ('get', 'teach', 'coteachers', 'clsid'),
+    ('post', 'teach', 'coteachers', 'clsid'),
 ]
 
 class IdHelpersTest(TestCase):
