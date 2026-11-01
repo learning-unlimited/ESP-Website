@@ -68,6 +68,8 @@ BAD_ID_PARAMS = [
     ('get', 'manage', 'deadline_management', 'group', {'perm': 'x'}, 'close'),
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'open'),
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'close'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'delete'),
+    ('get', 'manage', 'reject_student', 'cls', {'student': '1'}),
 ]
 
 class IdHelpersTest(TestCase):
@@ -164,6 +166,7 @@ class BadIdInUrlTest(ProgramFrameworkTest):
     def test_bad_id_in_listed_request_parameters_is_handled(self):
         for method, section, view, param, *rest in BAD_ID_PARAMS:
             extra = rest[0] if rest else {}
+            url_extra = rest[1] if len(rest) > 1 else ''
             url = self.url(section, view, url_extra)
             with self.subTest(view=view, param=param):
                 self.assert_nothing_raises(
@@ -173,3 +176,10 @@ class BadIdInUrlTest(ProgramFrameworkTest):
                 self.assertEqual(statuses[0], statuses[1],
                                 '%s %s: abc and 999999 differ' % (view, param))
 
+    def test_reject_student_bad_student_id(self):
+        cls = ClassSubject.objects.filter(parent_program=self.program).first()
+        url = self.url('manage', 'reject_student')
+        requests = [('get', url, {'cls': cls.id, 'student': bad}) for bad in BAD_IDS]
+        self.assert_nothing_raises(requests)
+        statuses = [self.client.get(url, data).status_code for _, url, data in requests]
+        self.assertEqual(statuses[0], statuses[1])

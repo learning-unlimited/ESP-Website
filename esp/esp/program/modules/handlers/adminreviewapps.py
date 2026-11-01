@@ -134,7 +134,7 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls', ''))
             student = ESPUser.objects.get(id = request.GET.get('student', ''))
-        except (ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
+        except (ValueError, TypeError, ClassSubject.DoesNotExist, ESPUser.DoesNotExist):
             raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
