@@ -14,6 +14,7 @@ AJAX = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
 class CustomFormsViewErrorsTest(TestCase):
 
     def setUp(self):
+        super().setUp()
         self.admin, _ = ESPUser.objects.get_or_create(username='viewerr_admin')
         self.admin.set_password('password')
         self.admin.save()
@@ -38,8 +39,11 @@ class CustomFormsViewErrorsTest(TestCase):
         self.client.login(username='viewerr_admin', password='password')
 
     def tearDown(self):
-        for form in Form.objects.all():
-            DynamicModelHandler(form).purgeDynModel()
+        try:
+            for form in Form.objects.all():
+                DynamicModelHandler(form).purgeDynModel()
+        finally:
+            super().tearDown()
 
     def test_submit_and_modify_reject_get_and_non_ajax_requests(self):
         for url in ('/customforms/submit/', '/customforms/modify/'):
@@ -68,13 +72,21 @@ class CustomFormsViewErrorsTest(TestCase):
                 self.assertEqual(response.status_code, 302)
                 self.assertTrue(response['Location'].startswith('/accounts/login/'))
 
-    def test_getmodules_with_non_numeric_program_is_bad_request(self):
-        response = self.client.get('/customforms/getmodules/', {'program': 'abc'}, **AJAX)
-        self.assertEqual(response.status_code, 400)
+    def test_getmodules_with_missing_or_non_numeric_program_is_bad_request(self):
+        for params in ({}, {'program': 'abc'}):
+            with self.subTest(params=params):
+                response = self.client.get('/customforms/getmodules/', params, **AJAX)
+                self.assertEqual(response.status_code, 400)
 
-    def test_bulk_download_of_unknown_question_is_not_found(self):
-        DynamicModelHandler(self.form).createDynModel().objects.create(
-            user=self.student, **{f'question_{self.field.id}': 'an answer'})
-        response = self.client.get('/customforms/bulkdownloadfiles/', {
-            'form_id': self.form.id, 'question_name': 'question_999999'})
+    def test_getmodules_for_unknown_program_is_not_found(self):
+        response = self.client.get('/customforms/getmodules/', {'program': 999999}, **AJAX)
         self.assertEqual(response.status_code, 404)
+
+    def test_bulk_download_of_unknown_or_non_file_question_is_not_found(self):
+        DynamicModelHandler(self.form).createDynModel().objects.create(
+            user=self.student, **{f'question_{self.field.id}': '/etc/passwd'})
+        for question_name in ('question_999999', f'question_{self.field.id}'):
+            with self.subTest(question_name=question_name):
+                response = self.client.get('/customforms/bulkdownloadfiles/', {
+                    'form_id': self.form.id, 'question_name': question_name})
+                self.assertEqual(response.status_code, 404)

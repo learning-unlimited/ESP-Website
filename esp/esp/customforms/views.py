@@ -5,7 +5,7 @@ from django.db import transaction
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from django.db import connection
+from django.db import connection, models
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -461,7 +461,9 @@ def bulkDownloadFiles(request):
             raise Http403('You do not have permission to download files for this form.')
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
-        if question_name not in [field.attname for field in dyn._meta.concrete_fields]:
+        #   Only file questions hold paths; any other answer is free text.
+        fields = {field.attname: field for field in dyn._meta.concrete_fields}
+        if not isinstance(fields.get(question_name), models.FileField):
             return error404(request)
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
         return zip_download(filenames, 'surveyfiles')
@@ -520,9 +522,13 @@ def get_modules(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
-                prog = Program.objects.get(id=request.GET.get('program'))
-            except (ValueError, Program.DoesNotExist):
+                prog_id = int(request.GET['program'])
+            except (ValueError, KeyError):
                 return HttpResponse(status=400)
+            try:
+                prog = Program.objects.get(id=prog_id)
+            except Program.DoesNotExist:
+                return error404(request)
             retval = {'learn': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'learn') if mod.module.handler in learn_handlers],
                       'teach': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'teach') if mod.module.handler in teach_handlers]}
             return HttpResponse(json.dumps(retval))
