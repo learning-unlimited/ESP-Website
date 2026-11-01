@@ -37,6 +37,7 @@ BAD_ID_PARAMS = [
     ('get', 'onsite', 'studentschedule', 'user'),
     ('get', 'onsite', 'printschedule', 'user'),
     ('post', 'onsite', 'checkin', 'userid'),
+    ('get', 'volunteer', 'volunteerschedule', 'user'),
 ]
 
 class IdHelpersTest(TestCase):
