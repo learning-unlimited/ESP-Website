@@ -63,6 +63,11 @@ BAD_ID_PARAMS = [
     ('post', 'manage', 'deleteassignment', 'id'),
     ('get', 'teach', 'coteachers', 'clsid'),
     ('post', 'teach', 'coteachers', 'clsid'),
+    ('get', 'manage', 'deadline_management', 'filter_perm_created'),
+    ('get', 'manage', 'deadline_management', 'group', {'perm': 'x'}, 'open'),
+    ('get', 'manage', 'deadline_management', 'group', {'perm': 'x'}, 'close'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'open'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'close'),
 ]
 
 class IdHelpersTest(TestCase):
@@ -159,11 +164,12 @@ class BadIdInUrlTest(ProgramFrameworkTest):
     def test_bad_id_in_listed_request_parameters_is_handled(self):
         for method, section, view, param, *rest in BAD_ID_PARAMS:
             extra = rest[0] if rest else {}
+            url = self.url(section, view, url_extra)
             with self.subTest(view=view, param=param):
-                url = self.url(section, view)
                 self.assert_nothing_raises(
                     [(method, url, {**extra, param: bad}) for bad in BAD_IDS])
                 statuses = [getattr(self.client, method)(url, {**extra, param: bad}).status_code
                         for bad in BAD_IDS]
                 self.assertEqual(statuses[0], statuses[1],
                                 '%s %s: abc and 999999 differ' % (view, param))
+
