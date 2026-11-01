@@ -8,6 +8,8 @@ import random
 from datetime import datetime, timedelta
 
 from django.core import mail
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 
 from esp.cal.models import Event
 from esp.program.class_status import ClassStatus
@@ -1050,11 +1052,24 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         keep, dup1, dup2 = [self._priority(student, sec) for _ in range(3)]
 
         self._login_with_profile(student)
-        response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
+        with CaptureQueriesContext(connection) as queries:
+            response = self._post_priorities(ts, {'1': str(sec.parent_class_id)})
         self.assertEqual(response.status_code, 302)
         self.assertEqual(
             list(self._valid_priorities(student).values_list('id', flat=True)),
             [keep.id])
+        # The duplicates are fetched once, in id order, rather than sliced in
+        # two separate unordered queries. They're the registrations grouped
+        # by meeting time; skip the exists() check on the same queryset.
+        table = StudentRegistration._meta.db_table
+        fetches = [q['sql'] for q in queries.captured_queries
+                   if f'FROM "{table}"' in q['sql']
+                   and 'HAVING MIN("cal_event"."start")' in q['sql']
+                   and not q['sql'].startswith('SELECT 1 AS')]
+        self.assertEqual(len(fetches), 1, fetches)
+        self.assertNotIn('LIMIT', fetches[0])
+        self.assertNotIn('OFFSET', fetches[0])
+        self.assertIn(f'ORDER BY "{table}"."id" ASC', fetches[0])
         for dup in (dup1, dup2):
             dup.refresh_from_db()
             self.assertFalse(dup.is_valid(), dup.id)
