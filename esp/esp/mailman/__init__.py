@@ -213,7 +213,7 @@ def all_lists(show_nonpublic=False):
     if not show_nonpublic:
         args.append("-a")
     output = Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0]
-    return _decode_output(output).split('\n')
+    return _decode_output(output).splitlines()
 
 @enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
@@ -225,7 +225,7 @@ def lists_containing(user):
 
     args = [MM_PATH + "find_member", search_regex]
     data = Popen(args, stdout=PIPE, stderr=PIPE).communicate()
-    data = _decode_output(data[0]).split('\n')
+    data = _decode_output(data[0]).splitlines()
 
     # find_member's output is of the form
     #
@@ -236,8 +236,8 @@ def lists_containing(user):
     #     list3
     #     list4
     #
-    # We only want the lists; grab those:
+    # We only want the lists, which are the indented lines; grab those:
 
-    lists = [x.strip() for x in data]
+    lists = [x.strip() for x in data if x[:1].isspace()]
     lists = [x for x in lists if x]
     return lists

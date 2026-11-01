@@ -259,7 +259,7 @@ class MailmanCommandConstructionTest(TestCase):
         self.assertEqual(
             mock_popen.call_args[0][0], ["/usr/lib/mailman/bin/list_lists", "-b", "-a"]
         )
-        self.assertEqual(result[:2], ["list1", "list2"])
+        self.assertEqual(result, ["list1", "list2"])
 
     def test_all_lists_include_nonpublic(self):
         mock_proc = MagicMock()
@@ -269,7 +269,13 @@ class MailmanCommandConstructionTest(TestCase):
         self.assertEqual(
             mock_popen.call_args[0][0], ["/usr/lib/mailman/bin/list_lists", "-b"]
         )
-        self.assertEqual(result[0], "list1")
+        self.assertEqual(result, ["list1"])
+
+    def test_all_lists_empty_output(self):
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = (b"", b"")
+        with patch.object(self.m, "Popen", return_value=mock_proc):
+            self.assertEqual(self.m.all_lists(), [])
 
     def test_lists_containing_string_user(self):
         mock_proc = MagicMock()
@@ -283,8 +289,17 @@ class MailmanCommandConstructionTest(TestCase):
             mock_popen.call_args[0][0],
             ["/usr/lib/mailman/bin/find_member", "^a@example.com$"],
         )
-        self.assertIn("list1", result)
-        self.assertIn("list2", result)
+        self.assertEqual(result, ["list1", "list2"])
+
+    def test_lists_containing_skips_member_headers(self):
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = (
+            b"a@example.com found in:\n    list1\nA@example.com found in:\n    list2\n",
+            b"",
+        )
+        with patch.object(self.m, "Popen", return_value=mock_proc):
+            result = self.m.lists_containing("a@example.com")
+        self.assertEqual(result, ["list1", "list2"])
 
     def test_lists_containing_user_object_matches_email_or_username(self):
         user = User(username="alice", email="alice@example.com")
