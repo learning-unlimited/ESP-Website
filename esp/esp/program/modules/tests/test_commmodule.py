@@ -26,6 +26,10 @@ from esp.users.models import ESPUser, PersistentQueryFilter
 GRADE_WARNING = "You haven't selected a grade range filter"
 GUARDIAN_WARNING = 'parent and/or emergency contact emails'
 STALE_FILTER_WARNING = 'no longer valid'
+MISSING_MSGREQ_ERROR = ('The selected previous message could not be found.  '
+                        'Please go back and select a message from the list.')
+BAD_TEMPLATE_ERROR = ('The selected email template does not exist.  '
+                      'Please go back and try again.')
 
 
 class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
@@ -187,6 +191,19 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTemplateNotUsed(
             response, 'program/modules/commmodule/step2.html')
 
+    def test_commpanel_post_without_use_checklist_skips_checklist(self):
+        self.login_as('admin')
+        response = self.post_to_module('manage', 'commpanel', {
+            'recipient_type': 'Student',
+            'base_list': 'enrolled',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response, 'program/modules/commmodule/step2.html')
+        self.assertTemplateNotUsed(response, 'users/userchecklist.html')
+        self.assertEqual(self.filter_user_ids(response.context['filterid']),
+                         self.enrolled_ids())
+
     def test_commpanel_post_invalid_criteria_rerenders_with_error(self):
         self.login_as('admin')
         filters_before = PersistentQueryFilter.objects.count()
@@ -239,6 +256,16 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertTrue(any(GUARDIAN_WARNING in w
                             for w in ctx['mailer_warnings']))
 
+    def test_commpanel_rejects_bad_msgreq_id(self):
+        self.login_as('admin')
+        for msgreq_id in ('abc', '999999', ''):
+            with self.subTest(msgreq_id=msgreq_id):
+                response = self.post_to_module(
+                    'manage', 'commpanel', {'msgreq_id': msgreq_id})
+                self.assertTemplateUsed(response, 'error.html')
+                self.assertContains(response, MISSING_MSGREQ_ERROR,
+                                    status_code=500)
+
     # ------------------------------------------------------------------
     # commprev (preview step)
     # ------------------------------------------------------------------
@@ -287,6 +314,20 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.context['replyto'], 'replies@learningu.org')
         self.assertTrue(response.context['public_view'])
         self.assertEqual(response.context['template'], 'minimal')
+
+    def test_commprev_rejects_unknown_template(self):
+        filterobj = self.make_filter(self.students)
+        self.login_as('admin')
+        # '../users/recovery' would otherwise load users/recovery_email.html,
+        # and a name past the filesystem's length limit raised an OSError.
+        for template in ('nope', '../users/recovery', '', 'a' * 300):
+            with self.subTest(template=template):
+                response = self.post_to_module(
+                    'manage', 'commprev',
+                    self.compose_data(filterobj, template=template))
+                self.assertTemplateUsed(response, 'error.html')
+                self.assertContains(response, BAD_TEMPLATE_ERROR,
+                                    status_code=500)
 
     def test_commprev_rejects_off_domain_from_address(self):
         filterobj = self.make_filter(self.students)
@@ -370,6 +411,27 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         msg = MessageRequest.objects.get()
         self.assertIn('Hi', msg.msgtext)
         self.assertNotIn('base64', msg.msgtext)
+
+    def test_commfinal_rejects_unknown_template_without_queueing(self):
+        filterobj = self.make_filter(self.students)
+        self.login_as('admin')
+        cases = [
+            ('unknown', {'template': 'nope'}),
+            ('path', {'template': '../users/recovery'}),
+            # The other-program-links confirmation page renders the template too.
+            ('unknown, other program links', {
+                'template': 'nope',
+                'body': 'Sign up at /teach/OtherProg/2020_Fall/makeaclass'}),
+        ]
+        for label, overrides in cases:
+            with self.subTest(label):
+                response = self.post_to_module(
+                    'manage', 'commfinal',
+                    self.compose_data(filterobj, **overrides))
+                self.assertTemplateUsed(response, 'error.html')
+                self.assertContains(response, BAD_TEMPLATE_ERROR,
+                                    status_code=500)
+                self.assertFalse(MessageRequest.objects.exists())
 
     def test_commfinal_requires_confirmation_for_other_program_links(self):
         filterobj = self.make_filter(self.students)
@@ -477,6 +539,21 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertFalse([m for m in mail.outbox
                           if m.subject.startswith('[TEST]')
                           or self.admin.email in m.to])
+
+    def test_send_test_email_rejects_unknown_template(self):
+        self.login_as('admin')
+        for template in ('nope', '../users/recovery', 'a' * 300):
+            with self.subTest(template=template):
+                response = self.post_to_module('manage', 'send_test_email', {
+                    'from': 'director@learningu.org',
+                    'subject': 'Schedule update',
+                    'body': 'Hello',
+                    'template': template,
+                })
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json(),
+                                 {'success': False, 'error': BAD_TEMPLATE_ERROR})
+                self.assertEqual(len(mail.outbox), 0)
 
 
 class CommModuleHelperTest(ProgramFrameworkTest):
