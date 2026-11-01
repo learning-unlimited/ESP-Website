@@ -252,7 +252,7 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except (ValueError, TypeError):
-            raise ESPError("Corrupted POST data!  Please contact us at " +
+            raise ESPError("Corrupted POST data! Please contact us at " +
             "websupport@learningu.org and tell us how you got this error, " +
             "and we'll look into it.")
 
@@ -376,7 +376,7 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except (ValueError, TypeError):
-            raise ESPError("Corrupted POST data!  Please contact us at " +
+            raise ESPError("Corrupted POST data! Please contact us at " +
             "websupport@learningu.org and tell us how you got this error, " +
             "and we'll look into it.")
 

@@ -24,7 +24,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.users.models import ESPUser, PersistentQueryFilter
 
 CORRUPTED_POST_ERROR = (
-    "Corrupted POST data!  Please contact us at websupport@learningu.org "
+    "Corrupted POST data! Please contact us at websupport@learningu.org "
     "and tell us how you got this error, and we'll look into it.")
 GRADE_WARNING = "You haven't selected a grade range filter"
 GUARDIAN_WARNING = 'parent and/or emergency contact emails'
