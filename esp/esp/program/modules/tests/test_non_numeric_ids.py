@@ -70,6 +70,15 @@ BAD_ID_PARAMS = [
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'close'),
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'delete'),
     ('get', 'manage', 'reject_student', 'cls', {'student': '1'}),
+    ('get',  'manage', 'lineitems', 'id', {'op': 'edit'}),
+    ('get',  'manage', 'lineitems', 'id', {'op': 'delete'}),
+    ('post', 'manage', 'phasezero', 'student_selected1', {}),
+    ('post', 'manage', 'phasezero', 'student_selected2', {}),
+    ('post', 'manage', 'phasezero', 'student_selected3', {}),
+    ('post', 'manage', 'phasezero', 'student_selected4', {}),
+    ('get',  'manage', 'student_financial_spreadsheet', 'userid'),
+    ('get',  'manage', 'studentschedules', 'userid'),
+    ('post', 'onsite', 'checkout', 'unenroll', {}),
 ]
 
 class IdHelpersTest(TestCase):
@@ -183,3 +192,24 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         self.assert_nothing_raises(requests)
         statuses = [self.client.get(url, data).status_code for _, url, data in requests]
         self.assertEqual(statuses[0], statuses[1])
+
+    def test_phasezero_bad_student_ids(self):
+        url = self.url('manage', 'phasezero')
+        st_id = str(self.students[0].id)
+        # Test all 4 student_selected fields with their required modes
+        test_cases = [
+            ('student_selected1', {'mode': 'addnew'}),
+            ('student_selected2', {'mode': 'addtoexisting', 'student_selected3': st_id}),
+            ('student_selected3', {'mode': 'addtoexisting', 'student_selected2': st_id}),
+            ('student_selected4', {'mode': 'remove'}),
+        ]
+        for param, extra in test_cases:
+            with self.subTest(param=param):
+                requests = [('post', url, {**extra, param: bad}) for bad in BAD_IDS]
+                self.assert_nothing_raises(requests)
+
+    def test_checkout_bad_unenroll_id(self):
+        url = self.url('onsite', 'checkout')
+        st_id = self.students[0].id
+        requests = [('post', url, {'user': st_id, 'checkout_student': '1', 'unenroll': bad}) for bad in BAD_IDS]
+        self.assert_nothing_raises(requests)
