@@ -32,6 +32,12 @@ VIEWS_WITH_ID_IN_URL = [
 # Not a number, and a number that matches nothing.
 BAD_IDS = ('abc', '999999')
 
+# Views that take an id in a request parameter: (method, section, view, parameter).
+BAD_ID_PARAMS = [
+    ('get', 'onsite', 'studentschedule', 'user'),
+    ('get', 'onsite', 'printschedule', 'user'),
+    ('post', 'onsite', 'checkin', 'userid'),
+]
 
 class IdHelpersTest(TestCase):
     def test_parse_id_accepts_integers(self):
@@ -124,10 +130,13 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         response = self.client.get(self.url('manage', 'deletesection'), {'sec_id': section.id})
         self.assertEqual(response.status_code, 200)
 
-    def test_bad_user_parameter_in_onsiteclassschedule_views(self):
-        for view in ('studentschedule', 'printschedule'):
-            url = self.url('onsite', view)
-            requests = [('get', url, {'user': bad}) for bad in BAD_IDS]
-            self.assert_nothing_raises(requests)
-            statuses = [self.client.get(url, {'user': bad}).status_code for bad in BAD_IDS]
-            self.assertEqual(statuses[0], statuses[1], '%s: abc and 999999 differ' % view)
+    def test_bad_id_in_listed_request_parameters_is_handled(self):
+        for method, section, view, param in BAD_ID_PARAMS:
+            with self.subTest(view=view, param=param):
+                url = self.url(section, view)
+                self.assert_nothing_raises(
+                    [(method, url, {param: bad}) for bad in BAD_IDS])
+                statuses = [getattr(self.client, method)(url, {param: bad}).status_code
+                            for bad in BAD_IDS]
+                self.assertEqual(statuses[0], statuses[1],
+                                '%s %s: abc and 999999 differ' % (view, param))

@@ -47,6 +47,7 @@ from django.http import HttpResponse
 from django.db import transaction
 from django.template.loader import render_to_string
 from esp.users.views    import search_for_user
+from esp.utils.ids import filter_by_id
 
 import json
 
@@ -360,7 +361,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         if request.method == 'POST' and 'userid' in request.POST:
             error = False
             message = None
-            user = ESPUser.objects.filter(id = request.POST['userid']).first()
+            user = filter_by_id(ESPUser.objects, request.POST['userid']).first()
             if user:
                 self.student = user
                 with transaction.atomic():
