@@ -123,3 +123,11 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         section = self.program.sections()[0]
         response = self.client.get(self.url('manage', 'deletesection'), {'sec_id': section.id})
         self.assertEqual(response.status_code, 200)
+
+    def test_bad_user_parameter_in_onsiteclassschedule_views(self):
+        for view in ('studentschedule', 'printschedule'):
+            url = self.url('onsite', view)
+            requests = [('get', url, {'user': bad}) for bad in BAD_IDS]
+            self.assert_nothing_raises(requests)
+            statuses = [self.client.get(url, {'user': bad}).status_code for bad in BAD_IDS]
+            self.assertEqual(statuses[0], statuses[1], '%s: abc and 999999 differ' % view)
