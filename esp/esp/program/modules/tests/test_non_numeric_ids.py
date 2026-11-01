@@ -32,6 +32,54 @@ VIEWS_WITH_ID_IN_URL = [
 # Not a number, and a number that matches nothing.
 BAD_IDS = ('abc', '999999')
 
+# Views that take an id in a request parameter: (method, section, view, parameter).
+BAD_ID_PARAMS = [
+    ('get', 'onsite', 'studentschedule', 'user'),
+    ('get', 'onsite', 'printschedule', 'user'),
+    ('post', 'onsite', 'checkin', 'userid'),
+    ('get', 'volunteer', 'volunteerschedule', 'user'),
+    ('post', 'manage', 'volunteering', 'id', {'op': 'delete'}),
+    ('get', 'manage', 'volunteering', 'id', {'op': 'edit'}),
+    ('get', 'manage', 'check_volunteer', 'user'),
+    ('get', 'teach', 'classroster', 'user'),
+    ('get', 'teach', 'teacherschedule', 'user'),
+    ('get', 'teach', 'teachermoderatorschedule', 'user'),
+    ('get', 'teach', 'moderatorschedule', 'user'),
+    ('get', 'json', 'class_info', 'section_id'),
+    ('get', 'json', 'class_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_info', 'class_id'),
+    ('get', 'json', 'class_size_info', 'section_id'),
+    ('get', 'json', 'class_size_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_size_info', 'class_id'),
+    ('get', 'json', 'class_admin_info', 'section_id'),
+    ('get', 'json', 'class_admin_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_admin_info', 'class_id'),
+    ('post', 'onsite', 'register_student', 'student_id'),
+    ('get', 'onsite', 'ajaxclassdetail', 'class', {'show_flags': '1'}),
+    ('get', 'onsite', 'missingteachers', 'start'),
+    ('post', 'manage', 'newassignment', 'target', {'resource': 'x'}),
+    ('post', 'manage', 'editassignment', 'id', {'returned': 'true'}),
+    ('post', 'manage', 'getavailableequipment', 'secid'),
+    ('post', 'manage', 'deleteassignment', 'id'),
+    ('get', 'teach', 'coteachers', 'clsid'),
+    ('post', 'teach', 'coteachers', 'clsid'),
+    ('get', 'manage', 'deadline_management', 'filter_perm_created'),
+    ('get', 'manage', 'deadline_management', 'group', {'perm': 'x'}, 'open'),
+    ('get', 'manage', 'deadline_management', 'group', {'perm': 'x'}, 'close'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'open'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'close'),
+    ('get', 'manage', 'deadline_management', 'perm_id', {}, 'delete'),
+    ('get', 'manage', 'reject_student', 'cls', {'student': '1'}),
+    ('get',  'manage', 'lineitems', 'id', {'op': 'edit'}),
+    ('get',  'manage', 'lineitems', 'id', {'op': 'delete'}),
+    ('post', 'manage', 'phasezero', 'student_selected1', {}),
+    ('post', 'manage', 'phasezero', 'student_selected2', {}),
+    ('post', 'manage', 'phasezero', 'student_selected3', {}),
+    ('post', 'manage', 'phasezero', 'student_selected4', {}),
+    ('get',  'manage', 'student_financial_spreadsheet', 'userid'),
+    ('get',  'manage', 'studentschedules', 'userid'),
+    ('post', 'onsite', 'checkout', 'unenroll', {}),
+]
 
 class IdHelpersTest(TestCase):
     def test_parse_id_accepts_integers(self):
@@ -123,3 +171,45 @@ class BadIdInUrlTest(ProgramFrameworkTest):
         section = self.program.sections()[0]
         response = self.client.get(self.url('manage', 'deletesection'), {'sec_id': section.id})
         self.assertEqual(response.status_code, 200)
+
+    def test_bad_id_in_listed_request_parameters_is_handled(self):
+        for method, section, view, param, *rest in BAD_ID_PARAMS:
+            extra = rest[0] if rest else {}
+            url_extra = rest[1] if len(rest) > 1 else ''
+            url = self.url(section, view, url_extra)
+            with self.subTest(view=view, param=param):
+                self.assert_nothing_raises(
+                    [(method, url, {**extra, param: bad}) for bad in BAD_IDS])
+                statuses = [getattr(self.client, method)(url, {**extra, param: bad}).status_code
+                        for bad in BAD_IDS]
+                self.assertEqual(statuses[0], statuses[1],
+                                '%s %s: abc and 999999 differ' % (view, param))
+
+    def test_reject_student_bad_student_id(self):
+        cls = ClassSubject.objects.filter(parent_program=self.program).first()
+        url = self.url('manage', 'reject_student')
+        requests = [('get', url, {'cls': cls.id, 'student': bad}) for bad in BAD_IDS]
+        self.assert_nothing_raises(requests)
+        statuses = [self.client.get(url, data).status_code for _, url, data in requests]
+        self.assertEqual(statuses[0], statuses[1])
+
+    def test_phasezero_bad_student_ids(self):
+        url = self.url('manage', 'phasezero')
+        st_id = str(self.students[0].id)
+        # Test all 4 student_selected fields with their required modes
+        test_cases = [
+            ('student_selected1', {'mode': 'addnew'}),
+            ('student_selected2', {'mode': 'addtoexisting', 'student_selected3': st_id}),
+            ('student_selected3', {'mode': 'addtoexisting', 'student_selected2': st_id}),
+            ('student_selected4', {'mode': 'remove'}),
+        ]
+        for param, extra in test_cases:
+            with self.subTest(param=param):
+                requests = [('post', url, {**extra, param: bad}) for bad in BAD_IDS]
+                self.assert_nothing_raises(requests)
+
+    def test_checkout_bad_unenroll_id(self):
+        url = self.url('onsite', 'checkout')
+        st_id = self.students[0].id
+        requests = [('post', url, {'user': st_id, 'checkout_student': '1', 'unenroll': bad}) for bad in BAD_IDS]
+        self.assert_nothing_raises(requests)

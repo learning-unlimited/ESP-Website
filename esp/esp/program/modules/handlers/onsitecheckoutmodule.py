@@ -42,6 +42,7 @@ from esp.users.models    import ESPUser, Record, RecordType
 from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import parse_id
 
 class OnSiteCheckoutModule(ProgramModuleObj):
     doc = """Check students out (temporarily or indefinitely) from a program."""
@@ -106,7 +107,8 @@ class OnSiteCheckoutModule(ProgramModuleObj):
 
                 # Unenroll student from selected classes
                 verbs = RTC.getVisibleRegistrationTypeNames(prog)
-                for sec in ClassSection.objects.filter(id__in=[_f for _f in request.POST.getlist('unenroll') if _f]).distinct():
+                unenroll_ids = [i for i in map(parse_id, request.POST.getlist('unenroll')) if i is not None]
+                for sec in ClassSection.objects.filter(id__in=unenroll_ids).distinct():
                     sec.unpreregister_student(student, verbs)
                 context['checkout_message_success'] = f"Successfully checked out {student.name()} ({student.username})"
 
