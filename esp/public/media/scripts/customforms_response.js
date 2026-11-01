@@ -57,8 +57,9 @@ $j(document).ready(function() {
 function file_link_formatter(cellvalue, options, rowObject)
 {
     //  Newer responses store a path relative to the media directory
-    //  ("uploaded/..."); older ones stored an absolute ".../media/uploaded/..." path.
-    var match = (cellvalue || "").match(/(?:^|media\/)uploaded\/(.+)$/);
+    //  ("uploaded/<model>/<file>"); older ones stored an absolute path under
+    //  whatever MEDIA_ROOT was, so match only the trailing three segments.
+    var match = (cellvalue || "").match(/(?:^|\/)uploaded\/([^\/]+\/[^\/]+)$/);
     var url_path = match ? match[1] : undefined;
     if (url_path) {
         var url_dir = url_path.split("/");

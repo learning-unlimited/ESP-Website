@@ -22,6 +22,7 @@ class FileUploadQuestionTest(TestCase):
     """A file question can be answered, and the uploads can be downloaded."""
 
     def setUp(self):
+        super().setUp()
         #   Keep everything the form wizard and the response table write out of
         #   the repository's public/media directory.
         self.media_root = tempfile.mkdtemp()
@@ -74,8 +75,11 @@ class FileUploadQuestionTest(TestCase):
         self.upload_dir = os.path.join(self.media_root, 'uploaded', f'Response_{self.form.id}')
 
     def tearDown(self):
-        for form in Form.objects.all():
-            DynamicModelHandler(form).purgeDynModel()
+        try:
+            for form in Form.objects.all():
+                DynamicModelHandler(form).purgeDynModel()
+        finally:
+            super().tearDown()
 
     def responses(self):
         return DynamicModelHandler(self.form).createDynModel().objects.all()
