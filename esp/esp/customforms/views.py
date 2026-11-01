@@ -5,7 +5,7 @@ from django.db import transaction
 from django.shortcuts import redirect
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
-from django.db import connection
+from django.db import connection, models
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 
@@ -66,6 +66,7 @@ def formBuilderData(request):
             return HttpResponse(json.dumps(data))
     return HttpResponse(status=400)
 
+@user_passes_test(test_func)
 def getPerms(request):
     """
     Returns the various permissions available for the current program via AJAX.
@@ -74,9 +75,12 @@ def getPerms(request):
         if request.method == 'GET':
             try:
                 prog_id = int(request.GET['prog_id'])
-            except ValueError:
+            except (KeyError, ValueError):
                 return HttpResponse(status=400)
-            prog = Program.objects.get(pk=prog_id)
+            try:
+                prog = Program.objects.get(pk=prog_id)
+            except Program.DoesNotExist:
+                return error404(request)
             perms = {'teachers': [], 'students': []}
             for module in prog.getModules(None):
                 teach_desc = module.teacherDesc()
@@ -183,6 +187,7 @@ def onSubmit(request):
                 #   Rollback any changes if an error is raised
                 transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+    return HttpResponse(status=400)
 
 def get_or_create_altered_obj(model, initial_id, **attrs):
     if model.objects.filter(id=initial_id).exists():
@@ -319,6 +324,7 @@ def onModify(request):
                 #   Rollback any changes if an error is raised
                 transaction.set_rollback(True)
                 return JsonResponse({'message': str(err)}, status=400)
+    return HttpResponse(status=400)
 
 def hasPerm(user, form):
     """
@@ -374,10 +380,10 @@ def success(request, form_id):
     """
     try:
         form_id = int(form_id)
-    except ValueError:
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
         return error404(request)
 
-    form = Form.objects.get(pk=form_id)
     return render_to_response('customforms/success.html', request, {'success_message': form.success_message,
                                                             'success_url': form.success_url})
 
@@ -455,6 +461,10 @@ def bulkDownloadFiles(request):
             raise Http403('You do not have permission to download files for this form.')
         dmh = DMH(form=form)
         dyn = dmh.createDynModel()
+        #   Only file questions hold paths; any other answer is free text.
+        fields = {field.attname: field for field in dyn._meta.concrete_fields}
+        if not isinstance(fields.get(question_name), models.FileField):
+            return error404(request)
         filenames = [resp[question_name] for resp in dyn.objects.all().values()]
         return zip_download(filenames, 'surveyfiles')
     return HttpResponse(status=400)
@@ -512,9 +522,13 @@ def get_modules(request):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if request.method == 'GET':
             try:
-                prog = Program.objects.get(id=request.GET.get('program'))
-            except Program.DoesNotExist:
+                prog_id = int(request.GET['program'])
+            except (ValueError, KeyError):
                 return HttpResponse(status=400)
+            try:
+                prog = Program.objects.get(id=prog_id)
+            except Program.DoesNotExist:
+                return error404(request)
             retval = {'learn': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'learn') if mod.module.handler in learn_handlers],
                       'teach': [(mod.module.handler, mod.module.admin_title) for mod in prog.getModules(tl = 'teach') if mod.module.handler in teach_handlers]}
             return HttpResponse(json.dumps(retval))
