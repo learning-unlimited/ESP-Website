@@ -318,8 +318,9 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
     def test_commprev_rejects_unknown_template(self):
         filterobj = self.make_filter(self.students)
         self.login_as('admin')
-        # '../users/recovery' would otherwise load users/recovery_email.html.
-        for template in ('nope', '../users/recovery', ''):
+        # '../users/recovery' would otherwise load users/recovery_email.html,
+        # and a name past the filesystem's length limit raised an OSError.
+        for template in ('nope', '../users/recovery', '', 'a' * 300):
             with self.subTest(template=template):
                 response = self.post_to_module(
                     'manage', 'commprev',
@@ -541,7 +542,7 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
 
     def test_send_test_email_rejects_unknown_template(self):
         self.login_as('admin')
-        for template in ('nope', '../users/recovery'):
+        for template in ('nope', '../users/recovery', 'a' * 300):
             with self.subTest(template=template):
                 response = self.post_to_module('manage', 'send_test_email', {
                     'from': 'director@learningu.org',

@@ -218,8 +218,9 @@ class CommModule(ProgramModuleObj):
     def get_email_template_or_error(template):
         """ Return the email/<template>_email.html wrapper template, or raise
             an ESPError if there is no such email template. """
-        # Only accept a bare name, so the value can't point outside email/.
-        if re.fullmatch(r'\w+', template):
+        # Only accept a short bare name, so the value can't point outside
+        # email/ or be too long for the filesystem to look up.
+        if re.fullmatch(r'\w{1,100}', template):
             try:
                 return get_template(f'email/{template}_email.html')
             except TemplateDoesNotExist:
