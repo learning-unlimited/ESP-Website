@@ -45,6 +45,15 @@ BAD_ID_PARAMS = [
     ('get', 'teach', 'teacherschedule', 'user'),
     ('get', 'teach', 'teachermoderatorschedule', 'user'),
     ('get', 'teach', 'moderatorschedule', 'user'),
+    ('get', 'json', 'class_info', 'section_id'),
+    ('get', 'json', 'class_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_info', 'class_id'),
+    ('get', 'json', 'class_size_info', 'section_id'),
+    ('get', 'json', 'class_size_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_size_info', 'class_id'),
+    ('get', 'json', 'class_admin_info', 'section_id'),
+    ('get', 'json', 'class_admin_info', 'section_id', {'return_key': 'classes'}),
+    ('get', 'json', 'class_admin_info', 'class_id'),
 ]
 
 class IdHelpersTest(TestCase):
