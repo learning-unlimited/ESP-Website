@@ -17,6 +17,7 @@ class AnonymousFormResponsesTest(TestCase):
     """The creator of an anonymous form can list and export its responses."""
 
     def setUp(self):
+        super().setUp()
         self.admin, _ = ESPUser.objects.get_or_create(username='anonresp_admin')
         self.admin.set_password('password')
         self.admin.save()
@@ -65,8 +66,11 @@ class AnonymousFormResponsesTest(TestCase):
         self.client.login(username='anonresp_admin', password='password')
 
     def tearDown(self):
-        for form in Form.objects.all():
-            DynamicModelHandler(form).purgeDynModel()
+        try:
+            for form in Form.objects.all():
+                DynamicModelHandler(form).purgeDynModel()
+        finally:
+            super().tearDown()
 
     def test_get_data_lists_responses_without_user_columns(self):
         response = self.client.get('/customforms/getData/', {'form_id': self.form.id},
