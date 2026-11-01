@@ -60,6 +60,7 @@ from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.accounting.controllers import IndividualAccountingController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import get_by_id_or_404
 
 MAX_SCHEDULE_SECTIONS = 200
 
@@ -217,7 +218,7 @@ class OnSiteClassList(ProgramModuleObj):
         resp = HttpResponse(content_type='application/json')
         program = self.program
         success = False
-        student = get_object_or_404(ESPUser, pk=request.POST.get("student_id"))
+        student = get_by_id_or_404(ESPUser, request.POST.get("student_id"))
 
         registration_profile = RegistrationProfile.getLastForProgram(student,
                                                                 program)
