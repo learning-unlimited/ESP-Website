@@ -41,6 +41,10 @@ BAD_ID_PARAMS = [
     ('post', 'manage', 'volunteering', 'id', {'op': 'delete'}),
     ('get', 'manage', 'volunteering', 'id', {'op': 'edit'}),
     ('get', 'manage', 'check_volunteer', 'user'),
+    ('get', 'teach', 'classroster', 'user'),
+    ('get', 'teach', 'teacherschedule', 'user'),
+    ('get', 'teach', 'teachermoderatorschedule', 'user'),
+    ('get', 'teach', 'moderatorschedule', 'user'),
 ]
 
 class IdHelpersTest(TestCase):
