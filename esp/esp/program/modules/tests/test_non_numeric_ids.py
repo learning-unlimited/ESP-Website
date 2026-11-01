@@ -57,6 +57,10 @@ BAD_ID_PARAMS = [
     ('post', 'onsite', 'register_student', 'student_id'),
     ('get', 'onsite', 'ajaxclassdetail', 'class', {'show_flags': '1'}),
     ('get', 'onsite', 'missingteachers', 'start'),
+    ('post', 'manage', 'newassignment', 'target', {'resource': 'x'}),
+    ('post', 'manage', 'editassignment', 'id', {'returned': 'true'}),
+    ('post', 'manage', 'getavailableequipment', 'secid'),
+    ('post', 'manage', 'deleteassignment', 'id'),
 ]
 
 class IdHelpersTest(TestCase):
