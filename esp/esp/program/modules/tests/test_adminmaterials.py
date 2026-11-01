@@ -103,7 +103,7 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertFalse(Media.objects.filter(id=media_id).exists())
 
     def test_delete_other_program_media_fails(self):
-        """Admin cannot delete a document belonging to another program."""
+        """Admin cannot delete a document belonging to another program or class."""
         other_prog = Program.objects.create(
             url="TestProgram/2020_Other",
             name="TestProgram Other 2020",
@@ -116,6 +116,17 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
             friendly_name="Other Program Doc",
             owner=other_prog,
         )
+        other_cls = ClassSubject.objects.create(
+            title="Other Class",
+            category=self.cls.category,
+            grade_min=7,
+            grade_max=12,
+            parent_program=other_prog,
+        )
+        other_class_media = Media.objects.create(
+            friendly_name="Other Class Doc",
+            owner=other_cls,
+        )
         self.login_as("admin")
         response = self.client.post(
             self.url, {"command": "delete", "docid": str(other_media.id)}
@@ -123,8 +134,14 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(Media.objects.filter(id=other_media.id).exists())
 
+        response = self.client.post(
+            self.url, {"command": "delete", "docid": str(other_class_media.id)}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Media.objects.filter(id=other_class_media.id).exists())
+
     def test_rename_other_program_media_fails(self):
-        """Admin cannot rename a document belonging to another program."""
+        """Admin cannot rename a document belonging to another program or class."""
         other_prog = Program.objects.create(
             url="TestProgram/2021_Other",
             name="TestProgram Other 2021",
@@ -136,6 +153,17 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         other_media = Media.objects.create(
             friendly_name="Original Name",
             owner=other_prog,
+        )
+        other_cls = ClassSubject.objects.create(
+            title="Other Class",
+            category=self.cls.category,
+            grade_min=7,
+            grade_max=12,
+            parent_program=other_prog,
+        )
+        other_class_media = Media.objects.create(
+            friendly_name="Original Class Doc",
+            owner=other_cls,
         )
         self.login_as("admin")
         response = self.client.post(
@@ -149,6 +177,18 @@ class AdminMaterialsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         other_media.refresh_from_db()
         self.assertEqual(other_media.friendly_name, "Original Name")
+
+        response = self.client.post(
+            self.url,
+            {
+                "command": "rename",
+                "docid": str(other_class_media.id),
+                "title": "Hacked Class Name",
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        other_class_media.refresh_from_db()
+        self.assertEqual(other_class_media.friendly_name, "Original Class Doc")
 
     def test_delete_and_rename_invalid_docid_does_not_crash(self):
         """Invalid, out-of-range, non-existent, or empty docid should not crash."""
