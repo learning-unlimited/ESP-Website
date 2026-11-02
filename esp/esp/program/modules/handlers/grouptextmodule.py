@@ -186,6 +186,10 @@ class GroupTextModule(ProgramModuleObj):
                 continue
             client = Client(account_sid, auth_token)
 
+            if not contactInfo.phone_cell:
+                send_log.append("No cell phone number found for " + str(user))
+                continue
+
             # format the number for Twilio
             formattedNumber = format_number(contactInfo.phone_cell, PhoneNumberFormat.E164)
 
