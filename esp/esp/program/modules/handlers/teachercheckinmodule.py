@@ -522,22 +522,31 @@ class TeacherCheckinModule(ProgramModuleObj):
         starttime = date = next = previous = None
         default_phone = request.GET.get('default_phone', '(missing contact info)')
         if 'start' in request.GET:
-            starttime = Event.objects.get(id=request.GET['start'])
-            date = starttime.start.date()
-            times = prog.getTimeSlotList()
-            i = times.index(starttime)
-            if i > 0:
-                previous = times[i - 1]
-            if i < len(times) - 1:
-                next = times[i + 1]
+            try:
+                starttime = Event.objects.get(id=int(request.GET['start']), program=prog)
+                times = prog.getTimeSlotList()
+                if starttime in times:
+                    date = starttime.start.date()
+                    i = times.index(starttime)
+                    if i > 0:
+                        previous = times[i - 1]
+                    if i < len(times) - 1:
+                        next = times[i + 1]
+            except (ValueError, TypeError, Event.DoesNotExist):
+                pass
         elif 'date' in request.GET:
-            date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
-            dates = prog.dates()
-            i = dates.index(date)
-            if i > 0:
-                previous = dates[i - 1].strftime('%m/%d/%Y')
-            if i < len(dates) - 1:
-                next = dates[i + 1].strftime('%m/%d/%Y')
+            try:
+                parsed_date = datetime.strptime(request.GET['date'], "%m/%d/%Y").date()
+                dates = prog.dates()
+                if parsed_date in dates:
+                    date = parsed_date
+                    i = dates.index(date)
+                    if i > 0:
+                        previous = dates[i - 1].strftime('%m/%d/%Y')
+                    if i < len(dates) - 1:
+                        next = dates[i + 1].strftime('%m/%d/%Y')
+            except (ValueError, TypeError):
+                pass
         context = {}
         context['default_phone'] = default_phone
         context['text_configured'] = GroupTextModule.is_configured()
