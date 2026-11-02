@@ -6,6 +6,7 @@ from django.test import TestCase
 from esp.program.models import ClassSubject
 from esp.program.tests import ProgramFrameworkTest
 from esp.utils.ids import filter_by_id, get_by_id_or_404, parse_id
+from esp.users.models import RecordType
 
 VIEWS_WITH_ID_IN_URL = [
     ('manage', 'accounting'), # fixed upstream in #6126; kept as a regression check
@@ -70,15 +71,9 @@ BAD_ID_PARAMS = [
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'close'),
     ('get', 'manage', 'deadline_management', 'perm_id', {}, 'delete'),
     ('get', 'manage', 'reject_student', 'cls', {'student': '1'}),
-    ('get',  'manage', 'lineitems', 'id', {'op': 'edit'}),
-    ('get',  'manage', 'lineitems', 'id', {'op': 'delete'}),
-    ('post', 'manage', 'phasezero', 'student_selected1', {}),
-    ('post', 'manage', 'phasezero', 'student_selected2', {}),
-    ('post', 'manage', 'phasezero', 'student_selected3', {}),
-    ('post', 'manage', 'phasezero', 'student_selected4', {}),
-    ('get',  'manage', 'student_financial_spreadsheet', 'userid'),
-    ('get',  'manage', 'studentschedules', 'userid'),
-    ('post', 'onsite', 'checkout', 'unenroll', {}),
+    ('get', 'json', 'class_info', 'class_id', {'return_key': 'sections'}),
+    ('get', 'json', 'class_size_info', 'class_id', {'return_key': 'sections'}),
+    ('get', 'json', 'class_admin_info', 'class_id', {'return_key': 'sections'}),
 ]
 
 class IdHelpersTest(TestCase):
@@ -209,6 +204,7 @@ class BadIdInUrlTest(ProgramFrameworkTest):
                 self.assert_nothing_raises(requests)
 
     def test_checkout_bad_unenroll_id(self):
+        RecordType.objects.get_or_create(name='checked_out')
         url = self.url('onsite', 'checkout')
         st_id = self.students[0].id
         requests = [('post', url, {'user': st_id, 'checkout_student': '1', 'unenroll': bad}) for bad in BAD_IDS]

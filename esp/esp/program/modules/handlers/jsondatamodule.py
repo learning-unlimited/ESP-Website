@@ -659,6 +659,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
+            if return_key == 'sections':
+                raise Http404
             class_id = parse_id(request.GET['class_id'])
             if class_id is None:
                 raise Http404
@@ -729,6 +731,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
+            if return_key == 'sections':
+                raise Http404
             class_id = parse_id(request.GET['class_id'])
             if class_id is None:
                 raise Http404
@@ -784,6 +788,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key is None: return_key = 'classes'
+            if return_key == 'sections':
+                raise Http404
             class_id = parse_id(request.GET['class_id'])
             if class_id is None:
                 raise Http404
