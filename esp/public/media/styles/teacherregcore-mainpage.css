@@ -53,22 +53,6 @@
     }
 }
 
-/* In themes with narrow fixed-width content areas such as fruitsalad (which has a
-   560px #content area), always stack the checklist on top above the modules so
-   forms and tables remain legible. */
-#page_main .teacher-reg-columns,
-#content .teacher-reg-columns {
-    display: block;
-}
-
-#page_main .teacher-reg-checklist-col,
-#content .teacher-reg-checklist-col {
-    flex: none;
-    max-height: none;
-    overflow-y: visible;
-    position: static;
-}
-
 .teacher-reg-panel {
     margin-bottom: 1.5rem;
 }
