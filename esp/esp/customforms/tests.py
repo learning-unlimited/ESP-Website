@@ -49,6 +49,7 @@ from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.views import hasPerm
 from esp.middleware import ESPError
 from esp.middleware.esperrormiddleware import ESPError_NoLog
+from esp.program.models import RegistrationProfile
 from esp.users.models import ESPUser, AnonymousESPUser, ContactInfo, TeacherInfo
 from esp.tests.util import CacheFlushTestCase as TestCase
 
@@ -1592,6 +1593,110 @@ class LinkedFieldNewRecordTest(TestCase):
         response = DynamicModelHandler(self.form).createDynModel().objects.get(user=self.admin)
         self.assertEqual(response.link_ContactInfo_id, contact.id)
         self.assertEqual(response.link_TeacherInfo_id, teacher.id)
+
+    def test_second_submission_reuses_the_created_record(self):
+        for email in ('first@example.com', 'second@example.com'):
+            self.client.post(f"/customforms/view/{self.form.id}/", {
+                'combo_form-current_step': '0',
+                f'question_{self.email.id}': email,
+                f'question_{self.college.id}': 'MIT',
+            })
+        contact = ContactInfo.objects.get(user=self.admin)
+        self.assertEqual(contact.e_mail, 'second@example.com')
+
+
+class LinkedContactInfoIsUsersOwnTest(TestCase):
+    """
+    Linked ContactInfo fields read and write the user's own contact info, not
+    their guardian's or emergency contact's, which are also stored with the
+    student as their user.
+    """
+
+    def setUp(self):
+        self.admin, _ = ESPUser.objects.get_or_create(username='owncontact_admin')
+        self.admin.set_password('password')
+        self.admin.save()
+        self.admin.makeRole('Administrator')
+
+        self.student, _ = ESPUser.objects.get_or_create(username='owncontact_student')
+        self.student.set_password('password')
+        self.student.save()
+        self.student.makeRole('Student')
+
+        #   Created in the order the profile form creates them, so the
+        #   emergency contact has the highest id
+        self.own = ContactInfo.objects.create(user=self.student, first_name='Stu', last_name='Dent',
+                                              e_mail='student@example.com')
+        self.guardian = ContactInfo.objects.create(user=self.student, first_name='Gar', last_name='Dian',
+                                                   e_mail='guardian@example.com')
+        self.emergency = ContactInfo.objects.create(user=self.student, first_name='Emer', last_name='Gency',
+                                                    e_mail='emergency@example.com')
+        RegistrationProfile.objects.create(user=self.student, contact_user=self.own,
+                                           contact_guardian=self.guardian,
+                                           contact_emergency=self.emergency)
+
+        self.client.login(username='owncontact_admin', password='password')
+        form_data = {
+            'title': 'Own Contact Form', 'desc': '', 'perms': '',
+            'link_type': '-1', 'link_id': -1,
+            'success_url': '/formsuccess.html', 'success_message': 'Thank you!',
+            'anonymous': False,
+            'pages': [{
+                'parent_id': -1, 'seq': 0,
+                'sections': [{
+                    'data': {'question_text': '', 'help_text': '', 'seq': 0},
+                    'fields': [{'data': {'field_type': 'ContactInfo_e_mail', 'question_text': 'Email',
+                                         'seq': 0, 'required': False, 'parent_id': -1,
+                                         'attrs': {}, 'help_text': ''}}],
+                }],
+            }],
+        }
+        response = self.client.post("/customforms/submit/", json.dumps(form_data),
+                                    content_type='application/json',
+                                    HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        self.client.logout()
+        self.form = Form.objects.get(title='Own Contact Form')
+        self.email = Field.objects.get(form=self.form, label='Email')
+        self.client.login(username='owncontact_student', password='password')
+
+    def tearDown(self):
+        for form in Form.objects.all():
+            DynamicModelHandler(form).purgeDynModel()
+
+    def test_form_prefills_the_users_own_email(self):
+        response = self.client.get(f"/customforms/view/{self.form.id}/")
+        self.assertContains(response, 'value="student@example.com"')
+        self.assertNotContains(response, 'emergency@example.com')
+
+    def test_submission_updates_only_the_users_own_record(self):
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+        for contact, email in ((self.own, 'new@example.com'),
+                               (self.guardian, 'guardian@example.com'),
+                               (self.emergency, 'emergency@example.com')):
+            contact.refresh_from_db()
+            self.assertEqual(contact.e_mail, email)
+        row = DynamicModelHandler(self.form).createDynModel().objects.get(user=self.student)
+        self.assertEqual(row.link_ContactInfo_id, self.own.id)
+
+    def test_without_contact_user_guardian_and_emergency_contacts_are_skipped(self):
+        profile = RegistrationProfile.objects.get(user=self.student)
+        profile.contact_user = None
+        profile.save()
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+        for contact, email in ((self.own, 'new@example.com'),
+                               (self.guardian, 'guardian@example.com'),
+                               (self.emergency, 'emergency@example.com')):
+            contact.refresh_from_db()
+            self.assertEqual(contact.e_mail, email)
 
 
 class AnonymousFormLinkedFieldTest(TestCase):
