@@ -658,17 +658,6 @@ var palette_list = [{% for color in palette.base %} "{{color}}", {% endfor %}{% 
       // BS3→BS4 class migration only; accordion toggling is handled by Bootstrap collapse.
       $j('#theme_editor_accordion').find('.collapse.in').removeClass('in').addClass('show');
 
-      // Ensure all Spectrum color inputs sync their current color into the form inputs before submitting
-      $j('form.centered-form').on('submit', function () {
-        $j('.color').each(function () {
-          try {
-            var sp = $j(this).spectrum('get');
-            if (sp) {
-              $j(this).val(sp.toHexString());
-            }
-          } catch (e) {}
-        });
-      });
 
       // When the Bootswatch theme dropdown changes, update every color/font/length
       // picker to show that theme's resolved colors.  The picker value AND the
