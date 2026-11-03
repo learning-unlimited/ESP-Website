@@ -22,8 +22,15 @@
 }
 
 /* Steps checklist and other requirements sit in a narrow left column beside the
-   registration content; they stack on top below the lg breakpoint. */
-@media (min-width: 992px) {
+   registration content; they stack on top when the content area is too narrow
+   for both (such as on mobile and in themes with a narrow fixed-width content
+   area like fruitsalad).  Querying the container width rather than the viewport
+   ensures the main column retains at least ~40rem beside the 20rem checklist. */
+.teacher-reg-landing {
+    container-type: inline-size;
+}
+
+@container (min-width: 62rem) {
     .teacher-reg-columns {
         align-items: flex-start;
         display: flex;
@@ -44,6 +51,22 @@
         /* Stops wide module tables from stretching the flex item. */
         min-width: 0;
     }
+}
+
+/* In themes with narrow fixed-width content areas such as fruitsalad (which has a
+   560px #content area), always stack the checklist on top above the modules so
+   forms and tables remain legible. */
+#page_main .teacher-reg-columns,
+#content .teacher-reg-columns {
+    display: block;
+}
+
+#page_main .teacher-reg-checklist-col,
+#content .teacher-reg-checklist-col {
+    flex: none;
+    max-height: none;
+    overflow-y: visible;
+    position: static;
 }
 
 .teacher-reg-panel {
