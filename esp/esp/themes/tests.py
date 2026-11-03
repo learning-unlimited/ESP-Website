@@ -635,7 +635,7 @@ class DropletsContentBackgroundTest(TestCase):
         )
         with open(self.css_filename) as f:
             css = f.read()
-        self.assertIn('#main {\n  background-color: #fafafa !important;', css)
+        self.assertIn('#main {\n  background-color: #fafafa;', css)
 
     def test_content_background_when_body_background_differs(self):
         """When bodyBackground is changed to differ from contentBackground,
@@ -647,7 +647,7 @@ class DropletsContentBackgroundTest(TestCase):
         )
         with open(self.css_filename) as f:
             css = f.read()
-        self.assertIn('#main {\n  background-color: #ffffff !important;', css)
+        self.assertIn('#main {\n  background-color: #ffffff;', css)
 
     def test_content_background_bootswatch_default_has_no_override(self):
         """Under an active Bootswatch theme, an untouched contentBackground
@@ -671,7 +671,7 @@ class DropletsContentBackgroundTest(TestCase):
         )
         with open(self.css_filename) as f:
             css = f.read()
-        self.assertIn('#main {\n  background-color: #fefefe !important;', css)
+        self.assertIn('#main {\n  background-color: #fefefe;', css)
 
     def test_content_background_bootswatch_body_background_override(self):
         """Under an active Bootswatch theme, customizing bodyBackground must emit
@@ -684,7 +684,7 @@ class DropletsContentBackgroundTest(TestCase):
         )
         with open(self.css_filename) as f:
             css = f.read()
-        self.assertIn('#main {\n  background-color: #ffffff !important;', css)
+        self.assertIn('#main {\n  background-color: #ffffff;', css)
 
     def test_bootswatch_labels_not_forced_dark_by_default(self):
         """Under an active Bootswatch theme, default labels must not be forced to
@@ -730,6 +730,27 @@ class DropletsContentBackgroundTest(TestCase):
         with open(self.css_filename) as f:
             css = f.read()
         self.assertIn('--bs-heading-color: #0088cc;', css)
+
+    def test_content_background_text_contrast_when_customized(self):
+        """When contentBackground is customized, #main text color defaults to
+        contrasting color unless textColor is explicitly overridden."""
+        self.tc.compile_css(
+            'droplets',
+            {'contentBackground': '#1a1a1a'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertIn('color: #fff;', css)
+
+        self.tc.compile_css(
+            'droplets',
+            {'contentBackground': '#1a1a1a', 'textColor': '#00ff00'},
+            self.css_filename,
+        )
+        with open(self.css_filename) as f:
+            css = f.read()
+        self.assertNotIn('#main {\n  background-color: #1a1a1a;\n  color:', css)
 
 
 class RecompileThemeCommandTest(TestCase):

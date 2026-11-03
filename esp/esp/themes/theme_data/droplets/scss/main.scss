@@ -428,7 +428,10 @@ div.navbar-collapse {
     //  dark skins where $bodyBackground defaults to dark while $contentBackground is #ffffff.
     @if index($esp-overridden, 'contentBackground') or index($esp-overridden, 'bodyBackground') {
         #main {
-            background-color: $contentBackground !important;
+            background-color: $contentBackground;
+            @if not index($esp-overridden, 'textColor') {
+                color: color-contrast($contentBackground);
+            }
             padding: 20px;
             border-radius: 4px;
         }
@@ -453,7 +456,10 @@ div.navbar-collapse {
     //  Unified with the Bootswatch branch above to consistently check $esp-overridden.
     @if index($esp-overridden, 'contentBackground') or index($esp-overridden, 'bodyBackground') {
         #main {
-            background-color: $contentBackground !important;
+            background-color: $contentBackground;
+            @if not index($esp-overridden, 'textColor') {
+                color: color-contrast($contentBackground);
+            }
             padding: 20px;
             border-radius: 4px;
         }
