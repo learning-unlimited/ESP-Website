@@ -757,9 +757,10 @@ class FormOwnershipAccessTest(TestCase):
         )
         page = Page.objects.create(form=self.form, seq=1)
         section = Section.objects.create(page=page, title='Section 1', seq=1)
+        #   A file question, so the bulk download tests can request it.
         self.field = Field.objects.create(
             form=self.form, section=section,
-            field_type='textField', seq=0, label='Q1', required=False
+            field_type='file', seq=0, label='Q1', required=False
         )
         self.question_name = f'question_{self.field.id}'
         dmh = DynamicModelHandler(self.form)
