@@ -13,9 +13,9 @@
 
 {% if form.affiliation %}
 <div class="col-12 profile-field">
-    <label for="id_affiliation_0" class="form-label">{{ form.affiliation.label }}<span class="text-danger" aria-hidden="true"> *</span></label>
+    <label for="id_affiliation_0" class="form-label">{{ form.affiliation.label }}<span class="text-danger" aria-hidden="true"> *</span><span class="visually-hidden"> (required)</span></label>
+    <div class="form-text mt-0 mb-2">If you select "Other" or "No affiliation," please explain in the lower box.</div>
     <div class="d-grid gap-2">{{ form.affiliation }}</div>
-    <div class="form-text">If you select "Other" or "No affiliation," please explain in the lower box.</div>
     {% for error in form.affiliation.errors %}<div class="invalid-feedback d-block" role="alert">{{ error }}</div>{% endfor %}
 </div>
 {% endif %}

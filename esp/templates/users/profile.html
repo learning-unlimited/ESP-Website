@@ -35,10 +35,11 @@ div.required label.control-label:after,
   background-color: rgba(var(--bs-warning-rgb), 0.12);
 }
 /* Inline-editable text ends with a margin and a <br> */
-.profile-note .prettify > :last-child {
+.profile-card .prettify > :last-child,
+.profile-card .prettify > .profile-note {
   margin-bottom: 0;
 }
-.profile-note .prettify ~ br {
+.profile-card .prettify ~ br {
   display: none;
 }
 .btn.profile-copy-btn {

@@ -54,7 +54,7 @@
 {% endif %}
 
 {% if form.phone_day or form.phone_cell %}
-<div class="col-12"><h3 class="h6 mt-2 mb-0">Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<span class="text-danger" aria-hidden="true"> *</span>{% endif %}</h3></div>
+<div class="col-12"><h3 class="h6 mt-2 mb-0">Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}{% if profiletype == "teacher" or profiletype == "student" and require_student_phonenum %}<span class="text-danger" aria-hidden="true"> *</span><span class="visually-hidden"> (at least one required)</span>{% endif %}</h3></div>
 
 {% if profiletype == "student" %}
 <div class="col-12">
