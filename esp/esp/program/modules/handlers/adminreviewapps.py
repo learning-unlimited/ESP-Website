@@ -74,11 +74,14 @@ class AdminReviewApps(ProgramModuleObj):
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
-        students = []
+        #   A student can hold several registration types (e.g. Enrolled
+        #   and Accepted); list each one only once.
+        students = {}
         for key in students_dict:
-            students += students_dict[key]
+            for student in students_dict[key]:
+                students.setdefault(student.id, student)
 
-        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
+        students = [x for x in students.values() if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
             reg = student.studentregistration_set.filter(section__parent_class=cls).first()
