@@ -451,8 +451,19 @@ class LotteryAssignmentController(object):
             #   capacity of the section, with the students' weight values serving as the probability
             #   distribution to draw from.
             weights = self.student_weights[candidate_students]
-            weights /= numpy.sum(weights)
-            selected_students = numpy.random.choice(candidate_students, num_spaces, replace=False, p=weights)
+            positive = weights > 0
+            if numpy.count_nonzero(positive) >= num_spaces:
+                #   Enough students have non-zero weight for a weighted draw without replacement.
+                weights = weights / numpy.sum(weights)
+                selected_students = numpy.random.choice(candidate_students, num_spaces, replace=False, p=weights)
+            else:
+                #   Too few non-zero weights for numpy.random.choice(replace=False, p=...), which would
+                #   raise ValueError (or produce NaNs if all weights are zero).  Take every student with
+                #   positive weight, then fill the remaining spaces uniformly from the rest.
+                guaranteed = candidate_students[positive]
+                remaining = candidate_students[~positive]
+                filler = numpy.random.choice(remaining, num_spaces - guaranteed.shape[0], replace=False)
+                selected_students = numpy.concatenate([guaranteed, filler])
             section_filled = True
 
         #   Update student section assignments

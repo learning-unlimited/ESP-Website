@@ -39,6 +39,8 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
 from django.db.models.query import Q
+from esp.utils.ids import get_by_id_or_404
+from django.http import Http404
 
 __all__ = ['AdminReviewApps']
 
@@ -63,8 +65,8 @@ class AdminReviewApps(ProgramModuleObj):
         students' applications. """
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
@@ -150,9 +152,9 @@ class AdminReviewApps(ProgramModuleObj):
         reg_nodes = scrmi.reg_verbs()
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = get_by_id_or_404(ClassSubject, extra)
             section = cls.default_section()
-        except ClassSubject.DoesNotExist:
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         student = request.GET.get('student', None)

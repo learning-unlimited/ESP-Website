@@ -5,6 +5,8 @@ from django.contrib.auth import login, logout
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.utils.html import format_html
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -24,15 +26,16 @@ from esp.web.views.main import DefaultQSDView
 def HttpMetaRedirect(location='/'):
     response = HttpResponse()
     response.status = 200
-    response.content = f"""
+    # format_html escapes location so it can't break out of the attribute
+    response.content = format_html("""
     <html><head>
-    <meta http-equiv="refresh" content="0; url={location}">
+    <meta http-equiv="refresh" content="0; url={0}">
     </head>
     <body>
-    Thank you for logging in. Please click <a href="{location}">here</a> if you are not redirected.
+    Thank you for logging in. Please click <a href="{0}">here</a> if you are not redirected.
     </body>
     </html>
-    """
+    """, location)
     return response
 
 # Locations where we override redirects with smarter defaults
@@ -92,6 +95,14 @@ class CustomLoginView(LoginView):
     def handle_authenticated_user(self, request):
         """Handle redirects for users who are already logged in."""
         next_url = request.GET.get('next', '')
+
+        # Don't send users off-site just because ?next= said so
+        if next_url and not url_has_allowed_host_and_scheme(
+            url=next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure()
+        ):
+            next_url = '/'
 
         if not RegistrationProfile.objects.filter(user=request.user).exists():
             reply = HttpMetaRedirect('/myesp/profile')
@@ -173,7 +184,13 @@ def signout(request):
     request._cached_user = request.user
 
     redirect_path = request.GET.get('redirect')
-    if redirect_path:
+
+    # Only honor ?redirect= when it points back at this site
+    if redirect_path and url_has_allowed_host_and_scheme(
+        url=redirect_path,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure()
+    ):
         return HttpResponseRedirect(redirect_path)
 
     return render_to_response('registration/logged_out.html', request, {})
