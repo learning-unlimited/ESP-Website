@@ -252,8 +252,8 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except (ValueError, TypeError):
-            raise ESPError("Corrupted POST data!  Please contact us at" +
-            "websupport@learningu.org and tell us how you got this error," +
+            raise ESPError("Corrupted POST data! Please contact us at " +
+            "websupport@learningu.org and tell us how you got this error, " +
             "and we'll look into it.")
 
         userlist = CommModule.get_valid_filter_or_error(filterid).getList(ESPUser)
@@ -376,8 +376,8 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except (ValueError, TypeError):
-            raise ESPError("Corrupted POST data!  Please contact us at " +
-            "websupport@learningu and tell us how you got this error, " +
+            raise ESPError("Corrupted POST data! Please contact us at " +
+            "websupport@learningu.org and tell us how you got this error, " +
             "and we'll look into it.")
 
         filterobj = CommModule.get_valid_filter_or_error(filterid)
