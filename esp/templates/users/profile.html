@@ -61,13 +61,9 @@ div.required label.control-label:after,
 {% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col-xl-10">
     <h1>Your Profile Information</h1>
     <p><span aria-hidden="true" class="text-danger">*</span> indicates a required field</p>
-  </div>
-  <div class="row">
-    <div class="col-xl-10">
+
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
 <p>First, please tell us a bit about yourself!  The fields with red asterisks are required.  After you have filled out everything, click the "{% if new_user %}submit{% else %}update{% endif %}" button at the bottom of the page to continue.</p>
@@ -76,11 +72,7 @@ div.required label.control-label:after,
 <p>Email addresses have a tendency to change regularly, so we are asking that you re-enter your email address each time you visit this form. Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 {% endif %}
       {% end_inline_qsd_block %}
-    </div>
-  </div>
-</div>
-<div class="row">
-  <div class="col-xl-10">
+
       {% if form.errors %}
             <div role="alert" class="alert alert-danger">
                 <span class="bi bi-info-circle" aria-hidden="true"></span>
@@ -139,8 +131,6 @@ div.required label.control-label:after,
 
         </fieldset>
     </form>
-  </div>
-</div>
 
 <script>
 // Show the country field (and its label) only for international addresses
