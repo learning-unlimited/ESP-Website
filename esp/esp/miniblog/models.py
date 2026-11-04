@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 from django.db import models
-from markdown import markdown
+from esp.utils.templatetags.markup import render_markdown as markdown
 from esp.users.models import ESPUser
 from esp.db.fields import AjaxForeignKey
 import datetime

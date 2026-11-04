@@ -1465,3 +1465,123 @@ class QSDViewsCoverageTest(TestCase):
         self.assertNotIn('<script>', payload['content'])
         self.assertIn('Hello', payload['content'])
 
+
+
+class QSDHTMLCommentTest(TestCase):
+    """ HTML comments in QSD content must reach the browser intact.
+
+    Markdown 2.3.1 escapes the closing '-->' of a comment containing blank
+    lines (or starting inside a '<p>'), leaving an unterminated comment that
+    swallows the rest of the page -- including the QSD's own edit controls.
+    """
+
+    @staticmethod
+    def is_unterminated(html):
+        return html.rfind('<!--') > html.rfind('-->')
+
+    def assert_renders_comment(self, content, comment):
+        from esp.utils.templatetags.markup import render_markdown
+        html = render_markdown(content)
+        self.assertFalse(self.is_unterminated(html), html)
+        self.assertIn(comment, html)
+        self.assertNotIn('--&gt;', html)
+        self.assertNotIn('esp-md-comment-', html)
+        self.assertIn('<p>after</p>', html)
+
+    def test_blank_line_comment_first_paragraph_ending_in_tag(self):
+        comment = '<!-- <p>x</p>\n\ny -->'
+        self.assert_renders_comment('a\n\n%s\n\nafter' % comment, comment)
+
+    def test_blank_line_comment_starting_inside_p(self):
+        comment = '<!-- x </p>\n\n<p>y</p> -->'
+        self.assert_renders_comment('a\n\n<p>start %s end</p>\n\nafter' % comment, comment)
+
+    def test_blank_line_comment_plain_text(self):
+        comment = '<!-- x\n\ny -->'
+        self.assert_renders_comment('a\n\n%s\n\nafter' % comment, comment)
+
+    def test_comment_text_passes_through_verbatim(self):
+        # Markdown syntax inside a comment isn't rendered (it used to be,
+        # when 2.3.1 split the comment up)
+        comment = '<!-- <p>[link](/x.html)</p>\n\n**bold** -->'
+        self.assert_renders_comment('a\n\n%s\n\nafter' % comment, comment)
+
+    def test_comment_before_raw_html_block(self):
+        # A comment opening a raw-HTML block mustn't stop Markdown from
+        # treating the rest of that block as raw HTML
+        from esp.utils.templatetags.markup import render_markdown
+        content = '<!-- styles -->\n<style>\n#content p {\n  color: red;\n}\n</style>\n\nafter'
+        html = render_markdown(content)
+        self.assertIn('<!-- styles -->', html)
+        self.assertIn('<style>\n#content p {\n  color: red;\n}\n</style>', html)
+        self.assertNotIn('<h1>', html)
+
+    def test_multiple_and_inline_comments(self):
+        from esp.utils.templatetags.markup import render_markdown
+        html = render_markdown('a <!-- one --> b <!-- two\n\nlines --> c\n\nafter')
+        self.assertIn('<!-- one -->', html)
+        self.assertIn('<!-- two\n\nlines -->', html)
+        self.assertIn('c</p>', html)
+        self.assertIn('<p>after</p>', html)
+
+    def test_unterminated_comment_closed_at_end_of_content(self):
+        # It still hides what follows it within the QSD, but no further
+        from esp.utils.templatetags.markup import render_markdown
+        html = render_markdown('shown\n\n<!-- hidden <p>x</p>\n\nalso hidden')
+        self.assertFalse(self.is_unterminated(html), html)
+        self.assertIn('<!-- hidden <p>x</p>\n\nalso hidden-->', html)
+        self.assertIn('<p>shown</p>', html)
+
+    def test_unterminated_comment_ending_in_tag(self):
+        from esp.utils.templatetags.markup import render_markdown
+        html = render_markdown('shown\n\n<!-- hidden</p>')
+        self.assertTrue(html.endswith('<!-- hidden</p>-->'), html)
+
+    def test_comments_pair_like_a_browser(self):
+        from esp.utils.templatetags.markup import _stash_comments
+        # The first '-->' closes a comment, nested '<!--' and all
+        _, comments = _stash_comments('<!-- a <!-- b --> c -->')
+        self.assertEqual(comments, ['<!-- a <!-- b -->'])
+        # '<!-->' and '<!--->' are complete empty comments; '--!>' closes one
+        _, comments = _stash_comments('<!--> x <!---> y <!-- z --!>')
+        self.assertEqual(comments, ['<!-->', '<!--->', '<!-- z --!>'])
+
+    def test_comment_in_code_block_still_displayed_as_text(self):
+        from esp.utils.templatetags.markup import render_markdown
+        html = render_markdown('a\n\n    <!-- shown as code -->\n\nafter')
+        self.assertIn('<code>&lt;!-- shown as code --&gt;', html)
+
+    def test_markdown_filter_uses_comment_handling(self):
+        html = Template('{% load markup %}{{ content|markdown }}').render(
+            Context({'content': 'a\n\n<!-- <p>x</p>\n\ny -->\n\nafter'}))
+        self.assertFalse(self.is_unterminated(html), html)
+
+    def test_full_page_edit_button_not_swallowed(self):
+        admin, _ = ESPUser.objects.get_or_create(username='qsd_comment_admin')
+        admin.set_password('password')
+        admin.save()
+        admin.makeRole('Administrator')
+        self.client.login(username='qsd_comment_admin', password='password')
+        qsd = QuasiStaticData(url='qsdcommenttest/page', author=admin, title='Test page',
+                              nav_category=default_navbarcategory(), description='', keywords='',
+                              content='<p>shown</p>\n\n<!-- <p>hidden</p>\n\nhidden too -->\n\n<p>also shown</p>')
+        qsd.save()
+        html = self.client.get('/qsdcommenttest/page.html').content.decode('utf-8')
+        edit_link = html.find('href="/qsdcommenttest/page.edit.html"')
+        self.assertNotEqual(edit_link, -1)
+        # no comment left open at the edit button
+        self.assertFalse(self.is_unterminated(html[:edit_link]))
+        self.assertIn('<p>also shown</p>', html)
+
+    def test_ajax_preview_uses_comment_handling(self):
+        admin, _ = ESPUser.objects.get_or_create(username='qsd_comment_admin2')
+        admin.set_password('password')
+        admin.save()
+        admin.makeRole('Administrator')
+        self.client.login(username='qsd_comment_admin2', password='password')
+        response = self.client.post('/admin/ajax_qsd_preview', {
+            'data': 'a\n\n<!-- <p>x</p>\n\ny -->\n\nafter',
+        }, HTTP_REFERER='/qsdcommenttest/somepage.html')
+        self.assertEqual(response.status_code, 200)
+        content = json.loads(response.content.decode('utf-8'))['content']
+        self.assertFalse(self.is_unterminated(content), content)

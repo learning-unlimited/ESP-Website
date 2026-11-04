@@ -42,7 +42,7 @@ import hashlib
 from django.db import models, transaction
 from django.db.utils import IntegrityError
 
-from markdown import markdown
+from esp.utils.templatetags.markup import render_markdown as markdown
 from reversion import revisions as reversion
 from esp.db.fields import AjaxForeignKey
 from argcache import cache_function

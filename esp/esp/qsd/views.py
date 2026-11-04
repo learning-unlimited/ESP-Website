@@ -52,7 +52,7 @@ from django.views.decorators.cache import cache_control
 from esp.varnish.varnish import purge_page
 from urllib.parse import urlparse
 from bleach import clean
-from markdown import markdown
+from esp.utils.templatetags.markup import render_markdown as markdown
 import json
 
 from django.conf import settings
