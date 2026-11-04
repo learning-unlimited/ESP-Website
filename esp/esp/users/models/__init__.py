@@ -2136,10 +2136,13 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         from esp.program.models import RegistrationProfile
         profile = RegistrationProfile.getLastProfile(request.user)
         if profile.contact_user_id is not None:
-            #   Re-fetch, since the profile (and its contact_user) may be cached
-            return cls.objects.filter(id=profile.contact_user_id).first()
-        #   No profile contact info, e.g. one created by a custom form: use the
-        #   newest record that isn't someone's guardian or emergency contact
+            #   Re-fetch, since the profile (and its contact_user) may be cached;
+            #   only use it if it really belongs to this user
+            own = cls.objects.filter(id=profile.contact_user_id, user=request.user).first()
+            if own is not None:
+                return own
+        #   No usable profile contact info, e.g. one created by a custom form: use
+        #   the newest record that isn't someone's guardian or emergency contact
         return cls.objects.filter(user=request.user, as_guardian__isnull=True,
                                   as_emergency__isnull=True).order_by('-id').first()
 

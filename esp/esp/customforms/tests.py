@@ -1669,6 +1669,41 @@ class LinkedContactInfoIsUsersOwnTest(TestCase):
         self.assertContains(response, 'value="student@example.com"')
         self.assertNotContains(response, 'emergency@example.com')
 
+    def test_profile_contact_wins_over_newer_unassociated_record(self):
+        ContactInfo.objects.create(user=self.student, first_name='Stray', last_name='Record',
+                                   e_mail='stray@example.com')
+        response = self.client.get(f"/customforms/view/{self.form.id}/")
+        self.assertContains(response, 'value="student@example.com"')
+        self.assertNotContains(response, 'stray@example.com')
+
+    def test_another_users_contact_on_the_profile_is_not_used(self):
+        other_user, _ = ESPUser.objects.get_or_create(username='owncontact_other')
+        other = ContactInfo.objects.create(user=other_user, first_name='Oth', last_name='Er',
+                                           e_mail='other@example.com')
+        profile = RegistrationProfile.objects.get(user=self.student)
+        profile.contact_user = other
+        profile.save()
+        response = self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+        })
+        self.assertRedirects(response, f"/customforms/success/{self.form.id}/")
+        other.refresh_from_db()
+        self.assertEqual(other.e_mail, 'other@example.com')
+        self.own.refresh_from_db()
+        self.assertEqual(self.own.e_mail, 'new@example.com')
+
+    def test_cached_profile_shows_the_updated_contact(self):
+        """The profile page reads the cached profile, so it must see the custom form's change."""
+        #   getLastForProgram caches the profile together with its contact_user
+        cached = lambda: RegistrationProfile.getLastForProgram(self.student, None).contact_user.e_mail
+        self.assertEqual(cached(), 'student@example.com')
+        self.client.post(f"/customforms/view/{self.form.id}/", {
+            'combo_form-current_step': '0',
+            f'question_{self.email.id}': 'new@example.com',
+        })
+        self.assertEqual(cached(), 'new@example.com')
+
     def test_submission_updates_only_the_users_own_record(self):
         response = self.client.post(f"/customforms/view/{self.form.id}/", {
             'combo_form-current_step': '0',
