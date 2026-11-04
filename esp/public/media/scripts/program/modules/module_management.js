@@ -211,10 +211,7 @@ $j(document).ready(function() {
         // Keep the timeline locked until the resync finishes (on both its
         // success and error paths) so another undo/redo can't run against the
         // still-stale state and have the pending GET overwrite the newer render.
-        loadModules(function() {
-            historyBusy = false;
-            updateHistoryControls();
-        });
+        loadModules(unlockHistory);
     }
 
     function runModuleCommand(command, direction, callback) {
@@ -285,6 +282,24 @@ $j(document).ready(function() {
         });
     }
 
+    // Release the history lock once the timeline reflects the command. A
+    // reorder resyncs from the server, so keep undo/redo locked until that
+    // reload completes; otherwise a second command could run and then be
+    // overwritten when the earlier, now-stale GET response arrives.
+    function unlockHistory() {
+        historyBusy = false;
+        updateHistoryControls();
+    }
+
+    function finishHistoryCommand(command) {
+        if (command.type === 'reorder') {
+            loadModules(unlockHistory);
+        } else {
+            renderModuleViews();
+            unlockHistory();
+        }
+    }
+
     function undo() {
         if (historyBusy || undoStack.length === 0) return;
         historyBusy = true;
@@ -294,13 +309,7 @@ $j(document).ready(function() {
         run(command, 'undo', function() {
             undoStack.pop();
             recordHistory(redoStack, command);
-            historyBusy = false;
-            if (command.type === 'reorder') {
-                loadModules();
-            } else {
-                renderModuleViews();
-            }
-            updateHistoryControls();
+            finishHistoryCommand(command);
             showToast('Change undone.', 'success');
         });
     }
@@ -314,13 +323,7 @@ $j(document).ready(function() {
         run(command, 'redo', function() {
             redoStack.pop();
             recordHistory(undoStack, command);
-            historyBusy = false;
-            if (command.type === 'reorder') {
-                loadModules();
-            } else {
-                renderModuleViews();
-            }
-            updateHistoryControls();
+            finishHistoryCommand(command);
             showToast('Change redone.', 'success');
         });
     }
@@ -923,10 +926,13 @@ $j(document).ready(function() {
                     ownVersions[after.id] = after.version;
                     recordHistory(undoStack, { type: 'update', before: before, after: after });
                     redoStack = [];
+                    // Keep undo/redo locked until the resync below completes
+                    // so its response can't overwrite a newer history change.
+                    historyBusy = true;
                     updateHistoryControls();
                     showToast('Module saved successfully.', 'success');
                     closeEditPanel(true);
-                    loadModules();
+                    loadModules(unlockHistory);
                 } else {
                     showToast('Error: ' + (res.error || 'Unknown error'), 'error');
                 }
@@ -944,8 +950,10 @@ $j(document).ready(function() {
                     if (activeModule) {
                         purgeHistoryFor([activeModule.id]);
                     }
+                    historyBusy = true;
+                    updateHistoryControls();
                     closeEditPanel(true);
-                    loadModules();
+                    loadModules(unlockHistory);
                 }
             }
         });
@@ -1060,12 +1068,16 @@ $j(document).ready(function() {
 
     // Global Escape key handler to close modals
     $j(document).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !$j(e.target).is('input, textarea, select')) {
+        // Timeline undo/redo must not change modules underneath an open edit
+        // panel or add drawer, whatever element inside it has focus.
+        var modalOpen = $editPanel.hasClass('active') || $addDrawer.hasClass('active');
+        var historyShortcutAllowed = !modalOpen && !$j(e.target).is('input, textarea, select');
+        if (historyShortcutAllowed && (e.ctrlKey || e.metaKey) && !e.shiftKey && e.key.toLowerCase() === 'z') {
             e.preventDefault();
             undo();
             return;
         }
-        if ((e.ctrlKey || e.metaKey) && ((e.key.toLowerCase() === 'y') || (e.shiftKey && e.key.toLowerCase() === 'z')) && !$j(e.target).is('input, textarea, select')) {
+        if (historyShortcutAllowed && (e.ctrlKey || e.metaKey) && ((e.key.toLowerCase() === 'y') || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
             e.preventDefault();
             redo();
             return;
