@@ -162,8 +162,8 @@ class AdminReviewApps(ProgramModuleObj):
             student = request.POST.get('student', '')
 
         try:
-            student = ESPUser.objects.get(id = student)
-        except ESPUser.DoesNotExist:
+            student = get_by_id_or_404(ESPUser, student)
+        except Http404:
             raise ESPError('Cannot find student, %s' % student, log=False)
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:

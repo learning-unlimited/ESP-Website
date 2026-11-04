@@ -330,6 +330,19 @@ class AdminReviewAppsViewsTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
                 response = self.client.get(self._url('view_app', extra, student=student_id))
                 self.assert_esp_error(response, message)
 
+    def test_view_app_missing_or_non_numeric_student(self):
+        """A missing or non-numeric student id gets the usual error page,
+        not a 500 from an unhandled ValueError (#6224)."""
+        self.login_as('admin')
+        cases = [
+            ('non-numeric', {'student': 'abc'}),
+            ('missing', {}),
+        ]
+        for label, params in cases:
+            with self.subTest(label):
+                response = self.client.get(self._url('view_app', self.cls.id, **params))
+                self.assert_esp_error(response, 'Cannot find student')
+
     def test_student_cannot_view_app(self):
         self.login_as('student')
         response = self.client.get(
