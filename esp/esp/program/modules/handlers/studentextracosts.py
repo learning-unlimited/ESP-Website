@@ -79,6 +79,22 @@ class MultiSelectCostItem(forms.Form):
             self.fields['option'] = forms.ChoiceField(required=required, label='', choices=choices, widget=RadioSelectWithData(option_data=option_data))
 
 
+def custom_amount_field(**kwargs):
+    """ Form field validating a custom option amount: a finite, non-negative
+        number with at most 2 decimal places and 9 digits in total (matching
+        `Transfer.amount_dec`).  """
+    return forms.DecimalField(min_value=0, max_digits=9, decimal_places=2, **kwargs)
+
+
+def parse_custom_amount(value):
+    """ Returns `value` as a Decimal if it is a valid custom amount,
+        otherwise None.  """
+    try:
+        return custom_amount_field().clean(value)
+    except forms.ValidationError:
+        return None
+
+
 def custom_amount_field_name(option_id):
     """ Name of the field holding the amount entered for a custom line item option. """
     return 'custom_amount_%s' % option_id
@@ -112,8 +128,8 @@ class MultiOptionCostItem(forms.Form):
             widget=CheckboxSelectMultipleWithData(option_data=option_data_for_lineitem(lineitem_type)))
 
         for option in self.custom_options:
-            self.fields[custom_amount_field_name(option.id)] = forms.DecimalField(
-                required=False, min_value=0, max_digits=9, decimal_places=2, label=option.description,
+            self.fields[custom_amount_field_name(option.id)] = custom_amount_field(
+                required=False, label=option.description,
                 widget=forms.NumberInput(attrs={'class': 'option-custom-amount input-mini',
                                                 'data-option-id': option.id}))
 
@@ -321,26 +337,20 @@ class StudentExtraCosts(ProgramModuleObj):
                                 option_amount = None
                             if option_id:
                                 option = LineItemOptions.objects.get(id=option_id)
-                                # Check for custom amount validity
-                                is_invalid_custom = False
                                 if option.is_custom:
-                                    if not option_amount:
-                                        is_invalid_custom = True
-                                    else:
-                                        try:
-                                            float(option_amount)
-                                        except (ValueError, TypeError):
-                                            is_invalid_custom = True
+                                    option_amount = parse_custom_amount(option_amount)
+                                    is_invalid_custom = option_amount is None
+                                else:
+                                    # Use default amount if this option doesn't allow a custom amount
+                                    option_amount = option.amount_dec_inherited
+                                    is_invalid_custom = False
 
                                 if is_invalid_custom:
                                     preserve_items[lineitem_type.text] = form
                                     forms_all_valid = False
                                     error_custom = True
                                 else:
-                                    # Use default amount if this option doesn't allow a custom amount
-                                    if not option.is_custom:
-                                        option_amount = option.amount_dec_inherited
-                                    form_prefs.append((lineitem_type.text, 1, float(option_amount), int(option_id)))
+                                    form_prefs.append((lineitem_type.text, 1, option_amount, int(option_id)))
 
                     elif isinstance(form, MultiOptionCostItem):
                         form_prefs.extend(form.preferences())
