@@ -45,7 +45,6 @@ class TagAdminForm(forms.ModelForm):
 
 
 class TagAdmin(admin.ModelAdmin):
-    save_as = True
     form = TagAdminForm
     list_display = ('key', 'value', 'target', )
     list_filter = ('key', 'object_id', 'content_type__model', )

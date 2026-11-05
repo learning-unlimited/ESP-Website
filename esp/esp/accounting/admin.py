@@ -41,7 +41,6 @@ class LIOInline(admin.TabularInline):
     model = LineItemOptions
 
 class LITAdmin(admin.ModelAdmin):
-    save_as = True
     list_display = ['text', 'amount_dec', 'program', 'required', 'for_finaid', 'num_options', 'max_quantity']
     search_fields = ['text', 'amount_dec', 'program__url', 'program__name']
     list_filter = ['program']
@@ -49,7 +48,6 @@ class LITAdmin(admin.ModelAdmin):
 admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
-    save_as = True
     def option_description(self, obj):
         if obj.option:
             return obj.option.description
@@ -69,7 +67,6 @@ class TransferAdmin(admin.ModelAdmin):
 admin_site.register(Transfer, TransferAdmin)
 
 class AccountAdmin(admin.ModelAdmin):
-    save_as = True
     list_display = ['name', 'program', 'balance']
 admin_site.register(Account, AccountAdmin)
 
@@ -77,7 +74,6 @@ def finalize_finaid_grants(modeladmin, request, queryset):
     for grant in queryset:
         grant.finalize()
 class FinancialAidGrantAdmin(admin.ModelAdmin):
-    save_as = True
     list_display = ['id', 'request', 'user', 'program', 'finalized', 'amount_max_dec', 'percent']
     readonly_fields=('finalized',)
     list_filter = ['request__program']
@@ -86,7 +82,8 @@ class FinancialAidGrantAdmin(admin.ModelAdmin):
 admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
 class CybersourcePostbackAdmin(admin.ModelAdmin):
-    save_as = True
+    #   Log of what Cybersource sent us; a copy would be invented.
+    save_as = False
     readonly_fields = ['timestamp']
     list_display = ['timestamp', 'transfer']
     search_fields = ['post_data', '=transfer__id', '=transfer__user__id',
