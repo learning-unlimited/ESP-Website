@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/survey_manage.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/survey.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -104,7 +105,7 @@ Each step below is a form that you can expand or contract by clicking on the hea
                 <td colspan="2" align="center">
                     <input class="btn btn-primary" type="submit" value="Upload &amp; Preview" />
                     &nbsp;
-                    <a class="btn" href="/manage/{{ program.url }}/surveys/csv_template">Download CSV Template</a>
+                    <a class="btn btn-secondary" href="/manage/{{ program.url }}/surveys/csv_template">Download CSV Template</a>
                 </td>
             </tr>
         </table>

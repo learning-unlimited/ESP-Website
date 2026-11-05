@@ -45,6 +45,7 @@ from esp.tagdict.models import Tag
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
     doc = """Provides a form for volunteers to signup for particular timeslots."""
+    permission_types = ('Volunteer/Signup',)
 
     @classmethod
     def module_properties(cls):

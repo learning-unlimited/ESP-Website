@@ -78,6 +78,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     newcounts = copy.copy(counts)
                     for j in sibs:
                         grade = j.getGrade(prog)
+                        # Find which grade range this student belongs to
                         grade_keys = [key for key in grade_caps if grade in key]
                         if len(grade_keys) == 1:
                             newcounts[grade_keys[0]] += 1
@@ -262,7 +263,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                 if stats[grade]['in_lottery'] == 0:
                     stats[grade]['per_accepted'] = "NA"
                 else:
-                    stats[grade]['per_accepted'] = round(stats[grade]['num_accepted'], 1)//stats[grade]['in_lottery']*100
+                    stats[grade]['per_accepted'] = round((stats[grade]['num_accepted'] / stats[grade]['in_lottery']) * 100, 1)
         context['stats'] = stats
         context['invalid_grades'] = invalid_grades
         context['num_allowed_users'] = num_allowed_users

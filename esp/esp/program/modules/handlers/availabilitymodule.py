@@ -47,6 +47,7 @@ from esp.users.forms.generic_search_form import TeacherSearchForm
 
 class AvailabilityModule(ProgramModuleObj):
     doc = """This program module allows teachers to indicate their availability for the program."""
+    permission_types = ('Teacher/Availability',)
 
     @classmethod
     def module_properties(cls):
@@ -63,10 +64,11 @@ class AvailabilityModule(ProgramModuleObj):
         et = EventType.get_from_desc('Class Time Block')
         return et
 
-    def prepare(self, context={}):
+    def prepare(self, context=None):
         """ prepare returns the context for the main availability page.
             Everything else can be gotten from hooks in this module. """
-        if context is None: context = {}
+        if context is None:
+            context = {}
 
         context['availabilitymodule'] = self
         return context

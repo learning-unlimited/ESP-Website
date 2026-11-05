@@ -38,6 +38,7 @@ from esp.accounting.models import LineItemType
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from django.utils.html import format_html
 from esp.program.modules.handlers.donationmodule import DonationModule
 
 from django.conf import settings
@@ -46,10 +47,14 @@ from django.db.models.query import Q
 from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import stripe
 import json
 import re
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class CreditCardModule_Stripe(ProgramModuleObj):
     doc = """Accept credit card payments via Stripe."""
@@ -82,7 +87,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         )
 
     def apply_settings(self):
-        #   Rather than using a model in module_ext.*, configure the module
+        #   Rather than using a model in program_settings.*, configure the module
         #   from a Tag (which can be per-program or global), combining the
         #   Tag's specifications with defaults in the code.
         DEFAULTS = {
@@ -92,7 +97,22 @@ class CreditCardModule_Stripe(ProgramModuleObj):
             'invoice_prefix': settings.INSTITUTION_NAME.lower(),
         }
         DEFAULTS.update(settings.STRIPE_CONFIG)
-        tag_data = json.loads(Tag.getProgramTag('stripe_settings', self.program))
+
+        # Handle missing or invalid 'stripe_settings' JSON to prevent apply_settings() from crashing (see issue #5474).
+        raw = Tag.getProgramTag('stripe_settings', self.program)
+        try:
+            tag_data = json.loads(raw) if raw else {}
+        except (json.JSONDecodeError, TypeError):
+            if raw:
+                logger.warning(
+                    'Could not parse stripe_settings tag for program %s (id=%s). '
+                    'Falling back to empty settings.',
+                    self.program.url,
+                    self.program.id
+                )
+            tag_data = {}
+
+
         self.settings = DEFAULTS.copy()
         self.settings.update(tag_data)
         return self.settings
@@ -210,7 +230,12 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team</a> to get it set up.', True)
+            raise ESPError(format_html(
+                'The site has not yet been properly set up for credit card'
+                ' payments. Administrators should contact the '
+                '<a href="mailto:{}">websupport team</a> to get it set up.',
+                settings.DEFAULT_EMAIL_ADDRESSES['support'],
+            ), True)
 
         user = request.user
 
@@ -278,11 +303,22 @@ class CreditCardModule_Stripe(ProgramModuleObj):
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         #   Check for setup of module.  This is also required to initialize settings.
         if not self.check_setup():
-            raise ESPError('The site has not yet been properly set up for credit card payments. Administrators should contact the <a href="mailto:{{settings.SUPPORT}}">websupport team to get it set up.', True)
+            raise ESPError(format_html(
+                'The site has not yet been properly set up for credit card'
+                ' payments. Administrators should contact the '
+                '<a href="mailto:{}">websupport team</a> to get it set up.',
+                settings.DEFAULT_EMAIL_ADDRESSES['support'],
+            ), True)
 
         context = {'postdata': request.POST.copy()}
 
         group_name = Tag.getTag('full_group_name') or f'{settings.INSTITUTION_NAME} {settings.ORGANIZATION_SHORT_NAME}'
+        # Stripe rejects the charge if the statement descriptor contains any of
+        # < > \ ' " * (https://docs.stripe.com/get-started/account/statement-descriptors).
+        # Commas are stripped too, to be safe. group_name comes from the
+        # full_group_name Tag or institution settings, which aren't guaranteed to
+        # avoid these, so strip them before truncating to Stripe's 22-character limit.
+        statement_descriptor = re.sub(r'[<>\\\'"*,]', '', group_name)[0:22]
 
         iac = IndividualAccountingController(self.program, request.user)
 
@@ -319,14 +355,24 @@ class CreditCardModule_Stripe(ProgramModuleObj):
         if 'error_type' not in context:
             #   Check the amount in the POST against the amount in our records.
             #   If they don't match, raise an error.
-            amount_cents_post = Decimal(request.POST['totalcost_cents'])
-            amount_cents_iac = Decimal(iac.amount_due()) * 100
-            if amount_cents_post != amount_cents_iac:
-                context['error_type'] = 'inconsistent_amount'
-                context['error_info'] = {
-                    'amount_cents_post': amount_cents_post,
-                    'amount_cents_iac':  amount_cents_iac,
-                }
+            try:
+                amount_cents_post = Decimal(request.POST.get('totalcost_cents', ''))
+            except (InvalidOperation, TypeError, ValueError):
+                context['error_type'] = 'missing_fields'
+                context['error_info'] = {'missing': 'totalcost_cents'}
+            else:
+                amount_cents_iac = Decimal(iac.amount_due()) * 100
+                if amount_cents_post != amount_cents_iac:
+                    context['error_type'] = 'inconsistent_amount'
+                    context['error_info'] = {
+                        'amount_cents_post': amount_cents_post,
+                        'amount_cents_iac':  amount_cents_iac,
+                    }
+
+        stripe_token = request.POST.get('stripeToken')
+        if 'error_type' not in context and not stripe_token:
+            context['error_type'] = 'missing_fields'
+            context['error_info'] = {'missing': 'stripeToken'}
 
         if 'error_type' not in context:
             try:
@@ -340,7 +386,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     # Thus, we will never be in a state where the card has been
                     # charged without a record being created on the site, nor
                     # vice-versa.
-                    totalcost_dollars = Decimal(request.POST['totalcost_cents']) / 100
+                    totalcost_dollars = amount_cents_post / 100
 
                     #   Create a record of the transfer without the transaction ID.
                     transfer = iac.submit_payment(totalcost_dollars, 'TBD')
@@ -350,11 +396,11 @@ class CreditCardModule_Stripe(ProgramModuleObj):
                     charge = stripe.Charge.create(
                         amount=amount_cents_post,
                         currency="usd",
-                        source=request.POST['stripeToken'],
+                        source=stripe_token,
                         description=f"Payment for {group_name} {prog.niceName()} - {request.user.name()}",
-                        statement_descriptor=group_name[0:22], #stripe limits statement descriptors to 22 characters
+                        statement_descriptor=statement_descriptor,
                         metadata={
-                            'ponumber': request.POST['ponumber'],
+                            'ponumber': request.POST.get('ponumber', ''),
                         },
                     )
 
@@ -384,7 +430,7 @@ class CreditCardModule_Stripe(ProgramModuleObj):
 
         #   Render the success page, which doesn't do much except direct back to studentreg.
         context['amount_paid'] = totalcost_dollars
-        context['statement_descriptor'] = group_name[0:22]
+        context['statement_descriptor'] = statement_descriptor
         context['can_confirm'] = self.deadline_met('/Confirm')
         return render_to_response(self.baseDir() + 'success.html', request, context)
 

@@ -71,7 +71,7 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from_email = from_email.strip()
     # the from_email must match one of our DMARC domains/subdomains
     # or the email may be rejected by email clients
-    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)?learningu\.org$)|(^.+<.+@(\w+\.)?learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), from_email):
+    if not re.match(r'(^.+@{0}$)|(^.+<.+@{0}>$)|(^.+@(\w+\.)*learningu\.org$)|(^.+<.+@(\w+\.)*learningu\.org>$)'.format(settings.SITE_INFO[1].replace('.', r'\.')), from_email):
         raise ESPError("Invalid 'From' email address (" + from_email + "). The 'From' email address must " +
                        "end in @" + settings.SITE_INFO[1] + " (your website), " +
                        "@learningu.org, or a valid subdomain of learningu.org " +
@@ -330,7 +330,7 @@ class MessageRequest(models.Model):
         try:
             return cls.get_sendto_fn_callable(sendto_fn_name)
         except ImproperlyConfigured as e:
-            raise ESPError(True, f'Invalid sendto function "{sendto_fn_name}". '
+            raise ESPError(f'Invalid sendto function "{sendto_fn_name}". '
                 f'This might be a website bug. Please contact us at {settings.DEFAULT_EMAIL_ADDRESSES["support"]} '
                 f'and tell us how you got this error, and we will look into it. '
                 f'The error message is: "{e}".')

@@ -39,6 +39,8 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
 from django.db.models.query import Q
+from esp.utils.ids import get_by_id_or_404
+from django.http import Http404
 
 __all__ = ['AdminReviewApps']
 
@@ -63,8 +65,8 @@ class AdminReviewApps(ProgramModuleObj):
         students' applications. """
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
@@ -72,11 +74,14 @@ class AdminReviewApps(ProgramModuleObj):
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
-        students = []
+        #   A student can hold several registration types (e.g. Enrolled
+        #   and Accepted); list each one only once.
+        students = {}
         for key in students_dict:
-            students += students_dict[key]
+            for student in students_dict[key]:
+                students.setdefault(student.id, student)
 
-        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
+        students = [x for x in students.values() if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
             reg = student.studentregistration_set.filter(section__parent_class=cls).first()
@@ -86,10 +91,12 @@ class AdminReviewApps(ProgramModuleObj):
             except StudentApplication.DoesNotExist:
                 student.app = None
 
+            #   This class's reviews, plus program-wide ones (no class).
             if student.app:
-                reviews = student.app.reviews.all()
+                student.app_reviews = student.app.reviews.filter(
+                    Q(class_subject=cls) | Q(class_subject__isnull=True))
             else:
-                reviews = []
+                student.app_reviews = []
 
             if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
                 student.status = 'Accepted'
@@ -148,9 +155,9 @@ class AdminReviewApps(ProgramModuleObj):
         reg_nodes = scrmi.reg_verbs()
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = get_by_id_or_404(ClassSubject, extra)
             section = cls.default_section()
-        except ClassSubject.DoesNotExist:
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         student = request.GET.get('student', None)
@@ -158,8 +165,8 @@ class AdminReviewApps(ProgramModuleObj):
             student = request.POST.get('student', '')
 
         try:
-            student = ESPUser.objects.get(id = student)
-        except ESPUser.DoesNotExist:
+            student = get_by_id_or_404(ESPUser, student)
+        except Http404:
             raise ESPError('Cannot find student, %s' % student, log=False)
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:

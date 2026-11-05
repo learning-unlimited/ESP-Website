@@ -9,13 +9,13 @@
 <p>{{ error_description|default:"Something went wrong. Please try again or contact us if the problem persists." }}</p>
 
 {% if error %}
-<p>{{ error|safe }}</p>
+<p>{{ error }}</p>
 {% endif %}
 
 <ul>
     <li><a href="javascript:history.go(-1);" title="Go back!">Go back</a> and try again</li>
     {% if error_type == "Http403" %}
-    <li><a href="/login/">Try logging in</a> with an account that has the required permissions</li>
+    <li><a href="{% url 'login' %}">Try logging in</a> with an account that has the required permissions</li>
     {% endif %}
     {% if error_type == "ESPError_NoLog" %}
     <li>Double-check the URL or form data you submitted</li>
@@ -48,7 +48,7 @@
     </tr>
     <tr>
         <th>Message</th>
-        <td>{{ error|safe|default:"(no message)" }}</td>
+        <td>{{ error|default:"(no message)" }}</td>
     </tr>
     <tr>
         <th>URL</th>

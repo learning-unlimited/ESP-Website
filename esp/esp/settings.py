@@ -77,6 +77,22 @@ TEMPLATES[0]['DIRS'].append(os.path.join(PROJECT_ROOT, 'templates'))
 TEMPLATES[0]['DIRS'].append(django.__path__[0] + '/forms/templates')
 TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
 
+######################
+# Transport security #
+######################
+# These depend on DEBUG, so they must be derived after local_settings.py has been imported.
+from . import local_settings as _local_settings
+
+if not hasattr(_local_settings, 'SESSION_COOKIE_SECURE'):
+    SESSION_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'CSRF_COOKIE_SECURE'):
+    CSRF_COOKIE_SECURE = not DEBUG
+if not hasattr(_local_settings, 'SECURE_SSL_REDIRECT'):
+    SECURE_SSL_REDIRECT = not DEBUG
+if not hasattr(_local_settings, 'SECURE_HSTS_SECONDS'):
+    # see https://docs.djangoproject.com/en/5.2/ref/middleware/#http-strict-transport-security
+    SECURE_HSTS_SECONDS = 0 if DEBUG else 3600
+
 # Ensure database settings are set properly
 if len(DATABASES['default']['USER']) == 0:
     try:
@@ -218,11 +234,6 @@ LOGGING = {
     }
 }
 
-#   Search directories for LESS (customizable stylesheet) files
-LESS_SEARCH_PATH = [
-    os.path.join(MEDIA_ROOT, 'less'),
-]
-
 MANAGERS = ADMINS
 
 DEFAULT_HOST = SITE_INFO[1]
@@ -262,7 +273,8 @@ MIDDLEWARE = tuple([pair[1] for pair in sorted(MIDDLEWARE_GLOBAL + MIDDLEWARE_LO
 # [Errno 13] Permission denied failures described in issue #234 that occurred
 # when runserver (owned by www-data) created the shared tempdir first.
 if not getattr(tempfile, 'alreadytwiddled', False): # Python appears to run this multiple times
-    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + str(os.getuid()))
+    uid_str = str(getattr(os, 'getuid', os.getpid)())
+    tempdir = os.path.join(tempfile.gettempdir(), "esptmp__" + CACHE_PREFIX + "_" + uid_str)
     os.makedirs(tempdir, mode=0o700, exist_ok=True)
     try:
         os.chmod(tempdir, 0o700)

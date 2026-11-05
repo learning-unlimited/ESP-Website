@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from esp.program.models import ModeratorRecord
+from esp.program.models import ClassCategories, ModeratorRecord
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_CLASSES
 from esp.resources.models import ResourceRequest, ResourceType
@@ -153,7 +153,7 @@ class SchedulingCheckRunner:
 
         # Filter out unscheduled classes and lunch blocks.
         sections = sections.exclude(resourceassignment__isnull=True)
-        sections = sections.exclude(parent_class__category__category='Lunch')
+        sections = sections.exclude(parent_class__category__is_lunch=True)
 
         sections = sections.select_related(
             'parent_class',
@@ -229,7 +229,7 @@ class SchedulingCheckRunner:
     def _getLunchByDay(self):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.p.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.p.getTimeSlots():
@@ -244,7 +244,7 @@ class SchedulingCheckRunner:
 
     def run_diagnostics(self, diagnostics=None):
         if diagnostics is None:
-             diagnostics = self.all_diagnostics()
+            diagnostics = self.all_diagnostics()
         return [getattr(self, diag)() for diag in diagnostics]
 
     # Update this to add a scheduling check.
@@ -476,8 +476,9 @@ class SchedulingCheckRunner:
         #not regular class categories
         open_class_cat = self.p.open_class_category.category
         if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-        lunch_cat = "Lunch"
-        if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category is not None and lunch_category.category in self.class_categories:
+            self.class_categories.remove(lunch_category.category)
 
         #generating a dictionary of class categories
         class_cat_d = {}

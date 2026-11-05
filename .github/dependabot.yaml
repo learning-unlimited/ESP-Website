@@ -10,3 +10,5 @@ updates:
       ci:
         patterns:
           - '*'
+    ignore:
+      - dependency-name: "actions/first-interaction"

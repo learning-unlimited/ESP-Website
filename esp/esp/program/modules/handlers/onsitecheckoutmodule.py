@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@learningu.org
 """
 
+from django.db import transaction
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call
 from esp.program.models import ClassSection
 from esp.utils.web import render_to_response
@@ -61,11 +62,14 @@ class OnSiteCheckoutModule(ProgramModuleObj):
         context = {}
 
         if "checkoutall" in request.POST and "confirm" in request.POST:
-            students = prog.currentlyCheckedInStudents()
+            students = list(prog.currentlyCheckedInStudents())
+            checkout_count = len(students)
             rt = RecordType.objects.get(name="checked_out")
-            for student in students:
-                Record.objects.create(user=student, event=rt, program=prog)
-            context['checkout_all_message'] = f"Successfully checked out {students.count()} students"
+            with transaction.atomic():
+                for student in students:
+                    Record.objects.create(user=student, event=rt, program=prog)
+            unit = "student" if checkout_count == 1 else "students"
+            context['checkout_all_message'] = f"Successfully checked out {checkout_count} {unit}"
 
         target_id = None
         student = None

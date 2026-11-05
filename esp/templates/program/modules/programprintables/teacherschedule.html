@@ -1,4 +1,4 @@
-<html lang="en">
+{% load schedule %}{% load getTag %}<html lang="en">
 <head>
 <title>{% if teachers %}Teacher {% if moderators %}and {% endif %}{% endif %}{% if moderators %}{{ program.getModeratorTitle }} {% endif %}Schedules</title>
 <link rel='stylesheet' type='text/css' href='/media/styles/teacherschedule.css' />
@@ -67,6 +67,18 @@
 </tr>
 {% endifchanged %}
 {% autoescape off %}
+{% if "multiweek_schedule"|getBooleanProgramTag:program %}
+{% classes_by_day scheditem.cls as day_entries %}
+{% for entry in day_entries %}
+<tr>
+  <td>{{ entry.day_time }}</td>
+  <td>{% if scheditem.cls.classrooms|length == 0 %}N/A{% else %}
+      {{ scheditem.cls.prettyrooms|join:"<br />" }}{% endif %}</td>
+  <td>{{ scheditem.cls.title }}</td>
+    {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
+</tr>
+{% endfor %}
+{% else %}
 <tr>
   <td>{{ scheditem.cls.friendly_times|join:"<br />" }}</td>
   <td>{% if scheditem.cls.classrooms|length == 0 %}N/A{% else %}
@@ -74,6 +86,7 @@
   <td>{{ scheditem.cls.title }}</td>
     {% if moderators and teachers %}<td>{{ scheditem.role }}</td>{% endif %}
 </tr>
+{% endif %}
 {% endautoescape %}
 {% endfor %}
 

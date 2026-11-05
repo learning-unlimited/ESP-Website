@@ -82,14 +82,11 @@ Source: esp/esp/random/views.py
 
 Tests good_random_class(), main view, and ajax view.
 """
-import json
 from unittest.mock import patch, MagicMock
 
 from django.db.models import Q
-from django.test import RequestFactory
 
 from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.random.views import good_random_class, main, ajax
 
 
 class GoodRandomClassTest(TestCase):

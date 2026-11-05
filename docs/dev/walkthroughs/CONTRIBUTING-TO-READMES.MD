@@ -6,7 +6,7 @@
 
 ## What Are These Files?
 
-Each major directory under `esp/esp/` has a README at `docs/walkthroughs/esp/esp/<dirname>-README.MD`. They are hand-written orientation documents — not API references — answering one question:
+Each major directory under `esp/esp/` has a README at `docs/dev/walkthroughs/esp/esp/<dirname>-README.MD`. They are hand-written orientation documents — not API references — answering one question:
 
 > *"I need to change X — where do I start?"*
 
@@ -53,18 +53,18 @@ Each major directory under `esp/esp/` has a README at `docs/walkthroughs/esp/esp
 - [ ] New external imports are in the Interactions table
 - [ ] Fixed bugs/gotchas have their notes removed or updated
 - [ ] Footer updated: `<!-- Last verified: YYYY-MM-DD | Verified by: github-username | Codebase commit: abc1234 -->`
-- [ ] If you **created a new walkthrough file**, added an entry for its directory in `docs/dev/directory_structure.rst` with a short description and the directory name linked to the new walkthrough doc (e.g. `` `web <../walkthroughs/esp/esp/web-README.MD>`_ ``)
+- [ ] If you **created a new walkthrough file**, added an entry for its directory in `docs/dev/directory_structure.rst` with a short description and the directory name linked to the new walkthrough doc (e.g. `` `web <walkthroughs/esp/esp/web-README.MD>`_ ``)
 
 ---
 
 ## Creating a README from Scratch
 
-1. Copy `docs/walkthroughs/templates_readme/README_TEMPLATE.MD` → `docs/walkthroughs/esp/esp/<dirname>-README.MD`
+1. Copy `docs/dev/walkthroughs/README_TEMPLATE.MD` → `docs/dev/walkthroughs/esp/esp/<dirname>-README.MD`
 2. Read every source file before writing — do not guess.
 3. Pay attention to: import statements, function signatures, `TODO`/`FIXME` comments, and decorators like `@cache_function` or `@login_required`.
 4. Check `esp/esp/urls.py` to verify the full mounted path of any URL patterns.
 5. Add the `<!-- Last verified -->` footer.
-6. Add an entry for the directory in `docs/dev/directory_structure.rst` — a short description with the directory name linked to your new walkthrough doc (e.g. `` `web <../walkthroughs/esp/esp/web-README.MD>`_ ``).
+6. Add an entry for the directory in `docs/dev/directory_structure.rst` — a short description with the directory name linked to your new walkthrough doc (e.g. `` `web <walkthroughs/esp/esp/web-README.MD>`_ ``).
 
 ---
 

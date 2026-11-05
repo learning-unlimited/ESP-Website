@@ -138,7 +138,7 @@ The full suite can be parallelized across CPU cores for faster runs::
 
   docker compose exec -w /app/esp web pytest -n auto
 
-This is what CI uses. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
+CI also passes ``--maxschedchunk=8``, which limits how many tests are queued on a worker at once so one slow test can't hold up a large batch. For running a single test or module, plain ``pytest`` is usually faster, since ``-n auto`` adds worker-startup overhead that outweighs parallelism on small runs.
 
 
 Test Suite Reference
@@ -146,7 +146,7 @@ Test Suite Reference
 
 To list all test modules currently in the codebase::
 
-  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' \) | sort"
+  docker compose exec web bash -c "find /app/esp/esp \( -name 'tests.py' -o -name 'tests_*.py' -o -name 'test_*.py' -o -name '*_tests.py' -o -name 'seltests.py' \) | sort"
 
 Code reviews
 ------------

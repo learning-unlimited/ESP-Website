@@ -43,7 +43,7 @@ from django.utils.safestring import mark_safe
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.modules.module_ext import ClassRegModuleInfo
+from esp.program.modules.program_settings import ClassRegModuleInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
@@ -162,6 +162,16 @@ class TeacherClassRegForm(FormWithRequiredCss):
             del self.fields['grade_range']
         if crmi.use_class_size_max:
             # class_size_max: crmi.getClassSizes
+            # If the current value was set outside the standard choices (e.g. by an admin
+            # via the manage page), add it so the dropdown displays it instead of going blank.
+            current_value = self.data.get('class_size_max') or self.initial.get('class_size_max')
+            if current_value is not None:
+                try:
+                    current_int = int(current_value)
+                    if current_int not in [c[0] for c in class_sizes]:
+                        class_sizes = sorted(class_sizes + [(current_int, current_int)], key=lambda x: x[0])
+                except (ValueError, TypeError):
+                    pass
             self.fields['class_size_max'].widget.choices = class_sizes
         else:
             del self.fields['class_size_max']

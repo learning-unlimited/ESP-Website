@@ -36,8 +36,8 @@ Learning Unlimited, Inc.
 import logging
 logger = logging.getLogger(__name__)
 import numpy
-from pkg_resources import parse_version
-assert parse_version(numpy.version.short_version) >= parse_version("1.7.0")
+from packaging.version import Version
+assert Version(numpy.version.short_version) >= Version("1.7.0")
 import numpy.random
 import queue
 import random
@@ -48,7 +48,6 @@ import os
 import sys
 import time
 
-from esp.cal.models import Event
 from esp.users.models import ESPUser
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program, ClassSection
 from esp.dbmail.models import send_mail
@@ -421,7 +420,7 @@ class ClassChangeController(object):
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
-        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.program, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        lunch_timeslots = self.program.lunch_timeslots()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
         for ts in self.timeslots:
@@ -565,13 +564,13 @@ class ClassChangeController(object):
                         possible_students *= ~(self.student_schedules[:, timeslot_index])
 
         candidate_students = numpy.nonzero(possible_students)[0]
-        num_spaces = self.section_capacities[si]
+        # Clamp num_spaces to 0. It can be negative if students enrolled in a
+        # class before it was moved to a smaller classroom. Whoops.
+        num_spaces = max(self.section_capacities[si], 0)
         if self.options['stats_display']:
             logger.info('   About to try to add %d candidates to %d spaces', candidate_students.shape[0], num_spaces)
             logger.info('   ' + str(candidate_students.shape))
-        # Clamp num_spaces to 0. It can be negative if students enrolled in a
-        # class before it was moved to a smaller classroom. Whoops.
-        if candidate_students.shape[0] <= max(num_spaces, 0):
+        if candidate_students.shape[0] <= num_spaces:
             #   If the section has enough space for all students that applied, let them all in.
             selected_students = candidate_students
             section_filled = False

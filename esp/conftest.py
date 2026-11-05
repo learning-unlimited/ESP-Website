@@ -54,14 +54,14 @@ def pytest_addoption(parser):
 
 def pytest_collection_modifyitems(config, items):
     """
-    Automatically skip selenium tests unless --selenium flag is passed.
-    Selenium tests live in esp/esp/seltests/ and are rarely run locally.
+    Skip tests marked @pytest.mark.selenium unless --selenium is passed.
+    Subclasses of esp.seltests.util.SeleniumTestCase carry that marker.
     """
-    run_selenium = config.getoption("--selenium", default=False)
+    if config.getoption("--selenium", default=False):
+        return
     skip_selenium = pytest.mark.skip(reason="pass --selenium to run selenium tests")
 
     for item in items:
-        if "seltests" in str(item.fspath):
-            if not run_selenium:
-                item.add_marker(skip_selenium)
+        if item.get_closest_marker("selenium"):
+            item.add_marker(skip_selenium)
 

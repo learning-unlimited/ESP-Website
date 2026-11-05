@@ -45,6 +45,8 @@ from esp.utils.models import TemplateOverride
 from esp.web.admin import NavBarCategoryAdmin
 from esp.admin import admin_site
 from django.contrib.auth.models import Group
+from esp.web.storage import LowercaseExtensionStorage
+from django.core.files.base import ContentFile
 
 import difflib
 import logging
@@ -79,6 +81,15 @@ class PageTest(TestCase):
         # Make sure that we've gotten an HTML document, and not a Django error
         self.assertStringContains(str(response.content, encoding='UTF-8'), "<html")
         self.assertNotStringContains(str(response.content, encoding='UTF-8'), "You're seeing this error because you have <code>DEBUG = True</code>")
+
+    def testSectionIndexRedirects(self):
+        """ Bare section URLs, which the default homepage links to, redirect to their index pages """
+        c = Client()
+        for section in ('learn', 'teach', 'volunteer'):
+            for path in (f'/{section}', f'/{section}/'):
+                response = c.get(path)
+                self.assertEqual(response.status_code, 301)
+                self.assertEqual(response['Location'], f'/{section}/index.html')
 
 class NavbarTest(TestCase):
 
@@ -506,7 +517,6 @@ class ProfileEditorCapitalizationTest(TestCase):
 
     def setUp(self):
         # Create a CamelCase group like it exists in real DB
-        from django.contrib.auth.models import Group
         self.group = Group.objects.get_or_create(name='StudentRep')[0]
 
         # Create a test user
@@ -534,6 +544,46 @@ class ProfileEditorCapitalizationTest(TestCase):
 
         # Should load fine â€" not crash with ValueError
         self.assertEqual(response.status_code, 200)
+
+
+class LowercaseExtensionStorageTest(TestCase):
+    def setUp(self):
+        self.storage = LowercaseExtensionStorage()
+
+    def test_uppercase_extension_lowercased(self):
+        result = self.storage._normalize_filename('photo.JPG')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_mixed_case_extension_lowercased(self):
+        result = self.storage._normalize_filename('photo.Jpg')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_no_extension_unchanged(self):
+        result = self.storage._normalize_filename('photo')
+        self.assertEqual(result, 'photo')
+
+    def test_empty_string_unchanged(self):
+        result = self.storage._normalize_filename('')
+        self.assertEqual(result, '')
+
+    def test_directory_path_extension_lowercased(self):
+        result = self.storage._normalize_filename('uploads/photos/photo.JPG')
+        self.assertEqual(result, 'uploads/photos/photo.jpg')
+
+    def test_already_lowercase_extension_unchanged(self):
+        result = self.storage._normalize_filename('photo.jpg')
+        self.assertEqual(result, 'photo.jpg')
+
+    def test_save_lowercases_extension(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            storage = LowercaseExtensionStorage(location=temp_dir)
+            name = None
+            try:
+                name = storage.save('test.JPG', ContentFile(b'test content'))
+                self.assertTrue(name.endswith('.jpg'))
+            finally:
+                if name is not None:
+                    storage.delete(name)
 
 
 class MediaCacheVersionTest(TestCase):

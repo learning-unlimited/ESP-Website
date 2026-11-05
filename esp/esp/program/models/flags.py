@@ -81,6 +81,7 @@ class ClassFlagType(models.Model):
         if teacher:
             base = base.filter(show_to_teacher=True)
         return base
+    get_flag_types.get_or_create_token(('program',))
     get_flag_types.depend_on_model('program.ClassFlagType')
     get_flag_types.depend_on_m2m('program.Program', 'flag_types', lambda prog, flag_type: {'program': prog})
     get_flag_types = classmethod(get_flag_types)

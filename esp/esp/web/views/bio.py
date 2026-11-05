@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.users.models     import ESPUser
 from esp.program.models   import TeacherBio, Program, ArchiveClass
 from esp.utils.web        import get_from_id, render_to_response
-from django.http          import HttpResponseRedirect
+from django.http          import HttpResponseRedirect, HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from datetime             import datetime
 from django.conf import settings
@@ -58,7 +58,7 @@ def bio_edit(request, tl='', username='', progid=None):
     return bio_edit_user_program(request, founduser, foundprogram)
 
 @login_required
-def bio_edit_user_program(request, founduser, foundprogram, external=False):
+def bio_edit_user_program(request, founduser, foundprogram, external=False, old_url=False):
     """ Edits a teacher bio, given user and program """
 
     if founduser is None or not founduser.isTeacher():
@@ -70,6 +70,9 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
         return bio_not_found(request)
 
     lastbio      = TeacherBio.getLastBio(founduser)
+
+    if old_url:
+        return HttpResponsePermanentRedirect(lastbio.edit_url())
 
 
     # if we submitted a newly edited bio...
@@ -165,15 +168,19 @@ def bio(request, tl, username=''):
     except ESPUser.DoesNotExist:
         return bio_not_found(request)
 
-    return bio_user(request, founduser)
+    return bio_user(request, founduser, old_url=(tl != 'teach'))
 
-def bio_user(request, founduser):
+def bio_user(request, founduser, old_url=False):
     """ Display a teacher bio for a given user """
 
     if (not founduser or not founduser.is_active or not founduser.isTeacher()):
         return bio_not_found(request)
 
     teacherbio = TeacherBio.getLastBio(founduser)
+
+    if old_url:
+        return HttpResponsePermanentRedirect(teacherbio.url())
+
     if teacherbio.hidden:
         return bio_not_found(request, founduser, teacherbio.edit_url())
 

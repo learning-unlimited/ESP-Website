@@ -31,7 +31,7 @@ $j(document).ready(function(){
 
 <h1>Program Settings for {{ program.niceName }} (ID: {{ program.id }})</h1>
 
-Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like. If you can't find the setting here, try checking out the <a href="/manage/{{ program.getUrlBase }}/tags/">program tag settings page</a> or the <a href="/manage/tags/">the global tag settings page</a>. You can also reach out to <a href="mailto:websupport@learningu.org">websupport</a>.
+Welcome to the program settings page for {{ program.niceName }}. This page lists most of the settings that you may want to change to make the program run how you would like. If you can't find the setting here, try checking out the <a href="/manage/{{ program.getUrlBase }}/tags/">program tag settings page</a> or the <a href="{% url 'manage_tags' %}">the global tag settings page</a>. You can also reach out to <a href="mailto:websupport@learningu.org">websupport</a>.
 {% inline_program_qsd_block program "manage:settings" %}
 {% end_inline_program_qsd_block %}
 

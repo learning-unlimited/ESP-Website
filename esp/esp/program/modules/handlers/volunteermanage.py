@@ -106,13 +106,12 @@ class VolunteerManage(ProgramModuleObj):
                 return response
             form = VolunteerRequestForm(program=prog)
 
-        elif 'op' in request.GET:
-            if request.GET['op'] == 'edit':
-                form = VolunteerRequestForm(program=prog)
-                form.load(VolunteerRequest.objects.get(id=request.GET['id']))
-            elif request.GET['op'] == 'delete':
-                form = VolunteerRequestForm(program=prog)
-                VolunteerRequest.objects.get(id=request.GET['id']).delete()
+        elif request.POST.get('op') == 'delete':
+            VolunteerRequest.objects.filter(id=request.POST.get('id'), timeslot__program=prog).delete()
+            form = VolunteerRequestForm(program=prog)
+        elif request.GET.get('op') == 'edit':
+            form = VolunteerRequestForm(program=prog)
+            form.load(VolunteerRequest.objects.get(id=request.GET['id']))
         elif request.method == 'POST':
             form = VolunteerRequestForm(request.POST, program=prog)
             if form.is_valid():

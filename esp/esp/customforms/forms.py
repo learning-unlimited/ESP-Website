@@ -3,6 +3,7 @@ from django import forms
 from collections import OrderedDict
 from localflavor.us.forms import USStateField, USStateSelect
 from django.utils.html import conditional_escape
+from django.core.exceptions import ValidationError
 
 class CustomFileWidget(forms.ClearableFileInput):
     """
@@ -137,3 +138,13 @@ class AddressField(forms.MultiValueField):
             compressed_value['%s_state' % self.name] = value_list[2]
             compressed_value['%s_zip' % self.name] = value_list[3]
         return compressed_value
+
+class RequiredNullBooleanField(forms.NullBooleanField):
+    """
+    A NullBooleanField that actually enforces the 'required' flag.
+    Django's NullBooleanField overrides validate() to a no-op, so "unknown"
+    (a null answer) is otherwise accepted even when the field is required.
+    """
+    def validate(self, value):
+        if self.required and value is None:
+            raise ValidationError(self.error_messages['required'], code='required')
