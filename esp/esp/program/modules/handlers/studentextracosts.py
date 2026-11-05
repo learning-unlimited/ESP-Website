@@ -138,7 +138,7 @@ class MultiOptionCostItem(forms.Form):
         selected = set(cleaned_data.get('options') or [])
         for option in self.custom_options:
             field_name = custom_amount_field_name(option.id)
-            if str(option.id) in selected and not cleaned_data.get(field_name):
+            if str(option.id) in selected and cleaned_data.get(field_name) is None:
                 self.add_error(field_name, 'Please enter an amount for this selection.')
         return cleaned_data
 
@@ -165,7 +165,7 @@ class MultiOptionCostItem(forms.Form):
                 amount = self.cleaned_data[custom_amount_field_name(option.id)]
             else:
                 amount = option.amount_dec_inherited
-            result.append((self.lineitem_type.text, 1, float(amount), option.id))
+            result.append((self.lineitem_type.text, 1, amount, option.id))
         return result
 
 

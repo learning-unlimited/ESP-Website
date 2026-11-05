@@ -89,6 +89,8 @@ class CustomAmountValidationTest(ProgramFrameworkTest):
             with self.subTest(amount=amount):
                 response = self._post_amount(amount)
                 self.assertEqual(response.status_code, 200)
+                self.assertTrue(response.context["errors"])
+                self.assertTrue(response.context["error_custom"])
                 self.assertFalse(self._transfers().exists())
 
     def test_valid_amounts_are_saved_exactly(self):
@@ -99,3 +101,20 @@ class CustomAmountValidationTest(ProgramFrameworkTest):
                 response = self._post_amount(amount)
                 self.assertEqual(response.status_code, 302)
                 self.assertEqual([t.amount_dec for t in self._transfers()], [expected])
+
+    def test_multi_select_accepts_zero_custom_amount(self):
+        """A zero custom amount is valid for multi-select items, as for single-select."""
+        item_type = LineItemType.objects.create(
+            text="Snacks", amount_dec=10, program=self.program, selection_type="multiple")
+        option = LineItemOptions.objects.create(
+            lineitem_type=item_type, description="Custom Snack", is_custom=True, amount_dec=0)
+        response = self.client.post(
+            "/learn/%s/extracosts" % self.program.getUrlBase(),
+            {
+                "multi%s-options" % item_type.id: [str(option.id)],
+                "multi%s-custom_amount_%s" % (item_type.id, option.id): "0",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        transfers = Transfer.objects.filter(user=self.student, line_item=item_type)
+        self.assertEqual([t.amount_dec for t in transfers], [Decimal("0")])
