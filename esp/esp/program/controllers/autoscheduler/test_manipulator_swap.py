@@ -33,7 +33,10 @@ def make_schedule():
 
 
 class SwapSectionsTest(unittest.TestCase):
+    """Swapping scheduled sections, undoing swaps and replaying them."""
+
     def setUp(self):
+        """Create a schedule, a manipulator and section/room shortcuts."""
         self.schedule = make_schedule()
         self.manipulator = ScheduleManipulator(
             self.schedule, constraint_names=[],
@@ -46,12 +49,14 @@ class SwapSectionsTest(unittest.TestCase):
         self.s5 = self.schedule.class_sections[5]
 
     def schedule_both(self):
+        """Schedule sections 1 and 3 in the first two roomslots."""
         self.assertTrue(self.manipulator.schedule_section(
             self.s1, self.rooms[0]))
         self.assertTrue(self.manipulator.schedule_section(
             self.s3, self.rooms[1]))
 
     def test_swaps_two_scheduled_sections(self):
+        """Swapping exchanges roomslots and records one swap."""
         self.schedule_both()
         self.assertTrue(self.manipulator.swap_sections(self.s1, self.s3))
         self.assertEqual(self.s1.assigned_roomslots, [self.rooms[1]])
@@ -63,6 +68,7 @@ class SwapSectionsTest(unittest.TestCase):
             ["schedule", "schedule", "swap"])
 
     def test_undo_of_swap_restores_original_placement(self):
+        """Undoing a swap restores both sections and drops the record."""
         self.schedule_both()
         self.manipulator.swap_sections(self.s1, self.s3)
         self.assertTrue(self.manipulator.undo())
@@ -93,6 +99,7 @@ class SwapSectionsTest(unittest.TestCase):
                                other.scorer.score_schedule())
 
     def test_swaps_sections_spanning_several_roomslots(self):
+        """Multi-roomslot sections swap, and the swap can be undone."""
         self.assertTrue(self.manipulator.schedule_section(
             self.s4, self.rooms[0]))
         self.assertTrue(self.manipulator.schedule_section(
@@ -110,6 +117,7 @@ class SwapSectionsTest(unittest.TestCase):
         self.assertEqual(self.s5.assigned_roomslots, self.rooms[3:5])
 
     def test_swap_survives_saving_and_replaying_history(self):
+        """A swap in a JSON round-tripped history replays via load_history."""
         self.schedule_both()
         self.manipulator.swap_sections(self.s1, self.s3)
         saved = json.loads(json.dumps(self.manipulator.jsonify_history()))
@@ -128,6 +136,7 @@ class SwapSectionsTest(unittest.TestCase):
                          ["schedule", "schedule", "swap"])
 
     def test_rejected_swap_leaves_history_and_schedule_unchanged(self):
+        """A rejected swap changes neither history nor schedule."""
         # Sections 1 and 2 have different durations. Section 2 can only start
         # in the second roomslot.
         self.assertTrue(self.manipulator.schedule_section(
