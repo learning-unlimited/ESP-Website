@@ -44,6 +44,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.template.loader import render_to_string
 
 from esp.cal.models import Event
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
@@ -183,14 +184,22 @@ class StudentRegTwoPhase(ProgramModuleObj):
         Builds context specific to the catalog. Used by all views which render
         the catalog. This is not a view in itself.
         """
+        # Fail loudly if the JSON Data Module isn't enabled.
+        if not prog.hasModule('JSONDataModule'):
+            raise ESPError(
+                "The Two-Phase Student Registration module requires the "
+                "'JSON Data Module' to also be enabled for this program, "
+                "but it isn't. Please tell an admin to add the JSON Data "
+                "Module to this program's modules and try again.", log=False)
+
         context = {}
         # FIXME(gkanwar): This is a terrible hack, we should find a better way
         # to filter out certain categories of classes
         context['open_class_category_id'] = prog.open_class_category.id
-        try:
-            lunch_category = ClassCategories.objects.get(category='Lunch')
+        lunch_category = ClassCategories.get_lunch()
+        if lunch_category:
             context['lunch_category_id'] = lunch_category.id
-        except ClassCategories.DoesNotExist:
+        else:
             context['lunch_category_id'] = -1
         return context
 
@@ -215,8 +224,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
@@ -257,8 +265,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
+            if category.is_lunch:
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
@@ -416,6 +423,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if (not sec.status > 0 or not sec.parent_class.status > 0):
                 logger.warning("Class '%s' was not approved.  Not letting "
                                "user '%s' register.", sec, request.user)
+                continue
             if (not sec.parent_class.grade_min <= request.user.getGrade(prog)
                 or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
                 logger.warning("User '%s' not in class grade range; not "

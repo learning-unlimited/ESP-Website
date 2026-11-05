@@ -64,6 +64,7 @@ from django.views.decorators.http import require_POST
 from reversion import revisions as reversion
 
 from esp.utils.sanitize import strip_base64_images
+from esp.utils.templatetags.markup import markdown
 
 import os
 import uuid
@@ -299,7 +300,6 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     import json
-    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
@@ -319,13 +319,12 @@ def ajax_qsd(request):
 
         data = post_dict['data']
 
-        # Get the URL from the request information
-        referer = request.META.get('HTTP_REFERER')
-        path = urlparse(referer).path
-        path_parts = [el for el in path.split('/') if el != '']
+        # Use the authoritative URL from the QSD object (database), not
+        # directly from the request
+        url_parts = qsd.url.split('/')
 
         # Sanitize if this is for a class QSD
-        if len(path_parts) > 3 and path_parts[3] == "Classes":
+        if len(url_parts) > 3 and url_parts[3] == "Classes":
             data = clean(data, strip = True)
         data, _ = strip_base64_images(data)
 
@@ -349,16 +348,32 @@ def ajax_qsd(request):
 def ajax_qsd_preview(request):
     """ Ajax function for previewing the result of QSD editing. """
     import json
-    from markdown import markdown
     data = request.POST['data']
 
-    # Get the URL from the request information
-    referer = request.META.get('HTTP_REFERER')
-    path = urlparse(referer).path
-    path_parts = [el for el in path.split('/') if el != '']
+    # Get the URL
+    url = request.POST.get('url', '')
+
+    # Require an authenticated session, similar to ajax_qsd
+    if request.user.id is None:
+        return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=401)
+
+    # Enforce QSD edit permission before looking up the QSD
+    if not Permission.user_can_edit_qsd(request.user, url):
+        return HttpResponse(content='Sorry, you do not have permission to preview this page.', status=403)
+
+    # Try to look up an existing QSD by URL, if any
+    qsd = QuasiStaticData.objects.get_by_url(url) if url else None
+
+    if qsd is not None:
+        # Existing QSD: ensure it is enabled and use its canonical URL
+        if qsd.disabled:
+            return HttpResponse('Invalid QSD', status=404)
+        # Use the authoritative server-side URL for sanitization check
+        url = qsd.url
+    url_parts = url.split('/')
 
     # Sanitize if this is for a class QSD
-    if len(path_parts) > 3 and path_parts[3] == "Classes":
+    if len(url_parts) > 3 and url_parts[3] == "Classes":
         data = clean(data, strip = True)
     data, _ = strip_base64_images(data)
 
@@ -367,6 +382,19 @@ def ajax_qsd_preview(request):
     result = {'content': markdown(data)}
 
     return HttpResponse(json.dumps(result))
+
+
+def ajax_qsd_can_edit(request):
+    """ Return the subset of the requested QSD URLs that the current user can edit.
+
+    QSD pages are publicly cached, so edit controls are rendered hidden for
+    everyone and revealed client-side based on this response. """
+    urls = list(dict.fromkeys(request.GET.getlist('url')))
+    editable = [url for url in urls if Permission.user_can_edit_qsd(request.user, url)]
+
+    response = JsonResponse({'editable': editable})
+    add_never_cache_headers(response)
+    return response
 
 
 def ajax_qsd_history(request):
@@ -443,7 +471,6 @@ def ajax_qsd_version_preview(request):
     """ Return rendered content for a specific version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     version_id = request.GET.get('version_id', '')
     if not version_id:
@@ -485,7 +512,6 @@ def ajax_qsd_restore(request):
     """ Restore a QSD to a specific historical version. """
     from reversion.models import Version
     from django.contrib.contenttypes.models import ContentType
-    from markdown import markdown
 
     if request.user.id is None:
         return HttpResponse('Session expired', status=401)

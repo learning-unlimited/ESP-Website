@@ -84,17 +84,34 @@ class StudentClassAppTest(TestCase):
 
     def test_str(self):
         result = str(self.class_app)
-        self.assertIsNotNone(result)
+        self.assertIn('classstudent', result)
+        self.assertIn('app for', result)
+
+    def test_default_status(self):
+        self.assertEqual(self.class_app.admission_status, StudentClassApp.UNASSIGNED)
 
     def test_admit(self):
         self.class_app.admit()
+        self.class_app.refresh_from_db()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.ADMITTED)
 
     def test_unadmit(self):
         self.class_app.admit()
         self.class_app.unadmit()
+        self.class_app.refresh_from_db()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.UNASSIGNED)
 
     def test_waitlist(self):
         self.class_app.waitlist()
+        self.class_app.refresh_from_db()
         self.assertEqual(self.class_app.admission_status, StudentClassApp.WAITLIST)
+
+    def test_admit_idempotency(self):
+        self.class_app.admit()
+        self.class_app.refresh_from_db()
+        first_status = self.class_app.admission_status
+
+        self.class_app.admit()
+        self.class_app.refresh_from_db()
+        second_status = self.class_app.admission_status
+        self.assertEqual(first_status, second_status)

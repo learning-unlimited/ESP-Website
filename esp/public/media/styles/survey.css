@@ -1,0 +1,8 @@
+/* Survey question rendering (student/teacher survey pages and admin preview) */
+
+textarea.survey-long-answer {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    min-height: 4.5em;
+}

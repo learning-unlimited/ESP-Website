@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 import codecs
 from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.modules.admin_search import AdminSearchEntry
+from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.program.modules.forms.volunteer import VolunteerRequestForm, VolunteerImportForm
 from esp.program.modules.handlers.volunteersignup import VolunteerSignup
 from esp.users.models import ESPUser
@@ -67,9 +67,9 @@ class VolunteerManage(ProgramModuleObj):
         return AdminSearchEntry(
             id="manage_volunteering",
             url="/manage/%s/volunteering" % base,
-            title="Volunteers",
-            category="Logistics",
-            keywords=["volunteers", "shifts", "signups"],
+            title="Manage Volunteers",
+            category=SEARCH_CATEGORY_REGISTRATION,
+            keywords=["volunteers", "shifts", "signups", "registration"],
         )
 
     """
@@ -106,13 +106,12 @@ class VolunteerManage(ProgramModuleObj):
                 return response
             form = VolunteerRequestForm(program=prog)
 
-        elif 'op' in request.GET:
-            if request.GET['op'] == 'edit':
-                form = VolunteerRequestForm(program=prog)
-                form.load(VolunteerRequest.objects.get(id=request.GET['id']))
-            elif request.GET['op'] == 'delete':
-                form = VolunteerRequestForm(program=prog)
-                VolunteerRequest.objects.get(id=request.GET['id']).delete()
+        elif request.POST.get('op') == 'delete':
+            VolunteerRequest.objects.filter(id=request.POST.get('id'), timeslot__program=prog).delete()
+            form = VolunteerRequestForm(program=prog)
+        elif request.GET.get('op') == 'edit':
+            form = VolunteerRequestForm(program=prog)
+            form.load(VolunteerRequest.objects.get(id=request.GET['id']))
         elif request.method == 'POST':
             form = VolunteerRequestForm(request.POST, program=prog)
             if form.is_valid():
@@ -208,7 +207,7 @@ class VolunteerManage(ProgramModuleObj):
             target_id = request.POST['user']
         else:
             context = {}
-            return HttpResponseRedirect( '/manage/%s/%s/volunteering' % (one, two) )
+            return HttpResponseRedirect( f'/manage/{one}/{two}/volunteering' )
 
         try:
             volunteer = ESPUser.objects.get(id=target_id)

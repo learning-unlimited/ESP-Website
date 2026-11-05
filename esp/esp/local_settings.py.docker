@@ -26,7 +26,8 @@ CACHES = {
     'default': {
         'BACKEND': 'esp.utils.memcached_multikey.CacheClass',
         'LOCATION': 'memcached:11211',
-        'TIMEOUT': 0,
+        # None == never expire.  Set 0 to actually disable caching.
+        'TIMEOUT': None,
     }
 }
 
@@ -41,3 +42,5 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = 'docker-dev-secret-key-not-for-production'
 
 ALLOWED_HOSTS = ['*']
+
+GOOGLE_MAPS_EMBED_KEY = ''

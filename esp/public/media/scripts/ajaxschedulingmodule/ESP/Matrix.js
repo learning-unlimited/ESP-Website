@@ -137,8 +137,8 @@ function Matrix(
     };
     
     this.scheduling_check = "";
-    $j('input[type=radio][name=scheduling-checks]').on("change", function() {
-        this.scheduling_check = event.target.value;
+    $j('input[type=radio][name=scheduling-checks]').on("change", function (evt) {
+        this.scheduling_check = evt.target.value;
         this.updateCells();
     }.bind(this));
 
@@ -186,7 +186,7 @@ function Matrix(
      *                   teachers are teaching, but would be available otherwise.
      * @param moderator: An optional moderator (if specified, shows moderator availability)
      */
-    this.highlightTimeslots = function(timeslots, section, moderator = null) {
+    this.highlightTimeslots = function(timeslots, section, moderator = null, options = {}) {
         /**
          * Adds a class to all non-disabled cells corresponding to each
          * timeslot in timeslots.
@@ -408,7 +408,7 @@ function Matrix(
      * @param schedule_timeslots: The array of timeslots we want to put the section into.
      * @param ignore_sections: An optional array of sections to ignore
      */
-    this.validateAssignment = function(section, room_id, schedule_timeslots, ignore_sections = []){
+    this.validateAssignment = function(section, room_id, schedule_timeslots, ignore_sections = [], options = {}){
         var result = {
             valid: true,
             reason: null,
@@ -445,35 +445,48 @@ function Matrix(
             }
         }
 
-        // Check to make sure all timeslots are contiguous.
-        var timeslot_objects = schedule_timeslots.map(function(timeslot_id){return timeslots.get_by_id(timeslot_id);});
-        if (!timeslots.are_timeslots_contiguous(timeslot_objects)){
-            result.valid = false;
-            result.reason = "Error: timeslots starting from " + schedule_timeslots[0] +
-                " are not contiguous."
-            return result;
+        var enforceContiguous = options.enforceContiguous !== false;
+        if (enforceContiguous) {
+            // Check to make sure all timeslots are contiguous.
+            var timeslot_objects = schedule_timeslots.map(function(timeslot_id){return this.timeslots.get_by_id(timeslot_id);}.bind(this));
+            if (!this.timeslots.are_timeslots_contiguous(timeslot_objects)){
+                result.valid = false;
+                result.reason = "Error: timeslots starting from " + schedule_timeslots[0] +
+                    " are not contiguous."
+                return result;
+            }
         }
 
         // Check lunch constraints.
-        var scheduled_over_lunch = false;
+        var scheduled_by_day = {};
+        $j.each(schedule_timeslots, function(index, timeslot_id) {
+            var timeslot = this.timeslots.get_by_id(timeslot_id);
+            if (!timeslot) {
+                return;
+            }
+            var day = timeslot.start[2];
+            if (!scheduled_by_day[day]) {
+                scheduled_by_day[day] = {};
+            }
+            scheduled_by_day[day][timeslot_id] = true;
+        }.bind(this));
+
         $j.each(this.timeslots.lunch_timeslots, function(day, lunch_slots) {
-            if(this.timeslots.on_same_day(lunch_slots[0], this.timeslots.get_by_id(schedule_timeslots[0]))) {
-               var count = 0;
-               $j.each(lunch_slots, function(index, lunch_slot) {
-                    if(schedule_timeslots.indexOf(lunch_slot.id) > -1) {
-                        count++;
-                    }
-                });
-                if(count == lunch_slots.length) {
-                    scheduled_over_lunch = true;
+            if(!scheduled_by_day[day]) {
+                return;
+            }
+            var count = 0;
+            $j.each(lunch_slots, function(index, lunch_slot) {
+                if(scheduled_by_day[day][lunch_slot.id]) {
+                    count++;
                 }
+            });
+            if(count == lunch_slots.length) {
+                result.valid = false;
+                result.reason = "scheduled over lunch";
+                return false;
             }
         }.bind(this));
-        if(scheduled_over_lunch) {
-            result.valid = false;
-            result.reason = "scheduled over lunch";
-            return result;
-        }
         return result;
     };
 
@@ -521,8 +534,8 @@ function Matrix(
         //populate cells
         var cells = this.cells;
         $j.each(room_ids, function(index, room_id){
-            row = rows[room_id];
-            for(i = 0; i < this.timeslots.timeslots_sorted.length; i++){
+            var row = rows[room_id];
+            for(var i = 0; i < this.timeslots.timeslots_sorted.length; i++){
                 cells[room_id][i].el.appendTo(row);
             }
             row.appendTo(tbody);
@@ -541,7 +554,12 @@ function Matrix(
         var that = this;
         this.el.tooltip({
             content: function() {
-                var room = that.rooms[$j(this).data('id')];
+                var $el = $j(this);
+                if ($el.hasClass("occupied-cell")) {
+                    var cell = $el.data("cell");
+                    return cell ? cell.tooltip() : "";
+                }
+                var room = that.rooms[$el.data('id')];
                 var tooltipParts = [
                     "<b>" + room.text + "</b>",
                     "Capacity: " + room.num_students + " students",
@@ -549,7 +567,7 @@ function Matrix(
                 ];
                 return tooltipParts.join("</br>");
             },
-            items: ".ft_c td",
+            items: ".ft_c td, .occupied-cell",
             track: true,
             show: {duration: 100},
             hide: {duration: 100},

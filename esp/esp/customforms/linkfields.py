@@ -28,7 +28,7 @@ generic_fields = {
     'date': {'typeMap': forms.DateField, 'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
     'time': {'typeMap': forms.TimeField, 'attrs': {'widget': forms.TimeInput,}, 'widget_attrs': {'class': 'time '},},
     'file': {'typeMap': forms.FileField, 'attrs': {'widget': CustomFileWidget,}, 'widget_attrs': {'class': 'file'},},
-    'phone': {'typeMap': PhoneNumberField, 'attrs': {'widget': PhoneNumberInternationalFallbackWidget,}, 'widget_attrs': {'class': 'USPhone '}},
+    'phone': {'typeMap': PhoneNumberField, 'attrs': {'widget': PhoneNumberInternationalFallbackWidget,}, 'widget_attrs': {'class': ''}},
     'email': {'typeMap': forms.EmailField, 'attrs': {'max_length': 30, 'widget': forms.TextInput,}, 'widget_attrs': {'class': 'email '}},
     'state': {'typeMap': USStateField, 'attrs': {'widget': USStateSelect}, 'widget_attrs': {'class': ''}},
     'gender': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': [('F', 'Female'), ('M', 'Male'), ('O', 'Other')]}, 'widget_attrs': {'class': 'gender '}},

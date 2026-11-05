@@ -22,7 +22,7 @@ You can use this form to change the appearance of your PDF student schedules.
 </h2>
 
 {% if form.errors %}
-<div class="alert alert-error">
+<div role="alert" class="alert alert-error">
     Please select at least one field.
 </div>
 {% endif %}
@@ -31,8 +31,8 @@ You can use this form to change the appearance of your PDF student schedules.
     <br />
     <br />
     <center>
-        <button type="submit" name="save" class="btn btn-large btn-primary" style="margin-right:10px;">Save Settings</button>
-        <button type="submit" name="reset" class="btn btn-large btn-danger" style="margin-left:10px;">Reset to Defaults</button>
+        <button type="submit" name="save" class="btn btn-lg btn-primary" style="margin-right:10px;">Save Settings</button>
+        <button type="submit" name="reset" class="btn btn-lg btn-danger" style="margin-left:10px;">Reset to Defaults</button>
     </center>
 </form>
 <br />

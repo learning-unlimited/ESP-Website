@@ -39,6 +39,8 @@ from esp.users.models import ESPUser
 from esp.utils.web import render_to_response
 from esp.program.models import ClassSubject, StudentRegistration, RegistrationType, StudentApplication
 from django.db.models.query import Q
+from esp.utils.ids import get_by_id_or_404
+from django.http import Http404
 
 __all__ = ['AdminReviewApps']
 
@@ -55,17 +57,6 @@ class AdminReviewApps(ProgramModuleObj):
             "choosable": 0,
             }
 
-    def students(self, QObject=False):
-        Q_accepted = Q(studentregistration__relationship__name='Accepted', studentregistration__section__parent_class__parent_program=self.program)
-
-        if QObject:
-            return {'app_accepted_to_one_program': Q_accepted}
-        else:
-            return {'app_accepted_to_one_program': ESPUser.objects.filter(Q_accepted).distinct()}
-
-    def studentDesc(self):
-        return {'app_accepted_to_one_program': """Students who are accepted to at least one class"""}
-
     @main_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
@@ -74,8 +65,8 @@ class AdminReviewApps(ProgramModuleObj):
         students' applications. """
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
-        except ClassSubject.DoesNotExist:
+            cls = get_by_id_or_404(ClassSubject, extra)
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
@@ -83,23 +74,29 @@ class AdminReviewApps(ProgramModuleObj):
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
-        students = []
+        #   A student can hold several registration types (e.g. Enrolled
+        #   and Accepted); list each one only once.
+        students = {}
         for key in students_dict:
-            students += students_dict[key]
+            for student in students_dict[key]:
+                students.setdefault(student.id, student)
 
-        students = [x for x in students if x.studentapplication_set.filter(program=self.program).count() > 0]
+        students = [x for x in students.values() if x.studentapplication_set.filter(program=self.program).count() > 0]
 
         for student in students:
-            student.added_class = student.studentregistration_set.filter(section__parent_class=cls)[0].start_date
+            reg = student.studentregistration_set.filter(section__parent_class=cls).first()
+            student.added_class = reg.start_date if reg else None
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except StudentApplication.DoesNotExist:
                 student.app = None
 
+            #   This class's reviews, plus program-wide ones (no class).
             if student.app:
-                reviews = student.app.reviews.all()
+                student.app_reviews = student.app.reviews.filter(
+                    Q(class_subject=cls) | Q(class_subject__isnull=True))
             else:
-                reviews = []
+                student.app_reviews = []
 
             if StudentRegistration.valid_objects().filter(user=student, section__parent_class=cls, relationship__name='Accepted').count() > 0:
                 student.status = 'Accepted'
@@ -158,9 +155,9 @@ class AdminReviewApps(ProgramModuleObj):
         reg_nodes = scrmi.reg_verbs()
 
         try:
-            cls = ClassSubject.objects.get(id = extra)
+            cls = get_by_id_or_404(ClassSubject, extra)
             section = cls.default_section()
-        except ClassSubject.DoesNotExist:
+        except Http404:
             raise ESPError('Cannot find class.', log=False)
 
         student = request.GET.get('student', None)
@@ -168,8 +165,8 @@ class AdminReviewApps(ProgramModuleObj):
             student = request.POST.get('student', '')
 
         try:
-            student = ESPUser.objects.get(id = student)
-        except ESPUser.DoesNotExist:
+            student = get_by_id_or_404(ESPUser, student)
+        except Http404:
             raise ESPError('Cannot find student, %s' % student, log=False)
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:
@@ -179,7 +176,6 @@ class AdminReviewApps(ProgramModuleObj):
             student.app = student.studentapplication_set.get(program = self.program)
         except StudentApplication.DoesNotExist:
             student.app = None
-            assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
 
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student, 'program': prog})
@@ -198,13 +194,14 @@ class AdminReviewApps(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
 
-        schedule = """
-Student schedule for %s:
+        schedule = f"""
+Student schedule for {student.name()}:
 
- Time               | Class                   | Room""" % student.name()
+ Time               | Class                   | Room"""
 
-        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted')
-        classes = sorted([x.section.parent_class for x in regs])
+        regs = StudentRegistration.valid_objects().filter(user=student, section__parent_class__parent_program=program, relationship__name='Accepted').select_related('section__parent_class').prefetch_related('section__parent_class__sections__meeting_times')
+        classes = [x.section.parent_class for x in regs]
+        classes.sort(key=lambda s: s._sort_key())
 
         # now we sort them by time/title
 
@@ -215,10 +212,8 @@ Student schedule for %s:
             else:
                 rooms = ", ".join(rooms)
 
-            schedule += """
-%s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title.ljust(25),
-               rooms)
+            schedule += f"""
+{",".join(cls.friendly_times()).ljust(20)}|{cls.title.ljust(25)}|{rooms}"""
 
         return schedule
 

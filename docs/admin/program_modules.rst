@@ -31,6 +31,7 @@ You will also see references to other data structures that store configuration s
 
 * [Teacher] module control (ClassRegModuleInfo): http://[hostname]/admin/modules/classregmoduleinfo/
 * Student module control (StudentClassRegModuleInfo): http://[hostname]/admin/modules/studentclassregmoduleinfo/
+* Module Schedule & Dates: See `Program Module Schedule & Permission Dates <module_schedule.rst>`_ for details on setting initial permissions, start/end dates, date inheritance, and permission synchronization.
 * Tags: http://[hostname]/admin/tagdict/tag/ - Very powerful, but more advanced; see `Customizing with Tags <tags.rst>`_ for more information.
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
@@ -113,7 +114,7 @@ Relevant settings include:
 * Tag 'allow_change_grade_level': By default, a student's graduation year is fixed after the first time they fill out their profile; this is intended to prevent students from lying about their age in order to get into certain classes. If this Tag is set, students may change their grade level at any time.
 * Tag 'student_grade_options': A JSON-encoded list of grade choices can be used to override the defaults (7 through 12 inclusive).
 * Tag 'student_medical_needs': If tag exists, students will see a text box where they can enter 'special medical needs'.
-* Tag 'show_studentrep_application': If tag exists, the student-rep application is shown as a part of the student profile. If it exists but is set to "no_expl", don't show the explanation textbox in the form.
+* Tag 'show_studentrep_application': Whether the student-rep application is shown as a part of the student profile, and if so, whether it includes the explanation textbox.
 * Tag 'show_student_tshirt_size_options': If tag exists, ask students about their choice of T-shirt size as part of the student profile
 * Tag 'show_student_vegetarianism_options': If tag exists, ask students about their dietary restrictions as part of the student profile
 * Tag 'show_student_graduation_years_not_grades': If tag exists, in the student profile, list graduation years rather than grade numbers
@@ -276,7 +277,7 @@ Views provided
 Student Surveys (SurveyModule)
 ------------------------------
 
-Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future).
+Include this module if you would like to use online surveys.  This module will cause your student survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" student deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only students that registered for a class ('classreg') are allowed to fill out the survey. This can be modified with the 'survey_student_filter' tag, which lists the groups of students defined by the program's modules.
 
 Formstack Application Module
 ----------------------------
@@ -298,9 +299,9 @@ Admin Setup
 
 The basic functionality of the student webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
 
-1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
-2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
-3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited.
+2. To enable the map, you'll need to set the 'program_center' tag to the geographic center of your campus or program location. The tag should be in the format "lat, long" (e.g., "37.427490, -122.170267"). This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065). Walking directions use standard Google Maps directions links and do not require any additional API keys.
 
 For class changes on the student webapp, students are allowed by default to enroll in classes that have fewer enrolled students than capacity (including any capacity modifiers specified in the program settings). You can change two tags to potentially allow students to enroll in classes that are not full based on program attendance or class attendance. The tags are as follows:
 
@@ -341,7 +342,7 @@ This module will prompt teachers to fill out their profile information before pr
 
 If you would like to remove a question, you can do so using the following tag:
 
-* teacherreg_hide_fields - A comma separated list of what fields (i.e. purchase_requests) you want to hide from teachers during teacher registration.
+* teacherreg_hide_fields - The fields (e.g. purchase_requests) you want to hide from teachers during teacher registration, selected from the fields that may be hidden.
 
 The questions shown on the teacher profile are configurable via the following tags:
 
@@ -356,7 +357,7 @@ The questions shown on the teacher profile are configurable via the following ta
 Teacher Surveys (SurveyModule)
 ------------------------------
 
-This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which is a comma-separated list of groups of students as specified in the prog.students() dictionary (this will be more user-friendly in the future)
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /manage/[program]/[instance]/surveys. By default, only teachers that submitted a class ('class_submitted') are allowed to fill out the survey. This can be modified with the 'survey_teacher_filter' tag, which lists the groups of teachers defined by the program's modules
 
 Teacher Acknowledgement (TeacherAcknowledgementModule)
 ------------------------------------------------------
@@ -429,9 +430,9 @@ Admin Setup
 
 The basic functionality of the teacher webapp should work as soon as the module is enabled. However, in order for the maps to work properly, you'll need to perform the following additional steps:
 
-1. We use the Google Maps API to display a map with a custom center. You'll need to register a `Google Cloud account <https://console.cloud.google.com/>`_. You'll then need to get an API key for the service. This API key should be set as the value for the 'google_cloud_api_key' tag. Note that this API service requires a payment method, but the good news is that you get a whole bunch of free usage before it charges your card each month.
-2. You'll also need to set the 'program_center' tag to the geographic center of your campus or program location, otherwise the map will be centered on Stanford. The tag should be in the format of "{lat: 37.427490, lng: -122.170267}". This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
-3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065).
+1. The map tab uses the Google Maps Embed API to display a map with a custom center. This API is entirely free and the key is managed centrally by Learning Unlimited.
+2. To enable the map, you'll need to set the 'program_center' tag to the geographic center of your campus or program location. The tag should be in the format "lat, long" (e.g., "37.427490, -122.170267"). This can be a program-specific tag (e.g. if you want the map to focus on different parts of campus for different programs) or just a global tag.
+3. Lastly, to enable the walking directions to class locations, you need a "Lat/Long" (spelling and capitalization matter) resource to be associated with each classroom (you should do this through the resources management page). The 'attribute_value' of each resource should be set to the lat/long from google maps (of the form 37.4268889, -122.172065). Walking directions use standard Google Maps directions links and do not require any additional API keys.
 
 Note that you do not need to do any of this again if you've already done this for the student webapp.
 

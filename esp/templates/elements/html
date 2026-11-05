@@ -1,16 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
 {% block doctype %}<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">{% endblock doctype %}
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
 {% if theme %}<!-- Theme: {{ theme.theme_name }} -->{% endif %}
   <head>
+    <script type="text/javascript">
+      /* Set user-state classes on <html> before first paint so the login box
+         and admin UI render in their correct state without a JS visibility
+         flicker. */
+      (function () {
+        try {
+          function cookie(name) {
+            var parts = ("; " + document.cookie).split("; " + name + "=");
+            return parts.length === 2 ? parts.pop().split(";").shift() : "";
+          }
+          var cls = "";
+          if (cookie("cur_username") && decodeURIComponent(cookie("cur_username"))) { cls += " esp-auth"; }
+          var morphed = cookie("cur_retTitle") ? true : false;
+          if (cookie("cur_admin") === "1" || morphed) { cls += " esp-admin"; }
+          if (morphed) { cls += " esp-morph"; }
+          document.documentElement.className += cls;
+        } catch (e) {}
+      })();
+    </script>
     <title>{% block fulltitle %}{% endblock %}</title>
   {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}">
+    <meta name="csrf-cookie-name" content="{{ settings.CSRF_COOKIE_NAME|escape }}" />
     <meta name="description" content="{% block description %}{% endblock %}" />
-    <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="{% block keywords %}{% endblock %}" />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="{% block og_title %}{% if theme and theme.full_group_name %}{{ theme.full_group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}{% endblock %}" />
+    <meta property="og:description" content="{% block og_description %}{% if theme and theme.full_group_name %}Learn more about {{ theme.full_group_name }} at {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% else %}Learn more about {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}.{% endif %}{% endblock %}" />
+    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+    <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/media/images/theme/logo.png?v={{ current_logo_version }}" />
+    <meta name="twitter:card" content="summary_large_image" />
   {% endblock meta %}
 
     {% block stylesheets %}
@@ -35,10 +61,17 @@
       .skip-nav:focus-visible {
         top: 0;
       }
+
+      .esp-submitting {
+        pointer-events: none;
+        opacity: 0.65;
+      }
     </style>
     <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css?v={{ current_theme_version }}"/>
+    <link rel="stylesheet" href="/media/theme_editor/node_modules/bootstrap-icons/font/bootstrap-icons.min.css?v=1.11.3">
+    <link rel="stylesheet" type="text/css" href="/media/styles/bs5-compat.css" />
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
@@ -81,6 +114,7 @@
     </script>
     {% endif %}
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+    <script type="text/javascript" src="/media/scripts/csrf_check.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
     
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
@@ -102,40 +136,59 @@
     <!-- prevent forms from being submitted twice -->
     <script type="text/javascript">
       $j(function() {
-        $j('[type=submit]:not(.stripe-button-el):not(.save):not(.custom-action)').on('click', function(event){
-          <!-- prevent any other behaviors -->
-          event.preventDefault();
-          event.stopPropagation();
-          
-          <!-- disable the submit button -->
-          $j(this).prop('disabled', true);
-          var form = $j(this).parents('form');
-          <!-- this adds a hidden field in case we care what the button name/value are -->
-          $j('<input>', {
-              type: 'hidden',
-              name: $j(this).prop('name'),
-              value: $j(this).prop('value')
-          }).appendTo(form);
-          <!-- check csrf cookie in form (we prevented this above) -->
-          check_csrf_cookie(form[0]);
-          var submitted = false;
-          <!-- check form validity -->
-          if(form[0].reportValidity()) {
-            <!-- run form's onsubmit if it has one -->
-            if(form[0].hasAttribute("onsubmit")) {
-              if(form[0].onsubmit()) {
-                form[0].submit();
-                submitted = true;
-              }
-            } else {
-              form[0].submit();
-              submitted = true;
-            }
+        // A submission that downloads a file leaves the page in place, so the
+        // lock has to be released here: as soon as the form is edited again,
+        // and after this long regardless.
+        var ESP_SUBMIT_TIMEOUT = 10000;
+
+        function espRelease(form) {
+          window.clearTimeout($j.data(form, 'espTimer'));
+          var marked = $j.data(form, 'espMarked');
+          if (marked) { marked.removeClass('esp-submitting').removeAttr('aria-disabled'); }
+          $j(form).off('.espSubmit');
+          $j.removeData(form, 'espSubmitting espTimer espMarked');
+        }
+
+        // Delegated on document so this runs after any handler bound to the
+        // form itself, and so it also covers forms added to the page later.
+        $j(document).on('submit', 'form', function(event) {
+          var form = this;
+          // A submit button's formmethod/formtarget override the form's own.
+          var submitter = event.originalEvent && event.originalEvent.submitter;
+          var method = (submitter && submitter.formMethod) || form.method;
+          var target = (submitter && submitter.formTarget) || form.target;
+          if (method.toLowerCase() !== 'post') return;
+          // Another handler has taken over, so it owns the form from here.
+          if (event.isDefaultPrevented() ||
+              (event.originalEvent && event.originalEvent.defaultPrevented)) return;
+          // Already on its way; drop the repeat.
+          if ($j.data(form, 'espSubmitting')) {
+            event.preventDefault();
+            return;
           }
-          <!-- if we didn't end up submitting the form, reenable the submit button -->
-          if(!submitted) {
-            $j(this).prop('disabled', false);
+          // Make sure there is a csrf token. A target changes where the
+          // response lands, not whether the POST needs one, so this comes
+          // first.
+          if (typeof check_csrf_cookie === 'function' && !check_csrf_cookie(form)) {
+            event.preventDefault();
+            return;
           }
+          // Submissions that open a new tab leave this page usable, so there is
+          // nothing to lock.
+          if (target) return;
+          // Mark the form and submit button to prevent multiple submissions.
+          $j.data(form, 'espSubmitting', true);
+          $j.data(form, 'espMarked', $j(submitter || $j(form).find(':submit'))
+            .addClass('esp-submitting').attr('aria-disabled', 'true'));
+          $j.data(form, 'espTimer',
+                  window.setTimeout(function() { espRelease(form); }, ESP_SUBMIT_TIMEOUT));
+          $j(form).on('input.espSubmit change.espSubmit', function() { espRelease(form); });
+        });
+
+        // Restore the form submission state on Back.
+        $j(window).on('pageshow', function() {
+          $j('form').each(function() { espRelease(this); });
+          $j('.esp-submitting').removeClass('esp-submitting').removeAttr('aria-disabled');
         });
       });
     </script>
@@ -171,7 +224,7 @@
     {% block javascript_footer %}
     <!-- Placed at the end of the document so the pages load faster -->
     <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/2.3.2/js/bootstrap.js"></script>
+    <script src="/media/theme_editor/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js?v=5.3.3"></script>
     
     <script src="/media/scripts/nav.js" type="text/javascript"></script>
 
