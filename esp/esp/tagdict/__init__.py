@@ -173,7 +173,8 @@ class MonthDayWidget(forms.SelectDateWidget):
 
     def value_from_datadict(self, data, files, name):
         # The year isn't rendered, so supply it rather than read it back
-        data = {**data, self.year_field % name: str(self.year)}
+        data = data.copy()
+        data[self.year_field % name] = str(self.year)
         return super().value_from_datadict(data, files, name)
 
 
