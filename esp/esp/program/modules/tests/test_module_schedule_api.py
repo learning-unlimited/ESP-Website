@@ -3,12 +3,32 @@ import json
 from datetime import datetime, timedelta
 
 from django.urls import reverse
-from esp.program.tests import ProgramFrameworkTest
+from esp.tests.factories import make_user, make_program
+from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
 from django.db import connection
 
-class TestModuleScheduleAPI(ProgramFrameworkTest):
+class ModuleScheduleTestCase(TestCase):
+    """
+    Minimal fixture for the module schedule tests: one admin, one student and a
+    program with its modules. These tests only exercise module schedule dates
+    and ordering, so they do not need the teachers, classes and rooms that
+    ProgramFrameworkTest seeds.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.admins = [make_user('Administrator', username='admin0000')]
+        self.students = [make_user('Student', username='student0000')]
+        self.program = make_program(
+            num_timeslots=1,
+            num_rooms=1,
+            admins=self.admins,
+        )
+
+
+class TestModuleScheduleAPI(ModuleScheduleTestCase):
     def setUp(self):
         super().setUp()
 
@@ -356,7 +376,7 @@ class TestModuleScheduleAPI(ProgramFrameworkTest):
 
 
 
-class ModuleScheduleAPITestBase(ProgramFrameworkTest):
+class ModuleScheduleAPITestBase(ModuleScheduleTestCase):
     """Shared setup and helpers for the module schedule API edge-case tests."""
 
     def setUp(self):
