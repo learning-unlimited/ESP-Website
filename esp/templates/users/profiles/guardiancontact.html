@@ -1,4 +1,6 @@
 <!-- Begin Guardian Contact Info -->
+
+{% if form.guard_first_name or form.guard_last_name or form.guard_e_mail or form.guard_phone_day or form.guard_phone_cell %}
 <div class="card mb-4 profile-card">
 <div class="card-header"><h2 class="h5 mb-0">Parent/Guardian Contact</h2></div>
 <div class="card-body">
@@ -31,5 +33,6 @@
 </div>
 </div>
 </div>
+{% endif %}
 
 <!-- End Guardian Contact Info -->

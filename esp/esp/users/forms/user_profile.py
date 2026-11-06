@@ -442,6 +442,9 @@ class StudentProfileForm(BootstrapFormMixin, UserContactForm, EmergContactForm, 
                 del self.fields[field_name]
             if field_name == 'phone_cell' and 'receive_txt_message' in self.fields:
                 del self.fields['receive_txt_message']
+        if not Tag.getBooleanTag('student_profile_show_guardian_info'):
+            for field_name in GuardContactForm.declared_fields:
+                self.fields.pop(field_name, None)
     def clean(self):
         cleaned_data = super(StudentProfileForm, self).clean()
 

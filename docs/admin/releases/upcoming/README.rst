@@ -14,6 +14,19 @@ Teachers can now save an incomplete class registration form as a draft and come 
 
 A draft is held as a class with the new "draft" status. Drafts are invisible to students, are not counted as submitted classes for admin teacher lists or teacher registration progress, and do not take part in teacher conflict or time-commitment calculations. Each teacher gets one draft per registration flow (regular classes and open classes are tracked separately); submitting the form promotes that draft into a normal unreviewed class.
 
+New Customization Tags
+======================
+
+Several previously hard-coded behaviors are now configurable by tag. Each tag
+defaults to the existing behavior.
+
+- ``student_profile_show_guardian_info`` (global, student registration): set to ``False`` to drop the parent/guardian contact section from the student profile form.
+- ``onsite_show_paid_field`` (global, onsite): set to ``False`` to hide the "Paid" checkbox on the onsite registration form.
+- ``volunteer_label_comments`` (per-program, volunteer): overrides the label of the volunteer form's comments field (the ``volunteer_help_text_comments`` tag already exists).
+- ``volunteer_help_text_requests`` (per-program, volunteer): overrides the help text of the volunteer form's timeslots field.
+- ``volunteer_help_text_confirm`` (per-program, volunteer): overrides the help text of the volunteer form's confirmation checkbox.
+- ``bigboard_graph_drop_beg``, ``bigboard_graph_drop_end``, and ``bigboard_graph_min_points`` (per-program, general management): control where the big board's registration graph starts, where it stops, and how many data points a series needs before it is plotted at all.
+
 Teacher Schedule Deadline
 =========================
 

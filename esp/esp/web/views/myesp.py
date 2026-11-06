@@ -214,7 +214,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
             if role == 'student':
                 regProf.student_info = StudentInfo.addOrUpdate(curUser, regProf, new_data)
-                regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
+                if Tag.getBooleanTag('student_profile_show_guardian_info'):
+                    regProf.contact_guardian = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_guardian, 'guard_')
                 regProf.contact_emergency = ContactInfo.addOrUpdate(curUser, regProf, new_data, regProf.contact_emergency, 'emerg_')
             elif role == 'teacher':
                 regProf.teacher_info = TeacherInfo.addOrUpdate(curUser, regProf, new_data)

@@ -1,4 +1,5 @@
 import datetime
+import logging
 import subprocess
 
 from django.db.models.aggregates import Count, Min
@@ -10,7 +11,11 @@ from esp.program.models import StudentSubjectInterest, StudentRegistration
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_REGISTRATION
 from esp.users.models import Record
+from esp.tagdict import all_program_tags
+from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
+
+logger = logging.getLogger(__name__)
 
 
 class BigBoardModule(ProgramModuleObj):
@@ -81,7 +86,11 @@ class BigBoardModule(ProgramModuleObj):
             ("enrolled in classes", [(1, time) for time in self.times_enrolled(prog)], True),
         ]
 
-        timess_data, start = self.make_graph_data(timess, 4, 0, 5)
+        timess_data, start = self.make_graph_data(
+            timess,
+            self.graph_setting('bigboard_graph_drop_beg', prog),
+            self.graph_setting('bigboard_graph_drop_end', prog),
+            self.graph_setting('bigboard_graph_min_points', prog))
 
         left_axis_data = [
             {"axis_name": "#", "series_data": timess_data},
@@ -283,14 +292,17 @@ class BigBoardModule(ProgramModuleObj):
     @cache_function_for(105)
     def times_lottery(self, prog):
         # stars or priorities
+        # Undated records are excluded here rather than in make_graph_data,
+        # because the comparison and sort below would hit the None first
         ssi_times_dict = dict(
             StudentSubjectInterest.objects.filter(subject__parent_program=prog)
+            .exclude(start_date=None)
             # GROUP BY user, SELECT user and min start date.
             # Don't you love django ORM syntax?
             .values_list('user').annotate(Min('start_date')))
         sr_times = StudentRegistration.objects.filter(
             section__parent_class__parent_program=prog, relationship__name__startswith="Priority"
-        ).values_list('user').annotate(Min('start_date'))
+        ).exclude(start_date=None).values_list('user').annotate(Min('start_date'))
         for id, sr_time in sr_times:
             if id not in ssi_times_dict or sr_time < ssi_times_dict[id]:
                 ssi_times_dict[id] = sr_time
@@ -339,6 +351,21 @@ class BigBoardModule(ProgramModuleObj):
         return chunks
 
     @staticmethod
+    def graph_setting(key, prog):
+        """Read one of the graph tags as a count of data points.
+
+        The tag settings page offers these as integer fields, but the Tag
+        admin accepts any text, so fall back to the tag's own default rather
+        than failing the whole big board on a stray value.
+        """
+        value = Tag.getProgramTag(key, prog)
+        try:
+            return max(0, int(value))
+        except (TypeError, ValueError):
+            logger.warning("Tag %s is not a number (%r); using its default", key, value)
+            return int(all_program_tags[key]['default'])
+
+    @staticmethod
     def make_graph_data(timess, drop_beg = 0, drop_end = 0, cutoff = 1):
         """Given a list of time series, return graph data series.
 
@@ -349,8 +376,14 @@ class BigBoardModule(ProgramModuleObj):
 
         Returns a dict of cleaned time series and the start time for graphing
         """
-        #Remove any time series without at least 'cutoff' times
-        timess = [(desc, times, cumulative) for desc, times, cumulative in timess if len(times) >= cutoff]
+        #Drop undated points; registration timestamps are nullable, and a point
+        #with no time cannot be placed on a time axis
+        timess = [(desc, [t for t in times if t[1] is not None], cumulative)
+                  for desc, times, cumulative in timess]
+        #Remove any time series without at least 'cutoff' times, or that would
+        #be left empty once 'drop_beg'/'drop_end' items are trimmed off the ends
+        timess = [(desc, times, cumulative) for desc, times, cumulative in timess
+                  if len(times) >= cutoff and len(times) > drop_beg + drop_end]
         # Drop the first and last times if specified
         # Then round start down and end up to the nearest day.
         if not timess:
