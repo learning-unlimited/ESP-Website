@@ -240,7 +240,8 @@ input.fancybutton:active
 
     #clsform input[type="text"], #clsform input[type="number"],
     #clsform select, #clsform textarea,
-    .stack-on-phone input[type="text"], .stack-on-phone select, .stack-on-phone textarea {
+    .stack-on-phone input[type="text"], .stack-on-phone input[type="file"],
+    .stack-on-phone select, .stack-on-phone textarea {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
