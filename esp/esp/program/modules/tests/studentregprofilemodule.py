@@ -104,6 +104,7 @@ class StudentRegProfileModuleTest(ProgramFrameworkTest):
             if 'id="id_graduation_year"' in line:
                 break
         self.assertTrue(i < len(lines)-1) ## Found the relevant line
+        self.assertIn('is-invalid', lines[i]) ## The invalid field is highlighted
 
         ## Find the line for the end of the graduation-year form field
         for j, line in enumerate(lines[i:]):

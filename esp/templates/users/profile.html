@@ -137,6 +137,11 @@ div.required label.control-label:after,
 // Show the country field (and its label) only for international addresses
 function toggle_country(state, country) {
   var $country = $j(country).add($j(country).closest(".profile-field"));
+  // Without a state field there is no "International" choice, so keep the country as entered
+  if (!$j(state).length) {
+    $country.removeClass("hidden");
+    return;
+  }
   if ($j(state).val() == "International") {
     $country.removeClass("hidden");
     if ($j(country).val() == "US") {
