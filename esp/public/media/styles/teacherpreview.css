@@ -90,6 +90,13 @@
         width: auto;
     }
 
+    /* Span the panel's full width, even in themes that size every content
+       table by ID (floaty: #content_area table { width: 70%; margin: 8px }). */
+    .teacher-preview-classes {
+        width: auto !important;
+        margin: 0 !important;
+    }
+
     /* Kept for screen readers; the labels replace it visually. */
     .teacher-preview-classes > thead {
         position: absolute;
