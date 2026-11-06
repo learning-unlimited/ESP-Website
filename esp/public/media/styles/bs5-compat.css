@@ -56,3 +56,15 @@ input[type="radio"] {
 .form-check-input {
     margin-top: 0.125em;
 }
+
+/* Bootstrap 2 named this variant .alert-error; Bootstrap 3 renamed it to
+ * .alert-danger.  Django's messages framework still tags messages.error()
+ * output as "error", so templates that build a class from message.tags (e.g.
+ * elements/banners.html) emit .alert-error and the alert renders uncoloured.
+ * Map it onto the theme's own danger palette until those tags are renamed. */
+.alert-error {
+    --bs-alert-color: var(--bs-danger-text-emphasis);
+    --bs-alert-bg: var(--bs-danger-bg-subtle);
+    --bs-alert-border-color: var(--bs-danger-border-subtle);
+    --bs-alert-link-color: var(--bs-danger-text-emphasis);
+}
