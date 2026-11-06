@@ -1,3 +1,4 @@
+import unittest
 import json
 from datetime import datetime, timedelta
 
@@ -5,6 +6,7 @@ from django.urls import reverse
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from django.db import connection
 
 class TestModuleScheduleAPI(ProgramFrameworkTest):
     def setUp(self):
@@ -449,6 +451,8 @@ class TestModuleScheduleTimezoneBoundaries(ModuleScheduleAPITestBase):
             (datetime(2026, 3, 8, 1, 59, 59), datetime(2026, 3, 8, 3, 0, 0)),
         )
 
+    @unittest.skipUnless(connection.vendor == 'postgresql',
+                         "Requires PostgreSQL's handling of nonexistent local times")
     def test_spring_forward_nonexistent_local_time_is_shifted_by_database(self):
         """
         A naive 02:30 on the spring-forward date does not exist locally. The API
@@ -690,7 +694,8 @@ class TestModuleScheduleReorderBulk(ModuleScheduleAPITestBase):
     POSITION_LOCKED_HANDLERS = (
         'StudentRegProfileModule',
         'TeacherRegProfileModule',
-        'CreditCardModule_stripe',
+        'CreditCardModule_Stripe',
+        'CreditCardModule_Cybersource',
         'StudentRegConfirm',
     )
 
@@ -913,6 +918,8 @@ class TestModuleScheduleReorderBulk(ModuleScheduleAPITestBase):
                     {"id": good.id, "seq": 7001},
                     {"id": target.id, "seq": bad_seq},
                 ])
+                # TODO: the reorder view needs 32-bit integer bounds validation and should
+                # return 400. Currently PostgreSQL raises DataError, which surfaces as a 500.
                 self.assertGreaterEqual(response.status_code, 400)
                 self.assertFalse(json.loads(response.content)["success"])
                 self.assertEqual(self.snapshot([good, target]), before)
