@@ -819,6 +819,8 @@ class FormHandler:
             'link_type': self.form.link_type,
             'link_id': self.form.link_id,
             'perms': self.form.perms,
+            'success_message': self.form.success_message,
+            'success_url': self.form.success_url,
             'pages': self._getFormMetadata(self.form)
         }
         # Identify if this form has been linked to a registration module
