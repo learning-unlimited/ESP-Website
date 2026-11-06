@@ -2,7 +2,7 @@
         <td>
             <b>{{ class.emailcode }}: <a href="{{ class.parent_program.get_teach_url }}catalogpreview/{{ class.id }}">{{ class.title|escape }}</a></b>
         </td>
-        <td>
+        <td{% if class.get_teachers %} data-label="Teachers"{% endif %}>
        <span class="teachers">
        {% for teacher in class.get_teachers %}
        <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html" 
@@ -11,10 +11,10 @@
        </a>{% if not forloop.last %}<br />{% endif %}{% endfor %}
        </span>
         </td>
-        <td>
+        <td data-label="Description">
             {{ class.class_info|truncatewords:20 }}
         </td>
-        <td>
+        <td data-label="Grades">
             {{ class.grade_min }}-{{ class.grade_max }}
         </td>
     </tr>
