@@ -7,7 +7,6 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-<link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 
 <style>
 #highcharts-placeholder {
@@ -39,9 +38,6 @@ table, th, td, .option {
 
 td {
     text-align: center;
-}
-.dsphead {
-    text-align: center !important;
 }
 </style>
 {% endblock %}
@@ -102,10 +98,10 @@ td {
 {% endif %}
 {% endautoescape %}
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#default-lottery" aria-expanded="false" aria-controls="default-lottery">
     <b><u>Run Default Student Lottery Algorithm:</u></b>
 </button>
-<div class="dspcont">
+<div id="default-lottery" class="accordion-collapse collapse">
     (Do not do this unless you know what you are doing)<br/><br/>
     <form action="#" method="POST">
         <input type="hidden" name="mode" value="default">
@@ -140,10 +136,10 @@ td {
 </div>
 
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#manual-lottery" aria-expanded="false" aria-controls="manual-lottery">
     <b><u>Run Manual Student Lottery:</u></b>
 </button>
-<div class="dspcont">
+<div id="manual-lottery" class="accordion-collapse collapse">
     (Do not do this unless you know what you are doing)<br/><br/>
     <form action="#" method="POST">
         <input type="hidden" name="mode" value="manual">
@@ -158,10 +154,10 @@ td {
 </div>
 
 {% if lottery_run %}
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#undo-lottery" aria-expanded="false" aria-controls="undo-lottery">
     <b><u>Undo the Student Lottery:</u></b>
 </button>
-<div class="dspcont">
+<div id="undo-lottery" class="accordion-collapse collapse">
     This will UNDO the student lottery, which will delete the winners group and remove any permissions that were created for the group. This can NOT be undone.<br/><br/>
     <form action="#" method="POST">
         <input type="hidden" name="mode" value="undo">
@@ -203,10 +199,10 @@ td {
 <br/><br/>
 {% endif %}
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#add-lottery-student" aria-expanded="false" aria-controls="add-lottery-student">
     <b><u>Manually Add a Student to the Lottery:</u></b>
 </button>
-<div class="dspcont">
+<div id="add-lottery-student" class="accordion-collapse collapse">
     <table width=100% cellpadding="0" cellspacing="0" class="addstudent">
         <td width=46% class="option">
             <form action="#" method="POST">
@@ -267,10 +263,10 @@ td {
     </table>
 </div>
 
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#remove-lottery-student" aria-expanded="false" aria-controls="remove-lottery-student">
     <b><u>Manually Remove a Student from the Lottery:</u></b>
 </button>
-<div class="dspcont">
+<div id="remove-lottery-student" class="accordion-collapse collapse">
     <table width=50% cellpadding="0" cellspacing="0" class="addstudent" style="margin: auto;">
         <td width=46% class="option">
             <form action="#" method="POST">
@@ -294,5 +290,4 @@ td {
 </div>
 
 {% include "program/modules/admincore/returnlink.html" %}
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 {% endblock %}

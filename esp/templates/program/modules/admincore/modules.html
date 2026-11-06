@@ -6,7 +6,6 @@
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
     <link rel="stylesheet" href="/media/styles/module_management.css" type="text/css" />
-    <link rel="stylesheet" href="/media/styles/expand_display.css" type="text/css" />
 {% endblock %}
 
 {% block xtrajs %}
@@ -248,11 +247,11 @@
 </div>
 
 <br/>
-<button class="dsphead">
+<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#reset-modules" aria-expanded="false" aria-controls="reset-modules">
    <b>Reset Modules to Defaults</b> (click to expand/collapse)
 </button>
 
-<div class="dspcont">
+<div id="reset-modules" class="accordion-collapse collapse">
 <form action="/manage/{{ program.getUrlBase }}/modules/" method="post">
     {% csrf_token %}
     <center>
@@ -265,7 +264,6 @@
 </form>
 </div>
 
-<script type="text/javascript" src="/media/scripts/expand_display.js"></script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
