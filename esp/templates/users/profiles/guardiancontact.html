@@ -1,6 +1,8 @@
 <!-- Begin Guardian Contact Info -->
 
+{% if form.guard_first_name or form.guard_last_name or form.guard_e_mail or form.guard_phone_day or form.guard_phone_cell %}
 <h3>Parent/Guardian Contact</h3>
+{% endif %}
 
 {% if form.guard_first_name %}
 <div class="control-group">

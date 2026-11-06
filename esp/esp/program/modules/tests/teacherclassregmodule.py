@@ -36,6 +36,7 @@ import json
 import random
 
 from django.contrib.auth.models import Group
+from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
 from unittest.mock import patch
@@ -45,7 +46,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 from esp.program.class_status import ClassStatus
-from esp.program.models import ClassSubject, RegistrationType, StudentRegistration
+from esp.program.models import ClassSubject, Program, RegistrationType, StudentRegistration
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
 from esp.qsdmedia.models import Media
@@ -472,6 +473,22 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         victim_doc.refresh_from_db()
         self.assertEqual(victim_doc.friendly_name, 'Original Name')
 
+    @transaction.atomic
+    def test_class_docs_copy_doc_rejects_non_class_owner(self):
+        """Teacher cannot copy a document owned by a non-class object whose
+        owner_id matches the id of a class they teach."""
+        program_ct = ContentType.objects.get_for_model(Program)
+        program_doc = Media.objects.create(
+            friendly_name='Program Doc', owner_type=program_ct, owner_id=self.cls.id)
+
+        self.assertTrue(
+            self.client.login(username=self.teacher.username, password='password'))
+        url = '%sclass_docs/%d' % (self.program.get_teach_url(), self.cls.id)
+        response = self.client.post(url, {'command': 'copy_doc', 'docid': program_doc.id})
+        self.assertContains(response, 'You do not have permission to copy this document.')
+        self.assertFalse(Media.objects.filter(friendly_name='Program Doc')
+                         .exclude(id=program_doc.id).exists())
+
     def test_copyaclass_authorized_teacher_can_copy(self):
         """Test A: An authorized teacher can copy a class they teach.
         The form is populated with the source class's fields."""
@@ -717,3 +734,31 @@ class TeacherScheduleDeadlineTest(ProgramFrameworkTest):
 
         self.close_schedule_deadline()
         self.assertNotContains(self.client.get(url), 'Time Blocks', status_code=200)
+
+    @transaction.atomic
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must receive independent dictionaries."""
+        res1 = self.moduleobj.prepare()
+        res2 = self.moduleobj.prepare()
+        self.assertIsNot(res1, res2)
+        res1['injected_leak'] = 'leaked_data'
+        res3 = self.moduleobj.prepare()
+        self.assertNotIn('injected_leak', res3)
+        self.assertEqual(res3['crmi'], self.moduleobj.crmi)
+
+    @transaction.atomic
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be preserved and mutated."""
+        explicit_ctx = {'initial_key': 'initial_val'}
+        res = self.moduleobj.prepare(explicit_ctx)
+        self.assertIs(res, explicit_ctx)
+        self.assertEqual(res['initial_key'], 'initial_val')
+        self.assertEqual(res['crmi'], self.moduleobj.crmi)
+
+    @transaction.atomic
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        empty_ctx = {}
+        res = self.moduleobj.prepare(empty_ctx)
+        self.assertIs(res, empty_ctx)
+        self.assertEqual(res['crmi'], self.moduleobj.crmi)
