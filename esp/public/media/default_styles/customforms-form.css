@@ -31,11 +31,9 @@ li {
 }
 
 .form_desc {
-	font-style: italic;
 	padding-top: 0;
 	margin-top: 5px;
 	margin-bottom: 15px;
-	font-size: 0.8em;
 }
 
 .section {
@@ -44,7 +42,6 @@ li {
 	border: 0;
 }
 .sect_desc {
-	font-style: italic;
 	margin-top: 2px;
 	padding: 0;
 	font-size: 1em;

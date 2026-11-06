@@ -1,4 +1,5 @@
 {% extends "customforms/form_base.html" %}
+{% load markup %}
 
 {% block title %}{{ module }} for {{ prog.niceName }}{% endblock %}
 
@@ -11,7 +12,7 @@
 <div id="program_form">
 
 <h1 class="form_title">{{ form_title }}</h1>
-<h2 class="form_desc">{{ form_description }}</h2>
+<div class="form_desc">{{ form_description|sanitize_html }}</div>
 <em class="step_count">Step {{ wizard.steps.step1 }} of {{ wizard.steps.count }}</em>
 <em class="req_text">(Fields in blue are required)</em>
 

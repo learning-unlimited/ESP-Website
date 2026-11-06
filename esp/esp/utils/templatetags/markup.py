@@ -20,6 +20,7 @@ from django.utils.safestring import mark_safe
 
 # Can't conflict with the `markdown` filter name.
 import markdown as md
+import bleach
 
 register = template.Library()
 
@@ -82,3 +83,19 @@ def render_markdown(text):
 def markdown(value):
     """Runs Markdown over a given value."""
     return mark_safe(render_markdown(value))
+
+
+# Tags allowed by `sanitize_html`: bleach's defaults (a, abbr, acronym, b,
+# blockquote, code, em, i, li, ol, strong, ul) plus simple formatting.
+_SANITIZE_TAGS = frozenset(bleach.sanitizer.ALLOWED_TAGS) | {'br', 'p', 'u'}
+
+
+@register.filter(is_safe=True)
+def sanitize_html(value):
+    """Renders `value` as HTML, keeping only a small set of safe tags.
+
+    For text that the editor treats as HTML but that untrusted users (e.g.
+    teachers building custom forms) can write, so it can't simply be marked
+    |safe. Disallowed tags are stripped, as for class QSDs.
+    """
+    return mark_safe(bleach.clean(force_text(value), tags=_SANITIZE_TAGS, strip=True))

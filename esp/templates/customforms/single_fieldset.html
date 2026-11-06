@@ -1,9 +1,10 @@
+{% load markup %}
       <fieldset class="{{ fieldset.classes }}">
 	  {% if fieldset.legend %}
 	    <h2 class="sect_title">{{ fieldset.legend }}</h2>
 	  {% endif %}
 	  {% if fieldset.description %}
-	    <em class="sect_desc">{{ fieldset.description }}</em>
+	    <div class="sect_desc">{{ fieldset.description|sanitize_html }}</div>
 	  {% endif %}
 	  <hr/>
 	  <div class="field_list">
@@ -15,7 +16,7 @@
 	        {{ field.errors }}
             {% if field.field.is_dummy_field %}
                 <div class="dummy_field_heading">{{ field.label_tag }}</div>
-                <div class="dummy_field_text">{{ field.help_text }}</div>
+                <div class="dummy_field_text">{{ field.help_text|sanitize_html }}</div>
             {% else %}
 				
                 {{ field.label_tag }}
