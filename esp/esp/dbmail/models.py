@@ -79,7 +79,7 @@ BARE_OR_NAMED_EMAIL_PATTERN = '|'.join(p for pair in zip(_BARE_PARTS, _NAMED_PAR
 # `user` is required for marketing and subscribed messages to add unsubscribe headers
 # this includes all comm panel emails
 # https://support.google.com/a/answer/81126?visit_id=638428689824104778-3542874255&rd=1#subscriptions
-def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None,
+def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=None, cc=None,
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={}, user=None,
               *args, **kwargs):
     from_email = from_email.strip()
@@ -125,10 +125,10 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         text_only = re.sub('[ \t]+', ' ', strip_tags(message))
         # Strip single spaces in the beginning of each line
         message_text = text_only.replace('\n ', '\n').strip()
-        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        msg = EmailMultiAlternatives(subject, message_text, from_email, recipients, bcc=bcc, cc=cc, connection=connection, headers=extra_headers)
         msg.attach_alternative(message, "text/html")
     else:
-        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, connection=connection, headers=extra_headers)
+        msg = EmailMessage(subject, message, from_email, recipients, bcc=bcc, cc=cc, connection=connection, headers=extra_headers)
 
     msg.send()
 
