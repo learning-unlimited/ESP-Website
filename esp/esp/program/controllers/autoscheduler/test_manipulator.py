@@ -352,6 +352,16 @@ class PerformActionTest(ManipulatorTestCase):
         self.assertFalse(self.s1.is_scheduled())
         self.assertEqual(self.actions(), ["schedule", "move", "unschedule"])
 
+    def test_dispatches_swap(self):
+        """perform_action handles swap records."""
+        self.manipulator.schedule_section(self.s1, self.rooms[0])
+        self.manipulator.schedule_section(self.s3, self.rooms[1])
+        self.assertTrue(self.manipulator.perform_action({
+            "action": "swap", "sections": (self.s1, self.s3)}))
+        self.assertEqual(placement(self.s1), ("26-100", [2]))
+        self.assertEqual(placement(self.s3), ("26-100", [1]))
+        self.assertEqual(self.actions(), ["schedule", "schedule", "swap"])
+
     def test_returns_false_when_action_is_not_allowed(self):
         """perform_action reports a disallowed action."""
         self.assertFalse(self.manipulator.perform_action({

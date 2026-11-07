@@ -143,9 +143,10 @@ class ImportAssignmentsTest(ControllerTestCase):
         other.setUp()
         other.controller.import_assignments(data)
 
-        self.assertTrue(other.s1.is_scheduled())
-        self.assertTrue(other.s3.is_scheduled())
-        self.assertEqual(len(other.manipulator.history), 2)
+        self.assertIs(other.s1.assigned_roomslots[0], other.rooms[0])
+        self.assertIs(other.s3.assigned_roomslots[0], other.rooms[1])
+        self.assertEqual([a["action"] for a in other.manipulator.history],
+                         ["schedule", "schedule"])
 
     def test_changed_section_is_rejected(self):
         """A section whose saved state has changed since export raises."""
