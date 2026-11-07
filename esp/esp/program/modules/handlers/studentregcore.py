@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 from argcache            import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, CoreModule, main_call, aux_call, _checkDeadline_helper, meets_cap
+from esp.program.modules.checklist import get_checklist_context
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
 from esp.tagdict.models import Tag
@@ -328,21 +329,18 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         context = {}
         modules = prog.getModules(request.user, 'learn')
-        context['completedAll'] = True
         for module in modules:
-            # If completed all required modules so far...
-            if context['completedAll']:
-                if not module.isCompleted(request.user) and module.isRequired():
-                    context['completedAll'] = False
-
             context = module.prepare(context)
 
-        records = self.get_reg_records(request.user, prog, 'learn')
+        # Same checklist context as the student module pages; see module_base.html.
+        checklist = get_checklist_context(request.user, prog, 'learn', modules)
+        checklist['options'] = prog.studentclassregmoduleinfo
+        context.update(checklist)
+        # Onsite registration shows no checklist.
+        context['checklist'] = {} if getattr(request.user, 'onsite_local', False) else checklist
 
         context['canRegToFullProgram'] = request.user.canRegToFullProgram(prog)
 
-        context['modules'] = modules
-        context['records'] = records
         context['one'] = one
         context['two'] = two
         context['coremodule'] = self
@@ -350,7 +348,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['can_confirm'] = _checkDeadline_helper(None, '/Confirm', self, request, tl)[0]
         context['isConfirmed'] = self.program.isConfirmed(request.user)
         context['have_paid'] = self.have_paid(request.user)
-        context['extra_steps'] = "learn:extra_steps"
         context['printers'] = self.printer_names()
 
         # Pass flag to frontend to hide the cancel button if a real CC payment exists
