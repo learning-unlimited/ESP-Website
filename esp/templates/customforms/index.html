@@ -4,185 +4,38 @@
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/customforms-style.css">
+    <link rel="stylesheet" type="text/css" href="/media/styles/customforms-builder.css">
 {% endblock %}
 
 {% block js1 %}
     {{ block.super }}
-    <script src="/media/scripts/json2.js"></script>
-    <script src="/media/scripts/custom_form.js"></script>
-    <script>
-        var edit_form = {% if edit %}{{ edit }}{% else %}-1{% endif %};
-    </script>
+    {{ builder_config|json_script:"cfb-config" }}
+    <script src="/media/scripts/customforms-builder.js" defer></script>
 {% endblock %}
 
 {% block body %}
-<input type="hidden" id="base_form_id" value="{{ base_form_id }}"/>
-<div class="wrapper">
-    <div class="preview_area">
-        <h2 id='form_title'>Form Title</h2>
-        <p id='form_description' class="field_text"></p>
-        <hr />
-        <div class="pages">
-            <div class="form_preview page_selected" id="page_0">
-                <div class="outline section_selected ui-sortable-handle">
-                    <h2 class="section_header">Section</h2>
-                    <p class="field_text section_text">Enter a short description about the section</p>
-                    <hr>
-                    <div id="section_0" class="section"></div><input type="button" value="X" class="section_button wrapper_button">
-                </div>
-                <input type="button" value="X" class="wrapper_button preview_button">
-            </div>
+<div class="cfb" id="cfb-app">
+    <header class="cfb-topbar">
+        <div class="cfb-crumbs">
+            <small><a href="/customforms/">Custom forms</a> · <span id="cfb-crumb">New form</span></small>
+            <input id="cfb-title" class="cfb-title-input" aria-label="Form title" placeholder="Untitled form" maxlength="40">
         </div>
+        <div id="cfb-status" class="cfb-status" aria-live="polite"></div>
+        <div class="cfb-tools">
+            <button type="button" class="cfb-btn cfb-icon" id="cfb-undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+            <button type="button" class="cfb-btn cfb-icon" id="cfb-redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></svg></button>
+            <div class="cfb-seg" role="group" aria-label="Mode"><button type="button" id="cfb-m-edit" aria-pressed="true">Edit</button><button type="button" id="cfb-m-preview" aria-pressed="false">Preview</button></div>
+            <button type="button" class="cfb-btn" id="cfb-settings" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Form settings</button>
+            <button type="button" class="cfb-btn cfb-primary" id="cfb-save">Create form</button>
+        </div>
+    </header>
+    <div id="cfb-alert" class="cfb-alert" role="alert" hidden></div>
+    <div class="cfb-panes" id="cfb-panes">
+        <aside class="cfb-pane cfb-palette" aria-label="Question types"><details id="cfb-pal-details" open><summary class="cfb-pane-title">Add a question</summary><div class="cfb-groups" id="cfb-palette"></div></details></aside>
+        <main class="cfb-pane cfb-canvas" id="cfb-canvas"><p class="cfb-loading">Loading the form builder…</p></main>
+        <aside class="cfb-pane cfb-inspector" aria-label="Settings"><div class="cfb-insp" id="cfb-inspector"></div></aside>
     </div>
-
-    <div id="form_toolbox">
-        <h3 id="header_information"><a href='#'>Form information</a></h3>
-        <div id="form_information">
-            <p><label for="input_form_title">Form Title</label></p> <input type='text' id='input_form_title' size='30' value='Form Title'/>
-            <p><label for="input_form_description">Description</label></p>
-            <textarea rows='3' cols='30' id='input_form_description'></textarea>
-            <p><label for="input_form_sucmsg">Message on Success</label></p>
-            <textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
-            <p><label for="input_suc_url">Redirect URL for successful completion</label></p>
-            <input type="text" id="input_suc_url" size="30"/>
-            <p><label for="id_anonymous">Anonymous Form</label> <input type='checkbox' id='id_anonymous'/></p>
-            <label for="base_form" id="create_text">Create from existing form:</label>
-            <select id="base_form">
-                <option value="-1">None</option>
-                {% for form in form_list %}
-                    <option value="{{form.id}}">{{form.title}}</option>
-                {% endfor %}
-            </select>
-            <button type="button" id="create_from_base" hidden onclick="createFromBase()">Create from previous form</button>
-            <p id="create_from_base_error" hidden style="color: red;"></p>
-            <div id="id_modify_wrapper" hidden><p><label for="id_modify">Modify this form</label> <input type="checkbox" id="id_modify"/></p>
-            <p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
-                resembles this one, leave this unchecked.)</p>
-            </div>
-        </div>
-
-        <h3 id="header_fields"><a href='#'>Fields</a></h3>
-        <div id="toolbox_content">
-
-            <div id="field_selector">
-                <br/>
-                <table border="0">
-                    <tr>
-                        <td>
-                            <label for="cat_selector">Field Category</label>
-                        </td>
-                        <td>
-                            <select id="cat_selector">
-                            </select>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <label for="elem_selector">Field</label>
-                        </td>
-                        <td>
-                            <select id="elem_selector">
-                            </select>
-                        </td>
-                    </tr>
-                </table>
-                <br/>
-                <div id="cat_spec_options">
-                    <p>Fields marked with a '**' must be <b>required</b> if included in the form.</p>
-                    <p>These fields will modify existing values in the database, or create new ones. Please select how you want
-                        this to happen.
-                    </p>
-                    <p><label for="main_cat_spec">Modification method:</label></p>
-                    <select id="main_cat_spec">
-                        <option value="automatic">Automatic</option>
-                        <option value="particular">Choose particular instance to modify</option>
-                    </select>
-                    <br/>
-                    <p><label for="cat_instance_sel">Instance:</label></p>
-                    <select id="cat_instance_sel">
-                    </select>
-                    <br/>
-                </div>
-
-            </div>
-
-            <div id="field_properties">
-
-                <p class="toolboxText"><label for="id_question">Field label</label></p>
-                <textarea name="question" id="id_question" rows=4 cols=30 maxlength=200></textarea>
-                <p class="toolboxText"><label for="id_instructions">Instructions for user</label></p>
-                <textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
-                <p class="toolboxText"><label for="id_required">Required</label>&nbsp;
-                    <input type="checkbox" id="id_required" name="required" /><br/><br/></p>
-                <form id="elem_properties">
-                    <div id="multi_options"></div>
-                </form>
-                <div id="other_options"></div>
-                <button type="button" id="button_add" value="Add to Form">Add Field to Form</button>
-            </div>
-
-        </div>
-        <h3><a href='#'>Form Permissions</a></h3>
-        <div>
-            <p><label for="id_main_perm">Restrict to</label>
-            <select id="id_main_perm">
-                <option value="none">None</option>
-                <option value="Teacher">Teachers</option>
-                <option value="Student">Students</option>
-            </select></p>
-            <p><input type="checkbox" id="id_prog_belong" /><label for="id_prog_belong"> Belonging to a program</label></p>
-            <p>
-                <label for="id_perm_program">Program:</label>
-                <select id="id_perm_program">
-                    <option value="-1">None</option>
-                    {% for prog in prog_list %}
-                        <option value="{{ prog.id }}">{{ prog.niceName }}</option>
-                    {% endfor %}
-                </select>
-            </p>
-            <div>
-                <label for="id_sub_perm">Filter:</label>
-                <select id="id_sub_perm" style="max-width: 200px;">
-                </select>
-            </div>
-        </div>
-
-        <h3><a href='#'>Link to a Program or Course</a></h3>
-        <div>
-            <p><label for="links_id_main">Link to</label>
-            <select id="links_id_main">
-            </select>
-            </p>
-
-            <p><label for="links_id_specify">Specify</label>
-            <select id="links_id_specify">
-                <option value="userdef">Let user pick</option>
-                <option value="particular">Particular Instance</option>
-            </select>
-            </p>
-
-            <p><label for="links_id_pick">Pick</label>
-            <select id="links_id_pick">
-            </select>
-            </p>
-
-            <p><label for="links_id_tl">User type</label>
-            <select id="links_id_tl">
-                <option value="learn">Students</option>
-                <option value="teach">Teachers</option>
-            </select>
-            </p>
-
-            <p><label for="links_id_module">Module</label>
-            <select id="links_id_module">
-            </select>
-            </p>
-            <p id="links_id_module_help_text" hidden style="color: red;"></p>
-        </div>
-
-        <input type="button" id="submit" value="Create Form"/>
-        <p id="submit_error" hidden style="color: red;"></p>
-    </div>
+    <div id="cfb-toast" class="cfb-toast" role="status" hidden></div>
+    <noscript><p class="cfb-loading">The form builder needs JavaScript.</p></noscript>
 </div>
 {% endblock %}

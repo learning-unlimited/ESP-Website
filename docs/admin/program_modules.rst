@@ -49,10 +49,11 @@ Extra Registration Info (CustomFormModule)
 ------------------------------------------
 
 This module can be used in teacher and/or student registration to add a custom form into the registration process.  This can be helpful if you want to collect information (e.g. about dietary restrictions or demographics) that is not collected by the other program modules.  To use it:
-1) Create a custom form at /customforms/.  Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]).
-2) Create a Tag (/admin/tagdict/tag/add/) called either "learn_extraform_id" (students) or "teach_extraform_id" (teachers), with the form ID as its value.
-3) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.
-4) To view results, use the main custom forms page at /customforms/.
+1) Enable the Student Custom Form and/or Teacher Custom Form module for the program.
+2) Create a custom form at /customforms/ (see `<custom_forms.rst>`_).  In its form settings, set "Link answers to" to the program, and "Use in registration" to the student or teacher custom form step.
+3) To view results, use the main custom forms page at /customforms/.
+
+Alternatively, create a Tag (/admin/tagdict/tag/add/) called either "learn_extraform_id" (students) or "teach_extraform_id" (teachers), with the form ID as its value (in the link to fill out the form, it will be /customforms/view/[ID]).  Leave the Tag without a program to use the form for every program, or associate it with one by selecting "Program" as the content type and the program ID as the object ID.
 
 
 Financial Aid Application (FinancialAidAppModule)
@@ -397,10 +398,9 @@ Teacher Logistics Quiz (TeacherQuizModule)
 You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via email or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
 
 The teacher quiz is based on a custom form.  To set it up:
-  1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
-  2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
-  3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
-  4) (Optional, if you want the quiz to be associated with a single program) Associate the desired program with this Tag by selecting "Program" as the content type from the pull-down menu and the program ID (the number next to the program under /admin/program/program/) as the object ID.  This will allow you to use different quizzes for different programs.
+  1) Create a custom form at /customforms/ (see `<custom_forms.rst>`_).  Make sure that you specify a correct answer for every question; in quiz mode, the form builder marks questions that don't have one.
+  2) In its form settings, set "Link answers to" to the program, and "Use in registration" to "Teacher registration: logistics quiz".  This associates the quiz with that program only, so you can use different quizzes for different programs.
+  3) Alternatively, to use one quiz for every program, create a Tag (/admin/tagdict/tag/add/) called "quiz_form_id" with the form's integer ID as its value (in the link to fill out the form, it will be /customforms/view/[ID]).  To associate it with a single program instead, select "Program" as the content type from the pull-down menu and the program ID (the number next to the program under /admin/program/program/) as the object ID.
 
 Core Teacher Reg (TeacherRegCore)
 ---------------------------------

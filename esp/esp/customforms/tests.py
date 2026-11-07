@@ -507,6 +507,48 @@ class FormBuilderViewTest(TestCase):
         response = self.client.get('/customforms/create')
         self.assertRedirects(response, '/accounts/login/?next=/customforms/create')
 
+    def test_builder_config_lists_users_forms(self):
+        """The builder's JSON config lists the forms the user may copy."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create')
+        config = response.context['builder_config']
+        self.assertEqual(config['forms'], [{'id': self.teacher_form.id, 'title': 'Teacher Form'}])
+        self.assertIsNone(config['edit'])
+        self.assertEqual(config['edit_error'], '')
+        self.assertContains(response, 'id="cfb-config"')
+
+    def test_builder_config_edit_own_form(self):
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create?edit=%d' % self.teacher_form.id)
+        self.assertEqual(response.context['builder_config']['edit'], self.teacher_form.id)
+        self.assertEqual(response.context['builder_config']['edit_error'], '')
+
+    def test_builder_config_edit_other_users_form(self):
+        """A teacher asking to edit someone else's form gets an error, not the form."""
+        self.client.login(username='builder_teacher', password='password')
+        response = self.client.get('/customforms/create?edit=%d' % self.admin_form.id)
+        self.assertIsNone(response.context['builder_config']['edit'])
+        self.assertIn('not found', response.context['builder_config']['edit_error'])
+
+    def test_builder_config_edit_not_a_number(self):
+        self.client.login(username='builder_admin', password='password')
+        response = self.client.get('/customforms/create?edit=abc')
+        self.assertIsNone(response.context['builder_config']['edit'])
+        self.assertIn('not found', response.context['builder_config']['edit_error'])
+
+    def test_metadata_includes_success_message_and_url(self):
+        """Editing a form reloads its success message and URL, so saving doesn't erase them."""
+        self.client.login(username='builder_admin', password='password')
+        self.admin_form.success_message = 'Thanks for applying!'
+        self.admin_form.success_url = '/learn/index.html'
+        self.admin_form.save()
+        response = self.client.get('/customforms/metadata/', {'form_id': self.admin_form.id},
+                                   HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        self.assertEqual(response.status_code, 200)
+        metadata = json.loads(response.content)
+        self.assertEqual(metadata['success_message'], 'Thanks for applying!')
+        self.assertEqual(metadata['success_url'], '/learn/index.html')
+
 class EmptyFormTitleValidationTest(TestCase):
     """Tests for validating that form title cannot be empty."""
 
