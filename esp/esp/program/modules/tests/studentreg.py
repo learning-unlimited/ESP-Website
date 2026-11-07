@@ -857,3 +857,25 @@ class StudentRegTest(ProgramFrameworkTest):
         LineItemType.objects.filter(id=shirt.id).update(amount_dec=10)
         body = self._approval_email_body(iac)
         self.assertIn("  - Shirt ($10.00, optional) - not selected\n", body)
+
+    def test_options_cost_range(self):
+        """ The range covers each option's real price (inheriting the item's
+        amount when unset) and leaves out custom-amount options. """
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [], [('Lunch', [('Small', 3), ('Large', 7), ('Medium', 5)])])
+        lunch = LineItemType.objects.get(program=self.program, text='Lunch')
+        self.assertEqual(lunch.options_cost_range, (Decimal('3'), Decimal('7')))
+
+        #   An option with no amount of its own inherits the item's amount
+        LineItemType.objects.filter(id=lunch.id).update(amount_dec=Decimal('9'))
+        lunch.lineitemoptions_set.filter(description='Medium').update(amount_dec=None)
+        lunch = LineItemType.objects.get(id=lunch.id)
+        self.assertEqual(lunch.options_cost_range, (Decimal('3'), Decimal('9')))
+
+        #   Custom-amount options are left out
+        lunch.lineitemoptions_set.filter(description='Large').update(is_custom=True)
+        self.assertEqual(lunch.options_cost_range, (Decimal('3'), Decimal('9')))
+        lunch.lineitemoptions_set.update(is_custom=True)
+        self.assertIsNone(lunch.options_cost_range)

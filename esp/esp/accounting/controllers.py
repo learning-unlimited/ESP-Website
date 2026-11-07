@@ -663,15 +663,13 @@ class IndividualAccountingController(ProgramAccountingController):
             # student enters their own amount for any option.
             price = li.amount_dec
             price_range = None
-            options = list(li.lineitemoptions_set.all())
-            if options:
-                if any(o.is_custom for o in options):
-                    price = None
-                else:
-                    prices = sorted({o.amount_dec_inherited for o in options})
-                    price = prices[0] if len(prices) == 1 else None
-                    if len(prices) > 1:
-                        price_range = (prices[0], prices[-1])
+            if li.has_custom_options:
+                price = None
+            elif li.num_options:
+                (low, high) = li.options_cost_range
+                price = low if low == high else None
+                if low != high:
+                    price_range = (low, high)
             items.append({
                 'name': li.text,
                 'required': li.required,

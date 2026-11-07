@@ -95,20 +95,16 @@ class LineItemType(models.Model):
 
     @property
     def options_cost_range(self):
-        """ Return a ($min, $max) tuple specifying the min and max cost of the
-            possible options for this line item type, or None if there are no
-            options.    """
-        opts = list(self.options)
-        if len(opts) == 0:
+        """ Return a ($min, $max) tuple of what this line item's options cost
+            (each option's own amount, or this item's amount if it doesn't set
+            one), or None if there are no fixed-price options. Options where
+            the user enters their own amount (is_custom) are left out; see
+            has_custom_options. """
+        prices = [option.amount_dec_inherited for option in self.lineitemoptions_set.all()
+                  if not option.is_custom]
+        if not prices:
             return None
-        else:
-            min_cost = opts[0][1]
-            max_cost = opts[-1][1]
-            if min_cost is None:
-                min_cost = self.amount_dec
-            if max_cost is None:
-                max_cost = self.amount_dec
-            return (min_cost, max_cost)
+        return (min(prices), max(prices))
 
     def __str__(self):
         if self.amount_dec:
