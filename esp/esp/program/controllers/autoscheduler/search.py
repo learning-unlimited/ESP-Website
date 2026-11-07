@@ -74,8 +74,11 @@ class SearchOptimizer:
                                               timeout)
                 if not other_section.is_scheduled():
                     # Evicted sections must be scheduled
-                    self.revert(len(proposed_actions))
-                    continue
+                    failed = True
+                    break
+            if failed:
+                self.revert(len(proposed_actions))
+                continue
             # Compute the score.
             new_score = self.manipulator.scorer.score_schedule()
             if new_score > best_score:
