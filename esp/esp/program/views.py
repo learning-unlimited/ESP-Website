@@ -655,12 +655,40 @@ def _submit_transaction(request, log_record):
         log_record.transfer = payment
         log_record.save()
 
+        _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id)
+
         return _redirect_from_identifier(identifier, "success")
     elif decision == "DECLINE":
         identifier = request.POST['req_merchant_defined_data1']
         return _redirect_from_identifier(identifier, "declined")
     else:
         raise NotImplementedError("Can't handle decision: %s" % decision)
+
+def _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id):
+    """ The amount charged is fixed when the payment form is loaded, so if the
+    user's balance dropped while they were paying (e.g. financial aid was
+    granted), they will have paid more than they owe. The payment is still
+    recorded correctly; ask treasury to refund the difference. """
+    # Never let a problem here undo the payment that was just recorded
+    try:
+        iac = IndividualAccountingController.from_id(identifier.split(':')[0])
+        amount_due = iac.amount_due()
+        if amount_due >= 0:
+            return
+        subject = '[ESP CC] Overpayment: refund $%.2f to %s' % (-amount_due, iac.user.name())
+        log_uri = request.build_absolute_uri(
+            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
+        message = ('%s (%s, user ID %d) has paid $%.2f more than they owe for %s, '
+                   'probably because their costs or financial aid changed while '
+                   'they were paying. The payment was recorded; please refund the '
+                   'difference.\n\n'
+                   '    Transaction ID: %s\n    Postback: %s\n') % (
+            iac.user.name(), iac.user.username, iac.user.id, -amount_due,
+            iac.program.niceName(), transaction_id, log_uri)
+        send_mail(subject, message, settings.SERVER_EMAIL,
+                  [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
+    except Exception:
+        logger.exception('Failed to send overpayment notification')
 
 def _redirect_from_identifier(identifier, result):
     program = IndividualAccountingController.program_from_identifier(identifier)

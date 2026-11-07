@@ -50,7 +50,7 @@ Payments:
 <tr{% if not forloop.last %} style="border-bottom: 1px dashed #699;"{% endif %}>
 <td>
 <b><a href="/manage/userview?username={{ payment.0.username}}&program={{ program.id }}">{{ payment.0.get_full_name }}</a></b> (ID: {{ payment.0.id }}) <br />
-${{ payment.2 }} billed; ${{ payment.3 }} owed
+${{ payment.2|floatformat:2 }} billed; ${{ payment.3|floatformat:2 }} owed
 </td>
 <td>
 <ul style="margin: 0px;">
@@ -58,7 +58,9 @@ ${{ payment.2 }} billed; ${{ payment.3 }} owed
 <li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}{% if transfer.transaction_id %} (CC Transaction ID: {{ transfer.transaction_id }}){% endif %}
 </div></li> <!-- div.( doc.getDoctypeStr ) -->
 {% endfor %}
-</ul>
+{% if payment.4 %}<li>-${{ payment.5|floatformat:2 }} - Financial aid ({{ payment.4.terms }} grant)</li>
+{% endif %}{% if payment.6 %}<li>-${{ payment.6|floatformat:2 }} - Sibling discount</li>
+{% endif %}</ul>
 </td>
 </tr>
 {% endfor %}

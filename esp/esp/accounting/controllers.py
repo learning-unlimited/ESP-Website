@@ -50,7 +50,7 @@ from django.db import transaction
 from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class BaseAccountingController(object):
@@ -441,7 +441,16 @@ class IndividualAccountingController(ProgramAccountingController):
         # Only apply sibling discount when admission is being paid in this transaction
         paying_admission = transfers.filter(line_item__text__in=self.admission_items).exists()
         sibling_discount = self.amount_siblingdiscount() if paying_admission else Decimal('0')
-        return '%s:%s:%.2f' % (self.get_id(), purchases_str, sibling_discount)
+        # Record any other credit the user is being given against these items
+        # (financial aid not already used up by earlier payments, or earlier
+        # payments not linked to items), so that the identifier reconciles
+        # with what the payment form actually charges: amount_due(), shown via
+        # |floatformat:2. amount_due() is already exact to the cent (see
+        # amount_finaid); the quantize just guards against that changing.
+        items_total = sum((t.amount_dec for t in transfers), Decimal('0'))
+        amount_charged = self.amount_due().quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        credit = items_total - sibling_discount - amount_charged
+        return '%s:%s:%.2f:%.2f' % (self.get_id(), purchases_str, sibling_discount, credit)
 
     @staticmethod
     def from_id(id):
@@ -475,8 +484,12 @@ class IndividualAccountingController(ProgramAccountingController):
         for manual intervention in the above case.
         """
         # Parse identifier
-        id_str, transfer_list, sibling_discount_str = identifier.split(':')
+        # Identifiers generated before the credit field was added have only
+        # three fields; treat their credit as zero.
+        fields = identifier.split(':')
+        id_str, transfer_list, sibling_discount_str = fields[:3]
         sibling_discount = Decimal(sibling_discount_str)
+        credit = Decimal(fields[3]) if len(fields) > 3 else Decimal('0')
         iac = IndividualAccountingController.from_id(id_str)
 
         payment = iac.submit_payment(
@@ -519,10 +532,10 @@ class IndividualAccountingController(ProgramAccountingController):
             transfer_total += transfer.amount_dec
             transfer.save()
 
-        if transfer_total - sibling_discount != amount_paid:
+        if transfer_total - sibling_discount - credit != amount_paid:
             raise ReconciliationError(
-                "Failed to process payment. Item prices sum to $%.2f (sibling discount $%.2f), but the user paid $%.2f" %
-                (transfer_total, sibling_discount, amount_paid))
+                "Failed to process payment. Item prices sum to $%.2f (sibling discount $%.2f, financial aid/other credit $%.2f), but the user paid $%.2f" %
+                (transfer_total, sibling_discount, credit, amount_paid))
 
         if sibling_discount > 0:
             Transfer.objects.filter(
@@ -591,6 +604,11 @@ class IndividualAccountingController(ProgramAccountingController):
             if latest_grant.percent is not None:
                 discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
+
+        # A percentage grant can produce fractions of a cent; round to cents
+        # here so that every amount derived from this (amount_due, payment
+        # forms, printables) is already exact. Half-up favors the student.
+        aid_amount = aid_amount.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
         return aid_amount
 

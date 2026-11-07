@@ -79,12 +79,19 @@ class CreditCardViewer(ProgramModuleObj):
     @cache_function
     def _payment_table_row_cached(prog, student):
         iac = IndividualAccountingController(prog, student)
-        return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due())
+        #   Financial aid and sibling discounts are computed live rather than
+        #   read from their stored transfers (get_transfers() leaves those out),
+        #   since the stored amounts are snapshots that drift as the student's
+        #   items, prices, or grant change.
+        return (student, iac.get_transfers(), iac.amount_requested(), iac.amount_due(),
+                iac.latest_finaid_grant(), iac.amount_finaid(), iac.amount_siblingdiscount())
     _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemType')
     _payment_table_row_cached.__func__.depend_on_model('accounting.LineItemOptions')
     _payment_table_row_cached.__func__.depend_on_model('accounting.FinancialAidGrant')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Account')
     _payment_table_row_cached.__func__.depend_on_model('accounting.Transfer')
+    _payment_table_row_cached.__func__.depend_on_model('program.SplashInfo')
+    _payment_table_row_cached.__func__.depend_on_model('program.Program')
 
     def isStep(self):
         return self.program.hasModule('CreditCardModule_Stripe')

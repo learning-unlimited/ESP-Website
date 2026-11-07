@@ -161,6 +161,17 @@ class FinancialAidGrant(models.Model):
             return float(self.amount_max_dec)
 
     @property
+    def terms(self):
+        """ Short description of the grant, e.g. '100%', 'up to $40.00',
+        'up to $40.00 + 50%'. A $0.00 cap or 0% counts as not set. """
+        parts = []
+        if self.amount_max_dec and self.percent != 100:
+            parts.append('up to $%.2f' % self.amount_max_dec)
+        if self.percent:
+            parts.append('%d%%' % self.percent)
+        return ' + '.join(parts) or 'nothing'
+
+    @property
     def user(self):
         return self.request.user
     @property
@@ -172,13 +183,18 @@ class FinancialAidGrant(models.Model):
         if self.finalized:
             return
 
+        #   Save first: amount_finaid() looks the grant up from the database,
+        #   so an unsaved grant (as created by FinancialAidRequest.approve())
+        #   would otherwise be recorded as $0.00, and unsaved edits ignored.
+        self.save()
+
         from esp.accounting.controllers import IndividualAccountingController
         iac = IndividualAccountingController(self.program, self.user)
         source_account = iac.default_finaid_account()
         dest_account = iac.default_source_account()
         line_item_type = iac.default_finaid_lineitemtype()
 
-        (transfer, created) = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
+        (transfer, created) = Transfer.objects.update_or_create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, defaults={'amount_dec': iac.amount_finaid()})
         self.finalized = True
         self.save()
         return transfer

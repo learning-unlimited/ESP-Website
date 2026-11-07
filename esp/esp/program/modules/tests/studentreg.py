@@ -35,13 +35,16 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo
-from esp.accounting.models import FinancialAidGrant, LineItemType
+from esp.accounting.models import FinancialAidGrant, LineItemType, Transfer
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 
 from decimal import Decimal
+from django.conf import settings
+from django.core import mail
+from unittest import mock
 import random
 import re
 
@@ -317,3 +320,234 @@ class StudentRegTest(ProgramFrameworkTest):
         spi = SplashInfo.getForUser(student, self.program)
         self.assertEqual(spi.siblingname, 'Test Name')
 
+    def test_payment_identifier_with_finaid(self):
+        """ A student whose financial aid covers admission but not an extra
+        item is charged only for the extra; the payment identifier must
+        reconcile against that amount (MIT Splash 2026 T-shirt bug). """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+        iac.grant_full_financial_aid()
+        self.assertEqual(iac.amount_due(), 10)
+
+        identifier = iac.get_identifier()
+        IndividualAccountingController.record_payment_from_identifier(
+            identifier, Decimal('10.00'), 'txn-finaid')
+        self.assertTrue(identifier.endswith(':0.00:70.00'), identifier)
+        self.assertEqual(iac.amount_paid(), 10)
+        self.assertEqual(iac.amount_due(), 0)
+        self.assertFalse(iac.get_transfers().filter(
+            line_item__for_payments=False, paid_in__isnull=True,
+        ).exclude(line_item__text__in=iac.finaid_items).exists())
+
+    def test_payment_identifier_legacy_format(self):
+        """ Identifiers generated before the financial aid field was added
+        (three fields) must still be accepted. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+
+        identifier = iac.get_identifier()
+        self.assertTrue(identifier.endswith(':0.00:0.00'), identifier)
+        legacy = identifier.rsplit(':', 1)[0]
+        IndividualAccountingController.record_payment_from_identifier(
+            legacy, Decimal('80.00'), 'txn-legacy')
+        self.assertEqual(iac.amount_due(), 0)
+
+    def test_payment_identifier_partial_finaid_later_item(self):
+        """ With a partial grant, an aid-covered item added after admission
+        was already paid must reconcile against only the remaining aid. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Food', 10, 1)], [])
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=True)
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_finaid_params(None, 50)
+
+        #   First payment: admission only, half covered
+        self.assertEqual(iac.amount_due(), 35)
+        IndividualAccountingController.record_payment_from_identifier(
+            iac.get_identifier(), Decimal('35.00'), 'txn-1')
+        self.assertEqual(iac.amount_due(), 0)
+
+        #   Later add an aid-covered item; only its half of the aid is new
+        iac.set_preference('Food', 1)
+        self.assertEqual(iac.amount_due(), 5)
+        IndividualAccountingController.record_payment_from_identifier(
+            iac.get_identifier(), Decimal('5.00'), 'txn-2')
+        self.assertEqual(iac.amount_due(), 0)
+
+    def test_payment_identifier_rounding(self):
+        """ A percentage grant that produces fractional cents is rounded to
+        cents (half-up, in the student's favor), so the aid, amount due, and
+        identifier all agree to the cent. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(Decimal('15.50'), [], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_finaid_params(None, 33)
+        self.assertEqual(iac.amount_finaid(), Decimal('5.12'))  # 33% of 15.50 = 5.115
+        self.assertEqual(iac.amount_due(), Decimal('10.38'))
+
+        IndividualAccountingController.record_payment_from_identifier(
+            iac.get_identifier(), Decimal('10.38'), 'txn-round')
+        self.assertEqual(iac.amount_due(), 0)
+
+    def _post_cybersource_accept(self, identifier, amount, transaction_id):
+        #   submit_transaction commits the raw postback log before processing,
+        #   which is forbidden inside the TestCase transaction; skip that step.
+        with mock.patch('esp.program.views.transaction.commit'):
+            return self.client.post('/manage/submit_transaction/', {
+                'decision': 'ACCEPT',
+                'req_merchant_defined_data1': identifier,
+                'req_amount': amount,
+                'transaction_id': transaction_id,
+            })
+
+    def test_cybersource_overpayment_notifies_treasury(self):
+        """ If aid is granted while the student is on the payment page, the
+        payment is still recorded and treasury is asked to refund the
+        difference. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+
+        #   Form loaded at $80, then aid granted before the payment arrives
+        identifier = iac.get_identifier()
+        iac.grant_full_financial_aid()
+        mail.outbox = []
+        response = self._post_cybersource_accept(identifier, '80.00', 'txn-over')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_paid(), 80)
+        self.assertEqual(iac.amount_due(), -70)
+        treasury = [m for m in mail.outbox if m.subject.startswith('[ESP CC] Overpayment')]
+        self.assertEqual(len(treasury), 1)
+        self.assertIn('$70.00', treasury[0].subject)
+        self.assertEqual(treasury[0].to, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
+        self.assertIn('txn-over', treasury[0].body)
+
+    def test_cybersource_exact_payment_no_notification(self):
+        """ A normal payment (here, the full-aid + extra case) sends no
+        overpayment notification. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+        iac.grant_full_financial_aid()
+
+        mail.outbox = []
+        response = self._post_cybersource_accept(iac.get_identifier(), '10.00', 'txn-exact')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(iac.amount_due(), 0)
+        self.assertFalse([m for m in mail.outbox if m.subject.startswith('[ESP CC]')])
+
+    def test_finaid_approve_records_grant_amount(self):
+        """ Approving a request stores the actual aid amount on the grant's
+        transfer (it used to be computed before the grant was saved, so it
+        was always $0.00), and re-finalizing updates it rather than adding a
+        duplicate. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1)], [])
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+
+        request = FinancialAidRequest.objects.create(user=student, program=self.program)
+        request.approve()
+        grant_transfers = Transfer.objects.filter(user=student, line_item=iac.default_finaid_lineitemtype())
+        self.assertEqual([t.amount_dec for t in grant_transfers], [Decimal('70.00')])
+
+        grant = FinancialAidGrant.objects.get(request=request)
+        grant.finalized = False
+        grant.percent = 50
+        grant.finalize()
+        self.assertEqual([t.amount_dec for t in grant_transfers.all()], [Decimal('35.00')])
+
+    def test_viewpay_shows_finaid(self):
+        """ The admin credit card view lists financial aid as a credit,
+        computed live so it reflects changes made after approval. """
+
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, 1), ('Food', 7, 1)], [])
+        LineItemType.objects.filter(text='Food', program=self.program).update(for_finaid=True)
+
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        iac.set_preference('Shirt', 1)
+        #   viewpay lists students who are registered for a class
+        self.program.sections()[0].preregister_student(student)
+        FinancialAidRequest.objects.create(user=student, program=self.program).approve()
+
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        response = self.client.get('/manage/%s/viewpay' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '-$70.00 - Financial aid (100% grant)')
+        self.assertContains(response, '$10.00 - Shirt')
+        self.assertContains(response, '$80.00 billed; $10.00 owed')
+
+        #   An aid-covered item added after approval is reflected immediately
+        iac.set_preference('Food', 1)
+        response = self.client.get('/manage/%s/viewpay' % self.program.getUrlBase())
+        self.assertContains(response, '-$77.00 - Financial aid (100% grant)')
+        self.assertContains(response, '$87.00 billed; $10.00 owed')
+
+    def test_finaid_grant_terms(self):
+        """ Short grant descriptions, with $0.00 / 0% treated as not set. """
+        cases = [
+            ((None, 100), '100%'),
+            ((Decimal('0.00'), 100), '100%'),
+            ((Decimal('40.00'), 100), '100%'),
+            ((None, 50), '50%'),
+            ((Decimal('40.00'), None), 'up to $40.00'),
+            ((Decimal('40.00'), 0), 'up to $40.00'),
+            ((Decimal('40.00'), 50), 'up to $40.00 + 50%'),
+            ((Decimal('0.00'), 0), 'nothing'),
+        ]
+        for (amount, percent), expected in cases:
+            grant = FinancialAidGrant(amount_max_dec=amount, percent=percent)
+            self.assertEqual(grant.terms, expected, (amount, percent))
