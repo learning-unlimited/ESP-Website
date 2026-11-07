@@ -54,8 +54,10 @@ from django.db.models import ProtectedError
 
 from django.core.management import call_command
 
+from django.db import connection
 from django.test import LiveServerTestCase, RequestFactory
 from django.test.client import Client
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django import forms
 
