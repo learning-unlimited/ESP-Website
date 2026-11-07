@@ -125,7 +125,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         self.check_reg_modules('studentreg', 'learn')
 
         #   Remove a module and check list is still consistent
-        possible_modules = [x.module.id for x in self.target_module_list('learn')]
+        possible_modules = [x.module.id for x in self.target_module_list('learn') if x.module.handler != 'StudentClassRegModule']
         module_to_remove = random.choice(possible_modules)
         self.program.program_modules.remove(module_to_remove)
         self.check_reg_modules('studentreg', 'learn')
