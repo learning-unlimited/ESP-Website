@@ -387,7 +387,7 @@ function createLinkButtonTd(clsObj, type, verb) {
         $j("<a/>", {
             'href': href,
             'title': verb + ' ' + getShortTitle(clsObj),
-            'class': 'btn',
+            'class': 'btn btn-secondary',
             'style': 'white-space: nowrap;',
         }).text(verb)
     );
@@ -399,7 +399,7 @@ function createStatusButtonTd(clsObj) {
         $j("<a/>", {
             'href': '#',
             'title': 'Set the status of ' + getShortTitle(clsObj),
-            'class': 'btn',
+            'class': 'btn btn-secondary',
             'style': 'white-space: nowrap;',
             'onclick': clickjs,
         }).text('Status')
