@@ -1,5 +1,6 @@
 """Tests for AutoschedulerController's history handling."""
 
+import json
 import unittest
 from types import SimpleNamespace
 from unittest import mock
@@ -135,7 +136,8 @@ class ImportAssignmentsTest(ControllerTestCase):
         """A history exported from one schedule replays on a fresh one."""
         self.manipulator.schedule_section(self.s1, self.rooms[0])
         self.manipulator.schedule_section(self.s3, self.rooms[1])
-        data = self.export()
+        # Assignments are stored as JSON, so go through a real dump/load.
+        data = json.loads(json.dumps(self.export()))
 
         other = ControllerTestCase("setUp")
         other.setUp()

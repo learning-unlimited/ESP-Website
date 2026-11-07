@@ -284,6 +284,58 @@ class UndoTest(ManipulatorTestCase):
             self.manipulator.scorer.get_all_score_schedule(), initial)
 
 
+class RejectEverything:
+    """Stands in for the constraints and reports a violation for every
+    action."""
+    def check_schedule_section(self, *args):
+        """Report a violation."""
+        return "violation"
+
+    check_move_section = check_unschedule_section = \
+        check_swap_sections = check_schedule_section
+
+
+class ForceTest(ManipulatorTestCase):
+    """force=True skips the constraint checks of every action."""
+
+    def setUp(self):
+        """Schedule two sections, then make the constraints reject all."""
+        super().setUp()
+        self.manipulator.schedule_section(self.s1, self.rooms[0])
+        self.manipulator.schedule_section(self.s3, self.rooms[1])
+        self.manipulator.constraints = RejectEverything()
+
+    def test_move_section(self):
+        """A violating move fails, but succeeds with force=True."""
+        self.assertFalse(self.manipulator.move_section(
+            self.s1, self.rooms[4]))
+        self.assertEqual(placement(self.s1), ("26-100", [1]))
+        self.assertTrue(self.manipulator.move_section(
+            self.s1, self.rooms[4], force=True))
+        self.assertEqual(placement(self.s1), ("26-100", [5]))
+        self.assertEqual(self.actions(), ["schedule", "schedule", "move"])
+
+    def test_unschedule_section(self):
+        """A violating unschedule fails, but succeeds with force=True."""
+        self.assertFalse(self.manipulator.unschedule_section(self.s1))
+        self.assertTrue(self.s1.is_scheduled())
+        self.assertTrue(self.manipulator.unschedule_section(
+            self.s1, force=True))
+        self.assertFalse(self.s1.is_scheduled())
+        self.assertEqual(
+            self.actions(), ["schedule", "schedule", "unschedule"])
+
+    def test_swap_sections(self):
+        """A violating swap fails, but succeeds with force=True."""
+        self.assertFalse(self.manipulator.swap_sections(self.s1, self.s3))
+        self.assertEqual(placement(self.s1), ("26-100", [1]))
+        self.assertTrue(self.manipulator.swap_sections(
+            self.s1, self.s3, force=True))
+        self.assertEqual(placement(self.s1), ("26-100", [2]))
+        self.assertEqual(placement(self.s3), ("26-100", [1]))
+        self.assertEqual(self.actions(), ["schedule", "schedule", "swap"])
+
+
 class PerformActionTest(ManipulatorTestCase):
     """ScheduleManipulator.perform_action."""
     def test_dispatches_each_action_type(self):
