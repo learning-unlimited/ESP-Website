@@ -40,7 +40,9 @@ from django.utils.html import escape
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
+from esp.program.modules.handlers.jsondatamodule import JSONDataModule
 from esp.resources.models import ResourceType
+from esp.users.models import Record, RecordType
 
 class JSONDataModuleTest(ProgramFrameworkTest):
     ## This test is very incomplete.
@@ -370,3 +372,32 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         for sec in cls_data.get('sections', []):
             self.assertIn('room', sec,
                           "class_admin_info must include per-section 'room' for admins")
+
+    def test_checked_in_students_by_class_matches_per_section(self):
+        """The batched helper must agree with the method it replaced.
+
+        hour_nums() used to call
+        ClassSection.count_ever_checked_in_students() once per section and sum
+        the results; this pins the batched query to that same answer.
+        """
+        attended = RecordType.objects.get(name='attended')
+        for student in self.students:
+            Record.objects.get_or_create(user=student, program=self.program,
+                                         event=attended)
+
+        batched = JSONDataModule.checked_in_students_by_class(self.program)
+
+        saw_a_nonzero_count = False
+        for cls in self.program.classes():
+            expected = sum(sec.count_ever_checked_in_students()
+                           for sec in cls.get_sections())
+            self.assertEqual(
+                batched[cls.id], expected,
+                "Batched checked-in count disagrees with the per-section "
+                "count for class %d" % cls.id)
+            saw_a_nonzero_count = saw_a_nonzero_count or expected > 0
+
+        self.assertTrue(
+            saw_a_nonzero_count,
+            "No class had a checked-in student, so this test would pass "
+            "without exercising the batched query.")
