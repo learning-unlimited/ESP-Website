@@ -89,6 +89,9 @@ class ResourceCriterion(object):
         if resource_classroom_match:
             negate, res_type, value_regex = \
                 resource_classroom_match.group(1, 2, 4)
+            if res_type not in valid_res_types:
+                raise ValueError(
+                    f"Resource type {res_type} doesn't exist")
             if value_regex:
                 matcher = ResourceClassroomMatcher(res_type, value_regex)
             else:
