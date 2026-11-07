@@ -41,26 +41,51 @@ body {
   padding: 0;
 }
 
+/*  Logo and buttons on top, sidebar and page below.  The rows stretch, so the
+    sidebar and page backgrounds always run to the same height. */
 #content {
-  width: 800px;
+  max-width: 800px;
   margin-left: auto;
   margin-right: auto;
   background: $contentBackground;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  grid-template-areas:
+    "logo nav"
+    "side main";
 }
 
 #topleft {
+  grid-area: logo;
   background: $sidebarBackground;
-  width: 200px;
-  height: 180px;
-  float: left;
+}
+
+#topleft img {
+  max-width: 100%;
+  height: auto;
+}
+
+.sidebar_toggle {
+  display: none;
 }
 
 /*  Nav buttons - rendered via SVG masking  */
 
+#nav_buttons {
+    grid-area: nav;
+    display: flex;
+    align-items: flex-start;
+    background: $navbarBackground;
+}
+
+/*  Grow from zero in a 40:140 ratio, so at 800px wide they are exactly
+    the original 40px spacer and 140px buttons. */
+#nav_buttons > a {
+    flex: 140 1 0;
+    min-width: 0;
+}
+
 div.nav_button {
-    width: 140px;
-    height: 180px;
-    float: left;
     color: $navbarBackground;
     text-align: center;
     vertical-align: middle;
@@ -68,10 +93,15 @@ div.nav_button {
     line-height: 40px;
 }
 
+div.nav_button svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
 div.nav_button_spacer {
-    width: 40px;
-    height: 180px;
-    float: left;
+    flex: 40 1 0;
+    align-self: stretch;
     background: $navbarBackground;
 }
 
@@ -135,18 +165,17 @@ div.nav_button :hover {
 
 #navbar_header {
   background: $sidebarHeader;
-  float: left;
   text-align: center;
   vertical-align: middle;
-  width: 200px;
   height: 30px;
   line-height: 30px;
 }
 
 #chicago_main_header {
   background: $content_header;
-  float: right;
-  width: 600px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 30px;
   color: $headingsColor;
   font-style: italic;
@@ -157,18 +186,18 @@ div.nav_button :hover {
 }
 
 #navbar {
-  float: left;
-  width: 200px;
+  grid-area: side;
   background: $sidebarBackground;
 }
 
 #loginbox {
     width: 170px;
-    clear: both;
+    max-width: 100%;
 }
 
+/*  Readable on light and dark sidebars alike. */
 #loginbox label {
-    color: #FFFFFF;
+    color: color-contrast($sidebarBackground);
     width: 50px;
     font-size: 0.9em;
 }
@@ -182,16 +211,21 @@ div.nav_button :hover {
     margin: 0px;
 }
 
-#chicago_main {
-  background: $bodyBackground;
-  float: right;
-  width: 600px;
+/*  Compact, so the login table still fits the 192px sidebar at 768px. */
+#loginbox #gologin {
+    padding: 2px 8px;
+    font-size: 0.9em;
 }
 
+#chicago_main {
+  grid-area: main;
+  background: $bodyBackground;
+}
+
+/*  No top margin: the old floated header's clearance used to absorb it. */
 #chicago_main_content {
   background: $contentBackground;
-  clear: both;
-  margin: 15px;
+  margin: 0 15px 15px;
 }
 
 .announcementlink_title {
@@ -312,4 +346,94 @@ div .error {
 
 #user_data {
     font-style: italic;
+}
+
+@media (max-width: 799.98px) {
+  /*  The buttons are no longer whole pixels wide, so let each SVG overhang
+      its button by 1px (right and bottom) to stop the button colour showing
+      at the edges. */
+  div.nav_button {
+    overflow: hidden;
+  }
+
+  div.nav_button svg {
+    width: calc(100% + 1px);
+    margin-bottom: -1px;
+  }
+
+  /*  The fixed-width message boxes fill the column instead. */
+  div .emailwarning,
+  div .note, .info, .warning, .error,
+  .helpbox {
+    width: auto;
+  }
+}
+
+/*  Phones: one column.  Logo, the four buttons in a row, the sidebar (news
+    and login) collapsed under one bar, then the page. */
+@media (max-width: 767.98px) {
+  #content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "logo"
+      "nav"
+      "side"
+      "main";
+  }
+
+  #topleft {
+    padding: 8px 12px;
+  }
+
+  #topleft img {
+    max-height: 80px;
+    width: auto;
+  }
+
+  #navbar.sidebar_collapsible .sidebar_toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 12px;
+    border: 0;
+    background: $sidebarHeader;
+    color: inherit;
+    font: inherit;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  #navbar.sidebar_collapsible .sidebar_toggle::after {
+    content: "\25BE";
+  }
+
+  #navbar.sidebar_open .sidebar_toggle::after {
+    content: "\25B4";
+  }
+
+  #navbar.sidebar_collapsible #navbar_header {
+    display: none;
+  }
+
+  #navbar.sidebar_collapsible:not(.sidebar_open) #navbar_content {
+    display: none;
+  }
+
+  #navbar_content {
+    padding: 8px 12px;
+  }
+
+  div.nav_button_spacer {
+    display: none;
+  }
+
+  #nav_buttons > a {
+    flex: 1 1 0;
+  }
+
+  #loginbox {
+    width: auto;
+  }
 }
