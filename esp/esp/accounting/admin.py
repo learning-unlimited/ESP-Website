@@ -85,9 +85,11 @@ admin_site.register(FinancialAidGrant, FinancialAidGrantAdmin)
 
 class CybersourcePostbackAdmin(admin.ModelAdmin):
     readonly_fields = ['timestamp']
-    list_display = ['timestamp', 'transfer']
-    search_fields = ['post_data', '=transfer__id', '=transfer__user__id',
+    list_display = ['timestamp', 'status', 'user', 'program', 'transaction_id', 'transfer']
+    search_fields = ['post_data', '=transaction_id', '=user__id', '=user__username',
+                     '=transfer__id', '=transfer__user__id',
                      '=transfer__user__username', '=transfer__transaction_id']
-    list_filter = ['timestamp']
-    raw_id_fields = ['transfer']
+    list_filter = ['status', 'program', 'timestamp']
+    list_select_related = ['user', 'program', 'transfer']
+    raw_id_fields = ['transfer', 'user']
 admin_site.register(CybersourcePostback, CybersourcePostbackAdmin)

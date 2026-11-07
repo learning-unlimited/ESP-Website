@@ -38,6 +38,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.utils.web import render_to_response
 from esp.program.models import FinancialAidRequest
 from esp.accounting.models import FinancialAidGrant
+from esp.middleware import ESPError
+from decimal import Decimal, InvalidOperation
 
 
 class FinAidApproveModule(ProgramModuleObj):
@@ -86,8 +88,12 @@ class FinAidApproveModule(ProgramModuleObj):
             # ITERATE & APPROVE REQUESTS
             userchecklist = request.POST.getlist("user")
             approve_blanks = request.POST.get('approve_blanks', False)
-            amount_max_dec = request.POST.get('amount_max_dec', None)
-            percent = request.POST.get('percent', None)
+            #   Blank means 0; with both 0, approve() refuses (nothing granted)
+            try:
+                amount_max_dec = Decimal(request.POST.get('amount_max_dec', '').strip() or '0')
+                percent = int(request.POST.get('percent', '').strip() or '0')
+            except (InvalidOperation, ValueError):
+                raise ESPError('The dollar amount and percent must be numbers.', log=False)
 
             def is_blank(x):
                 return x is None or x == ""

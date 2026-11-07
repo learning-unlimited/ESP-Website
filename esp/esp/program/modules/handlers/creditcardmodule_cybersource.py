@@ -33,7 +33,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, meets_cap
+from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, meets_deadline, main_call, aux_call, meets_cap
+from django.http import HttpResponseRedirect
+from decimal import Decimal, ROUND_HALF_UP
 from esp.utils.web       import render_to_response
 from django.conf         import settings
 from django.db.models.query     import Q
@@ -96,7 +98,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['user'] = user
         context['contact_email'] = self.program.director_email
         context['invoice_id'] = iac.get_id()
-        context['identifier'] = iac.get_identifier()
         payment_type = iac.default_payments_lineitemtype()
         sibling_type = iac.default_siblingdiscount_lineitemtype()
         grant_type = iac.default_finaid_lineitemtype()
@@ -114,6 +115,40 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
             raise ESPError("The Cybersource module is not configured")
 
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+
+    @aux_call
+    @needs_student_in_grade
+    @meets_deadline('/Payment')
+    @meets_cap
+    def cybersource_checkout(self, request, tl, one, two, module, extra, prog):
+        """ Re-checks what the student owes just before handing them off to
+        Cybersource, so that we never charge an amount they weren't shown.
+        Their aid, items, or prices may have changed while the payment page
+        was open, or they may already have paid (e.g. in another tab). """
+        payment_page = '/learn/%s/cybersource' % prog.getUrlBase()
+        if request.method != 'POST':
+            return HttpResponseRedirect(payment_page)
+
+        iac = IndividualAccountingController(self.program, request.user)
+        iac.ensure_required_transfers()
+        amount_due = iac.amount_due().quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        if amount_due <= 0:
+            #   The payment page says they have no outstanding balance
+            return HttpResponseRedirect(payment_page)
+        if '%.2f' % amount_due != request.POST.get('expected_amount', ''):
+            return HttpResponseRedirect(payment_page + '?result=balance_changed')
+
+        if not (settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']):
+            raise ESPError("The Cybersource module is not configured")
+        context = {
+            'program': prog,
+            'user': request.user,
+            'post_url': settings.CYBERSOURCE_CONFIG['post_url'],
+            'merchant_id': settings.CYBERSOURCE_CONFIG['merchant_id'],
+            'amount': '%.2f' % amount_due,
+            'identifier': iac.get_identifier(),
+        }
+        return render_to_response(self.baseDir() + 'checkout.html', request, context)
 
     def isStep(self):
         return settings.CYBERSOURCE_CONFIG['post_url'] and settings.CYBERSOURCE_CONFIG['merchant_id']

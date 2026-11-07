@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import FinancialAidRequest, SplashInfo
-from esp.accounting.models import FinancialAidGrant, LineItemType, Transfer
+from esp.accounting.models import CybersourcePostback, FinancialAidGrant, LineItemType, Transfer
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
@@ -43,6 +43,7 @@ from esp.accounting.controllers import ProgramAccountingController, IndividualAc
 
 from decimal import Decimal
 from django.conf import settings
+from django.test import override_settings
 from django.core import mail
 from unittest import mock
 import random
@@ -417,16 +418,20 @@ class StudentRegTest(ProgramFrameworkTest):
             iac.get_identifier(), Decimal('10.38'), 'txn-round')
         self.assertEqual(iac.amount_due(), 0)
 
-    def _post_cybersource_accept(self, identifier, amount, transaction_id):
+    def _post_cybersource(self, data):
         #   submit_transaction commits the raw postback log before processing,
         #   which is forbidden inside the TestCase transaction; skip that step.
         with mock.patch('esp.program.views.transaction.commit'):
-            return self.client.post('/manage/submit_transaction/', {
-                'decision': 'ACCEPT',
-                'req_merchant_defined_data1': identifier,
-                'req_amount': amount,
-                'transaction_id': transaction_id,
-            })
+            return self.client.post('/manage/submit_transaction/', data)
+
+    def _post_cybersource_accept(self, identifier, amount, transaction_id):
+        return self._post_cybersource({
+            'decision': 'ACCEPT',
+            'reason_code': '100',
+            'req_merchant_defined_data1': identifier,
+            'req_amount': amount,
+            'transaction_id': transaction_id,
+        })
 
     def test_cybersource_overpayment_notifies_treasury(self):
         """ If aid is granted while the student is on the payment page, the
@@ -551,3 +556,288 @@ class StudentRegTest(ProgramFrameworkTest):
         for (amount, percent), expected in cases:
             grant = FinancialAidGrant(amount_max_dec=amount, percent=percent)
             self.assertEqual(grant.terms, expected, (amount, percent))
+
+    def _setup_shirt_program(self, shirt_max=1):
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Shirt', 10, shirt_max)], [])
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        iac.ensure_required_transfers()
+        return iac
+
+    def _treasury_mail(self, prefix):
+        return [m for m in mail.outbox if m.subject.startswith(prefix)]
+
+    def test_cybersource_unmatched_payment_is_still_recorded(self):
+        """ If a payment can't be matched to items (here, the student removed
+        an item while paying), the payment is still recorded, flagged for
+        review, and treasury is told; the student is told not to pay again. """
+        iac = self._setup_shirt_program()
+        iac.set_preference('Shirt', 1)
+        identifier = iac.get_identifier()
+        iac.set_preference('Shirt', 0)
+
+        mail.outbox = []
+        response = self._post_cybersource_accept(identifier, '80.00', 'txn-unmatched')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('result=received_review', response['Location'])
+        self.assertEqual(iac.amount_paid(), 80)
+        postback = CybersourcePostback.objects.get(transaction_id='txn-unmatched')
+        self.assertEqual(postback.status, 'needs_review')
+        self.assertEqual((postback.user, postback.program), (iac.user, self.program))
+        self.assertEqual(postback.transfer.amount_dec, 80)
+        self.assertIn('no longer has this item', postback.status_detail)
+        self.assertEqual(len(self._treasury_mail('[ESP CC] Payment needs manual review')), 1)
+        #   Nothing was marked paid, since matching failed
+        self.assertFalse(Transfer.objects.filter(paid_in=postback.transfer).exists())
+
+    def test_cybersource_second_payment_is_recorded_for_review(self):
+        """ Paying twice (e.g. from two tabs) records both payments; the
+        second is flagged for review, leaving the student overpaid. """
+        iac = self._setup_shirt_program()
+        identifier = iac.get_identifier()
+        self._post_cybersource_accept(identifier, '70.00', 'txn-first')
+        mail.outbox = []
+        response = self._post_cybersource_accept(identifier, '70.00', 'txn-second')
+        self.assertIn('result=received_review', response['Location'])
+        self.assertEqual(iac.amount_paid(), 140)
+        self.assertEqual(iac.amount_due(), -70)
+        self.assertEqual(CybersourcePostback.objects.get(transaction_id='txn-first').status, 'processed')
+        self.assertEqual(CybersourcePostback.objects.get(transaction_id='txn-second').status, 'needs_review')
+        self.assertEqual(len(self._treasury_mail('[ESP CC] Payment needs manual review')), 1)
+
+    def test_cybersource_repeated_postback_not_double_recorded(self):
+        """ The same postback arriving twice (e.g. a refresh) records one
+        payment. """
+        iac = self._setup_shirt_program()
+        identifier = iac.get_identifier()
+        self._post_cybersource_accept(identifier, '70.00', 'txn-repeat')
+        response = self._post_cybersource_accept(identifier, '70.00', 'txn-repeat')
+        self.assertIn('result=success', response['Location'])
+        self.assertEqual(iac.amount_paid(), 70)
+        self.assertEqual(Transfer.objects.filter(transaction_id='txn-repeat').count(), 1)
+        self.assertEqual(
+            list(CybersourcePostback.objects.filter(transaction_id='txn-repeat').values_list('status', flat=True)),
+            ['processed', 'processed'])
+
+    def test_cybersource_quantity_more_than_one(self):
+        """ An item bought in a quantity above one reconciles (each unit is
+        its own transfer). """
+        iac = self._setup_shirt_program(shirt_max=3)
+        iac.set_preference('Shirt', 2)
+        response = self._post_cybersource_accept(iac.get_identifier(), '90.00', 'txn-qty')
+        self.assertIn('result=success', response['Location'])
+        self.assertEqual(iac.amount_due(), 0)
+        self.assertEqual(Transfer.objects.filter(line_item__text='Shirt', paid_in__isnull=False).count(), 2)
+
+    def test_cybersource_non_accept_decisions(self):
+        """ Every non-ACCEPT decision is handled without an error, records no
+        payment, and tells the student what happened. """
+        iac = self._setup_shirt_program()
+        identifier = iac.get_identifier()
+        cases = [
+            # decision, reason, expected result, expected status, emails treasury
+            ('DECLINE', '203', 'declined', 'not_paid', False),
+            ('REVIEW', '201', 'bank_verify', 'not_paid', False),
+            ('REVIEW', '480', 'under_review', 'review_hold', True),
+            ('ERROR', '104', 'possible_duplicate', 'not_paid', False),
+            ('ERROR', '150', 'error', 'not_paid', False),
+            ('CANCEL', '', 'cancelled', 'not_paid', False),
+            ('SOMETHING_NEW', '999', 'error', 'failed', True),
+        ]
+        for i, (decision, reason, result, status, emails) in enumerate(cases):
+            mail.outbox = []
+            txn = 'txn-decision-%d' % i
+            response = self._post_cybersource({
+                'decision': decision, 'reason_code': reason,
+                'req_merchant_defined_data1': identifier,
+                'req_amount': '70.00', 'transaction_id': txn,
+            })
+            self.assertEqual(response.status_code, 302, decision)
+            self.assertIn('result=%s' % result, response['Location'], decision)
+            postback = CybersourcePostback.objects.get(transaction_id=txn)
+            self.assertEqual(postback.status, status, decision)
+            self.assertEqual((postback.user, postback.program), (iac.user, self.program), decision)
+            self.assertEqual(bool(self._treasury_mail('[ESP CC]')), emails, decision)
+        self.assertEqual(iac.amount_paid(), 0)
+
+    def test_cybersource_unusable_identifier(self):
+        """ An accepted payment we can't attribute to anyone is flagged as
+        failed and reported to treasury, and the student is told not to pay
+        again. """
+        mail.outbox = []
+        response = self._post_cybersource_accept('garbage', '70.00', 'txn-garbage')
+        self.assertContains(response, 'Please do not pay again', status_code=response.status_code)
+        postback = CybersourcePostback.objects.get(transaction_id='txn-garbage')
+        self.assertEqual(postback.status, 'failed')
+        self.assertEqual((postback.user, postback.program), (None, None))
+        self.assertEqual(len(self._treasury_mail('[ESP CC] Failed to process')), 1)
+        self.assertFalse(Transfer.objects.filter(transaction_id='txn-garbage').exists())
+
+    def _approval_email_body(self, iac, **approve_kwargs):
+        mail.outbox = []
+        FinancialAidRequest.objects.create(user=iac.user, program=self.program).approve(**approve_kwargs)
+        sent = [m for m in mail.outbox if m.subject.startswith('Financial Aid Approved')]
+        self.assertEqual(len(sent), 1)
+        body = sent[0].body
+        #   Compare from the grant description up to the closing lines
+        return body[body.index('\n\n', body.index('was approved on')) + 2:body.index('Questions?')]
+
+    def test_finaid_approval_email_full_grant(self):
+        """ Splash 2026 shape: full aid for admission, an uncovered optional
+        extra that the student selected. """
+        iac = self._setup_shirt_program()
+        LineItemType.objects.filter(text='Shirt', program=self.program).update(text="Kids' Shirt")
+        iac.set_preference("Kids' Shirt", 1)
+        body = self._approval_email_body(iac)
+        self.assertTrue(body.startswith(
+            "Your grant covers the full cost of:\n"
+            "  - Program admission ($70.00)\n"
+            "\n"
+            "Based on what you've selected so far, that's $70.00 off.\n"
+            "\n"
+            "Not covered by financial aid:\n"
+            "  - Kids' Shirt ($10.00, optional; selected)\n"
+            "You're only charged for optional items you select.\n"
+            "\n"
+            "Your current balance is $10.00. You can pay online at https://"), body)
+
+    def test_finaid_approval_email_partial_grant_many_items(self):
+        """ Percentage grant covering several kinds of items, selected and
+        not: priced per unit, with options, and not chosen. """
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [('Food', 5, 3), ('Bus pass', 15, 1), ('Shirt', 10, 1)],
+                                [('Lunch', [('Small', 3), ('Large', 7)])])
+        LineItemType.objects.filter(program=self.program, text__in=['Food', 'Bus pass', 'Lunch']).update(for_finaid=True)
+        iac = IndividualAccountingController(self.program, random.choice(self.students))
+        iac.ensure_required_transfers()
+        iac.set_preference('Food', 2)
+        lunch = LineItemType.objects.get(program=self.program, text='Lunch')
+        large = [x for x in lunch.options if x[2] == 'Large'][0]
+        iac.set_preference('Lunch', 1, option_id=large[0])
+        body = self._approval_email_body(iac, discount_percent=50)
+        self.assertEqual(body,
+            "Your grant covers 50%% of the cost of:\n"
+            "  - Bus pass ($15.00, optional; not selected)\n"
+            "  - Food ($5.00 each, optional; you've selected 2 for $10.00)\n"
+            "  - Lunch (price varies, optional; selected, $7.00)\n"
+            "  - Program admission ($70.00)\n"
+            "\n"
+            "Based on what you've selected so far, that's $43.50 off.\n"
+            "\n"
+            "Not covered by financial aid:\n"
+            "  - Shirt ($10.00, optional; not selected)\n"
+            "You're only charged for optional items you select.\n"
+            "\n"
+            "Your current balance is $43.50. You can pay online at https://%s/learn/%s/cybersource.\n"
+            "\n" % (settings.DEFAULT_HOST, self.program.getUrlBase()))
+
+    def test_finaid_approval_email_dollars_plus_percent(self):
+        iac = self._setup_shirt_program()
+        body = self._approval_email_body(iac, dollar_amount=Decimal('40.00'), discount_percent=50)
+        self.assertTrue(body.startswith(
+            "Your grant covers up to $40.00 of the cost of the items below, plus 50% of whatever remains:\n"
+            "  - Program admission ($70.00)\n"
+            "\n"
+            "Based on what you've selected so far, that's $55.00 off.\n"), body)
+        self.assertIn("Your current balance is $15.00.", body)
+
+    def test_finaid_approval_email_nothing_covered(self):
+        iac = self._setup_shirt_program()
+        LineItemType.objects.filter(program=self.program).update(for_finaid=False)
+        body = self._approval_email_body(iac)
+        self.assertTrue(body.startswith("Your grant doesn't currently apply to any costs for this program."), body)
+        self.assertIn("Costs for this program:\n  - Program admission ($70.00)\n", body)
+        self.assertNotIn("Not covered by financial aid", body)
+        self.assertIn("Your current balance is $70.00.", body)
+
+    def test_finaid_approval_email_nothing_owed(self):
+        """ With nothing owed, the email still warns that uncovered optional
+        items would cost extra. """
+        iac = self._setup_shirt_program()
+        body = self._approval_email_body(iac)
+        self.assertIn("  - Shirt ($10.00, optional; not selected)\n", body)
+        self.assertIn(
+            "You don't owe anything for %s right now. If you select any optional items "
+            "not covered by financial aid, you'll need to pay for those.\n" % self.program.niceName(), body)
+
+    @override_settings(CYBERSOURCE_CONFIG={'post_url': 'https://pay.example.com/', 'merchant_id': 'test_merchant'})
+    def test_cybersource_checkout_rechecks_amount(self):
+        """ Continuing to payment re-checks the amount due: forward to the
+        processor only if it still matches what the student was shown. """
+        iac = self._setup_shirt_program()
+        self.assertTrue(self.client.login(username=iac.user.username, password='password'))
+        payment_page = '/learn/%s/cybersource' % self.program.getUrlBase()
+        checkout = '/learn/%s/cybersource_checkout' % self.program.getUrlBase()
+
+        #   The payment page sends the shown amount to the re-check step
+        response = self.client.get(payment_page)
+        self.assertContains(response, 'action="%s"' % checkout)
+        self.assertContains(response, 'name="expected_amount" value="70.00"')
+
+        #   Same amount: forward to the processor with a fresh identifier
+        iac.set_preference('Shirt', 1)
+        response = self.client.post(checkout, {'expected_amount': '80.00'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'action="https://pay.example.com/"')
+        self.assertContains(response, 'name="amount" value="80.00"')
+        self.assertContains(response, 'name="merchantDefinedData1" value="%s"' % iac.get_identifier())
+
+        #   Different amount (e.g. the page was opened before adding the shirt)
+        response = self.client.post(checkout, {'expected_amount': '70.00'})
+        self.assertRedirects(response, payment_page + '?result=balance_changed', fetch_redirect_response=False)
+
+        #   Nothing owed (e.g. already paid in another tab): don't send them
+        iac.grant_full_financial_aid()
+        iac.set_preference('Shirt', 0)
+        response = self.client.post(checkout, {'expected_amount': '70.00'})
+        self.assertRedirects(response, payment_page, fetch_redirect_response=False)
+
+        #   Visiting the step directly just goes back to the payment page
+        response = self.client.get(checkout)
+        self.assertRedirects(response, payment_page, fetch_redirect_response=False)
+
+    def test_finaid_approval_email_string_inputs(self):
+        """ The approval page passes the grant amounts as strings; a $0 cap
+        with 100% must still read as covering the full cost. """
+        iac = self._setup_shirt_program()
+        body = self._approval_email_body(iac, dollar_amount='0', discount_percent='100')
+        self.assertTrue(body.startswith("Your grant covers the full cost of:\n"), body)
+
+    def test_finaid_approval_page_blank_amounts(self):
+        """ On the approval page, a blank dollar amount means $0 (so 100%
+        still reads as the full cost); with both blank nothing is granted. """
+        iac = self._setup_shirt_program()
+        request = FinancialAidRequest.objects.create(user=iac.user, program=self.program,
+                                                     extra_explaination='Please')
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        url = '/manage/%s/finaidapprove' % self.program.getUrlBase()
+
+        response = self.client.post(url, {'user': [str(iac.user.id)], 'amount_max_dec': '', 'percent': ''})
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(FinancialAidGrant.objects.filter(request=request).exists())
+
+        mail.outbox = []
+        response = self.client.post(url, {'user': [str(iac.user.id)], 'amount_max_dec': '', 'percent': '100'})
+        self.assertEqual(response.status_code, 200)
+        grant = FinancialAidGrant.objects.get(request=request)
+        self.assertEqual((grant.amount_max_dec, grant.percent), (Decimal('0.00'), 100))
+        sent = [m for m in mail.outbox if m.subject.startswith('Financial Aid Approved')]
+        self.assertEqual(len(sent), 1)
+        self.assertIn("Your grant covers the full cost of:\n", sent[0].body)
+
+    def test_finaid_approval_survives_email_failure(self):
+        """ If the approval email can't be built or sent, the grant stays
+        approved and approve() doesn't raise. """
+        iac = self._setup_shirt_program()
+        request = FinancialAidRequest.objects.create(user=iac.user, program=self.program)
+        with mock.patch('esp.program.models.render_to_string', side_effect=Exception('boom')):
+            request.approve()
+        request.refresh_from_db()
+        self.assertTrue(request.done)
+        self.assertTrue(request.approved)
+        self.assertEqual(iac.amount_due(), 0)

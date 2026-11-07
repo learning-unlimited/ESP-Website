@@ -1,10 +1,22 @@
-Hi {{ student.name }},
+{% autoescape off %}Hi {{ student.first_name }},
 
-On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, your financial aid request for {{ program.niceName }} was approved by a program administrator.
+Your financial aid request for {{ program.niceName }} was approved on {{ curtime|date:"l, F j, Y" }} at {{ curtime|date:"g:i A" }}.
 
-Your financial aid grant provides {% if grant.amount_max_dec %}${{ grant.amount_max_dec }} of direct financial aid{% endif %}{% if grant.amount_max_dec and grant.percent %} plus {% endif %}{% if grant.percent %}{{ grant.percent }}% of any {% if grant.amount_max_dec %}remaining {% endif %}costs for the program{% endif %}.
-
-{% if note %}Additional comments: {{ note }}{% endif %}
+{% if aid.applies %}{% if aid.full %}Your grant covers the full cost of:{% elif aid.dollars and aid.percent %}Your grant covers up to ${{ aid.dollars|floatformat:2 }} of the cost of the items below, plus {{ aid.percent }}% of whatever remains:{% elif aid.dollars %}Your grant covers up to ${{ aid.dollars|floatformat:2 }} of the cost of:{% else %}Your grant covers {{ aid.percent }}% of the cost of:{% endif %}
+{% for item in aid.covered %}{% include "program/modules/finaidapprovemodule/finaid_item_line.txt" %}
+{% endfor %}{% if aid.amount_now > 0 %}
+Based on what you've selected so far, that's ${{ aid.amount_now|floatformat:2 }} off.
+{% endif %}{% else %}Your grant doesn't currently apply to any costs for this program. Please contact the directors (below) if you think this is a mistake.
+{% endif %}{% if aid.not_covered %}
+{% if aid.applies %}Not covered by financial aid:{% else %}Costs for this program:{% endif %}
+{% for item in aid.not_covered %}{% include "program/modules/finaidapprovemodule/finaid_item_line.txt" %}
+{% endfor %}{% if aid.any_optional_not_covered %}You're only charged for optional items you select.
+{% endif %}{% endif %}
+{% if aid.amount_due > 0 %}Your current balance is ${{ aid.amount_due|floatformat:2 }}.{% if payment_url %} You can pay online at {{ payment_url }}.{% endif %}{% else %}You don't owe anything for {{ program.niceName }} right now.{% if aid.any_optional_not_covered %} If you select any optional items not covered by financial aid, you'll need to pay for those.{% endif %}{% endif %}
+{% if note %}
+Note from the program directors: {{ note }}
+{% endif %}
+Questions? Contact the directors at {{ program.director_email }}.
 
 - {{ program.program_type }} Registration System
-  Contact the directors: {{ program.director_email }}
+{% endautoescape %}

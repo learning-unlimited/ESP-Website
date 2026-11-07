@@ -79,7 +79,7 @@ from esp.program.modules.handlers.commmodule import CommModule
 from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserAvailability, GradeChangeRequest, RecordType
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.accounting.models import CybersourcePostback
+from esp.accounting.models import CybersourcePostback, Transfer
 from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
@@ -621,77 +621,207 @@ def newprogram(request):
 @csrf_exempt
 @transaction.non_atomic_requests
 def submit_transaction(request):
-    # Before we do anything else, log the raw postback to the database
+    """ Handles a Cybersource postback. The raw postback is always logged
+    first. For an accepted payment, the payment is then recorded on its own,
+    before matching it to the items it paid for, so that money we've received
+    is never lost: anything that goes wrong after that point leaves the
+    payment recorded and flags the postback for treasury to review. """
     pretty_postdata = json.dumps(request.POST, sort_keys=True, indent=4,
                                  separators=(', ', ': '))
-    log_record = CybersourcePostback.objects.create(post_data=pretty_postdata)
+    (user, program) = _postback_owner(request.POST.get('req_merchant_defined_data1', ''))
+    log_record = CybersourcePostback.objects.create(
+        post_data=pretty_postdata,
+        transaction_id=request.POST.get('transaction_id', '')[:64],
+        user=user, program=program)
     transaction.commit()
     try:
         return _submit_transaction(request, log_record)
-    except:
-        subject = '[ESP CC] Failed to process Cybersource postback'
-        log_uri = request.build_absolute_uri(
-            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
-        message = 'The following Cybersource postback could not be processed. Please ' + \
-                  'reconcile it by hand:\n\n    %s\n\n%s' % (log_uri, traceback.format_exc())
-        from_addr = settings.SERVER_EMAIL
-        recipients = [settings.DEFAULT_EMAIL_ADDRESSES['treasury']]
-        send_mail(subject, message, from_addr, recipients)
-        raise
+    except Exception:
+        # Only reached if we couldn't work out who the postback was for, or
+        # couldn't record the payment at all.
+        logger.exception('Failed to process Cybersource postback %d', log_record.id)
+        if log_record.transfer_id:
+            # The payment itself was recorded before the error
+            _set_postback_status(log_record, 'needs_review', traceback.format_exc())
+            recorded = 'A payment WAS recorded for it (see the postback), but it'
+        else:
+            _set_postback_status(log_record, 'failed', traceback.format_exc())
+            recorded = 'No payment was recorded for it, and it'
+        _email_treasury(request, log_record,
+                        '[ESP CC] Failed to process Cybersource postback',
+                        'The following Cybersource postback could not be processed. '
+                        '%s needs to be reconciled by hand.\n\n%s' % (
+                            recorded, traceback.format_exc()))
+        if request.POST.get('decision') == 'ACCEPT':
+            raise ESPError('Your payment went through, but we could not record it '
+                           'automatically. Please do not pay again; we have been '
+                           'notified and will contact you if anything else is needed.',
+                           log=False)
+        raise ESPError('We could not process the response from our payment '
+                       'processor. Please check your balance before trying again.',
+                       log=False)
 
-@transaction.atomic
+def _postback_owner(identifier):
+    """ The (user, program) a postback's identifier names, or Nones if it
+    can't be parsed or names someone or something that doesn't exist. """
+    try:
+        program_str, user_str = identifier.split(':')[0].split('/')
+        return (ESPUser.objects.filter(id=int(user_str)).first(),
+                Program.objects.filter(id=int(program_str)).first())
+    except Exception:
+        return (None, None)
+
 def _submit_transaction(request, log_record):
-    decision = request.POST['decision']
-    if decision == "ACCEPT":
-        # Handle payment
-        identifier = request.POST['req_merchant_defined_data1']
-        amount_paid = Decimal(request.POST['req_amount'])
-        transaction_id = request.POST['transaction_id']
+    # Decisions and reason codes are documented at
+    # https://developer.cybersource.com/docs/cybs/en-us/sa/developer/all/sa-hosted/secure-acceptance/sa-notification-types.html
+    decision = request.POST.get('decision', '')
+    reason_code = request.POST.get('reason_code', '')
+    identifier = request.POST.get('req_merchant_defined_data1', '')
 
-        payment = IndividualAccountingController.record_payment_from_identifier(
-            identifier, amount_paid, transaction_id)
+    if decision == 'ACCEPT':
+        return _record_accepted_payment(request, log_record, identifier)
 
-        # Link payment to log record
+    if decision == 'DECLINE':
+        _set_postback_status(log_record, 'not_paid', 'Declined (reason %s).' % reason_code)
+        return _redirect_from_identifier(identifier, 'declined')
+
+    if decision == 'REVIEW':
+        if reason_code == '201':
+            # The issuer wants the cardholder to call; nothing was authorized.
+            _set_postback_status(log_record, 'not_paid',
+                                 'Issuer requested verification (reason 201); not charged.')
+            return _redirect_from_identifier(identifier, 'bank_verify')
+        _set_postback_status(log_record, 'review_hold',
+                             'Held for review by the processor (reason %s); '
+                             'the card may have been authorized.' % reason_code)
+        _email_treasury(request, log_record,
+                        '[ESP CC] Payment held for review by Cybersource',
+                        'Cybersource returned decision REVIEW with reason code %s for the '
+                        'following postback. The card may have been authorized, but no '
+                        'payment was recorded. Please check the transaction with the '
+                        'payment processor and record or void it by hand.' % reason_code)
+        return _redirect_from_identifier(identifier, 'under_review')
+
+    if decision == 'ERROR':
+        _set_postback_status(log_record, 'not_paid', 'Processor error (reason %s).' % reason_code)
+        # 104: the same order was submitted twice within 15 minutes, so the
+        # first attempt may have gone through.
+        return _redirect_from_identifier(
+            identifier, 'possible_duplicate' if reason_code == '104' else 'error')
+
+    if decision == 'CANCEL':
+        _set_postback_status(log_record, 'not_paid', 'Cancelled by the user.')
+        return _redirect_from_identifier(identifier, 'cancelled')
+
+    logger.warning('Unknown Cybersource decision %r in postback %d', decision, log_record.id)
+    _set_postback_status(log_record, 'failed', 'Unknown decision %r.' % decision)
+    _email_treasury(request, log_record,
+                    '[ESP CC] Unknown Cybersource decision',
+                    'Cybersource returned an unrecognized decision (%r) for the '
+                    'following postback. No payment was recorded. Please check it '
+                    'by hand.' % decision)
+    return _redirect_from_identifier(identifier, 'error')
+
+def _record_accepted_payment(request, log_record, identifier):
+    amount_paid = Decimal(request.POST['req_amount'])
+    transaction_id = request.POST['transaction_id']
+    iac = IndividualAccountingController.parse_identifier(identifier)[0]
+
+    # 1. Record the payment by itself and commit it, so that nothing that
+    #    goes wrong afterwards can lose it. A repeated postback for the same
+    #    transaction (e.g. the user refreshing) reuses the existing payment.
+    with transaction.atomic():
+        # Lock the user's row so that simultaneous postbacks for this user run
+        # one at a time; the second then sees the first's payment.
+        ESPUser.objects.select_for_update().get(id=iac.user.id)
+        payment = None
+        if transaction_id:
+            payment = Transfer.objects.filter(
+                user=iac.user, line_item=iac.default_payments_lineitemtype(),
+                transaction_id=transaction_id).first()
+        repeat = payment is not None
+        if not repeat:
+            payment = iac.submit_payment(amount_paid, transaction_id, link_transfers=False)
         log_record.transfer = payment
         log_record.save()
+    if repeat:
+        _set_postback_status(log_record, 'processed', 'Repeat of an already-recorded payment.')
+        return _redirect_from_identifier(identifier, 'success')
 
-        _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id)
+    # 2. Mark the items it paid for. A failure rolls back only this step.
+    try:
+        IndividualAccountingController.reconcile_payment_with_identifier(payment, identifier)
+    except Exception as e:
+        logger.warning('Cybersource payment %s was recorded but not matched to items',
+                       transaction_id, exc_info=True)
+        _set_postback_status(log_record, 'needs_review', '%s: %s' % (type(e).__name__, e))
+        try:
+            balance = '$%.2f' % iac.amount_due()
+        except Exception:
+            balance = 'unknown'
+        _email_treasury(request, log_record,
+                        '[ESP CC] Payment needs manual review: %s' % iac.user.name(),
+                        '%s (%s, user ID %d) paid $%.2f for %s (transaction ID %s). '
+                        'The payment was recorded, but could not be matched to the '
+                        'items it was for:\n\n    %s: %s\n\nTheir balance is now '
+                        '%s (negative means they have overpaid). Please mark the '
+                        'right items as paid, or refund, by hand.' % (
+                            iac.user.name(), iac.user.username, iac.user.id,
+                            amount_paid, iac.program.niceName(), transaction_id,
+                            type(e).__name__, e, balance))
+        return _redirect_from_identifier(identifier, 'received_review')
 
-        return _redirect_from_identifier(identifier, "success")
-    elif decision == "DECLINE":
-        identifier = request.POST['req_merchant_defined_data1']
-        return _redirect_from_identifier(identifier, "declined")
-    else:
-        raise NotImplementedError("Can't handle decision: %s" % decision)
+    _set_postback_status(log_record, 'processed')
+    _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id)
+    return _redirect_from_identifier(identifier, 'success')
+
+def _set_postback_status(log_record, status, detail=''):
+    try:
+        log_record.status = status
+        log_record.status_detail = detail
+        log_record.save(update_fields=['status', 'status_detail'])
+    except Exception:
+        logger.exception('Failed to save status of Cybersource postback %d', log_record.id)
+
+def _email_treasury(request, log_record, subject, message):
+    """ Emails treasury about a postback, with a link to it. Never raises. """
+    try:
+        log_uri = request.build_absolute_uri(
+            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
+        send_mail(subject, '%s\n\nPostback: %s\n' % (message, log_uri),
+                  settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
+    except Exception:
+        logger.exception('Failed to email treasury about Cybersource postback %d', log_record.id)
 
 def _notify_treasury_if_overpaid(request, identifier, log_record, transaction_id):
     """ The amount charged is fixed when the payment form is loaded, so if the
     user's balance dropped while they were paying (e.g. financial aid was
     granted), they will have paid more than they owe. The payment is still
     recorded correctly; ask treasury to refund the difference. """
-    # Never let a problem here undo the payment that was just recorded
+    # Never let a problem here affect the payment that was just recorded
     try:
-        iac = IndividualAccountingController.from_id(identifier.split(':')[0])
+        iac = IndividualAccountingController.parse_identifier(identifier)[0]
         amount_due = iac.amount_due()
         if amount_due >= 0:
             return
-        subject = '[ESP CC] Overpayment: refund $%.2f to %s' % (-amount_due, iac.user.name())
-        log_uri = request.build_absolute_uri(
-            reverse('admin:accounting_cybersourcepostback_change', args=(log_record.id,)))
-        message = ('%s (%s, user ID %d) has paid $%.2f more than they owe for %s, '
-                   'probably because their costs or financial aid changed while '
-                   'they were paying. The payment was recorded; please refund the '
-                   'difference.\n\n'
-                   '    Transaction ID: %s\n    Postback: %s\n') % (
-            iac.user.name(), iac.user.username, iac.user.id, -amount_due,
-            iac.program.niceName(), transaction_id, log_uri)
-        send_mail(subject, message, settings.SERVER_EMAIL,
-                  [settings.DEFAULT_EMAIL_ADDRESSES['treasury']])
+        _email_treasury(request, log_record,
+                        '[ESP CC] Overpayment: refund $%.2f to %s' % (-amount_due, iac.user.name()),
+                        '%s (%s, user ID %d) has paid $%.2f more than they owe for %s, '
+                        'probably because their costs or financial aid changed while '
+                        'they were paying. The payment was recorded; please refund the '
+                        'difference.\n\n    Transaction ID: %s' % (
+                            iac.user.name(), iac.user.username, iac.user.id, -amount_due,
+                            iac.program.niceName(), transaction_id))
     except Exception:
-        logger.exception('Failed to send overpayment notification')
+        logger.exception('Failed to check for overpayment')
 
 def _redirect_from_identifier(identifier, result):
-    program = IndividualAccountingController.program_from_identifier(identifier)
+    try:
+        program = IndividualAccountingController.program_from_identifier(identifier)
+    except Exception:
+        # Without a usable identifier we can't tell which program this was for
+        logger.warning('Cybersource postback with unusable identifier %r', identifier)
+        return HttpResponseRedirect('/')
     destination = "/learn/%s/cybersource?result=%s" % (program.getUrlBase(), result)
     return HttpResponseRedirect(destination)
 

@@ -106,6 +106,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0019_auto_20200828_1517'),
+        # set_my_defaults reads RegistrationProfile.contact_* (added there)
+        ('program', '0002_auto_20151004_1715'),
     ]
 
     operations = [

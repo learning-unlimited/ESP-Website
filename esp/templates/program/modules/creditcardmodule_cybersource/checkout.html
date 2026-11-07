@@ -1,0 +1,22 @@
+{% extends "main.html" %}
+
+{% block title %}{{ program.niceName }} Registration{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }}</h1>
+
+<p>Taking you to our payment processor to pay <b>${{ amount }}</b>&hellip;</p>
+
+<form id="cybersource_form" action="{{ post_url }}" method="post" autocomplete="off">
+<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
+<input type="hidden" name="amount" value="{{ amount }}" />
+<input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
+<input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ program.id }}/{{ user.id }} (for {{ program.niceName }})" />
+<input type="hidden" name="billTo_country" value="US" />
+<center><input class="btn btn-primary" type="submit" value="Continue to payment"></center>
+</form>
+
+<script type="text/javascript">
+document.getElementById('cybersource_form').submit();
+</script>
+{% endblock %}

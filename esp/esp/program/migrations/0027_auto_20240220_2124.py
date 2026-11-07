@@ -23,6 +23,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('program', '0026_auto_20221122_2100'),
+        # uses dbmail's PlainRedirect
+        ('dbmail', '0005_auto_20220719_2056'),
     ]
 
     operations = [

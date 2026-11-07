@@ -310,10 +310,26 @@ class Transfer(models.Model):
 class CybersourcePostback(models.Model):
     """ Logs every Cybersource postback to enable debugging and automated
         reconciliation."""
+    STATUS_CHOICES = (
+        ('processed', 'Processed'),
+        ('needs_review', 'Payment recorded; needs manual review'),
+        ('not_paid', 'No payment (declined, cancelled, or error)'),
+        ('review_hold', 'Held for review by the processor; may have been charged'),
+        ('failed', 'Failed; payment not recorded'),
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
     post_data = models.TextField()
     transfer = models.ForeignKey(Transfer, blank=True, null=True,
                                  on_delete=models.SET_NULL)
+    status = models.CharField(max_length=20, blank=True, default='', choices=STATUS_CHOICES,
+                              help_text='Blank for postbacks received before statuses were recorded.')
+    transaction_id = models.CharField(max_length=64, blank=True, default='', db_index=True)
+    #   Who and what the postback was for, from its identifier, so a postback
+    #   can be traced even when no payment was recorded for it
+    user = AjaxForeignKey(ESPUser, blank=True, null=True, on_delete=models.SET_NULL)
+    program = models.ForeignKey(Program, blank=True, null=True, on_delete=models.SET_NULL)
+    status_detail = models.TextField(blank=True, default='',
+                                     help_text='Why the postback needs attention, if it does.')
 
     def __str__(self):
         return '%d' % self.id

@@ -53,6 +53,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('users', '0025_auto_20210617_0839'),
+        # set_my_defaults uses accounting's Transfer, LineItemType, and Account
+        ('accounting', '0014_auto_20211221_2104'),
     ]
 
     operations = [

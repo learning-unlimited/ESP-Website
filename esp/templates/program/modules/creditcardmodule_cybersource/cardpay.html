@@ -17,6 +17,34 @@
 <div class="alert alert-danger">
   <b>Your card was declined.</b> Please try again.
 </div>
+{% elif result == "balance_changed" %}
+<div class="alert alert-warning">
+  <b>Your balance changed since you opened this page.</b> Please review the updated total below, then continue.
+</div>
+{% elif result == "received_review" %}
+<div class="alert alert-warning">
+  <b>We received your payment, but it needs a manual review on our end.</b> Please don't pay again; we'll contact you if anything else is needed.
+</div>
+{% elif result == "bank_verify" %}
+<div class="alert alert-danger">
+  <b>Your bank needs to verify this payment before it can go through.</b> You weren't charged. Please call the number on the back of your card, or try a different card.
+</div>
+{% elif result == "under_review" %}
+<div class="alert alert-warning">
+  <b>Your payment is being reviewed by our payment processor.</b> Please don't pay again; we'll contact you if anything else is needed.
+</div>
+{% elif result == "possible_duplicate" %}
+<div class="alert alert-warning">
+  <b>This payment may already have gone through.</b> Please check your balance below before trying again.
+</div>
+{% elif result == "cancelled" %}
+<div class="alert alert-info">
+  <b>Payment cancelled.</b> You weren't charged.
+</div>
+{% elif result == "error" %}
+<div class="alert alert-danger">
+  <b>Our payment processor had a temporary problem.</b> Please try again in a few minutes.
+</div>
 {% endif %}
 
 {% if itemizedcosttotal > 0 %}
@@ -36,12 +64,8 @@
 
 <br />
 {% if itemizedcosttotal > 0 %}
-<form action="{{ post_url }}" method="post" autocomplete="off">
-<input type="hidden" name="merchant_id" value="{{ merchant_id }}" />
-<input type="hidden" name="amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="merchantDefinedData1" value="{{ identifier }}" />
-<input type="hidden" name="comments" value="{{ settings.ORGANIZATION_SHORT_NAME }} Invoice {{ module.program.id }}/{{ user.id }} (for {{ program.niceName }})" />
-<input type="hidden" name="billTo_country" value="US" />
+<form action="/learn/{{ program.getUrlBase }}/cybersource_checkout" method="post">{% csrf_token %}
+<input type="hidden" name="expected_amount" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <center><input id="submit_form" class="btn btn-primary" type="submit" value="Continue to Payment"></center>
 </form>
 {% endif %}

@@ -1718,20 +1718,37 @@ class FinancialAidRequest(models.Model):
                 f = FinancialAidGrant(request = self, amount_max_dec = dollar_amount, percent = discount_percent)
                 # finalize the grant (creates the accounting transfer)
                 f.finalize()
+                # reload it, since callers like the approval page pass the
+                # amounts as strings, which would otherwise be left on f
+                f.refresh_from_db()
                 # mark request as done
                 self.done = True
                 self.save()
-                # send email to student
-                email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
-                email_to = [self.user.get_email_sendto_address()]
-                subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
-                email_context = {'student': self.user,
-                                 'program': self.program,
-                                 'grant': f,
-                                 'curtime': datetime.now(),
-                                 'DEFAULT_HOST': settings.DEFAULT_HOST}
-                email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
-                send_mail(subj, email_contents, email_from, email_to)
+                # send email to student. The grant is already approved at this
+                # point, so a problem with the email shouldn't undo or misreport that.
+                try:
+                    email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
+                    email_to = [self.user.get_email_sendto_address()]
+                    subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
+                    from esp.accounting.controllers import IndividualAccountingController
+                    iac = IndividualAccountingController(self.program, self.user)
+                    payment_url = None
+                    for module_name, view in [('CreditCardModule_Cybersource', 'cybersource'),
+                                              ('CreditCardModule_Stripe', 'payonline')]:
+                        if self.program.hasModule(module_name):
+                            payment_url = 'https://%s/learn/%s/%s' % (settings.DEFAULT_HOST, self.program.getUrlBase(), view)
+                            break
+                    email_context = {'student': self.user,
+                                     'program': self.program,
+                                     'grant': f,
+                                     'aid': iac.finaid_email_context(f),
+                                     'payment_url': payment_url,
+                                     'curtime': datetime.now(),
+                                     'DEFAULT_HOST': settings.DEFAULT_HOST}
+                    email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
+                    send_mail(subj, email_contents, email_from, email_to)
+                except Exception:
+                    logger.exception('Failed to send financial aid approval email to user %d', self.user.id)
             else:
                 raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
 

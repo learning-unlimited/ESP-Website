@@ -85,10 +85,28 @@ from esp.program.models import ScheduleMap, ScheduleConstraint
 from esp.program.models import ArchiveClass
 from esp.resources.models         import Resource, ResourceRequest, ResourceAssignment, ResourceType
 from argcache                     import cache_function, wildcard
-from argcache.extras.derivedfield import DerivedField
+from argcache.extras.derivedfield import DerivedField as _ArgcacheDerivedField
 from esp.program.class_status import ClassStatus
 
 from esp.middleware.threadlocalrequest import get_current_request
+
+def DerivedField(FieldCls, getter_fn):
+    """ argcache's DerivedField, with a fixed deconstruct() path.
+
+    argcache reports e.g. 'django.db.models.fields.IntegerField', but Django's
+    own fields (and so the migration state) report the shortened
+    'django.db.models.IntegerField'. The mismatch made makemigrations see a
+    change to every derived field on every run (see program migrations 0028
+    and 0030, which both contain the same no-op AlterFields). """
+    BaseCls = _ArgcacheDerivedField(FieldCls, getter_fn)
+
+    class FixedCls(BaseCls):
+        def deconstruct(self):
+            name, path, args, kwargs = super(FixedCls, self).deconstruct()
+            return name, FieldCls(*args, **kwargs).deconstruct()[1], args, kwargs
+
+    return FixedCls
+
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
