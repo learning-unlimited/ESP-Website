@@ -39,6 +39,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student_in_grade, n
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
 from esp.utils.models import Printer, PrintRequest
+from esp.utils.ids import get_by_id_or_404
 
 class OnsiteClassSchedule(ProgramModuleObj):
     doc = """Get and/or print a student's schedule for the program."""
@@ -62,7 +63,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
         if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
+            user = get_by_id_or_404(ESPUser, request.GET['user'])
         else:
             user = request.user
         redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
@@ -73,7 +74,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @needs_onsite_no_switchback
     def studentschedule(self, request, *args, **kwargs):
         if 'user' in request.GET:
-            user = ESPUser.objects.get(id=request.GET['user'])
+            user = get_by_id_or_404(ESPUser, request.GET['user'])
         else:
             user = request.user
 

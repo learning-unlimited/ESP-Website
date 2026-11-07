@@ -841,9 +841,9 @@ class TeacherClassRegModule(ProgramModuleObj):
     @meets_deadline('/Classes/Coteachers')
     def coteachers(self, request, tl, one, two, module, extra, prog):
         if 'clsid' in request.GET:
-            classes = ClassSubject.objects.filter(id = request.GET['clsid'])
+            classes = filter_by_id(ClassSubject.objects, request.GET['clsid'])
         elif 'clsid' in request.POST:
-            classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+            classes = filter_by_id(ClassSubject.objects, request.POST['clsid'])
         else:
             return self.goToCore(tl) # just fails.
 
