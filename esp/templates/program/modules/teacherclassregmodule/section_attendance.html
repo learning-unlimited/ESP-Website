@@ -56,7 +56,7 @@ Please select a section from the dropdown below.
 
 {% if tl == "teach" or timeslot %}
 <center>
-    <select name="secid" onchange="location.href='{{ request.path }}?secid='+$j(this).children('option:selected').val()" style="width: 400px;">
+    <select name="secid" onchange="location.href='{{ request.path }}?secid='+$j(this).children('option:selected').val()" style="width: 400px; max-width: 100%;">
         <option disabled{% if not section %} selected="selected"{% endif %}>
             (Select a section)
         </option>
