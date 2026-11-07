@@ -3,7 +3,28 @@ import re
 from django.http import HttpResponseForbidden
 from django.template import Context, Template
 from django.conf import settings
+from django.core.mail import mail_admins
 from django.views.csrf import csrf_failure as django_csrf_failure
+
+def email_admins(request, reason):
+    """
+    Tell the admins about a CSRF failure, so we know who is getting them.
+
+    This is written by hand instead of logging through AdminEmailHandler: the
+    request is rejected before any view runs, so its POST data (passwords
+    included) would be emailed unredacted.
+    """
+    try:
+        user = getattr(request, 'user', None)
+        username = user.username if user is not None and user.is_authenticated else 'anonymous'
+        message = ('User: %s\nRequest: %s %s\nReason: %s\nReferer: %s\nUser agent: %s\n'
+                   % (username, request.method, request.path, reason,
+                      request.META.get('HTTP_REFERER', ''),
+                      request.META.get('HTTP_USER_AGENT', '')))
+        mail_admins('CSRF failure: %s' % request.path, message, fail_silently=True)
+    except Exception:
+        # Never let the email stop the error page from being shown.
+        pass
 
 def csrf_failure(request, reason=""):
     """
@@ -14,6 +35,9 @@ def csrf_failure(request, reason=""):
          'reason': reason,
          'no_referer': reason == REASON_NO_REFERER
         }
+
+    if not settings.DEBUG:
+        email_admins(request, reason)
 
     # We wrap our custom csrf_failure in a try-block, and fall back to
     # Django's global default view in the case of an exception, since we need
