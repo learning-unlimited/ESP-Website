@@ -32,10 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@learningu.org
 """
+from django.contrib.contenttypes.models import ContentType
+from django.db import DataError
+from django.db.models import Q
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from esp.program.modules.admin_search import AdminSearchEntry, SEARCH_CATEGORY_SETTINGS
 from esp.utils.web import render_to_response
-from esp.program.models import ClassSubject
+from esp.program.models import ClassSubject, Program
 
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes
@@ -78,12 +81,25 @@ class AdminMaterials(ProgramModuleObj):
         new_choices.reverse()
         context_form.set_choices(new_choices)
 
+        prog_ct = ContentType.objects.get_for_model(Program)
+        classsubject_ct = ContentType.objects.get_for_model(ClassSubject)
+        class_ids = ClassSubject.objects.filter(parent_program=prog).values_list('id', flat=True)
+        scoped_media = Media.objects.filter(
+            Q(owner_type=prog_ct, owner_id=prog.id) |
+            Q(owner_type=classsubject_ct, owner_id__in=class_ids)
+        )
+
         if request.method == 'POST':
-            if request.POST['command'] == 'delete':
-                docid = request.POST['docid']
-                media = Media.objects.get(id = docid)
-                media.delete()
-            elif request.POST['command'] == 'add':
+            command = request.POST.get('command')
+            if command == 'delete':
+                docid = request.POST.get('docid')
+                if docid:
+                    try:
+                        media = scoped_media.get(id=docid)
+                        media.delete()
+                    except (Media.DoesNotExist, ValueError, TypeError, DataError):
+                        pass
+            elif command == 'add':
                 form = FileUploadForm_Admin(request.POST, request.FILES)
                 form.set_choices(new_choices)
 
@@ -108,13 +124,17 @@ class AdminMaterials(ProgramModuleObj):
                     media.save()
                 else:
                     context_form = form
-            elif request.POST['command'] == 'rename':
+            elif command == 'rename':
                 form = FileRenameForm(request.POST, request.FILES)
                 if form.is_valid():
-                    docid = request.POST['docid']
-                    media = Media.objects.get(id = docid)
-                    media.rename(form.cleaned_data['title'])
-                    media.save()
+                    docid = request.POST.get('docid')
+                    if docid:
+                        try:
+                            media = scoped_media.get(id=docid)
+                            media.rename(form.cleaned_data['title'])
+                            media.save()
+                        except (Media.DoesNotExist, ValueError, TypeError, DataError):
+                            pass
                 else:
                     context_rename_form = form
 
