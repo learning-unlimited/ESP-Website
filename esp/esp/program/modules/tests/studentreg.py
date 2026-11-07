@@ -724,7 +724,7 @@ class StudentRegTest(ProgramFrameworkTest):
             "Your grant covers 50%% of the cost of:\n"
             "  - Bus pass ($15.00, optional; not selected)\n"
             "  - Food ($5.00 each, optional; you've selected 2 for $10.00)\n"
-            "  - Lunch (price varies, optional; selected, $7.00)\n"
+            "  - Lunch ($3.00 to $7.00, optional; selected, $7.00)\n"
             "  - Program admission ($70.00)\n"
             "\n"
             "Based on what you've selected so far, that's $43.50 off.\n"
@@ -841,3 +841,18 @@ class StudentRegTest(ProgramFrameworkTest):
         self.assertTrue(request.done)
         self.assertTrue(request.approved)
         self.assertEqual(iac.amount_due(), 0)
+
+    def test_finaid_approval_email_option_prices(self):
+        """ An item whose options all cost the same (e.g. shirt sizes) shows
+        that price; options with different prices show a range. """
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(70, [], [('Shirt', [('Small', 10), ('Large', 10)])])
+        iac = IndividualAccountingController(self.program, random.choice(self.students))
+        iac.ensure_required_transfers()
+        shirt = LineItemType.objects.get(program=self.program, text='Shirt')
+        shirt.lineitemoptions_set.update(amount_dec=None)   # sizes inherit the shirt's price
+        LineItemType.objects.filter(id=shirt.id).update(amount_dec=10)
+        body = self._approval_email_body(iac)
+        self.assertIn("  - Shirt ($10.00, optional; not selected)\n", body)

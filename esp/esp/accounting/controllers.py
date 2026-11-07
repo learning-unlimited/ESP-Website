@@ -658,12 +658,26 @@ class IndividualAccountingController(ProgramAccountingController):
         items = []
         for li in self.get_lineitemtypes(include_donations=False).filter(for_payments=False):
             selected = Transfer.objects.filter(user=self.user, line_item=li)
+            # Items with options (e.g. shirt sizes, meal sizes) have one price if
+            # every option costs the same, a range if not, and no price if the
+            # student enters their own amount for any option.
+            price = li.amount_dec
+            price_range = None
+            options = list(li.lineitemoptions_set.all())
+            if options:
+                if any(o.is_custom for o in options):
+                    price = None
+                else:
+                    prices = sorted({o.amount_dec_inherited for o in options})
+                    price = prices[0] if len(prices) == 1 else None
+                    if len(prices) > 1:
+                        price_range = (prices[0], prices[-1])
             items.append({
                 'name': li.text,
                 'required': li.required,
                 'covered': li.for_finaid,
-                # Items with options (e.g. meal sizes) have no single price
-                'price': None if li.num_options else li.amount_dec,
+                'price': price,
+                'price_range': price_range,
                 'each': (li.max_quantity or 1) > 1,
                 'selected_qty': selected.count(),
                 'selected_total': selected.aggregate(Sum('amount_dec'))['amount_dec__sum'] or Decimal('0'),
