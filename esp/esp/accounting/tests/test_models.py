@@ -738,3 +738,59 @@ class IndividualAccountingControllerTest(TestCase):
                 identifier, amount_due, transaction_id='cs-1')
 
         self.assertEqual(self.iac.amount_paid(), Decimal('65.00'))
+
+class LineItemTypeGetOrCreateForProgramTest(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.program = Program.objects.create(grade_min=7, grade_max=12)
+
+    def test_creates_when_missing(self):
+        lit, created = LineItemType.get_or_create_for_program(self.program, text='Donation')
+        self.assertTrue(created)
+        self.assertEqual(lit.program, self.program)
+        self.assertEqual(lit.text, 'Donation')
+        self.assertEqual(LineItemType.objects.filter(program=self.program).count(), 1)
+
+    def test_returns_existing(self):
+        existing = LineItemType.objects.create(program=self.program, text='Donation', required=True)
+        lit, created = LineItemType.get_or_create_for_program(self.program, text='Donation')
+        self.assertFalse(created)
+        self.assertEqual(lit, existing)
+        self.assertEqual(LineItemType.objects.filter(program=self.program).count(), 1)
+
+    def test_returns_newest_of_duplicates(self):
+        LineItemType.objects.create(program=self.program, text='Donation')
+        newest = LineItemType.objects.create(program=self.program, text='Donation')
+        self.assertEqual(LineItemType.get_or_create_for_program(self.program, text='Donation'), (newest, False))
+
+    def test_ignores_other_programs(self):
+        other = Program.objects.create(url='other', grade_min=7, grade_max=12)
+        LineItemType.objects.create(program=other, text='Donation')
+        lit, created = LineItemType.get_or_create_for_program(self.program, text='Donation')
+        self.assertTrue(created)
+        self.assertEqual(lit.program, self.program)
+
+    def test_matches_on_every_lookup_field(self):
+        LineItemType.objects.create(program=self.program, text='Program admission', amount_dec=Decimal('25.00'))
+        lit, created = LineItemType.get_or_create_for_program(
+            self.program, text='Program admission', amount_dec=Decimal('40.00'))
+        self.assertTrue(created)
+        self.assertEqual(lit.amount_dec, Decimal('40.00'))
+
+    def test_defaults_apply_only_on_create(self):
+        lit, created = LineItemType.get_or_create_for_program(
+            self.program, text='Student refund', defaults={'for_payments': True})
+        self.assertTrue(lit.for_payments)
+        lit.for_payments = False
+        lit.save()
+        again, created = LineItemType.get_or_create_for_program(
+            self.program, text='Student refund', defaults={'for_payments': True})
+        self.assertFalse(created)
+        self.assertEqual(again, lit)
+        self.assertFalse(again.for_payments)
+
+    def test_refund_lineitemtype_tolerates_duplicates(self):
+        """Duplicates left by an earlier race must not raise MultipleObjectsReturned."""
+        LineItemType.objects.create(program=self.program, text='Student refund')
+        newest = LineItemType.objects.create(program=self.program, text='Student refund')
+        self.assertEqual(ProgramAccountingController(self.program).default_refund_lineitemtype(), newest)
