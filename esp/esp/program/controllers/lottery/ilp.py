@@ -455,6 +455,11 @@ class ILPLotteryAssignmentController(BaseLotteryAssignmentController):
             if not studs:
                 continue
             cap = int(self.section_capacities[sj])
+            if cap == 0:
+                # The capacity constraint already forces enrollment to 0, so
+                # the penalty would only be a constant -- and Gurobi rejects a
+                # PWL whose breakpoints are all at x=0.
+                continue
             sec_id = int(self.section_ids[sj])
             breakpoints, reward = self._section_penalty_pwl[sec_id]
 
