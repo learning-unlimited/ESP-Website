@@ -42,7 +42,8 @@ class TestModuleScheduleConflictsAPI(ProgramFrameworkTest):
             self.client.force_login(self.admin)
             payload = {
                 "module_id": self.pmo1.id,
-                "seq": 999
+                "seq": 999,
+                "version": self.pmo1.version
             }
 
             response = self.client.post(
