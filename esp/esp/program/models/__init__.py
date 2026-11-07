@@ -53,7 +53,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core import urlresolvers, validators
 from django.core.cache import cache
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -1659,6 +1659,11 @@ class TeacherBio(models.Model):
             lastBio = bios[0]
         return lastBio
 
+class _RollBackPreview(Exception):
+    """ Raised to roll back the savepoint in
+    FinancialAidRequest.preview_approval_email(). """
+    pass
+
 @python_2_unicode_compatible
 class FinancialAidRequest(models.Model):
     """
@@ -1710,47 +1715,69 @@ class FinancialAidRequest(models.Model):
 
         return string
 
-    def approve(self, dollar_amount = None, discount_percent = 100):
+    def approval_email(self, grant):
+        """ The email telling the student that grant was approved, as a dict
+        with subject, body, from and to. """
+        from esp.accounting.controllers import IndividualAccountingController
+        iac = IndividualAccountingController(self.program, self.user)
+        payment_url = None
+        for module_name, view in [('CreditCardModule_Cybersource', 'cybersource'),
+                                  ('CreditCardModule_Stripe', 'payonline')]:
+            if self.program.hasModule(module_name):
+                payment_url = 'https://%s/learn/%s/%s' % (settings.DEFAULT_HOST, self.program.getUrlBase(), view)
+                break
+        email_context = {'student': self.user,
+                         'program': self.program,
+                         'grant': grant,
+                         'aid': iac.finaid_email_context(grant),
+                         'payment_url': payment_url,
+                         'curtime': datetime.now(),
+                         'DEFAULT_HOST': settings.DEFAULT_HOST}
+        return {'subject': 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName()),
+                'body': render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context),
+                'from': '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER),
+                'to': [self.user.get_email_sendto_address()]}
+
+    def _create_grant(self, dollar_amount, discount_percent):
         from esp.accounting.models import FinancialAidGrant
+        if not any([dollar_amount, discount_percent]):
+            raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
+        f = FinancialAidGrant(request = self, amount_max_dec = dollar_amount, percent = discount_percent)
+        # finalize the grant (creates the accounting transfer)
+        f.finalize()
+        # reload it, since callers like the approval page pass the
+        # amounts as strings, which would otherwise be left on f
+        f.refresh_from_db()
+        return f
+
+    def approve(self, dollar_amount = None, discount_percent = 100):
         if not self.approved:
-            if any([dollar_amount, discount_percent]):
-                # create financial aid grant
-                f = FinancialAidGrant(request = self, amount_max_dec = dollar_amount, percent = discount_percent)
-                # finalize the grant (creates the accounting transfer)
-                f.finalize()
-                # reload it, since callers like the approval page pass the
-                # amounts as strings, which would otherwise be left on f
-                f.refresh_from_db()
-                # mark request as done
-                self.done = True
-                self.save()
-                # send email to student. The grant is already approved at this
-                # point, so a problem with the email shouldn't undo or misreport that.
-                try:
-                    email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
-                    email_to = [self.user.get_email_sendto_address()]
-                    subj = 'Financial Aid Approved for %s for %s' % (self.user.name(), self.program.niceName())
-                    from esp.accounting.controllers import IndividualAccountingController
-                    iac = IndividualAccountingController(self.program, self.user)
-                    payment_url = None
-                    for module_name, view in [('CreditCardModule_Cybersource', 'cybersource'),
-                                              ('CreditCardModule_Stripe', 'payonline')]:
-                        if self.program.hasModule(module_name):
-                            payment_url = 'https://%s/learn/%s/%s' % (settings.DEFAULT_HOST, self.program.getUrlBase(), view)
-                            break
-                    email_context = {'student': self.user,
-                                     'program': self.program,
-                                     'grant': f,
-                                     'aid': iac.finaid_email_context(f),
-                                     'payment_url': payment_url,
-                                     'curtime': datetime.now(),
-                                     'DEFAULT_HOST': settings.DEFAULT_HOST}
-                    email_contents = render_to_string('program/modules/finaidapprovemodule/approval_email.txt', email_context)
-                    send_mail(subj, email_contents, email_from, email_to)
-                except Exception:
-                    logger.exception('Failed to send financial aid approval email to user %d', self.user.id)
-            else:
-                raise ESPError('Need to supply at least one of dollar_amount and discount_percent', log=True)
+            f = self._create_grant(dollar_amount, discount_percent)
+            # mark request as done
+            self.done = True
+            self.save()
+            # send email to student. The grant is already approved at this
+            # point, so a problem with the email shouldn't undo or misreport that.
+            try:
+                email = self.approval_email(f)
+                send_mail(email['subject'], email['body'], email['from'], email['to'])
+            except Exception:
+                logger.exception('Failed to send financial aid approval email to user %d', self.user.id)
+
+    def preview_approval_email(self, dollar_amount = None, discount_percent = 100):
+        """ The email approve() would send with these terms, without approving
+        anything: the grant is created and finalized in a savepoint that is
+        then rolled back, so the email is computed exactly as approve() would
+        (amount_finaid() and friends look the grant up in the database). """
+        if self.approved:
+            raise ESPError('This request has already been approved.', log=False)
+        try:
+            with transaction.atomic():
+                email = self.approval_email(self._create_grant(dollar_amount, discount_percent))
+                raise _RollBackPreview()
+        except _RollBackPreview:
+            pass
+        return email
 
 """ Functions for scheduling constraints
     I'm sorry that these are in the same __init__.py file;

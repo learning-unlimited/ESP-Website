@@ -38,6 +38,7 @@ from esp.program.models import FinancialAidRequest, SplashInfo
 from esp.accounting.models import CybersourcePostback, FinancialAidGrant, LineItemType, Transfer
 
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.middleware.esperrormiddleware import ESPError_NoLog
 from esp.program.tests import ProgramFrameworkTest
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 
@@ -46,6 +47,7 @@ from django.conf import settings
 from django.test import override_settings
 from django.core import mail
 from unittest import mock
+import json
 import random
 import re
 
@@ -830,6 +832,77 @@ class StudentRegTest(ProgramFrameworkTest):
         sent = [m for m in mail.outbox if m.subject.startswith('Financial Aid Approved')]
         self.assertEqual(len(sent), 1)
         self.assertIn("Your grant covers the full cost of:\n", sent[0].body)
+
+    def test_finaid_approval_email_preview(self):
+        """ The preview is the email approve() then sends, and saves nothing. """
+        iac = self._setup_shirt_program()
+        iac.set_preference('Shirt', 1)
+        request = FinancialAidRequest.objects.create(user=iac.user, program=self.program)
+        transfers = list(Transfer.objects.filter(user=iac.user).values_list('id', 'amount_dec'))
+
+        preview = request.preview_approval_email(dollar_amount=Decimal('40.00'), discount_percent=50)
+        self.assertIn("Your grant covers up to $40.00", preview['body'])
+        self.assertIn("Your current balance is $25.00.", preview['body'])
+        self.assertFalse(FinancialAidGrant.objects.filter(request=request).exists())
+        self.assertEqual(list(Transfer.objects.filter(user=iac.user).values_list('id', 'amount_dec')), transfers)
+        request.refresh_from_db()
+        self.assertFalse(request.done)
+        self.assertEqual(iac.amount_due(), 80)
+
+        mail.outbox = []
+        request.approve(dollar_amount=Decimal('40.00'), discount_percent=50)
+        sent = [m for m in mail.outbox if m.subject.startswith('Financial Aid Approved')]
+        self.assertEqual(len(sent), 1)
+        self.assertEqual((sent[0].subject, sent[0].to), (preview['subject'], preview['to']))
+        #   Identical apart from the approval time, which can tick over
+        strip_time = lambda body: body[body.index('\n\n', body.index('was approved on')):]
+        self.assertEqual(strip_time(sent[0].body), strip_time(preview['body']))
+        with self.assertRaises(ESPError_NoLog):
+            request.preview_approval_email()
+
+    def test_finaid_approval_page_preview(self):
+        """ The approval page's preview endpoint reports who would be approved
+        or skipped, and picks whose email to show by criteria or by choice. """
+        self._setup_shirt_program()
+        (paid, unpaid, blank, approved) = self.students[:4]
+        for student in [paid, unpaid, approved]:
+            FinancialAidRequest.objects.create(user=student, program=self.program, extra_explaination='Please')
+        FinancialAidRequest.objects.create(user=blank, program=self.program)
+        FinancialAidRequest.objects.get(user=approved, program=self.program).approve()
+        IndividualAccountingController(self.program, paid).submit_payment(Decimal('70.00'))
+        self.assertTrue(self.client.login(username=self.admins[0].username, password='password'))
+        url = '/manage/%s/finaidapprovepreview' % self.program.getUrlBase()
+        all_users = [str(s.id) for s in [paid, unpaid, blank, approved]]
+
+        def preview(**extra):
+            data = {'user': all_users, 'amount_max_dec': '0', 'percent': '100'}
+            data.update(extra)
+            mail.outbox = []
+            response = self.client.post(url, data)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(mail.outbox, [])
+            return json.loads(response.content.decode('utf-8'))
+
+        result = preview()
+        #   Page order is newest request first
+        self.assertEqual([s['id'] for s in result['to_approve']], [unpaid.id, paid.id])
+        self.assertEqual((result['already_approved'], result['blank']), ([approved.name()], [blank.name()]))
+        self.assertEqual(result['student']['id'], unpaid.id)
+        self.assertIn("Your grant covers the full cost of:\n", result['email']['body'])
+
+        self.assertEqual(preview(payment='paid')['student']['id'], paid.id)
+        self.assertEqual(preview(payment='unpaid')['student']['id'], unpaid.id)
+        self.assertEqual(preview(preview_user=str(paid.id))['student']['id'], paid.id)
+        self.assertIsNone(preview(extracosts='yes')['email'])
+        result = preview(approve_blanks='on')
+        self.assertEqual([s['id'] for s in result['to_approve']], [blank.id, unpaid.id, paid.id])
+        result = preview(amount_max_dec='', percent='')
+        self.assertIsNone(result['email'])
+        self.assertTrue(result['error'])
+        result = preview(percent='lots')
+        self.assertIsNone(result['email'])
+        self.assertEqual(result['error'], 'The dollar amount and percent must be numbers.')
+        self.assertFalse(FinancialAidGrant.objects.filter(request__user__in=[paid, unpaid, blank]).exists())
 
     def test_finaid_approval_survives_email_failure(self):
         """ If the approval email can't be built or sent, the grant stays

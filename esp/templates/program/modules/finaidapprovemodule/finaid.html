@@ -32,6 +32,89 @@
       background-color: #f5f5f5;
     }
 
+    #preview-section {
+      max-width: 800px;
+      margin: 15px 0px;
+      background: #f7f7f7;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px 16px;
+    }
+    #preview-section h3 {
+      margin-top: 0;
+    }
+    .preview-box {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 12px 16px;
+    }
+    .preview-box.active {
+      background: #dde4ee;
+      border-color: #8aaac8;
+    }
+    .preview-box-label {
+      font-weight: bold;
+      font-size: 12px;
+      text-transform: uppercase;
+      color: #888;
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+    .preview-or-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+      color: #aaa;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .preview-or-divider::before,
+    .preview-or-divider::after {
+      content: '';
+      flex: 1;
+      border-top: 1px solid #ccc;
+    }
+    .preview-criteria-table td {
+      padding: 3px 8px 3px 0;
+      vertical-align: middle;
+    }
+    .preview-criteria-table select, #preview-user-select {
+      margin: 0;
+    }
+    #preview-summary {
+      margin: 0 0 10px;
+    }
+    #preview-status {
+      color: #666;
+      padding: 8px 0;
+    }
+    #preview-status.error {
+      color: #a94442;
+    }
+    #preview-email {
+      margin-top: 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+      padding: 12px 16px;
+    }
+    #preview-email-headers {
+      color: #555;
+      margin-bottom: 8px;
+    }
+    #preview-email-body {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: monospace;
+      font-size: 12px;
+      background: none;
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+
     td.explanation {
       max-width: 300px;
       overflow-wrap: break-word;
@@ -45,6 +128,7 @@
 <script type="text/javascript" language="javascript">
 function toggle(source) {
   $j('input[name=user]').prop('checked', source.checked);
+  $j('input[name=user]').first().trigger('change');
 }
 </script>
 {% endblock %}
@@ -54,6 +138,25 @@ function toggle(source) {
   <h1>Financial Aid Requests for {{ program.niceName }}</h1>
   <p>Below is a list of users that have requested financial aid.</p>
   <p>Please select the requests that you would like to approve.</p>
+  {% if error %}
+  <h3 style="padding-top: 10px;">{{ error }}</h3>
+  {% endif %}
+
+  {% if users_approved %}
+  <h3 style="padding-top: 10px;"> {{ users_approved|length }} New Approvals</h3>
+  <h4>
+    {{ users_approved|join:", " }}
+  </h4>
+  {% elif POST %}
+  <h3 style="padding-top: 10px;"> 0 New Approvals </h3>
+  {% endif %}
+
+  {% if users_error %}
+  <h3 style="padding-top: 10px; color: firebrick"> {{ users_error|length }} Errors</h3>
+  <h4>
+    {{ users_error|join:", " }}
+  </h4>
+  {% endif %}
   <form action="/manage/{{ program.getUrlBase }}/finaidapprove/" method="post">
     <div id="program_form">
       <table align="center" id="finaid_table">
@@ -90,35 +193,192 @@ function toggle(source) {
     </div>
 
     <label for="amount_max_dec">{{ amount_max_dec_help_text }}</label>
-    <input name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00" required>
+    <input id="amount_max_dec" name="amount_max_dec" type="number" min="0.00" step="0.01" max="2500" value="0.00" required>
     <br />
-    <label for="amount_max_dec">{{ percent_help_text }}</label>
-    <input name="percent" type="number" min="0" step="1" max="100" value="100" required>
+    <label for="percent">{{ percent_help_text }}</label>
+    <input id="percent" name="percent" type="number" min="0" step="1" max="100" value="100" required>
     <br />
-    <input type="submit" value="Approve Requests" class="btn btn-primary" >
-    <input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks"> Approve blank requests?
+    <label><input type="checkbox" id="approve_blanks_checkbox" name="approve_blanks"> Approve blank requests?</label>
+
+    <div id="preview-section">
+      <h3>Email preview</h3>
+      <p>Check what the approval email will say before submitting. It's computed from the grant terms above and each student's current items and balance; nothing is saved.</p>
+      <div id="preview-criteria-box" class="preview-box">
+        <div class="preview-box-label">By criteria</div>
+        <p style="margin: 0 0 8px; font-size: 13px; color: #555;">Show the email for the first selected student (in the order above) who meets these criteria:</p>
+        <table class="preview-criteria-table">
+          <tr>
+            <td><label for="preview-extracosts-select">Extra costs:</label></td>
+            <td>
+              <select id="preview-extracosts-select">
+                <option value="">&mdash; Any &mdash;</option>
+                <option value="yes">Has selected optional items</option>
+                <option value="no">No optional items</option>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <td><label for="preview-payment-select">Payment:</label></td>
+            <td>
+              <select id="preview-payment-select">
+                <option value="">&mdash; Any &mdash;</option>
+                <option value="paid">Has already paid something</option>
+                <option value="unpaid">Hasn't paid anything</option>
+              </select>
+            </td>
+          </tr>
+        </table>
+      </div>
+      <div class="preview-or-divider">&mdash;OR&mdash;</div>
+      <div id="preview-student-box" class="preview-box">
+        <div class="preview-box-label">Specific student</div>
+        <select id="preview-user-select">
+          <option value="">&mdash; Choose a selected student &mdash;</option>
+        </select>
+      </div>
+
+      <div id="preview-status"></div>
+      <div id="preview-email" hidden>
+        <div id="preview-email-headers">
+          <div><b>To:</b> <span id="preview-email-to"></span></div>
+          <div><b>Subject:</b> <span id="preview-email-subject"></span></div>
+        </div>
+        <pre id="preview-email-body"></pre>
+      </div>
+    </div>
+
+    <div id="preview-summary"></div>
+    <input type="submit" value="Submit and notify students" class="btn btn-primary" >
   </form>
 
-  {% if error %}
-  <h3 style="padding-top: 10px;">{{ error }}</h3>
-  {% endif %}
-
-  {% if users_approved %}
-  <h3 style="padding-top: 10px;"> {{ users_approved|length }} New Approvals</h3>
-  <h4>
-    {{ users_approved|join:", " }}
-  </h4>
-  {% elif POST %}
-  <h3 style="padding-top: 10px;"> 0 New Approvals </h3>
-  {% endif %}
-
-  {% if users_error %}
-  <h3 style="padding-top: 10px; color: firebrick"> {{ users_error|length }} Errors</h3>
-  <h4>
-    {{ users_error|join:", " }}
-  </h4>
-  {% endif %}
 </div>
+
+<script type="text/javascript">
+(function() {
+    var previewUrl = '/manage/{{ program.getUrlBase }}/finaidapprovepreview';
+    var $form = $j('#finaid_table').closest('form');
+    var currentRequest = null;
+    var termsTimer = null;
+
+    function esc(text) {
+        return $j('<div>').text(text).html();
+    }
+
+    function checkedIds() {
+        return $j('input[name=user]:checked').map(function() { return this.value; }).get();
+    }
+
+    function updateActiveBoxes() {
+        var specific = $j('#preview-user-select').val() !== '';
+        $j('#preview-student-box').toggleClass('active', specific);
+        $j('#preview-criteria-box').toggleClass('active', !specific);
+    }
+
+    function showStatus(msg, isError) {
+        $j('#preview-status').text(msg).toggleClass('error', !!isError).prop('hidden', !msg);
+    }
+
+    function rebuildUserSelect(students) {
+        var $sel = $j('#preview-user-select');
+        var chosen = $sel.val();
+        $sel.find('option:not(:first)').remove();
+        $j.each(students, function(i, s) {
+            $sel.append($j('<option>').val(String(s.id)).text(s.name));
+        });
+        $sel.val($sel.find('option[value="' + chosen + '"]').length ? chosen : '');
+        updateActiveBoxes();
+    }
+
+    function showSummary(data) {
+        var n = data.to_approve.length;
+        var html = '';
+        if (n) {
+            html += '<b>Submitting will approve ' + n + ' student' + (n === 1 ? '' : 's') +
+                    ' and email each of them.</b>';
+        }
+        if (data.already_approved.length) {
+            html += '<br />Skipped, already approved: ' + esc(data.already_approved.join(', '));
+        }
+        if (data.blank.length) {
+            html += '<br />Skipped, no explanation (check "Approve blank requests?" to include): ' +
+                    esc(data.blank.join(', '));
+        }
+        $j('#preview-summary').html(html);
+    }
+
+    function refreshPreview() {
+        //   A specifically chosen student who has since been unchecked
+        //   falls back to the criteria
+        var chosen = $j('#preview-user-select').val();
+        if (chosen && checkedIds().indexOf(chosen) === -1) {
+            $j('#preview-user-select').val('');
+        }
+        updateActiveBoxes();
+
+        if (currentRequest) { currentRequest.abort(); }
+        if (!checkedIds().length) {
+            currentRequest = null;
+            rebuildUserSelect([]);
+            $j('#preview-summary').html('');
+            $j('#preview-email').prop('hidden', true);
+            showStatus('Select at least one student who hasn\'t been approved yet to preview their email.');
+            return;
+        }
+
+        showStatus('Loading preview\u2026');
+        var params = $form.serializeArray();
+        params.push({name: 'csrfmiddlewaretoken', value: csrf_token()});
+        params.push({name: 'extracosts', value: $j('#preview-extracosts-select').val()});
+        params.push({name: 'payment', value: $j('#preview-payment-select').val()});
+        params.push({name: 'preview_user', value: $j('#preview-user-select').val()});
+
+        currentRequest = $j.ajax({url: previewUrl, type: 'POST', data: $j.param(params), dataType: 'json'})
+            .done(function(data) {
+                rebuildUserSelect(data.to_approve);
+                showSummary(data);
+                if (data.email) {
+                    $j('#preview-email-to').text(data.email.to.join(', '));
+                    $j('#preview-email-subject').text(data.email.subject);
+                    $j('#preview-email-body').text(data.email.body);
+                    $j('#preview-email').prop('hidden', false);
+                    showStatus('');
+                    return;
+                }
+                $j('#preview-email').prop('hidden', true);
+                if (data.error) {
+                    showStatus(data.error, true);
+                } else if (!data.to_approve.length) {
+                    showStatus('Select at least one student who hasn\'t been approved yet to preview their email.');
+                } else {
+                    showStatus('None of the selected students meet these criteria.');
+                }
+            })
+            .fail(function(xhr, textStatus) {
+                if (textStatus === 'abort') { return; }
+                $j('#preview-email').prop('hidden', true);
+                showStatus('Failed to load the preview (HTTP ' + xhr.status + ').', true);
+            });
+    }
+
+    $j('input[name=user], #approve_blanks_checkbox').on('change', refreshPreview);
+    $j('#amount_max_dec, #percent').on('input', function() {
+        clearTimeout(termsTimer);
+        termsTimer = setTimeout(refreshPreview, 400);
+    });
+    $j('#preview-extracosts-select, #preview-payment-select').on('change', function() {
+        $j('#preview-user-select').val('');
+        refreshPreview();
+    });
+    $j('#preview-user-select').on('change', function() {
+        if ($j(this).val() !== '') {
+            $j('#preview-extracosts-select, #preview-payment-select').val('');
+        }
+        refreshPreview();
+    });
+
+    refreshPreview();
+})();
+</script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
