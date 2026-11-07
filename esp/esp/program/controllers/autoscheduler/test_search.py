@@ -110,6 +110,51 @@ class SearchOptimizerTest(unittest.TestCase):
             ["schedule", "schedule"])
         self.assertEqual(self.manipulator.history[0]["section"], self.s2)
 
+    def test_failed_second_eviction_rolls_back_the_first(self):
+        """Section 2 needs two roomslots, so scheduling it evicts sections 1
+        and 4. Section 1 can be placed elsewhere, but section 4's teacher is
+        only free in the timeslot it already occupies, so the attempt fails.
+        Everything, including the work done to relocate section 1, is undone
+        and the original assignments and history survive."""
+        teacher = data_model.AS_Teacher([self.schedule.timeslots[2]], 5)
+        self.schedule.teachers[5] = teacher
+        s4 = data_model.AS_ClassSection([teacher], 0.83, 20, 0, [], 4, 0)
+        self.schedule.class_sections[4] = s4
+        self.manipulator = ScheduleManipulator(
+            self.schedule, constraint_names=[],
+            scorer_names_and_weights=SCORER_WEIGHTS)
+        self.optimizer = SearchOptimizer(self.manipulator)
+        self.assertTrue(self.manipulator.schedule_section(
+            self.s1, self.rooms[1]))
+        self.assertTrue(self.manipulator.schedule_section(s4, self.rooms[2]))
+        history_before = list(self.manipulator.history)
+
+        actions = self.optimizer.optimize_section(self.s2, 3)
+
+        self.assertEqual(actions, [])
+        self.assertFalse(self.s2.is_scheduled())
+        self.assertIs(self.s1.assigned_roomslots[0], self.rooms[1])
+        self.assertIs(s4.assigned_roomslots[0], self.rooms[2])
+        self.assertEqual(self.manipulator.history, history_before)
+
+    def test_moves_scheduled_section_when_it_improves_the_score(self):
+        """With a scorer that prefers a better-sized room, an already
+        scheduled section is moved, and the move is returned."""
+        manipulator = ScheduleManipulator(
+            self.schedule, constraint_names=[],
+            scorer_names_and_weights={"RoomSizeMismatchScorer": 100.0})
+        optimizer = SearchOptimizer(manipulator)
+        self.assertTrue(manipulator.schedule_section(self.s1, self.rooms[0]))
+        score_before = manipulator.scorer.score_schedule()
+
+        actions = optimizer.optimize_section(self.s1, 1)
+
+        self.assertEqual([a["action"] for a in actions], ["move"])
+        self.assertEqual(self.s1.assigned_roomslots[0].room.name, "10-250")
+        self.assertGreater(manipulator.scorer.score_schedule(), score_before)
+        self.assertEqual([a["action"] for a in manipulator.history],
+                         ["schedule", "move"])
+
     def test_search_leaves_consistent_scores(self):
         """After a search, the incrementally updated score equals a fresh
         one."""
