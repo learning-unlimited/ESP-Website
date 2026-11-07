@@ -12,7 +12,7 @@ Based on what you've selected so far, that's ${{ aid.amount_now|floatformat:2 }}
 {% for item in aid.not_covered %}{% include "program/modules/finaidapprovemodule/finaid_item_line.txt" %}
 {% endfor %}{% if aid.any_optional_not_covered %}You're only charged for optional items you select.
 {% endif %}{% endif %}
-{% if aid.amount_due > 0 %}Your current balance is ${{ aid.amount_due|floatformat:2 }}.{% if payment_url %} You can pay online at {{ payment_url }}.{% endif %}{% else %}You don't owe anything for {{ program.niceName }} right now.{% if aid.any_optional_not_covered %} If you select any optional items not covered by financial aid, you'll need to pay for those.{% endif %}{% endif %}
+{% if aid.amount_due > 0 %}Your current balance is ${{ aid.amount_due|floatformat:2 }}.{% if payment_url %} You can pay online at: {{ payment_url }}{% endif %}{% else %}You don't owe anything for {{ program.niceName }} right now.{% if aid.any_optional_not_covered %} If you select any optional items not covered by financial aid, you'll need to pay for those.{% endif %}{% endif %}
 {% if note %}
 Note from the program directors: {{ note }}
 {% endif %}

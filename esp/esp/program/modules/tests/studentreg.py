@@ -699,10 +699,10 @@ class StudentRegTest(ProgramFrameworkTest):
             "Based on what you've selected so far, that's $70.00 off.\n"
             "\n"
             "Not covered by financial aid:\n"
-            "  - Kids' Shirt ($10.00, optional; selected)\n"
+            "  - Kids' Shirt ($10.00, optional) - selected\n"
             "You're only charged for optional items you select.\n"
             "\n"
-            "Your current balance is $10.00. You can pay online at https://"), body)
+            "Your current balance is $10.00. You can pay online at: https://"), body)
 
     def test_finaid_approval_email_partial_grant_many_items(self):
         """ Percentage grant covering several kinds of items, selected and
@@ -722,18 +722,19 @@ class StudentRegTest(ProgramFrameworkTest):
         body = self._approval_email_body(iac, discount_percent=50)
         self.assertEqual(body,
             "Your grant covers 50%% of the cost of:\n"
-            "  - Bus pass ($15.00, optional; not selected)\n"
-            "  - Food ($5.00 each, optional; you've selected 2 for $10.00)\n"
-            "  - Lunch ($3.00 to $7.00, optional; selected, $7.00)\n"
+            "  - Bus pass ($15.00, optional) - not selected\n"
+            "  - Food ($5.00 each, optional) - you've selected 2 for $10.00\n"
+            "  - Lunch ($3.00 to $7.00, optional) - selected, $7.00\n"
             "  - Program admission ($70.00)\n"
             "\n"
             "Based on what you've selected so far, that's $43.50 off.\n"
             "\n"
             "Not covered by financial aid:\n"
-            "  - Shirt ($10.00, optional; not selected)\n"
+            "  - Shirt ($10.00, optional) - not selected\n"
             "You're only charged for optional items you select.\n"
             "\n"
-            "Your current balance is $43.50. You can pay online at https://%s/learn/%s/cybersource.\n"
+            "Your current balance is $43.50. You can pay online at: "
+            "https://%s/learn/%s/cybersource\n"
             "\n" % (settings.DEFAULT_HOST, self.program.getUrlBase()))
 
     def test_finaid_approval_email_dollars_plus_percent(self):
@@ -760,7 +761,7 @@ class StudentRegTest(ProgramFrameworkTest):
         items would cost extra. """
         iac = self._setup_shirt_program()
         body = self._approval_email_body(iac)
-        self.assertIn("  - Shirt ($10.00, optional; not selected)\n", body)
+        self.assertIn("  - Shirt ($10.00, optional) - not selected\n", body)
         self.assertIn(
             "You don't owe anything for %s right now. If you select any optional items "
             "not covered by financial aid, you'll need to pay for those.\n" % self.program.niceName(), body)
@@ -855,4 +856,4 @@ class StudentRegTest(ProgramFrameworkTest):
         shirt.lineitemoptions_set.update(amount_dec=None)   # sizes inherit the shirt's price
         LineItemType.objects.filter(id=shirt.id).update(amount_dec=10)
         body = self._approval_email_body(iac)
-        self.assertIn("  - Shirt ($10.00, optional; not selected)\n", body)
+        self.assertIn("  - Shirt ($10.00, optional) - not selected\n", body)
