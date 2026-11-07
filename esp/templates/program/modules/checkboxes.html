@@ -1,7 +1,10 @@
 {% load render_qsd %}
 {% comment %}
 Pass lock_links=True to show the steps without links, e.g. while registration
-still forces the user through its required modules in order.
+still forces the user through its required modules in order.  Pass the
+checklist's gate and gate_status to describe the lotteries (see
+esp.program.modules.checklist); steps outside their schedule window are never
+links.
 {% endcomment %}
 
 <div class="row">
@@ -9,10 +12,13 @@ still forces the user through its required modules in order.
 <table class="table table-condensed" align="center" width="400">
 <tr><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
-{% if module.isStep %}
-<tr>
-<td>{% if lock_links %}
-{{ module.get_link_title }}
+{% if module.isStep and not module.hide_in_checklist %}
+{% if module.after_gate %}{% ifchanged module.after_gate.id %}
+<tr class="reg-gate-heading"><th colspan="2">After {{ module.after_gate.gate_label }}</th></tr>
+{% endifchanged %}{% endif %}
+<tr{% if module.after_gate or module.schedule_state != 'open' %} class="reg-step-unavailable"{% endif %}>
+<td>{% if lock_links or module.schedule_state != 'open' %}
+{{ module.get_link_title }}{% if module.schedule_state == 'closed' %} <i>(closed)</i>{% endif %}
 {% elif module.useTemplate %}
 {% if is_module_page %}
 <a href="{{ mainpage_url }}" title="{{ module.module.link_title }}">{{ module.module.link_title }}</a>
@@ -26,7 +32,7 @@ still forces the user through its required modules in order.
     {% if not module.isRequired %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
 {% endif %}
 </td>
-<td>{% if lock_links %}
+<td>{% if lock_links or module.schedule_state != 'open' %}
 {% elif not module.useTemplate %}
 <a href="{{ module.get_full_path }}">
 {% elif is_module_page %}
@@ -36,10 +42,18 @@ still forces the user through its required modules in order.
 {% endif %}
 {% if module.isCompleted %}
     <i class="bi bi-check done-sign" aria-label="Done"></i>
+{% elif module.after_gate.gate_lifts == 'completed' %}
+    <span class="reg-step-status">If selected</span>
+{% elif module.after_gate or module.schedule_state == 'upcoming' %}
+    <span class="reg-step-status">{% if module.opens_on %}Opens {{ module.opens_on|date:"M j" }}{% else %}Later{% endif %}</span>
+{% elif gate and module.id == gate.id and gate_status == 'waiting' %}
+    <span class="reg-step-status">Entered</span>
+{% elif gate and module.id == gate.id and gate_status == 'refused' %}
+    <span class="reg-step-status">Not selected</span>
 {% else %}
     <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
 {% endif %}
-{% if not lock_links %}</a>{% endif %}
+{% if not lock_links and module.schedule_state == 'open' %}</a>{% endif %}
 
 </td>
 </tr>

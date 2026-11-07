@@ -17,11 +17,11 @@
 {% block module_content %}
 <section class="reg-modules">
   {% for module in modules %}
-  {% if module.useTemplate or module.getTemplate %}
+  {% if not module.checklist_only %}{% if module.useTemplate or module.getTemplate %}
   <div class="reg-module-block" id="module-{{ module.id }}">
     {% include module.getTemplate %}
   </div>
-  {% endif %}
+  {% endif %}{% endif %}
   {% endfor %}
 </section>
 {% endblock %}

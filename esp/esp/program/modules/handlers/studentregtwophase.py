@@ -48,7 +48,7 @@ from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student_in_grade, meets_cap, no_auth
-from esp.users.models import Record, RecordType, ESPUser
+from esp.users.models import Permission, Record, RecordType, ESPUser
 from esp.dbmail.models import send_mail
 from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
@@ -70,6 +70,54 @@ class StudentRegTwoPhase(ProgramModuleObj):
     def studentDesc(self):
         return {'twophase_star_students': "Students who have starred classes in the two-phase lottery",
                 'twophase_priority_students': "Students who have marked choices in the two-phase lottery"}
+
+    #   The module's schedule is the class lottery's: students who have
+    #   submitted their preferences stay here until it closes.
+    permission_types = ('Student/Classes/Lottery',)
+    gate_lifts = 'closed'
+    gate_label = 'the class lottery'
+
+    def _lottery_deadlines(self, user):
+        """The Student/Classes/Lottery deadlines that apply to ``user``: their
+        own and their roles', as Permission.user_has_perm matches them first.
+        Deadlines for a user filter aren't counted."""
+        if user is None or not user.is_authenticated:
+            return Permission.objects.none()
+        applies = Q(user=user) | Q(user=None, role__in=user.groups.all())
+        return Permission.objects.filter(applies, program=self.program, permission_type='Student/Classes/Lottery')
+
+    def _lottery_state(self, user=None):
+        """Where the class lottery's own deadlines stand for ``user`` (by
+        default the current request's): 'open', 'upcoming', 'ended', or None
+        without any.  Deadlines changed on the deadlines page, including one
+        student's extension, don't change the module's own schedule, so the
+        module checks them too.  Broader permissions like Student/All aren't
+        counted, since programs usually leave those open."""
+        if user is None:
+            user = getattr(get_current_request(), 'user', None)
+        now = datetime.datetime.now()
+        deadlines = self._lottery_deadlines(user)
+        if deadlines.filter(Permission.is_valid_qobject(now)).exists():
+            return 'open'
+        if deadlines.filter(start_date__gt=now).exists():
+            return 'upcoming'
+        if deadlines.filter(end_date__lt=now).exists():
+            return 'ended'
+        return None
+
+    def is_open(self, user=None):
+        return super().is_open(user) and self._lottery_state(user) in ('open', None)
+
+    def has_ended(self, user=None):
+        return super().has_ended(user) or self._lottery_state(user) == 'ended'
+
+    def opens_at(self, user=None):
+        if self._lottery_state(user) != 'upcoming':
+            return self.start_date
+        if user is None:
+            user = getattr(get_current_request(), 'user', None)
+        starts = self._lottery_deadlines(user).filter(start_date__gt=datetime.datetime.now()).aggregate(Min('start_date'))
+        return max(filter(None, [self.start_date, starts['start_date__min']]))
 
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
@@ -175,6 +223,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         context['timeslots'] = schedule
         context['is_confirmed'] = self.isCompleted()
+        context['twophase_closes'] = self.end_date
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
@@ -501,7 +550,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         if min_classes > 0 and total_classes < min_classes:
             messages.error(
                 request,
-                'You must star at least %d classes before confirming your preferences. '
+                'You must star at least %d classes before submitting your preferences. '
                 'You currently have %d starred.' % (min_classes, total_classes)
             )
             return self.goToCore(tl)
