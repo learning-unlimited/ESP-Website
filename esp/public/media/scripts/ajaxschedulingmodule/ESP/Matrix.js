@@ -29,28 +29,54 @@ function Matrix(
     
     // Set up filtering
     this.filter = {
-        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), type: "number"},
-        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), type: "number"},
-        roomResource: {active: false, el: $j("input#room-filter-resource-text"), type: "string"},
-        roomName: {active: false, el: $j("input#room-filter-name-text"), type: "string"},
+        roomCapacityMin: {active: false, el: $j("input#room-filter-capacity-min"), weightEl: $j("input#room-filter-capacity-min-weight"), type: "number"},
+        roomCapacityMax: {active: false, el: $j("input#room-filter-capacity-max"), weightEl: $j("input#room-filter-capacity-max-weight"), type: "number"},
+        roomResource: {active: false, el: $j("input#room-filter-resource-text"), weightEl: $j("input#room-filter-resource-weight"), type: "string"},
+        roomName: {active: false, el: $j("input#room-filter-name-text"), weightEl: $j("input#room-filter-name-weight"), type: "string"},
+        roomFitsSection: {active: false, el: $j("input#room-filter-fits-section"), weightEl: $j("input#room-filter-fits-section-weight"), type: "boolean"},
+        // Set by clicking timeslot headers (see toggleFilterTimeslot) rather than by an input
+        roomFreeAtTimeslots: {active: false, el: $j(), weightEl: $j("input#room-filter-free-timeslots-weight"), type: "timeslots", val: []},
     };
-    this.filter.roomCapacityMin.valid = function(a) {
-        return a.num_students >= this.filter.roomCapacityMin.val;
+    // Rooms where the selected section has at least one valid placement (set by highlightTimeslots)
+    this.placeableRoomIds = {};
+    // Rooms whose match score is below this percentage are hidden
+    this.matchThreshold = 100;
+
+    // Each filter's distance is 0 for a match and up to 1 for the worst mismatch (null if it doesn't apply)
+    this.filter.roomCapacityMin.distance = function(a) {
+        var min = this.filter.roomCapacityMin.val;
+        return a.num_students >= min ? 0 : (min - a.num_students) / min;
     }.bind(this);
-    this.filter.roomCapacityMax.valid = function(a) {
-        return a.num_students <= this.filter.roomCapacityMax.val;
+    this.filter.roomCapacityMax.distance = function(a) {
+        var max = this.filter.roomCapacityMax.val;
+        return a.num_students <= max ? 0 : (a.num_students - max) / Math.max(max, 1);
     }.bind(this);
-    this.filter.roomResource.valid = function(a) {
-        var result = false;
+    this.filter.roomResource.distance = function(a) {
+        var result = 1;
         $j.each(a.resource_lines, function(index, resource) {
             if((resource).toLowerCase().search(this.filter.roomResource.val)>-1) {
-                result = true;
+                result = 0;
             }
         }.bind(this));
         return result;
     }.bind(this);
-    this.filter.roomName.valid = function(a) {
-        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1
+    this.filter.roomName.distance = function(a) {
+        return (a.text).toLowerCase().search(this.filter.roomName.val)>-1 ? 0 : 1;
+    }.bind(this);
+    this.filter.roomFitsSection.distance = function(a) {
+        if (!this.sections.selectedSection) {
+            return null;
+        }
+        return this.placeableRoomIds[a.id] === true ? 0 : 1;
+    }.bind(this);
+    this.filter.roomFreeAtTimeslots.distance = function(a) {
+        var timeslot_ids = this.filter.roomFreeAtTimeslots.val;
+        // the fraction of chosen timeslots where the room is unavailable or holds another section
+        var busy = timeslot_ids.filter(function(timeslot_id) {
+            var cell = this.getCell(a.id, timeslot_id);
+            return cell.disabled || (cell.section && cell.section !== this.sections.selectedSection);
+        }.bind(this));
+        return busy.length / timeslot_ids.length;
     }.bind(this);
 
     $j.each(this.filter, function(filterName, filterObject) {
@@ -72,45 +98,159 @@ function Matrix(
             }
             $j("body").trigger("room-filters-changed");
         });
+        filterObject.weight = 1;
+        filterObject.weightEl.on("change", function() {
+            var weight = parseFloat(filterObject.weightEl.val());
+            filterObject.weight = isNaN(weight) ? 1 : Math.max(weight, 0);
+            $j("body").trigger("room-filters-changed");
+        });
     }.bind(this));
-    
+
+    var thresholdEl = $j("input#room-filter-threshold");
+    thresholdEl.on("input change", function() {
+        this.matchThreshold = parseInt(thresholdEl.val(), 10);
+        $j("#room-filter-threshold-value").text(this.matchThreshold + "%");
+        $j("body").trigger("room-filters-changed");
+    }.bind(this));
+
     /**
-     * Get the rooms satisfying the search criteria.
+     * Add or remove a timeslot from the "free at timeslots" room filter.
+     *
+     * @param timeslot_id: The id of the timeslot whose header was clicked
+     */
+    this.toggleFilterTimeslot = function(timeslot_id){
+        var filterObject = this.filter.roomFreeAtTimeslots;
+        var index = filterObject.val.indexOf(timeslot_id);
+        if (index >= 0) {
+            filterObject.val.splice(index, 1);
+        } else {
+            filterObject.val.push(timeslot_id);
+        }
+        this.setFilterTimeslots(filterObject.val);
+    };
+
+    /**
+     * Set the timeslots for the "free at timeslots" room filter and update its display.
+     *
+     * @param timeslot_ids: An array of timeslot ids
+     */
+    this.setFilterTimeslots = function(timeslot_ids){
+        var filterObject = this.filter.roomFreeAtTimeslots;
+        filterObject.val = timeslot_ids.slice().sort(function(a, b) {
+            return this.timeslots.get_by_id(a).order - this.timeslots.get_by_id(b).order;
+        }.bind(this));
+        filterObject.active = filterObject.val.length > 0;
+        $j.each(this.timeslotHeaders, function(timeslot_id, header) {
+            var selected = filterObject.val.indexOf(parseInt(timeslot_id, 10)) >= 0;
+            header.toggleClass("timeslot-filter-selected", selected);
+            header.find("button").attr("aria-pressed", String(selected));
+        });
+        $j("#room-filter-free-timeslots-list").text(filterObject.active ? filterObject.val.map(function(timeslot_id) {
+            return this.timeslots.get_by_id(timeslot_id).label;
+        }.bind(this)).join("; ") : "None (click timeslot headers to choose)");
+        $j("body").trigger("room-filters-changed");
+    };
+
+    $j("#room-filter-free-timeslots-clear").on("click", function() {
+        this.setFilterTimeslots([]);
+    }.bind(this));
+
+    // Scheduling changes can change which rooms are free at the chosen timeslots
+    $j("body").on("schedule-changed", function() {
+        if (this.filter.roomFreeAtTimeslots.active) {
+            this.updateRooms();
+        }
+    }.bind(this));
+
+    // Default room order: sort by building number
+    this.roomOrder = Object.keys(this.rooms).sort(function (room1, room2) {
+        return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
+            numeric: true,
+            sensitivity: 'base'
+        })
+    });
+
+    /**
+     * Score how well a room matches the active filters: 1 minus the weighted mean of the
+     * squared filter distances, so 1 is a full match. Returns null if no filter applies.
+     */
+    this.roomMatch = function(room){
+        var penalty = 0;
+        var totalWeight = 0;
+        // score every active criterion in the room filter tab
+        $j.each(this.filter, function(filterName, filterObject) {
+            if (!filterObject.active || filterObject.weight <= 0) {
+                return;
+            }
+            var distance = filterObject.distance(room);
+            if (distance === null) {
+                return;
+            }
+            distance = Math.min(Math.max(distance, 0), 1);
+            penalty += filterObject.weight * distance * distance;
+            totalWeight += filterObject.weight;
+        });
+        return totalWeight > 0 ? 1 - penalty / totalWeight : null;
+    };
+
+    /**
+     * Get the rooms at or above the match threshold, best matches first, as {room, match} objects.
      */
     this.filteredRooms = function(){
         var returnedRooms = [];
-        $j.each(this.rooms, function(index, room) {
-            var roomValid;
-            // check every criterion in the room filter tab, short-circuiting if possible
-            roomValid = true;
-            for (var filterName in this.filter) {
-                if (this.filter.hasOwnProperty(filterName)) {
-                    var filterObject = this.filter[filterName];
-                    // this loops over properties in this.filter
-                    if (filterObject.active && !filterObject.valid(room)) {
-                        roomValid = false;
-                        break;
-                    }
-                }
-            }
-            if (roomValid) {
-                returnedRooms.push(room);
+        $j.each(this.roomOrder, function(index, room_id) {
+            var room = this.rooms[room_id];
+            var match = this.roomMatch(room);
+            if (match === null || match * 100 >= this.matchThreshold) {
+                returnedRooms.push({room: room, match: match});
             }
         }.bind(this));
+        // sort is stable, so equal matches keep the default room order
+        returnedRooms.sort(function(a, b) {
+            return b.match - a.match;
+        });
         return returnedRooms;
     };
-    
+
     this.updateRooms = function(){
-        var filtRooms = this.filteredRooms()
-        $j.each(this.rooms, function(index, room) {
-            // get rows to show or hide
-            var rows = $j(".room[data-id='" + room.id + "']").parent();
-            if (filtRooms.includes(room)) {
+        var filtRooms = this.filteredRooms();
+        var matches = {};
+        $j.each(filtRooms, function(index, entry) {
+            matches[entry.room.id] = entry.match;
+        });
+        // shown rooms (best matches first), then hidden rooms in the default order
+        var orderedRooms = filtRooms.map(function(entry) {
+            return entry.room;
+        }).concat(this.roomOrder.map(function(room_id) {
+            return this.rooms[room_id];
+        }.bind(this)).filter(function(room) {
+            return !(room.id in matches);
+        }));
+        $j.each(orderedRooms, function(index, room) {
+            // get rows to show or hide, moving each to the end of its table to apply the order
+            var headers = $j(".room[data-id='" + room.id + "']");
+            var rows = headers.parent();
+            rows.each(function(i, row) {
+                row.parentNode.appendChild(row);
+            });
+            var match = matches[room.id];
+            if (match !== undefined) {
                 rows.css("display", "table-row");
             } else {
                 rows.css("display", "none");
             }
-        }.bind(this));
+            headers.toggleClass("room-full-match", match === 1);
+            headers.find(".room-match").text(match != null && match < 1 ? Math.floor(match * 100) + "%" : "");
+        });
+    };
+
+    /**
+     * Re-filter the rooms after the selected section changes, if the room filters depend on it.
+     */
+    this.refreshRoomsForSelection = function(){
+        if (this.filter.roomFitsSection.active || this.filter.roomFreeAtTimeslots.active) {
+            this.updateRooms();
+        }
     };
 
     this.sections = sections;
@@ -263,6 +403,12 @@ function Matrix(
         }
         
         if(section){
+            this.placeableRoomIds = {};
+            // Always keep the room the section is currently scheduled in
+            var assignment = this.sections.scheduleAssignments[section.id];
+            if(assignment && assignment.room_id) {
+                this.placeableRoomIds[assignment.room_id] = true;
+            }
             $j.each(available_timeslots, function(j, timeslot_id) {
                 $j.each(this.rooms, function(k, room) {
                     var cell = this.getCell(room.id, timeslot_id);
@@ -271,6 +417,8 @@ function Matrix(
                         if(scheduleTimeslots == null || !this.validateAssignment(section, room.id, scheduleTimeslots).valid) {
                             cell.el.removeClass("teacher-available-cell");
                             cell.el.addClass("teacher-available-not-first-cell");
+                        } else {
+                            this.placeableRoomIds[room.id] = true;
                         }
                     }
                 }.bind(this));
@@ -278,6 +426,7 @@ function Matrix(
             for(var teacher of section.teacher_data) {
                 addClassToSections(_.difference(teacher.sections, [section.id]), "teacher-is-teaching-this-cell");
             }
+            this.refreshRoomsForSelection();
         }
     }
 
@@ -505,26 +654,25 @@ function Matrix(
         header_corner.append($j("<button id = 'legend_button'>Show Legend</button>"));
         header_row.append(header_corner);
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
-            var timeslotHeader = $j("<th>" + timeslot.label + "</th>");
+            // the button makes the header keyboard-accessible; its clicks bubble up to the header's handler
+            var timeslotHeader = $j("<th>")
+                .addClass("timeslot-header")
+                .attr("data-timeslot-id", timeslot.id)
+                .attr("title", "Click to show rooms free at this time")
+                .append($j("<button type='button'>").text(timeslot.label).attr("aria-pressed", "false"));
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
             timeslotHeader.appendTo(header_row);
             colModal.push({width: 80, align: 'center'});
         }.bind(this));
         //Room headers
         var rows = {}; //table rows by room name
-        var room_ids = Object.keys(this.rooms);
-        room_ids = room_ids.sort(function (room1, room2) {
-            // sort by building number
-            return rooms[room1].text.localeCompare(rooms[room2].text, undefined, {
-                numeric: true,
-                sensitivity: 'base'
-            })
-        });
+        var room_ids = this.roomOrder;
         $j.each(this.rooms, function(id, room){
             room = this.rooms[id];
             var room_header = $j("<td>")
                 .addClass('room')
                 .text(room.text + " [" + room['num_students'] + "]")
+                .append($j("<span>").addClass('room-match'))
                 .attr('data-id', id)
                 .css({"max-width": "140px", "min-width": "140px"});
             var row = $j("<tr></tr>");
@@ -546,8 +694,11 @@ function Matrix(
 
         // Get both sets of headers
         $j.each(this.timeslots.timeslots_sorted, function(index, timeslot){
-            var timeslotHeader = $j("th:contains('" + timeslot.label + "')");
+            var timeslotHeader = $j("th[data-timeslot-id='" + timeslot.id + "']");
             this.timeslotHeaders[timeslot.id] = timeslotHeader;
+            timeslotHeader.on("click", function() {
+                this.toggleFilterTimeslot(timeslot.id);
+            }.bind(this));
         }.bind(this));
 
         // Hack to make tooltips work
@@ -565,6 +716,10 @@ function Matrix(
                     "Capacity: " + room.num_students + " students",
                     "Resources: " + ((room.resource_lines.length > 0) ? "<ul><li>"+ room.resource_lines.join("</li><li>") + "</li></ul>" : "None"),
                 ];
+                var match = that.roomMatch(room);
+                if (match !== null) {
+                    tooltipParts.push("Filter match: " + Math.floor(match * 100) + "%");
+                }
                 return tooltipParts.join("</br>");
             },
             items: ".ft_c td, .occupied-cell",
