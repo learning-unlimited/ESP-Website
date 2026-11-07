@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.survey.models import Survey, Question, QuestionType, SurveyResponse, Answer
-from esp.users.models import Record
+from esp.users.models import Record, ESPUser
 
 import random
 import re
@@ -178,3 +178,75 @@ class SurveyTest(ProgramFrameworkTest):
             if q_type in ('checkboxes', 'multiple choice'):
                 self.assertEqual(param_val, 'Option 1|Option 2|Option 3')
                 self.assertEqual(q_text, 'Select from the options')
+
+    def test_generic_survey(self):
+        # Create a generic survey
+        survey = Survey.objects.create(name='Generic Feedback Survey', program=self.program, category='generic')
+        text_qtype, _ = QuestionType.objects.get_or_create(name='yes-no response')
+        question_base = Question.objects.create(survey=survey, name='Did you have a good experience?', question_type=text_qtype, per_class=False, seq=0)
+
+        # Unauthenticated user should be redirected to login
+        response = self.client.get(f'/survey/{self.program.url}')
+        self.assertEqual(response.status_code, 302)
+
+        # Create a generic user (not enrolled as student or teacher)
+        volunteer = ESPUser.objects.create_user(username='volunteer_user', password='password')
+        self.assertTrue(self.client.login(username=volunteer.username, password='password'))
+
+        # Not yet completed
+        self.assertFalse(Record.user_completed(volunteer, 'generic_survey', self.program))
+
+        # Access survey view list
+        response = self.client.get(f'/survey/{self.program.url}')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'General Program Survey')
+        self.assertContains(response, 'Take Survey')
+
+        # Access with trailing slash
+        response = self.client.get(f'/survey/{self.program.url}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'General Program Survey')
+
+        # Access /survey/.../survey
+        response = self.client.get(f'/survey/{self.program.url}/survey')
+        self.assertEqual(response.status_code, 200)
+
+        # Access general survey questions page
+        response = self.client.get(f'/survey/{self.program.url}?general')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Did you have a good experience?')
+
+        # Submit the survey
+        form_data = {
+            f'question_{question_base.id}': 'Yes',
+        }
+        response = self.client.post(f'/survey/{self.program.url}?general', form_data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'have been saved')
+
+        # Check database records
+        self.assertEqual(SurveyResponse.objects.filter(survey=survey).count(), 1)
+        self.assertEqual(Answer.objects.filter(question=question_base).count(), 1)
+        answer = Answer.objects.get(question=question_base)
+        self.assertEqual(answer.answer, 'Yes')
+        self.assertEqual(answer.target, self.program)
+
+        # User is marked as completed
+        self.assertTrue(Record.user_completed(volunteer, 'generic_survey', self.program))
+
+        # Duplicate attempt shows already completed
+        response = self.client.get(f'/survey/{self.program.url}?general')
+        self.assertContains(response, 'already completed the')
+
+        # Check program.survey url alias
+        response = self.client.get(f'/survey/{self.program.url}/program.survey')
+        self.assertEqual(response.status_code, 200)
+
+        # Admin view should show link for generic survey
+        self.client.logout()
+        admin = self.admins[0]
+        self.client.login(username=admin.username, password='password')
+        response = self.client.get(f'/manage/{self.program.url}/surveys')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'/survey/{self.program.getUrlBase()}')
+

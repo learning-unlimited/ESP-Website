@@ -61,7 +61,7 @@ class Survey(models.Model):
                                 blank=True, null=True,
                                 help_text="Blank if not associated to a program", on_delete=models.CASCADE)
 
-    survey_choices = [("learn", "learn"), ("teach", "teach")]
+    survey_choices = [("learn", "learn"), ("teach", "teach"), ("generic", "generic")]
     category = models.CharField(max_length = 10, choices = survey_choices)
 
     def __str__(self):
