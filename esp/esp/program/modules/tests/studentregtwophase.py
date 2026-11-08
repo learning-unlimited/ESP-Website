@@ -946,6 +946,49 @@ class StudentRegTwoPhaseTest(StudentRegTwoPhaseBaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertFalse(self._valid_priorities(student).exists())
 
+    def test_save_priorities_unknown_timeslot_rejected(self):
+        """A timeslot id that doesn't exist or isn't numeric returns 400."""
+        self._login_with_profile(self.students[0])
+        bogus = Event.objects.order_by('-id')[0].id + 1000
+        for timeslot_id in (str(bogus), 'abc'):
+            response = self.client.post(
+                self._url('save_priorities'),
+                {'json_data': json.dumps({timeslot_id: {'1': ''}})})
+            self.assertEqual(response.status_code, 400, timeslot_id)
+            self.assertEqual(response.content, b'JSON data mis-formatted.')
+
+    def test_save_priorities_other_program_timeslot_rejected(self):
+        """A timeslot that isn't in this program returns 400 and saves nothing."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        other = Event.objects.create(
+            program=None, event_type=ts.event_type, start=ts.start,
+            end=ts.end, short_description='Other', description='Other')
+        student = self.students[0]
+        self._login_with_profile(student)
+
+        response = self._post_priorities(
+            other, {'1': str(sec.parent_class.id)})
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(self._valid_priorities(student).exists())
+
+    def test_save_priorities_non_numeric_class_rejected(self):
+        """A non-numeric class id returns 400 and saves no other ranks."""
+        ts = self.timeslots[0]
+        sec = self.program.sections()[0]
+        self._place(sec, ts)
+        student = self.students[0]
+        self._login_with_profile(student)
+
+        for bad in ('abc', None, [1]):
+            response = self._post_priorities(
+                ts, {'1': str(sec.parent_class.id), '2': bad})
+            self.assertEqual(response.status_code, 400, bad)
+            self.assertEqual(response.content, b'JSON data mis-formatted.')
+        self.assertFalse(
+            StudentRegistration.objects.filter(user=student).exists())
+
     def test_save_priorities_blank_choice_expires_existing(self):
         """An empty choice clears the existing priority for that slot."""
         ts = self.timeslots[0]
