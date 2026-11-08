@@ -38,6 +38,7 @@ from esp.users.models import ESPUser, Permission
 from esp.program.models import PhaseZeroRecord
 from esp.tagdict.models import Tag
 from esp.program.modules.handlers.bigboardmodule import BigBoardModule
+from esp.utils.ids import get_by_id_or_404
 
 from django.contrib.auth.models import Group
 from django.db.models.query import Q
@@ -149,7 +150,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
 
         if request.POST:
             if request.POST.get('mode') == 'addnew':
-                add_user = ESPUser.objects.get(id=request.POST['student_selected1'])
+                add_user = get_by_id_or_404(ESPUser, request.POST['student_selected1'])
                 in_lottery = PhaseZeroRecord.objects.filter(user=add_user, program=prog).exists()
                 if in_lottery:
                     context['error'] = f'Error - {add_user.name()} is already in the lottery.'
@@ -159,8 +160,8 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     rec.user.add(add_user)
                     context['success'] = f"{add_user.name()} has been added to the lottery."
             elif request.POST.get('mode') == 'addtoexisting':
-                add_user = ESPUser.objects.get(id=request.POST['student_selected2'])
-                join_user = ESPUser.objects.get(id=request.POST['student_selected3'])
+                add_user = get_by_id_or_404(ESPUser, request.POST['student_selected2'])
+                join_user = get_by_id_or_404(ESPUser, request.POST['student_selected3'])
                 try:
                     rec = PhaseZeroRecord.objects.get(user=join_user, program=prog)
                 except PhaseZeroRecord.DoesNotExist:
@@ -182,7 +183,7 @@ class StudentRegPhaseZeroManage(ProgramModuleObj):
                     else:
                         context['error'] = f'Error - This group already contains the maximum number of students ({num_allowed_users}).'
             elif request.POST.get('mode') == 'remove':
-                remove_user = ESPUser.objects.get(id=request.POST['student_selected4'])
+                remove_user = get_by_id_or_404(ESPUser, request.POST['student_selected4'])
                 try:
                     rec = PhaseZeroRecord.objects.get(user=remove_user, program=prog)
                 except PhaseZeroRecord.DoesNotExist:

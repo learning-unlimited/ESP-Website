@@ -19,6 +19,7 @@ from django.utils.datastructures import MultiValueDictKeyError
 from django.utils.decorators import method_decorator
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.safestring import mark_safe
 from django.views.decorators.http import require_GET
 
 from vanilla import CreateView
@@ -340,11 +341,11 @@ def user_registration_phase2(request):
                               request, {'form':form, 'email':email})
 
 
-ALREADY_ACTIVE_MESSAGE = ('The user account supplied has already been activated. '
-                          'If you have lost your password, visit the '
-                          '<a href="/myesp/passwdrecover/">password recovery form</a>.  '
-                          'Otherwise, please '
-                          '<a href="/accounts/login/?next=/myesp/profile/">log in</a>.')
+ALREADY_ACTIVE_MESSAGE = mark_safe('The user account supplied has already been activated. '
+                                   'If you have lost your password, visit the '
+                                   '<a href="/myesp/passwdrecover/">password recovery form</a>.  '
+                                   'Otherwise, please '
+                                   '<a href="/accounts/login/?next=/myesp/profile/">log in</a>.')
 
 
 def _finish_activation(user):
@@ -363,13 +364,13 @@ def activate_account(request, uidb64, token):
         u = None
 
     if u is None:
-        raise ESPError("Invalid activation link.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>.", log=False)
+        raise ESPError(mark_safe("Invalid activation link.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>."), log=False)
 
     if u.is_active:
         raise ESPError(ALREADY_ACTIVE_MESSAGE, log=False)
 
     if not account_activation_token.check_token(u, token):
-        raise ESPError("This activation link is invalid or has expired.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>.", log=False)
+        raise ESPError(mark_safe("This activation link is invalid or has expired.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>."), log=False)
 
     _finish_activation(u)
 
@@ -377,7 +378,7 @@ def activate_account(request, uidb64, token):
 
 def activate_account_legacy(request):
     """Handle a legacy "?username=&key=" activation link."""
-    raise ESPError("This activation link is no longer valid.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>, or set a password using the <a href='/myesp/passwdrecover/'>password recovery form</a>.", log=False)
+    raise ESPError(mark_safe("This activation link is no longer valid.  Please request a new one using the <a href='/myesp/resend/'>resend form</a>, or set a password using the <a href='/myesp/passwdrecover/'>password recovery form</a>."), log=False)
 
 def send_activation_email(user):
     """Mail the user a fresh activation link.

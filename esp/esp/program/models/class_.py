@@ -49,6 +49,7 @@ from django.db.models.query import Q
 from django.db.models import Count, Min, OuterRef, Subquery, signals, Sum
 from django.db.models.manager import Manager
 from django.core.exceptions import FieldError
+from django.utils.html import format_html
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 from django.template import Template, Context
@@ -1026,7 +1027,7 @@ class ClassSection(models.Model):
 
             for exp in relevantConstraints:
                 if not exp.evaluate(sm, recursive=autocorrect_constraints):
-                    return f"Adding <i>{self.title()}</i> to your schedule requires that you {exp.requirement.label}.  You can go back and correct this."
+                    return format_html("Adding <i>{}</i> to your schedule requires that you {}.  You can go back and correct this.", self.title(), exp.requirement.label)
 
         scrmi = self.parent_program.studentclassregmoduleinfo
         section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
@@ -1617,7 +1618,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
     optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True, on_delete=models.CASCADE)
-    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
