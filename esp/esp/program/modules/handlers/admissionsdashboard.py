@@ -161,22 +161,7 @@ class AdmissionsDashboard(ProgramModuleObj):
             "teacher_comment",
             "student_preference",
         )
-        ).values(
-            "id",
-            "app_id",
-            "app__admin_status",
-            "app__admin_comment",
-            "app__user__id",
-            "app__user__first_name",
-            "app__user__last_name",
-            "subject_id",
-            "subject__title",
-            "teacher_rating",
-            "teacher_ranking",
-            "teacher_comment",
-            "student_preference",
-        )
-
+        
         if not request.user.isAdmin(prog):
             classes = request.user.getTaughtClassesFromProgram(prog)
             classapps = classapps.filter(subject__in=classes)
