@@ -54,10 +54,8 @@ from django.db.models import ProtectedError
 
 from django.core.management import call_command
 
-from django.db import connection
 from django.test import LiveServerTestCase, RequestFactory
 from django.test.client import Client
-from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django import forms
 
@@ -2905,10 +2903,9 @@ class ProgramCreationFormHandlerLookupTest(TestCase):
         ids = self._ids_for_question('will you accept payment by credit card')
         self.assertIsNotNone(ids)
         self.assertIn(pm.id, ids)
-      
+
 class ProgramCreationFormDateValidationTest(TestCase):
-    """Tests that ProgramCreationForm rejects registration date ranges where
-    end is not strictly after start."""
+    """Tests that ProgramCreationForm rejects registration date ranges whereend is not strictly after start."""
 
     def _base_form_data(self, teacher_start, teacher_end, student_start, student_end):
         """Return a minimal set of form fields sufficient to trigger the date
