@@ -56,6 +56,7 @@ from django.conf import settings
 import collections
 import json
 import phonenumbers
+from esp.utils.ids import get_by_id_or_404
 
 class TeacherCheckinModule(ProgramModuleObj):
     doc = """Check in teachers for a program."""
@@ -223,7 +224,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         snippet
         """
         context = {}
-        context['class'] = ClassSubject.objects.get(id=request.GET['class'])
+        context['class'] = get_by_id_or_404(ClassSubject, request.GET['class'])
         if request.GET['show_flags']:
             context['show_flags'] = True
             context['flag_types'] = ClassFlagType.get_flag_types(self.program)
@@ -522,7 +523,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         starttime = date = next = previous = None
         default_phone = request.GET.get('default_phone', '(missing contact info)')
         if 'start' in request.GET:
-            starttime = Event.objects.get(id=request.GET['start'])
+            starttime = get_by_id_or_404(Event, request.GET['start'])
             date = starttime.start.date()
             times = prog.getTimeSlotList()
             i = times.index(starttime)
