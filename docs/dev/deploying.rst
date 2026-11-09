@@ -21,11 +21,13 @@ add more chapters.  When it does the "create superuser", you should create
 yourself an account; afterwards chapter admins can create their own accounts
 and you can make them admins.
 
-If something doesn't work, and you need to re-run a particular step, you can do
-so by passing the appropriate flag to ``new_site.sh``.  Note that some steps
-won't work if you run them twice, so if a step fails partway through you may
-need to complete or undo it manually.  The script will remember your settings;
-you just need to tell it the same directory again.
+If something doesn't work, fix the problem and re-run ``new_site.sh``, either
+with ``--all`` or with the flag for just the step that failed.  Each step skips
+work that's already done (e.g. an existing database, Apache section, or cron
+entry), so it's safe to run again.  The script will remember your settings;
+you just need to tell it the same directory again.  An existing
+``local_settings.py`` is kept as-is; to regenerate it, or to start over on the
+settings or database, use ``--reset``.
 
 It can also be helpful to run ``python manage.py migrate`` if the setup fails
 during the database or settings phase.
