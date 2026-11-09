@@ -104,9 +104,8 @@ class StudentClassRegModuleInfo(models.Model):
     #   - Set to true to make the cancel button remove the student from classes they have registered for
     cancel_button_dereg = models.BooleanField(default=False, help_text='Check this box to remove a student from all of their classes when they cancel their registration.')
 
-    #   Choose which appears on student reg for the modules: checkbox list, progress bar, or nothing
-    #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
-    progress_mode = models.IntegerField(default=1, help_text='Select which to use on student reg: 1=checklist with a progress bar (2 does the same), 0=neither.')
+    #   Choose whether student reg shows the registration checklist
+    show_checklist = models.BooleanField(default=True, help_text='Check this box to show the registration checklist (the registration steps, with a progress bar) on the student registration pages.')
 
     #   Choose whether an email is sent the first time a student confirms registration.
     send_confirmation = models.BooleanField(default=True, help_text='Check this box to send each student an email each time they confirm their registration. You can customize the text of the email using the "Confirmemail" registration receipt below.')
@@ -194,9 +193,8 @@ class ClassRegModuleInfo(models.Model):
     open_class_registration = models.BooleanField(blank=True, default=False,
          help_text = 'If true, teachers will be presented with an option to register for an "open class".')
 
-    #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
-    #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
-    progress_mode = models.IntegerField(default=1, help_text='Select which to use on teacher reg: 1=checklist with a progress bar (2 does the same), 0=neither.')
+    #   Choose whether teacher reg shows the registration checklist
+    show_checklist = models.BooleanField(default=True, help_text='Check this box to show the registration checklist (the registration steps, with a progress bar) on the teacher registration pages.')
 
     @property
     def module(self):
