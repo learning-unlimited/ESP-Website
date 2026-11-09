@@ -42,6 +42,7 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.users.views.usersearch import get_user_checklist
 from esp.dbmail.models import ActionHandler
 from esp.tagdict.models import Tag
+from django.contrib import messages
 from django.template import Template
 from django.template import Context as DjangoContext
 from django.template.loader import render_to_string
@@ -87,6 +88,16 @@ def _make_image_urls_absolute(body, request):
             return 'src="{}"'.format(request.build_absolute_uri(m.group(3)))
         return 'src={}{}{}'.format(m.group(1), request.build_absolute_uri(m.group(2)), m.group(1))
     return _RELATIVE_SRC_RE.sub(replace_src, body)
+
+
+def _strip_embedded_images(body, request):
+    """Strip base64 images from an email body, warning the sender if any were removed."""
+    body, n_stripped = strip_base64_images(body)
+    if n_stripped:
+        messages.warning(request,
+            f'{n_stripped} embedded image(s) were removed from this email. '
+            'Please use the image upload button in the editor toolbar to add images.')
+    return body
 
 
 def _program_urls_in_text(text, current_program_url):
@@ -222,7 +233,7 @@ class CommModule(ProgramModuleObj):
                                               request.POST['listcount'],
                                               request.POST['subject'],
                                               request.POST['body']    ]
-        body, _ = strip_base64_images(body)
+        body = _strip_embedded_images(body, request)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         selected = request.POST.get('selected')
@@ -336,7 +347,7 @@ class CommModule(ProgramModuleObj):
                                     request.POST['replyto'],
                                     request.POST['subject'],
                                     request.POST['body']    ]
-        body, _ = strip_base64_images(body)
+        body = _strip_embedded_images(body, request)
         body = _make_image_urls_absolute(body, request)
         sendto_fn_name = request.POST.get('sendto_fn_name', MessageRequest.SEND_TO_SELF_REAL)
         public_view = 'public_view' in request.POST

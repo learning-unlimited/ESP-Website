@@ -9,6 +9,7 @@ static helpers the views rely on.
 """
 
 from django.conf import settings
+from django.contrib.messages import get_messages
 from django.core import mail
 from django.db.models import Q
 from django.test import SimpleTestCase
@@ -29,6 +30,8 @@ CORRUPTED_POST_ERROR = (
 GRADE_WARNING = "You haven't selected a grade range filter"
 GUARDIAN_WARNING = 'parent and/or emergency contact emails'
 STALE_FILTER_WARNING = 'no longer valid'
+EMBEDDED_IMAGE_WARNING = 'embedded image(s) were removed'
+BASE64_IMAGE_BODY = '<p>Hi</p><img src="data:image/png;base64,iVBORw0KGgoAAAA">'
 
 
 class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
@@ -66,6 +69,10 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         }
         data.update(overrides)
         return data
+
+    def warnings_for(self, response):
+        return [str(m) for m in get_messages(response.wsgi_request)
+                if m.level_tag == 'warning']
 
     def enrolled_ids(self):
         return set(ESPUser.objects.filter(
@@ -281,6 +288,17 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertEqual(ctx['other_program_urls'], [])
         self.assertFalse(MessageRequest.objects.exists())
 
+    def test_commprev_warns_when_stripping_base64_images(self):
+        filterobj = self.make_filter(self.students)
+        self.login_as('admin')
+        response = self.post_to_module('manage', 'commprev', self.compose_data(
+            filterobj, body=BASE64_IMAGE_BODY))
+        self.assertNotIn('base64', response.context['body'])
+        warnings = self.warnings_for(response)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('1 ' + EMBEDDED_IMAGE_WARNING, warnings[0])
+        self.assertContains(response, EMBEDDED_IMAGE_WARNING)
+
     def test_commprev_keeps_explicit_from_and_replyto(self):
         filterobj = self.make_filter(self.students)
         self.login_as('admin')
@@ -370,17 +388,20 @@ class CommModuleViewTest(ModuleHandlerTestMixin, ProgramFrameworkTest):
         self.assertContains(response, '/email/%d' % msg.id)
         # Nothing is sent synchronously; cronmail does that later.
         self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(self.warnings_for(response), [])
 
     def test_commfinal_strips_base64_images(self):
         filterobj = self.make_filter(self.students)
         self.login_as('admin')
-        self.post_to_module('manage', 'commfinal', self.compose_data(
-            filterobj,
-            body='<p>Hi</p><img src="data:image/png;base64,iVBORw0KGgoAAAA">',
-        ))
+        response = self.post_to_module('manage', 'commfinal', self.compose_data(
+            filterobj, body=BASE64_IMAGE_BODY))
         msg = MessageRequest.objects.get()
         self.assertIn('Hi', msg.msgtext)
         self.assertNotIn('base64', msg.msgtext)
+        warnings = self.warnings_for(response)
+        self.assertEqual(len(warnings), 1)
+        self.assertIn('1 ' + EMBEDDED_IMAGE_WARNING, warnings[0])
+        self.assertContains(response, EMBEDDED_IMAGE_WARNING)
 
     def test_commfinal_requires_confirmation_for_other_program_links(self):
         filterobj = self.make_filter(self.students)
