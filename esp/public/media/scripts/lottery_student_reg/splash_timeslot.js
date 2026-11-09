@@ -65,9 +65,6 @@ var Timeslot = function(data){
 
     this.add_classes_to_timeslot = function(sections){
 
-	// Create the dialog used to show class info
-	create_class_info_dialog();
-
 	carryover_id_list = timeslot_data['sections'];
 	class_id_list = timeslot_data['starting_sections'];
 

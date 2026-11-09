@@ -6,24 +6,14 @@
  */
 function SectionCommentDialog(el, sections) {
     this.el = el;
-    this.dialog = el.dialog({
-        autoOpen: false,
-        height: 200,
-        width: 450,
-        modal: true,
-        buttons: {
-            "Set Comment": function() {
-                this.doSetComment();
-                this.dialog.dialog("close");
-            }.bind(this),
-            Cancel: function() {
-                this.dialog.dialog("close");
-            }.bind(this),
-        },
-        close: function() {
-            this.el.find('form')[0].reset();
-        }.bind(this),
-    });
+    this.modal = bootstrap.Modal.getOrCreateInstance(el[0]);
+    el.find('#commentDialog-save').on("click", function() {
+        this.doSetComment();
+        this.modal.hide();
+    }.bind(this));
+    el[0].addEventListener('hidden.bs.modal', function() {
+        this.el.find('form')[0].reset();
+    }.bind(this));
     this.sections = sections;
 
     /**
@@ -35,7 +25,7 @@ function SectionCommentDialog(el, sections) {
         if(section.schedulingLocked) {
             this.el.find('#commentDialog-lock').prop("checked", true);
         }
-        this.dialog.dialog("open");
+        this.modal.show();
     }.bind(this);
 
     this.doSetComment = function() {
