@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.cal.models import Event
+from django.db import IntegrityError, transaction
 
 import re
 
@@ -228,4 +230,104 @@ class ResourceModuleTest(ProgramFrameworkTest):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('Edited Resource Type', self.checkDisplayedResourceTypeList())
 
+    def testTimeslotDuplicateRejected(self):
+        """Duplicate timeslot creation via manual add is rejected with a form error."""
+        timeslot_url = '/manage/%s/resources/timeslot' % self.program.getUrlBase()
 
+        add_timeslot_data = {
+            'command': 'addedit',
+            'id': '',
+            'name': 'Duplicate Test Slot',
+            'description': 'desc',
+            'start': '10/14/2027 09:00:00',
+            'hours': '1',
+            'minutes': '0',
+            'openclass': False,
+            'compulsory': False,
+            'group': '',
+        }
+
+        before_count = Event.objects.filter(
+            program=self.program, short_description='Duplicate Test Slot'
+        ).count()
+
+        # First submission should succeed
+        response = self.client.post(timeslot_url, add_timeslot_data)
+        self.assertEqual(response.status_code, 200)
+
+        after_first_count = Event.objects.filter(
+            program=self.program, short_description='Duplicate Test Slot'
+        ).count()
+        self.assertEqual(after_first_count, before_count + 1)
+
+        # Second, identical submission should be rejected — event count must not increase
+        response = self.client.post(timeslot_url, add_timeslot_data)
+        self.assertEqual(response.status_code, 200)  # re-renders form with errors, not a 4xx
+        self.assertIn('already exists', str(response.content, encoding='UTF-8'))
+
+        after_second_count = Event.objects.filter(
+            program=self.program, short_description='Duplicate Test Slot'
+        ).count()
+        self.assertEqual(
+            after_second_count, after_first_count,
+            "Duplicate timeslot was persisted despite validation"
+        )
+
+    def testTimeslotEditWithoutChangeDoesNotSelfFlag(self):
+        """Editing an existing timeslot without changing start/end should not be
+        falsely rejected as a duplicate of itself."""
+        timeslot_url = '/manage/%s/resources/timeslot' % self.program.getUrlBase()
+
+        add_timeslot_data = {
+            'command': 'addedit',
+            'id': '',
+            'name': 'Edit Test Slot',
+            'description': 'desc',
+            'start': '10/15/2027 09:00:00',
+            'hours': '1',
+            'minutes': '0',
+            'openclass': False,
+            'compulsory': False,
+            'group': '',
+        }
+        response = self.client.post(timeslot_url, add_timeslot_data)
+        self.assertEqual(response.status_code, 200)
+
+        created = Event.objects.get(program=self.program, short_description='Edit Test Slot')
+
+        # Resubmit with the same id and same start/end — should succeed, not self-flag
+        edit_data = dict(add_timeslot_data)
+        edit_data['id'] = str(created.id)
+
+        response = self.client.post(timeslot_url, edit_data)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('already exists', str(response.content, encoding='UTF-8'))
+
+        # Still exactly one matching event — not duplicated, not rejected
+        matching_count = Event.objects.filter(
+            program=self.program, short_description='Edit Test Slot'
+        ).count()
+        self.assertEqual(matching_count, 1)
+
+    def testTimeslotUniqueConstraintHoldsAtDbLevel(self):
+        """The DB-level UniqueConstraint on Event(program, start, end) holds even
+        when the form/validation layer is bypassed entirely."""
+        existing_type = self.program.getTimeSlots().first().event_type
+        start = self.program.getTimeSlots().first().start
+
+        from datetime import timedelta
+        end = start + timedelta(hours=1)
+
+        Event.objects.create(
+            program=self.program, start=start, end=end,
+            description='RaceTest', short_description='RaceTest',
+            event_type=existing_type,
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Event.objects.create(
+                    program=self.program, start=start, end=end,
+                    description='RaceTest2', short_description='RaceTest2',
+                    event_type=existing_type,
+                )
