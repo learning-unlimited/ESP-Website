@@ -110,6 +110,19 @@
     <input type="submit" class="button" name="submitform" value="Save Progress" />
  </th>
 </tr>
+{% if can_decline %}
+<tr>
+ <td colspan="2" style="text-align: center;">
+    {% if declined %}
+    You've told us you don't need financial aid. If that changes, fill out the form above and click <strong>Complete</strong>.
+    {% else %}
+    Don't need financial aid? Let us know, and you can skip this step.
+    <br />
+    <input type="submit" class="button" name="submitform" value="{{ decline_label }}" />
+    {% endif %}
+ </td>
+</tr>
+{% endif %}
 </table>
 </form>
 
