@@ -54,6 +54,7 @@ Bug Fixes
 - Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.
 - Director email addresses and outgoing "From" addresses now accept ``learningu.org`` at any subdomain depth. The rule previously allowed at most one subdomain label, so an address like ``info@a.b.learningu.org`` was rejected even though the director email help text has always described any valid subdomain as acceptable. This applies to the program creation and program settings forms, the ``director_email`` model validator, and the "From" address checks used by the comm panel and automated mail.
 - Teachers can now edit their class website pages inline. Inline editing controls and the "Edit this page" button were previously only shown to administrators, even though teachers of a class have permission to edit its pages. Logged-in non-admins now see the editing controls for any page or inline text block they have permission to edit, and nothing else.
+- The comm panel now warns you when embedded (pasted) images are removed from an email. The preview and send steps already removed them to keep oversized emails out of the database, but did so silently, so an email could go out without its images and without the sender knowing.
 
 Developer Notes
 ===============
