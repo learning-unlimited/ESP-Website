@@ -311,7 +311,11 @@ class ClassManager(Manager):
             c._index_qsd = 1 if c.id in index_qsd_class_ids else 0
 
         # Now to get the sections corresponding to these classes...
-        sections = ClassSection.objects.filter(parent_class__in=class_ids)
+        #   prefetch_catalog_data populates _events, which friendly_times(),
+        #   get_meeting_times() and get_section() all check for before falling
+        #   back to a query per section.
+        sections = ClassSection.prefetch_catalog_data(
+            ClassSection.objects.filter(parent_class__in=class_ids))
 
         sections_by_parent_id = defaultdict(list)
         for s in sections:
@@ -353,6 +357,84 @@ class ClassManager(Manager):
         except Exception:
             return {}
 
+    @staticmethod
+    def _catalog_key_set_for_media(media):
+        #   Media owners are a generic relation; only class documents matter.
+        try:
+            owner = media.owner
+        except Exception:
+            return {}
+        if not isinstance(owner, ClassSubject):
+            return {}
+        return ClassManager._catalog_key_set_for_subject(owner)
+
+    @staticmethod
+    def _catalog_key_set_for_studentappquestion(question):
+        #   subject is nullable: a program-level question is not counted by
+        #   _studentapps_count, which only counts questions attached to one of
+        #   the classes, so it cannot change any catalog.  None means "evict
+        #   nothing", as opposed to {}, which would evict everything.
+        if question.subject_id is None:
+            return None
+        try:
+            return ClassManager._catalog_key_set(question.subject.parent_program)
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _catalog_key_set_for_tag(tag):
+        #   getProgramTag() falls back to the global tag, so a global tag
+        #   (no target) can change any program's catalog and still has to
+        #   drop everything.  A program-targeted tag only affects that one.
+        try:
+            from esp.program.models import Program
+            target = tag.target
+        except Exception:
+            return {}
+        if isinstance(target, Program):
+            return ClassManager._catalog_key_set(target)
+        return {}
+
+    @staticmethod
+    def _catalog_key_set_for_event(event):
+        #   prefetch_catalog_data() stores Event objects on each section as
+        #   _events, so an edit to an event's times has to evict the catalog
+        #   holding them; the m2m dependency above only fires when the set of
+        #   meeting times changes, not when one of those times is edited.
+        #   Nothing in the schema stops a section from meeting at another
+        #   program's event, and Event.program is nullable, so key off the
+        #   programs whose sections actually reference it as well as its own.
+        #   Events are only saved by admins editing timeblocks, so the extra
+        #   query is cheap.
+        try:
+            from esp.program.models import Program
+            programs = {p for p in Program.objects.filter(
+                classsubject__sections__meeting_times=event).distinct()}
+            if event.program_id is not None:
+                programs.add(event.program)
+            if not programs:
+                #   Not in any catalog, so there is nothing to evict.
+                return None
+            return [ClassManager._catalog_key_set(p) for p in programs]
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _catalog_key_set_for_qsd(page):
+        #   Class index QSDs live at 'learn/<program.url>/Classes/<emailcode>/index';
+        #   see ClassSubject.url() and got_index_qsd().
+        try:
+            from esp.program.models import Program
+            #   Strip the leading 'learn/' and the trailing
+            #   'Classes/<emailcode>/index' to recover the program url.
+            parts = page.url.split('/')
+            classes_index = parts.index('Classes')
+            program_url = '/'.join(parts[1:classes_index])
+            program = Program.objects.filter(url=program_url).first()
+        except Exception:
+            return {}
+        return ClassManager._catalog_key_set(program)
+
     catalog_cached.get_or_create_token(('program',))
     catalog_cached.depend_on_row('program.ClassSubject',
                                  lambda cls: ClassManager._catalog_key_set_for_subject(cls))
@@ -362,11 +444,54 @@ class ClassManager(Manager):
                                  lambda sec, event: ClassManager._catalog_key_set_for_section(sec))
     catalog_cached.depend_on_m2m('program.ClassSubject', 'teachers',
                                  lambda subj, teacher: ClassManager._catalog_key_set_for_subject(subj))
-    catalog_cached.depend_on_model('program.StudentAppQuestion')
-    catalog_cached.depend_on_model('qsdmedia.Media')
-    catalog_cached.depend_on_model('tagdict.Tag')
+    catalog_cached.depend_on_row('program.StudentAppQuestion',
+                                 lambda question: ClassManager._catalog_key_set_for_studentappquestion(question))
+    catalog_cached.depend_on_row('qsdmedia.Media',
+                                 lambda media: ClassManager._catalog_key_set_for_media(media))
+    catalog_cached.depend_on_row('tagdict.Tag',
+                                 lambda tag: ClassManager._catalog_key_set_for_tag(tag))
+    catalog_cached.depend_on_row('cal.Event',
+                                 lambda event: ClassManager._catalog_key_set_for_event(event))
 
-    #perhaps make it program-specific?
+    #   depend_on_row only fires on post_save and pre_delete, so a selector
+    #   never sees where a row used to point.  Moving a question to a class in
+    #   another program, or detaching it, would leave the former program's
+    #   catalog holding the old question count; the depend_on_model this
+    #   replaced covered that by dropping every catalog.  Read the row as it
+    #   still is in the database and evict that scope too.
+    def _evict_catalog_for_previous_studentappquestion(sender, instance,
+                                                       _cache=catalog_cached,
+                                                       **kwargs):
+        if instance.pk is None:
+            return
+        try:
+            previous = sender.objects.get(pk=instance.pk)
+        except Exception:
+            return
+        key_set = ClassManager._catalog_key_set_for_studentappquestion(previous)
+        instance._previous_catalog_key_set = key_set
+        if key_set is not None:
+            _cache.delete_key_sets(key_set)
+
+    #   Evicting only in pre_save is not enough.  ATOMIC_REQUESTS wraps each
+    #   request in a transaction, so the row the eviction was based on stays
+    #   visible to everyone else until commit; a catalog rebuilt in that window
+    #   caches the old question count again, and the post_save selector cannot
+    #   drop it because it only sees the new scope (nothing at all, once the
+    #   question is detached).  Drop the former scope once more after commit,
+    #   when the move is actually visible.
+    def _evict_catalog_for_moved_studentappquestion(sender, instance,
+                                                    _cache=catalog_cached,
+                                                    **kwargs):
+        key_set = instance.__dict__.pop('_previous_catalog_key_set', None)
+        if key_set is not None:
+            transaction.on_commit(lambda: _cache.delete_key_sets(key_set))
+
+    signals.pre_save.connect(_evict_catalog_for_previous_studentappquestion,
+                             sender='program.StudentAppQuestion', weak=False)
+    signals.post_save.connect(_evict_catalog_for_moved_studentappquestion,
+                              sender='program.StudentAppQuestion', weak=False)
+
     @staticmethod
     def is_class_index_qsd(qsd):
         parts = qsd.url.split("/")
@@ -374,7 +499,8 @@ class ClassManager(Manager):
             parts[-1] == "index" and \
             parts[0] == "learn" and \
             "Classes" in parts
-    catalog_cached.depend_on_row('qsd.QuasiStaticData', lambda page: {},
+    catalog_cached.depend_on_row('qsd.QuasiStaticData',
+                                 lambda page: ClassManager._catalog_key_set_for_qsd(page),
                                  lambda page: ClassManager.is_class_index_qsd(page))
 
     def random_class(self, q=None):
@@ -441,7 +567,8 @@ class ClassSection(models.Model):
     def prefetch_catalog_data(cls, queryset):
         """Take a queryset of ClassSections, prefetch their meeting_times,
         and cache the resulting Event objects on each section in a sorted
-        internal ``_events`` list for later reuse."""
+        internal ``_events`` list for later reuse.  Also preloads the
+        classroom data that capacity needs, via prefetch_capacity_data()."""
         sections = queryset.prefetch_related('meeting_times')
         sections = list(sections)
 
@@ -451,7 +578,69 @@ class ClassSection(models.Model):
             s._events = list(s.meeting_times.all())
             s._events.sort(key=lambda e:e.start)
 
+        cls.prefetch_capacity_data(sections)
+
         return sections
+
+    @classmethod
+    def prefetch_capacity_data(cls, sections):
+        """Preload, in one query, the classroom data that _get_capacity()
+        would otherwise query per section.
+
+        Sets two attributes on each section, which _get_capacity() and
+        _get_room_capacity() use in place of classrooms():
+
+          _num_classrooms     how many distinct classrooms are assigned
+          _raw_room_capacity  the minimum over timeblocks of the summed
+                              classroom capacity, before the
+                              studentclassregmoduleinfo multiplier is applied
+                              (None when no classroom is assigned)
+
+        _get_capacity() is cached, so these only matter on a cache miss.
+        """
+        sections = list(sections)
+        section_ids = [s.id for s in sections]
+        rooms_by_section = defaultdict(dict)
+
+        if section_ids:
+            rows = (ResourceAssignment.objects
+                    .filter(target_id__in=section_ids,
+                            resource__res_type__name="Classroom")
+                    .values_list('target_id', 'resource_id',
+                                 'resource__event_id', 'resource__num_students'))
+            #   Keyed by resource id so that two assignments of the same room
+            #   count once, matching the id__in filter in classrooms().
+            for target_id, resource_id, event_id, num_students in rows:
+                rooms_by_section[target_id][resource_id] = (event_id, num_students)
+
+        for s in sections:
+            rooms = rooms_by_section[s.id]
+            s._num_classrooms = len(rooms)
+            if rooms:
+                capacity_by_event = defaultdict(int)
+                for event_id, num_students in rooms.values():
+                    capacity_by_event[event_id] += num_students
+                s._raw_room_capacity = min(capacity_by_event.values())
+            else:
+                s._raw_room_capacity = None
+
+        return sections
+
+    #   prefetch_capacity_data() stashes these for the life of one request.
+    #   catalog_cached pickles whole sections and has no dependency on
+    #   resources, so a stash that survived into it would outlive the room data
+    #   it was read from: a room change evicts _get_capacity(), which would
+    #   then recompute from the stale stash and cache the wrong answer.  A
+    #   section unpickled without them just queries, as it did before.
+    #   _events is deliberately not in this list -- it is worth keeping on the
+    #   warm path, which is why catalog_cached depends on cal.Event.
+    _PREFETCH_ONLY_ATTRS = ('_num_classrooms', '_raw_room_capacity')
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        for attr in self._PREFETCH_ONLY_ATTRS:
+            state.pop(attr, None)
+        return state
 
     def get_absolute_url(self):
         return self.parent_class.get_absolute_url()
@@ -500,11 +689,15 @@ class ClassSection(models.Model):
 
     def _get_room_capacity(self, rooms = None, ignore_changes=False):
         # rooms should be a queryset
-        if rooms is None:
-            rooms = self.classrooms()
+        if getattr(self, '_raw_room_capacity', None) is not None:
+            #   Preloaded in bulk by prefetch_capacity_data().
+            rc = self._raw_room_capacity
+        else:
+            if rooms is None:
+                rooms = self.classrooms()
 
-        # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
-        rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
+            # Take the summed classroom capacity for each timeblock, then take the minimum of those sums
+            rc = min(d.get('capacity', 0) for d in rooms.values('event').order_by('event').annotate(capacity=Sum('num_students')))
 
         options = self.parent_program.studentclassregmoduleinfo
         if options.apply_multiplier_to_room_cap and not ignore_changes:
@@ -525,11 +718,18 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
-        rooms = self.classrooms()
+        if getattr(self, '_num_classrooms', None) is not None:
+            #   Preloaded in bulk by prefetch_capacity_data(); _get_room_capacity()
+            #   reads its preloaded value too, so the queryset is never needed.
+            rooms = None
+            num_rooms = self._num_classrooms
+        else:
+            rooms = self.classrooms()
+            num_rooms = len(rooms)
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
-            if len(rooms) == 0:
+            if num_rooms == 0:
                 if not ans:
                     ans = self.parent_class.class_size_max
             else:
@@ -541,20 +741,20 @@ class ClassSection(models.Model):
         if ans is None or ans == 0:
             # New class size capacity condition set for Splash 2010.  In code
             # because it seems like a fairly reasonable metric.
-            if self.parent_class.allowable_class_size_ranges.all() and len(rooms) != 0:
+            if self.parent_class.allowable_class_size_ranges.all() and num_rooms != 0:
                 range_max_vals = list(self.parent_class.allowable_class_size_ranges.order_by('-range_max').values_list('range_max', flat=True))
                 range_max = range_max_vals[0] if range_max_vals else None
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 upper = self._max_none_safe(range_max, opt)
                 ans = self._min_none_safe(upper, room_cap)
-            elif self.parent_class.class_size_optimal and len(rooms) != 0:
+            elif self.parent_class.class_size_optimal and num_rooms != 0:
                 opt = self.parent_class.class_size_optimal
                 room_cap = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
                 ans = self._min_none_safe(opt, room_cap)
             elif self.parent_class.class_size_optimal:
                 ans = self.parent_class.class_size_optimal
-            elif len(rooms) != 0:
+            elif num_rooms != 0:
                 ans = self._get_room_capacity(rooms, ignore_changes=ignore_changes)
             else:
                 ans = 0
@@ -570,16 +770,40 @@ class ClassSection(models.Model):
         else:
             return int(ans)
 
+    #   Fall back to {} (drop everything) if there's an exception, the same
+    #   way ClassManager's catalog selectors do.
+    @staticmethod
+    def _capacity_key_sets_for_subject(subject):
+        """Only the subject's own sections read its capacity fields."""
+        try:
+            return [{'self': sec} for sec in subject.sections.all()]
+        except Exception:
+            return {}
+
+    @staticmethod
+    def _capacity_key_sets_for_resource(resource):
+        """Only sections this room is assigned to use it for room capacity."""
+        try:
+            return [{'self': ra.target} for ra
+                    in resource.resourceassignment_set.select_related('target')
+                    if ra.target_id is not None]
+        except Exception:
+            return {}
+
     _get_capacity.depend_on_m2m('program.ClassSection', 'meeting_times', lambda sec, event: {'self': sec})
     _get_capacity.depend_on_row('program.ClassSection', lambda r: {'self': r})
-    _get_capacity.depend_on_model('program.ClassSubject')
-    _get_capacity.depend_on_model('resources.Resource')
+    _get_capacity.depend_on_row('program.ClassSubject',
+                                lambda cls: ClassSection._capacity_key_sets_for_subject(cls))
+    _get_capacity.depend_on_row('resources.Resource',
+                                lambda res: ClassSection._capacity_key_sets_for_resource(res))
     _get_capacity.depend_on_row('program.ClassSection', 'self')
     _get_capacity.depend_on_row('resources.ResourceRequest', lambda r: {'self': r.target})
     _get_capacity.depend_on_row('resources.ResourceAssignment', lambda r: {'self': r.target})
+    #   A StudentClassRegModuleInfo change alters the capacity multiplier for
+    #   every section of its program; there is no bounded key set for that.
     _get_capacity.depend_on_model('modules.StudentClassRegModuleInfo')
     _get_capacity.depend_on_m2m('program.ClassSubject', 'allowable_class_size_ranges',
-                                lambda subj, csr: {})
+                                lambda subj, csr: ClassSection._capacity_key_sets_for_subject(subj))
 
 
     capacity = property(_get_capacity)
