@@ -401,10 +401,21 @@ class ClassManager(Manager):
         #   _events, so an edit to an event's times has to evict the catalog
         #   holding them; the m2m dependency above only fires when the set of
         #   meeting times changes, not when one of those times is edited.
+        #   Nothing in the schema stops a section from meeting at another
+        #   program's event, and Event.program is nullable, so key off the
+        #   programs whose sections actually reference it as well as its own.
+        #   Events are only saved by admins editing timeblocks, so the extra
+        #   query is cheap.
         try:
-            if event.program_id is None:
-                return {}
-            return ClassManager._catalog_key_set(event.program)
+            from esp.program.models import Program
+            programs = {p for p in Program.objects.filter(
+                classsubject__sections__meeting_times=event).distinct()}
+            if event.program_id is not None:
+                programs.add(event.program)
+            if not programs:
+                #   Not in any catalog, so there is nothing to evict.
+                return None
+            return [ClassManager._catalog_key_set(p) for p in programs]
         except Exception:
             return {}
 
@@ -441,6 +452,28 @@ class ClassManager(Manager):
                                  lambda tag: ClassManager._catalog_key_set_for_tag(tag))
     catalog_cached.depend_on_row('cal.Event',
                                  lambda event: ClassManager._catalog_key_set_for_event(event))
+
+    #   depend_on_row only fires on post_save and pre_delete, so a selector
+    #   never sees where a row used to point.  Moving a question to a class in
+    #   another program, or detaching it, would leave the former program's
+    #   catalog holding the old question count; the depend_on_model this
+    #   replaced covered that by dropping every catalog.  Read the row as it
+    #   still is in the database and evict that scope too.
+    def _evict_catalog_for_previous_studentappquestion(sender, instance,
+                                                       _cache=catalog_cached,
+                                                       **kwargs):
+        if instance.pk is None:
+            return
+        try:
+            previous = sender.objects.get(pk=instance.pk)
+        except Exception:
+            return
+        key_set = ClassManager._catalog_key_set_for_studentappquestion(previous)
+        if key_set is not None:
+            _cache.delete_key_sets(key_set)
+
+    signals.pre_save.connect(_evict_catalog_for_previous_studentappquestion,
+                             sender='program.StudentAppQuestion', weak=False)
 
     @staticmethod
     def is_class_index_qsd(qsd):
@@ -575,6 +608,22 @@ class ClassSection(models.Model):
                 s._raw_room_capacity = None
 
         return sections
+
+    #   prefetch_capacity_data() stashes these for the life of one request.
+    #   catalog_cached pickles whole sections and has no dependency on
+    #   resources, so a stash that survived into it would outlive the room data
+    #   it was read from: a room change evicts _get_capacity(), which would
+    #   then recompute from the stale stash and cache the wrong answer.  A
+    #   section unpickled without them just queries, as it did before.
+    #   _events is deliberately not in this list -- it is worth keeping on the
+    #   warm path, which is why catalog_cached depends on cal.Event.
+    _PREFETCH_ONLY_ATTRS = ('_num_classrooms', '_raw_room_capacity')
+
+    def __getstate__(self):
+        state = super().__getstate__()
+        for attr in self._PREFETCH_ONLY_ATTRS:
+            state.pop(attr, None)
+        return state
 
     def get_absolute_url(self):
         return self.parent_class.get_absolute_url()

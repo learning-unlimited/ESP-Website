@@ -42,7 +42,7 @@ from datetime import datetime
 from esp.cal.models import Event, EventType
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from esp.program.models import ClassSubject
+from esp.program.models import ClassSubject, StudentRegistration
 from esp.program.modules.handlers.jsondatamodule import JSONDataModule
 from esp.resources.models import ResourceType
 from esp.users.models import Record, RecordType
@@ -384,9 +384,19 @@ class JSONDataModuleTest(ProgramFrameworkTest):
         the results; this pins the batched query to that same answer.
         """
         attended = RecordType.objects.get(name='attended')
-        for student in self.students:
+        #   One enrolled student is deliberately left without an attendance
+        #   record: if every student had one, a batched query that dropped its
+        #   attendance filter would still match the per-section counts.
+        held_out = self.students[0]
+        for student in self.students[1:]:
             Record.objects.get_or_create(user=student, program=self.program,
                                          event=attended)
+        self.assertTrue(
+            StudentRegistration.valid_objects().filter(
+                user=held_out, section__parent_class__parent_program=self.program
+            ).exists(),
+            "the student held out of check-in is not enrolled in anything, so "
+            "this test would pass without the attendance filter.")
 
         batched = JSONDataModule.checked_in_students_by_class(self.program)
 
