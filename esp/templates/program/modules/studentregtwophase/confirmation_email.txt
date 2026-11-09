@@ -14,7 +14,7 @@ YOUR PRIORITY RANKINGS:
 You may update your preferences at any time before the deadline by visiting:
 http://{{ DEFAULT_HOST }}/learn/{{ program.url }}/studentreg2phase
 
-If you make changes, please confirm again to receive an updated confirmation.
+If you make changes, submit your preferences again to receive an updated summary.
 
 - {{ program.program_type }} Registration System
   Contact the directors: {{ program.director_email }}

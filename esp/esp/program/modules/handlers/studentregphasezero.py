@@ -51,6 +51,9 @@ import datetime
 class StudentRegPhaseZero(ProgramModuleObj):
     doc = """Allows students to enter a lottery for admission to the program."""
     permission_types = ('Student/PhaseZero',)
+    #   Only students selected in the lottery get past it, even once it closes.
+    gate_lifts = 'completed'
+    gate_label = 'the student lottery'
 
     def students(self, QObject = False):
         q_phasezero = Q(phasezerorecord__program=self.program)
@@ -66,6 +69,14 @@ class StudentRegPhaseZero(ProgramModuleObj):
     def isCompleted(self, user=None):
         user = self._resolve_user(user)
         return user.can_skip_phase_zero(self.program)
+
+    def gate_pending_status(self, user=None):
+        user = self._resolve_user(user)
+        if Tag.getBooleanTag('student_lottery_run', self.program):
+            return 'refused'
+        if PhaseZeroRecord.objects.filter(user=user, program=self.program).exists():
+            return 'waiting'
+        return 'todo'
 
     @classmethod
     def module_properties(cls):
@@ -246,7 +257,7 @@ class StudentRegPhaseZero(ProgramModuleObj):
         send_mail(email_title, email_contents, email_from, email_to, False)
 
     def isStep(self):
-        return False
+        return True
 
     def inModulesList(self):
         return True

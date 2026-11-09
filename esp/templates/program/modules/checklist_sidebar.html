@@ -13,9 +13,10 @@ reg-layout.css keeps it open (and hides the toggle) everywhere else.
 <aside class="reg-checklist-col{% if in_theme_sidebar %} reg-in-theme-sidebar{% endif %}" aria-label="Registration checklist">
   <section class="card reg-panel reg-checklist">
 
-    {% with progress=checklist.progress %}
-    {% if progress.total %}
+    {% with progress=checklist.progress gate=checklist.gate %}
+    {% if progress.total or gate %}
     <div class="reg-progress">
+      {% if progress.total and checklist.gate_status != 'refused' %}
       <div class="reg-progress-label">
         <strong>{{ progress.done }} of {{ progress.total }} registration requirements done</strong>
         <span>{{ progress.percent }}%</span>
@@ -23,8 +24,17 @@ reg-layout.css keeps it open (and hides the toggle) everywhere else.
       <div class="progress" role="progressbar" aria-label="Registration requirements done" aria-valuemin="0" aria-valuemax="{{ progress.total }}" aria-valuenow="{{ progress.done }}">
         <div class="progress-bar" style="width: {{ progress.percent }}%"></div>
       </div>
+      {% endif %}
       <p class="reg-next">
-        {% if progress.next_step %}
+        {% if checklist.gate_status == 'refused' %}
+        You weren't selected in {{ gate.gate_label }}, so the remaining steps aren't available.
+        {% elif checklist.gate_status == 'waiting' and gate.gate_lifts == 'completed' %}
+        You're entered in {{ gate.gate_label }}{% if gate.end_date and not gate.has_ended %} (entries close {{ gate.end_date|date:"F j" }}){% endif %}. The remaining steps open if you're selected.
+        {% elif checklist.gate_status == 'waiting' and gate.isCompleted %}
+        You're all set until {{ gate.gate_label }}{% if gate.end_date %} closes on {{ gate.end_date|date:"F j" }}{% endif %}. The remaining steps open after it.
+        {% elif checklist.gate_status == 'waiting' %}
+        {{ gate.get_link_title }} opens{% if gate.opens_at %} on {{ gate.opens_at|date:"F j" }}{% else %} soon{% endif %}.
+        {% elif progress.next_step %}
         {% with step=progress.next_step %}
         Next:
         {% if checklist.lock_links %}
@@ -56,7 +66,7 @@ reg-layout.css keeps it open (and hides the toggle) everywhere else.
     <div class="card-body">
 
       {% if checklist.show_steps %}
-      {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url lock_links=checklist.lock_links %}
+      {% include "program/modules/checkboxes.html" with modules=checklist.modules program=checklist.program extra_steps=checklist.extra_steps is_module_page=checklist.is_module_page mainpage_url=checklist.mainpage_url lock_links=checklist.lock_links gate=checklist.gate gate_status=checklist.gate_status %}
       {% endif %}
 
       {% if checklist.records %}

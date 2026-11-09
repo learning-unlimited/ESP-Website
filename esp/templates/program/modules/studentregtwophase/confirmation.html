@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %} Confirmation Email Sent — {{program.niceName}} {% endblock %}
+{% block title %} Preferences Submitted — {{program.niceName}} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
@@ -8,10 +8,10 @@
 {% endblock %}
 
 {% block content %}
-<h1>Confirmation Email Sent</h1>
+<h1>Preferences Submitted</h1>
 
 <div class="alert alert-success" style="border: 1px solid #3c763d; padding: 15px; background-color: #dff0d8;">
-    <strong>Success!</strong> A confirmation email with your lottery preferences for <strong>{{program.niceName}}</strong> has been sent to you.
+    <strong>Success!</strong> Your lottery preferences for <strong>{{program.niceName}}</strong> are submitted, and we've emailed you a summary.
 </div>
 
 <p>Your preferences have been automatically saved. You may update them at any time before the lottery deadline by returning to the
