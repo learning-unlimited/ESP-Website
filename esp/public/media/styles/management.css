@@ -119,7 +119,7 @@ div .module_group_expandable + .module_group_body {
     width: inherit;
 }
 
-.module_group_body .info {
+.module_group_body .alert-info {
     display: table;
     margin: 0 auto;
 }
