@@ -8,20 +8,22 @@ a img {
   border: 0;
 }
 
-a:link {
+/*  Anchors rendered as buttons keep their button colours; :where() means
+    the exclusions add no specificity. */
+a:where(:not(.btn, .module_link_large, .link_button)):link {
   color: $linkColor;
   text-decoration: none;
 }
 
-a:visited {
+a:where(:not(.btn, .module_link_large, .link_button)):visited {
   color: $linkColor;
 }
 
-a:hover {
+a:where(:not(.btn, .module_link_large, .link_button)):hover {
   color: $linkColorHover;
 }
 
-a:active {
+a:where(:not(.btn, .module_link_large, .link_button)):active {
   color: $linkColor;
 }
 

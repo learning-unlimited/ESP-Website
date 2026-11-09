@@ -1,4 +1,5 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
 from esp.survey.models  import Question, Survey
 
@@ -192,6 +193,13 @@ def parse_csv(csv_file):
                     'Invalid per_class value "%s". Use true/false, yes/no, or 1/0.'
                     % per_class_str
                 )
+
+        # Validate param_values against the question type's rules (same checks as the question form)
+        if question_type is not None:
+            try:
+                Question(question_type=question_type, _param_values=param_values).clean()
+            except ValidationError as e:
+                row_errors.extend(e.messages)
 
         # Validate seq
         seq = 0

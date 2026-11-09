@@ -43,10 +43,11 @@ from esp.tagdict.models import Tag
 from esp.utils.web import render_to_response
 from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, Http404
 from django.utils.http import url_has_allowed_host_and_scheme
 from esp.middleware import ESPError
 from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+from esp.utils.ids import filter_by_id, get_by_id_or_404
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -73,7 +74,7 @@ class AdminClass(ProgramModuleObj):
         management forms. """
 
         if field_str == 'status':
-            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
+            return ((ClassStatus.CANCELLED, 'Cancelled'), (ClassStatus.REJECTED, 'Rejected'), (ClassStatus.DRAFT, 'Draft'), (ClassStatus.UNREVIEWED, 'Unreviewed'), (ClassStatus.HIDDEN, 'Accepted but hidden'), (ClassStatus.ACCEPTED, 'Accepted'))
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
@@ -150,11 +151,14 @@ class AdminClass(ProgramModuleObj):
 
             class_id = request.POST['class_id']
             try:
-                class_subject = ClassSubject.objects.get(pk=class_id)
+                class_subject = get_by_id_or_404(ClassSubject, class_id)
             except ClassSubject.MultipleObjectsReturned:
                 raise ESPError("Error: multiple classes selected")
-            except ClassSubject.DoesNotExist:
+            except Http404:
                 raise ESPError("Error: no classes found with id "+str(class_id))
+
+            if class_subject.isDraft():
+                raise ESPError("Error: this class is still a teacher's unsubmitted draft and cannot be reviewed.", log=False)
 
             review_status = request.POST['review_status']
 
@@ -184,8 +188,7 @@ class AdminClass(ProgramModuleObj):
                 except (ValueError, ClassSection.DoesNotExist):
                     raise ESPError(f'Unable to delete a section.  The section requested was: {request.GET["sec_id"]}', log=False)
         else:
-            section_id = int(request.GET['sec_id'])
-            section = ClassSection.objects.get(id=section_id)
+            section = get_by_id_or_404(ClassSection, request.GET.get('sec_id'))
             context = {'sec': section, 'module': self}
 
             return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
@@ -306,7 +309,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
-        classes = ClassSubject.objects.filter(id = extra)
+        classes = filter_by_id(ClassSubject.objects, extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
@@ -331,7 +334,7 @@ class AdminClass(ProgramModuleObj):
         else:
             ajax = True
 
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = filter_by_id(ClassSubject.objects, clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
@@ -345,7 +348,7 @@ class AdminClass(ProgramModuleObj):
         """ Hand over to the teacher class reg module so we only have this code in one place. """
         from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-        classes = ClassSubject.objects.filter(id = extra)
+        classes = filter_by_id(ClassSubject.objects, extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]

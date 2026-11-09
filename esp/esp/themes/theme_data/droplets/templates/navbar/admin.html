@@ -22,8 +22,12 @@
       var debug = {{ settings.DEBUG|yesno:"true,false" }};
       var rawToolbarLinks = JSON.parse(document.getElementById('toolbar-links-data').textContent);
       var toolbarLinks = Array.isArray(rawToolbarLinks) ? rawToolbarLinks : [];
+      var adminBarCollapsibleModules = false;
       </script>
-      <script type="text/javascript" src="/media/scripts/theme/admin_bar.js"> </script>
+      <style>
+        #adminbar_Other_content { padding: 3px 7px !important; }
+      </style>
+      <script type="text/javascript" src="/media/scripts/admin_bar.js"> </script>
       {% comment %} === End Admin Toolbar === {% endcomment %}
     </ul>
   </li>

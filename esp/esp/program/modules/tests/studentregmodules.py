@@ -457,3 +457,66 @@ class StudentClassRegModuleTest(ProgramFrameworkTest):
         module = self.program.getModule('StudentClassRegModule')
         desc = module.studentDesc()
         self.assertIn('enrolled', desc)
+
+    def test_prepare_default_context_independent_across_calls(self):
+        """Separate calls to prepare() without context must not share dictionary state."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            res1 = module.prepare()
+            res2 = module.prepare()
+
+            self.assertIsNot(res1, res2)
+            res1['injected_leak'] = 'leaked_data'
+            res3 = module.prepare()
+            self.assertNotIn('injected_leak', res3)
+
+    def test_prepare_explicit_context_preserved(self):
+        """Explicit context dictionary must be mutated and returned without re-instantiation."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            explicit_ctx = {'initial_key': 'initial_val'}
+            result = module.prepare(explicit_ctx)
+            self.assertIs(result, explicit_ctx)
+            self.assertEqual(result['initial_key'], 'initial_val')
+            self.assertIn('timeslots', result)
+
+    def test_prepare_explicit_empty_dict_preserved(self):
+        """An explicit empty dictionary {} must not be replaced by a new dictionary."""
+        from unittest.mock import patch
+        module = self.program.getModule('StudentClassRegModule')
+        module.user = self.student
+        with patch('esp.program.modules.handlers.studentclassregmodule.get_current_request') as mock_req:
+            mock_req.return_value.user = self.student
+            empty_ctx = {}
+            result = module.prepare(empty_ctx)
+            self.assertIs(result, empty_ctx)
+            self.assertIn('timeslots', result)
+
+    def test_prepare_static_default_context_independent_across_calls(self):
+        """Separate calls to prepare_static() without context must receive independent dictionaries."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        res1 = StudentClassRegModule.prepare_static(self.student, self.program)
+        res2 = StudentClassRegModule.prepare_static(self.student, self.program)
+
+        self.assertIsNot(res1, res2)
+        res1['injected_leak'] = 'leaked_data'
+        res3 = StudentClassRegModule.prepare_static(self.student, self.program)
+        self.assertNotIn('injected_leak', res3)
+
+    def test_prepare_static_explicit_context_preserved(self):
+        """Explicit context dictionary to prepare_static must be preserved and mutated."""
+        from esp.program.modules.handlers.studentclassregmodule import StudentClassRegModule
+        explicit_ctx = {'existing_key': 42}
+        result = StudentClassRegModule.prepare_static(self.student, self.program, context=explicit_ctx)
+        self.assertIs(result, explicit_ctx)
+        self.assertEqual(result['existing_key'], 42)
+
+        empty_ctx = {}
+        result_empty = StudentClassRegModule.prepare_static(self.student, self.program, context=empty_ctx)
+        self.assertIs(result_empty, empty_ctx)

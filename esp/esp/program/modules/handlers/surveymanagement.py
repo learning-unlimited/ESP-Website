@@ -273,9 +273,9 @@ class SurveyManagement(ProgramModuleObj):
                 question_text = 'Did you enjoy this?'
                 param_values = ''
             elif 'text' in qt.name.lower() or 'answer' in qt.name.lower():
-                # Text answer type
+                # Text answer type (Long Answer requires a Rows value)
                 question_text = 'Please provide your feedback'
-                param_values = ''
+                param_values = '5' if qt.name == QuestionType.LONG_ANSWER_NAME else ''
             elif 'instruction' in qt.name.lower():
                 # Instruction type
                 question_text = 'Instructions: Please answer the following questions honestly'

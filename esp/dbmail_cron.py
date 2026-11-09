@@ -21,7 +21,8 @@ sys.path.insert(0, project)
 if os.environ.get('VIRTUAL_ENV') is None:
     root = os.path.dirname(project)
     activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-    exec(compile(open(activate_this, "rb").read(), activate_this, 'exec'), dict(__file__=activate_this))
+    with open(activate_this, "rb") as f:
+        exec(compile(f.read(), activate_this, 'exec'), dict(__file__=activate_this))
 
 import django
 django.setup()
@@ -41,6 +42,7 @@ try:
 except IOError:
     # another instance has the lock
     logger.info('dbmail_cron: exiting because another instance has the lock.')
+    lock_file_handle.close()
     sys.exit(0)
 
 try:
@@ -50,7 +52,7 @@ try:
     send_email_requests()
     logger.info('dbmail_cron: sent emails.')
 except Exception as e:
-    logger.info('dbmail_cron: fatal error!')
+    logger.error('dbmail_cron: fatal error!')
     logger.exception(e)
 finally:
     # Release the lock when message sending is complete.

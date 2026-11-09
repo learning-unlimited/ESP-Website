@@ -191,12 +191,12 @@
 
 ## Where to Look If You're Changing...
 
-- **The homepage or any public static page** → `home()` in [views/main.py](views/main.py), and the `'home'` `NavBarCategory` in the database; template is `templates/index.html`.
-- **The top navigation bar** (tabs: Discover ESP, Take a Class, etc.) → `get_primary_nav` in [templatetags/topbar.py](templatetags/topbar.py); the `sections` dict at the bottom of that file defines every top-level nav item and its URL.
-- **The secondary/sidebar navigation** → `makeNavBar` in [views/navBar.py](views/navBar.py), `NavBarCategory`/`NavBarEntry` in [models.py](models.py), and `navbar_gen` in [templatetags/navbar.py](templatetags/navbar.py).
-- **User profile creation or editing** → `profile_editor` in [views/myesp.py](views/myesp.py); the actual form class is loaded dynamically from `esp.users.forms.user_profile` based on the user's role.
-- **Teacher bio pages** (display or edit) → `bio` / `bio_user` and `bio_edit` / `bio_edit_user_program` in [views/bio.py](views/bio.py); picture resizing lives in `ResizeImageField` in [forms/\_\_init\_\_.py](forms/__init__.py); bio data model is `TeacherBio` in `/program`.
-- **The contact form** → `contact()` in [views/main.py](views/main.py) and `ContactForm` in [forms/contact_form.py](forms/contact_form.py); the `contact_form_enabled` Tag gates whether the form is active at all.
+- **The homepage or any public static page** → `home()` in [views/main.py](../../../../../esp/esp/web/views/main.py), and the `'home'` `NavBarCategory` in the database; template is `templates/index.html`.
+- **The top navigation bar** (tabs: Discover ESP, Take a Class, etc.) → `get_primary_nav` in [templatetags/topbar.py](../../../../../esp/esp/web/templatetags/topbar.py); the `sections` dict at the bottom of that file defines every top-level nav item and its URL.
+- **The secondary/sidebar navigation** → `makeNavBar` in [views/navBar.py](../../../../../esp/esp/web/views/navBar.py), `NavBarCategory`/`NavBarEntry` in [models.py](../../../../../esp/esp/web/models.py), and `navbar_gen` in [templatetags/navbar.py](../../../../../esp/esp/web/templatetags/navbar.py).
+- **User profile creation or editing** → `profile_editor` in [views/myesp.py](../../../../../esp/esp/web/views/myesp.py); the actual form class is loaded dynamically from `esp.users.forms.user_profile` based on the user's role.
+- **Teacher bio pages** (display or edit) → `bio` / `bio_user` and `bio_edit` / `bio_edit_user_program` in [views/bio.py](../../../../../esp/esp/web/views/bio.py); picture resizing lives in `ResizeImageField` in [forms/\_\_init\_\_.py](../../../../../esp/esp/web/forms/__init__.py); bio data model is `TeacherBio` in `/program`.
+- **The contact form** → `contact()` in [views/main.py](../../../../../esp/esp/web/views/main.py) and `ContactForm` in [forms/contact_form.py](../../../../../esp/esp/web/forms/contact_form.py); the `contact_form_enabled` Tag gates whether the form is active at all.
 
 ---
 
@@ -204,18 +204,16 @@
 
 - **`program()` is not a program-module view itself.** It only resolves the `Program` object and calls `ProgramModuleObj.findModule`. All actual program page logic lives in `/program/modules/`. If a module isn't found, this view raises a plain 404.
 
-- **`get_primary_nav` uses two separate nav lists with different purposes.** `known_navlinks` (7 items) gates whether the tag renders anything at all — if the first URL path segment is not in this list the function returns `{}`. `basic_navlinks` (also 7 items, different set) controls which sections are *iterated* when building nav link dicts. These two lists overlap but are not identical; `contactinfo` is in `known_navlinks` but maps to a subsection under `about`, while admin/onsite links are injected separately based on user role. Adding a new top-level section requires updating *both* lists and the `sections` dict in [templatetags/topbar.py](templatetags/topbar.py).
+- **`get_primary_nav` uses two separate nav lists with different purposes.** `known_navlinks` (7 items) gates whether the tag renders anything at all — if the first URL path segment is not in this list the function returns `{}`. `basic_navlinks` (also 7 items, different set) controls which sections are *iterated* when building nav link dicts. These two lists overlap but are not identical; `contactinfo` is in `known_navlinks` but maps to a subsection under `about`, while admin/onsite links are injected separately based on user role. Adding a new top-level section requires updating *both* lists and the `sections` dict in [templatetags/topbar.py](../../../../../esp/esp/web/templatetags/topbar.py).
 
 - **`NavBarCategory.from_request` is cache-decorated via `argcache`.** It declares `depend_on_model('web.NavBarCategory')`, so the cache is invalidated on any `NavBarCategory` change. However, cache invalidation bugs here will produce wrong sidebar nav on pages — if nav seems stale, check the cache backend.
 
 - **`profile_editor` dynamically imports the form class by string name.** The role string (e.g. `'teacher'`) maps to a form class name (e.g. `'UserContactForm'`) via `ESPUser.getAllUserTypes()`. If you add a new user role, you must add a corresponding entry there *and* create the matching form in `esp.users.forms.user_profile`, otherwise `profile_editor` will throw a `ValueError` (from `list.index()` on the unknown role string) or an `AttributeError` (from `getattr` on a missing form class) at runtime.
 
-- **`bio_user` deliberately excludes classes whose end time is in the future.** This is a documented privacy decision: the course catalog for a not-yet-run program may not be public yet, so exposing class titles on the bio page would leak information. See the comment in [views/bio.py](views/bio.py).
+- **`bio_user` deliberately excludes classes whose end time is in the future.** This is a documented privacy decision: the course catalog for a not-yet-run program may not be public yet, so exposing class titles on the bio page would leak information. See the comment in [views/bio.py](../../../../../esp/esp/web/views/bio.py).
 
-- **Old bio URLs permanently redirect.** Both `bio` and `bio_edit` detect "old URL" patterns (non-`teach` tl prefix, or first/last/num format) and issue `HttpResponsePermanentRedirect`. A `TODO` comment in [views/bio.py](views/bio.py) indicates these redirects were expected to be removed, but are still present.
+- **Old bio URLs permanently redirect.** Both `bio` and `bio_edit` detect "old URL" patterns (non-`teach` tl prefix, or first/last/num format) and issue `HttpResponsePermanentRedirect`. A `TODO` comment in [views/bio.py](../../../../../esp/esp/web/views/bio.py) indicates these redirects were expected to be removed, but are still present.
 
-- **`csrf_failure` resolves `prog` but never uses it.** In [views/csrf.py](views/csrf.py), `prog` is looked up and assigned but never added to the template context before `render_to_response` is called, so `403_csrf_failure.html` cannot access program-specific context. This appears to be a long-standing bug.
-
-- **`ResizeImageField` calls `Image.ANTIALIAS`, which is removed in Pillow 10.** `Image.ANTIALIAS` was deprecated in Pillow 9.1.0 and fully removed in Pillow 10.0.0 (released 2023). Running on a modern Pillow version will raise `AttributeError` when a user uploads a profile picture. The fix is to replace it with `Image.LANCZOS`.
+- **`csrf_failure` resolves `prog` but never uses it.** In [views/csrf.py](../../../../../esp/esp/web/views/csrf.py), `prog` is looked up and assigned but never added to the template context before `render_to_response` is called, so `403_csrf_failure.html` cannot access program-specific context. This appears to be a long-standing bug.
 
 <!-- Last verified: 2026-03-05 | Verified by: Balasubramaniam12007 -->
