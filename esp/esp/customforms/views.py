@@ -50,8 +50,24 @@ def formBuilder(request):
     if not (request.user.isAdministrator() or request.user.is_morphed()):
         form_list = form_list.filter(created_by=request.user)
     context = {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': list(cf_cache.only_fkey_models.keys())}
+    builder_config = {
+        'programs': [{'id': prog.id, 'name': prog.niceName()} for prog in prog_list.order_by('-id')],
+        'forms': [{'id': form.id, 'title': form.title} for form in form_list],
+        'edit': None,
+        'edit_error': '',
+    }
     if 'edit' in request.GET and request.GET.get('edit'):
         context['edit'] = request.GET.get('edit')
+        try:
+            edit_id = int(context['edit'])
+        except ValueError:
+            edit_id = None
+        #   The builder only offers forms from the user's own list
+        if edit_id is not None and form_list.filter(id=edit_id).exists():
+            builder_config['edit'] = edit_id
+        else:
+            builder_config['edit_error'] = f'Form {context["edit"]} was not found, or you do not have permission to edit it.'
+    context['builder_config'] = builder_config
     return render_to_response('customforms/index.html', request, context)
 
 @user_passes_test(test_func)
