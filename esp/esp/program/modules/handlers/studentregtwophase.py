@@ -295,13 +295,19 @@ class StudentRegTwoPhase(ProgramModuleObj):
             json_data = json.loads(request.POST['json_data'])
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
-        if not isinstance(json_data.get('interested'), list) or \
+        if not isinstance(json_data, dict) or \
+           not isinstance(json_data.get('interested'), list) or \
            not isinstance(json_data.get('not_interested'), list):
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        try:
+            interested = [int(x) for x in json_data['interested']]
+            not_interested = [int(x) for x in json_data['not_interested']]
+        except (TypeError, ValueError, OverflowError):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
         # Determine which of the given class ids are valid
         valid_classes = ClassSubject.objects.filter(
-            pk__in=json_data['interested'],
+            pk__in=interested,
             parent_program=prog,
             status__gte=0,
             grade_min__lte=request.user.getGrade(prog),
@@ -325,7 +331,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         # Expire any matching SSIs that are in 'not_interested'
         to_expire = StudentSubjectInterest.objects.filter(
             user=request.user,
-            subject__pk__in=json_data['not_interested'])
+            subject__pk__in=not_interested)
         to_expire.update(end_date=datetime.datetime.now())
 
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -379,6 +385,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
             json_data = json.loads(request.POST['json_data'])
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
+        if not isinstance(json_data, dict):
+            return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
             [timeslot_id] = list(json_data.keys())
         except ValueError:
@@ -388,9 +396,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         timeslot = Event.objects.get(pk=timeslot_id)
         priorities = json_data[timeslot_id]
+        # Look up every rank before saving anything, so an unknown rank
+        # doesn't leave the earlier ranks half-saved.
+        rels = {}
+        for rel_index in priorities:
+            try:
+                rels[rel_index] = RegistrationType.objects.get(
+                    name='Priority/%s' % rel_index, category='student')
+            except RegistrationType.DoesNotExist:
+                return HttpResponseBadRequest('JSON data mis-formatted.')
         for rel_index, cls_id in priorities.items():
-            rel_name = 'Priority/%s' % rel_index
-            rel = RegistrationType.objects.get(name=rel_name, category='student')
+            rel = rels[rel_index]
 
             # Pull up any registrations that exist (including expired ones)
             srs = StudentRegistration.objects.annotate(
