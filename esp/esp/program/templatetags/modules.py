@@ -17,14 +17,14 @@ def hasModule(program, module):
         return program.hasModule(module)
 
 
-def _module_page_registration(context, tls=('learn', 'teach')):
-    """Shared request lookup for the module page checklist tags below.
+def _module_page_registration(context):
+    """Shared request lookup for the registration_checklist tag below.
 
     Reads ``request.program`` and ``request.tl`` (both set by the standard
-    ESP view decorators) and returns ``(request, program, tl, scrmi)``, where
-    scrmi is the StudentClassRegModuleInfo or ClassRegModuleInfo for the tl.
-    Returns None when there is no request, program or registration options,
-    or the tl is not in ``tls``.
+    ESP view decorators) and returns ``(request, program, tl, options)``,
+    where options is the StudentClassRegModuleInfo or ClassRegModuleInfo for
+    the tl.  Returns None when there is no request, program or registration
+    options, or the tl is not 'learn' or 'teach'.
     """
     request = context.get('request')
     if request is None:
@@ -33,57 +33,28 @@ def _module_page_registration(context, tls=('learn', 'teach')):
     program = getattr(request, 'program', None)
     tl = getattr(request, 'tl', None)
 
-    if program is None or tl not in tls:
+    if program is None or tl not in ('learn', 'teach'):
         return None
 
     try:
         if tl == 'learn':
-            scrmi = program.studentclassregmoduleinfo
+            options = program.studentclassregmoduleinfo
         else:
-            scrmi = program.classregmoduleinfo
+            options = program.classregmoduleinfo
     except (AttributeError, ObjectDoesNotExist):
         return None
 
-    return request, program, tl, scrmi
-
-
-@register.inclusion_tag('program/modules/module_progress.html', takes_context=True)
-def registration_progress(context):
-    """Render the registration checklist or progress bar on a module page.
-
-    Looks up the full list of modules and computes completion state, then
-    passes them to ``module_progress.html`` so the existing
-    checkboxes/progressbar partials can render without changes.
-
-    Returns an empty dict (renders nothing) when:
-      - there is no request in the template context, or
-      - the current tl is not 'learn' or 'teach', or
-      - the progress_mode for this registration type is 0 (disabled).
-    """
-    registration = _module_page_registration(context)
-    if registration is None:
-        return {}
-    request, program, tl, scrmi = registration
-
-    if scrmi.progress_mode == 0:
-        return {}
-
-    if not request.user.is_authenticated:
-        return {}
-
-    checklist = get_module_page_checklist_context(request.user, program, tl)
-    checklist['scrmi'] = scrmi
-    return checklist
+    return request, program, tl, options
 
 
 @register.simple_tag(takes_context=True)
-def teacher_checklist(context):
-    """Return the checklist context used by teacher_module_base.html.
+def registration_checklist(context):
+    """Return the checklist context used by module_base.html.
 
     Reuses ``checklist`` from the template context when the view already
-    built it (as the teacher registration main page does); otherwise looks it
-    up for the current teacher module page.  Returns an empty dict outside
-    teacher registration, so templates shared with other pages render as
+    built it (as the registration main pages do); otherwise looks it up for
+    the current student or teacher module page.  Returns an empty dict
+    outside registration, so templates shared with other pages render as
     plain pages there.
 
     Also sets ``show_list`` (whether there is a checklist or other
@@ -92,27 +63,28 @@ def teacher_checklist(context):
     ``lock_links`` (whether steps are shown without links) and, with the
     list, ``progress`` (see get_checklist_progress).
     The result is cached for the rest of the render, because
-    teacher_module_base.html calls this from both its sidebar_extra and content
+    module_base.html calls this from both its sidebar_extra and content
     blocks.
     """
-    if 'teacher_checklist' in context.render_context:
-        return context.render_context['teacher_checklist']
+    if 'registration_checklist' in context.render_context:
+        return context.render_context['registration_checklist']
 
-    checklist = context.get('checklist') or _lookup_teacher_checklist(context)
+    # A view can pass an empty checklist to show none.
+    checklist = context['checklist'] if 'checklist' in context else _lookup_checklist(context)
     if checklist:
-        # Teacher pages show the checklist (with its progress bar) for mode 2 too.
+        # Progress mode 2 (formerly the separate progress bar) shows the checklist too.
         show_steps = checklist['options'].progress_mode in (1, 2)
         checklist['show_steps'] = show_steps
         checklist['show_list'] = show_steps or bool(checklist.get('records'))
         checklist['in_theme_sidebar'] = checklist['show_list'] and _theme_has_checklist_sidebar(context)
         if checklist['show_list']:
             checklist['progress'] = get_checklist_progress(checklist, include_steps=show_steps)
-        # Until the required modules are done, findModule sends the teacher
+        # Until the required modules are done, findModule sends the user
         # through them in order, so the checklist shouldn't link around that.
         checklist['lock_links'] = (not checklist['completedAll']
                                    and forces_required_modules(checklist['program']))
 
-    context.render_context['teacher_checklist'] = checklist
+    context.render_context['registration_checklist'] = checklist
     return checklist
 
 
@@ -131,16 +103,16 @@ def _theme_has_checklist_sidebar(context):
     return bool(theme.get('checklist_in_sidebar'))
 
 
-def _lookup_teacher_checklist(context):
-    """Checklist context for the current teacher module page, or an empty dict."""
-    registration = _module_page_registration(context, tls=('teach',))
+def _lookup_checklist(context):
+    """Checklist context for the current registration module page, or an empty dict."""
+    registration = _module_page_registration(context)
     if registration is None:
         return {}
-    request, program, tl, crmi = registration
+    request, program, tl, options = registration
 
     if not request.user.is_authenticated:
         return {}
 
     checklist = get_module_page_checklist_context(request.user, program, tl)
-    checklist['options'] = crmi
+    checklist['options'] = options
     return checklist

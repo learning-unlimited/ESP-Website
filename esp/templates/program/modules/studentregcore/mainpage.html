@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "program/modules/module_base.html" %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
@@ -47,8 +47,9 @@
 </script>
 {% endblock %}
 
-{% block content %}
-<br /><br />
+{% block module_header %}
+{% load render_qsd %}
+<header class="reg-hero">
 <h1>Student registration for {{program.niceName}} </h1>
 {% if not request.user.onsite_local %}
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
@@ -60,11 +61,10 @@
 {% endif %}
 {% endif %}
 {% endif %}
-{% load render_qsd %}
 {% inline_program_qsd_block program "registration_steps" %}
 <p>
     Please complete the following steps to register for {{ program.niceName }}.
-    When each step is completed, the corresponding box in the right-hand column will
+    When each step is completed, the corresponding box in the checklist will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
 </p>
@@ -75,48 +75,23 @@
 <span class="bi bi-info-circle" aria-hidden="true"></span>
 <big><b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.</big>
 </div>
-
-{% if scrmi.progress_mode == 1 %}
-    {% include "program/modules/checkboxes.html" %}
 {% endif %}
-{% if scrmi.progress_mode == 2 %}
-    {% include "program/modules/progressbar.html" %}
-{% endif %}
+</header>
+{% endblock %}
 
-{% if records %}
-{% render_inline_program_qsd program record_steps %}
-<div class="row">
-<div class="col-md-10 offset-md-1">
-<table class="table table-condensed" align="center" width="400">
-<tr class="well"><th>Other Registration Requirements</th><th>Done?</th></tr>
-{% for record in records %}
-    <tr>
-        <td>{{ record.full_event }}</td>
-        <td>
-            {% if record.isCompleted %}
-                <i class="bi bi-check done-sign" aria-label="Done"></i>
-            {% else %}
-                <i class="bi bi-x not-done-sign" aria-label="Not done"></i>
-            {% endif %}
-        </td>
-    </tr>
-{% endfor %}
-</table>
-</div>
-</div>
-{% endif %}
-
-{% endif %}
-
+{% block module_content %}
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:studentreg" %}
 
+<section class="reg-modules">
 {% for module in modules %}
 {% if module.useTemplate %}
-<a name="module-{{module.id}}"></a>
+<div class="reg-module-block" id="module-{{ module.id }}">
 {% include module.getTemplate %}
+</div>
 {% endif %}
 {% endfor %}
+</section>
 
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
