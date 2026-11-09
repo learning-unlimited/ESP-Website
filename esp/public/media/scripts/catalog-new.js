@@ -491,8 +491,11 @@ var CatalogViewModel = function () {
                 JSON.stringify(updates));
             $form.attr('action', learn_url + 'mark_classes_interested');
             $form.attr('method', 'post');
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', false);
         }
         else {
+            // Plain navigation, so keep the CSRF token out of the URL.
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', true);
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
@@ -524,8 +527,11 @@ var CatalogViewModel = function () {
             $form.find("input[name=json_data]").val(json_data);
             $form.attr('action', learn_url + 'save_priorities');
             $form.attr('method', 'post');
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', false);
         }
         else {
+            // Plain navigation, so keep the CSRF token out of the URL.
+            $form.find('input[name=csrfmiddlewaretoken]').prop('disabled', true);
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
