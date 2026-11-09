@@ -137,8 +137,10 @@ function Matrix(
     };
     
     this.scheduling_check = "";
+    this.checkLegend = new CheckLegend($j("#scheduling-checks-legend"), this);
     $j('input[type=radio][name=scheduling-checks]').on("change", function (evt) {
         this.scheduling_check = evt.target.value;
+        this.checkLegend.render(this.scheduling_check);
         this.updateCells();
     }.bind(this));
 
