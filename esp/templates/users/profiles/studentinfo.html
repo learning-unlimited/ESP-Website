@@ -1,8 +1,9 @@
 <!-- Begin Student Info Portion -->
-<h3>Additional Student Information</h3>
+<div class="card mb-4 profile-card">
+<div class="card-header"><h2 class="h5 mb-0">Additional Student Information</h2></div>
+<div class="card-body">
 {% if not user.getGrade or form.allow_change_grade_level %}
-<div role="alert" class="alert alert-dismissible">
-<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="profile-note profile-note-warning mb-3">
 Please fill out your current age and grade accurately and honestly.
 We trust our students to represent themselves honestly, but
 students have abused this trust in the past to circumvent grade
@@ -12,7 +13,7 @@ requirements with full knowledge of the outstanding students in the
 program. Please be honest and support the community.
 <br /> <br />
 {% if not user.getGrade and not form.allow_change_grade_level %}
-You will only be able to set your age and grade level ONCE. 
+You will only be able to set your age and grade level ONCE.
 After you click "Update Your Information!" below, you will not be
 able to change your age or grade level.
 <br /> <br />
@@ -25,170 +26,77 @@ Your grade level will update automatically every August.
     {% include "users/profiles/gradechangerequestinfo.html" %}
 {% endif %}
 
+<div class="row g-3">
+
 {% if form.dob %}
-<div class="control-group">
-    <label for="id_dob_0" class="control-label">Date of Birth:</label>
-    <div class="controls controls-row">
-    {{ form.dob }} {% if form.dob.errors %}
-    <br /><span class="form_error" role="alert">{{ form.dob.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.dob label="Date of birth" col="col-md-7" for_id="id_dob_0" group="d-flex gap-2" %}
 {% endif %}
 
 {% if form.graduation_year %}
-<div class="control-group">
-    <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
-    <div class="controls">
-    {{ form.graduation_year }} {% if form.graduation_year.errors %}
-    <br /><span class="form_error" role="alert">{{ form.graduation_year.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.graduation_year label="Grade / Graduation year" col="col-md-5" %}
 {% endif %}
 
 {% if form.gender %}
-<div class="control-group">
-    <label for="id_dob"  class="control-label">Gender:</label>
-    <div class="controls">
-    {{ form.gender }} {% if form.gender.errors %}
-    <br /><span class="form_error" role="alert">{{ form.gender.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.gender label="Gender" col="col-sm-6" %}
 {% endif %}
 
 {% if form.pronoun %}
-<div class="control-group">
-    <label for="id_pronoun"  class="control-label">Preferred pronouns:</label>
-    <div class="controls">
-    <p style="font-size: 0.8em; font-style: italic;">(Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required.)</p>
-    {{ form.pronoun }} {% if form.pronoun.errors %}
-    <br /><span class="form_error" role="alert">{{ form.pronoun.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.pronoun label="Preferred pronouns" col="col-sm-6" help="Anyone with access to your account will be able to see this on your profile. Teachers and administrators will also have access to this information. This field is not required." %}
 {% endif %}
 
 {% if form.k12school %}
-<div class="control-group">
-    <label for="id_k12school" class="control-label">School:</label>
-    <div class="controls controls-row">
-    <p style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up, otherwise enter the full school name.)</p>
-    {{ form.k12school }} {% if form.k12school.errors %}
-    <br /><span class="form_error" role="alert">{{ form.k12school.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.k12school label="School" help="Begin to type your school's name and select your school if it comes up, otherwise enter the full school name." %}
 {% endif %}
 
 {% if form.unmatched_school %}
-<div class="control-group">
-    <label for="id_unmatched_school" class="control-label"></label>
-    <div class="controls">
-    {{ form.unmatched_school }} {% if form.unmatched_school.errors %}
-    <br /><span class="form_error" role="alert">{{ form.unmatched_school.errors|join:", " }}</span>
-    {% endif %}
+<div class="col-12 profile-field">
+    <div class="form-check">
+    {{ form.unmatched_school }}
+    <label for="id_unmatched_school" class="form-check-label">Check this box only if you've tried searching but could not find your school.</label>
     </div>
-    <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
+    {% for error in form.unmatched_school.errors %}<div class="invalid-feedback d-block" role="alert">{{ error }}</div>{% endfor %}
 </div>
 {% endif %}
 
 {% if form.heard_about %}
-<div class="control-group">
-    <label for="{{ form.heard_about.id_for_label }}" class="control-label">(Optional) How did you hear of this program?
-    </label>
-    <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
-    {{ form.heard_about }} {% if form.heard_about.errors %}
-    <br /><span class="form_error" role="alert">{{ form.heard_about.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{% if form.fields.studentrep %}
-<div class="control-group">
-    <label for="id_studentrep" class="control-label">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label>
-    <div class="controls">
-    {{ form.studentrep }} 
-    {% if form.studentrep.errors %}
-    <br /><span class="form_error" role="alert">{{ form.studentrep.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-    {% if form.fields.studentrep_expl %}
-    <i>For new student reps:</i>
-    Please enter a short explanation of why you would <br />
-    like to be a student representative and any ideas you <br />
-    may have for us.  Our membership coordinator will <br />
-    contact you soon! <br />
-    <div class="controls">
-    {{ form.studentrep_expl }}
-    {% if form.studentrep_expl.errors %}
-    <br /><span class="form_error" role="alert">{{ form.studentrep_expl.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-    {% endif %}
-</div>
-{% endif %}
-
-{% if form.food_preference %}
-<div class="control-group">
-    <label for="id_food_preference" class="control-label">Food preference: </label>
-    <div class="controls">
-    {{ form.food_preference }} {% if form.food_preference.errors %}
-    <br /><span class="form_error" role="alert">{{ form.food_preference.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{% if form.shirt_size %}
-<div role="alert" class="alert alert-dismissible">
-<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
-</div>
-
-<div class="control-group">
-    <label for="id_shirt_size" class="control-label">Shirt size:</label>
-    <div class="controls">
-    {{ form.shirt_size }} {% if form.shirt_size.errors %}
-    <br /><span class="form_error" role="alert">{{ form.shirt_size.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div> 
-
-<div class="control-group">
-    <label for="id_shirt_type" class="control-label">Shirt type:</label>
-    <div class="controls">
-    {{ form.shirt_type }} {% if form.shirt_type.errors %}
-    <br /><span class="form_error" role="alert">{{ form.shirt_type.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
-{% endif %}
-
-{% if form.medical_needs %}
-<div class="control-group">
-    <label for="id_medical_needs" class="control-label">(Optional) Medical needs:</label>
-    <div class="controls">
-    {{ form.medical_needs }} {% if form.medical_needs.errors %}
-    <br /><span class="form_error" role="alert">{{ form.medical_needs.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.heard_about label="(Optional) How did you hear of this program?" col="col-md-6" for_id="id_heard_about_0" group="d-grid gap-2" help='If you select "Other," please explain in the lower box.' %}
 {% endif %}
 
 {% if form.transportation %}
-<div class="control-group">
-    <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
-    <div class="controls controls-row">
-    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the lower box.)</span><br />
-    {{ form.transportation }} {% if form.transportation.errors %}
-    <br /><span class="form_error" role="alert">{{ form.transportation.errors|join:", " }}</span>
-    {% endif %}
-    </div>
-</div>
+{% include "users/profiles/field.html" with field=form.transportation label="How do you plan to get to/from the program?" col="col-md-6" for_id="id_transportation_0" group="d-grid gap-2" help='If you select "Other," please explain in the lower box.' %}
 {% endif %}
+
+{% if form.fields.studentrep %}
+<div class="col-12 profile-field">
+    <div class="form-check">
+    {{ form.studentrep }}
+    <label for="id_studentrep" class="form-check-label">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a></label>
+    </div>
+    {% for error in form.studentrep.errors %}<div class="invalid-feedback d-block" role="alert">{{ error }}</div>{% endfor %}
+</div>
+{% if form.fields.studentrep_expl %}
+{% include "users/profiles/field.html" with field=form.studentrep_expl label="For new student reps: please enter a short explanation of why you would like to be a student representative and any ideas you may have for us. Our membership coordinator will contact you soon!" %}
+{% endif %}
+{% endif %}
+
+{% if form.food_preference %}
+{% include "users/profiles/field.html" with field=form.food_preference label="Food preference" col="col-sm-6" %}
+{% endif %}
+
+{% if form.shirt_size %}
+<div class="col-12"><h3 class="h6 mt-2 mb-0">T-shirt</h3>
+<div class="form-text">T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!</div>
+</div>
+{% include "users/profiles/field.html" with field=form.shirt_size label="Shirt size" col="col-sm-6" %}
+{% include "users/profiles/field.html" with field=form.shirt_type label="Shirt type" col="col-sm-6" %}
+{% endif %}
+
+{% if form.medical_needs %}
+{% include "users/profiles/field.html" with field=form.medical_needs label="(Optional) Medical needs" %}
+{% endif %}
+
+</div>
+</div>
+</div>
 
 <!-- End Student Info Portion -->
