@@ -29,7 +29,7 @@ class AddClassConcurrencyRegressionTest(TransactionTestCase):
 
     def setUp(self):
         # SQLite ignores row locks; this regression targets backends used in production.
-        if not getattr(connection.features, 'supports_select_for_update', False):
+        if not connection.features.has_select_for_update:
             raise unittest.SkipTest(
                 'Database backend must support SELECT ... FOR UPDATE (not available on SQLite).'
             )
