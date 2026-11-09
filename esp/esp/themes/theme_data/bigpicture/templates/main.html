@@ -79,6 +79,8 @@
     <div id="sidebar" class="col-md-3">
       {% include "sidebar/nav.html" %}
       {% include "sidebar/admin.html" %}
+      {# Filled by pages that add to the sidebar, e.g. the teacher registration checklist. #}
+      {% block sidebar_extra %}{% endblock %}
     </div>
     {% endblock %}
 
