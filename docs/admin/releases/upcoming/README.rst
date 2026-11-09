@@ -49,6 +49,7 @@ have set already carry over and keep working.
 Bug Fixes
 =========
 
+- The email status page (``/manage/emails``) no longer crashes when the emails sent in the selected period are too large to cache, for example when one has an image pasted into it. The page is no longer cached, and it now counts each email's recipients and sent messages with a single database query. This also fixes the recipient and sent counts showing 0 for emails whose subject uses a template variable such as ``{{ user.first_name }}``.
 - The teacher custom form, teacher quiz and student custom form module pages now check required fields and field formats in the browser before submitting, as standalone custom forms do. The date check on all custom forms now also accepts the format the site re-displays saved dates in (such as "2026-11-14"). Phone numbers are no longer checked in the browser, which rejected international numbers the site accepts; the server still checks them.
 - The "First Step" and "Prev Step" buttons on custom forms no longer require the current page to be filled in correctly, so users can go back without completing it first.
 - Pressing Enter on a later page of a custom form (standalone, or a teacher or student registration step) now goes to the next page instead of back a page.

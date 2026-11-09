@@ -41,7 +41,6 @@ import os
 from operator import __or__ as OR
 from pprint import pprint
 
-from argcache import cache_function
 
 from esp.utils.web import render_to_response
 from esp.qsd.models import QuasiStaticData
@@ -55,7 +54,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.redirects.models import Redirect
 from django.contrib.sites.models import Site
 from django.db.models.query import Q
-from django.db.models import Min
+from django.db.models import Count, Max, Min
 from django.db import transaction
 from django.core.mail import mail_admins
 from django.core.cache import cache
@@ -79,7 +78,7 @@ from esp.users.models import ESPUser, Permission, admin_required, ZipCode, UserA
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.accounting.models import CybersourcePostback
-from esp.dbmail.models import MessageRequest, TextOfEmail, PlainRedirect
+from esp.dbmail.models import MessageRequest, PlainRedirect
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_members
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -977,32 +976,35 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, context)
 
-@cache_function
 def get_email_data(start_date):
-    requests = MessageRequest.objects.filter(created_at__gte=start_date).order_by('-created_at')
+    """
+    Return the MessageRequests created since start_date, newest first, each
+    annotated with num_rec, num_sent and finished_at for admin/emails.html.
+
+    Not cached: the requests carry their full message bodies, which can easily
+    exceed memcached's item size, and the counts below are a single indexed
+    query on the TextOfEmail -> MessageRequest foreign key.
+    """
+    requests = (MessageRequest.objects
+                .filter(created_at__gte=start_date)
+                .select_related('creator')
+                .annotate(num_toes=Count('textofemail'),
+                          num_sent=Count('textofemail', filter=Q(textofemail__sent__isnull=False)),
+                          last_sent=Max('textofemail__sent'))
+                .order_by('-created_at'))
 
     requests_list = []
     for req in requests:
-        toes = TextOfEmail.objects.filter(created_at=req.created_at,
-                                          subject = req.subject,
-                                          send_from = req.sender)
         if req.processed:
-            req.num_rec = toes.count()
+            req.num_rec = req.num_toes
         else:
             req.num_rec = CommModule.approx_num_of_recipients(req.recipients, req.get_sendto_fn())
-        req.num_sent = toes.filter(sent__isnull=False).count()
-        if req.num_rec == req.num_sent:
-            last_email = toes.order_by('-sent').first()
-            if last_email is not None:
-                req.finished_at = last_email.sent
-            else:
-                req.finished_at = "(Not finished)"
+        if req.num_rec == req.num_sent and req.last_sent is not None:
+            req.finished_at = req.last_sent
         else:
             req.finished_at = "(Not finished)"
         requests_list.append(req)
     return requests_list
-get_email_data.depend_on_model(MessageRequest)
-get_email_data.depend_on_model(TextOfEmail)
 
 @admin_required
 def emails(request):
@@ -1010,7 +1012,7 @@ def emails(request):
     View that displays information for recent email requests.
     GET data:
       'start_date' (optional):  Starting date to filter email requests by.
-                                Should be given in the format "%m/%d/%Y".
+                                Should be given in the format "%Y-%m-%d".
     """
     context = {}
     if request.GET and "start_date" in request.GET:
