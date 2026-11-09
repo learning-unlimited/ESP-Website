@@ -156,3 +156,36 @@ class CatalogInvalidationTest(ProgramFrameworkTest):
         self.assertIn(new_start, starts,
                       "catalog still holds the pre-edit time of an event "
                       "owned by another program")
+
+    def test_detached_app_question_evicts_the_former_scope_after_commit(self):
+        """ATOMIC_REQUESTS keeps the pre-move row visible to everyone else
+        until commit, so a catalog rebuilt after the pre_save eviction but
+        before that commit re-caches the old question count.  The post_save
+        selector cannot drop it -- a detached question has no scope -- so the
+        former scope is evicted again on commit.
+        """
+        subject = self.program.classes().first()
+        question = StudentAppQuestion.objects.create(
+            program=self.program, subject=subject,
+            question='What is your experience?')
+        self._catalog()
+        self.assertEqual(self._queries_to_reload(), 0,
+                         "catalog should be cached before the question moves")
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            question.subject = None
+            question.save()
+            #   Stands in for a concurrent request rebuilding the catalog
+            #   while the detachment is still uncommitted.
+            self._catalog()
+
+        self.assertEqual(
+            self._queries_to_reload(), 0,
+            "the simulated racing rebuild should have re-cached the catalog")
+
+        for callback in callbacks:
+            callback()
+
+        self.assertGreater(
+            self._queries_to_reload(), 0,
+            "the former program's catalog survived the committed detachment")

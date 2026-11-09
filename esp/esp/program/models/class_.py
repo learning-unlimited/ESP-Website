@@ -469,11 +469,28 @@ class ClassManager(Manager):
         except Exception:
             return
         key_set = ClassManager._catalog_key_set_for_studentappquestion(previous)
+        instance._previous_catalog_key_set = key_set
         if key_set is not None:
             _cache.delete_key_sets(key_set)
 
+    #   Evicting only in pre_save is not enough.  ATOMIC_REQUESTS wraps each
+    #   request in a transaction, so the row the eviction was based on stays
+    #   visible to everyone else until commit; a catalog rebuilt in that window
+    #   caches the old question count again, and the post_save selector cannot
+    #   drop it because it only sees the new scope (nothing at all, once the
+    #   question is detached).  Drop the former scope once more after commit,
+    #   when the move is actually visible.
+    def _evict_catalog_for_moved_studentappquestion(sender, instance,
+                                                    _cache=catalog_cached,
+                                                    **kwargs):
+        key_set = instance.__dict__.pop('_previous_catalog_key_set', None)
+        if key_set is not None:
+            transaction.on_commit(lambda: _cache.delete_key_sets(key_set))
+
     signals.pre_save.connect(_evict_catalog_for_previous_studentappquestion,
                              sender='program.StudentAppQuestion', weak=False)
+    signals.post_save.connect(_evict_catalog_for_moved_studentappquestion,
+                              sender='program.StudentAppQuestion', weak=False)
 
     @staticmethod
     def is_class_index_qsd(qsd):
