@@ -325,6 +325,7 @@ function Sections(sections_data, section_details_data, categories_data, teacher_
         this.matrix.unhighlightTimeslots(this.availableTimeslots);
         this.clearRecurringSelection();
         this.unscheduleAsGhost();
+        this.matrix.refreshRoomsForSelection();
     };
 
     this.setRecurringSelectionMode = function(enabled) {
