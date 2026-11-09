@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from pathlib import Path
 #
 # Import classrooms from two csv files: one from schedules, and one we make
 # with furnishings.
@@ -36,14 +37,14 @@ PROGRAM = Program.objects.get(name=args.program)
 RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
 RESOURCE_NAMES = [x[0] for x in RESOURCE_TYPES.values_list("name")]
 
-sched_filename = os.path.expanduser(args.sched_filename)
+sched_filename = str(Path(args.sched_filename).expanduser())
 sched_csvfile = open(sched_filename, "r")
 sched_reader = csv.reader(sched_csvfile)
 sched_rows = list(sched_reader)
 SCHED_ROOM_NUMBER_COL = 3
 ALL_USED_ROOMS = {row[SCHED_ROOM_NUMBER_COL] for row in sched_rows}
 
-furnish_filename = os.path.expanduser(args.furnish_filename)
+furnish_filename = str(Path(args.furnish_filename).expanduser())
 furnish_csvfile = open(furnish_filename, "r")
 furnish_reader = csv.reader(furnish_csvfile)
 furnish_rows = list(furnish_reader)
