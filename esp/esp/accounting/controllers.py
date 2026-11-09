@@ -260,8 +260,18 @@ class ProgramAccountingController(BaseAccountingController):
         return q_object
 
     def get_lineitemtypes(self, **kwargs):
+        from django.db import connection
         qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
-        return qs.order_by('text', '-id').distinct('text')
+        if connection.features.can_distinct_on_fields:
+            return qs.order_by('text', '-id').distinct('text')
+        else:
+            seen_texts = set()
+            ids = []
+            for item in qs.order_by('text', '-id'):
+                if item.text not in seen_texts:
+                    seen_texts.add(item.text)
+                    ids.append(item.id)
+            return LineItemType.objects.filter(id__in=ids)
 
     def all_transfers_Q(self, **kwargs):
         """
