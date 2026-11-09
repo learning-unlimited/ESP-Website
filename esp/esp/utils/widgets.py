@@ -9,13 +9,13 @@ from django.forms import widgets
 from django.template import Template, Context
 from django.utils.safestring import mark_safe
 
-from collections import OrderedDict
-
 import django.utils.formats
 import datetime
 import time
 import json
 import logging
+import os
+import re
 logger = logging.getLogger(__name__)
 
 class DateTimeWidget(forms.widgets.DateTimeInput):
@@ -554,290 +554,59 @@ class ChoiceWithOtherField(forms.MultiValueField):
 
         return option_value, other_value
 
-# copied from esp/public/media/theme_editor/less/glyphicons.less
-# TODO(benkraft): avoid the duplication
-_ICONS = OrderedDict([
-    ("asterisk", "&#x002a"),
-    ("plus", "&#x002b"),
-    ("euro", "&#x20ac"),
-    ("minus", "&#x2212"),
-    ("cloud", "&#x2601"),
-    ("envelope", "&#x2709"),
-    ("pencil", "&#x270f"),
-    ("glass", "&#xe001"),
-    ("music", "&#xe002"),
-    ("search", "&#xe003"),
-    ("heart", "&#xe005"),
-    ("star", "&#xe006"),
-    ("star-empty", "&#xe007"),
-    ("user", "&#xe008"),
-    ("film", "&#xe009"),
-    ("th-large", "&#xe010"),
-    ("th", "&#xe011"),
-    ("th-list", "&#xe012"),
-    ("ok", "&#xe013"),
-    ("remove", "&#xe014"),
-    ("zoom-in", "&#xe015"),
-    ("zoom-out", "&#xe016"),
-    ("off", "&#xe017"),
-    ("signal", "&#xe018"),
-    ("cog", "&#xe019"),
-    ("trash", "&#xe020"),
-    ("home", "&#xe021"),
-    ("file", "&#xe022"),
-    ("time", "&#xe023"),
-    ("road", "&#xe024"),
-    ("download-alt", "&#xe025"),
-    ("download", "&#xe026"),
-    ("upload", "&#xe027"),
-    ("inbox", "&#xe028"),
-    ("play-circle", "&#xe029"),
-    ("repeat", "&#xe030"),
-    ("refresh", "&#xe031"),
-    ("list-alt", "&#xe032"),
-    ("lock", "&#xe033"),
-    ("flag", "&#xe034"),
-    ("headphones", "&#xe035"),
-    ("volume-off", "&#xe036"),
-    ("volume-down", "&#xe037"),
-    ("volume-up", "&#xe038"),
-    ("qrcode", "&#xe039"),
-    ("barcode", "&#xe040"),
-    ("tag", "&#xe041"),
-    ("tags", "&#xe042"),
-    ("book", "&#xe043"),
-    ("bookmark", "&#xe044"),
-    ("print", "&#xe045"),
-    ("camera", "&#xe046"),
-    ("font", "&#xe047"),
-    ("bold", "&#xe048"),
-    ("italic", "&#xe049"),
-    ("text-height", "&#xe050"),
-    ("text-width", "&#xe051"),
-    ("align-left", "&#xe052"),
-    ("align-center", "&#xe053"),
-    ("align-right", "&#xe054"),
-    ("align-justify", "&#xe055"),
-    ("list", "&#xe056"),
-    ("indent-left", "&#xe057"),
-    ("indent-right", "&#xe058"),
-    ("facetime-video", "&#xe059"),
-    ("picture", "&#xe060"),
-    ("map-marker", "&#xe062"),
-    ("adjust", "&#xe063"),
-    ("tint", "&#xe064"),
-    ("edit", "&#xe065"),
-    ("share", "&#xe066"),
-    ("check", "&#xe067"),
-    ("move", "&#xe068"),
-    ("step-backward", "&#xe069"),
-    ("fast-backward", "&#xe070"),
-    ("backward", "&#xe071"),
-    ("play", "&#xe072"),
-    ("pause", "&#xe073"),
-    ("stop", "&#xe074"),
-    ("forward", "&#xe075"),
-    ("fast-forward", "&#xe076"),
-    ("step-forward", "&#xe077"),
-    ("eject", "&#xe078"),
-    ("chevron-left", "&#xe079"),
-    ("chevron-right", "&#xe080"),
-    ("plus-sign", "&#xe081"),
-    ("minus-sign", "&#xe082"),
-    ("remove-sign", "&#xe083"),
-    ("ok-sign", "&#xe084"),
-    ("question-sign", "&#xe085"),
-    ("info-sign", "&#xe086"),
-    ("screenshot", "&#xe087"),
-    ("remove-circle", "&#xe088"),
-    ("ok-circle", "&#xe089"),
-    ("ban-circle", "&#xe090"),
-    ("arrow-left", "&#xe091"),
-    ("arrow-right", "&#xe092"),
-    ("arrow-up", "&#xe093"),
-    ("arrow-down", "&#xe094"),
-    ("share-alt", "&#xe095"),
-    ("resize-full", "&#xe096"),
-    ("resize-small", "&#xe097"),
-    ("exclamation-sign", "&#xe101"),
-    ("gift", "&#xe102"),
-    ("leaf", "&#xe103"),
-    ("fire", "&#xe104"),
-    ("eye-open", "&#xe105"),
-    ("eye-close", "&#xe106"),
-    ("warning-sign", "&#xe107"),
-    ("plane", "&#xe108"),
-    ("calendar", "&#xe109"),
-    ("random", "&#xe110"),
-    ("comment", "&#xe111"),
-    ("magnet", "&#xe112"),
-    ("chevron-up", "&#xe113"),
-    ("chevron-down", "&#xe114"),
-    ("retweet", "&#xe115"),
-    ("shopping-cart", "&#xe116"),
-    ("folder-close", "&#xe117"),
-    ("folder-open", "&#xe118"),
-    ("resize-vertical", "&#xe119"),
-    ("resize-horizontal", "&#xe120"),
-    ("hdd", "&#xe121"),
-    ("bullhorn", "&#xe122"),
-    ("bell", "&#xe123"),
-    ("certificate", "&#xe124"),
-    ("thumbs-up", "&#xe125"),
-    ("thumbs-down", "&#xe126"),
-    ("hand-right", "&#xe127"),
-    ("hand-left", "&#xe128"),
-    ("hand-up", "&#xe129"),
-    ("hand-down", "&#xe130"),
-    ("circle-arrow-right", "&#xe131"),
-    ("circle-arrow-left", "&#xe132"),
-    ("circle-arrow-up", "&#xe133"),
-    ("circle-arrow-down", "&#xe134"),
-    ("globe", "&#xe135"),
-    ("wrench", "&#xe136"),
-    ("tasks", "&#xe137"),
-    ("filter", "&#xe138"),
-    ("briefcase", "&#xe139"),
-    ("fullscreen", "&#xe140"),
-    ("dashboard", "&#xe141"),
-    ("paperclip", "&#xe142"),
-    ("heart-empty", "&#xe143"),
-    ("link", "&#xe144"),
-    ("phone", "&#xe145"),
-    ("pushpin", "&#xe146"),
-    ("usd", "&#xe148"),
-    ("gbp", "&#xe149"),
-    ("sort", "&#xe150"),
-    ("sort-by-alphabet", "&#xe151"),
-    ("sort-by-alphabet-alt", "&#xe152"),
-    ("sort-by-order", "&#xe153"),
-    ("sort-by-order-alt", "&#xe154"),
-    ("sort-by-attributes", "&#xe155"),
-    ("sort-by-attributes-alt", "&#xe156"),
-    ("unchecked", "&#xe157"),
-    ("expand", "&#xe158"),
-    ("collapse-down", "&#xe159"),
-    ("collapse-up", "&#xe160"),
-    ("log-in", "&#xe161"),
-    ("flash", "&#xe162"),
-    ("log-out", "&#xe163"),
-    ("new-window", "&#xe164"),
-    ("record", "&#xe165"),
-    ("save", "&#xe166"),
-    ("open", "&#xe167"),
-    ("saved", "&#xe168"),
-    ("import", "&#xe169"),
-    ("export", "&#xe170"),
-    ("send", "&#xe171"),
-    ("floppy-disk", "&#xe172"),
-    ("floppy-saved", "&#xe173"),
-    ("floppy-remove", "&#xe174"),
-    ("floppy-save", "&#xe175"),
-    ("floppy-open", "&#xe176"),
-    ("credit-card", "&#xe177"),
-    ("transfer", "&#xe178"),
-    ("cutlery", "&#xe179"),
-    ("header", "&#xe180"),
-    ("compressed", "&#xe181"),
-    ("earphone", "&#xe182"),
-    ("phone-alt", "&#xe183"),
-    ("tower", "&#xe184"),
-    ("stats", "&#xe185"),
-    ("sd-video", "&#xe186"),
-    ("hd-video", "&#xe187"),
-    ("subtitles", "&#xe188"),
-    ("sound-stereo", "&#xe189"),
-    ("sound-dolby", "&#xe190"),
-    ("sound-5-1", "&#xe191"),
-    ("sound-6-1", "&#xe192"),
-    ("sound-7-1", "&#xe193"),
-    ("copyright-mark", "&#xe194"),
-    ("registration-mark", "&#xe195"),
-    ("cloud-download", "&#xe197"),
-    ("cloud-upload", "&#xe198"),
-    ("tree-conifer", "&#xe199"),
-    ("tree-deciduous", "&#xe200"),
-    ("cd", "&#xe201"),
-    ("save-file", "&#xe202"),
-    ("open-file", "&#xe203"),
-    ("level-up", "&#xe204"),
-    ("copy", "&#xe205"),
-    ("paste", "&#xe206"),
-    ("alert", "&#xe209"),
-    ("equalizer", "&#xe210"),
-    ("king", "&#xe211"),
-    ("queen", "&#xe212"),
-    ("pawn", "&#xe213"),
-    ("bishop", "&#xe214"),
-    ("knight", "&#xe215"),
-    ("baby-formula", "&#xe216"),
-    ("tent", "&#x26fa"),
-    ("blackboard", "&#xe218"),
-    ("bed", "&#xe219"),
-    ("apple", "&#xf8ff"),
-    ("erase", "&#xe221"),
-    ("hourglass", "&#x231b"),
-    ("lamp", "&#xe223"),
-    ("duplicate", "&#xe224"),
-    ("piggy-bank", "&#xe225"),
-    ("scissors", "&#xe226"),
-    ("bitcoin", "&#xe227"),
-    ("btc", "&#xe227"),
-    ("xbt", "&#xe227"),
-    ("yen", "&#x00a5"),
-    ("jpy", "&#x00a5"),
-    ("ruble", "&#x20bd"),
-    ("rub", "&#x20bd"),
-    ("scale", "&#xe230"),
-    ("ice-lolly", "&#xe231"),
-    ("ice-lolly-tasted", "&#xe232"),
-    ("education", "&#xe233"),
-    ("option-horizontal", "&#xe234"),
-    ("option-vertical", "&#xe235"),
-    ("menu-hamburger", "&#xe236"),
-    ("modal-window", "&#xe237"),
-    ("oil", "&#xe238"),
-    ("grain", "&#xe239"),
-    ("sunglasses", "&#xe240"),
-    ("text-size", "&#xe241"),
-    ("text-color", "&#xe242"),
-    ("text-background", "&#xe243"),
-    ("object-align-top", "&#xe244"),
-    ("object-align-bottom", "&#xe245"),
-    ("object-align-horizontal", "&#xe246"),
-    ("object-align-left", "&#xe247"),
-    ("object-align-vertical", "&#xe248"),
-    ("object-align-right", "&#xe249"),
-    ("triangle-right", "&#xe250"),
-    ("triangle-left", "&#xe251"),
-    ("triangle-bottom", "&#xe252"),
-    ("triangle-top", "&#xe253"),
-    ("console", "&#xe254"),
-    ("superscript", "&#xe255"),
-    ("subscript", "&#xe256"),
-    ("menu-left", "&#xe257"),
-    ("menu-right", "&#xe258"),
-    ("menu-down", "&#xe259"),
-    ("menu-up", "&#xe260"),
-])
+def bootstrap_icons():
+    """Return {name: codepoint} from the installed Bootstrap Icons package,
+    which the themes render as <i class="bi bi-NAME">."""
+    path = os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'node_modules',
+                        'bootstrap-icons', 'font', 'bootstrap-icons.json')
+    try:
+        with open(path) as f:
+            icons = json.load(f)
+    except (OSError, ValueError):
+        logger.warning('Could not read the Bootstrap Icons list from %s', path)
+        return {}
+    return {name: codepoint for name, codepoint in icons.items()
+            if re.fullmatch(r'[a-z0-9-]+', name) and isinstance(codepoint, int)}
 
 class NavStructureWidgetWithIcons(NavStructureWidget):
     add_link_body = """
         entry.append($j("<span>Icon: </span>"));
-        var select = $j("<select style='font-family: Glyphicons Halflings'" +
-                        "class='data_icon nav_secondary_field input-medium glyphicon' />");
-        select.append($j("<option style='font-family: Glyphicons Halflings' value=''" +
-                         (data.icon ? "" : " selected") +
-                         ">(none)</option>"));
-        %(entries)s
-        entry.append(select);
+        var select = $j("<select class='data_icon nav_secondary_field input-medium' />");
+        select.css("font-family", "bootstrap-icons, var(--bs-body-font-family), sans-serif");
+        select.html({{ name }}_icon_options());
+        select.val(data.icon || "");
+        if (data.icon && select.val() !== data.icon) {
+            // Keep a saved name Bootstrap Icons lacks (e.g. an old Glyphicon) rather than dropping it on save
+            select.append($j("<option />").val(data.icon).text(data.icon + " (not a Bootstrap Icons name)"));
+            select.val(data.icon);
+        }
+        var preview = $j("<i class='bi ms-1' aria-hidden='true'></i>");
+        var update_preview = function () {
+            preview.attr("class", "bi ms-1" + (select.val() ? " bi-" + select.val() : ""));
+        };
+        select.on("change", update_preview);
+        update_preview();
+        entry.append(select).append(preview);
         %(super_add_link_body)s
-    """ % {
-        'super_add_link_body': NavStructureWidget.add_link_body,
-        'entries': '\n'.join('''
-            select.append($j("<option style='font-family: Glyphicons Halflings' value='%(icon)s'" +
-                             (data.icon === "%(icon)s" ? " selected" : "") +
-                             ">%(unicode)s (%(icon)s)</option>"));'''
-            % {'icon': icon, 'unicode': text_unicode}
-            for icon, text_unicode in _ICONS.items()),
+    """ % {'super_add_link_body': NavStructureWidget.add_link_body}
+
+    icon_script = """
+<script type="text/javascript">
+var %(name)s_icons = %(icons)s;
+var %(name)s_icon_options_html = null;
+function %(name)s_icon_options()
+{
+    if (%(name)s_icon_options_html === null) {
+        %(name)s_icon_options_html = "<option value=''>(none)</option>" + %(name)s_icons.map(function (icon) {
+            return "<option value='" + icon[0] + "'>" + String.fromCodePoint(icon[1]) + " " + icon[0] + "</option>";
+        }).join("");
     }
+    return %(name)s_icon_options_html;
+}
+</script>
+"""
+
+    def render(self, name, value, attrs=None, renderer=None):
+        icons = json.dumps(sorted(bootstrap_icons().items()))
+        script = self.icon_script % {'name': name, 'icons': icons}
+        return mark_safe(script + super().render(name, value, attrs, renderer))
