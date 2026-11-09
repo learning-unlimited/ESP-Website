@@ -13,7 +13,7 @@ django-recaptcha==2.0.6 # Provides support for Google reCAPTCHA
 django-reversion==1.10.0 # Handles versioning, currently for QSD and TemplateOverrides
 django-sendgrid-v5==0.9.0 # Provides support for using SendGrid as the EmailBackend
 django-vanilla-views==1.0.4 # Provides simpler generic views, currently used only for grade change requests
-git+https://github.com/learning-unlimited/django-admin-tools.git@esp # Extends Django Admin
+git+https://github.com/learning-unlimited/django-admin-tools.git@bf62857226cab317334e64833ba012d98d120594 # Extends Django Admin
 
 
 # Non-Django-specific packages
