@@ -144,6 +144,9 @@ def setup():
                 run("ln -s -T default_images images")
                 run("ln -s -T default_styles styles")
 
+    # Letters and certificates need a letterhead; use a blank one locally.
+    run(env.rbase + "deploy/make_blank_letterhead.sh")
+
     sudo("touch /fab-setup-done")
 
 @runs_once

@@ -21,6 +21,7 @@ with open('esp/esp/local_settings.py', 'w') as f:
 "
     ln -f -s `pwd`/esp/public/media/default_images esp/public/media/images
     ln -f -s `pwd`/esp/public/media/default_styles esp/public/media/styles
+    deploy/make_blank_letterhead.sh
     # the postgres service in Github Actions sets up the database for us
     if [ "$GITHUB_ACTIONS" != true ]; then
         psql -c "DROP DATABASE IF EXISTS test_test_django;" -U postgres

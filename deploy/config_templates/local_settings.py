@@ -56,6 +56,19 @@ CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 SECRET_KEY = '%(secret_key)s'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
+# Dev only: poll for code changes. The Vagrant shared folder (vboxsf) doesn't
+# deliver inotify events for edits made on the host, so the default inotify
+# reloader never notices them.
+from django.utils import autoreload
+autoreload.USE_INOTIFY = False
+
+# Dev only: re-read templates on every request so that edits show up without
+# a restart.  Costs about 10-50ms per page here.
+from .django_settings import TEMPLATES
+_loaders = TEMPLATES[0]['OPTIONS']['loaders']
+if isinstance(_loaders[-1], tuple) and _loaders[-1][0] == 'django.template.loaders.cached.Loader':
+    _loaders[-1:] = list(_loaders[-1][1])
+
 # for shell_plus jupyter notebook:
 NOTEBOOK_ARGUMENTS = [
     '--ip', '0.0.0.0',
